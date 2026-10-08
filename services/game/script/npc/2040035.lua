@@ -1,7 +1,7 @@
 -- NPC name (String.wz/Npc.img.xml): 아르토
 
 local pq = require("script/lib/party_quest")
-local REPEAT_QUEST = 199600
+local CLEAR_RECORD = "ludibrium_pq.clears"
 local LOBBY_MAP = 922010000
 
 local rewards = {
@@ -106,16 +106,7 @@ local rewards = {
 local DEFAULT = { id = 2000003, n = 100 }
 
 local function bump_clear_count(me)
-	local q = me:quest(REPEAT_QUEST)
-	if q == nil then
-		return
-	end
-	if not q:started() then
-		q:start("1")
-		return
-	end
-	local count = tonumber(q:record()) or 0
-	q:record(tostring(count + 1))
+	me:records():add(CLEAR_RECORD, 1)
 end
 
 return {

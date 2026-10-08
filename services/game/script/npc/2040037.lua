@@ -3,7 +3,7 @@
 local pq = require("script/lib/party_quest")
 
 local PASS_ID = 4001022
-local REPEAT_QUEST = 199600
+local CLEAR_RECORD = "ludibrium_pq.clears"
 local COUNT = 15
 local NEXT_STAGE = 3
 local EXP = 3600
@@ -24,12 +24,7 @@ local function give_exp(sm, amount)
 	for _, p in ipairs(sm:players()) do
 		if p ~= nil then
 			local give = amount
-			local q = p:quest(REPEAT_QUEST)
-			local count = 0
-			if q ~= nil then
-				count = tonumber(q:record()) or 0
-			end
-			if count > 0 then
+			if p:records():get(CLEAR_RECORD) > 0 then
 				give = math.floor(amount * 70 / 100)
 			end
 			p:exchange({}, { exp = give })

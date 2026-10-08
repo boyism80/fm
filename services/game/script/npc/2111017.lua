@@ -1,7 +1,7 @@
 -- NPC name (String.wz/Npc.img.xml): 첫번째 파이프손잡이
 
-local shuffle_key_quest = 164201
-local pipe_progress_quest = 164202
+local KEY_RECORD = "magatia.pipe_key"
+local PROGRESS_RECORD = "magatia.pipe_progress"
 local pipe_base_npc = 2111016
 
 local function shuffle_str(s)
@@ -16,38 +16,19 @@ local function shuffle_str(s)
 	return table.concat(t)
 end
 
-local function ensure_quest_record(q, default)
-	if q == nil then
-		return nil
-	end
-	if not q:started() and not q:completed() then
-		q:start(default)
-		return default
-	end
-	local r = q:record()
-	if r == nil or r == "" then
-		q:record(default)
-		return default
-	end
-	return r
-end
-
 return {
 	on_click = function(me, npc)
 		local npc_id = npc:id()
-		local qr = me:quest(shuffle_key_quest)
-		local qr2 = me:quest(pipe_progress_quest)
-		if qr == nil or qr2 == nil then
-			return
+		local key = me:records():text(KEY_RECORD)
+		if key == "" then
+			key = shuffle_str("123")
+			me:records():set_text(KEY_RECORD, key)
 		end
 
-		local key = ensure_quest_record(qr, shuffle_str("123"))
-		ensure_quest_record(qr2, "")
-
-		local progress = qr2:record()
+		local progress = me:records():text(PROGRESS_RECORD)
 		if #progress < 3 then
-			qr2:record(progress .. (npc_id - pipe_base_npc))
-			progress = qr2:record()
+			progress = progress .. (npc_id - pipe_base_npc)
+			me:records():set_text(PROGRESS_RECORD, progress)
 		end
 
 		local len = #progress
@@ -55,14 +36,14 @@ return {
 			if key:sub(1, 1) == progress:sub(1, 1) then
 				me:dialog(npc, "파이프가 날카로운 쇳소리와 함께 오른쪽으로 조금 돌아갔다.", false, false)
 			else
-				qr2:record("")
+				me:records():remove(PROGRESS_RECORD)
 				me:dialog(npc, "... 파이프가 날카로운 쇳소리와 함께 돌아가려다가 멈추고, 원래대로 돌아갔다. 다시 처음부터 돌려보자.", false, false)
 			end
 		elseif len == 2 then
 			if key:sub(2, 2) == progress:sub(2, 2) then
 				me:dialog(npc, "파이프가 날카로운 쇳소리와 함께 왼쪽으로 조금 돌아갔다.", false, false)
 			else
-				qr2:record("")
+				me:records():remove(PROGRESS_RECORD)
 				me:dialog(npc, "... 파이프가 날카로운 쇳소리와 함께 돌아가려다가 멈추고, 원래대로 돌아갔다. 다시 처음부터 돌려보자.", false, false)
 			end
 		else
@@ -72,17 +53,17 @@ return {
 					return
 				end
 				if text == "필리아는 내 사랑" then
-					qr2:record("")
-					qr:record(shuffle_str("123"))
+					me:records():remove(PROGRESS_RECORD)
+					me:records():set_text(KEY_RECORD, shuffle_str("123"))
 					me:play_portal_sound()
 					me:map(261000001, 1)
 				else
-					qr2:record("")
-					qr:record(shuffle_str("123"))
+					me:records():remove(PROGRESS_RECORD)
+					me:records():set_text(KEY_RECORD, shuffle_str("123"))
 					me:dialog(npc, "비밀번호가 틀린 것 같다. 보안장치가 사라지고 파이프가 원상태로 돌아갔다.", false, false)
 				end
 			else
-				qr2:record("")
+				me:records():remove(PROGRESS_RECORD)
 				me:dialog(npc, "... 파이프가 날카로운 쇳소리와 함께 돌아가려다가 멈추고, 원래대로 돌아갔다. 다시 처음부터 돌려보자.", false, false)
 			end
 		end

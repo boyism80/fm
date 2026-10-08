@@ -85,7 +85,7 @@ test_suite {
 	on_initialize = function(ctx)
 		for i = 0, ctx:bot_count() - 1 do
 			local bot = ctx:bot(i)
-			if pq.command(bot, "/봇초기화 50 100 0 4000051:30 100000:1", "봇초기화 완료") == false then
+			if pq.command(bot, "/봇초기화 50 100 0 4000051:30 - - zakum.approval=1", "봇초기화 완료") == false then
 				return ctx:fail(bot:name() .. " 봇 초기화 실패")
 			end
 			if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then

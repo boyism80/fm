@@ -2,24 +2,11 @@
 
 local COST = 8500000
 local DAILY_LIMIT = 1
+local RECORD = "summon.dorothy"
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local count_q = me:quest(12191046)
-		local day_q = me:quest(12191047)
-		if not count_q:started() then
-			count_q:start("0")
-		end
-		if not day_q:started() then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get(RECORD)
 
 		if not me:dialog_yes_no(npc, "어서와. 이곳엔 무서운 몬스터가 있어. 뭐? 너는 그 몬스터를 찾고있다고? 공짜로 가르쳐 줄 순없고 " .. COST .. " 메소를 줘.\r\n\r\n#r#e" .. count .. "/" .. DAILY_LIMIT .. "#n#k") then
 			return
@@ -44,6 +31,6 @@ return {
 			return
 		end
 		map:spawn_mob(9309207, -133, -167)
-		count_q:record(tostring(count + 1))
+		me:records():add(RECORD, 1, { daily = true })
 	end
 }

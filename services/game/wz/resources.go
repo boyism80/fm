@@ -614,17 +614,12 @@ func NewResources(wzPath string) *Resources {
 		reactor.Info.ActivateByTouch = target.Info.ActivateByTouch
 	}
 
-	quests := map[uint32]*Quest{}
-	err = loadResourceFiles(filepath.Join(wzPath, "Quest.wz", "QuestData"), workerCount, func(path string) (result *Quest, err error) {
-		return loadQuest(path)
-	}, func(percent float32, value *Quest) {
-		quests[value.ID] = value
-		fmt.Printf("Loading quest files: %.1f%%\n", percent)
-	})
+	quests, err := loadQuests(filepath.Join(wzPath, "Quest.wz"))
 	if err != nil {
 		log.Fatal(err)
 		return nil
 	}
+	fmt.Printf("Loaded %d quests\n", len(quests))
 
 	pquestPath := filepath.Join(wzPath, "Quest.wz", "PQuest.img.xml")
 	if err := attachPartyQuestRules(quests, pquestPath); err != nil {

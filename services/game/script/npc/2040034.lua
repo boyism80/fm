@@ -7,7 +7,7 @@ local MAX_PARTY_SIZE = 6
 local MIN_LEVEL = 35
 local MAX_LEVEL = 250
 local SCALE_LEVEL = 50
-local REPEAT_QUEST = 199600
+local CLEAR_RECORD = "ludibrium_pq.clears"
 local PASS_ID = 4001022
 local KEY_ID = 4001023
 
@@ -83,22 +83,14 @@ local function try_start(me, npc)
 end
 
 local function claim_earring(me, npc)
-	local q = me:quest(REPEAT_QUEST)
-	local count = 0
-	if q ~= nil then
-		count = tonumber(q:record()) or 0
-	end
+	local count = me:records():get(CLEAR_RECORD)
 	if count >= 5 then
 		local item = pq.gain_item(me, 1032064, 1)
 		if item == nil then
 			me:dialog(npc, "인벤토리 공간을 확보하신 후 다시 말을 걸어주세요.")
 			return
 		end
-		if q:started() then
-			q:record("0")
-		else
-			q:start("0")
-		end
+		me:records():set(CLEAR_RECORD, 0)
 		me:dialog(npc, "그동안 도와주셔서 감사합니다. 총 5번 도와 주셔서 #b귀걸이#k를 1번 받으실 수 있습니다. #b귀걸이#k을 한개 드렸습니다. 앞으로 5번을 더 하시면 #b귀걸이#k 한개를 더 받으실 수 있습니다.")
 		return
 	end

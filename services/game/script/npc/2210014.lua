@@ -11,21 +11,7 @@ return {
 	end,
 
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local count_q = me:quest(23003)
-		local day_q = me:quest(23004)
-		if count_q:started() == false then
-			count_q:start("0")
-		end
-		if day_q:started() == false then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get("entry.guwar")
 		if count >= DAILY_LIMIT then
 			me:dialog(npc, "더이상 입장 하실 수 없습니다.")
 			return
@@ -51,7 +37,7 @@ return {
 				return
 			end
 		end
-		count_q:record(tostring(count + 1))
+		me:records():add("entry.guwar", 1, { daily = true })
 		run_on_map(DEST, SCRIPT, "reset_map")
 		local pid = party:id()
 		for _, ch in pairs(me:map():characters()) do

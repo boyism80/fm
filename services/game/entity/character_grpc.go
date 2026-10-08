@@ -239,9 +239,6 @@ func (ch *Character) LoadQuests(pbs []*internal.Quest) {
 		if q == nil {
 			continue
 		}
-		if q.Wz == nil {
-			q.Wz = ch.Quests.wzDef(questID)
-		}
 		q.Status = status
 		q.MobKills = make(map[uint32]int, len(pb.GetMobKills()))
 		for mobID, kills := range pb.GetMobKills() {

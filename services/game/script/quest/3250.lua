@@ -24,14 +24,7 @@ return {
 		if code ~= ExchangeResult.OK then
 			return
 		end
-		local q7067 = me:quest(7067)
-		if q7067 ~= nil then
-			if q7067:wz() == nil then
-				q7067:start("0")
-			else
-				q7067:start(npc, "0")
-			end
-		end
+		me:quest(7067):start(npc, "0")
 		q:start(npc, true)
 	end,
 

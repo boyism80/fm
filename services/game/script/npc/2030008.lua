@@ -5,62 +5,18 @@ local pq = require("script/lib/party_quest")
 local GROUP_NAME = "zakum_party_quest"
 local MIN_LEVEL = 50
 local STAGE2_MAP = 280020000
-local APPROVAL_QUEST = 100000
-local STAGE1_QUEST = 100001
-local STAGE2_QUEST = 100002
-local STAGE3_QUEST = 100003
+local APPROVAL_RECORD = "zakum.approval"
+local STAGE1_RECORD = "zakum.stage1"
+local STAGE2_RECORD = "zakum.stage2"
+local STAGE3_RECORD = "zakum.stage3"
+local STAGE_STARTED = 1
+local STAGE_COMPLETED = 2
 local FIRE_ORE_PIECE = 4031061
 local VOLCANO_BREATH = 4031062
 local HECTOR_TAIL = 4000051
 local EYE_OF_FIRE = 4001017
 local REINFORCED_BOTTLE = 4001109
 local FIRE_DEMON = "fire_demon"
-
-local function ensure_quest_started(me, quest_id, record)
-	local q = me:quest(quest_id)
-	if q == nil then
-		return nil
-	end
-	if q:started() or q:completed() then
-		return q
-	end
-	if record == nil then
-		record = ""
-	end
-	if q:wz() == nil then
-		q:start(record)
-	else
-		q:start(0, true)
-	end
-	return me:quest(quest_id)
-end
-
-local function quest_record_starts(me, quest_id, prefix)
-	local q = me:quest(quest_id)
-	if q == nil then
-		return false
-	end
-	local rec = q:record()
-	if rec == nil or rec == "" then
-		return false
-	end
-	return string.sub(rec, 1, #prefix) == prefix
-end
-
-local function set_quest_record(me, quest_id, value)
-	local q = me:quest(quest_id)
-	if q == nil then
-		return false
-	end
-	if not q:started() and not q:completed() then
-		ensure_quest_started(me, quest_id, value)
-		q = me:quest(quest_id)
-	end
-	if q == nil then
-		return false
-	end
-	return q:record(value)
-end
 
 local function start_fire_demon(me, npc)
 	local group = state_machine(FIRE_DEMON)
@@ -117,7 +73,9 @@ local function start_zakum_pq(me, npc)
 		me:dialog(npc, "이미 다른 파티가 안으로 들어가 퀘스트 클리어에 도전하고 있습니다.")
 		return
 	end
-	ensure_quest_started(me, STAGE1_QUEST, "")
+	if me:records():get(STAGE1_RECORD) == 0 then
+		me:records():set(STAGE1_RECORD, STAGE_STARTED)
+	end
 	local sm, err = group:start_party(me, party)
 	if sm == nil then
 		me:dialog(npc, "지금은 무언가 문제가 생긴 것 같군..")
@@ -128,11 +86,9 @@ local function start_zakum_pq(me, npc)
 end
 
 local function handle_stage2(me, npc)
-	local stage1 = me:quest(STAGE1_QUEST)
-	local stage2 = me:quest(STAGE2_QUEST)
-	local stage1_done = stage1 ~= nil and stage1:completed()
-	local stage2_done = stage2 ~= nil and stage2:completed()
-	local cleared = quest_record_starts(me, APPROVAL_QUEST, "Zakum1Clear")
+	local stage1_done = me:records():get(STAGE1_RECORD) == STAGE_COMPLETED
+	local stage2_done = me:records():get(STAGE2_RECORD) == STAGE_COMPLETED
+	local cleared = me:records():text(APPROVAL_RECORD) == "Zakum1Clear"
 	if not stage1_done and not stage2_done and not cleared then
 		me:dialog(npc, "자네는 1단계를 진행중인 것 같군 그래. 2단계를 도전하기 위해서는 1단계를 성공적으로 클리어 한 상태여야만 하네. 우선 1단계를 클리어 하게나.")
 		return
@@ -150,21 +106,19 @@ local function handle_stage2(me, npc)
 	if not me:dialog(npc, "좋네! 이제부터 자네를 수 많은 장애물들이 있는 맵으로 이동될 것일세. 그곳의 가장 안쪽에는 보물상자가 있는데 보물상자를 조사하면 보스를 소환하는 데 필요한 아이템의 재료 중 하나를 얻을 수 있을 거야. 재료를 얻어서 나에게 가져와 주게나. 그럼 힘내주게!", true, true) then
 		return
 	end
-	if stage2 == nil or (not stage2:started() and not stage2:completed()) then
-		ensure_quest_started(me, STAGE2_QUEST, "")
+	if me:records():get(STAGE2_RECORD) == 0 then
+		me:records():set(STAGE2_RECORD, STAGE_STARTED)
 	end
 	me:map(STAGE2_MAP)
 end
 
 local function handle_refine(me, npc)
-	local stage2 = me:quest(STAGE2_QUEST)
-	if stage2 == nil or not stage2:completed() then
+	if me:records():get(STAGE2_RECORD) ~= STAGE_COMPLETED then
 		me:dialog(npc, "아직 자네는 이전 단계를 클리어 하지 않은 것 같군. 이전 단계를 클리어 한 후에 다시 시도해 주길 바라네.")
 		return
 	end
-	local stage3 = me:quest(STAGE3_QUEST)
-	local stage3_done = stage3 ~= nil and stage3:completed()
-	local cleared2 = quest_record_starts(me, APPROVAL_QUEST, "Zakum2Clear")
+	local stage3_done = me:records():get(STAGE3_RECORD) == STAGE_COMPLETED
+	local cleared2 = me:records():text(APPROVAL_RECORD) == "Zakum2Clear"
 	local msg
 	if stage3_done then
 		msg = "흠... 자네는 일전에 #b불의 눈#k을 제련해 간 사람이 아닌가. 그런데 나에게 무슨 볼일인가. 다시 한 번 #b불의 원석 조각#k과 #b화산의 숨결#k을 조합하여 #b불의 눈#k을 만들어 볼텐가?"
@@ -177,7 +131,7 @@ local function handle_refine(me, npc)
 	end
 	if not cleared2 then
 		me:dialog(npc, "흠, #b불의 원석 조각#k와 #b화산의 숨결#k을 조합하면 보스를 부르는데 제물로 바쳐야 하는 아이템인 #b불의 눈#k를 만들 수 있지. 하지만... 쿨럭쿨럭...! 보다시피 몸이 좋질 않아 뭐든 구하기가 여간 어려운게 아니라네. 그러니 혹, #b헥터의 꼬리 30개#k만 구해다 줄 소 있소? 어디에 쓸 지는 묻지 말고... 흠흠...")
-		set_quest_record(me, APPROVAL_QUEST, "Zakum2Clear")
+		me:records():set_text(APPROVAL_RECORD, "Zakum2Clear")
 		return
 	end
 	if not (pq.has_item(me, FIRE_ORE_PIECE)
@@ -202,12 +156,8 @@ local function handle_refine(me, npc)
 		me:dialog(npc, "인벤토리 공간을 확인한 뒤 다시 말을 걸어 주게.")
 		return
 	end
-	ensure_quest_started(me, STAGE3_QUEST, "")
-	local q3 = me:quest(STAGE3_QUEST)
-	if q3 ~= nil and q3:started() then
-		q3:force_complete(npc)
-	end
-	set_quest_record(me, APPROVAL_QUEST, "")
+	me:records():set(STAGE3_RECORD, STAGE_COMPLETED)
+	me:records():set_text(APPROVAL_RECORD, "")
 	me:dialog(npc, "여깄네. 자, 이제 저 문이 열리면 안으로 들어갈 수 있을 걸세. 이 #b불의 눈#k을 갖고 있어야만 문을 통해 입장을 할 수 있다네. 뭐, 열 명까지 입장이 가능하다던가...")
 end
 
@@ -226,11 +176,7 @@ end
 
 return {
 	on_click = function(me, npc)
-		local approved = false
-		local q = me:quest(APPROVAL_QUEST)
-		if q ~= nil and (q:started() or q:completed()) then
-			approved = true
-		end
+		local approved = me:records():get(APPROVAL_RECORD) > 0
 		local has_bottle = pq.has_item(me, REINFORCED_BOTTLE)
 		local options = {}
 		local actions = {}

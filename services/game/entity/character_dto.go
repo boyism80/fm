@@ -178,7 +178,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)
 	if ch.Quests != nil {
 		ch.Quests.ForEach(func(questID uint32, qp *Quest) {
-			if questID > 0xFFFF || qp.Wz == nil {
+			if questID > 0xFFFF {
 				return
 			}
 			questDTO := &dto.QuestStatus{
@@ -188,7 +188,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 				StatusRecord:   qp.StatusRecord.AsString(),
 				CompletionTime: qp.CompletionTime,
 			}
-			if qp.Wz != nil && len(qp.Wz.OrderedMobIDs()) > 0 {
+			if len(qp.Wz.OrderedMobIDs()) > 0 {
 				questDTO.MobKills = qp.MobKillCountsOrdered()
 			}
 			switch qp.Status {

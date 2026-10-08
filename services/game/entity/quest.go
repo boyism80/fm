@@ -83,7 +83,7 @@ func (qp *Quest) MatchesState(state wz.QuestStatus) bool {
 }
 
 func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
-	if qp == nil || ch == nil || qp.Wz == nil {
+	if qp == nil || ch == nil {
 		return ErrQuestNotCompletable
 	}
 	if !qp.IsStarted() {
@@ -113,14 +113,14 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 }
 
 func (qp *Quest) StartedMobKills() []uint16 {
-	if qp == nil || qp.Wz == nil || len(qp.Wz.OrderedMobIDs()) == 0 {
+	if qp == nil || len(qp.Wz.OrderedMobIDs()) == 0 {
 		return nil
 	}
 	return qp.MobKillCountsOrdered()
 }
 
 func (qp *Quest) RecordMobKill(mobID uint32) bool {
-	if qp == nil || !qp.IsStarted() || qp.Wz == nil || mobID == 0 {
+	if qp == nil || !qp.IsStarted() || mobID == 0 {
 		return false
 	}
 	required := qp.Wz.RelevantMobs()
@@ -139,7 +139,7 @@ func (qp *Quest) RecordMobKill(mobID uint32) bool {
 }
 
 func (qp *Quest) MobKillCountsOrdered() []uint16 {
-	if qp == nil || qp.Wz == nil {
+	if qp == nil {
 		return nil
 	}
 	ids := qp.Wz.OrderedMobIDs()
@@ -170,7 +170,7 @@ func (ch *Character) OnQuestMobKilled(mobID uint32) {
 }
 
 func (qp *Quest) InitMobKillCounters() {
-	if qp == nil || qp.Wz == nil {
+	if qp == nil {
 		return
 	}
 	mobs := qp.Wz.RelevantMobs()
@@ -188,7 +188,7 @@ func (qp *Quest) InitMobKillCounters() {
 }
 
 func (qp *Quest) CanForfeit() bool {
-	if qp == nil || !qp.IsStarted() || qp.Wz == nil {
+	if qp == nil || !qp.IsStarted() {
 		return false
 	}
 	switch qp.QuestID {
@@ -200,7 +200,7 @@ func (qp *Quest) CanForfeit() bool {
 }
 
 func (qp *Quest) CanRestoreLostItem(ch *Character, itemID uint32) bool {
-	if qp == nil || qp.Wz == nil || itemID == 0 || ch == nil {
+	if qp == nil || itemID == 0 || ch == nil {
 		return false
 	}
 	if !qp.IsStarted() {
@@ -221,7 +221,7 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 	if !qp.CanRestoreLostItem(ch, itemID) {
 		return ErrQuestRestoreItem
 	}
-	if ch == nil || qp.Wz == nil {
+	if ch == nil {
 		return ErrQuestRestoreItem
 	}
 	var count uint16
@@ -251,9 +251,6 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 	if qp == nil || ch == nil {
 		return ErrQuestNotCompletable
 	}
-	if qp.Wz == nil && !opts.Force {
-		return ErrQuestNotCompletable
-	}
 	if qp.Expired() {
 		return ErrQuestExpired
 	}
@@ -277,11 +274,7 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 	}
 	qp.Status = QuestStatusCompleted
 	qp.CompletionTime = clock.Now()
-	nextQuestID := uint32(0)
-	if qp.Wz != nil {
-		nextQuestID = qp.Wz.NextQuestID()
-	}
-	ch.Listener.OnQuestCompleted(ch, qp, wireNPC, nextQuestID)
+	ch.Listener.OnQuestCompleted(ch, qp, wireNPC, qp.Wz.NextQuestID())
 	return nil
 }
 
@@ -338,9 +331,13 @@ func (qc *Quests) Create(questID uint32, status QuestStatusType) *Quest {
 	if qc.progress[questID] != nil {
 		return nil
 	}
+	def := qc.wzDef(questID)
+	if def == nil {
+		return nil
+	}
 	qp := &Quest{
 		quests:   qc,
-		Wz:       qc.wzDef(questID),
+		Wz:       def,
 		QuestID:  questID,
 		Status:   status,
 		MobKills: make(map[uint32]int),
@@ -366,7 +363,7 @@ func (qc *Quests) Clear(questID uint32) bool {
 		return false
 	}
 	delete(qc.progress, questID)
-	if qc.owner != nil && qc.owner.Listener != nil && existing.Wz != nil {
+	if qc.owner != nil {
 		qc.owner.Listener.OnQuestForfeited(qc.owner, &Quest{
 			QuestID: questID,
 			Status:  QuestStatusNotStarted,
@@ -387,7 +384,6 @@ func (qc *Quests) ClearAll() int {
 		snapshots = append(snapshots, &Quest{
 			QuestID: id,
 			Status:  QuestStatusNotStarted,
-			Wz:      qp.Wz,
 		})
 	}
 	count := len(snapshots)
@@ -396,12 +392,7 @@ func (qc *Quests) ClearAll() int {
 		return count
 	}
 	for _, snap := range snapshots {
-		if snap.Wz != nil {
-			qc.owner.Listener.OnQuestForfeited(qc.owner, &Quest{
-				QuestID: snap.QuestID,
-				Status:  QuestStatusNotStarted,
-			})
-		}
+		qc.owner.Listener.OnQuestForfeited(qc.owner, snap)
 	}
 	return count
 }
@@ -474,7 +465,7 @@ func (qp *Quest) RecordExWire() string {
 }
 
 func (qp *Quest) RecordExField(key string) (string, bool) {
-	if qp == nil || key == "" || qp.Wz == nil {
+	if qp == nil || key == "" {
 		return "", false
 	}
 	if len(qp.RecordEx) == 0 {
@@ -485,7 +476,7 @@ func (qp *Quest) RecordExField(key string) (string, bool) {
 }
 
 func (qp *Quest) SetRecordExField(key, value string) bool {
-	if qp == nil || key == "" || value == "" || qp.Wz == nil {
+	if qp == nil || key == "" || value == "" {
 		return false
 	}
 	if qp.quests == nil || qp.quests.Get(qp.QuestID) == nil {

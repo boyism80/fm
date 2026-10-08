@@ -64,7 +64,7 @@ local function buy_seed(me, npc, feellike)
 	me:dialog(npc, "좋은곳에 사용하기를 바라네.")
 end
 
-local function donate(me, npc, q, feellike)
+local function donate(me, npc, feellike)
 	local options = {}
 	for i, donation in ipairs(DONATIONS) do
 		options[i] = "#t" .. donation.item .. "#"
@@ -95,7 +95,7 @@ local function donate(me, npc, q, feellike)
 		if feellike < 100 then
 			feellike = 100
 		end
-		q:record(tostring(feellike))
+		me:records():set("leafre.donation", feellike)
 		me:dialog(npc, "자네.. 기부해 줄 물건은 제대로 갖고 있는건가?")
 		return
 	end
@@ -103,7 +103,7 @@ local function donate(me, npc, q, feellike)
 	if feellike > 800000 then
 		feellike = 800000
 	end
-	q:record(tostring(feellike))
+	me:records():set("leafre.donation", feellike)
 	me:dialog(npc, "마을을 위해 물건을 기부해 주어서 정말 고맙네!")
 end
 
@@ -114,16 +114,12 @@ return {
 			return
 		end
 
-		local q = me:quest(7810)
-		if not q:started() then
-			q:start("000000")
-		end
-		local feellike = tonumber(q:record()) or 0
+		local feellike = me:records():get("leafre.donation")
 
 		if sel == 1 then
 			buy_seed(me, npc, feellike)
 		else
-			donate(me, npc, q, feellike)
+			donate(me, npc, feellike)
 		end
 	end
 }

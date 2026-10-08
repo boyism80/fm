@@ -137,19 +137,8 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	if created {
 		qp = qc.Create(questID, QuestStatusStarted)
 	}
-
-	def := qc.wzDef(questID)
-	if def == nil {
-		qp.Status = QuestStatusStarted
-		if opts.Record != nil {
-			qp.StatusRecord.WriteString(*opts.Record)
-		}
-		qp.ResetDeadline()
-		if qp.MobKills == nil {
-			qp.MobKills = make(map[uint32]int)
-		}
-		qc.RunAutoTriggers(nil, AutoQuestTriggerInfoStart, questID)
-		return qp, nil
+	if qp == nil {
+		return nil, ErrQuestNotStartable
 	}
 
 	wireNPC := uint32(0)
@@ -164,15 +153,15 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	before := *qp
 	qp.Status = QuestStatusStarted
 	qp.StatusRecord.WriteString("")
-	if def.Meta.TimeLimit2 > 0 {
-		qp.SetDeadline(clock.Now().Add(time.Duration(def.Meta.TimeLimit2) * time.Second))
+	if qp.Wz.Meta.TimeLimit2 > 0 {
+		qp.SetDeadline(clock.Now().Add(time.Duration(qp.Wz.Meta.TimeLimit2) * time.Second))
 	} else {
 		qp.ResetDeadline()
 	}
 	qp.MobKills = make(map[uint32]int)
 	qp.InitMobKillCounters()
 	if opts.Force == false {
-		err := qc.grant(qp, def.Start.Actions, questActionOpts{
+		err := qc.grant(qp, qp.Wz.Start.Actions, questActionOpts{
 			ClassID:   qc.owner.Class,
 			Forfeited: qp.Forfeited > 0,
 			NpcID:     wireNPC,
@@ -187,6 +176,7 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 		}
 	}
 	qc.notifyQuestStart(qp, wireNPC, opts)
+	qc.RunAutoTriggers(nil, AutoQuestTriggerInfoStart, questID)
 	return qp, nil
 }
 
@@ -195,16 +185,12 @@ func (qc *Quests) notifyQuestStart(qp *Quest, wireNPC uint32, opts QuestPhaseOpt
 		return
 	}
 	ch := qc.owner
-	if qp.Wz != nil && ch.Listener != nil {
-		ch.Listener.OnQuestStarted(ch, qp, wireNPC)
-	}
+	ch.Listener.OnQuestStarted(ch, qp, wireNPC)
 	if opts.Record == nil || *opts.Record == "" {
 		return
 	}
 	qp.StatusRecord.WriteString(*opts.Record)
-	if qp.Wz != nil && ch.Listener != nil {
-		ch.Listener.OnQuestProgress(ch, qp)
-	}
+	ch.Listener.OnQuestProgress(ch, qp)
 }
 
 func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
@@ -281,9 +267,6 @@ func (qc *Quests) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
 		case wz.QuestStatusStarted:
 			existing := qc.Get(questID)
 			if existing == nil {
-				if qc.wzDef(questID) == nil {
-					continue
-				}
 				qc.Create(questID, QuestStatusStarted)
 			} else {
 				existing.Status = QuestStatusStarted
@@ -291,9 +274,6 @@ func (qc *Quests) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
 		case wz.QuestStatusCompleted:
 			existing := qc.Get(questID)
 			if existing == nil {
-				if qc.wzDef(questID) == nil {
-					continue
-				}
 				created := qc.Create(questID, QuestStatusCompleted)
 				if created != nil {
 					created.CompletionTime = clock.Now()

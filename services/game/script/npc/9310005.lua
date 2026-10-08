@@ -2,7 +2,7 @@
 
 local GROUP_NAME = "shanghai_boss"
 local QUEST_ID = 4103
-local COOLDOWN_QUEST = 158100
+local COOLDOWN_RECORD = "cooldown.shanghai_boss"
 local COOLDOWN_SEC = 60
 
 local function quest_allowed(me)
@@ -14,20 +14,10 @@ local function quest_allowed(me)
 end
 
 local function cooldown_blocked(me)
-	local q = me:quest(COOLDOWN_QUEST)
-	if q == nil then
-		return false
-	end
-	local t = now()
-	if not q:started() then
-		q:start(tostring(t))
-		return false
-	end
-	local dat = tonumber(q:record()) or 0
-	if dat + COOLDOWN_SEC > t then
+	if me:records():get(COOLDOWN_RECORD) > 0 then
 		return true
 	end
-	q:record(tostring(t))
+	me:records():set(COOLDOWN_RECORD, 1, { every = COOLDOWN_SEC })
 	return false
 end
 

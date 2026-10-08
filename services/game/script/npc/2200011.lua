@@ -2,24 +2,11 @@
 
 local COST = 10500000
 local DAILY_LIMIT = 1
+local RECORD = "summon.toad_lord"
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local count_q = me:quest(12191048)
-		local day_q = me:quest(12191049)
-		if not count_q:started() then
-			count_q:start("0")
-		end
-		if not day_q:started() then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get(RECORD)
 
 		if not me:dialog_yes_no(npc, "호...이몸을 찾았단말인가? 도전을 해보겠다고? 그렇다면 재력을 증명해봐. " .. COST .. " 메소를 줘봐.\r\n\r\n#r#e" .. count .. "/" .. DAILY_LIMIT .. "#n#k") then
 			return
@@ -44,6 +31,6 @@ return {
 			return
 		end
 		map:spawn_mob(6500011, 772, 96)
-		count_q:record(tostring(count + 1))
+		me:records():add(RECORD, 1, { daily = true })
 	end
 }

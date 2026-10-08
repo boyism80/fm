@@ -4,7 +4,7 @@ local LETTER = 4031008
 local PROOF = 4031012
 local BLACK_CHARM = 4031059
 local NECKLACE = 4031057
-local TRIAL_QUEST = 195000
+local TRIAL_RECORD = "job3.trial"
 local DEFAULT_TEXT = "강인한 힘을 가지고, 가볍고 강력한 갑옷을 통한 방어력을 구사하는 전사는 항상 강인한 직업이지, 어때? 전사에 관심이 있는가 ?"
 
 local GREETINGS = {
@@ -165,11 +165,7 @@ end
 
 return {
 	on_click = function(me, npc)
-		local q = me:quest(TRIAL_QUEST)
-		if q:started() == false then
-			q:start("0")
-		end
-		local value = q:record()
+		local value = me:records():text(TRIAL_RECORD)
 
 		if me:class() == Class.Beginner then
 			first_class(me, npc)
@@ -185,7 +181,7 @@ return {
 				me:dialog(npc, DEFAULT_TEXT)
 				return
 			end
-			q:record("job3_trial1_2")
+			me:records():set_text(TRIAL_RECORD, "job3_trial1_2")
 			me:dialog(npc, "자네를 기다리고 있었네. 몇 일 전 오시리아 대륙의 #b타일러스#k님으로부터 자네에 대한 이야기를 전해 들었지. 좋아... 자네의 힘을 내가 시험해 주지. 빅토리아 아일랜드 개미굴 어딘가에 다른 차원으로 통하는 균열이 있다네. 보통 사람들은 들어갈 수 없지만 자네에 한해서는 들어갈 수 있도록 해 두겠네. 균열 안으로 들어가면 나의 분신을 만날 수 있는데 그 분신을 쓰러뜨리고 #b검은 부적#k을 얻어 내게 가져와 주게나.", false, true)
 			return
 		end
@@ -195,7 +191,7 @@ return {
 					me:dialog(npc, "흐음. 인벤토리 공간이 부족한 것 같은데. 기타 탭을 충분히 비우고 다시 오게.")
 					return
 				end
-				q:record("job3_trial1_3")
+				me:records():set_text(TRIAL_RECORD, "job3_trial1_3")
 				me:dialog(npc, "이럴수가... 나의 분신을 쓰러뜨리고 #b검은 부적#k을 가져왔군. 그래! 좋아... 이걸로 너의 힘은 충분히 증명되었다네. 힘에 한해서는 #b3차 전직#k을 하기에 부족함이 없어 보이는군. 약속대로 너에게 #b강인함의 목걸이#k를 주겠네. 이 목걸이를 가지고 오시리아의 #b타일러스#k님에게 돌아가면 두번째 시험을 치를 수 있겠지. 그럼 네가 무사히 3차 전직을 할 수 있기를 빌겠네.")
 				return
 			end

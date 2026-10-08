@@ -11,8 +11,7 @@ local BOSS = {
 	x = 1222,
 	y = 16,
 	limit = 3,
-	quest = 19022140,
-	day_quest = 19022141,
+	record = "boss_entry.damien",
 }
 
 return {

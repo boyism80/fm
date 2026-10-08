@@ -34,49 +34,9 @@ local TOWNS = {
 	{ text = "히든스트리트 - 마르의숲", map = 101000200 },
 }
 
-local HUNTS = {
-	{ text = "#r[추천 Lv 130~150]#k 성벽 #b(그레이 벌쳐)#k", map = 211060410 },
-	{ text = "#r[추천 Lv 150~160]#k 암벽 거인 #b(호넷)#k", map = 240091400 },
-	{ text = "#r[추천 Lv 160~170]#k 레헬른 #b(닭고기)#k", map = 450003310 },
-	{ text = "#r[추천 Lv 170~200]#k 아르카나 #b(부조화의 정령)#k", map = 450005431 },
-	{ text = "#r[추천 Lv 200~250~]#k 미래의문 #b(돌연변이 슬라임)#k", map = 271010300 },
-}
-
-local BOSSES = {
-	{ text = "#r[파풀라투스]#k #b시계탑 깊은 곳#k (입장)", map = 220080000 },
-	{ text = "#r[크렉셀]#k #b사유지#k #e(점프맵)#n", map = 541020700 },
-	{ text = "#r[자쿰]#k #b자쿰의 제단 입구#k (입장)", map = 211042300 },
-	{ text = "#r[도로시]#k #b도로시의 영역#k #e(보스룸)#n", map = 123456788 },
-	{ text = "#r[아인크라드]#k #b어딘가의 보스룸#k (소환할때)", map = 864000100 },
-	{ text = "#r[마왕 발록]#k #b신전으로 가는길#k #k(입장)", map = 105100000 },
-	{ text = "#r[텐구]#k #b월하죽림#k #e(나막신)#n", map = 800020130 },
-	{ text = "#r[혼테일]#k #b생명의 동굴#k #k(입장)#n", map = 240050400 },
-	{ text = "#r[보스웨이브]#k #b로비#k #k(입장)", map = 123456771 },
-}
-
-local PARTIES = {
-	{ text = "#r[파티 3~6인]#k 레벨제한 : 10~250 #b월묘 파퀘#k", map = 100000200 },
-	{ text = "#r[파티 4~6인]#k 레벨제한 : 21~250 #b커닝 파퀘#k", map = 103000000 },
-	{ text = "#r[파티 2~6인]#k 레벨제한 : 30~250 #b몬스터 카니발#k", npc = 2042002 },
-	{ text = "#r[파티 6~6인]#k 레벨제한 : 35~250 #b루디 파퀘#k", map = 221024500 },
-	{ text = "#r[파티 6~6인]#k 레벨제한 : 51~250 #b올비 파퀘#k", map = 200080101 },
-	{ text = "#r[파티 3~6인]#k 레벨제한 : 45~250 #b엘린숲 파퀘#k", map = 300030100 },
-	{ text = "#r[파티 3~6인]#k 레벨제한 : 55~250 #b데비존 파퀘#k", map = 251010404 },
-	{ text = "#r[파티 4~6인]#k 레벨제한 : 71~250 #b줄리엣 파퀘#k", map = 261000021 },
-	{ text = "#r[파티 4~6인]#k 레벨제한 : 71~250 #b로미오 파퀘#k", map = 261000011 },
-}
-
 local MAIN = {
 	{ text = "#k마을 이동#k", menu = TOWNS },
 	{ text = "#k거울 이동#n#k", npc = 9001013 },
-}
-
-local ROUTES = {
-	["0"] = MAIN,
-	["1"] = TOWNS,
-	["2"] = HUNTS,
-	["3"] = BOSSES,
-	["4"] = PARTIES,
 }
 
 local function choose(me, npc, prompt, entries)
@@ -93,7 +53,6 @@ local function choose(me, npc, prompt, entries)
 		choose(me, npc, "", entry.menu)
 		return
 	end
-	me:quest(875000):record("0")
 	if entry.npc ~= nil then
 		me:open_npc(entry.npc)
 		return
@@ -107,29 +66,6 @@ end
 
 return {
 	on_click = function(me, npc)
-		local route_q = me:quest(875000)
-		local flag_q = me:quest(875001)
-		if not route_q:started() then
-			route_q:start("0")
-		end
-		if not flag_q:started() then
-			flag_q:start("0")
-		end
-		if flag_q:record() == "0" then
-			route_q:record("0")
-		elseif flag_q:record() == "1" then
-			flag_q:record("0")
-		end
-
-		local route = route_q:record()
-		local entries = ROUTES[route]
-		if entries == nil then
-			return
-		end
-		local prompt = ""
-		if route == "0" then
-			prompt = "#k어느걸 이용할거야?"
-		end
-		choose(me, npc, prompt, entries)
+		choose(me, npc, "#k어느걸 이용할거야?", MAIN)
 	end
 }

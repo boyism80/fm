@@ -18,6 +18,9 @@ func (ch *Character) LuaQuest(questID uint32) *Quest {
 		return qp
 	}
 	def := ch.Quests.wzDef(questID)
+	if def == nil {
+		return nil
+	}
 	return &Quest{
 		quests:  ch.Quests,
 		Wz:      def,
@@ -196,10 +199,6 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() takes no arguments")
 				return 0
 			}
-			if q.Wz == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
 			L.Push(luax.NewLuable(L, q.Wz))
 			return 1
 		},
@@ -338,37 +337,26 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			opts := QuestPhaseOpts{}
-			if q.Wz == nil {
-				if L.GetTop() != 2 {
-					L.ArgError(2, "start(record) requires record when quest has no WZ definition")
+			if L.GetTop() < 2 || L.GetTop() > 3 {
+				L.ArgError(2, "start(npc[, force|record]) requires npc")
+				return 0
+			}
+			npcID, ok := LuaCheckNpcID(L, 2)
+			if ok == false {
+				return 0
+			}
+			opts := QuestPhaseOpts{NpcID: &npcID}
+			if L.GetTop() >= 3 {
+				switch L.Get(3).Type() {
+				case lua.LTBool:
+					opts.Force = L.CheckBool(3)
+				case lua.LTString:
+					record := L.CheckString(3)
+					opts.Force = true
+					opts.Record = &record
+				default:
+					L.ArgError(3, "start(npc[, force|record]) second argument must be boolean or string")
 					return 0
-				}
-				record := L.CheckString(2)
-				opts.Force = true
-				opts.Record = &record
-			} else {
-				if L.GetTop() < 2 || L.GetTop() > 3 {
-					L.ArgError(2, "start(npc[, force|record]) requires npc")
-					return 0
-				}
-				npcID, ok := LuaCheckNpcID(L, 2)
-				if ok == false {
-					return 0
-				}
-				opts.NpcID = &npcID
-				if L.GetTop() >= 3 {
-					switch L.Get(3).Type() {
-					case lua.LTBool:
-						opts.Force = L.CheckBool(3)
-					case lua.LTString:
-						record := L.CheckString(3)
-						opts.Force = true
-						opts.Record = &record
-					default:
-						L.ArgError(3, "start(npc[, force|record]) second argument must be boolean or string")
-						return 0
-					}
 				}
 			}
 			qp, err := q.quests.Start(q.QuestID, opts)

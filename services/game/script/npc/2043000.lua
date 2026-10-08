@@ -8,14 +8,7 @@ return {
 			if not me:dialog_yes_no(npc, "그럼 당신의 시간을 되돌릴 준비를 할게요. 이야아압~") then
 				return
 			end
-			local next_q = me:quest(6364)
-			if next_q ~= nil then
-				if next_q:wz() == nil then
-					next_q:start("2")
-				else
-					next_q:start(npc_id, "2")
-				end
-			end
+			me:quest(6364):start(npc_id, "2")
 			me:show_quest_completion(6363)
 			me:map(220080000, 5)
 			return

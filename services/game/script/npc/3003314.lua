@@ -15,21 +15,6 @@ end
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local day_q = me:quest(999998)
-		local count_q = me:quest(9999998)
-		if count_q:started() == false then
-			count_q:start("0")
-		end
-		if day_q:started() == false then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-
 		local sel = me:dialog_list(npc, "정말 위험할 것 같은데요?#b", {
 			"분노한 거대 정령과 붙어보겠다..",
 		})
@@ -41,7 +26,7 @@ return {
 			me:dialog(npc, "루시드의 나비 1000개가 필요합니다.")
 			return
 		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get("summon.corrupted_spirit_of_harmony")
 		if count >= DAILY_LIMIT then
 			me:dialog(npc, "오늘 이미 소환하셨네요? 다음에 시도해주세요.~")
 			return
@@ -55,7 +40,7 @@ return {
 			me:dialog(npc, "루시드의 나비 1000개가 필요합니다.")
 			return
 		end
-		count_q:record(tostring(count + 1))
+		me:records():add("summon.corrupted_spirit_of_harmony", 1, { daily = true })
 		map:spawn_mob(8644011, SPAWN_X, SPAWN_Y)
 	end
 }

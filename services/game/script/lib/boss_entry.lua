@@ -68,8 +68,6 @@ function M.on_click(me, npc, boss)
 		return
 	end
 
-	local d = datetime()
-	local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
 	local characters = me:map():characters()
 	local size = 0
 	local leveled = 0
@@ -83,19 +81,7 @@ function M.on_click(me, npc, boss)
 		local ch = characters[mem:id()]
 		if ch ~= nil then
 			in_map = in_map + 1
-			local count_q = ch:quest(boss.quest)
-			local day_q = ch:quest(boss.day_quest)
-			if count_q:started() == false then
-				count_q:start(tostring(boss.limit))
-			end
-			if day_q:started() == false then
-				day_q:start(today)
-			end
-			if day_q:record() ~= today then
-				count_q:record(tostring(boss.limit))
-				day_q:record(today)
-			end
-			if (tonumber(count_q:record()) or 0) > 0 then
+			if ch:records():get(boss.record) < boss.limit then
 				entries = entries + 1
 			end
 		end
@@ -115,8 +101,7 @@ function M.on_click(me, npc, boss)
 	for _, ch in pairs(characters) do
 		local p = ch:party()
 		if p ~= nil and p:id() == pid then
-			local count_q = ch:quest(boss.quest)
-			count_q:record(tostring((tonumber(count_q:record()) or 0) - 1))
+			ch:records():add(boss.record, 1, { daily = true })
 		end
 	end
 	for _, map_id in ipairs(boss.maps) do

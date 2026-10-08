@@ -17,25 +17,6 @@ end
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local upgrade_q = me:quest(99999)
-		local day_q = me:quest(999999)
-		local count_q = me:quest(9999999)
-		if upgrade_q:started() == false then
-			upgrade_q:start("0")
-		end
-		if count_q:started() == false then
-			count_q:start("0")
-		end
-		if day_q:started() == false then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-
 		local sel = me:dialog_list(npc, "카오스 자쿰을 소환하실건가요?#b", {
 			"카오스 자쿰을 소환한다.",
 			"카오스 자쿰의 투구 각성.",
@@ -49,7 +30,7 @@ return {
 				me:dialog(npc, "자쿰의 결정 10개가 필요합니다.")
 				return
 			end
-			if (tonumber(count_q:record()) or 0) >= 1 then
+			if me:records():get("summon.chaos_zakum") >= 1 then
 				me:dialog(npc, "오늘 이미 소환하셨네요? 다음에 시도해주세요.~")
 				return
 			end
@@ -62,7 +43,7 @@ return {
 				me:dialog(npc, "자쿰의 결정 10개가 필요합니다.")
 				return
 			end
-			count_q:record("1")
+			me:records():add("summon.chaos_zakum", 1, { daily = true })
 			map:spawn_mob(8800100, SPAWN_X, SPAWN_Y)
 			for _, mob_id in ipairs(CHAOS_ZAKUM_ARMS) do
 				map:spawn_mob(mob_id, SPAWN_X, SPAWN_Y)
@@ -70,7 +51,7 @@ return {
 			return
 		end
 
-		if (tonumber(upgrade_q:record()) or 0) >= 1 then
+		if me:records():get("chaos_zakum.helmet_upgrade") >= 1 then
 			me:dialog(npc, "이미 모자를 한번 강화하셨어요.")
 			return
 		end
@@ -87,6 +68,6 @@ return {
 			me:dialog(npc, "장비창 한칸을 비우시오.")
 			return
 		end
-		upgrade_q:record("1")
+		me:records():set("chaos_zakum.helmet_upgrade", 1)
 	end
 }

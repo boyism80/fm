@@ -11,8 +11,7 @@ local BOSS = {
 	x = -3,
 	y = 85,
 	limit = 3,
-	quest = 19022150,
-	day_quest = 19022151,
+	record = "boss_entry.black_mage",
 }
 
 return {

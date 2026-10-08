@@ -11,8 +11,7 @@ local BOSS = {
 	x = -393,
 	y = -386,
 	limit = 10,
-	quest = 19022120,
-	day_quest = 19022121,
+	record = "boss_entry.chaos_papulatus",
 }
 
 return {

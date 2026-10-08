@@ -4,58 +4,89 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 )
 
-func loadQuest(path string) (*Quest, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var root node
-	if err := xml.NewDecoder(file).Decode(&root); err != nil {
-		return nil, err
-	}
-
-	id, err := strconv.ParseUint(strings.TrimSuffix(root.Name, ".img"), 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid quest id in %s: %w", path, err)
-	}
-
-	quest := &Quest{
-		ID: uint32(id),
+func loadQuests(questPath string) (map[uint32]*Quest, error) {
+	parts := make(map[string]*node, 3)
+	for _, name := range []string{"QuestInfo", "Check", "Act"} {
+		path := filepath.Join(questPath, name+".img.xml")
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		var root node
+		err = xml.NewDecoder(file).Decode(&root)
+		file.Close()
+		if err != nil {
+			return nil, fmt.Errorf("decode %s: %w", path, err)
+		}
+		parts[name] = &root
 	}
 
-	if info := root.find("QuestInfo"); info != nil {
-		quest.Meta = parseQuestMeta(info)
+	quests := make(map[uint32]*Quest, len(parts["QuestInfo"].Children))
+	quest := func(name string) *Quest {
+		id, err := strconv.ParseUint(name, 10, 32)
+		if err != nil {
+			return nil
+		}
+		q := quests[uint32(id)]
+		if q == nil {
+			q = &Quest{ID: uint32(id)}
+			quests[uint32(id)] = q
+		}
+		return q
 	}
 
-	if check := root.find("Check"); check != nil {
+	for i := range parts["QuestInfo"].Children {
+		info := &parts["QuestInfo"].Children[i]
+		if q := quest(info.Name); q != nil {
+			q.Meta = parseQuestMeta(info)
+		}
+	}
+
+	for i := range parts["Check"].Children {
+		check := &parts["Check"].Children[i]
+		q := quest(check.Name)
+		if q == nil {
+			continue
+		}
 		if start := check.find("0"); start != nil {
-			quest.Start.Requirements = parseQuestRequirements(start)
-			if quest.Start.Requirements.HasInterval || quest.Start.Requirements.DayByDay {
-				quest.Meta.Repeatable = true
+			q.Start.Requirements = parseQuestRequirements(start)
+			if q.Start.Requirements.HasInterval || q.Start.Requirements.DayByDay {
+				q.Meta.Repeatable = true
 			}
 		}
 		if complete := check.find("1"); complete != nil {
-			quest.Complete.Requirements = parseQuestRequirements(complete)
+			q.Complete.Requirements = parseQuestRequirements(complete)
 		}
 	}
 
-	if act := root.find("Act"); act != nil {
+	for i := range parts["Act"].Children {
+		act := &parts["Act"].Children[i]
+		q := quest(act.Name)
+		if q == nil {
+			continue
+		}
 		if start := act.find("0"); start != nil {
-			quest.Start.Actions = parseQuestActions(start)
+			q.Start.Actions = parseQuestActions(start)
 		}
 		if complete := act.find("1"); complete != nil {
-			quest.Complete.Actions = parseQuestActions(complete)
+			q.Complete.Actions = parseQuestActions(complete)
 		}
 	}
 
-	return quest, nil
+	for _, q := range quests {
+		for _, id := range []uint32{uint32(q.Start.Requirements.InfoNumber), uint32(q.Complete.Requirements.InfoNumber), q.Start.Actions.InfoNumber, q.Complete.Actions.InfoNumber} {
+			if id > 0 && quests[id] == nil {
+				quests[id] = &Quest{ID: id}
+			}
+		}
+	}
+
+	return quests, nil
 }
 
 func parseQuestMeta(info *node) QuestMeta {

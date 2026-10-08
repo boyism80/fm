@@ -1,7 +1,9 @@
 local EXIT_MAP = 280090000
 local FIRE_ORE_PIECE = 4031061
 local PAPER_REWARD = 2030007
-local STAGE1_QUEST = 100001
+local STAGE1_RECORD = "zakum.stage1"
+local STAGE_STARTED = 1
+local STAGE_COMPLETED = 2
 
 return {
 	on_enter = function(me)
@@ -34,9 +36,8 @@ return {
 			me:message("인벤토리에 공간이 부족하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
 			return
 		end
-		local q = me:quest(STAGE1_QUEST)
-		if q ~= nil and q:started() then
-			q:force_complete(0)
+		if me:records():get(STAGE1_RECORD) == STAGE_STARTED then
+			me:records():set(STAGE1_RECORD, STAGE_COMPLETED)
 		end
 		me:play_portal_sound()
 		me:map(EXIT_MAP, 1)

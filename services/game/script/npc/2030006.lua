@@ -57,7 +57,7 @@ local LIE = "...거짓을 말했다. 넌 시험을 통과하지 못했다.. 시�
 
 return {
 	on_click = function(me, npc)
-		local record = me:quest(195000):record()
+		local record = me:records():text("job3.trial")
 		if next(me:item(4031058)) ~= nil or string.sub(record, 1, 11) ~= "job3_trial2" then
 			me:dialog(npc, "......")
 			return

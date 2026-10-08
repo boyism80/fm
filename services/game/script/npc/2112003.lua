@@ -104,11 +104,7 @@ local function handle_reward(me, npc)
 	end
 	rj.strip_items(me)
 	me:end_party_quest(rj.ranking_quest)
-	local q = me:quest(199603)
-	if q ~= nil then
-		local n = tonumber(q:record()) or 0
-		q:record(tostring(n + 1))
-	end
+	me:records():add("romeo_juliet_pq.clears", 1)
 	me:map(926110700)
 end
 

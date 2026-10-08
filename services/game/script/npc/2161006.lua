@@ -11,11 +11,7 @@ return {
 	end,
 
 	on_click = function(me, npc)
-		local q = me:quest(12999)
-		if not q:started() then
-			q:start("0")
-		end
-		local count = tonumber(q:record()) or 0
+		local count = me:records():get("arena.ruden_tries")
 		if count >= MAX_TRIES then
 			me:dialog(npc, "용사님은 이미 모든 기회를 박탈 당하셨습니다.")
 			return
@@ -26,7 +22,7 @@ return {
 		if sel == nil then
 			return
 		end
-		q:record(tostring(count + 1))
+		me:records():add("arena.ruden_tries", 1)
 		run_on_map(ARENA_MAP, "script/npc/2161006.lua", "prepare_arena")
 		me:map(ARENA_MAP)
 	end

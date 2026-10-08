@@ -7,14 +7,7 @@ return {
 			return
 		end
 		trigger:message("진짜 바트를 찾았습니다.", Msg.PinkText)
-		local quest = trigger:quest(116400)
-		if quest ~= nil then
-			if quest:started() then
-				quest:record("q22")
-			else
-				quest:start("q22")
-			end
-		end
+		trigger:records():set_text("air_strike.progress", "q22")
 		trigger:map(120000104)
 	end
 }

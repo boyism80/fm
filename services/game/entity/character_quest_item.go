@@ -5,10 +5,6 @@ func (ch *Character) NeedsQuestItem(questID uint32, itemID uint32) bool {
 	if qp.IsStarted() == false {
 		return false
 	}
-	if qp.Wz == nil {
-		return true
-	}
-
 	for _, act := range qp.Wz.Complete.Actions.Item {
 		if act.ItemID == itemID && act.Count < 0 {
 			return ch.Inventory.HasItemCount(itemID, uint16(-act.Count)) == false

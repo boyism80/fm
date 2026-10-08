@@ -2,8 +2,7 @@
 
 return {
 	on_click = function(me, npc)
-		local q = me:quest(5604001)
-		if q:started() and q:record() ~= "0" then
+		if me:records():get("gift.fishing_cat") > 0 then
 			me:dialog(npc, "이미 고양이를 가져갔는걸?")
 			return
 		end
@@ -12,11 +11,7 @@ return {
 			me:dialog(npc, "인벤토리 공간이 부족합니다.")
 			return
 		end
-		if q:started() then
-			q:record("1")
-		else
-			q:start("1")
-		end
+		me:records():set("gift.fishing_cat", 1)
 		me:dialog(npc, "역시 낚시에 가장 필요한건 고양이겠지?")
 	end
 }

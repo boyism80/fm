@@ -2,24 +2,11 @@
 
 local COST = 600000
 local DAILY_LIMIT = 15
+local RECORD = "summon.chaos_centipede"
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local count_q = me:quest(12191027)
-		local day_q = me:quest(12191028)
-		if not count_q:started() then
-			count_q:start("0")
-		end
-		if not day_q:started() then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get(RECORD)
 
 		if not me:dialog_yes_no(npc, "이곳은 그분을 위한 장소...너는...누구? 혹시 날 좀 도와주겠니? 내가 기다리고 있는 사람이 끔찍한 독기때문에 올 수 없는 상황이라서...도와줄 수 있다면 " .. COST .. " 메소를 줘.\r\n\r\n#r#e" .. count .. "/" .. DAILY_LIMIT .. "#n#k") then
 			return
@@ -44,6 +31,6 @@ return {
 			return
 		end
 		map:spawn_mob(5000006, 2331, 823)
-		count_q:record(tostring(count + 1))
+		me:records():add(RECORD, 1, { daily = true })
 	end
 }

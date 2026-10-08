@@ -28,22 +28,8 @@ return {
 		end
 
 		local key = shuffle_str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"):sub(1, 10)
-		local q7061 = me:quest(7061)
-		if q7061 ~= nil then
-			if q7061:wz() == nil then
-				q7061:start(key)
-			else
-				q7061:start(npc, key)
-			end
-		end
-		local q7062 = me:quest(7062)
-		if q7062 ~= nil then
-			if q7062:wz() == nil then
-				q7062:start("00")
-			else
-				q7062:start(npc, "00")
-			end
-		end
+		me:records():set_text("magatia.secret_key", key)
+		me:records():set_text("magatia.secret_access", "00")
 		q:start(npc, "0")
 		me:dialog(npc, "키번호는 #b" .. key .. "#k이네. 잊지 않았겠지? 이 키를 비밀통로 입구에 입력하면 비밀통로를 자유롭게 이용할 수 있을 거야. ", false, false)
 	end

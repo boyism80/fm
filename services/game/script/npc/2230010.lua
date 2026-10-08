@@ -2,24 +2,11 @@
 
 local COST = 1800000
 local DAILY_LIMIT = 1
+local RECORD = "summon.spirit_of_harmony"
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local count_q = me:quest(12191073)
-		local day_q = me:quest(12191074)
-		if not count_q:started() then
-			count_q:start("0")
-		end
-		if not day_q:started() then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get(RECORD)
 
 		if not me:dialog_yes_no(npc, "#r[주의]#b 24일 클라를 받고 소환하셔야합니다. #k 이곳엔 행운을 준다는 정령이 살고있는데 벌목을 하다보니 난폭해져버렸어. 정령을 설득시켜볼래? 그럼 " .. COST .. " 메소가 필요해.\r\n\r\n#r#e" .. count .. "/" .. DAILY_LIMIT .. "#n#k") then
 			return
@@ -44,6 +31,6 @@ return {
 			return
 		end
 		map:spawn_mob(8644011, 962, 404)
-		count_q:record(tostring(count + 1))
+		me:records():add(RECORD, 1, { daily = true })
 	end
 }

@@ -165,9 +165,6 @@ local function pick_class(codes)
 end
 
 local function force_start(quest)
-	if quest:wz() == nil then
-		return quest:start("")
-	end
 	return quest:start(0, true)
 end
 
@@ -297,13 +294,6 @@ local function prepare_quest_requirement(me, quest, req)
 				want = value
 				break
 			end
-		end
-		local info = me:quest(info_id)
-		if info == nil then
-			return false, kind
-		end
-		if info:wz() == nil then
-			return info:start(want), kind
 		end
 		if not ensure_quest_state(me, info_id, 1) then
 			return false, kind
@@ -658,8 +648,12 @@ local command_funcs = {
 					me:quest(tonumber(quest_id)):record(record)
 				end
 			end
-			for key, value in string.gmatch(args[7] or "", "([%w_%.]+)=(-?%d+)") do
-				me:records():set(key, tonumber(value))
+			for key, value in string.gmatch(args[7] or "", "([%w_%.]+)=([%w_%-]+)") do
+				if tonumber(value) ~= nil then
+					me:records():set(key, tonumber(value))
+				else
+					me:records():set_text(key, value)
+				end
 			end
 			me:message("봇초기화 완료")
 			return true
@@ -845,7 +839,7 @@ local command_funcs = {
 			end
 			for key, boss in pairs(ex.BOSS) do
 				if target == nil or target == "" or target == key then
-					me:clear_quests(boss.cooldown_quest)
+					me:records():remove(boss.cooldown_record)
 					me:message(string.format("%s 원정대 입장 제한 초기화", boss.name))
 				end
 			end

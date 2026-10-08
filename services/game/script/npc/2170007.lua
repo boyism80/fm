@@ -7,12 +7,7 @@ return {
 			return
 		end
 		if next(me:map():mobs()) == nil and me:quest(31013):started() then
-			local q = me:quest(31018)
-			if q:wz() == nil then
-				q:start("1")
-			else
-				q:start(npc_id, "1")
-			end
+			me:quest(31018):start(npc_id, "1")
 		end
 		me:map(200101400)
 	end

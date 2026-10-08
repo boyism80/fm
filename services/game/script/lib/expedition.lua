@@ -13,7 +13,7 @@ M.BOSS = {
 		max_members = 30,
 		max_battles = 1,
 		recruit_ms = 300000,
-		cooldown_quest = 160101,
+		cooldown_record = "expedition.zakum",
 		cooldown_sec = 6 * HOUR,
 		notice = "님이 자쿰 원정대장이 되었습니다. 원정대에 참여하실 분은 지금 신청해 주세요.",
 	},
@@ -25,7 +25,7 @@ M.BOSS = {
 		max_members = 30,
 		max_battles = 1,
 		recruit_ms = 300000,
-		cooldown_quest = 160100,
+		cooldown_record = "expedition.horntail",
 		cooldown_sec = 12 * HOUR,
 		notice = "님이 혼테일 원정대장이 되었습니다. 원정대에 참여하실 분은 지금 신청해 주세요.",
 	},
@@ -37,7 +37,7 @@ M.BOSS = {
 		max_members = 30,
 		max_battles = 1,
 		recruit_ms = 300000,
-		cooldown_quest = 160102,
+		cooldown_record = "expedition.pink_bean",
 		cooldown_sec = 0,
 		notice = "님이 핑크빈 원정대장이 되었습니다. 원정대에 참여하실 분은 지금 신청해 주세요.",
 	},
@@ -49,7 +49,7 @@ M.BOSS = {
 		max_members = 30,
 		max_battles = 1,
 		recruit_ms = 300000,
-		cooldown_quest = 160107,
+		cooldown_record = "expedition.von_leon",
 		cooldown_sec = 12 * HOUR,
 		notice = "님이 반레온 원정대장이 되었습니다. 원정대에 참여하실 분은 지금 신청해 주세요.",
 	},
@@ -61,7 +61,7 @@ M.BOSS = {
 		max_members = 30,
 		max_battles = 1,
 		recruit_ms = 300000,
-		cooldown_quest = 160105,
+		cooldown_record = "expedition.balrog_normal",
 		cooldown_sec = 0,
 		notice = "님이 마왕발록 원정대의 원정대장이 되셨습니다. 제한시간 안에 원정대에 참여해주세요.",
 	},
@@ -73,7 +73,7 @@ M.BOSS = {
 		max_members = 30,
 		max_battles = 1,
 		recruit_ms = 300000,
-		cooldown_quest = 160106,
+		cooldown_record = "expedition.balrog_hard",
 		cooldown_sec = 0,
 		notice = "님이 마왕발록 원정대의 원정대장이 되셨습니다. 제한시간 안에 원정대에 참여해주세요.",
 	},
@@ -103,11 +103,7 @@ function M.cooldown_left(me, boss)
 	if boss.cooldown_sec <= 0 or pq.is_gm(me) then
 		return 0
 	end
-	local entered = tonumber(me:quest(boss.cooldown_quest):record())
-	if entered == nil then
-		return 0
-	end
-	local left = entered + boss.cooldown_sec - now()
+	local left = me:records():get(boss.cooldown_record) + boss.cooldown_sec - now()
 	if left < 0 then
 		return 0
 	end
@@ -128,13 +124,7 @@ local function check_cooldown(me, npc, boss)
 end
 
 function M.stamp(me, key)
-	local q = me:quest(M.BOSS[key].cooldown_quest)
-	local value = tostring(now())
-	if q:started() or q:completed() then
-		q:record(value)
-	else
-		q:start(value)
-	end
+	me:records():set(M.BOSS[key].cooldown_record, now())
 end
 
 local function member_list(members)

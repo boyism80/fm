@@ -11,8 +11,7 @@ local BOSS = {
 	x = 164,
 	y = 196,
 	limit = 5,
-	quest = 19022100,
-	day_quest = 19022101,
+	record = "boss_entry.hilla",
 }
 
 return {

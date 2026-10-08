@@ -11,14 +11,12 @@ local function shuffled_symbols()
 	return table.concat(symbols)
 end
 
-local function complete_trial(me, sm)
+local function complete_trial(me, npc, sm)
 	local quest = me:quest(6401)
-	if quest ~= nil then
-		if quest:started() then
-			quest:record("q3")
-		else
-			quest:start("q3")
-		end
+	if quest:started() then
+		quest:record("q3")
+	else
+		quest:start(npc, "q3")
 	end
 	sm:finish(0)
 	me:map(EXIT_MAP, 1)
@@ -71,7 +69,7 @@ return {
 		end
 		if stage >= 3 then
 			me:dialog(npc, "그대는 나의 시험을 통과했다. 조나단에게 자네의 지혜에 대해 이야기해 두겠다.")
-			complete_trial(me, sm)
+			complete_trial(me, npc, sm)
 			return
 		end
 		sm:set_property("stage", tostring(stage + 1))

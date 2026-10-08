@@ -2,16 +2,8 @@
 
 return {
 	on_click = function(me, npc)
-		local milk_q = me:quest(126640)
-		local cow_q = me:quest(126641)
-		if not milk_q:started() then
-			milk_q:start("0")
-		end
-		if not cow_q:started() then
-			cow_q:start("0")
-		end
-		milk_q:record("0")
-		cow_q:record("0")
+		me:records():remove("cow.milk")
+		me:records():remove("cow.last")
 
 		local count = 0
 		for _, it in pairs(me:item(4031850)) do

@@ -1081,7 +1081,7 @@ func (l *CharacterListenerImpl) OnScriptError(ch *entity.Character, script strin
 }
 
 func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.Quest, npcID uint32) {
-	if qp == nil || qp.Wz == nil {
+	if qp == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -1102,14 +1102,14 @@ func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.
 			NextQuestID: 0,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
-	if qp.Wz != nil && qp.Wz.Meta.TimeLimit > 0 {
+	if qp.Wz.Meta.TimeLimit > 0 {
 		l.OnClock(ch, int32(qp.Wz.Meta.TimeLimit))
 	}
 	l.OnUnlockAction(ch)
 }
 
 func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entity.Quest, npcID uint32, nextQuestID uint32) {
-	if qp == nil || qp.Wz == nil {
+	if qp == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -1182,7 +1182,7 @@ func (l *CharacterListenerImpl) OnPlayPortalSound(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity.Quest) {
-	if qp == nil || qp.Wz == nil {
+	if qp == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{

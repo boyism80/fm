@@ -11,8 +11,7 @@ local BOSS = {
 	x = -110,
 	y = -16,
 	limit = 5,
-	quest = 19022130,
-	day_quest = 19022131,
+	record = "boss_entry.suu",
 }
 
 return {

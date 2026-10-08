@@ -1,6 +1,6 @@
 -- NPC name (String.wz/Npc.img.xml): 차원의 문
 
-local TRIAL_QUEST = 195000
+local TRIAL_RECORD = "job3.trial"
 local BLACK_CHARM = 4031059
 local DEFAULT_TEXT = "다른 세계로 통할 것 같은 이상한 모양의 차원의 균열이다."
 
@@ -21,7 +21,7 @@ local CRACKS = {
 
 return {
 	on_click = function(me, npc)
-		if me:quest(TRIAL_QUEST):record() ~= "job3_trial1_2" or next(me:item(BLACK_CHARM)) ~= nil then
+		if me:records():text(TRIAL_RECORD) ~= "job3_trial1_2" or next(me:item(BLACK_CHARM)) ~= nil then
 			me:dialog(npc, DEFAULT_TEXT)
 			return
 		end

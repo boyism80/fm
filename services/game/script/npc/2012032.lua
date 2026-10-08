@@ -13,20 +13,8 @@ return {
 		if q:record() == "42" then
 			return
 		end
-		local seq = me:quest(103114)
-		if seq == nil then
-			return
-		end
-		if not seq:started() and not seq:completed() then
-			seq:start("")
-		end
-		local data = seq:record()
-		if data == nil then
-			data = ""
-		end
-		data = data .. (npc_id - 2012027)
-		seq:record(data)
-		seq:sync_progress()
+		local data = me:records():text("orbis.melody") .. (npc_id - 2012027)
+		me:records():set_text("orbis.melody", data)
 		if data == MELODY then
 			me:message("노래를 정확하게 연주하여 엘리쟈가 잠에 빠져듭니다.", Msg.PinkText)
 			q:record("42")
@@ -34,8 +22,7 @@ return {
 			me:show_quest_completion(3114)
 		elseif string.sub(MELODY, 1, #data) ~= data then
 			me:message("연주가 틀렸습니다. 처음부터 다시 연주해 주세요.")
-			seq:record("")
-			seq:sync_progress()
+			me:records():set_text("orbis.melody", "")
 		end
 	end
 }

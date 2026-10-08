@@ -6,7 +6,7 @@ local GROUP_NAME = "night_market_boss"
 local QUALIFICATION_QUEST = 4014
 local STORY_QUEST = 4013
 local NECKLACE = 4031354
-local COOLDOWN_QUEST = 158200
+local COOLDOWN_RECORD = "cooldown.night_market_boss"
 local COOLDOWN_SEC = 7200
 
 local function eligible(me)
@@ -22,25 +22,11 @@ local function eligible(me)
 end
 
 local function cooldown_blocked(me)
-	local quest = me:quest(COOLDOWN_QUEST)
-	if quest == nil or not quest:started() then
-		return false
-	end
-	local last_entry = tonumber(quest:record()) or 0
-	return last_entry + COOLDOWN_SEC > now()
+	return me:records():get(COOLDOWN_RECORD) > 0
 end
 
 local function record_entry(me)
-	local quest = me:quest(COOLDOWN_QUEST)
-	if quest == nil then
-		return
-	end
-	local entry_time = tostring(now())
-	if quest:started() then
-		quest:record(entry_time)
-	else
-		quest:start(entry_time)
-	end
+	me:records():set(COOLDOWN_RECORD, 1, { every = COOLDOWN_SEC })
 end
 
 return {

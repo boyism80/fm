@@ -2,24 +2,11 @@
 
 local COST = 10000000
 local DAILY_LIMIT = 1
+local RECORD = "summon.lucid"
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local count_q = me:quest(12191025)
-		local day_q = me:quest(12191026)
-		if not count_q:started() then
-			count_q:start("0")
-		end
-		if not day_q:started() then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get(RECORD)
 
 		if not me:dialog_yes_no(npc, "이곳은 어떤 소녀의 불안정한 꿈속이에요. 그아이를 구해주시겠어요? 그럴려면 " .. COST .. " 메소 가 필요합니다.\r\n\r\n#r#e" .. count .. "/" .. DAILY_LIMIT .. "#n#k") then
 			return
@@ -44,6 +31,6 @@ return {
 			return
 		end
 		map:spawn_mob(9880140, 1032, 48)
-		count_q:record(tostring(count + 1))
+		me:records():add(RECORD, 1, { daily = true })
 	end
 }

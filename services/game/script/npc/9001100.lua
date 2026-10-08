@@ -2,6 +2,7 @@
 
 local COST = 6000000
 local DAILY_LIMIT = 6
+local RECORD = "summon.zakum"
 local ZAKUM_ARMS = {
 	8800003, 8800004, 8800005, 8800006,
 	8800007, 8800008, 8800009, 8800010,
@@ -9,21 +10,7 @@ local ZAKUM_ARMS = {
 
 return {
 	on_click = function(me, npc)
-		local d = datetime()
-		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
-		local count_q = me:quest(12191025)
-		local day_q = me:quest(12191026)
-		if not count_q:started() then
-			count_q:start("0")
-		end
-		if not day_q:started() then
-			day_q:start(today)
-		end
-		if day_q:record() ~= today then
-			count_q:record("0")
-			day_q:record(today)
-		end
-		local count = tonumber(count_q:record()) or 0
+		local count = me:records():get(RECORD)
 
 		if not me:dialog_yes_no(npc, "자쿰을 소환 하기 위해선 " .. COST .. "가 필요합니다.\r\n\r\n#r#e" .. count .. "/" .. DAILY_LIMIT .. "#n#k") then
 			return
@@ -54,6 +41,6 @@ return {
 		for _, mob_id in ipairs(ZAKUM_ARMS) do
 			map:spawn_mob(mob_id, -10, -215, -2)
 		end
-		count_q:record(tostring(count + 1))
+		me:records():add(RECORD, 1, { daily = true })
 	end
 }

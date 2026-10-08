@@ -3,7 +3,6 @@
 local pq = require("script/lib/party_quest")
 
 local RANKING_QUEST = 1203
-local REPEAT_QUEST = 199602
 local FEATHER = 4001158
 local DIARY_BOOK = 4161014
 
@@ -161,11 +160,7 @@ local function handle_reward(me, npc)
 		me:dialog(npc, "인벤토리 공간은 최소 두칸씩 비우신 후 다시 말을 걸어주세요.")
 		return
 	end
-	local q = me:quest(REPEAT_QUEST)
-	if q ~= nil then
-		local n = tonumber(q:record()) or 0
-		q:record(tostring(n + 1))
-	end
+	me:records():add("orbis_pq.clears", 1)
 	me:map(920011200)
 end
 

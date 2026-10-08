@@ -2,7 +2,7 @@
 
 return {
 	on_click = function(me, npc)
-		if me:quest(130010):record() ~= "ing" then
+		if me:records():text("wedding.vow") ~= "ing" then
 			me:dialog(npc, "진실한 사랑.. 우리 이쁘죠?")
 			return
 		end

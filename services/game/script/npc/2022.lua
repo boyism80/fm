@@ -11,8 +11,7 @@ local BOSS = {
 	x = 2365,
 	y = -1347,
 	limit = 5,
-	quest = 19022110,
-	day_quest = 19022111,
+	record = "boss_entry.magnus",
 }
 
 return {

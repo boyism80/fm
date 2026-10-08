@@ -54,18 +54,6 @@ local BOSSES = {
 	{ text = "#r[보스웨이브]#k #b로비#k #k(입장)", map = 123456771 },
 }
 
-local PARTIES = {
-	{ text = "#r[파티 3~6인]#k 레벨제한 : 10~250 #b월묘 파퀘#k", map = 100000200 },
-	{ text = "#r[파티 4~6인]#k 레벨제한 : 21~250 #b커닝 파퀘#k", map = 103000000 },
-	{ text = "#r[파티 2~6인]#k 레벨제한 : 30~250 #b몬스터 카니발#k", npc = 2042002 },
-	{ text = "#r[파티 6~6인]#k 레벨제한 : 35~250 #b루디 파퀘#k", map = 221024500 },
-	{ text = "#r[파티 6~6인]#k 레벨제한 : 51~250 #b올비 파퀘#k", map = 200080101 },
-	{ text = "#r[파티 3~6인]#k 레벨제한 : 45~250 #b엘린숲 파퀘#k", map = 300030100 },
-	{ text = "#r[파티 3~6인]#k 레벨제한 : 55~250 #b데비존 파퀘#k", map = 251010404 },
-	{ text = "#r[파티 4~6인]#k 레벨제한 : 71~250 #b줄리엣 파퀘#k", map = 261000021 },
-	{ text = "#r[파티 4~6인]#k 레벨제한 : 71~250 #b로미오 파퀘#k", map = 261000011 },
-}
-
 local MAIN = {
 	{ text = "#r#e강화 이동#k", map = 864000000 },
 	{ text = "#r#e퀘스트 이동#k", npc = 9000400 },
@@ -75,14 +63,6 @@ local MAIN = {
 	{ text = "#k추천 사냥#k", npc = 9072200 },
 	{ text = "#k쩔맵 이용#k", npc = 9010095 },
 	{ text = "#e티어 이용#n#k", npc = 2011 },
-}
-
-local ROUTES = {
-	["0"] = MAIN,
-	["1"] = TOWNS,
-	["2"] = HUNTS,
-	["3"] = BOSSES,
-	["4"] = PARTIES,
 }
 
 local function choose(me, npc, prompt, entries)
@@ -99,7 +79,6 @@ local function choose(me, npc, prompt, entries)
 		choose(me, npc, "", entry.menu)
 		return
 	end
-	me:quest(875000):record("0")
 	if entry.npc ~= nil then
 		me:open_npc(entry.npc)
 		return
@@ -113,29 +92,6 @@ end
 
 return {
 	on_click = function(me, npc)
-		local route_q = me:quest(875000)
-		local flag_q = me:quest(875001)
-		if not route_q:started() then
-			route_q:start("0")
-		end
-		if not flag_q:started() then
-			flag_q:start("0")
-		end
-		if flag_q:record() == "0" then
-			route_q:record("0")
-		elseif flag_q:record() == "1" then
-			flag_q:record("0")
-		end
-
-		local route = route_q:record()
-		local entries = ROUTES[route]
-		if entries == nil then
-			return
-		end
-		local prompt = ""
-		if route == "0" then
-			prompt = "#k#e퀘스트 이동 기능#n 을 이용 하면 퀘스트 진행이 편해져! 퀘스트 이동에 없는 퀘스트 진행 맵은 광장의 #e차원의 거울#n을 찾아보시면 있어!"
-		end
-		choose(me, npc, prompt, entries)
+		choose(me, npc, "#k#e퀘스트 이동 기능#n 을 이용 하면 퀘스트 진행이 편해져! 퀘스트 이동에 없는 퀘스트 진행 맵은 광장의 #e차원의 거울#n을 찾아보시면 있어!", MAIN)
 	end
 }

@@ -1,6 +1,6 @@
 return {
 	on_enter = function(me)
-		if me:quest(4325):started() == false and me:quest(4681):started() == false then
+		if me:quest(4325):started() == false then
 			me:message("두꺼비 요괴 퇴치 퀘스트가 없으면 들어갈 수 없습니다.", Msg.PinkText)
 			return
 		end

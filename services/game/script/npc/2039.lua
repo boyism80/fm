@@ -11,8 +11,7 @@ local BOSS = {
 	x = 1008,
 	y = 48,
 	limit = 4,
-	quest = 19022160,
-	day_quest = 19022161,
+	record = "boss_entry.lucid",
 }
 
 return {

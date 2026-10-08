@@ -31,17 +31,13 @@ return {
 			me:dialog(npc, "커흠. 이미 나의 모든 시험을 통과했구만? 축하하네~")
 			return
 		end
-		local progress_quest = me:quest(116400)
-		if progress_quest == nil then
-			return
-		end
-		if not progress_quest:started() then
+		local progress = me:records():text("air_strike.progress")
+		if progress == "" then
 			me:dialog(npc, "하하~ 드디어 만나보게 되었군. 난 갈매기들의 제왕 조나단 3세일세. 해적이라면 누구나 거쳐야 할 의식을 위해 자네를 불렀네.")
 			me:dialog(npc, "자네 스스로 지혜롭다고 생각되면 나에게 다시 말을 걸게. 알겠나?")
-			progress_quest:start("q1")
+			me:records():set_text("air_strike.progress", "q1")
 			return
 		end
-		local progress = progress_quest:record()
 		if progress == "q1" then
 			local answer = me:dialog_input(npc, "이 세상에서 가장 강하고 용감한 사람은 누구일까?")
 			if answer ~= "조나단" then
@@ -49,7 +45,7 @@ return {
 				return
 			end
 			me:dialog(npc, "우하하~! 나를 잠깐 봤는데도 금방 알아보다니, 역시 나를 실망시키지 않는군!")
-			progress_quest:record("q2")
+			me:records():set_text("air_strike.progress", "q2")
 			return
 		end
 		if progress == "q2" then

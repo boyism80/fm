@@ -2,7 +2,7 @@
 
 local third_class = require("script/lib/third_class")
 
-local APPROVAL_QUEST = 100000
+local APPROVAL_RECORD = "zakum.approval"
 local MIN_LEVEL = 50
 
 local THIRD_CLASS = {
@@ -41,21 +41,16 @@ local THIRD_CLASS = {
 }
 
 local function grant_approval(me, npc)
-	local q = me:quest(APPROVAL_QUEST)
-	if me:level() >= MIN_LEVEL and q ~= nil and not q:started() and not q:completed() then
-		me:dialog(npc, "자쿰던전 퀘스트를 허가해 달라 그거군... #b아도비스#k인가... 아무튼 좋네! 자네라면 그 던전을 탐색하는 데 모자람이 없겠지. 그럼 아무쪼록 조심하길 바라네.")
-		if q:wz() == nil then
-			q:start("")
-		else
-			q:start(0, true)
-		end
-		return
-	end
-	if q ~= nil and (q:started() or q:completed()) then
+	if me:records():get(APPROVAL_RECORD) > 0 then
 		me:dialog(npc, "자네는 이미 자쿰던전 퀘스트를 허가받지 않았는가? 아무쪼록 조심하길 바라네.")
 		return
 	end
-	me:dialog(npc, "아직 자네의 실력이 부족해 보이는군. 레벨 50 이상이 된 후에 다시 찾아오게나.")
+	if me:level() < MIN_LEVEL then
+		me:dialog(npc, "아직 자네의 실력이 부족해 보이는군. 레벨 50 이상이 된 후에 다시 찾아오게나.")
+		return
+	end
+	me:dialog(npc, "자쿰던전 퀘스트를 허가해 달라 그거군... #b아도비스#k인가... 아무튼 좋네! 자네라면 그 던전을 탐색하는 데 모자람이 없겠지. 그럼 아무쪼록 조심하길 바라네.")
+	me:records():set(APPROVAL_RECORD, 1)
 end
 
 return {

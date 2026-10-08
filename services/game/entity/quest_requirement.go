@@ -179,7 +179,7 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 		if need <= 0 {
 			need = 5
 		}
-		partyQuestIDs := []uint32{1200, 1201, 1202, 1203, 1204, 1205, 1206, 1300, 1301, 1302}
+		partyQuestIDs := []uint32{1200, 1201, 1202, 1203, 1204, 1205, 1206, 1300, 1301}
 		sRankings := 0
 		for _, questID := range partyQuestIDs {
 			qp := qc.Get(questID)

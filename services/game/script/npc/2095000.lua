@@ -35,12 +35,7 @@ local function thank(me, npc)
 	if me:dialog(npc, "저를 구해주셔서 정말 고마워요. 당신은 친절한 사람이군요.", false, true) == false then
 		return
 	end
-	local progress = me:quest(PROGRESS_QUEST)
-	if progress:wz() == nil then
-		progress:start("p2")
-	else
-		progress:start(npc, "p2")
-	end
+	me:quest(PROGRESS_QUEST):start(npc, "p2")
 	me:show_quest_completion(QUEST)
 end
 

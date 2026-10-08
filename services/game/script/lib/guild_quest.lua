@@ -9,7 +9,7 @@ M.WAIT_MS = 180000
 M.DURATION_MS = 5400000
 M.MIN_PLAYERS = 6
 
-local MAZE_QUEST = 7600
+local MAZE_RECORD = "guild_quest.maze"
 local GATE_MAP = 990000300
 
 function M.is_leader(me, sm)
@@ -44,16 +44,11 @@ function M.pass_gate(me, name, clear_key, map_id, spawn, closed)
 end
 
 function M.maze(me)
-	return me:quest(MAZE_QUEST):record()
+	return me:records():text(MAZE_RECORD)
 end
 
 function M.set_maze(me, value)
-	local q = me:quest(MAZE_QUEST)
-	if q:started() then
-		q:record(value)
-		return
-	end
-	q:start(value)
+	me:records():set_text(MAZE_RECORD, value)
 end
 
 function M.combo_length(sm)

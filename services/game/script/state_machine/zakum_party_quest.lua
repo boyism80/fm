@@ -5,7 +5,8 @@ local pq = require("script/lib/party_quest")
 local EXIT_MAP = 280090000
 local START_MAP = 280010000
 local DURATION_MS = 1800000
-local STAGE1_QUEST = 100001
+local STAGE1_RECORD = "zakum.stage1"
+local STAGE_STARTED = 1
 local SHUFFLE_REACTOR_MIN = 2110000
 local SHUFFLE_REACTOR_MAX = 2112013
 
@@ -41,25 +42,6 @@ local STAGE_MAPS = {
 	280011005,
 	280011006,
 }
-
-local function ensure_quest_started(me, quest_id, record)
-	local q = me:quest(quest_id)
-	if q == nil then
-		return nil
-	end
-	if q:started() or q:completed() then
-		return q
-	end
-	if record == nil then
-		record = ""
-	end
-	if q:wz() == nil then
-		q:start(record)
-	else
-		q:start(0, true)
-	end
-	return me:quest(quest_id)
-end
 
 local function end_run(sm)
 	sm:finish(EXIT_MAP)
@@ -102,7 +84,9 @@ return {
 
 	on_player_enter = function(sm, player)
 		local function on_arrive(player)
-			ensure_quest_started(player, STAGE1_QUEST, "")
+			if player:records():get(STAGE1_RECORD) == 0 then
+				player:records():set(STAGE1_RECORD, STAGE_STARTED)
+			end
 		end
 		player:map(sm:map(START_MAP), { callback = on_arrive })
 	end,

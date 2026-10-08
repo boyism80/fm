@@ -129,6 +129,6 @@ return {
 
 		q:start(npc, true)
 		q:force_complete(npc)
-		me:quest(7631):start(tracker_record)
+		me:quest(7631):start(npc, tracker_record)
 	end
 }
