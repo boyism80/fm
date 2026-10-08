@@ -6,18 +6,26 @@ import (
 	"github.com/boyism80/fm/core/clock"
 )
 
-type RecordPeriod uint8
+type RecordResetKind uint8
 
 const (
-	RecordPeriodNone RecordPeriod = iota
-	RecordPeriodDaily
-	RecordPeriodWeekly
+	RecordResetNone RecordResetKind = iota
+	RecordResetDaily
+	RecordResetWeekly
+	RecordResetEvery
 )
+
+type RecordReset struct {
+	Kind    RecordResetKind
+	At      time.Duration
+	Every   time.Duration
+	Restart bool
+}
 
 type Record struct {
 	Value     int64
 	Text      string
-	Period    RecordPeriod
+	ExpiresAt time.Time
 	UpdatedAt time.Time
 }
 
@@ -29,18 +37,33 @@ func NewRecords() *Records {
 	return &Records{entries: make(map[string]*Record)}
 }
 
-func (r *Record) expired(now time.Time) bool {
-	switch r.Period {
-	case RecordPeriodDaily:
-		y1, m1, d1 := r.UpdatedAt.Date()
-		y2, m2, d2 := now.Date()
-		return y1 != y2 || m1 != m2 || d1 != d2
-	case RecordPeriodWeekly:
-		y1, w1 := r.UpdatedAt.ISOWeek()
-		y2, w2 := now.ISOWeek()
-		return y1 != y2 || w1 != w2
+func (reset RecordReset) expiresAt(now time.Time) time.Time {
+	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	switch reset.Kind {
+	case RecordResetDaily:
+		boundary := midnight.Add(reset.At)
+		if boundary.After(now) == false {
+			boundary = boundary.AddDate(0, 0, 1)
+		}
+		return boundary
+	case RecordResetWeekly:
+		monday := midnight.AddDate(0, 0, -((int(now.Weekday()) + 6) % 7))
+		boundary := monday.Add(reset.At)
+		if boundary.After(now) == false {
+			boundary = boundary.AddDate(0, 0, 7)
+		}
+		return boundary
+	case RecordResetEvery:
+		return now.Add(reset.Every)
 	}
-	return false
+	return time.Time{}
+}
+
+func (r *Record) expired(now time.Time) bool {
+	if r.ExpiresAt.IsZero() {
+		return false
+	}
+	return now.Before(r.ExpiresAt) == false
 }
 
 func (r *Records) find(key string) *Record {
@@ -55,14 +78,17 @@ func (r *Records) find(key string) *Record {
 	return record
 }
 
-func (r *Records) touch(key string, period RecordPeriod) *Record {
+func (r *Records) touch(key string, reset RecordReset) *Record {
+	now := clock.Now()
 	record := r.find(key)
-	if record == nil {
-		record = &Record{}
+	switch {
+	case record == nil:
+		record = &Record{ExpiresAt: reset.expiresAt(now)}
 		r.entries[key] = record
+	case reset.Restart:
+		record.ExpiresAt = reset.expiresAt(now)
 	}
-	record.Period = period
-	record.UpdatedAt = clock.Now()
+	record.UpdatedAt = now
 	return record
 }
 
@@ -82,16 +108,16 @@ func (r *Records) Text(key string) string {
 	return record.Text
 }
 
-func (r *Records) Set(key string, value int64, period RecordPeriod) {
-	r.touch(key, period).Value = value
+func (r *Records) Set(key string, value int64, reset RecordReset) {
+	r.touch(key, reset).Value = value
 }
 
-func (r *Records) SetText(key string, text string, period RecordPeriod) {
-	r.touch(key, period).Text = text
+func (r *Records) SetText(key string, text string, reset RecordReset) {
+	r.touch(key, reset).Text = text
 }
 
-func (r *Records) Add(key string, n int64, period RecordPeriod) int64 {
-	record := r.touch(key, period)
+func (r *Records) Add(key string, n int64, reset RecordReset) int64 {
+	record := r.touch(key, reset)
 	record.Value += n
 	return record.Value
 }

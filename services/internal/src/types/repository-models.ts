@@ -559,7 +559,7 @@ export interface RecordModel {
     key: string;
     value: number;
     text: string;
-    period: number;
+    expiresAtUnixMs: number;
     updatedAtUnixMs: number;
     updatedAt?: Date;
 }
@@ -569,7 +569,7 @@ export type RecordRow = {
     record_key: string;
     value: number;
     text: string;
-    period: number;
+    expires_at_unix_ms: number;
     updated_at_unix_ms: number;
     updated_at?: Date | string;
     deleted?: boolean;

@@ -9,7 +9,7 @@ const PER_ROW_PARAMS = 6;
 export type { RecordModel };
 
 function rowValues(row: RecordRow) {
-    return [row.owner_id, row.record_key, row.value, row.text, row.period, row.updated_at_unix_ms];
+    return [row.owner_id, row.record_key, row.value, row.text, row.expires_at_unix_ms, row.updated_at_unix_ms];
 }
 
 export class CharacterRecordRepository extends HashRepository<RecordModel, RecordRow> {
@@ -22,7 +22,7 @@ export class CharacterRecordRepository extends HashRepository<RecordModel, Recor
     }
 
     private get selectCols() {
-        return `${this.ownerColumn} AS owner_id, record_key, value, text, period, updated_at_unix_ms, updated_at`;
+        return `${this.ownerColumn} AS owner_id, record_key, value, text, expires_at_unix_ms, updated_at_unix_ms, updated_at`;
     }
 
     override getTtlSeconds() {
@@ -59,12 +59,12 @@ export class CharacterRecordRepository extends HashRepository<RecordModel, Recor
             })
             .join(",");
         return {
-            text: `INSERT INTO ${this.table} (${this.ownerColumn}, record_key, value, text, period, updated_at_unix_ms, updated_at) VALUES
+            text: `INSERT INTO ${this.table} (${this.ownerColumn}, record_key, value, text, expires_at_unix_ms, updated_at_unix_ms, updated_at) VALUES
 ${placeholders}
 ON CONFLICT (${this.ownerColumn}, record_key) DO UPDATE SET
   value = EXCLUDED.value,
   text = EXCLUDED.text,
-  period = EXCLUDED.period,
+  expires_at_unix_ms = EXCLUDED.expires_at_unix_ms,
   updated_at_unix_ms = EXCLUDED.updated_at_unix_ms,
   updated_at = NOW() RETURNING ${this.selectCols}`,
             values: rows.flatMap(rowValues),
@@ -83,7 +83,7 @@ ON CONFLICT (${this.ownerColumn}, record_key) DO UPDATE SET
             ...row,
             owner_id: toPgInt(row.owner_id),
             value: toPgInt(row.value),
-            period: toPgInt(row.period),
+            expires_at_unix_ms: toPgInt(row.expires_at_unix_ms),
             updated_at_unix_ms: toPgInt(row.updated_at_unix_ms),
         };
     }
@@ -94,7 +94,7 @@ ON CONFLICT (${this.ownerColumn}, record_key) DO UPDATE SET
             key: row.record_key,
             value: toPgInt(row.value),
             text: row.text ?? "",
-            period: toPgInt(row.period),
+            expiresAtUnixMs: toPgInt(row.expires_at_unix_ms),
             updatedAtUnixMs: toPgInt(row.updated_at_unix_ms),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
@@ -106,7 +106,7 @@ ON CONFLICT (${this.ownerColumn}, record_key) DO UPDATE SET
             record_key: model.key,
             value: model.value,
             text: model.text ?? "",
-            period: model.period,
+            expires_at_unix_ms: model.expiresAtUnixMs,
             updated_at_unix_ms: model.updatedAtUnixMs,
         };
     }

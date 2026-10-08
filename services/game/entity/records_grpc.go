@@ -12,12 +12,15 @@ func NewRecordsFromInternalProto(pbs []*internal.Record) *Records {
 		if pb == nil || pb.GetKey() == "" {
 			continue
 		}
-		r.entries[pb.GetKey()] = &Record{
+		record := &Record{
 			Value:     pb.GetValue(),
 			Text:      pb.GetText(),
-			Period:    RecordPeriod(pb.GetPeriod()),
 			UpdatedAt: time.UnixMilli(pb.GetUpdatedAtUnixMs()),
 		}
+		if pb.GetExpiresAtUnixMs() != 0 {
+			record.ExpiresAt = time.UnixMilli(pb.GetExpiresAtUnixMs())
+		}
+		r.entries[pb.GetKey()] = record
 	}
 	return r
 }
@@ -29,13 +32,16 @@ func (r *Records) ToProto() []*internal.Record {
 		if record == nil {
 			continue
 		}
-		out = append(out, &internal.Record{
+		pb := &internal.Record{
 			Key:             key,
 			Value:           record.Value,
 			Text:            record.Text,
-			Period:          uint32(record.Period),
 			UpdatedAtUnixMs: record.UpdatedAt.UnixMilli(),
-		})
+		}
+		if record.ExpiresAt.IsZero() == false {
+			pb.ExpiresAtUnixMs = record.ExpiresAt.UnixMilli()
+		}
+		out = append(out, pb)
 	}
 	return out
 }

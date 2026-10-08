@@ -2130,7 +2130,7 @@ export interface Record {
   key: string;
   value: number;
   text: string;
-  period: number;
+  expiresAtUnixMs: number;
   updatedAtUnixMs: number;
 }
 
@@ -17552,7 +17552,7 @@ export const SavedLocation: MessageFns<SavedLocation> = {
 };
 
 function createBaseRecord(): Record {
-  return { key: "", value: 0, text: "", period: 0, updatedAtUnixMs: 0 };
+  return { key: "", value: 0, text: "", expiresAtUnixMs: 0, updatedAtUnixMs: 0 };
 }
 
 export const Record: MessageFns<Record> = {
@@ -17566,8 +17566,8 @@ export const Record: MessageFns<Record> = {
     if (message.text !== "") {
       writer.uint32(26).string(message.text);
     }
-    if (message.period !== 0) {
-      writer.uint32(32).uint32(message.period);
+    if (message.expiresAtUnixMs !== 0) {
+      writer.uint32(32).int64(message.expiresAtUnixMs);
     }
     if (message.updatedAtUnixMs !== 0) {
       writer.uint32(40).int64(message.updatedAtUnixMs);
@@ -17611,7 +17611,7 @@ export const Record: MessageFns<Record> = {
             break;
           }
 
-          message.period = reader.uint32();
+          message.expiresAtUnixMs = longToNumber(reader.int64());
           continue;
         }
         case 5: {
@@ -17636,7 +17636,11 @@ export const Record: MessageFns<Record> = {
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       value: isSet(object.value) ? globalThis.Number(object.value) : 0,
       text: isSet(object.text) ? globalThis.String(object.text) : "",
-      period: isSet(object.period) ? globalThis.Number(object.period) : 0,
+      expiresAtUnixMs: isSet(object.expiresAtUnixMs)
+        ? globalThis.Number(object.expiresAtUnixMs)
+        : isSet(object.expires_at_unix_ms)
+        ? globalThis.Number(object.expires_at_unix_ms)
+        : 0,
       updatedAtUnixMs: isSet(object.updatedAtUnixMs)
         ? globalThis.Number(object.updatedAtUnixMs)
         : isSet(object.updated_at_unix_ms)
@@ -17656,8 +17660,8 @@ export const Record: MessageFns<Record> = {
     if (message.text !== "") {
       obj.text = message.text;
     }
-    if (message.period !== 0) {
-      obj.period = Math.round(message.period);
+    if (message.expiresAtUnixMs !== 0) {
+      obj.expiresAtUnixMs = Math.round(message.expiresAtUnixMs);
     }
     if (message.updatedAtUnixMs !== 0) {
       obj.updatedAtUnixMs = Math.round(message.updatedAtUnixMs);
@@ -17673,7 +17677,7 @@ export const Record: MessageFns<Record> = {
     message.key = object.key ?? "";
     message.value = object.value ?? 0;
     message.text = object.text ?? "";
-    message.period = object.period ?? 0;
+    message.expiresAtUnixMs = object.expiresAtUnixMs ?? 0;
     message.updatedAtUnixMs = object.updatedAtUnixMs ?? 0;
     return message;
   },

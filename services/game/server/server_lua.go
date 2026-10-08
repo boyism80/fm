@@ -301,14 +301,6 @@ func (gs *GameServer) registerExchangeResultConstants(luaState *lua.LState) {
 	luaState.SetGlobal("ExchangeResult", t)
 }
 
-func (gs *GameServer) registerRecordPeriodConstants(luaState *lua.LState) {
-	t := luaState.NewTable()
-	t.RawSetString("None", lua.LNumber(entity.RecordPeriodNone))
-	t.RawSetString("Daily", lua.LNumber(entity.RecordPeriodDaily))
-	t.RawSetString("Weekly", lua.LNumber(entity.RecordPeriodWeekly))
-	luaState.SetGlobal("RecordPeriod", t)
-}
-
 func (gs *GameServer) registerServerMessageConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllServerMessageTypes() {
@@ -440,7 +432,6 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	gs.registerSkillEffectTypeConstants(luaState)
 	gs.registerEffectTypeConstants(luaState)
 	gs.registerExchangeResultConstants(luaState)
-	gs.registerRecordPeriodConstants(luaState)
 	gs.registerServerMessageConstants(luaState)
 	registerClockLuaFuncs(gs, luaState)
 	registerMarriageLuaFuncs(gs, luaState)

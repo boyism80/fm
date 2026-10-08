@@ -232,8 +232,8 @@ export class SessionGrpcController {
             cashWishlist: cashWishlist.filter((sn) => sn !== 0),
             rings,
             monsterBook: monsterBook.map((card) => ({ cardId: card.cardId >>> 0, count: card.count >>> 0 })),
-            records: records.map(({ key, value, text, period, updatedAtUnixMs }) => ({ key, value, text, period, updatedAtUnixMs })),
-            accountRecords: accountRecords.map(({ key, value, text, period, updatedAtUnixMs }) => ({ key, value, text, period, updatedAtUnixMs })),
+            records: records.map(({ key, value, text, expiresAtUnixMs, updatedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, updatedAtUnixMs })),
+            accountRecords: accountRecords.map(({ key, value, text, expiresAtUnixMs, updatedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, updatedAtUnixMs })),
         };
     }
 
