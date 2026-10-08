@@ -2,7 +2,6 @@ package entity
 
 import (
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -493,23 +492,4 @@ func (qp *Quest) SetRecordExField(key, value string) bool {
 		}
 	}
 	return true
-}
-
-func (qp *Quest) IncrementRecordExField(key string, delta int) bool {
-	if qp == nil || key == "" || delta == 0 {
-		return false
-	}
-	count := 0
-	if val, ok := qp.RecordExField(key); ok {
-		parsed, err := strconv.Atoi(val)
-		if err != nil {
-			return false
-		}
-		count = parsed
-	}
-	count += delta
-	if count < 0 {
-		count = 0
-	}
-	return qp.SetRecordExField(key, strconv.Itoa(count))
 }
