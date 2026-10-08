@@ -55,7 +55,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		}
 	}
 
-	character.Send(&response.KeyMap{Slots: character.KeyLayout().Bindings()}, types.SEND_POLICY_ENCRYPT)
+	character.Send(&response.KeyMap{Slots: character.KeyLayout.Bindings()}, types.SEND_POLICY_ENCRYPT)
 	if init && character.Pets.HPItem != 0 {
 		character.Send(&response.PetAutoHP{ItemID: character.Pets.HPItem}, types.SEND_POLICY_ENCRYPT)
 	}

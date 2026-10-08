@@ -379,7 +379,7 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 	err := m.RemovePlayer(playerID)
 	character.ClearTimers()
 	select {
-	case character.logoutEntry <- entry:
+	case character.session.logoutEntry <- entry:
 	default:
 	}
 	return err

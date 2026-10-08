@@ -54,7 +54,7 @@ type Character struct {
 	Storage         *Storage
 	Duey            *Duey
 	Skills          *Skills
-	keyLayout       *KeyLayout
+	KeyLayout       *KeyLayout
 	Chair           uint32
 	lastHeal        lastHeal
 	Buffs           *Buffs
@@ -70,22 +70,26 @@ type Character struct {
 	stateMachine    *StateMachine
 	carnivalTeam    *CarnivalTeam
 	SavedLocations  *SavedLocations
-	loggedOut       atomic.Bool
-	logoutEntry     chan *internal.CharacterSaveEntry
-	destination     atomic.Pointer[Map]
-	cashItemInUse   atomic.Bool
+	session         session
+}
+
+type session struct {
+	loggedOut     atomic.Bool
+	logoutEntry   chan *internal.CharacterSaveEntry
+	destination   atomic.Pointer[Map]
+	cashItemInUse atomic.Bool
 }
 
 func (ch *Character) Destination() *Map {
-	return ch.destination.Load()
+	return ch.session.destination.Load()
 }
 
 func (ch *Character) BeginMove(target *Map) bool {
-	return ch.destination.CompareAndSwap(nil, target)
+	return ch.session.destination.CompareAndSwap(nil, target)
 }
 
 func (ch *Character) FinishMove(target *Map) {
-	ch.destination.CompareAndSwap(target, nil)
+	ch.session.destination.CompareAndSwap(target, nil)
 }
 
 func (ch *Character) GetObjectType() constant.ObjectType {
@@ -694,13 +698,13 @@ func (ch *Character) GetID() uint32 {
 
 // MarkLoggedOut runs on the disconnect goroutine; whichever actor holds the character next logs it out.
 func (ch *Character) MarkLoggedOut() <-chan *internal.CharacterSaveEntry {
-	ch.logoutEntry = make(chan *internal.CharacterSaveEntry, 1)
-	ch.loggedOut.Store(true)
-	return ch.logoutEntry
+	ch.session.logoutEntry = make(chan *internal.CharacterSaveEntry, 1)
+	ch.session.loggedOut.Store(true)
+	return ch.session.logoutEntry
 }
 
 func (ch *Character) LoggedOut() bool {
-	return ch.loggedOut.Load()
+	return ch.session.loggedOut.Load()
 }
 
 func (ch *Character) GetPK() uint32 {
@@ -864,12 +868,8 @@ func (ch *Character) GetHolySymbolExpRate() int32 {
 	return int32(100 * int64(150+x) / 150)
 }
 
-func (ch *Character) KeyLayout() *KeyLayout {
-	return ch.keyLayout
-}
-
 func (ch *Character) BindKey(slot int, typ byte, action int32) {
-	ch.KeyLayout().SetKey(slot, typ, action)
+	ch.KeyLayout.SetKey(slot, typ, action)
 	ch.Listener.OnKeyMap(ch)
 }
 

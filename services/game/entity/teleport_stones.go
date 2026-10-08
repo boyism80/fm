@@ -69,12 +69,12 @@ func (t *TeleportStones) Reset() {
 }
 
 func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, slot int16, itemID uint32, mapID uint32, name string) {
-	if t.owner.cashItemInUse.CompareAndSwap(false, true) == false {
+	if t.owner.session.cashItemInUse.CompareAndSwap(false, true) == false {
 		t.owner.Listener.OnUpdateStats(t.owner, nil, true)
 		return
 	}
 	finish := func() {
-		t.owner.cashItemInUse.Store(false)
+		t.owner.session.cashItemInUse.Store(false)
 		t.owner.Listener.OnUpdateStats(t.owner, nil, true)
 	}
 	vip := constant.IsVipTeleportStone(itemID)

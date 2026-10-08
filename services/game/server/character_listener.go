@@ -105,7 +105,7 @@ func (l *CharacterListenerImpl) OnMesoChanged(ch *entity.Character, meso int32) 
 }
 
 func (l *CharacterListenerImpl) OnKeyMap(ch *entity.Character) {
-	ch.Send(&response.KeyMap{Slots: ch.KeyLayout().Bindings()}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.KeyMap{Slots: ch.KeyLayout.Bindings()}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType constant.ServerMessageType, message string) {

@@ -37,12 +37,11 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 		return nil
 	}
 
-	kl := ch.KeyLayout()
 	for _, c := range req.Changes {
 		if !h.allowBinding(ch, c.Type, c.Action) {
 			continue
 		}
-		kl.SetKey(int(c.Key), c.Type, c.Action)
+		ch.KeyLayout.SetKey(int(c.Key), c.Type, c.Action)
 	}
 	return nil
 }
