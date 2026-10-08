@@ -390,6 +390,13 @@ func (l *MapListenerImpl) OnPlaySound(mapInstance *entity.Map, path string) {
 	}, nil)
 }
 
+func (l *MapListenerImpl) OnTremble(mapInstance *entity.Map, typ uint8, delay int32) {
+	mapInstance.Broadcast(&response.Tremble{
+		Type:  typ,
+		Delay: delay,
+	}, nil)
+}
+
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character, aggro bool) {
 	switch {
 	case before == nil && after != nil:

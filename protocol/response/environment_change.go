@@ -7,6 +7,7 @@ import (
 type EnvironmentChangeMode uint8
 
 const (
+	EnvironmentChangeModeTremble     EnvironmentChangeMode = 1
 	EnvironmentChangeModeObjectState EnvironmentChangeMode = 2
 	EnvironmentChangeModeMapEffect   EnvironmentChangeMode = 3
 	EnvironmentChangeModeSound       EnvironmentChangeMode = 4

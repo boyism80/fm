@@ -36,6 +36,7 @@ const (
 	FieldTypeCoconut               FieldType = 4
 	FieldTypeMonsterCarnival       FieldType = 10
 	FieldTypeMonsterCarnivalRevive FieldType = 11
+	FieldTypeDojo                  FieldType = 14
 )
 
 type Map struct {

@@ -128,6 +128,9 @@ return {
 	end,
 
 	on_damaged = function(me, attacker, skill, damage, params)
+		if me:buff_value(BuffFlag.DivineBody) ~= nil then
+			return 0
+		end
 		local d = skill_lib.absorb_magic_guard(me, attacker, skill, damage)
 		d = skill_lib.absorb_meso_guard(me, attacker, skill, d)
 		d = combat.reflect_incoming_damage(me, attacker, skill, d, params)

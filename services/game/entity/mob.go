@@ -547,13 +547,28 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 					return false
 				}
 				percent := min(m.GetHp()*100/maxHp, 100)
-				attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
+				m.showHp(attacker, uint8(percent))
 			}
 		}
 		return false
 	}
 
 	return m.Kill(attacker, constant.MobDieAnimationTypeFadeOut)
+}
+
+func (m *Mob) showHp(attacker *Character, percent uint8) {
+	mapInstance := m.GetMap()
+	if mapInstance == nil || mapInstance.Wz.FieldType != wz.FieldTypeDojo {
+		attacker.Listener.OnShowMobHp(attacker, m, percent)
+		return
+	}
+	for _, player := range mapInstance.GetAllPlayers() {
+		ch, ok := player.(*Character)
+		if ok == false {
+			continue
+		}
+		ch.Listener.OnShowMobHp(ch, m, percent)
+	}
 }
 
 func (m *Mob) runDieScript(attacker *Character) {
@@ -621,7 +636,7 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 	}
 
 	if attacker != nil {
-		attacker.Listener.OnShowMobHp(attacker, m, 0)
+		m.showHp(attacker, 0)
 	}
 	if sm := mapInstance.StateMachine(); sm != nil && !mapInstance.HasAliveMobs() {
 		sm.CallHook("on_all_monsters_dead")

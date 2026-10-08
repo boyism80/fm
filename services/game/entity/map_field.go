@@ -51,6 +51,10 @@ func (m *Map) PlaySound(path string) {
 	m.listener.OnPlaySound(m, path)
 }
 
+func (m *Map) Tremble(typ uint8, delay int32) {
+	m.listener.OnTremble(m, typ, delay)
+}
+
 func (m *Map) PlayersInArea(index int) int {
 	if m == nil || m.Wz == nil || index < 0 || index >= len(m.Wz.Areas) {
 		return 0

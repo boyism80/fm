@@ -2089,6 +2089,25 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"dojo_energy": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			switch L.GetTop() {
+			case 1:
+				L.Push(lua.LNumber(ch.DojoEnergy()))
+				return 1
+			case 2:
+				ch.SetDojoEnergy(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "dojo_energy() requires 0 or 1 arguments")
+				return 0
+			}
+		},
 		"instant_kill": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

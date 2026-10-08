@@ -141,11 +141,15 @@ var decoders = func() []decoder {
 		newDecoder[response.SpawnMob](nil),
 		newDecoder[response.DieMob](nil),
 		newDecoder[response.ShowMobHp](nil),
+		newDecoder[response.SessionValue](nil),
 		newDecoder[response.SpawnMeso](func(body []byte) bool { return len(body) >= 6 && body[5] == 1 }),
 		newDecoder[response.SpawnItem](func(body []byte) bool { return len(body) >= 6 }),
 		newDecoder[response.RemoveItem](nil),
 		newDecoder[response.ShowBossHp](func(body []byte) bool {
 			return len(body) > 0 && response.EnvironmentChangeMode(body[0]) == response.EnvironmentChangeModeBossHP
+		}),
+		newDecoder[response.Tremble](func(body []byte) bool {
+			return len(body) > 0 && response.EnvironmentChangeMode(body[0]) == response.EnvironmentChangeModeTremble
 		}),
 		newDecoder[response.EnvironmentChange](func(body []byte) bool { return len(body) > 0 }),
 		newDecoder[response.SpawnReactor](nil),

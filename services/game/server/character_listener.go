@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -710,6 +711,13 @@ func (l *CharacterListenerImpl) OnShowMobHp(ch *entity.Character, mob *entity.Mo
 	ch.Send(&response.ShowMobHp{
 		OID:        mob.OID,
 		Percentage: percentage,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnDojoEnergy(ch *entity.Character, energy int) {
+	ch.Send(&response.SessionValue{
+		Key:   "energy",
+		Value: strconv.Itoa(energy),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

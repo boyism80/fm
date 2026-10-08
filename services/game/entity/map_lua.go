@@ -867,6 +867,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mapInstance.PlaySound(path)
 			return 0
 		},
+		"tremble": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mapInstance.Tremble(uint8(L.OptInt(2, 0)), int32(L.OptInt(3, 1)))
+			return 0
+		},
 		"players_in_area": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

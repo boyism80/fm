@@ -27,6 +27,13 @@ func (ch *Character) DamageTo(damages []dto.AttackPair) {
 			log.Printf("Mob not found for OID: %d", damage.OID)
 			continue
 		}
+		total := uint64(0)
+		for _, damagePair := range damage.DamagePairs {
+			total += uint64(damagePair.Damage)
+		}
+		if total > 0 {
+			ch.chargeDojoEnergy(mob, total)
+		}
 		for _, damagePair := range damage.DamagePairs {
 			if damagePair.Damage == 0 {
 				continue
@@ -96,6 +103,10 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 }
 
 func (ch *Character) TakeDamage(damage int32) {
+	if damage > 0 {
+		ch.AddDojoEnergy(2)
+	}
+
 	hp := int(ch.GetHp()) - int(damage)
 	if hp < 0 {
 		hp = 0

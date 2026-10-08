@@ -38,6 +38,7 @@ type MapListener interface {
 	OnClearEffect(mapInstance *Map)
 	OnShowEffect(mapInstance *Map, path string)
 	OnPlaySound(mapInstance *Map, path string)
+	OnTremble(mapInstance *Map, typ uint8, delay int32)
 	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
 	OnMobHomingSet(mapInstance *Map, mob *Mob, homing *Homing, causer *Character)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool)
@@ -246,6 +247,9 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	character.Map = m
+	if m.Wz.FieldType != wz.FieldTypeDojo {
+		character.SetDojoEnergy(0)
+	}
 	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
 		character.Position = pos
 	}

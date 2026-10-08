@@ -72,6 +72,7 @@ type Character struct {
 	GM              GMMode
 	stateMachine    *StateMachine
 	carnivalTeam    *CarnivalTeam
+	dojoEnergy      int
 	SavedLocations  *SavedLocations
 	session         session
 }
