@@ -22,11 +22,11 @@ func (h *PetLoot) Handle(ctx *core.ClientContext, req *request.PetLoot) error {
 		return nil
 	}
 	character := gameClient.GetCharacter()
-	if character == nil || character.Pet == nil {
+	if character == nil || character.Pets.Active == nil {
 		return nil
 	}
 
-	err := character.Pet.Loot(req.OID, req.Position)
+	err := character.Pets.Active.Loot(req.OID, req.Position)
 	if err != nil {
 		character.Listener.OnUnlockAction(character)
 	}

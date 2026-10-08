@@ -22,11 +22,11 @@ func (h *PetCommand) Handle(ctx *core.ClientContext, req *request.PetCommand) er
 		return nil
 	}
 	character := gameClient.GetCharacter()
-	if character == nil || character.Pet == nil {
+	if character == nil || character.Pets.Active == nil {
 		return nil
 	}
 
-	character.Pet.Command(req.Index, req.CalledByName)
+	character.Pets.Active.Command(req.Index, req.CalledByName)
 
 	return nil
 }

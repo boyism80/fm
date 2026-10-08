@@ -1819,10 +1819,10 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 func (l *CharacterListenerImpl) OnPetSpawn(ch *entity.Character) {
 	ch.Broadcast(&response.SpawnPet{
 		CharacterID: ch.GetID(),
-		Pet:         ch.Pet.ToDTO(),
+		Pet:         ch.Pets.Active.ToDTO(),
 	}, &entity.ObjectBroadcastOption{WithMe: true})
 	l.OnPetExceptions(ch)
-	sn := *ch.Pet.Item.UniqueId
+	sn := *ch.Pets.Active.Item.UniqueId
 	ch.Send(&response.UpdateStats{Pet: &sn, UnlockAction: true}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -1871,15 +1871,15 @@ func (l *CharacterListenerImpl) OnPetUpdated(ch *entity.Character, pet *entity.P
 func (l *CharacterListenerImpl) OnPetExceptions(ch *entity.Character) {
 	ch.Send(&response.PetExceptions{
 		CharacterID: ch.GetID(),
-		SN:          *ch.Pet.Item.UniqueId,
-		ItemIDs:     ch.Pet.Item.Exceptions,
+		SN:          *ch.Pets.Active.Item.UniqueId,
+		ItemIDs:     ch.Pets.Active.Item.Exceptions,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnPetNameChanged(ch *entity.Character) {
 	ch.Broadcast(&response.PetNameChanged{
 		CharacterID: ch.GetID(),
-		Name:        ch.Pet.Item.Name,
+		Name:        ch.Pets.Active.Item.Name,
 	}, &entity.ObjectBroadcastOption{WithMe: true})
 }
 

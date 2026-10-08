@@ -195,10 +195,10 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 			return false
 		}
 	}
-	if len(req.Pet) > 0 && (ch.Pet == nil || slices.Contains(req.Pet, ch.Pet.Item.GetModel().GetID()) == false) {
+	if len(req.Pet) > 0 && (ch.Pets.Active == nil || slices.Contains(req.Pet, ch.Pets.Active.Item.GetModel().GetID()) == false) {
 		return false
 	}
-	if req.PetTamenessMin > 0 && (ch.Pet == nil || int(ch.Pet.Item.Closeness) < req.PetTamenessMin) {
+	if req.PetTamenessMin > 0 && (ch.Pets.Active == nil || int(ch.Pets.Active.Item.Closeness) < req.PetTamenessMin) {
 		return false
 	}
 	if req.MBMin > 0 || len(req.MBCard) > 0 || req.SubClassFlags != 0 {

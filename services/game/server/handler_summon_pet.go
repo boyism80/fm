@@ -26,7 +26,7 @@ func (h *SummonPet) Handle(ctx *core.ClientContext, req *request.SummonPet) erro
 		return nil
 	}
 
-	err := character.SummonPet(req.Slot)
+	err := character.Pets.Summon(req.Slot)
 	if err != nil {
 		character.Listener.OnUnlockAction(character)
 	}

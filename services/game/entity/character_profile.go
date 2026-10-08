@@ -39,14 +39,14 @@ func (ch *Character) Inspect(targetID uint32) {
 			}
 		}
 	}
-	if target.Pet != nil {
+	if target.Pets.Active != nil {
 		profile.Pet = &response.CharacterProfilePet{
-			ItemID:    target.Pet.Item.GetModel().GetID(),
-			Name:      target.Pet.Item.Name,
-			Level:     target.Pet.Item.Level,
-			Closeness: target.Pet.Item.Closeness,
-			Fullness:  target.Pet.Item.Fullness,
-			Skills:    uint16(target.Pet.Item.Skills),
+			ItemID:    target.Pets.Active.Item.GetModel().GetID(),
+			Name:      target.Pets.Active.Item.Name,
+			Level:     target.Pets.Active.Item.Level,
+			Closeness: target.Pets.Active.Item.Closeness,
+			Fullness:  target.Pets.Active.Item.Fullness,
+			Skills:    uint16(target.Pets.Active.Item.Skills),
 		}
 		equip := target.Inventory.Equipped[constant.EquipmentPartsPetEquip.Cash()]
 		if equip == nil {

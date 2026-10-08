@@ -30,10 +30,10 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 	}
 	switch req.Mode {
 	case 1:
-		ch.PetHPItem = uint32(req.Data)
+		ch.Pets.HPItem = uint32(req.Data)
 		return nil
 	case 2:
-		ch.PetMPItem = uint32(req.Data)
+		ch.Pets.MPItem = uint32(req.Data)
 		return nil
 	}
 

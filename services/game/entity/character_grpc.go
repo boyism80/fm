@@ -58,9 +58,6 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		AbilityPoint: uint16(p.GetAbilityPoint()),
 		SkillPoint:   uint16(p.GetSkillPoint()),
 		HpApUsed:     uint16(p.GetHpApUsed()),
-		PetHPItem:    p.GetPetHpItem(),
-		PetMPItem:    p.GetPetMpItem(),
-		summonedPet:  p.GetSummonedPet(),
 		exp:          p.GetExp(),
 		population:   uint16(p.GetPopulation()),
 		partyID:      partyID,
@@ -78,6 +75,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Quests = NewQuests(ch)
 	ch.Summons = NewSummons(ch)
 	ch.Doors = NewDoors(ch)
+	ch.Pets = &Pets{owner: ch, summoned: p.GetSummonedPet(), HPItem: p.GetPetHpItem(), MPItem: p.GetPetMpItem()}
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
 	for i, limit := range p.GetSlotLimits() {
@@ -392,9 +390,9 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		SkillPoint:        uint32(ch.SkillPoint),
 		Population:        uint32(ch.population),
 		HpApUsed:          uint32(ch.HpApUsed),
-		PetHpItem:         ch.PetHPItem,
-		PetMpItem:         ch.PetMPItem,
-		SummonedPet:       ch.summonedPet,
+		PetHpItem:         ch.Pets.HPItem,
+		PetMpItem:         ch.Pets.MPItem,
+		SummonedPet:       ch.Pets.summoned,
 		SlotLimits:        slotLimits,
 		MonsterBookCover:  ch.MonsterBook.Cover,
 		TeleportStones:    ch.teleportStones.Registered(),

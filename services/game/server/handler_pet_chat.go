@@ -22,11 +22,11 @@ func (h *PetChat) Handle(ctx *core.ClientContext, req *request.PetChat) error {
 		return nil
 	}
 	character := gameClient.GetCharacter()
-	if character == nil || character.Pet == nil {
+	if character == nil || character.Pets.Active == nil {
 		return nil
 	}
 
-	character.Pet.Chat(req.Type, req.Action, req.Text)
+	character.Pets.Active.Chat(req.Type, req.Action, req.Text)
 
 	return nil
 }

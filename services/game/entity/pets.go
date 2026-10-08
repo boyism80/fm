@@ -15,46 +15,54 @@ var (
 	ErrPetNotRevivable = errors.New("pet cannot be revived")
 )
 
-func (ch *Character) SummonPet(slot int16) error {
-	pet, ok := ch.Inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
+type Pets struct {
+	owner    *Character
+	summoned uint64
+	Active   *ActivePet
+	HPItem   uint32
+	MPItem   uint32
+}
+
+func (p *Pets) Summon(slot int16) error {
+	pet, ok := p.owner.Inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
 	if ok == false {
 		return ErrPetNotFound
 	}
-	if ch.Pet != nil && ch.Pet.Item == pet {
-		ch.DismissPet(constant.PetRemoveReasonNone)
+	if p.Active != nil && p.Active.Item == pet {
+		p.Dismiss(constant.PetRemoveReasonNone)
 		return nil
 	}
 	if pet.Alive(time.Now()) == false {
 		return ErrPetDead
 	}
 
-	ch.DismissPet(constant.PetRemoveReasonNone)
-	ch.Pet = &ActivePet{owner: ch, Item: pet, Position: ch.Position, Stance: ch.Stance}
-	ch.Pet.scheduleTimers()
-	ch.summonedPet = *pet.UniqueId
-	ch.Listener.OnPetSpawn(ch)
+	p.Dismiss(constant.PetRemoveReasonNone)
+	p.Active = &ActivePet{owner: p.owner, Item: pet, Position: p.owner.Position, Stance: p.owner.Stance}
+	p.Active.scheduleTimers()
+	p.summoned = *pet.UniqueId
+	p.owner.Listener.OnPetSpawn(p.owner)
 	return nil
 }
 
-func (ch *Character) DismissPet(reason constant.PetRemoveReason) {
-	if ch.Pet == nil {
+func (p *Pets) Dismiss(reason constant.PetRemoveReason) {
+	if p.Active == nil {
 		return
 	}
-	ch.Pet.stopTimers()
-	ch.Pet = nil
-	ch.summonedPet = 0
-	ch.Listener.OnPetRemove(ch, reason)
+	p.Active.stopTimers()
+	p.Active = nil
+	p.summoned = 0
+	p.owner.Listener.OnPetRemove(p.owner, reason)
 }
 
-func (ch *Character) ChangePetSkill(sn uint64, itemID uint32) error {
-	model, ok := ch.GameWorld.GetResources().Items[itemID].(*wz.CashItem)
+func (p *Pets) ChangeSkill(sn uint64, itemID uint32) error {
+	model, ok := p.owner.GameWorld.GetResources().Items[itemID].(*wz.CashItem)
 	if ok == false || model.PetSkill == 0 {
 		return ErrPetSkillInvalid
 	}
 	var pet *Pet
-	for _, item := range ch.Inventory.Tabs[constant.InventoryTypeCash].Items {
-		if p, ok := item.(*Pet); ok && *p.UniqueId == sn {
-			pet = p
+	for _, item := range p.owner.Inventory.Tabs[constant.InventoryTypeCash].Items {
+		if candidate, ok := item.(*Pet); ok && *candidate.UniqueId == sn {
+			pet = candidate
 			break
 		}
 	}
@@ -82,12 +90,12 @@ func (ch *Character) ChangePetSkill(sn uint64, itemID uint32) error {
 		}
 		pet.Skills &^= skill
 	}
-	ch.Listener.OnPetSkillChanged(ch, pet, skill, model.PetSkillAdd)
+	p.owner.Listener.OnPetSkillChanged(p.owner, pet, skill, model.PetSkillAdd)
 	return nil
 }
 
-func (ch *Character) RevivePet(slot int16) error {
-	pet, ok := ch.Inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
+func (p *Pets) Revive(slot int16) error {
+	pet, ok := p.owner.Inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
 	if ok == false {
 		return ErrPetNotFound
 	}
@@ -97,14 +105,14 @@ func (ch *Character) RevivePet(slot int16) error {
 	}
 
 	pet.ItemCore.Expiration = time.Now().AddDate(0, 0, model.Life)
-	ch.Listener.OnPetUpdated(ch, pet)
+	p.owner.Listener.OnPetUpdated(p.owner, pet)
 	return nil
 }
 
-func (ch *Character) ExpiredPets() map[int16]*Pet {
+func (p *Pets) Expired() map[int16]*Pet {
 	now := time.Now()
 	pets := make(map[int16]*Pet)
-	for slot, item := range ch.Inventory.Tabs[constant.InventoryTypeCash].Items {
+	for slot, item := range p.owner.Inventory.Tabs[constant.InventoryTypeCash].Items {
 		if pet, ok := item.(*Pet); ok && pet.Alive(now) == false && pet.GetModel().(*wz.Pet).NoRevive == false {
 			pets[slot] = pet
 		}
@@ -112,22 +120,22 @@ func (ch *Character) ExpiredPets() map[int16]*Pet {
 	return pets
 }
 
-func (ch *Character) restorePet() {
-	if ch.summonedPet == 0 {
+func (p *Pets) restore() {
+	if p.summoned == 0 {
 		return
 	}
 	now := time.Now()
-	for _, item := range ch.Inventory.Tabs[constant.InventoryTypeCash].Items {
+	for _, item := range p.owner.Inventory.Tabs[constant.InventoryTypeCash].Items {
 		pet, ok := item.(*Pet)
-		if ok == false || *pet.UniqueId != ch.summonedPet {
+		if ok == false || *pet.UniqueId != p.summoned {
 			continue
 		}
 		if pet.Alive(now) {
-			ch.Pet = &ActivePet{owner: ch, Item: pet, Position: ch.Position, Stance: ch.Stance}
-			ch.Pet.scheduleTimers()
+			p.Active = &ActivePet{owner: p.owner, Item: pet, Position: p.owner.Position, Stance: p.owner.Stance}
+			p.Active.scheduleTimers()
 			return
 		}
 		break
 	}
-	ch.summonedPet = 0
+	p.summoned = 0
 }

@@ -150,10 +150,10 @@ func (p *ActivePet) Loot(oid uint32, position types.Vector2[int16]) error {
 
 func (p *ActivePet) UsePotion(slot int16, itemID uint32) error {
 	var skill constant.PetSkill
-	if itemID == p.owner.PetHPItem {
+	if itemID == p.owner.Pets.HPItem {
 		skill |= constant.PetSkillConsumeHP
 	}
-	if itemID == p.owner.PetMPItem {
+	if itemID == p.owner.Pets.MPItem {
 		skill |= constant.PetSkillConsumeMP
 	}
 	if p.Item.Skills&skill == 0 {
@@ -233,14 +233,14 @@ func (p *ActivePet) stopTimers() {
 
 func (p *ActivePet) hunger() {
 	if p.Item.Alive(time.Now()) == false {
-		p.owner.DismissPet(constant.PetRemoveReasonExpired)
+		p.owner.Pets.Dismiss(constant.PetRemoveReasonExpired)
 		return
 	}
 
 	fullness := int(p.Item.Fullness) - p.Item.GetModel().(*wz.Pet).Hungry
 	if fullness <= constant.PetStarveFullness {
 		p.Item.Fullness = constant.PetStarvedFullness
-		p.owner.DismissPet(constant.PetRemoveReasonHungry)
+		p.owner.Pets.Dismiss(constant.PetRemoveReasonHungry)
 		return
 	}
 	p.Item.Fullness = uint8(fullness)
@@ -255,7 +255,7 @@ func (p *ActivePet) age() {
 		return
 	}
 
-	p.owner.DismissPet(constant.PetRemoveReasonExpired)
+	p.owner.Pets.Dismiss(constant.PetRemoveReasonExpired)
 	if slot, ok := p.owner.Inventory.FindSlot(constant.InventoryTypeCash, p.Item); ok {
 		p.owner.Inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)
 	}

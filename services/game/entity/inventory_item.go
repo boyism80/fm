@@ -450,7 +450,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		return ErrInvalidEquipmentPart
 	}
 	if armor, ok := newEq.GetModel().(*wz.Armor); ok && constant.GetEquipmentType(armor.ID) == constant.EquipmentTypePetEquip {
-		if ch.Pet == nil || slices.Contains(armor.Pets, ch.Pet.Item.GetModel().GetID()) == false {
+		if ch.Pets.Active == nil || slices.Contains(armor.Pets, ch.Pets.Active.Item.GetModel().GetID()) == false {
 			return ErrInvalidEquipmentPart
 		}
 	}

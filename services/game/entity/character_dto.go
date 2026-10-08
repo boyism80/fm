@@ -51,8 +51,8 @@ func (ch *Character) ToDTO() *dto.Character {
 		mapID = m.TemplateID()
 	}
 	var pet uint64
-	if ch.Pet != nil {
-		pet = *ch.Pet.Item.UniqueId
+	if ch.Pets.Active != nil {
+		pet = *ch.Pets.Active.Item.UniqueId
 	}
 	return &dto.Character{
 		ID:            ch.GetID(),

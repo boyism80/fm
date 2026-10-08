@@ -22,11 +22,11 @@ func (h *PetAutoPotion) Handle(ctx *core.ClientContext, req *request.PetAutoPoti
 		return nil
 	}
 	character := gameClient.GetCharacter()
-	if character == nil || character.Pet == nil {
+	if character == nil || character.Pets.Active == nil {
 		return nil
 	}
 
-	err := character.Pet.UsePotion(req.Slot, req.ItemID)
+	err := character.Pets.Active.UsePotion(req.Slot, req.ItemID)
 	if err != nil {
 		character.Listener.OnUnlockAction(character)
 	}

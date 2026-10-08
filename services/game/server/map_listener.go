@@ -48,19 +48,19 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 	if character.IsHidden() {
 		character.Send(&response.SuperHide{Hidden: true}, types.SEND_POLICY_ENCRYPT)
 	}
-	if character.Pet != nil {
-		character.Send(&response.SpawnPet{CharacterID: character.GetID(), Pet: character.Pet.ToDTO()}, types.SEND_POLICY_ENCRYPT)
+	if character.Pets.Active != nil {
+		character.Send(&response.SpawnPet{CharacterID: character.GetID(), Pet: character.Pets.Active.ToDTO()}, types.SEND_POLICY_ENCRYPT)
 		if init {
 			character.Listener.OnPetExceptions(character)
 		}
 	}
 
 	character.Send(&response.KeyMap{Slots: character.KeyLayout().Bindings()}, types.SEND_POLICY_ENCRYPT)
-	if init && character.PetHPItem != 0 {
-		character.Send(&response.PetAutoHP{ItemID: character.PetHPItem}, types.SEND_POLICY_ENCRYPT)
+	if init && character.Pets.HPItem != 0 {
+		character.Send(&response.PetAutoHP{ItemID: character.Pets.HPItem}, types.SEND_POLICY_ENCRYPT)
 	}
-	if init && character.PetMPItem != 0 {
-		character.Send(&response.PetAutoMP{ItemID: character.PetMPItem}, types.SEND_POLICY_ENCRYPT)
+	if init && character.Pets.MPItem != 0 {
+		character.Send(&response.PetAutoMP{ItemID: character.Pets.MPItem}, types.SEND_POLICY_ENCRYPT)
 	}
 
 	if mapInstance.Wz != nil && mapInstance.Wz.HasClock {
