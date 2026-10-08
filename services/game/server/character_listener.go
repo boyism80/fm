@@ -1853,11 +1853,11 @@ func (l *CharacterListenerImpl) OnPetChat(ch *entity.Character, typ uint8, actio
 }
 
 func (l *CharacterListenerImpl) OnPetCommand(ch *entity.Character, index uint8, success bool) {
-	ch.Send(&response.PetCommand{CharacterID: ch.GetID(), Index: index, Success: success}, types.SEND_POLICY_ENCRYPT)
+	ch.Broadcast(&response.PetCommand{CharacterID: ch.GetID(), Index: index, Success: success}, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnPetFood(ch *entity.Character, success bool) {
-	ch.Send(&response.PetCommand{CharacterID: ch.GetID(), Food: true, Success: success}, types.SEND_POLICY_ENCRYPT)
+	ch.Broadcast(&response.PetCommand{CharacterID: ch.GetID(), Food: true, Success: success}, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnPetUpdated(ch *entity.Character, pet *entity.Pet) {
