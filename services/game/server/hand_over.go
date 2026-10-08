@@ -39,7 +39,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 			block()
 			return fmt.Errorf("hand over: character %d has no map to save", character.GetID())
 		}
-		debuffs = character.DebuffsToProto()
+		debuffs = character.Debuffs.ToProto()
 		return nil
 	})
 	promise.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {

@@ -99,7 +99,7 @@ func (ch *Character) GiveMobSkillDebuff(skillID uint32, skillLevel uint8) bool {
 		if duration <= 0 {
 			duration = 5 * time.Second
 		}
-		ch.GiveDebuff(flag, duration, int16(mobSkill.X), uint16(skillID), uint16(skillLevel))
+		ch.Debuffs.Give(flag, duration, int16(mobSkill.X), uint16(skillID), uint16(skillLevel))
 		return true
 	}
 	return false

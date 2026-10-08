@@ -3588,7 +3588,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() >= 6 {
 				skillLevel = uint16(L.CheckNumber(6))
 			}
-			ch.GiveDebuff(flag, time.Duration(durationMs)*time.Millisecond, x, skillID, skillLevel)
+			ch.Debuffs.Give(flag, time.Duration(durationMs)*time.Millisecond, x, skillID, skillLevel)
 			return 0
 		},
 		"has_debuff": func(L *lua.LState) int {
@@ -3623,7 +3623,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !ok {
 				return 0
 			}
-			L.Push(lua.LBool(ch.HasDebuff(flag)))
+			L.Push(lua.LBool(ch.Debuffs.Has(flag)))
 			return 1
 		},
 		"remove_debuff": func(L *lua.LState) int {
@@ -3663,7 +3663,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				flags = append(flags, flag)
 			}
 			if len(flags) > 0 {
-				ch.RemoveDebuff(flags...)
+				ch.Debuffs.Remove(flags...)
 			}
 			return 0
 		},

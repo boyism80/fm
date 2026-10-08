@@ -54,7 +54,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 				if !ok || ch == nil || !ch.IsAlive() {
 					continue
 				}
-				if ch.HasDebuff(constant.DebuffFlagPoison) {
+				if ch.Debuffs.Has(constant.DebuffFlagPoison) {
 					continue
 				}
 				candidates = append(candidates, ch)

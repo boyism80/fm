@@ -68,6 +68,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	}
 	ch.Dialog = NewDialog(ch)
 	ch.Buffs = NewBuffs(ch)
+	ch.Debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
 	ch.Skills = NewSkills(ch)
 	ch.Quests = NewQuests(ch)
 	ch.Summons = NewSummons(ch)
@@ -102,7 +103,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Inventory.LoadRings(reply.GetRings())
 	ch.LoadSkills(reply.GetSkills())
 	ch.LoadBuffs(reply.GetBuffs())
-	ch.LoadDebuffs(reply.GetDebuffs())
+	ch.Debuffs.Load(reply.GetDebuffs())
 	ch.LoadQuests(reply.GetQuests())
 	ch.LoadSavedLocations(reply.GetSavedLocations())
 	ch.BuddyList().LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
@@ -211,36 +212,6 @@ func (ch *Character) LoadBuffs(pbs []*internal.Buff) {
 			ch.Buffs.AddItemBuff(cw, dur, values, false, false)
 		default:
 			continue
-		}
-	}
-}
-
-func (ch *Character) LoadDebuffs(pbs []*internal.Debuff) {
-	now := clock.Now()
-	flags := constant.AllDebuffFlags()
-	for _, pb := range pbs {
-		var duration time.Duration
-		if pb.GetEndUnixMs() != 0 {
-			duration = time.UnixMilli(pb.GetEndUnixMs()).Sub(now)
-			if duration <= 0 {
-				continue
-			}
-		}
-		for _, flag := range flags {
-			if flag.Mask != pb.GetMask() || flag.Position != int(pb.GetPosition()) {
-				continue
-			}
-			if ch.debuffs == nil {
-				ch.debuffs = make(map[constant.DebuffFlag]*Debuff)
-			}
-			ch.debuffs[flag] = &Debuff{
-				Flag:       flag,
-				StartTime:  now,
-				Duration:   duration,
-				X:          int16(pb.GetX()),
-				SkillID:    uint16(pb.GetSkillId()),
-				SkillLevel: uint16(pb.GetSkillLevel()),
-			}
 		}
 	}
 }
@@ -443,30 +414,6 @@ func (ch *Character) SkillsToProto() []*internal.Skill {
 		}
 	})
 	return skills
-}
-
-func (ch *Character) DebuffsToProto() []*internal.Debuff {
-	now := clock.Now()
-	out := make([]*internal.Debuff, 0, len(ch.debuffs))
-	for _, holder := range ch.debuffs {
-		var endUnixMs int64
-		if holder.Duration > 0 {
-			end := holder.StartTime.Add(holder.Duration)
-			if end.After(now) == false {
-				continue
-			}
-			endUnixMs = end.UnixMilli()
-		}
-		out = append(out, &internal.Debuff{
-			Mask:       holder.Flag.Mask,
-			Position:   int32(holder.Flag.Position),
-			X:          int32(holder.X),
-			SkillId:    uint32(holder.SkillID),
-			SkillLevel: uint32(holder.SkillLevel),
-			EndUnixMs:  endUnixMs,
-		})
-	}
-	return out
 }
 
 func (ch *Character) BuffsToProto() []*internal.Buff {

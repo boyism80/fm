@@ -70,7 +70,7 @@ type Character struct {
 	BaseStats         BaseStats
 	BonusStats        BonusStats
 	Buffs             *Buffs
-	debuffs           map[constant.DebuffFlag]*Debuff
+	Debuffs           *Debuffs
 	Summons           *Summons
 	Pets              *Pets
 	Doors             *Doors
@@ -104,15 +104,6 @@ func (ch *Character) FinishMove(target *Map) {
 	ch.destination.CompareAndSwap(target, nil)
 }
 
-type Debuff struct {
-	Flag       constant.DebuffFlag
-	StartTime  time.Time
-	Duration   time.Duration
-	X          int16
-	SkillID    uint16
-	SkillLevel uint16
-}
-
 func (ch *Character) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeCharacter
 }
@@ -139,7 +130,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	spawnPacket := &response.SpawnPlayer{
 		Character:         ch.ToDTO(),
 		BuffStates:        spawnBuffData.BuffStates,
-		Diseases:          ch.GetDiseaseMask(),
+		Diseases:          ch.Debuffs.DiseaseMask(),
 		SpeedBuff:         spawnBuffData.SpeedBuff,
 		ComboCount:        spawnBuffData.ComboCount,
 		WKChargeSkillId:   spawnBuffData.WKChargeSkillID,
@@ -1033,7 +1024,7 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 		exp = mulClamp(exp, uint32(ch.BonusStats.ExpRate)) / 100
 	}
 	exp = mulClamp(exp, uint32(ch.GetHolySymbolExpRate())) / 100
-	if ch.HasDebuff(constant.DebuffFlagCurse) {
+	if ch.Debuffs.Has(constant.DebuffFlagCurse) {
 		exp /= 2
 	}
 	if gw := ch.GameWorld; gw != nil {
@@ -1195,99 +1186,6 @@ func (ch *Character) broadcastLevelUpEffect() {
 		CharacterID: ch.id,
 		Type:        response.EffectTypeLevelUp,
 	}, nil)
-}
-
-func (ch *Character) debuffTimerKey(flag constant.DebuffFlag) string {
-	return fmt.Sprintf("debuff_%d_%d", flag.Position, flag.Mask)
-}
-
-func (ch *Character) HasDebuff(flag constant.DebuffFlag) bool {
-	if ch.debuffs == nil {
-		return false
-	}
-	_, ok := ch.debuffs[flag]
-	return ok
-}
-
-func (ch *Character) AddDebuff(holder *Debuff) {
-	if holder == nil {
-		return
-	}
-	if ch.debuffs == nil {
-		ch.debuffs = make(map[constant.DebuffFlag]*Debuff)
-	}
-	ch.RemoveTimer(ch.debuffTimerKey(holder.Flag))
-	ch.debuffs[holder.Flag] = holder
-	if holder.Duration > 0 {
-		flag := holder.Flag
-		ch.AddTimer(ch.debuffTimerKey(flag), holder.Duration, false, func() {
-			ch.RemoveTimer(ch.debuffTimerKey(flag))
-			if _, ok := ch.debuffs[flag]; ok {
-				delete(ch.debuffs, flag)
-				ch.Listener.OnDebuffRemoved(ch, []constant.DebuffFlag{flag})
-			}
-		})
-	}
-}
-
-func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration, x int16, skillID uint16, skillLevel uint16) {
-	if skillID == 0 {
-		skillID = flag.DiseaseSkillID
-	}
-	if skillLevel == 0 {
-		skillLevel = 1
-	}
-	holder := &Debuff{
-		Flag:       flag,
-		StartTime:  clock.Now(),
-		Duration:   duration,
-		X:          x,
-		SkillID:    skillID,
-		SkillLevel: skillLevel,
-	}
-	ch.AddDebuff(holder)
-	ch.Listener.OnDebuffAdded(ch, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
-}
-
-func (ch *Character) restoreDebuffs() {
-	restored := make([]*Debuff, 0, len(ch.debuffs))
-	for _, holder := range ch.debuffs {
-		restored = append(restored, holder)
-	}
-	for _, holder := range restored {
-		ch.AddDebuff(holder)
-		ch.Listener.OnDebuffAdded(ch, holder.Flag, holder.X, holder.SkillID, holder.SkillLevel, int32(holder.Duration.Milliseconds()))
-	}
-}
-
-func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
-	var removed []constant.DebuffFlag
-	if ch.debuffs != nil {
-		for _, flag := range flags {
-			ch.RemoveTimer(ch.debuffTimerKey(flag))
-			if _, ok := ch.debuffs[flag]; ok {
-				delete(ch.debuffs, flag)
-				removed = append(removed, flag)
-			}
-		}
-	}
-	if len(removed) > 0 {
-		ch.Listener.OnDebuffRemoved(ch, removed)
-	}
-}
-
-func (ch *Character) GetDiseaseMask() [4]uint32 {
-	var mask [4]uint32
-	if ch.debuffs == nil {
-		return mask
-	}
-	for flag := range ch.debuffs {
-		idx := flag.Position - 1
-		if idx >= 0 && idx < constant.MaxBuffFlag {
-			mask[idx] |= flag.Mask
-		}
-	}
-	return mask
 }
 
 type SpawnPlayerBuffData struct {

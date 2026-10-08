@@ -70,7 +70,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 				continue
 			}
 			if len(wzConsume.CureDebuffs) > 0 {
-				character.RemoveDebuff(wzConsume.CureDebuffs...)
+				character.Debuffs.Remove(wzConsume.CureDebuffs...)
 			}
 			character.addItemBuff(wzConsume)
 			character.recover(wzConsume)
