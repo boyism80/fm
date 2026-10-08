@@ -85,7 +85,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		}
 	}
 	ch.Duey = &Duey{owner: ch}
-	ch.savedLocations = make(map[string]uint32)
+	ch.SavedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
 	ch.keyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	ch.LifeCore.ObjectCore.initTimers()
@@ -101,7 +101,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.LoadBuffs(reply.GetBuffs())
 	ch.Debuffs.Load(reply.GetDebuffs())
 	ch.LoadQuests(reply.GetQuests())
-	ch.LoadSavedLocations(reply.GetSavedLocations())
+	ch.SavedLocations.Load(reply.GetSavedLocations())
 	ch.Buddies.LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
 	return ch
 }
@@ -376,7 +376,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Buffs:          ch.BuffsToProto(),
 		KeyLayout:      ch.KeyLayout().ToProto(),
 		Quests:         ch.QuestsToProto(),
-		SavedLocations: ch.SavedLocationsToProto(),
+		SavedLocations: ch.SavedLocations.ToProto(),
 		Storage:        ch.Storage.ToProto(worldID),
 		MonsterBook:    ch.MonsterBook.ToProto(),
 	}
@@ -478,38 +478,6 @@ func (ch *Character) BuffsToProto() []*internal.Buff {
 			RemainingDurationMs: rem,
 			SkillLevel:          skillLevel,
 			CauserId:            causerID,
-		})
-	}
-	return out
-}
-
-func (ch *Character) LoadSavedLocations(pbs []*internal.SavedLocation) {
-	if ch == nil {
-		return
-	}
-	ch.savedLocations = make(map[string]uint32, len(pbs))
-	for _, pb := range pbs {
-		if pb == nil {
-			continue
-		}
-		name := pb.GetName()
-		if name == "" {
-			continue
-		}
-		ch.savedLocations[name] = pb.GetMapId()
-	}
-}
-
-func (ch *Character) SavedLocationsToProto() []*internal.SavedLocation {
-	if ch == nil || len(ch.savedLocations) == 0 {
-		return nil
-	}
-	out := make([]*internal.SavedLocation, 0, len(ch.savedLocations))
-	for name, mapID := range ch.savedLocations {
-		out = append(out, &internal.SavedLocation{
-			CharacterId: ch.GetID(),
-			Name:        name,
-			MapId:       mapID,
 		})
 	}
 	return out

@@ -2521,7 +2521,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.SaveLocation(L.CheckString(2))
+			ch.SavedLocations.Save(L.CheckString(2))
 			return 0
 		},
 		"saved_location": func(L *lua.LState) int {
@@ -2531,7 +2531,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			mapID, ok := ch.SavedLocation(L.CheckString(2))
+			mapID, ok := ch.SavedLocations.Find(L.CheckString(2))
 			if !ok {
 				L.Push(lua.LNil)
 				return 1
@@ -2546,7 +2546,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.ClearSavedLocation(L.CheckString(2))
+			ch.SavedLocations.Clear(L.CheckString(2))
 			return 0
 		},
 		"max_hp": func(L *lua.LState) int {

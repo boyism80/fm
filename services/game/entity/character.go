@@ -69,7 +69,7 @@ type Character struct {
 	GM              GMMode
 	stateMachine    *StateMachine
 	carnivalTeam    *CarnivalTeam
-	savedLocations  map[string]uint32
+	SavedLocations  *SavedLocations
 	loggedOut       atomic.Bool
 	logoutEntry     chan *internal.CharacterSaveEntry
 	destination     atomic.Pointer[Map]
