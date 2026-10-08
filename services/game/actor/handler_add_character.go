@@ -24,7 +24,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 	msg.Character.Wedding.NotifySpouseMap(ctx, msg.Init)
 	if msg.Init {
-		msg.Character.SendBuddyLoginSync()
+		msg.Character.Buddies.SyncLogin()
 		msg.Character.Duey.CheckArrivals(ctx)
 	}
 }

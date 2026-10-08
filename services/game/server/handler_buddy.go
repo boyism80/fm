@@ -66,7 +66,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 				}
 				if view := reply.GetRequesterView(); view != nil {
 					entry := entity.BuddyListEntryFromProto(view)
-					ch.BuddyList().Upsert(entry)
+					ch.Buddies.Upsert(entry)
 					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.ToResponse()})
 				}
 				return nil
@@ -94,7 +94,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 				}
 				if view := reply.GetAccepterView(); view != nil {
 					entry := entity.BuddyListEntryFromProto(view)
-					ch.BuddyList().Upsert(entry)
+					ch.Buddies.Upsert(entry)
 					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.ToResponse()})
 				}
 				return nil
@@ -120,8 +120,8 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 					log.Printf("Buddy(delete): failed character=%d buddy=%d code=%v", charID, buddyID, reply.GetErrorCode())
 					return nil
 				}
-				ch.BuddyList().Remove(buddyID)
-				ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncDelete, ch.BuddyList().SnapshotForClient())
+				ch.Buddies.Remove(buddyID)
+				ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncDelete, ch.Buddies.SnapshotForClient())
 				return nil
 			},
 		).OnError(func(err error) {

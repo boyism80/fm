@@ -1,7 +1,6 @@
 package entity
 
 import (
-	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -104,15 +103,10 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	if ch.Quests != nil {
 		charDTO.RecordExByQuest = ch.Quests.RecordExWireMap()
 	}
-	if bl := ch.BuddyList(); bl != nil {
-		capacity := bl.Capacity()
-		if capacity > 255 {
-			charDTO.BuddyCapacity = 255
-		} else {
-			charDTO.BuddyCapacity = uint8(capacity)
-		}
+	if capacity := ch.Buddies.Capacity(); capacity > 255 {
+		charDTO.BuddyCapacity = 255
 	} else {
-		charDTO.BuddyCapacity = pconst.DefaultBuddyCapacity
+		charDTO.BuddyCapacity = uint8(capacity)
 	}
 
 	charDTO.Random1 = &ch.random[0]

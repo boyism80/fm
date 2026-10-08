@@ -50,12 +50,11 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 			Face:      p.GetFace(),
 			Hair:      p.GetHair(),
 		},
-		level:     uint8(p.GetLevel()),
-		Class:     uint16(p.GetClassId()),
-		Role:      constant.CharacterRole(p.GetRole()),
-		GM:        GMMode{Hidden: p.GetHidden()},
-		exp:       p.GetExp(),
-		buddyList: NewBuddyList(),
+		level: uint8(p.GetLevel()),
+		Class: uint16(p.GetClassId()),
+		Role:  constant.CharacterRole(p.GetRole()),
+		GM:    GMMode{Hidden: p.GetHidden()},
+		exp:   p.GetExp(),
 
 		random: [3]stream.RandomStream{stream.NewRandomStream(), stream.NewRandomStream(), stream.NewRandomStream()},
 	}
@@ -63,6 +62,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Points = &Points{owner: ch, AP: uint16(p.GetAbilityPoint()), SP: uint16(p.GetSkillPoint()), HPMPUsed: uint16(p.GetHpApUsed())}
 	ch.Party = &PartyMembership{owner: ch, id: partyID}
 	ch.Guild = &GuildMembership{owner: ch, id: guildID, invites: make(map[uint32]time.Time)}
+	ch.Buddies = NewBuddyList(ch)
 	ch.Dialog = NewDialog(ch)
 	ch.Buffs = NewBuffs(ch)
 	ch.Debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
@@ -102,7 +102,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Debuffs.Load(reply.GetDebuffs())
 	ch.LoadQuests(reply.GetQuests())
 	ch.LoadSavedLocations(reply.GetSavedLocations())
-	ch.BuddyList().LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
+	ch.Buddies.LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
 	return ch
 }
 

@@ -17,31 +17,28 @@ type BuddyListEntry struct {
 }
 
 type BuddyList struct {
+	owner    *Character
 	capacity uint32
 	entries  map[uint32]BuddyListEntry
 }
 
-func NewBuddyList() *BuddyList {
+func NewBuddyList(owner *Character) *BuddyList {
 	return &BuddyList{
+		owner:    owner,
 		capacity: uint32(pconst.DefaultBuddyCapacity),
 		entries:  make(map[uint32]BuddyListEntry),
 	}
 }
 
 func (bl *BuddyList) SetCapacity(n uint32) {
-	if bl == nil {
-		return
-	}
 	if n > 255 {
 		n = 255
 	}
 	bl.capacity = n
+	bl.owner.Listener.OnBuddyCapacity(bl.owner, uint8(bl.Capacity()))
 }
 
 func (bl *BuddyList) Capacity() uint32 {
-	if bl == nil {
-		return uint32(pconst.DefaultBuddyCapacity)
-	}
 	if bl.capacity == 0 {
 		return uint32(pconst.DefaultBuddyCapacity)
 	}
@@ -49,16 +46,10 @@ func (bl *BuddyList) Capacity() uint32 {
 }
 
 func (bl *BuddyList) Clear() {
-	if bl == nil {
-		return
-	}
 	bl.entries = make(map[uint32]BuddyListEntry)
 }
 
 func (bl *BuddyList) LoadFromProto(entries []*internal.BuddyEntry, capacity uint32) {
-	if bl == nil {
-		return
-	}
 	bl.entries = make(map[uint32]BuddyListEntry)
 	if capacity > 0 {
 		bl.capacity = capacity
@@ -72,14 +63,14 @@ func (bl *BuddyList) LoadFromProto(entries []*internal.BuddyEntry, capacity uint
 }
 
 func (bl *BuddyList) Upsert(entry BuddyListEntry) {
-	if bl == nil || entry.CharacterID == 0 {
+	if entry.CharacterID == 0 {
 		return
 	}
 	bl.entries[entry.CharacterID] = entry
 }
 
 func (bl *BuddyList) Remove(characterID uint32) bool {
-	if bl == nil || characterID == 0 {
+	if characterID == 0 {
 		return false
 	}
 	if _, ok := bl.entries[characterID]; !ok {
@@ -90,7 +81,7 @@ func (bl *BuddyList) Remove(characterID uint32) bool {
 }
 
 func (bl *BuddyList) SetChannel(characterID uint32, channel int32) bool {
-	if bl == nil || characterID == 0 {
+	if characterID == 0 {
 		return false
 	}
 	entry, ok := bl.entries[characterID]
@@ -103,9 +94,6 @@ func (bl *BuddyList) SetChannel(characterID uint32, channel int32) bool {
 }
 
 func (bl *BuddyList) SnapshotForClient() []response.BuddyEntry {
-	if bl == nil {
-		return nil
-	}
 	out := make([]response.BuddyEntry, 0, len(bl.entries))
 	for _, entry := range bl.entries {
 		out = append(out, entry.ToResponse())
@@ -114,6 +102,10 @@ func (bl *BuddyList) SnapshotForClient() []response.BuddyEntry {
 		return out[i].CharacterID < out[j].CharacterID
 	})
 	return out
+}
+
+func (bl *BuddyList) SyncLogin() {
+	bl.owner.Listener.OnBuddyListUpdate(bl.owner, pconst.BuddyListSyncLogin, bl.SnapshotForClient())
 }
 
 func BuddyListEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {

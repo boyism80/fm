@@ -22,6 +22,6 @@ func (h *DeliverBuddyChannelUpdateHandler) Handle(ctx actor.Context, a *GameLogi
 	if ch == nil {
 		return
 	}
-	ch.BuddyList().SetChannel(msg.BuddyCharacterID, msg.Channel)
+	ch.Buddies.SetChannel(msg.BuddyCharacterID, msg.Channel)
 	ch.Listener.OnBuddyChannelUpdate(ch, msg.BuddyCharacterID, msg.Channel)
 }

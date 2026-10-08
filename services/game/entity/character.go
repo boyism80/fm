@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/core/luax"
-	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
@@ -66,7 +65,7 @@ type Character struct {
 	HomingTargetOID *uint32
 	Party           *PartyMembership
 	Guild           *GuildMembership
-	buddyList       *BuddyList
+	Buddies         *BuddyList
 	GM              GMMode
 	stateMachine    *StateMachine
 	carnivalTeam    *CarnivalTeam
@@ -298,11 +297,6 @@ func (ch *Character) SetSkin(color uint8) {
 		constant.StatSkin: int32(color),
 	}, false)
 	ch.Listener.OnUpdateCharacterLook(ch)
-}
-
-func (ch *Character) SetBuddyCapacity(n uint32) {
-	ch.BuddyList().SetCapacity(n)
-	ch.Listener.OnBuddyCapacity(ch, uint8(ch.BuddyList().Capacity()))
 }
 
 func (ch *Character) MapMessage(messageType constant.ServerMessageType, message string) {
@@ -733,21 +727,6 @@ func (ch *Character) ToProtoGuildMember(worldID uint32, channelID int32, rank in
 		return m.ToProto()
 	}
 	return nil
-}
-
-func (ch *Character) BuddyList() *BuddyList {
-	if ch == nil {
-		return nil
-	}
-	if ch.buddyList == nil {
-		ch.buddyList = NewBuddyList()
-	}
-	return ch.buddyList
-}
-
-func (ch *Character) SendBuddyLoginSync() {
-	entries := ch.BuddyList().SnapshotForClient()
-	ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncLogin, entries)
 }
 
 func (ch *Character) Message(message string) {

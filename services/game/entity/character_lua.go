@@ -3898,10 +3898,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				L.Push(lua.LNumber(ch.BuddyList().Capacity()))
+				L.Push(lua.LNumber(ch.Buddies.Capacity()))
 				return 1
 			}
-			ch.SetBuddyCapacity(uint32(L.CheckInt(2)))
+			ch.Buddies.SetCapacity(uint32(L.CheckInt(2)))
 			return 0
 		},
 		"sync_item": func(L *lua.LState) int {
