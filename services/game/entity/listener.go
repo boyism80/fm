@@ -58,18 +58,18 @@ type CharacterListener interface {
 	OnDueyResult(ch *Character, result pconst.DueyResult)
 	OnDueyRemoved(ch *Character, parcelID uint32, reason uint8)
 	OnDueyArrival(ch *Character, sender string, quick bool, count int)
-	FindHiredMerchantAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FindHiredMerchantReply]
-	OpenHiredMerchantAsync(ctx actor.Context, ch *Character, merchant *internal.HiredMerchant) *async.Promise[*internal.OpenHiredMerchantReply]
+	FindEntrustedShopAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FindEntrustedShopReply]
+	OpenEntrustedShopAsync(ctx actor.Context, ch *Character, shop *internal.EntrustedShop) *async.Promise[*internal.OpenEntrustedShopReply]
 	ClaimStoreBankAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.ClaimStoreBankReply]
 	OnEntrustedShopCheck(ch *Character, result pconst.EntrustedShopCheck, mapID uint32, channel uint8)
-	OnMiniRoomEntered(ch *Character, hm *HiredMerchant, firstTime bool)
+	OnMiniRoomEntered(ch *Character, es *EntrustedShop, firstTime bool)
 	OnMiniRoomEnterFailed(ch *Character, code pconst.MiniRoomEnterError)
 	OnMiniRoomVisited(ch *Character, slot uint8, visitor *Character)
 	OnMiniRoomChat(ch *Character, slot uint8, text string)
 	OnMiniRoomLeft(ch *Character, slot uint8, reason pconst.MiniRoomLeaveReason)
-	OnMiniRoomItems(ch *Character, hm *HiredMerchant)
+	OnMiniRoomItems(ch *Character, es *EntrustedShop)
 	OnMiniRoomBuyFailed(ch *Character, result pconst.MiniRoomBuyResult)
-	OnMiniRoomArranged(ch *Character, hm *HiredMerchant)
+	OnMiniRoomArranged(ch *Character, es *EntrustedShop)
 	OnMiniRoomClosed(ch *Character, result pconst.MiniRoomCloseResult)
 	OnMiniRoomMesoWithdrawn(ch *Character)
 	OnOpenStoreBank(ch *Character, npcID uint32)

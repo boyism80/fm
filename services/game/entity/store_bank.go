@@ -26,11 +26,11 @@ var (
 )
 
 type StoreBank struct {
-	owner    *Character
-	merchant *internal.HiredMerchant
-	Meso     int32
-	Items    []*HiredMerchantItem
-	pending  bool
+	owner   *Character
+	shop    *internal.EntrustedShop
+	Meso    int32
+	Items   []*EntrustedShopItem
+	pending bool
 }
 
 func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
@@ -39,16 +39,16 @@ func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
 	}
 
 	sb.pending = true
-	sb.owner.Listener.FindHiredMerchantAsync(actx, sb.owner).Do(func(v *internal.FindHiredMerchantReply) error {
+	sb.owner.Listener.FindEntrustedShopAsync(actx, sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
 		sb.pending = false
-		merchant := v.GetMerchant()
+		shop := v.GetShop()
 		switch {
-		case merchant == nil || merchant.GetCharacterId() != sb.owner.GetID():
+		case shop == nil || shop.GetCharacterId() != sb.owner.GetID():
 			sb.owner.Listener.OnStoreBankLocation(sb.owner, npcID, StoreBankNothingMapID, StoreBankNothingChannel)
-		case merchant.GetClosedAtUnixMs() == 0:
-			sb.owner.Listener.OnStoreBankLocation(sb.owner, npcID, merchant.GetMapId(), uint8(merchant.GetChannelId()))
+		case shop.GetClosedAtUnixMs() == 0:
+			sb.owner.Listener.OnStoreBankLocation(sb.owner, npcID, shop.GetMapId(), uint8(shop.GetChannelId()))
 		default:
-			sb.load(merchant)
+			sb.load(shop)
 			sb.owner.Listener.OnOpenStoreBank(sb.owner, npcID)
 		}
 		return nil
@@ -58,16 +58,16 @@ func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
 	})
 }
 
-func (sb *StoreBank) load(merchant *internal.HiredMerchant) {
-	sb.merchant = merchant
-	sb.Meso = merchant.GetMeso()
+func (sb *StoreBank) load(shop *internal.EntrustedShop) {
+	sb.shop = shop
+	sb.Meso = shop.GetMeso()
 	sb.Items = nil
-	for _, pb := range merchant.GetItems() {
+	for _, pb := range shop.GetItems() {
 		item, err := NewItemFromInternalProto(pb.GetItem(), sb.owner.GameWorld)
 		if err != nil || pb.GetBundles() == 0 {
 			continue
 		}
-		sb.Items = append(sb.Items, &HiredMerchantItem{
+		sb.Items = append(sb.Items, &EntrustedShopItem{
 			Item:      item,
 			Bundles:   uint16(pb.GetBundles()),
 			PerBundle: uint16(pb.GetPerBundle()),
@@ -77,13 +77,13 @@ func (sb *StoreBank) load(merchant *internal.HiredMerchant) {
 }
 
 func (sb *StoreBank) Close() {
-	sb.merchant = nil
+	sb.shop = nil
 	sb.Items = nil
 	sb.Meso = 0
 }
 
 func (sb *StoreBank) fee() (uint32, int32) {
-	days := int64(clock.Now().Sub(time.UnixMilli(sb.merchant.GetClosedAtUnixMs())) / StoreBankFeeGrace)
+	days := int64(clock.Now().Sub(time.UnixMilli(sb.shop.GetClosedAtUnixMs())) / StoreBankFeeGrace)
 	if days <= 0 {
 		return 0, 0
 	}
@@ -96,7 +96,7 @@ func (sb *StoreBank) fee() (uint32, int32) {
 }
 
 func (sb *StoreBank) Withdraw() error {
-	if sb.merchant == nil {
+	if sb.shop == nil {
 		return ErrStoreBankClosed
 	}
 
@@ -127,7 +127,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 }
 
 func (sb *StoreBank) Confirm(actx actor.Context) error {
-	if sb.merchant == nil {
+	if sb.shop == nil {
 		return ErrStoreBankClosed
 	}
 	if sb.pending {
@@ -142,7 +142,7 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 	sb.pending = true
 	sb.owner.Listener.ClaimStoreBankAsync(actx, sb.owner).Do(func(v *internal.ClaimStoreBankReply) error {
 		sb.pending = false
-		claimed := v.GetMerchant()
+		claimed := v.GetShop()
 		if claimed == nil {
 			sb.Close()
 			sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultInventoryFull)
@@ -152,8 +152,8 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 		sb.load(claimed)
 		_, fee := sb.fee()
 		if result := sb.check(fee); result != pconst.StoreBankResultClaimed {
-			sb.owner.Listener.OpenHiredMerchantAsync(actx, sb.owner, claimed).OnError(func(err error) {
-				log.Printf("StoreBank.Confirm restore character=%d merchant=%d: %v", sb.owner.GetID(), claimed.GetMerchantId(), err)
+			sb.owner.Listener.OpenEntrustedShopAsync(actx, sb.owner, claimed).OnError(func(err error) {
+				log.Printf("StoreBank.Confirm restore character=%d shop=%d: %v", sb.owner.GetID(), claimed.GetShopId(), err)
 			})
 			sb.Close()
 			sb.owner.Listener.OnStoreBankResult(sb.owner, result)

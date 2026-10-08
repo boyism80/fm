@@ -89,8 +89,8 @@ func (p *MiniRoomEnter) Opcode() uint16 {
 
 func (p *MiniRoomEnter) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(pconst.MiniRoomResultEnter))
-	writer.WriteU8(pconst.MiniRoomTypeHiredMerchant)
-	writer.WriteU8(pconst.MiniRoomHiredMerchantUsers)
+	writer.WriteU8(pconst.MiniRoomTypeEntrustedShop)
+	writer.WriteU8(pconst.MiniRoomEntrustedShopUsers)
 	writer.WriteU8(p.MySlot)
 	writer.WriteU8(0)
 	writer.WriteU32(p.PermitItemID)

@@ -18,13 +18,13 @@ import (
 )
 
 const (
-	HiredMerchantMaxItems       = 10
-	HiredMerchantVisitors       = 3
-	HiredMerchantDuration       = 24 * time.Hour
-	HiredMerchantSpacingSq      = 15000
-	HiredMerchantMaxBundleTotal = math.MaxInt16
-	hiredMerchantCloseTimer     = "hired_merchant_close"
-	hiredMerchantPortalType     = 2
+	EntrustedShopMaxItems       = 10
+	EntrustedShopVisitors       = 3
+	EntrustedShopDuration       = 24 * time.Hour
+	EntrustedShopSpacingSq      = 15000
+	EntrustedShopMaxBundleTotal = math.MaxInt16
+	entrustedShopCloseTimer     = "entrusted_shop_close"
+	entrustedShopPortalType     = 2
 )
 
 var (
@@ -53,25 +53,25 @@ func (e *MiniRoomBuyError) Error() string {
 	return fmt.Sprintf("mini room buy failed: %d", e.Result)
 }
 
-type HiredMerchantItem struct {
+type EntrustedShopItem struct {
 	Item      Item
 	Bundles   uint16
 	PerBundle uint16
 	Price     int32
 }
 
-func (hi *HiredMerchantItem) count() uint16 {
+func (hi *EntrustedShopItem) count() uint16 {
 	return hi.Bundles * hi.PerBundle
 }
 
-type HiredMerchantSale struct {
+type EntrustedShopSale struct {
 	ItemID  uint32
 	Bundles uint16
 	Total   int32
 	Buyer   string
 }
 
-type HiredMerchant struct {
+type EntrustedShop struct {
 	ObjectCore
 	ID         uint32
 	AccountID  uint32
@@ -81,86 +81,86 @@ type HiredMerchant struct {
 	ItemID     uint32
 	Title      string
 	Meso       int32
-	Items      []*HiredMerchantItem
-	Sold       []HiredMerchantSale
+	Items      []*EntrustedShopItem
+	Sold       []EntrustedShopSale
 	OpenedAt   time.Time
 	soldInform bool
 	published  bool
 	owner      *Character
-	Visitors   [HiredMerchantVisitors]*Character
+	Visitors   [EntrustedShopVisitors]*Character
 	saving     bool
 	dirty      bool
 	closing    bool
 	entries    map[uint32]*internal.CharacterSaveEntry
 }
 
-func (hm *HiredMerchant) GetObjectType() constant.ObjectType {
-	return constant.ObjectTypeHiredMerchant
+func (es *EntrustedShop) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeEntrustedShop
 }
 
-func (hm *HiredMerchant) Is(typ constant.ObjectType) bool {
-	return hm.GetObjectType().Has(typ)
+func (es *EntrustedShop) Is(typ constant.ObjectType) bool {
+	return es.GetObjectType().Has(typ)
 }
 
-func (hm *HiredMerchant) balloon() response.HiredMerchantBalloon {
+func (es *EntrustedShop) balloon() response.EntrustedShopBalloon {
 	users := uint8(1)
-	for _, visitor := range hm.Visitors {
+	for _, visitor := range es.Visitors {
 		if visitor != nil {
 			users++
 		}
 	}
-	return response.HiredMerchantBalloon{
-		SN:     hm.OID,
-		Title:  hm.Title,
-		ItemID: hm.ItemID,
+	return response.EntrustedShopBalloon{
+		SN:     es.OID,
+		Title:  es.Title,
+		ItemID: es.ItemID,
 		Users:  users,
 	}
 }
 
-func (hm *HiredMerchant) SendSpawnSyncToViewer(viewer *Character) {
-	if hm.published == false {
+func (es *EntrustedShop) SendSpawnSyncToViewer(viewer *Character) {
+	if es.published == false {
 		return
 	}
 	footholdID := uint16(0)
-	if foothold, ok := hm.Map.Wz.Footholds.Find(types.Point[int16]{X: hm.Position.X, Y: hm.Position.Y}); ok {
+	if foothold, ok := es.Map.Wz.Footholds.Find(types.Point[int16]{X: es.Position.X, Y: es.Position.Y}); ok {
 		footholdID = uint16(foothold.ID)
 	}
-	viewer.Send(&response.SpawnHiredMerchant{
-		EmployerID:           hm.OwnerID,
-		X:                    hm.Position.X,
-		Y:                    hm.Position.Y,
+	viewer.Send(&response.SpawnEntrustedShop{
+		EmployerID:           es.OwnerID,
+		X:                    es.Position.X,
+		Y:                    es.Position.Y,
 		Foothold:             footholdID,
-		OwnerName:            hm.OwnerName,
-		HiredMerchantBalloon: hm.balloon(),
+		OwnerName:            es.OwnerName,
+		EntrustedShopBalloon: es.balloon(),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (hm *HiredMerchant) SendDestroySyncToViewer(viewer *Character) {
-	if hm.published == false {
+func (es *EntrustedShop) SendDestroySyncToViewer(viewer *Character) {
+	if es.published == false {
 		return
 	}
-	viewer.Send(&response.DestroyHiredMerchant{EmployerID: hm.OwnerID}, types.SEND_POLICY_ENCRYPT)
+	viewer.Send(&response.DestroyEntrustedShop{EmployerID: es.OwnerID}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (hm *HiredMerchant) updateBalloon() {
-	if hm.published == false {
+func (es *EntrustedShop) updateBalloon() {
+	if es.published == false {
 		return
 	}
-	hm.Broadcast(&response.UpdateHiredMerchant{
-		EmployerID:           hm.OwnerID,
-		HiredMerchantBalloon: hm.balloon(),
+	es.Broadcast(&response.UpdateEntrustedShop{
+		EmployerID:           es.OwnerID,
+		EntrustedShopBalloon: es.balloon(),
 	}, nil)
 }
 
-func (hm *HiredMerchant) accepting() bool {
-	return hm.published && hm.owner == nil
+func (es *EntrustedShop) accepting() bool {
+	return es.published && es.owner == nil
 }
 
-func (hm *HiredMerchant) SlotOf(ch *Character) (uint8, bool) {
-	if hm.owner == ch {
+func (es *EntrustedShop) SlotOf(ch *Character) (uint8, bool) {
+	if es.owner == ch {
 		return 0, true
 	}
-	for i, visitor := range hm.Visitors {
+	for i, visitor := range es.Visitors {
 		if visitor == ch {
 			return uint8(i + 1), true
 		}
@@ -168,12 +168,12 @@ func (hm *HiredMerchant) SlotOf(ch *Character) (uint8, bool) {
 	return 0, false
 }
 
-func (hm *HiredMerchant) members() []*Character {
-	members := make([]*Character, 0, HiredMerchantVisitors+1)
-	if hm.owner != nil {
-		members = append(members, hm.owner)
+func (es *EntrustedShop) members() []*Character {
+	members := make([]*Character, 0, EntrustedShopVisitors+1)
+	if es.owner != nil {
+		members = append(members, es.owner)
 	}
-	for _, visitor := range hm.Visitors {
+	for _, visitor := range es.Visitors {
 		if visitor != nil {
 			members = append(members, visitor)
 		}
@@ -181,11 +181,11 @@ func (hm *HiredMerchant) members() []*Character {
 	return members
 }
 
-func (hm *HiredMerchant) Elapsed() time.Duration {
-	return clock.Now().Sub(hm.OpenedAt)
+func (es *EntrustedShop) Elapsed() time.Duration {
+	return clock.Now().Sub(es.OpenedAt)
 }
 
-func (hm *HiredMerchant) tax(meso int32) int32 {
+func (es *EntrustedShop) tax(meso int32) int32 {
 	var permille int64
 	switch {
 	case meso >= 100000000:
@@ -204,38 +204,38 @@ func (hm *HiredMerchant) tax(meso int32) int32 {
 	return int32(int64(meso) * permille / 1000)
 }
 
-func (hm *HiredMerchant) Visit(ch *Character) error {
+func (es *EntrustedShop) Visit(ch *Character) error {
 	if ch.MiniRoom != nil {
 		return ErrMiniRoomInvalid
 	}
 
-	if ch.GetID() == hm.OwnerID {
-		if hm.published == false || hm.owner != nil {
+	if ch.GetID() == es.OwnerID {
+		if es.published == false || es.owner != nil {
 			return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 		}
-		for i, visitor := range hm.Visitors {
+		for i, visitor := range es.Visitors {
 			if visitor == nil {
 				continue
 			}
-			hm.Visitors[i] = nil
+			es.Visitors[i] = nil
 			visitor.MiniRoom = nil
 			visitor.Listener.OnMiniRoomLeft(visitor, uint8(i+1), pconst.MiniRoomLeaveOrganizing)
 		}
-		hm.owner = ch
-		ch.MiniRoom = hm
-		hm.updateBalloon()
-		ch.Listener.OnMiniRoomEntered(ch, hm, false)
+		es.owner = ch
+		ch.MiniRoom = es
+		es.updateBalloon()
+		ch.Listener.OnMiniRoomEntered(ch, es, false)
 		return nil
 	}
 
-	if hm.published == false {
+	if es.published == false {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}
-	if hm.owner != nil {
+	if es.owner != nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterOrganizing}
 	}
 	index := -1
-	for i, visitor := range hm.Visitors {
+	for i, visitor := range es.Visitors {
 		if visitor == nil {
 			index = i
 			break
@@ -246,58 +246,58 @@ func (hm *HiredMerchant) Visit(ch *Character) error {
 	}
 
 	slot := uint8(index + 1)
-	for _, member := range hm.members() {
+	for _, member := range es.members() {
 		member.Listener.OnMiniRoomVisited(member, slot, ch)
 	}
-	hm.Visitors[index] = ch
-	ch.MiniRoom = hm
-	hm.updateBalloon()
-	ch.Listener.OnMiniRoomEntered(ch, hm, false)
+	es.Visitors[index] = ch
+	ch.MiniRoom = es
+	es.updateBalloon()
+	ch.Listener.OnMiniRoomEntered(ch, es, false)
 	return nil
 }
 
-func (hm *HiredMerchant) Leave(ch *Character) {
-	slot, ok := hm.SlotOf(ch)
+func (es *EntrustedShop) Leave(ch *Character) {
+	slot, ok := es.SlotOf(ch)
 	if ok == false {
 		return
 	}
 
 	ch.MiniRoom = nil
 	if slot != 0 {
-		hm.Visitors[slot-1] = nil
-		for _, member := range hm.members() {
+		es.Visitors[slot-1] = nil
+		for _, member := range es.members() {
 			member.Listener.OnMiniRoomLeft(member, slot, pconst.MiniRoomLeaveExit)
 		}
-		hm.updateBalloon()
+		es.updateBalloon()
 		return
 	}
 
-	hm.owner = nil
-	if hm.published {
-		hm.updateBalloon()
+	es.owner = nil
+	if es.published {
+		es.updateBalloon()
 		return
 	}
-	hm.GameWorld.GetMapSystem().Call(hm.Map, hm.close)
+	es.GameWorld.GetMapSystem().Call(es.Map, es.close)
 }
 
-func (hm *HiredMerchant) Chat(ch *Character, message string) error {
-	slot, ok := hm.SlotOf(ch)
+func (es *EntrustedShop) Chat(ch *Character, message string) error {
+	slot, ok := es.SlotOf(ch)
 	if ok == false {
 		return ErrMiniRoomInvalid
 	}
 
 	text := fmt.Sprintf("%s : %s", ch.GetName(), message)
-	for _, member := range hm.members() {
+	for _, member := range es.members() {
 		member.Listener.OnMiniRoomChat(member, slot, text)
 	}
 	return nil
 }
 
-func (hm *HiredMerchant) AddItem(actx actor.Context, ch *Character, invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) error {
-	if hm.owner != ch {
+func (es *EntrustedShop) AddItem(actx actor.Context, ch *Character, invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) error {
+	if es.owner != ch {
 		return ErrMiniRoomNotOwner
 	}
-	if len(hm.Items) >= HiredMerchantMaxItems {
+	if len(es.Items) >= EntrustedShopMaxItems {
 		return ErrMiniRoomFull
 	}
 	if bundles == 0 || perBundle == 0 || price <= 0 {
@@ -320,42 +320,42 @@ func (hm *HiredMerchant) AddItem(actx actor.Context, ch *Character, invType cons
 		perBundle = item.GetCount()
 	}
 	total := int(bundles) * int(perBundle)
-	if total > HiredMerchantMaxBundleTotal || total > int(item.GetCount()) {
+	if total > EntrustedShopMaxBundleTotal || total > int(item.GetCount()) {
 		return ErrMiniRoomInvalid
 	}
 	if int64(price)*int64(bundles) > math.MaxInt32 {
 		return ErrMiniRoomInvalid
 	}
 	if model.IsOnly() {
-		for _, listed := range hm.Items {
+		for _, listed := range es.Items {
 			if listed.Item.GetModel().GetID() == model.GetID() {
 				return ErrMiniRoomOnlyHeld
 			}
 		}
 	}
 
-	listed := &HiredMerchantItem{
+	listed := &EntrustedShopItem{
 		Item:      item.Clone(perBundle),
 		Bundles:   bundles,
 		PerBundle: perBundle,
 		Price:     price,
 	}
 	ch.Inventory.RemoveItem(invType, slot, uint16(total))
-	hm.Items = append(hm.Items, listed)
-	ch.Listener.OnMiniRoomItems(ch, hm)
-	hm.save(actx, false, ch)
+	es.Items = append(es.Items, listed)
+	ch.Listener.OnMiniRoomItems(ch, es)
+	es.save(actx, false, ch)
 	return nil
 }
 
-func (hm *HiredMerchant) RemoveItem(actx actor.Context, ch *Character, index uint16) error {
-	if hm.owner != ch {
+func (es *EntrustedShop) RemoveItem(actx actor.Context, ch *Character, index uint16) error {
+	if es.owner != ch {
 		return ErrMiniRoomNotOwner
 	}
-	if int(index) >= len(hm.Items) {
+	if int(index) >= len(es.Items) {
 		return ErrMiniRoomItemNotFound
 	}
 
-	listed := hm.Items[index]
+	listed := es.Items[index]
 	if listed.Bundles > 0 {
 		model := listed.Item.GetModel()
 		if model.IsOnly() && ch.Inventory.HasItem(model.GetID()) {
@@ -368,73 +368,73 @@ func (hm *HiredMerchant) RemoveItem(actx actor.Context, ch *Character, index uin
 		ch.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
 	}
 
-	hm.Items = append(hm.Items[:index:index], hm.Items[index+1:]...)
-	ch.Listener.OnMiniRoomItems(ch, hm)
-	hm.save(actx, false, ch)
+	es.Items = append(es.Items[:index:index], es.Items[index+1:]...)
+	ch.Listener.OnMiniRoomItems(ch, es)
+	es.save(actx, false, ch)
 	return nil
 }
 
-func (hm *HiredMerchant) Open(ch *Character) error {
-	if hm.owner != ch || hm.published {
+func (es *EntrustedShop) Open(ch *Character) error {
+	if es.owner != ch || es.published {
 		return ErrMiniRoomNotOwner
 	}
-	if len(hm.Items) == 0 {
+	if len(es.Items) == 0 {
 		return ErrMiniRoomInvalid
 	}
 
-	hm.owner = nil
+	es.owner = nil
 	ch.MiniRoom = nil
-	hm.published = true
-	hm.BroadcastCall(func(obj Object) {
+	es.published = true
+	es.BroadcastCall(func(obj Object) {
 		viewer, ok := obj.(*Character)
 		if ok == false {
 			return
 		}
-		hm.SendSpawnSyncToViewer(viewer)
+		es.SendSpawnSyncToViewer(viewer)
 	}, nil)
-	hm.scheduleClose()
+	es.scheduleClose()
 	return nil
 }
 
-func (hm *HiredMerchant) scheduleClose() {
-	remaining := max(HiredMerchantDuration-hm.Elapsed(), 0)
-	hm.AddTimer(hiredMerchantCloseTimer, remaining, false, func() {
-		hm.GameWorld.GetMapSystem().Call(hm.Map, func(ctx actor.Context) {
-			if hm.Map == nil {
+func (es *EntrustedShop) scheduleClose() {
+	remaining := max(EntrustedShopDuration-es.Elapsed(), 0)
+	es.AddTimer(entrustedShopCloseTimer, remaining, false, func() {
+		es.GameWorld.GetMapSystem().Call(es.Map, func(ctx actor.Context) {
+			if es.Map == nil {
 				return
 			}
-			for _, member := range hm.members() {
-				slot, _ := hm.SlotOf(member)
+			for _, member := range es.members() {
+				slot, _ := es.SlotOf(member)
 				member.MiniRoom = nil
 				member.Listener.OnMiniRoomLeft(member, slot, pconst.MiniRoomLeaveTimeUp)
 			}
-			hm.owner = nil
-			hm.Visitors = [HiredMerchantVisitors]*Character{}
-			hm.close(ctx)
+			es.owner = nil
+			es.Visitors = [EntrustedShopVisitors]*Character{}
+			es.close(ctx)
 		})
 	})
 }
 
-func (hm *HiredMerchant) EndMaintenance(ch *Character) error {
-	if hm.owner != ch || hm.published == false {
+func (es *EntrustedShop) EndMaintenance(ch *Character) error {
+	if es.owner != ch || es.published == false {
 		return ErrMiniRoomNotOwner
 	}
 
-	hm.owner = nil
+	es.owner = nil
 	ch.MiniRoom = nil
-	hm.updateBalloon()
+	es.updateBalloon()
 	return nil
 }
 
-func (hm *HiredMerchant) Buy(actx actor.Context, ch *Character, index uint16, bundles uint16) error {
-	if _, ok := hm.SlotOf(ch); ok == false || hm.accepting() == false {
+func (es *EntrustedShop) Buy(actx actor.Context, ch *Character, index uint16, bundles uint16) error {
+	if _, ok := es.SlotOf(ch); ok == false || es.accepting() == false {
 		return ErrMiniRoomInvalid
 	}
-	if int(index) >= len(hm.Items) || bundles == 0 {
+	if int(index) >= len(es.Items) || bundles == 0 {
 		return &MiniRoomBuyError{Result: pconst.MiniRoomBuyNotEnoughItem}
 	}
 
-	listed := hm.Items[index]
+	listed := es.Items[index]
 	if bundles > listed.Bundles {
 		return &MiniRoomBuyError{Result: pconst.MiniRoomBuyNotEnoughItem}
 	}
@@ -445,8 +445,8 @@ func (hm *HiredMerchant) Buy(actx actor.Context, ch *Character, index uint16, bu
 	if ch.Inventory.Meso < int32(total) {
 		return &MiniRoomBuyError{Result: pconst.MiniRoomBuyNotEnoughMeso}
 	}
-	income := int32(total) - hm.tax(int32(total))
-	if income > math.MaxInt32-hm.Meso {
+	income := int32(total) - es.tax(int32(total))
+	if income > math.MaxInt32-es.Meso {
 		return &MiniRoomBuyError{Result: pconst.MiniRoomBuySellerLimit}
 	}
 	model := listed.Item.GetModel()
@@ -465,95 +465,95 @@ func (hm *HiredMerchant) Buy(actx actor.Context, ch *Character, index uint16, bu
 	ch.Inventory.removeMesoUnchecked(int32(total))
 	ch.Inventory.addItemUnchecked(listed.Item.Clone(count), true)
 	listed.Bundles -= bundles
-	hm.Meso += income
-	hm.Sold = append(hm.Sold, HiredMerchantSale{
+	es.Meso += income
+	es.Sold = append(es.Sold, EntrustedShopSale{
 		ItemID:  model.GetID(),
 		Bundles: bundles,
 		Total:   int32(total),
 		Buyer:   ch.GetName(),
 	})
-	if len(hm.Sold) > math.MaxUint8 {
-		hm.Sold = hm.Sold[len(hm.Sold)-math.MaxUint8:]
+	if len(es.Sold) > math.MaxUint8 {
+		es.Sold = es.Sold[len(es.Sold)-math.MaxUint8:]
 	}
-	for _, member := range hm.members() {
-		member.Listener.OnMiniRoomItems(member, hm)
+	for _, member := range es.members() {
+		member.Listener.OnMiniRoomItems(member, es)
 	}
-	hm.save(actx, false, ch)
+	es.save(actx, false, ch)
 
-	if hm.soldInform == false {
+	if es.soldInform == false {
 		return nil
 	}
-	message := fmt.Sprintf("고용상점에서 %s %d개가 판매되었습니다.", hm.GameWorld.GetResources().GetItemName(model.GetID()), count)
-	hm.GameWorld.GetDispatchSystem().CallCharacter(hm.OwnerID, func(ctx actor.Context, owner *Character) {
+	message := fmt.Sprintf("고용상점에서 %s %d개가 판매되었습니다.", es.GameWorld.GetResources().GetItemName(model.GetID()), count)
+	es.GameWorld.GetDispatchSystem().CallCharacter(es.OwnerID, func(ctx actor.Context, owner *Character) {
 		owner.Listener.OnMessage(owner, constant.MsgLightBlueText, message)
 	})
 	return nil
 }
 
-func (hm *HiredMerchant) Arrange(actx actor.Context, ch *Character) error {
-	if hm.owner != ch {
+func (es *EntrustedShop) Arrange(actx actor.Context, ch *Character) error {
+	if es.owner != ch {
 		return ErrMiniRoomNotOwner
 	}
 
-	if (ExchangeSpec{Reward: ExchangeSide{Meso: hm.Meso}}).Valid(ch) == ExchangeOK {
-		ch.Inventory.addMesoUnchecked(hm.Meso)
-		hm.Meso = 0
+	if (ExchangeSpec{Reward: ExchangeSide{Meso: es.Meso}}).Valid(ch) == ExchangeOK {
+		ch.Inventory.addMesoUnchecked(es.Meso)
+		es.Meso = 0
 	}
-	items := hm.Items[:0]
-	for _, listed := range hm.Items {
+	items := es.Items[:0]
+	for _, listed := range es.Items {
 		if listed.Bundles > 0 {
 			items = append(items, listed)
 		}
 	}
-	hm.Items = items
-	ch.Listener.OnMiniRoomArranged(ch, hm)
-	hm.save(actx, false, ch)
+	es.Items = items
+	ch.Listener.OnMiniRoomArranged(ch, es)
+	es.save(actx, false, ch)
 	return nil
 }
 
-func (hm *HiredMerchant) WithdrawMeso(actx actor.Context, ch *Character) error {
-	if hm.owner != ch {
+func (es *EntrustedShop) WithdrawMeso(actx actor.Context, ch *Character) error {
+	if es.owner != ch {
 		return ErrMiniRoomNotOwner
 	}
-	if hm.Meso <= 0 {
+	if es.Meso <= 0 {
 		return ErrMiniRoomInvalid
 	}
-	if (ExchangeSpec{Reward: ExchangeSide{Meso: hm.Meso}}).Valid(ch) != ExchangeOK {
+	if (ExchangeSpec{Reward: ExchangeSide{Meso: es.Meso}}).Valid(ch) != ExchangeOK {
 		return ErrMiniRoomMesoOver
 	}
 
-	ch.Inventory.addMesoUnchecked(hm.Meso)
-	hm.Meso = 0
+	ch.Inventory.addMesoUnchecked(es.Meso)
+	es.Meso = 0
 	ch.Listener.OnMiniRoomMesoWithdrawn(ch)
-	hm.save(actx, false, ch)
+	es.save(actx, false, ch)
 	return nil
 }
 
-func (hm *HiredMerchant) Close(actx actor.Context, ch *Character) error {
-	if hm.owner != ch {
+func (es *EntrustedShop) Close(actx actor.Context, ch *Character) error {
+	if es.owner != ch {
 		return ErrMiniRoomNotOwner
 	}
 
 	result := pconst.MiniRoomCloseAll
-	if (ExchangeSpec{Reward: ExchangeSide{Meso: hm.Meso}}).Valid(ch) != ExchangeOK {
+	if (ExchangeSpec{Reward: ExchangeSide{Meso: es.Meso}}).Valid(ch) != ExchangeOK {
 		result = pconst.MiniRoomCloseMesoOver
 	} else {
-		ch.Inventory.addMesoUnchecked(hm.Meso)
-		hm.Meso = 0
-		result = hm.returnItems(ch)
+		ch.Inventory.addMesoUnchecked(es.Meso)
+		es.Meso = 0
+		result = es.returnItems(ch)
 	}
 
-	hm.owner = nil
+	es.owner = nil
 	ch.MiniRoom = nil
 	ch.Listener.OnMiniRoomClosed(ch, result)
-	hm.entries[ch.GetID()] = ch.ToProto(hm.GameWorld.GetWorldID())
-	hm.close(actx)
+	es.entries[ch.GetID()] = ch.ToProto(es.GameWorld.GetWorldID())
+	es.close(actx)
 	return nil
 }
 
-func (hm *HiredMerchant) returnItems(ch *Character) pconst.MiniRoomCloseResult {
+func (es *EntrustedShop) returnItems(ch *Character) pconst.MiniRoomCloseResult {
 	rewards := map[uint32]uint16{}
-	for _, listed := range hm.Items {
+	for _, listed := range es.Items {
 		if listed.Bundles == 0 {
 			continue
 		}
@@ -567,60 +567,60 @@ func (hm *HiredMerchant) returnItems(ch *Character) pconst.MiniRoomCloseResult {
 		return pconst.MiniRoomCloseInventoryFull
 	}
 
-	for _, listed := range hm.Items {
+	for _, listed := range es.Items {
 		if listed.Bundles == 0 {
 			continue
 		}
 		ch.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
 	}
-	hm.Items = nil
+	es.Items = nil
 	return pconst.MiniRoomCloseAll
 }
 
-func (hm *HiredMerchant) close(actx actor.Context) {
-	m := hm.Map
+func (es *EntrustedShop) close(actx actor.Context) {
+	m := es.Map
 	if m == nil {
 		return
 	}
-	m.RemoveHiredMerchant(hm)
-	hm.save(actx, true)
+	m.RemoveEntrustedShop(es)
+	es.save(actx, true)
 }
 
-func (hm *HiredMerchant) save(actx actor.Context, closing bool, characters ...*Character) {
+func (es *EntrustedShop) save(actx actor.Context, closing bool, characters ...*Character) {
 	for _, ch := range characters {
-		hm.entries[ch.GetID()] = ch.ToProto(hm.GameWorld.GetWorldID())
+		es.entries[ch.GetID()] = ch.ToProto(es.GameWorld.GetWorldID())
 	}
 	if closing {
-		hm.closing = true
+		es.closing = true
 	}
-	if hm.saving {
-		hm.dirty = true
+	if es.saving {
+		es.dirty = true
 		return
 	}
 
-	entries := make([]*internal.CharacterSaveEntry, 0, len(hm.entries))
-	for _, entry := range hm.entries {
+	entries := make([]*internal.CharacterSaveEntry, 0, len(es.entries))
+	for _, entry := range es.entries {
 		entries = append(entries, entry)
 	}
-	hm.entries = make(map[uint32]*internal.CharacterSaveEntry)
-	hm.saving = true
-	hm.dirty = false
+	es.entries = make(map[uint32]*internal.CharacterSaveEntry)
+	es.saving = true
+	es.dirty = false
 	done := func() {
-		hm.saving = false
-		if hm.dirty {
-			hm.save(actx, hm.closing)
+		es.saving = false
+		if es.dirty {
+			es.save(actx, es.closing)
 		}
 	}
-	hm.GameWorld.SaveHiredMerchantAsync(actx, hm.ToProto(), entries, hm.closing).Do(func(*internal.SaveHiredMerchantReply) error {
+	es.GameWorld.SaveEntrustedShopAsync(actx, es.ToProto(), entries, es.closing).Do(func(*internal.SaveEntrustedShopReply) error {
 		done()
 		return nil
 	}).OnError(func(err error) {
-		log.Printf("HiredMerchant.save merchant=%d: %v", hm.ID, err)
+		log.Printf("EntrustedShop.save shop=%d: %v", es.ID, err)
 		done()
 	})
 }
 
-func (ch *Character) UseHiredMerchant(actx actor.Context) {
+func (ch *Character) UseEntrustedShop(actx actor.Context) {
 	m := ch.GetMap()
 	if m == nil || m.Wz.EntrustedShop == false || ch.MiniRoom != nil || ch.miniRoomPending {
 		ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
@@ -628,16 +628,16 @@ func (ch *Character) UseHiredMerchant(actx actor.Context) {
 	}
 
 	ch.miniRoomPending = true
-	ch.Listener.FindHiredMerchantAsync(actx, ch).Do(func(v *internal.FindHiredMerchantReply) error {
+	ch.Listener.FindEntrustedShopAsync(actx, ch).Do(func(v *internal.FindEntrustedShopReply) error {
 		ch.miniRoomPending = false
-		merchant := v.GetMerchant()
+		shop := v.GetShop()
 		switch {
-		case merchant == nil:
+		case shop == nil:
 			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopTitle, 0, 0)
-		case merchant.GetClosedAtUnixMs() != 0:
+		case shop.GetClosedAtUnixMs() != 0:
 			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopStoreBankFull, 0, 0)
-		case merchant.GetCharacterId() == ch.GetID():
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAlreadyOpen, merchant.GetMapId(), uint8(merchant.GetChannelId()))
+		case shop.GetCharacterId() == ch.GetID():
+			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAlreadyOpen, shop.GetMapId(), uint8(shop.GetChannelId()))
 		default:
 			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAccountBusy, 0, 0)
 		}
@@ -645,11 +645,11 @@ func (ch *Character) UseHiredMerchant(actx actor.Context) {
 	}).OnError(func(err error) {
 		ch.miniRoomPending = false
 		ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
-		log.Printf("UseHiredMerchant character=%d: %v", ch.GetID(), err)
+		log.Printf("UseEntrustedShop character=%d: %v", ch.GetID(), err)
 	})
 }
 
-func (ch *Character) CreateHiredMerchant(actx actor.Context, title string, slot int16, itemID uint32) error {
+func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot int16, itemID uint32) error {
 	m := ch.GetMap()
 	if m == nil || m.Wz.EntrustedShop == false || ch.MiniRoom != nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
@@ -667,7 +667,7 @@ func (ch *Character) CreateHiredMerchant(actx actor.Context, title string, slot 
 	if title == "" {
 		return ErrMiniRoomInvalid
 	}
-	if err := m.checkHiredMerchantSpot(ch.Position); err != nil {
+	if err := m.checkEntrustedShopSpot(ch.Position); err != nil {
 		return err
 	}
 
@@ -675,7 +675,7 @@ func (ch *Character) CreateHiredMerchant(actx actor.Context, title string, slot 
 	if model, ok := permit.GetModel().(*wz.CashItem); ok {
 		soldInform = model.SoldInform
 	}
-	hm := &HiredMerchant{
+	es := &EntrustedShop{
 		AccountID:  ch.AccountID,
 		OwnerID:    ch.GetID(),
 		OwnerName:  ch.GetName(),
@@ -686,34 +686,34 @@ func (ch *Character) CreateHiredMerchant(actx actor.Context, title string, slot 
 		soldInform: soldInform,
 		entries:    make(map[uint32]*internal.CharacterSaveEntry),
 	}
-	hm.ObjectCore.self = hm
-	hm.Position = ch.Position
+	es.ObjectCore.self = es
+	es.Position = ch.Position
 
 	ch.miniRoomPending = true
-	ch.Listener.OpenHiredMerchantAsync(actx, ch, hm.ToProto()).Do(func(v *internal.OpenHiredMerchantReply) error {
+	ch.Listener.OpenEntrustedShopAsync(actx, ch, es.ToProto()).Do(func(v *internal.OpenEntrustedShopReply) error {
 		ch.miniRoomPending = false
 		if v.GetExisting() != nil {
 			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
 			return nil
 		}
 
-		hm.ID = v.GetMerchantId()
+		es.ID = v.GetShopId()
 		current := ch.GetMap()
-		if current != m || ch.MiniRoom != nil || m.checkHiredMerchantSpot(hm.Position) != nil {
-			hm.GameWorld = ch.GameWorld
-			hm.save(actx, true)
+		if current != m || ch.MiniRoom != nil || m.checkEntrustedShopSpot(es.Position) != nil {
+			es.GameWorld = ch.GameWorld
+			es.save(actx, true)
 			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
 			return nil
 		}
-		m.AddHiredMerchant(hm)
-		hm.owner = ch
-		ch.MiniRoom = hm
-		ch.Listener.OnMiniRoomEntered(ch, hm, true)
+		m.AddEntrustedShop(es)
+		es.owner = ch
+		ch.MiniRoom = es
+		ch.Listener.OnMiniRoomEntered(ch, es, true)
 		return nil
 	}).OnError(func(err error) {
 		ch.miniRoomPending = false
 		ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
-		log.Printf("CreateHiredMerchant character=%d: %v", ch.GetID(), err)
+		log.Printf("CreateEntrustedShop character=%d: %v", ch.GetID(), err)
 	})
 	return nil
 }
@@ -723,9 +723,9 @@ func (ch *Character) VisitMiniRoom(sn uint32) error {
 	if m == nil {
 		return ErrMiniRoomInvalid
 	}
-	hm, ok := m.GetObject(constant.ObjectTypeHiredMerchant, sn).(*HiredMerchant)
+	es, ok := m.GetObject(constant.ObjectTypeEntrustedShop, sn).(*EntrustedShop)
 	if ok == false {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}
-	return hm.Visit(ch)
+	return es.Visit(ch)
 }

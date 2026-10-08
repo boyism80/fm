@@ -15,26 +15,26 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) FindHiredMerchantAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.FindHiredMerchantReply] {
-	req := &internal.FindHiredMerchantRequest{
+func (l *CharacterListenerImpl) FindEntrustedShopAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.FindEntrustedShopReply] {
+	req := &internal.FindEntrustedShopRequest{
 		WorldId:   l.gs.config.WorldId,
 		AccountId: ch.AccountID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.FindHiredMerchantReply, error) {
-			return l.gs.internalClient.FindHiredMerchant(c, req)
+		func(c context.Context) (*internal.FindEntrustedShopReply, error) {
+			return l.gs.internalClient.FindEntrustedShop(c, req)
 		},
 		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) OpenHiredMerchantAsync(ctx actor.Context, ch *entity.Character, merchant *internal.HiredMerchant) *async.Promise[*internal.OpenHiredMerchantReply] {
-	merchant.WorldId = l.gs.config.WorldId
-	merchant.ChannelId = int32(l.gs.config.ChannelId)
-	req := &internal.OpenHiredMerchantRequest{Merchant: merchant}
+func (l *CharacterListenerImpl) OpenEntrustedShopAsync(ctx actor.Context, ch *entity.Character, shop *internal.EntrustedShop) *async.Promise[*internal.OpenEntrustedShopReply] {
+	shop.WorldId = l.gs.config.WorldId
+	shop.ChannelId = int32(l.gs.config.ChannelId)
+	req := &internal.OpenEntrustedShopRequest{Shop: shop}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.OpenHiredMerchantReply, error) {
-			return l.gs.internalClient.OpenHiredMerchant(c, req)
+		func(c context.Context) (*internal.OpenEntrustedShopReply, error) {
+			return l.gs.internalClient.OpenEntrustedShop(c, req)
 		},
 		nil,
 	)
@@ -62,7 +62,7 @@ func (l *CharacterListenerImpl) OnEntrustedShopCheck(ch *entity.Character, resul
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) miniRoomItems(items []*entity.HiredMerchantItem) []response.MiniRoomItem {
+func (l *CharacterListenerImpl) miniRoomItems(items []*entity.EntrustedShopItem) []response.MiniRoomItem {
 	out := make([]response.MiniRoomItem, 0, len(items))
 	for _, listed := range items {
 		out = append(out, response.MiniRoomItem{
@@ -75,22 +75,22 @@ func (l *CharacterListenerImpl) miniRoomItems(items []*entity.HiredMerchantItem)
 	return out
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *entity.Character, hm *entity.HiredMerchant, firstTime bool) {
-	slot, _ := hm.SlotOf(ch)
+func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *entity.Character, es *entity.EntrustedShop, firstTime bool) {
+	slot, _ := es.SlotOf(ch)
 	enter := &response.MiniRoomEnter{
 		MySlot:       slot,
-		PermitItemID: hm.ItemID,
-		OwnerName:    hm.OwnerName,
-		Elapsed:      uint32(hm.Elapsed().Milliseconds()),
+		PermitItemID: es.ItemID,
+		OwnerName:    es.OwnerName,
+		Elapsed:      uint32(es.Elapsed().Milliseconds()),
 		FirstTime:    firstTime,
-		Title:        hm.Title,
-		MaxItems:     entity.HiredMerchantMaxItems,
+		Title:        es.Title,
+		MaxItems:     entity.EntrustedShopMaxItems,
 		MiniRoomItems: response.MiniRoomItems{
-			Meso:  hm.Meso,
-			Items: l.miniRoomItems(hm.Items),
+			Meso:  es.Meso,
+			Items: l.miniRoomItems(es.Items),
 		},
 	}
-	for i, visitor := range hm.Visitors {
+	for i, visitor := range es.Visitors {
 		if visitor == nil {
 			continue
 		}
@@ -99,7 +99,7 @@ func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *entity.Character, hm *enti
 			Character: visitor.ToDTO(),
 		})
 	}
-	for _, sale := range hm.Sold {
+	for _, sale := range es.Sold {
 		enter.Sold = append(enter.Sold, response.MiniRoomSale{
 			ItemID:  sale.ItemID,
 			Bundles: sale.Bundles,
@@ -137,10 +137,10 @@ func (l *CharacterListenerImpl) OnMiniRoomLeft(ch *entity.Character, slot uint8,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomItems(ch *entity.Character, hm *entity.HiredMerchant) {
+func (l *CharacterListenerImpl) OnMiniRoomItems(ch *entity.Character, es *entity.EntrustedShop) {
 	ch.Send(&response.MiniRoomItems{
-		Meso:  hm.Meso,
-		Items: l.miniRoomItems(hm.Items),
+		Meso:  es.Meso,
+		Items: l.miniRoomItems(es.Items),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -148,9 +148,9 @@ func (l *CharacterListenerImpl) OnMiniRoomBuyFailed(ch *entity.Character, result
 	ch.Send(&response.MiniRoomBuyFailed{Result: result}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomArranged(ch *entity.Character, hm *entity.HiredMerchant) {
-	ch.Send(&response.MiniRoomArranged{Meso: hm.Meso}, types.SEND_POLICY_ENCRYPT)
-	l.OnMiniRoomItems(ch, hm)
+func (l *CharacterListenerImpl) OnMiniRoomArranged(ch *entity.Character, es *entity.EntrustedShop) {
+	ch.Send(&response.MiniRoomArranged{Meso: es.Meso}, types.SEND_POLICY_ENCRYPT)
+	l.OnMiniRoomItems(ch, es)
 }
 
 func (l *CharacterListenerImpl) OnMiniRoomClosed(ch *entity.Character, result pconst.MiniRoomCloseResult) {

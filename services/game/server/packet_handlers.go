@@ -55,7 +55,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, NpcShop](gs)
 	core.Bind[*GameServer, Storage](gs)
 	core.Bind[*GameServer, Duey](gs)
-	core.Bind[*GameServer, UseHiredMerchant](gs)
+	core.Bind[*GameServer, UseEntrustedShop](gs)
 	core.Bind[*GameServer, MiniRoom](gs)
 	core.Bind[*GameServer, StoreBank](gs)
 	core.Bind[*GameServer, MagicAttack](gs)

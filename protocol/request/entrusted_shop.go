@@ -5,15 +5,15 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-type UseHiredMerchant struct{}
+type UseEntrustedShop struct{}
 
-func (*UseHiredMerchant) Opcode() byte { return 0x2E }
+func (*UseEntrustedShop) Opcode() byte { return 0x2E }
 
-func (p *UseHiredMerchant) Serialize(writer *stream.StreamWriter) error {
+func (p *UseEntrustedShop) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UseHiredMerchant) Deserialize(reader *stream.StreamReader) {}
+func (p *UseEntrustedShop) Deserialize(reader *stream.StreamReader) {}
 
 type MiniRoom struct {
 	Mode          constant.MiniRoomMode

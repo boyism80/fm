@@ -54,7 +54,7 @@ type Character struct {
 	Storage         *Storage
 	Duey            *Duey
 	StoreBank       *StoreBank
-	MiniRoom        *HiredMerchant
+	MiniRoom        *EntrustedShop
 	miniRoomPending bool
 	Skills          *Skills
 	KeyLayout       *KeyLayout

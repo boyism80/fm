@@ -493,15 +493,15 @@ func (gs *GameServer) Start() error {
 
 	if gs.internalClient != nil {
 		closeCtx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-		reply, err := gs.internalClient.CloseChannelMerchants(closeCtx, &internal.CloseChannelMerchantsRequest{
+		reply, err := gs.internalClient.CloseChannelEntrustedShops(closeCtx, &internal.CloseChannelEntrustedShopsRequest{
 			WorldId:   gs.config.WorldId,
 			ChannelId: int32(gs.config.ChannelId),
 		})
 		cancel()
 		if err != nil {
-			log.Printf("close channel hired merchants: %v", err)
+			log.Printf("close channel entrusted shops: %v", err)
 		} else {
-			log.Printf("Closed %d hired merchants into the store bank", reply.GetCount())
+			log.Printf("Closed %d entrusted shops into the store bank", reply.GetCount())
 		}
 	}
 

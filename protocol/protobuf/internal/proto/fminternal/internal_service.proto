@@ -19,11 +19,11 @@ service Internal {
   rpc ClaimParcel (ClaimParcelRequest) returns (ClaimParcelReply);
   rpc DeleteParcel (DeleteParcelRequest) returns (DeleteParcelReply);
   rpc CheckParcelArrivals (CheckParcelArrivalsRequest) returns (CheckParcelArrivalsReply);
-  rpc FindHiredMerchant (FindHiredMerchantRequest) returns (FindHiredMerchantReply);
-  rpc OpenHiredMerchant (OpenHiredMerchantRequest) returns (OpenHiredMerchantReply);
-  rpc SaveHiredMerchant (SaveHiredMerchantRequest) returns (SaveHiredMerchantReply);
+  rpc FindEntrustedShop (FindEntrustedShopRequest) returns (FindEntrustedShopReply);
+  rpc OpenEntrustedShop (OpenEntrustedShopRequest) returns (OpenEntrustedShopReply);
+  rpc SaveEntrustedShop (SaveEntrustedShopRequest) returns (SaveEntrustedShopReply);
   rpc ClaimStoreBank (ClaimStoreBankRequest) returns (ClaimStoreBankReply);
-  rpc CloseChannelMerchants (CloseChannelMerchantsRequest) returns (CloseChannelMerchantsReply);
+  rpc CloseChannelEntrustedShops (CloseChannelEntrustedShopsRequest) returns (CloseChannelEntrustedShopsReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
@@ -808,22 +808,22 @@ message CheckParcelArrivalsReply {
   bool quick = 3;
 }
 
-message HiredMerchantItem {
+message EntrustedShopItem {
   Inventory item = 1;
   uint32 bundles = 2;
   uint32 per_bundle = 3;
   int32 price = 4;
 }
 
-message HiredMerchantSale {
+message EntrustedShopSale {
   uint32 item_id = 1;
   uint32 bundles = 2;
   int32 total = 3;
   string buyer = 4;
 }
 
-message HiredMerchant {
-  uint32 merchant_id = 1;
+message EntrustedShop {
+  uint32 shop_id = 1;
   uint32 world_id = 2;
   uint32 account_id = 3;
   uint32 character_id = 4;
@@ -833,37 +833,37 @@ message HiredMerchant {
   uint32 item_id = 8;
   string title = 9;
   int32 meso = 10;
-  repeated HiredMerchantItem items = 11;
-  repeated HiredMerchantSale sold = 12;
+  repeated EntrustedShopItem items = 11;
+  repeated EntrustedShopSale sold = 12;
   int64 opened_at_unix_ms = 13;
   int64 closed_at_unix_ms = 14;
 }
 
-message FindHiredMerchantRequest {
+message FindEntrustedShopRequest {
   uint32 world_id = 1;
   uint32 account_id = 2;
 }
 
-message FindHiredMerchantReply {
-  HiredMerchant merchant = 1;
+message FindEntrustedShopReply {
+  EntrustedShop shop = 1;
 }
 
-message OpenHiredMerchantRequest {
-  HiredMerchant merchant = 1;
+message OpenEntrustedShopRequest {
+  EntrustedShop shop = 1;
 }
 
-message OpenHiredMerchantReply {
-  uint32 merchant_id = 1;
-  HiredMerchant existing = 2;
+message OpenEntrustedShopReply {
+  uint32 shop_id = 1;
+  EntrustedShop existing = 2;
 }
 
-message SaveHiredMerchantRequest {
-  HiredMerchant merchant = 1;
+message SaveEntrustedShopRequest {
+  EntrustedShop shop = 1;
   repeated CharacterSaveEntry characters = 2;
   bool close = 3;
 }
 
-message SaveHiredMerchantReply {
+message SaveEntrustedShopReply {
 }
 
 message ClaimStoreBankRequest {
@@ -873,15 +873,15 @@ message ClaimStoreBankRequest {
 }
 
 message ClaimStoreBankReply {
-  HiredMerchant merchant = 1;
+  EntrustedShop shop = 1;
 }
 
-message CloseChannelMerchantsRequest {
+message CloseChannelEntrustedShopsRequest {
   uint32 world_id = 1;
   int32 channel_id = 2;
 }
 
-message CloseChannelMerchantsReply {
+message CloseChannelEntrustedShopsReply {
   uint32 count = 1;
 }
 

@@ -65,7 +65,7 @@ local function move_to(ctx, bot, map, spot)
 end
 
 local function shop_check(ctx, bot, result, what)
-	local p = bot:request(resp.entrusted_shop_check_result, req.use_hired_merchant {}, nil, 5000)
+	local p = bot:request(resp.entrusted_shop_check_result, req.use_entrusted_shop {}, nil, 5000)
 	if p == false then
 		return ctx:fail(bot:name() .. " 개설 문의 응답 없음: " .. what)
 	end
@@ -215,14 +215,14 @@ local function shop_flow(ctx)
 		return false
 	end
 
-	local spawn = owner:request_on(buyer, resp.spawn_hired_merchant, req.mini_room { mode = MODE.open }, function(s)
+	local spawn = owner:request_on(buyer, resp.spawn_entrusted_shop, req.mini_room { mode = MODE.open }, function(s)
 		return s.employer_id == owner:id()
 	end, 5000)
 	if spawn == false then
 		return ctx:fail("상점 개설이 다른 캐릭터에게 보이지 않음")
 	end
-	local sn = spawn.hired_merchant_balloon.sn
-	if check(ctx, spawn.owner_name == owner:name() and spawn.hired_merchant_balloon.title == "봇 상점", "상점 말풍선 정보가 다름") == false then
+	local sn = spawn.entrusted_shop_balloon.sn
+	if check(ctx, spawn.owner_name == owner:name() and spawn.entrusted_shop_balloon.title == "봇 상점", "상점 말풍선 정보가 다름") == false then
 		return false
 	end
 
@@ -265,7 +265,7 @@ local function shop_flow(ctx)
 		return false
 	end
 
-	local destroyed = owner:request_on(buyer, resp.destroy_hired_merchant, req.mini_room { mode = MODE.close }, nil, 5000)
+	local destroyed = owner:request_on(buyer, resp.destroy_entrusted_shop, req.mini_room { mode = MODE.close }, nil, 5000)
 	if destroyed == false then
 		return ctx:fail("상점을 닫아도 맵에서 사라지지 않음")
 	end
@@ -337,7 +337,7 @@ local function store_bank_flow(ctx)
 end
 
 test_suite {
-	name = "HiredMerchant: 고용상인 개설·판매·관리·스토어뱅크",
+	name = "EntrustedShop: 고용상인 개설·판매·관리·스토어뱅크",
 	bot_count = 2,
 
 	scenarios = {

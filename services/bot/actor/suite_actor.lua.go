@@ -41,7 +41,7 @@ var requests = []outbound{
 	&request.UseCashItem{},
 	&request.Storage{},
 	&request.Duey{},
-	&request.UseHiredMerchant{},
+	&request.UseEntrustedShop{},
 	&request.MiniRoom{},
 	&request.StoreBank{},
 	&request.SummonPet{},

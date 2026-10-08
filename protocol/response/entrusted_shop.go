@@ -32,23 +32,23 @@ func (p *EntrustedShopCheckResult) Deserialize(reader *stream.StreamReader) {
 	}
 }
 
-type HiredMerchantBalloon struct {
+type EntrustedShopBalloon struct {
 	SN     uint32
 	Title  string
 	ItemID uint32
 	Users  uint8
 }
 
-func (b *HiredMerchantBalloon) serialize(writer *stream.StreamWriter) {
-	writer.WriteU8(pconst.MiniRoomTypeHiredMerchant)
+func (b *EntrustedShopBalloon) serialize(writer *stream.StreamWriter) {
+	writer.WriteU8(pconst.MiniRoomTypeEntrustedShop)
 	writer.WriteU32(b.SN)
 	writer.WriteStr16(b.Title)
 	writer.WriteU8(uint8(b.ItemID % 10))
 	writer.WriteU8(b.Users)
-	writer.WriteU8(pconst.MiniRoomHiredMerchantUsers)
+	writer.WriteU8(pconst.MiniRoomEntrustedShopUsers)
 }
 
-func (b *HiredMerchantBalloon) deserialize(reader *stream.StreamReader) {
+func (b *EntrustedShopBalloon) deserialize(reader *stream.StreamReader) {
 	if reader.ReadU8() == 0 {
 		return
 	}
@@ -59,20 +59,20 @@ func (b *HiredMerchantBalloon) deserialize(reader *stream.StreamReader) {
 	reader.ReadU8()
 }
 
-type SpawnHiredMerchant struct {
+type SpawnEntrustedShop struct {
 	EmployerID uint32
 	X          int16
 	Y          int16
 	Foothold   uint16
 	OwnerName  string
-	HiredMerchantBalloon
+	EntrustedShopBalloon
 }
 
-func (p *SpawnHiredMerchant) Opcode() uint16 {
+func (p *SpawnEntrustedShop) Opcode() uint16 {
 	return 0xC3
 }
 
-func (p *SpawnHiredMerchant) Serialize(writer *stream.StreamWriter) error {
+func (p *SpawnEntrustedShop) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.EmployerID)
 	writer.WriteU32(p.ItemID)
 	writer.Write16(p.X)
@@ -83,7 +83,7 @@ func (p *SpawnHiredMerchant) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnHiredMerchant) Deserialize(reader *stream.StreamReader) {
+func (p *SpawnEntrustedShop) Deserialize(reader *stream.StreamReader) {
 	p.EmployerID = reader.ReadU32()
 	p.ItemID = reader.ReadU32()
 	p.X = reader.Read16()
@@ -93,39 +93,39 @@ func (p *SpawnHiredMerchant) Deserialize(reader *stream.StreamReader) {
 	p.deserialize(reader)
 }
 
-type DestroyHiredMerchant struct {
+type DestroyEntrustedShop struct {
 	EmployerID uint32
 }
 
-func (p *DestroyHiredMerchant) Opcode() uint16 {
+func (p *DestroyEntrustedShop) Opcode() uint16 {
 	return 0xC4
 }
 
-func (p *DestroyHiredMerchant) Serialize(writer *stream.StreamWriter) error {
+func (p *DestroyEntrustedShop) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.EmployerID)
 	return nil
 }
 
-func (p *DestroyHiredMerchant) Deserialize(reader *stream.StreamReader) {
+func (p *DestroyEntrustedShop) Deserialize(reader *stream.StreamReader) {
 	p.EmployerID = reader.ReadU32()
 }
 
-type UpdateHiredMerchant struct {
+type UpdateEntrustedShop struct {
 	EmployerID uint32
-	HiredMerchantBalloon
+	EntrustedShopBalloon
 }
 
-func (p *UpdateHiredMerchant) Opcode() uint16 {
+func (p *UpdateEntrustedShop) Opcode() uint16 {
 	return 0xC5
 }
 
-func (p *UpdateHiredMerchant) Serialize(writer *stream.StreamWriter) error {
+func (p *UpdateEntrustedShop) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.EmployerID)
 	p.serialize(writer)
 	return nil
 }
 
-func (p *UpdateHiredMerchant) Deserialize(reader *stream.StreamReader) {
+func (p *UpdateEntrustedShop) Deserialize(reader *stream.StreamReader) {
 	p.EmployerID = reader.ReadU32()
 	p.deserialize(reader)
 }

@@ -27,7 +27,7 @@ type GameWorld interface {
 	BroadcastNotice(messageType constant.ServerMessageType, message string, channel int, ear bool)
 	GetWorldID() uint32
 	SaveAsync(ctx actor.Context, entries []*internal.CharacterSaveEntry) *async.Task
-	SaveHiredMerchantAsync(ctx actor.Context, merchant *internal.HiredMerchant, entries []*internal.CharacterSaveEntry, close bool) *async.Promise[*internal.SaveHiredMerchantReply]
+	SaveEntrustedShopAsync(ctx actor.Context, shop *internal.EntrustedShop, entries []*internal.CharacterSaveEntry, close bool) *async.Promise[*internal.SaveEntrustedShopReply]
 	GetMapSystem() MapSystem
 	GetSchedulerSystem() SchedulerSystem
 	GetGuildSystem() GuildSystem

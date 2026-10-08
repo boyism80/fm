@@ -1937,22 +1937,22 @@ export interface CheckParcelArrivalsReply {
   quick: boolean;
 }
 
-export interface HiredMerchantItem {
+export interface EntrustedShopItem {
   item: Inventory | undefined;
   bundles: number;
   perBundle: number;
   price: number;
 }
 
-export interface HiredMerchantSale {
+export interface EntrustedShopSale {
   itemId: number;
   bundles: number;
   total: number;
   buyer: string;
 }
 
-export interface HiredMerchant {
-  merchantId: number;
+export interface EntrustedShop {
+  shopId: number;
   worldId: number;
   accountId: number;
   characterId: number;
@@ -1962,37 +1962,37 @@ export interface HiredMerchant {
   itemId: number;
   title: string;
   meso: number;
-  items: HiredMerchantItem[];
-  sold: HiredMerchantSale[];
+  items: EntrustedShopItem[];
+  sold: EntrustedShopSale[];
   openedAtUnixMs: number;
   closedAtUnixMs: number;
 }
 
-export interface FindHiredMerchantRequest {
+export interface FindEntrustedShopRequest {
   worldId: number;
   accountId: number;
 }
 
-export interface FindHiredMerchantReply {
-  merchant: HiredMerchant | undefined;
+export interface FindEntrustedShopReply {
+  shop: EntrustedShop | undefined;
 }
 
-export interface OpenHiredMerchantRequest {
-  merchant: HiredMerchant | undefined;
+export interface OpenEntrustedShopRequest {
+  shop: EntrustedShop | undefined;
 }
 
-export interface OpenHiredMerchantReply {
-  merchantId: number;
-  existing: HiredMerchant | undefined;
+export interface OpenEntrustedShopReply {
+  shopId: number;
+  existing: EntrustedShop | undefined;
 }
 
-export interface SaveHiredMerchantRequest {
-  merchant: HiredMerchant | undefined;
+export interface SaveEntrustedShopRequest {
+  shop: EntrustedShop | undefined;
   characters: CharacterSaveEntry[];
   close: boolean;
 }
 
-export interface SaveHiredMerchantReply {
+export interface SaveEntrustedShopReply {
 }
 
 export interface ClaimStoreBankRequest {
@@ -2002,15 +2002,15 @@ export interface ClaimStoreBankRequest {
 }
 
 export interface ClaimStoreBankReply {
-  merchant: HiredMerchant | undefined;
+  shop: EntrustedShop | undefined;
 }
 
-export interface CloseChannelMerchantsRequest {
+export interface CloseChannelEntrustedShopsRequest {
   worldId: number;
   channelId: number;
 }
 
-export interface CloseChannelMerchantsReply {
+export interface CloseChannelEntrustedShopsReply {
   count: number;
 }
 
@@ -14228,12 +14228,12 @@ export const CheckParcelArrivalsReply: MessageFns<CheckParcelArrivalsReply> = {
   },
 };
 
-function createBaseHiredMerchantItem(): HiredMerchantItem {
+function createBaseEntrustedShopItem(): EntrustedShopItem {
   return { item: undefined, bundles: 0, perBundle: 0, price: 0 };
 }
 
-export const HiredMerchantItem: MessageFns<HiredMerchantItem> = {
-  encode(message: HiredMerchantItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const EntrustedShopItem: MessageFns<EntrustedShopItem> = {
+  encode(message: EntrustedShopItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.item !== undefined) {
       Inventory.encode(message.item, writer.uint32(10).fork()).join();
     }
@@ -14249,10 +14249,10 @@ export const HiredMerchantItem: MessageFns<HiredMerchantItem> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): HiredMerchantItem {
+  decode(input: BinaryReader | Uint8Array, length?: number): EntrustedShopItem {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseHiredMerchantItem();
+    const message = createBaseEntrustedShopItem();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14297,7 +14297,7 @@ export const HiredMerchantItem: MessageFns<HiredMerchantItem> = {
     return message;
   },
 
-  fromJSON(object: any): HiredMerchantItem {
+  fromJSON(object: any): EntrustedShopItem {
     return {
       item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
       bundles: isSet(object.bundles) ? globalThis.Number(object.bundles) : 0,
@@ -14310,7 +14310,7 @@ export const HiredMerchantItem: MessageFns<HiredMerchantItem> = {
     };
   },
 
-  toJSON(message: HiredMerchantItem): unknown {
+  toJSON(message: EntrustedShopItem): unknown {
     const obj: any = {};
     if (message.item !== undefined) {
       obj.item = Inventory.toJSON(message.item);
@@ -14327,11 +14327,11 @@ export const HiredMerchantItem: MessageFns<HiredMerchantItem> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<HiredMerchantItem>, I>>(base?: I): HiredMerchantItem {
-    return HiredMerchantItem.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<EntrustedShopItem>, I>>(base?: I): EntrustedShopItem {
+    return EntrustedShopItem.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<HiredMerchantItem>, I>>(object: I): HiredMerchantItem {
-    const message = createBaseHiredMerchantItem();
+  fromPartial<I extends Exact<DeepPartial<EntrustedShopItem>, I>>(object: I): EntrustedShopItem {
+    const message = createBaseEntrustedShopItem();
     message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
     message.bundles = object.bundles ?? 0;
     message.perBundle = object.perBundle ?? 0;
@@ -14340,12 +14340,12 @@ export const HiredMerchantItem: MessageFns<HiredMerchantItem> = {
   },
 };
 
-function createBaseHiredMerchantSale(): HiredMerchantSale {
+function createBaseEntrustedShopSale(): EntrustedShopSale {
   return { itemId: 0, bundles: 0, total: 0, buyer: "" };
 }
 
-export const HiredMerchantSale: MessageFns<HiredMerchantSale> = {
-  encode(message: HiredMerchantSale, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const EntrustedShopSale: MessageFns<EntrustedShopSale> = {
+  encode(message: EntrustedShopSale, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.itemId !== 0) {
       writer.uint32(8).uint32(message.itemId);
     }
@@ -14361,10 +14361,10 @@ export const HiredMerchantSale: MessageFns<HiredMerchantSale> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): HiredMerchantSale {
+  decode(input: BinaryReader | Uint8Array, length?: number): EntrustedShopSale {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseHiredMerchantSale();
+    const message = createBaseEntrustedShopSale();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14409,7 +14409,7 @@ export const HiredMerchantSale: MessageFns<HiredMerchantSale> = {
     return message;
   },
 
-  fromJSON(object: any): HiredMerchantSale {
+  fromJSON(object: any): EntrustedShopSale {
     return {
       itemId: isSet(object.itemId)
         ? globalThis.Number(object.itemId)
@@ -14422,7 +14422,7 @@ export const HiredMerchantSale: MessageFns<HiredMerchantSale> = {
     };
   },
 
-  toJSON(message: HiredMerchantSale): unknown {
+  toJSON(message: EntrustedShopSale): unknown {
     const obj: any = {};
     if (message.itemId !== 0) {
       obj.itemId = Math.round(message.itemId);
@@ -14439,11 +14439,11 @@ export const HiredMerchantSale: MessageFns<HiredMerchantSale> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<HiredMerchantSale>, I>>(base?: I): HiredMerchantSale {
-    return HiredMerchantSale.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<EntrustedShopSale>, I>>(base?: I): EntrustedShopSale {
+    return EntrustedShopSale.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<HiredMerchantSale>, I>>(object: I): HiredMerchantSale {
-    const message = createBaseHiredMerchantSale();
+  fromPartial<I extends Exact<DeepPartial<EntrustedShopSale>, I>>(object: I): EntrustedShopSale {
+    const message = createBaseEntrustedShopSale();
     message.itemId = object.itemId ?? 0;
     message.bundles = object.bundles ?? 0;
     message.total = object.total ?? 0;
@@ -14452,9 +14452,9 @@ export const HiredMerchantSale: MessageFns<HiredMerchantSale> = {
   },
 };
 
-function createBaseHiredMerchant(): HiredMerchant {
+function createBaseEntrustedShop(): EntrustedShop {
   return {
-    merchantId: 0,
+    shopId: 0,
     worldId: 0,
     accountId: 0,
     characterId: 0,
@@ -14471,10 +14471,10 @@ function createBaseHiredMerchant(): HiredMerchant {
   };
 }
 
-export const HiredMerchant: MessageFns<HiredMerchant> = {
-  encode(message: HiredMerchant, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.merchantId !== 0) {
-      writer.uint32(8).uint32(message.merchantId);
+export const EntrustedShop: MessageFns<EntrustedShop> = {
+  encode(message: EntrustedShop, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.shopId !== 0) {
+      writer.uint32(8).uint32(message.shopId);
     }
     if (message.worldId !== 0) {
       writer.uint32(16).uint32(message.worldId);
@@ -14504,10 +14504,10 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
       writer.uint32(80).int32(message.meso);
     }
     for (const v of message.items) {
-      HiredMerchantItem.encode(v!, writer.uint32(90).fork()).join();
+      EntrustedShopItem.encode(v!, writer.uint32(90).fork()).join();
     }
     for (const v of message.sold) {
-      HiredMerchantSale.encode(v!, writer.uint32(98).fork()).join();
+      EntrustedShopSale.encode(v!, writer.uint32(98).fork()).join();
     }
     if (message.openedAtUnixMs !== 0) {
       writer.uint32(104).int64(message.openedAtUnixMs);
@@ -14518,10 +14518,10 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): HiredMerchant {
+  decode(input: BinaryReader | Uint8Array, length?: number): EntrustedShop {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseHiredMerchant();
+    const message = createBaseEntrustedShop();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14530,7 +14530,7 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
             break;
           }
 
-          message.merchantId = reader.uint32();
+          message.shopId = reader.uint32();
           continue;
         }
         case 2: {
@@ -14610,7 +14610,7 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
             break;
           }
 
-          message.items.push(HiredMerchantItem.decode(reader, reader.uint32()));
+          message.items.push(EntrustedShopItem.decode(reader, reader.uint32()));
           continue;
         }
         case 12: {
@@ -14618,7 +14618,7 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
             break;
           }
 
-          message.sold.push(HiredMerchantSale.decode(reader, reader.uint32()));
+          message.sold.push(EntrustedShopSale.decode(reader, reader.uint32()));
           continue;
         }
         case 13: {
@@ -14646,12 +14646,12 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
     return message;
   },
 
-  fromJSON(object: any): HiredMerchant {
+  fromJSON(object: any): EntrustedShop {
     return {
-      merchantId: isSet(object.merchantId)
-        ? globalThis.Number(object.merchantId)
-        : isSet(object.merchant_id)
-        ? globalThis.Number(object.merchant_id)
+      shopId: isSet(object.shopId)
+        ? globalThis.Number(object.shopId)
+        : isSet(object.shop_id)
+        ? globalThis.Number(object.shop_id)
         : 0,
       worldId: isSet(object.worldId)
         ? globalThis.Number(object.worldId)
@@ -14691,10 +14691,10 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
       items: globalThis.Array.isArray(object?.items)
-        ? object.items.map((e: any) => HiredMerchantItem.fromJSON(e))
+        ? object.items.map((e: any) => EntrustedShopItem.fromJSON(e))
         : [],
       sold: globalThis.Array.isArray(object?.sold)
-        ? object.sold.map((e: any) => HiredMerchantSale.fromJSON(e))
+        ? object.sold.map((e: any) => EntrustedShopSale.fromJSON(e))
         : [],
       openedAtUnixMs: isSet(object.openedAtUnixMs)
         ? globalThis.Number(object.openedAtUnixMs)
@@ -14709,10 +14709,10 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
     };
   },
 
-  toJSON(message: HiredMerchant): unknown {
+  toJSON(message: EntrustedShop): unknown {
     const obj: any = {};
-    if (message.merchantId !== 0) {
-      obj.merchantId = Math.round(message.merchantId);
+    if (message.shopId !== 0) {
+      obj.shopId = Math.round(message.shopId);
     }
     if (message.worldId !== 0) {
       obj.worldId = Math.round(message.worldId);
@@ -14742,10 +14742,10 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
       obj.meso = Math.round(message.meso);
     }
     if (message.items?.length) {
-      obj.items = message.items.map((e) => HiredMerchantItem.toJSON(e));
+      obj.items = message.items.map((e) => EntrustedShopItem.toJSON(e));
     }
     if (message.sold?.length) {
-      obj.sold = message.sold.map((e) => HiredMerchantSale.toJSON(e));
+      obj.sold = message.sold.map((e) => EntrustedShopSale.toJSON(e));
     }
     if (message.openedAtUnixMs !== 0) {
       obj.openedAtUnixMs = Math.round(message.openedAtUnixMs);
@@ -14756,12 +14756,12 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<HiredMerchant>, I>>(base?: I): HiredMerchant {
-    return HiredMerchant.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<EntrustedShop>, I>>(base?: I): EntrustedShop {
+    return EntrustedShop.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<HiredMerchant>, I>>(object: I): HiredMerchant {
-    const message = createBaseHiredMerchant();
-    message.merchantId = object.merchantId ?? 0;
+  fromPartial<I extends Exact<DeepPartial<EntrustedShop>, I>>(object: I): EntrustedShop {
+    const message = createBaseEntrustedShop();
+    message.shopId = object.shopId ?? 0;
     message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
     message.characterId = object.characterId ?? 0;
@@ -14771,20 +14771,20 @@ export const HiredMerchant: MessageFns<HiredMerchant> = {
     message.itemId = object.itemId ?? 0;
     message.title = object.title ?? "";
     message.meso = object.meso ?? 0;
-    message.items = object.items?.map((e) => HiredMerchantItem.fromPartial(e)) || [];
-    message.sold = object.sold?.map((e) => HiredMerchantSale.fromPartial(e)) || [];
+    message.items = object.items?.map((e) => EntrustedShopItem.fromPartial(e)) || [];
+    message.sold = object.sold?.map((e) => EntrustedShopSale.fromPartial(e)) || [];
     message.openedAtUnixMs = object.openedAtUnixMs ?? 0;
     message.closedAtUnixMs = object.closedAtUnixMs ?? 0;
     return message;
   },
 };
 
-function createBaseFindHiredMerchantRequest(): FindHiredMerchantRequest {
+function createBaseFindEntrustedShopRequest(): FindEntrustedShopRequest {
   return { worldId: 0, accountId: 0 };
 }
 
-export const FindHiredMerchantRequest: MessageFns<FindHiredMerchantRequest> = {
-  encode(message: FindHiredMerchantRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const FindEntrustedShopRequest: MessageFns<FindEntrustedShopRequest> = {
+  encode(message: FindEntrustedShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.worldId !== 0) {
       writer.uint32(8).uint32(message.worldId);
     }
@@ -14794,10 +14794,10 @@ export const FindHiredMerchantRequest: MessageFns<FindHiredMerchantRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): FindHiredMerchantRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): FindEntrustedShopRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFindHiredMerchantRequest();
+    const message = createBaseFindEntrustedShopRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14826,7 +14826,7 @@ export const FindHiredMerchantRequest: MessageFns<FindHiredMerchantRequest> = {
     return message;
   },
 
-  fromJSON(object: any): FindHiredMerchantRequest {
+  fromJSON(object: any): FindEntrustedShopRequest {
     return {
       worldId: isSet(object.worldId)
         ? globalThis.Number(object.worldId)
@@ -14841,7 +14841,7 @@ export const FindHiredMerchantRequest: MessageFns<FindHiredMerchantRequest> = {
     };
   },
 
-  toJSON(message: FindHiredMerchantRequest): unknown {
+  toJSON(message: FindEntrustedShopRequest): unknown {
     const obj: any = {};
     if (message.worldId !== 0) {
       obj.worldId = Math.round(message.worldId);
@@ -14852,33 +14852,33 @@ export const FindHiredMerchantRequest: MessageFns<FindHiredMerchantRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<FindHiredMerchantRequest>, I>>(base?: I): FindHiredMerchantRequest {
-    return FindHiredMerchantRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<FindEntrustedShopRequest>, I>>(base?: I): FindEntrustedShopRequest {
+    return FindEntrustedShopRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<FindHiredMerchantRequest>, I>>(object: I): FindHiredMerchantRequest {
-    const message = createBaseFindHiredMerchantRequest();
+  fromPartial<I extends Exact<DeepPartial<FindEntrustedShopRequest>, I>>(object: I): FindEntrustedShopRequest {
+    const message = createBaseFindEntrustedShopRequest();
     message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
     return message;
   },
 };
 
-function createBaseFindHiredMerchantReply(): FindHiredMerchantReply {
-  return { merchant: undefined };
+function createBaseFindEntrustedShopReply(): FindEntrustedShopReply {
+  return { shop: undefined };
 }
 
-export const FindHiredMerchantReply: MessageFns<FindHiredMerchantReply> = {
-  encode(message: FindHiredMerchantReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.merchant !== undefined) {
-      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+export const FindEntrustedShopReply: MessageFns<FindEntrustedShopReply> = {
+  encode(message: FindEntrustedShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.shop !== undefined) {
+      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): FindHiredMerchantReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): FindEntrustedShopReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFindHiredMerchantReply();
+    const message = createBaseFindEntrustedShopReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14887,7 +14887,7 @@ export const FindHiredMerchantReply: MessageFns<FindHiredMerchantReply> = {
             break;
           }
 
-          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          message.shop = EntrustedShop.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -14899,46 +14899,46 @@ export const FindHiredMerchantReply: MessageFns<FindHiredMerchantReply> = {
     return message;
   },
 
-  fromJSON(object: any): FindHiredMerchantReply {
-    return { merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined };
+  fromJSON(object: any): FindEntrustedShopReply {
+    return { shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined };
   },
 
-  toJSON(message: FindHiredMerchantReply): unknown {
+  toJSON(message: FindEntrustedShopReply): unknown {
     const obj: any = {};
-    if (message.merchant !== undefined) {
-      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    if (message.shop !== undefined) {
+      obj.shop = EntrustedShop.toJSON(message.shop);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<FindHiredMerchantReply>, I>>(base?: I): FindHiredMerchantReply {
-    return FindHiredMerchantReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<FindEntrustedShopReply>, I>>(base?: I): FindEntrustedShopReply {
+    return FindEntrustedShopReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<FindHiredMerchantReply>, I>>(object: I): FindHiredMerchantReply {
-    const message = createBaseFindHiredMerchantReply();
-    message.merchant = (object.merchant !== undefined && object.merchant !== null)
-      ? HiredMerchant.fromPartial(object.merchant)
+  fromPartial<I extends Exact<DeepPartial<FindEntrustedShopReply>, I>>(object: I): FindEntrustedShopReply {
+    const message = createBaseFindEntrustedShopReply();
+    message.shop = (object.shop !== undefined && object.shop !== null)
+      ? EntrustedShop.fromPartial(object.shop)
       : undefined;
     return message;
   },
 };
 
-function createBaseOpenHiredMerchantRequest(): OpenHiredMerchantRequest {
-  return { merchant: undefined };
+function createBaseOpenEntrustedShopRequest(): OpenEntrustedShopRequest {
+  return { shop: undefined };
 }
 
-export const OpenHiredMerchantRequest: MessageFns<OpenHiredMerchantRequest> = {
-  encode(message: OpenHiredMerchantRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.merchant !== undefined) {
-      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+export const OpenEntrustedShopRequest: MessageFns<OpenEntrustedShopRequest> = {
+  encode(message: OpenEntrustedShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.shop !== undefined) {
+      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): OpenHiredMerchantRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): OpenEntrustedShopRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOpenHiredMerchantRequest();
+    const message = createBaseOpenEntrustedShopRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14947,7 +14947,7 @@ export const OpenHiredMerchantRequest: MessageFns<OpenHiredMerchantRequest> = {
             break;
           }
 
-          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          message.shop = EntrustedShop.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -14959,49 +14959,49 @@ export const OpenHiredMerchantRequest: MessageFns<OpenHiredMerchantRequest> = {
     return message;
   },
 
-  fromJSON(object: any): OpenHiredMerchantRequest {
-    return { merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined };
+  fromJSON(object: any): OpenEntrustedShopRequest {
+    return { shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined };
   },
 
-  toJSON(message: OpenHiredMerchantRequest): unknown {
+  toJSON(message: OpenEntrustedShopRequest): unknown {
     const obj: any = {};
-    if (message.merchant !== undefined) {
-      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    if (message.shop !== undefined) {
+      obj.shop = EntrustedShop.toJSON(message.shop);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<OpenHiredMerchantRequest>, I>>(base?: I): OpenHiredMerchantRequest {
-    return OpenHiredMerchantRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<OpenEntrustedShopRequest>, I>>(base?: I): OpenEntrustedShopRequest {
+    return OpenEntrustedShopRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<OpenHiredMerchantRequest>, I>>(object: I): OpenHiredMerchantRequest {
-    const message = createBaseOpenHiredMerchantRequest();
-    message.merchant = (object.merchant !== undefined && object.merchant !== null)
-      ? HiredMerchant.fromPartial(object.merchant)
+  fromPartial<I extends Exact<DeepPartial<OpenEntrustedShopRequest>, I>>(object: I): OpenEntrustedShopRequest {
+    const message = createBaseOpenEntrustedShopRequest();
+    message.shop = (object.shop !== undefined && object.shop !== null)
+      ? EntrustedShop.fromPartial(object.shop)
       : undefined;
     return message;
   },
 };
 
-function createBaseOpenHiredMerchantReply(): OpenHiredMerchantReply {
-  return { merchantId: 0, existing: undefined };
+function createBaseOpenEntrustedShopReply(): OpenEntrustedShopReply {
+  return { shopId: 0, existing: undefined };
 }
 
-export const OpenHiredMerchantReply: MessageFns<OpenHiredMerchantReply> = {
-  encode(message: OpenHiredMerchantReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.merchantId !== 0) {
-      writer.uint32(8).uint32(message.merchantId);
+export const OpenEntrustedShopReply: MessageFns<OpenEntrustedShopReply> = {
+  encode(message: OpenEntrustedShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.shopId !== 0) {
+      writer.uint32(8).uint32(message.shopId);
     }
     if (message.existing !== undefined) {
-      HiredMerchant.encode(message.existing, writer.uint32(18).fork()).join();
+      EntrustedShop.encode(message.existing, writer.uint32(18).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): OpenHiredMerchantReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): OpenEntrustedShopReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOpenHiredMerchantReply();
+    const message = createBaseOpenEntrustedShopReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15010,7 +15010,7 @@ export const OpenHiredMerchantReply: MessageFns<OpenHiredMerchantReply> = {
             break;
           }
 
-          message.merchantId = reader.uint32();
+          message.shopId = reader.uint32();
           continue;
         }
         case 2: {
@@ -15018,7 +15018,7 @@ export const OpenHiredMerchantReply: MessageFns<OpenHiredMerchantReply> = {
             break;
           }
 
-          message.existing = HiredMerchant.decode(reader, reader.uint32());
+          message.existing = EntrustedShop.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -15030,49 +15030,49 @@ export const OpenHiredMerchantReply: MessageFns<OpenHiredMerchantReply> = {
     return message;
   },
 
-  fromJSON(object: any): OpenHiredMerchantReply {
+  fromJSON(object: any): OpenEntrustedShopReply {
     return {
-      merchantId: isSet(object.merchantId)
-        ? globalThis.Number(object.merchantId)
-        : isSet(object.merchant_id)
-        ? globalThis.Number(object.merchant_id)
+      shopId: isSet(object.shopId)
+        ? globalThis.Number(object.shopId)
+        : isSet(object.shop_id)
+        ? globalThis.Number(object.shop_id)
         : 0,
-      existing: isSet(object.existing) ? HiredMerchant.fromJSON(object.existing) : undefined,
+      existing: isSet(object.existing) ? EntrustedShop.fromJSON(object.existing) : undefined,
     };
   },
 
-  toJSON(message: OpenHiredMerchantReply): unknown {
+  toJSON(message: OpenEntrustedShopReply): unknown {
     const obj: any = {};
-    if (message.merchantId !== 0) {
-      obj.merchantId = Math.round(message.merchantId);
+    if (message.shopId !== 0) {
+      obj.shopId = Math.round(message.shopId);
     }
     if (message.existing !== undefined) {
-      obj.existing = HiredMerchant.toJSON(message.existing);
+      obj.existing = EntrustedShop.toJSON(message.existing);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<OpenHiredMerchantReply>, I>>(base?: I): OpenHiredMerchantReply {
-    return OpenHiredMerchantReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<OpenEntrustedShopReply>, I>>(base?: I): OpenEntrustedShopReply {
+    return OpenEntrustedShopReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<OpenHiredMerchantReply>, I>>(object: I): OpenHiredMerchantReply {
-    const message = createBaseOpenHiredMerchantReply();
-    message.merchantId = object.merchantId ?? 0;
+  fromPartial<I extends Exact<DeepPartial<OpenEntrustedShopReply>, I>>(object: I): OpenEntrustedShopReply {
+    const message = createBaseOpenEntrustedShopReply();
+    message.shopId = object.shopId ?? 0;
     message.existing = (object.existing !== undefined && object.existing !== null)
-      ? HiredMerchant.fromPartial(object.existing)
+      ? EntrustedShop.fromPartial(object.existing)
       : undefined;
     return message;
   },
 };
 
-function createBaseSaveHiredMerchantRequest(): SaveHiredMerchantRequest {
-  return { merchant: undefined, characters: [], close: false };
+function createBaseSaveEntrustedShopRequest(): SaveEntrustedShopRequest {
+  return { shop: undefined, characters: [], close: false };
 }
 
-export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
-  encode(message: SaveHiredMerchantRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.merchant !== undefined) {
-      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+export const SaveEntrustedShopRequest: MessageFns<SaveEntrustedShopRequest> = {
+  encode(message: SaveEntrustedShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.shop !== undefined) {
+      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
     }
     for (const v of message.characters) {
       CharacterSaveEntry.encode(v!, writer.uint32(18).fork()).join();
@@ -15083,10 +15083,10 @@ export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SaveHiredMerchantRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): SaveEntrustedShopRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSaveHiredMerchantRequest();
+    const message = createBaseSaveEntrustedShopRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15095,7 +15095,7 @@ export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
             break;
           }
 
-          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          message.shop = EntrustedShop.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -15123,9 +15123,9 @@ export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SaveHiredMerchantRequest {
+  fromJSON(object: any): SaveEntrustedShopRequest {
     return {
-      merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined,
+      shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined,
       characters: globalThis.Array.isArray(object?.characters)
         ? object.characters.map((e: any) => CharacterSaveEntry.fromJSON(e))
         : [],
@@ -15133,10 +15133,10 @@ export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
     };
   },
 
-  toJSON(message: SaveHiredMerchantRequest): unknown {
+  toJSON(message: SaveEntrustedShopRequest): unknown {
     const obj: any = {};
-    if (message.merchant !== undefined) {
-      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    if (message.shop !== undefined) {
+      obj.shop = EntrustedShop.toJSON(message.shop);
     }
     if (message.characters?.length) {
       obj.characters = message.characters.map((e) => CharacterSaveEntry.toJSON(e));
@@ -15147,13 +15147,13 @@ export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SaveHiredMerchantRequest>, I>>(base?: I): SaveHiredMerchantRequest {
-    return SaveHiredMerchantRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SaveEntrustedShopRequest>, I>>(base?: I): SaveEntrustedShopRequest {
+    return SaveEntrustedShopRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SaveHiredMerchantRequest>, I>>(object: I): SaveHiredMerchantRequest {
-    const message = createBaseSaveHiredMerchantRequest();
-    message.merchant = (object.merchant !== undefined && object.merchant !== null)
-      ? HiredMerchant.fromPartial(object.merchant)
+  fromPartial<I extends Exact<DeepPartial<SaveEntrustedShopRequest>, I>>(object: I): SaveEntrustedShopRequest {
+    const message = createBaseSaveEntrustedShopRequest();
+    message.shop = (object.shop !== undefined && object.shop !== null)
+      ? EntrustedShop.fromPartial(object.shop)
       : undefined;
     message.characters = object.characters?.map((e) => CharacterSaveEntry.fromPartial(e)) || [];
     message.close = object.close ?? false;
@@ -15161,19 +15161,19 @@ export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
   },
 };
 
-function createBaseSaveHiredMerchantReply(): SaveHiredMerchantReply {
+function createBaseSaveEntrustedShopReply(): SaveEntrustedShopReply {
   return {};
 }
 
-export const SaveHiredMerchantReply: MessageFns<SaveHiredMerchantReply> = {
-  encode(_: SaveHiredMerchantReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SaveEntrustedShopReply: MessageFns<SaveEntrustedShopReply> = {
+  encode(_: SaveEntrustedShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SaveHiredMerchantReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): SaveEntrustedShopReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSaveHiredMerchantReply();
+    const message = createBaseSaveEntrustedShopReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15186,20 +15186,20 @@ export const SaveHiredMerchantReply: MessageFns<SaveHiredMerchantReply> = {
     return message;
   },
 
-  fromJSON(_: any): SaveHiredMerchantReply {
+  fromJSON(_: any): SaveEntrustedShopReply {
     return {};
   },
 
-  toJSON(_: SaveHiredMerchantReply): unknown {
+  toJSON(_: SaveEntrustedShopReply): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SaveHiredMerchantReply>, I>>(base?: I): SaveHiredMerchantReply {
-    return SaveHiredMerchantReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SaveEntrustedShopReply>, I>>(base?: I): SaveEntrustedShopReply {
+    return SaveEntrustedShopReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SaveHiredMerchantReply>, I>>(_: I): SaveHiredMerchantReply {
-    const message = createBaseSaveHiredMerchantReply();
+  fromPartial<I extends Exact<DeepPartial<SaveEntrustedShopReply>, I>>(_: I): SaveEntrustedShopReply {
+    const message = createBaseSaveEntrustedShopReply();
     return message;
   },
 };
@@ -15309,13 +15309,13 @@ export const ClaimStoreBankRequest: MessageFns<ClaimStoreBankRequest> = {
 };
 
 function createBaseClaimStoreBankReply(): ClaimStoreBankReply {
-  return { merchant: undefined };
+  return { shop: undefined };
 }
 
 export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
   encode(message: ClaimStoreBankReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.merchant !== undefined) {
-      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+    if (message.shop !== undefined) {
+      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -15332,7 +15332,7 @@ export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
             break;
           }
 
-          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          message.shop = EntrustedShop.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -15345,13 +15345,13 @@ export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
   },
 
   fromJSON(object: any): ClaimStoreBankReply {
-    return { merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined };
+    return { shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined };
   },
 
   toJSON(message: ClaimStoreBankReply): unknown {
     const obj: any = {};
-    if (message.merchant !== undefined) {
-      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    if (message.shop !== undefined) {
+      obj.shop = EntrustedShop.toJSON(message.shop);
     }
     return obj;
   },
@@ -15361,19 +15361,19 @@ export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
   },
   fromPartial<I extends Exact<DeepPartial<ClaimStoreBankReply>, I>>(object: I): ClaimStoreBankReply {
     const message = createBaseClaimStoreBankReply();
-    message.merchant = (object.merchant !== undefined && object.merchant !== null)
-      ? HiredMerchant.fromPartial(object.merchant)
+    message.shop = (object.shop !== undefined && object.shop !== null)
+      ? EntrustedShop.fromPartial(object.shop)
       : undefined;
     return message;
   },
 };
 
-function createBaseCloseChannelMerchantsRequest(): CloseChannelMerchantsRequest {
+function createBaseCloseChannelEntrustedShopsRequest(): CloseChannelEntrustedShopsRequest {
   return { worldId: 0, channelId: 0 };
 }
 
-export const CloseChannelMerchantsRequest: MessageFns<CloseChannelMerchantsRequest> = {
-  encode(message: CloseChannelMerchantsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const CloseChannelEntrustedShopsRequest: MessageFns<CloseChannelEntrustedShopsRequest> = {
+  encode(message: CloseChannelEntrustedShopsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.worldId !== 0) {
       writer.uint32(8).uint32(message.worldId);
     }
@@ -15383,10 +15383,10 @@ export const CloseChannelMerchantsRequest: MessageFns<CloseChannelMerchantsReque
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelMerchantsRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelEntrustedShopsRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCloseChannelMerchantsRequest();
+    const message = createBaseCloseChannelEntrustedShopsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15415,7 +15415,7 @@ export const CloseChannelMerchantsRequest: MessageFns<CloseChannelMerchantsReque
     return message;
   },
 
-  fromJSON(object: any): CloseChannelMerchantsRequest {
+  fromJSON(object: any): CloseChannelEntrustedShopsRequest {
     return {
       worldId: isSet(object.worldId)
         ? globalThis.Number(object.worldId)
@@ -15430,7 +15430,7 @@ export const CloseChannelMerchantsRequest: MessageFns<CloseChannelMerchantsReque
     };
   },
 
-  toJSON(message: CloseChannelMerchantsRequest): unknown {
+  toJSON(message: CloseChannelEntrustedShopsRequest): unknown {
     const obj: any = {};
     if (message.worldId !== 0) {
       obj.worldId = Math.round(message.worldId);
@@ -15441,33 +15441,37 @@ export const CloseChannelMerchantsRequest: MessageFns<CloseChannelMerchantsReque
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CloseChannelMerchantsRequest>, I>>(base?: I): CloseChannelMerchantsRequest {
-    return CloseChannelMerchantsRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<CloseChannelEntrustedShopsRequest>, I>>(
+    base?: I,
+  ): CloseChannelEntrustedShopsRequest {
+    return CloseChannelEntrustedShopsRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CloseChannelMerchantsRequest>, I>>(object: I): CloseChannelMerchantsRequest {
-    const message = createBaseCloseChannelMerchantsRequest();
+  fromPartial<I extends Exact<DeepPartial<CloseChannelEntrustedShopsRequest>, I>>(
+    object: I,
+  ): CloseChannelEntrustedShopsRequest {
+    const message = createBaseCloseChannelEntrustedShopsRequest();
     message.worldId = object.worldId ?? 0;
     message.channelId = object.channelId ?? 0;
     return message;
   },
 };
 
-function createBaseCloseChannelMerchantsReply(): CloseChannelMerchantsReply {
+function createBaseCloseChannelEntrustedShopsReply(): CloseChannelEntrustedShopsReply {
   return { count: 0 };
 }
 
-export const CloseChannelMerchantsReply: MessageFns<CloseChannelMerchantsReply> = {
-  encode(message: CloseChannelMerchantsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const CloseChannelEntrustedShopsReply: MessageFns<CloseChannelEntrustedShopsReply> = {
+  encode(message: CloseChannelEntrustedShopsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.count !== 0) {
       writer.uint32(8).uint32(message.count);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelMerchantsReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelEntrustedShopsReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCloseChannelMerchantsReply();
+    const message = createBaseCloseChannelEntrustedShopsReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15488,11 +15492,11 @@ export const CloseChannelMerchantsReply: MessageFns<CloseChannelMerchantsReply> 
     return message;
   },
 
-  fromJSON(object: any): CloseChannelMerchantsReply {
+  fromJSON(object: any): CloseChannelEntrustedShopsReply {
     return { count: isSet(object.count) ? globalThis.Number(object.count) : 0 };
   },
 
-  toJSON(message: CloseChannelMerchantsReply): unknown {
+  toJSON(message: CloseChannelEntrustedShopsReply): unknown {
     const obj: any = {};
     if (message.count !== 0) {
       obj.count = Math.round(message.count);
@@ -15500,11 +15504,13 @@ export const CloseChannelMerchantsReply: MessageFns<CloseChannelMerchantsReply> 
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CloseChannelMerchantsReply>, I>>(base?: I): CloseChannelMerchantsReply {
-    return CloseChannelMerchantsReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<CloseChannelEntrustedShopsReply>, I>>(base?: I): CloseChannelEntrustedShopsReply {
+    return CloseChannelEntrustedShopsReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CloseChannelMerchantsReply>, I>>(object: I): CloseChannelMerchantsReply {
-    const message = createBaseCloseChannelMerchantsReply();
+  fromPartial<I extends Exact<DeepPartial<CloseChannelEntrustedShopsReply>, I>>(
+    object: I,
+  ): CloseChannelEntrustedShopsReply {
+    const message = createBaseCloseChannelEntrustedShopsReply();
     message.count = object.count ?? 0;
     return message;
   },
@@ -32726,38 +32732,38 @@ export const InternalService = {
       Buffer.from(CheckParcelArrivalsReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): CheckParcelArrivalsReply => CheckParcelArrivalsReply.decode(value),
   },
-  findHiredMerchant: {
-    path: "/fm.internal.Internal/FindHiredMerchant" as const,
+  findEntrustedShop: {
+    path: "/fm.internal.Internal/FindEntrustedShop" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: FindHiredMerchantRequest): Buffer =>
-      Buffer.from(FindHiredMerchantRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): FindHiredMerchantRequest => FindHiredMerchantRequest.decode(value),
-    responseSerialize: (value: FindHiredMerchantReply): Buffer =>
-      Buffer.from(FindHiredMerchantReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): FindHiredMerchantReply => FindHiredMerchantReply.decode(value),
+    requestSerialize: (value: FindEntrustedShopRequest): Buffer =>
+      Buffer.from(FindEntrustedShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FindEntrustedShopRequest => FindEntrustedShopRequest.decode(value),
+    responseSerialize: (value: FindEntrustedShopReply): Buffer =>
+      Buffer.from(FindEntrustedShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FindEntrustedShopReply => FindEntrustedShopReply.decode(value),
   },
-  openHiredMerchant: {
-    path: "/fm.internal.Internal/OpenHiredMerchant" as const,
+  openEntrustedShop: {
+    path: "/fm.internal.Internal/OpenEntrustedShop" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: OpenHiredMerchantRequest): Buffer =>
-      Buffer.from(OpenHiredMerchantRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): OpenHiredMerchantRequest => OpenHiredMerchantRequest.decode(value),
-    responseSerialize: (value: OpenHiredMerchantReply): Buffer =>
-      Buffer.from(OpenHiredMerchantReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): OpenHiredMerchantReply => OpenHiredMerchantReply.decode(value),
+    requestSerialize: (value: OpenEntrustedShopRequest): Buffer =>
+      Buffer.from(OpenEntrustedShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): OpenEntrustedShopRequest => OpenEntrustedShopRequest.decode(value),
+    responseSerialize: (value: OpenEntrustedShopReply): Buffer =>
+      Buffer.from(OpenEntrustedShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): OpenEntrustedShopReply => OpenEntrustedShopReply.decode(value),
   },
-  saveHiredMerchant: {
-    path: "/fm.internal.Internal/SaveHiredMerchant" as const,
+  saveEntrustedShop: {
+    path: "/fm.internal.Internal/SaveEntrustedShop" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: SaveHiredMerchantRequest): Buffer =>
-      Buffer.from(SaveHiredMerchantRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): SaveHiredMerchantRequest => SaveHiredMerchantRequest.decode(value),
-    responseSerialize: (value: SaveHiredMerchantReply): Buffer =>
-      Buffer.from(SaveHiredMerchantReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): SaveHiredMerchantReply => SaveHiredMerchantReply.decode(value),
+    requestSerialize: (value: SaveEntrustedShopRequest): Buffer =>
+      Buffer.from(SaveEntrustedShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SaveEntrustedShopRequest => SaveEntrustedShopRequest.decode(value),
+    responseSerialize: (value: SaveEntrustedShopReply): Buffer =>
+      Buffer.from(SaveEntrustedShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SaveEntrustedShopReply => SaveEntrustedShopReply.decode(value),
   },
   claimStoreBank: {
     path: "/fm.internal.Internal/ClaimStoreBank" as const,
@@ -32769,16 +32775,18 @@ export const InternalService = {
     responseSerialize: (value: ClaimStoreBankReply): Buffer => Buffer.from(ClaimStoreBankReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): ClaimStoreBankReply => ClaimStoreBankReply.decode(value),
   },
-  closeChannelMerchants: {
-    path: "/fm.internal.Internal/CloseChannelMerchants" as const,
+  closeChannelEntrustedShops: {
+    path: "/fm.internal.Internal/CloseChannelEntrustedShops" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: CloseChannelMerchantsRequest): Buffer =>
-      Buffer.from(CloseChannelMerchantsRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): CloseChannelMerchantsRequest => CloseChannelMerchantsRequest.decode(value),
-    responseSerialize: (value: CloseChannelMerchantsReply): Buffer =>
-      Buffer.from(CloseChannelMerchantsReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): CloseChannelMerchantsReply => CloseChannelMerchantsReply.decode(value),
+    requestSerialize: (value: CloseChannelEntrustedShopsRequest): Buffer =>
+      Buffer.from(CloseChannelEntrustedShopsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CloseChannelEntrustedShopsRequest =>
+      CloseChannelEntrustedShopsRequest.decode(value),
+    responseSerialize: (value: CloseChannelEntrustedShopsReply): Buffer =>
+      Buffer.from(CloseChannelEntrustedShopsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CloseChannelEntrustedShopsReply =>
+      CloseChannelEntrustedShopsReply.decode(value),
   },
   loginAccount: {
     path: "/fm.internal.Internal/LoginAccount" as const,
@@ -33666,11 +33674,11 @@ export interface InternalServer extends UntypedServiceImplementation {
   claimParcel: handleUnaryCall<ClaimParcelRequest, ClaimParcelReply>;
   deleteParcel: handleUnaryCall<DeleteParcelRequest, DeleteParcelReply>;
   checkParcelArrivals: handleUnaryCall<CheckParcelArrivalsRequest, CheckParcelArrivalsReply>;
-  findHiredMerchant: handleUnaryCall<FindHiredMerchantRequest, FindHiredMerchantReply>;
-  openHiredMerchant: handleUnaryCall<OpenHiredMerchantRequest, OpenHiredMerchantReply>;
-  saveHiredMerchant: handleUnaryCall<SaveHiredMerchantRequest, SaveHiredMerchantReply>;
+  findEntrustedShop: handleUnaryCall<FindEntrustedShopRequest, FindEntrustedShopReply>;
+  openEntrustedShop: handleUnaryCall<OpenEntrustedShopRequest, OpenEntrustedShopReply>;
+  saveEntrustedShop: handleUnaryCall<SaveEntrustedShopRequest, SaveEntrustedShopReply>;
   claimStoreBank: handleUnaryCall<ClaimStoreBankRequest, ClaimStoreBankReply>;
-  closeChannelMerchants: handleUnaryCall<CloseChannelMerchantsRequest, CloseChannelMerchantsReply>;
+  closeChannelEntrustedShops: handleUnaryCall<CloseChannelEntrustedShopsRequest, CloseChannelEntrustedShopsReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
   getCharacterList: handleUnaryCall<GetCharacterListRequest, GetCharacterListReply>;
   checkCharacterName: handleUnaryCall<CheckCharacterNameRequest, CheckCharacterNameReply>;
@@ -33968,50 +33976,50 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: CheckParcelArrivalsReply) => void,
   ): ClientUnaryCall;
-  findHiredMerchant(
-    request: FindHiredMerchantRequest,
-    callback: (error: ServiceError | null, response: FindHiredMerchantReply) => void,
+  findEntrustedShop(
+    request: FindEntrustedShopRequest,
+    callback: (error: ServiceError | null, response: FindEntrustedShopReply) => void,
   ): ClientUnaryCall;
-  findHiredMerchant(
-    request: FindHiredMerchantRequest,
+  findEntrustedShop(
+    request: FindEntrustedShopRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: FindHiredMerchantReply) => void,
+    callback: (error: ServiceError | null, response: FindEntrustedShopReply) => void,
   ): ClientUnaryCall;
-  findHiredMerchant(
-    request: FindHiredMerchantRequest,
-    metadata: Metadata,
-    options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: FindHiredMerchantReply) => void,
-  ): ClientUnaryCall;
-  openHiredMerchant(
-    request: OpenHiredMerchantRequest,
-    callback: (error: ServiceError | null, response: OpenHiredMerchantReply) => void,
-  ): ClientUnaryCall;
-  openHiredMerchant(
-    request: OpenHiredMerchantRequest,
-    metadata: Metadata,
-    callback: (error: ServiceError | null, response: OpenHiredMerchantReply) => void,
-  ): ClientUnaryCall;
-  openHiredMerchant(
-    request: OpenHiredMerchantRequest,
+  findEntrustedShop(
+    request: FindEntrustedShopRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: OpenHiredMerchantReply) => void,
+    callback: (error: ServiceError | null, response: FindEntrustedShopReply) => void,
   ): ClientUnaryCall;
-  saveHiredMerchant(
-    request: SaveHiredMerchantRequest,
-    callback: (error: ServiceError | null, response: SaveHiredMerchantReply) => void,
+  openEntrustedShop(
+    request: OpenEntrustedShopRequest,
+    callback: (error: ServiceError | null, response: OpenEntrustedShopReply) => void,
   ): ClientUnaryCall;
-  saveHiredMerchant(
-    request: SaveHiredMerchantRequest,
+  openEntrustedShop(
+    request: OpenEntrustedShopRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: SaveHiredMerchantReply) => void,
+    callback: (error: ServiceError | null, response: OpenEntrustedShopReply) => void,
   ): ClientUnaryCall;
-  saveHiredMerchant(
-    request: SaveHiredMerchantRequest,
+  openEntrustedShop(
+    request: OpenEntrustedShopRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: SaveHiredMerchantReply) => void,
+    callback: (error: ServiceError | null, response: OpenEntrustedShopReply) => void,
+  ): ClientUnaryCall;
+  saveEntrustedShop(
+    request: SaveEntrustedShopRequest,
+    callback: (error: ServiceError | null, response: SaveEntrustedShopReply) => void,
+  ): ClientUnaryCall;
+  saveEntrustedShop(
+    request: SaveEntrustedShopRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SaveEntrustedShopReply) => void,
+  ): ClientUnaryCall;
+  saveEntrustedShop(
+    request: SaveEntrustedShopRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SaveEntrustedShopReply) => void,
   ): ClientUnaryCall;
   claimStoreBank(
     request: ClaimStoreBankRequest,
@@ -34028,20 +34036,20 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
   ): ClientUnaryCall;
-  closeChannelMerchants(
-    request: CloseChannelMerchantsRequest,
-    callback: (error: ServiceError | null, response: CloseChannelMerchantsReply) => void,
+  closeChannelEntrustedShops(
+    request: CloseChannelEntrustedShopsRequest,
+    callback: (error: ServiceError | null, response: CloseChannelEntrustedShopsReply) => void,
   ): ClientUnaryCall;
-  closeChannelMerchants(
-    request: CloseChannelMerchantsRequest,
+  closeChannelEntrustedShops(
+    request: CloseChannelEntrustedShopsRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: CloseChannelMerchantsReply) => void,
+    callback: (error: ServiceError | null, response: CloseChannelEntrustedShopsReply) => void,
   ): ClientUnaryCall;
-  closeChannelMerchants(
-    request: CloseChannelMerchantsRequest,
+  closeChannelEntrustedShops(
+    request: CloseChannelEntrustedShopsRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: CloseChannelMerchantsReply) => void,
+    callback: (error: ServiceError | null, response: CloseChannelEntrustedShopsReply) => void,
   ): ClientUnaryCall;
   loginAccount(
     request: LoginAccountRequest,

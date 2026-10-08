@@ -8,17 +8,17 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 )
 
-type UseHiredMerchant struct {
+type UseEntrustedShop struct {
 	gs *GameServer
 }
 
-func (UseHiredMerchant) New(gs *GameServer) *UseHiredMerchant {
-	return &UseHiredMerchant{
+func (UseEntrustedShop) New(gs *GameServer) *UseEntrustedShop {
+	return &UseEntrustedShop{
 		gs: gs,
 	}
 }
 
-func (h *UseHiredMerchant) Handle(ctx *core.ClientContext, req *request.UseHiredMerchant) error {
+func (h *UseEntrustedShop) Handle(ctx *core.ClientContext, req *request.UseEntrustedShop) error {
 	client, ok := ctx.Client.(*client.GameClient)
 	if ok == false {
 		return fmt.Errorf("client is not a GameClient")
@@ -28,6 +28,6 @@ func (h *UseHiredMerchant) Handle(ctx *core.ClientContext, req *request.UseHired
 	if ch == nil {
 		return nil
 	}
-	ch.UseHiredMerchant(ctx.ActorContext)
+	ch.UseEntrustedShop(ctx.ActorContext)
 	return nil
 }

@@ -36,11 +36,11 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 	var err error
 	switch req.Mode {
 	case pconst.MiniRoomCreate:
-		if req.Type != pconst.MiniRoomTypeHiredMerchant {
+		if req.Type != pconst.MiniRoomTypeEntrustedShop {
 			ch.Listener.OnUnlockAction(ch)
 			return nil
 		}
-		err = ch.CreateHiredMerchant(ctx.ActorContext, req.Title, req.Slot, req.ItemID)
+		err = ch.CreateEntrustedShop(ctx.ActorContext, req.Title, req.Slot, req.ItemID)
 	case pconst.MiniRoomVisit:
 		err = ch.VisitMiniRoom(req.SN)
 	case pconst.MiniRoomExit:

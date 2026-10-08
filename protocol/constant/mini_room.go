@@ -32,8 +32,8 @@ const (
 )
 
 const (
-	MiniRoomTypeHiredMerchant  uint8 = 5
-	MiniRoomHiredMerchantUsers uint8 = 4
+	MiniRoomTypeEntrustedShop  uint8 = 5
+	MiniRoomEntrustedShopUsers uint8 = 4
 	MiniRoomChatShop           uint8 = 8
 )
 

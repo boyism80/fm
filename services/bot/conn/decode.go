@@ -94,9 +94,9 @@ var decoders = func() []decoder {
 		newDecoder[response.DueyArrivals](duey(pconst.DueyResultArrivals)),
 		newDecoder[response.Duey](nil),
 		newDecoder[response.EntrustedShopCheckResult](nil),
-		newDecoder[response.SpawnHiredMerchant](nil),
-		newDecoder[response.DestroyHiredMerchant](nil),
-		newDecoder[response.UpdateHiredMerchant](nil),
+		newDecoder[response.SpawnEntrustedShop](nil),
+		newDecoder[response.DestroyEntrustedShop](nil),
+		newDecoder[response.UpdateEntrustedShop](nil),
 		newDecoder[response.MiniRoomEnterFailed](func(body []byte) bool {
 			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter && body[1] == 0
 		}),
