@@ -32,7 +32,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 	if ch == nil {
 		return nil
 	}
-	_, inGuild := ch.GetGuildID()
+	_, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}

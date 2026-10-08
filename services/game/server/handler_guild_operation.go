@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/boyism80/fm/core/clock"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
@@ -57,7 +55,7 @@ func (h *GuildOperation) applyGuildFromProto(ch *entity.Character, guildPb *inte
 	}
 	guildID := guildPb.GetGuildId()
 	id := guildID
-	ch.SetGuildID(&id)
+	ch.Guild.SetID(&id)
 	h.gs.guild.Update(guildPb)
 	ch.Listener.OnShowGuildInfo(ch)
 	ch.Listener.OnBroadcastGuildAppearance(ch)
@@ -120,7 +118,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 
 	switch req.Operation {
 	case pconst.GuildC2SCreate:
-		if _, inGuild := ch.GetGuildID(); inGuild {
+		if _, inGuild := ch.Guild.ID(); inGuild {
 			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultAlreadyInGuild)
 			return nil
@@ -172,7 +170,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		return nil
 	case pconst.GuildC2SInvite:
-		guildID, inGuild := ch.GetGuildID()
+		guildID, inGuild := ch.Guild.ID()
 		g := h.gs.GetGuildSystem().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
@@ -191,22 +189,12 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 		if mapInstance := ch.GetMap(); mapInstance != nil {
 			if target := mapInstance.GetPlayer(targetID); target != nil {
-				if _, targetInGuild := target.GetGuildID(); targetInGuild {
+				switch target.Guild.Invite(guildID, ch.GetName()) {
+				case entity.ErrGuildAlreadyJoined:
 					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
-					return nil
-				}
-				now := clock.Now()
-				for id, expiresAt := range target.GuildInvites {
-					if !now.Before(expiresAt) {
-						delete(target.GuildInvites, id)
-					}
-				}
-				if len(target.GuildInvites) > 0 {
+				case entity.ErrGuildInviteBusy:
 					ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.GuildInviteTargetBusyMessage)
-					return nil
 				}
-				target.GuildInvites[guildID] = now.Add(gameconst.GuildInviteDuration)
-				target.Listener.OnGuildInvite(target, guildID, ch.GetName())
 				return nil
 			}
 		}
@@ -218,23 +206,12 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		return nil
 	case pconst.GuildC2SAcceptInvite:
-		if _, inGuild := ch.GetGuildID(); inGuild {
-			return nil
-		}
 		if req.GuildID == 0 || req.CharacterID != charID {
 			return nil
 		}
-		now := clock.Now()
-		expiresAt, hasInvite := ch.GuildInvites[req.GuildID]
-		for id, exp := range ch.GuildInvites {
-			if !now.Before(exp) {
-				delete(ch.GuildInvites, id)
-			}
-		}
-		if !hasInvite || !now.Before(expiresAt) {
+		if ch.Guild.AcceptInvite(req.GuildID) != nil {
 			return nil
 		}
-		delete(ch.GuildInvites, req.GuildID)
 
 		member := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_NEW)
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
@@ -272,7 +249,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if req.CharacterName != ch.GetName() {
 			return nil
 		}
-		if _, inGuild := ch.GetGuildID(); !inGuild {
+		if _, inGuild := ch.Guild.ID(); !inGuild {
 			return nil
 		}
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
@@ -300,7 +277,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if targetID == 0 {
 			return nil
 		}
-		guildID, inGuild := ch.GetGuildID()
+		guildID, inGuild := ch.Guild.ID()
 		g := h.gs.GetGuildSystem().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
@@ -329,7 +306,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		return nil
 	case pconst.GuildC2SChangeRankTitles:
-		guildID, inGuild := ch.GetGuildID()
+		guildID, inGuild := ch.Guild.ID()
 		g := h.gs.GetGuildSystem().Get(guildID)
 		if !inGuild || g == nil || !g.IsGuildMaster(charID) {
 			return nil
@@ -371,7 +348,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if targetID == 0 {
 			return nil
 		}
-		guildID, inGuild := ch.GetGuildID()
+		guildID, inGuild := ch.Guild.ID()
 		g := h.gs.GetGuildSystem().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
@@ -405,7 +382,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		return nil
 	case pconst.GuildC2SChangeEmblem:
-		guildID, inGuild := ch.GetGuildID()
+		guildID, inGuild := ch.Guild.ID()
 		g := h.gs.GetGuildSystem().Get(guildID)
 		mapInstance := ch.GetMap()
 		if !inGuild || g == nil || !g.IsGuildMaster(charID) ||
@@ -446,7 +423,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		return nil
 	case pconst.GuildC2SChangeNotice:
-		guildID, inGuild := ch.GetGuildID()
+		guildID, inGuild := ch.Guild.ID()
 		g := h.gs.GetGuildSystem().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil

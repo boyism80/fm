@@ -173,7 +173,7 @@ func (ac *AllianceCache) NotifyMemberFieldsChanged(ch *entity.Character) {
 		return
 	}
 	ac.gs.guild.NotifyMemberFieldsChanged(ch)
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return
 	}
@@ -270,7 +270,7 @@ func (ac *AllianceCache) ValidateCreateAlliance(ch *entity.Character) (uint32, b
 		return 0, false
 	}
 	leaderID := ch.GetID()
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return 0, false
 	}

@@ -2,9 +2,9 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core/clock"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type DeliverGuildInviteHandler struct{}
@@ -25,22 +25,15 @@ func (h *DeliverGuildInviteHandler) Handle(ctx actor.Context, a *GameLogicActor,
 	if ch == nil {
 		return
 	}
-	if _, inGuild := ch.GetGuildID(); inGuild {
+	switch ch.Guild.Invite(msg.GuildID, msg.InviterName) {
+	case entity.ErrGuildAlreadyJoined:
 		if a.GameWorld != nil {
 			a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverGuildMessage{
 				CharacterID: msg.InviterCharacterID,
 				Code:        pconst.GuildResponseAlreadyInGuild,
 			})
 		}
-		return
-	}
-	now := clock.Now()
-	for id, expiresAt := range ch.GuildInvites {
-		if !now.Before(expiresAt) {
-			delete(ch.GuildInvites, id)
-		}
-	}
-	if len(ch.GuildInvites) > 0 {
+	case entity.ErrGuildInviteBusy:
 		if a.GameWorld != nil {
 			a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverMessage{
 				CharacterID: msg.InviterCharacterID,
@@ -48,8 +41,5 @@ func (h *DeliverGuildInviteHandler) Handle(ctx actor.Context, a *GameLogicActor,
 				Message:     constant.GuildInviteTargetBusyMessage,
 			})
 		}
-		return
 	}
-	ch.GuildInvites[msg.GuildID] = now.Add(constant.GuildInviteDuration)
-	ch.Listener.OnGuildInvite(ch, msg.GuildID, msg.InviterName)
 }

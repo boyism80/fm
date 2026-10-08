@@ -172,7 +172,7 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
 	if l.gs == nil {
 		return
 	}
-	guildID, ok := ch.GetGuildID()
+	guildID, ok := ch.Guild.ID()
 	if !ok {
 		return
 	}
@@ -194,7 +194,7 @@ func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *entity.Character) {
 		return
 	}
 	allianceID := uint32(0)
-	if guildID, ok := ch.GetGuildID(); ok {
+	if guildID, ok := ch.Guild.ID(); ok {
 		if g := l.gs.guild.Get(guildID); g != nil {
 			if id, inAlliance := g.GetAllianceID(); inAlliance {
 				allianceID = id
@@ -215,7 +215,7 @@ func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *entity.Character) {
 		return
 	}
 	allianceID := uint32(0)
-	if guildID, ok := ch.GetGuildID(); ok {
+	if guildID, ok := ch.Guild.ID(); ok {
 		if g := l.gs.guild.Get(guildID); g != nil {
 			if id, inAlliance := g.GetAllianceID(); inAlliance {
 				allianceID = id
@@ -233,7 +233,7 @@ func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *entity.Character) {
-	guildID, ok := ch.GetGuildID()
+	guildID, ok := ch.Guild.ID()
 	if !ok || l.gs == nil {
 		return
 	}
@@ -419,7 +419,7 @@ func (l *CharacterListenerImpl) OnGuildNewMember(ch *entity.Character, guildID u
 }
 
 func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *entity.Character) {
-	ch.SetGuildID(nil)
+	ch.Guild.SetID(nil)
 	_ = ch.Send(&response.GuildShowInfo{
 		Info: nil,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -435,7 +435,7 @@ func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *entity.Character, guildID uint32) {
-	ch.SetGuildID(nil)
+	ch.Guild.SetID(nil)
 	_ = ch.Send(&response.GuildMemberLeft{
 		GuildID:     guildID,
 		CharacterID: ch.GetID(),
@@ -557,12 +557,12 @@ func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *entity.Characte
 }
 
 func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *entity.Character, guildID uint32) {
-	if gid, ok := ch.GetGuildID(); ok && gid == guildID {
+	if gid, ok := ch.Guild.ID(); ok && gid == guildID {
 		_ = ch.Send(&response.GuildDisband{
 			GuildID: guildID,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
-	ch.SetGuildID(nil)
+	ch.Guild.SetID(nil)
 	_ = ch.Send(&response.GuildShowInfo{
 		Info: nil,
 	}, types.SEND_POLICY_ENCRYPT)

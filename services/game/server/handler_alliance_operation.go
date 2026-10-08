@@ -76,7 +76,7 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *entity.Char
 	if targetGuildID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
@@ -132,7 +132,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *enti
 	if newLeaderID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
@@ -181,7 +181,7 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *enti
 	if h.gs == nil || h.gs.internalClient == nil {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
@@ -224,7 +224,7 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 	if h.gs == nil || h.gs.internalClient == nil {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
@@ -282,7 +282,7 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 	if targetID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
@@ -327,7 +327,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 	if h.gs == nil {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
@@ -388,7 +388,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *enti
 	if h.gs == nil || h.gs.internalClient == nil {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
@@ -443,7 +443,7 @@ func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *entity
 	if h.gs == nil {
 		return nil
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}

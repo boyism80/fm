@@ -23,7 +23,7 @@ func (h *DeliverAllianceInviteHandler) Handle(ctx actor.Context, a *GameLogicAct
 	if ch == nil {
 		return
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild || guildID != msg.TargetGuildID {
 		return
 	}

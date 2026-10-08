@@ -95,7 +95,7 @@ func (gc *GuildCache) NotifyMemberFieldsChanged(ch *entity.Character) {
 	if gc == nil || gc.gs == nil || ch == nil {
 		return
 	}
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return
 	}

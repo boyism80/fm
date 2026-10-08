@@ -22,7 +22,7 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		return nil
 	}
 	*result = fail
-	guildID, inGuild := ch.GetGuildID()
+	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		*result = int(constant.AllianceIncreaseCapacityResultNotInAlliance)
 		return nil

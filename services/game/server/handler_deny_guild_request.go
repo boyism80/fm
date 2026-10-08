@@ -27,6 +27,6 @@ func (h *DenyGuildRequest) Handle(ctx *core.ClientContext, req *request.DenyGuil
 	if ch == nil {
 		return fmt.Errorf("character not found")
 	}
-	clear(ch.GuildInvites)
+	ch.Guild.ClearInvites()
 	return nil
 }

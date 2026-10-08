@@ -2770,7 +2770,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "guild() takes no arguments")
 				return 0
 			}
-			guildID, inGuild := ch.GetGuildID()
+			guildID, inGuild := ch.Guild.ID()
 			if !inGuild || ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1

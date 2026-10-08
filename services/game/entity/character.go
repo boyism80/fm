@@ -65,8 +65,7 @@ type Character struct {
 	Doors           *Doors
 	HomingTargetOID *uint32
 	Party           *PartyMembership
-	guildID         *uint32
-	GuildInvites    map[uint32]time.Time
+	Guild           *GuildMembership
 	buddyList       *BuddyList
 	GM              GMMode
 	stateMachine    *StateMachine
@@ -134,7 +133,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	if ch.Pets.Active != nil {
 		spawnPacket.Pet = ch.Pets.Active.ToDTO()
 	}
-	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {
+	if guildID, ok := ch.Guild.ID(); ok && ch.GameWorld != nil {
 		if guild := ch.GameWorld.GetGuildSystem().Get(guildID); guild != nil {
 			spawnPacket.GuildName = guild.Name
 			if guild.Logo != nil {
@@ -749,17 +748,6 @@ func (ch *Character) BuddyList() *BuddyList {
 func (ch *Character) SendBuddyLoginSync() {
 	entries := ch.BuddyList().SnapshotForClient()
 	ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncLogin, entries)
-}
-
-func (ch *Character) GetGuildID() (uint32, bool) {
-	if ch == nil || ch.guildID == nil {
-		return 0, false
-	}
-	return *ch.guildID, true
-}
-
-func (ch *Character) SetGuildID(guildID *uint32) {
-	ch.guildID = guildID
 }
 
 func (ch *Character) Message(message string) {

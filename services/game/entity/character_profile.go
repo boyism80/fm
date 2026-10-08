@@ -31,7 +31,7 @@ func (ch *Character) Inspect(targetID uint32) {
 		Self:        target.GetID() == ch.GetID(),
 		Wishlist:    target.CashWishlist,
 	}
-	if guildID, ok := target.GetGuildID(); ok {
+	if guildID, ok := target.Guild.ID(); ok {
 		if guild := target.GameWorld.GetGuildSystem().Get(guildID); guild != nil {
 			profile.GuildName = guild.Name
 			if alliance := guild.Alliance(); alliance != nil {

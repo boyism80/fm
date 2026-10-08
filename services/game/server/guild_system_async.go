@@ -262,7 +262,7 @@ func (s guildSystem) DisbandAllianceAsync(ctx actor.Context, ch *entity.Characte
 		return nil
 	}
 	*result = fail
-	guildID, ok := ch.GetGuildID()
+	guildID, ok := ch.Guild.ID()
 	if !ok {
 		*result = int(constant.AllianceDisbandResultNotInAlliance)
 		return nil
