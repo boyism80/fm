@@ -103,7 +103,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 		finish()
 		return
 	}
-	if t.owner.GetHp() <= 0 || t.owner.CurrentShopID != 0 || t.owner.Dialog.Thread() != nil {
+	if t.owner.GetHp() <= 0 || t.owner.Dialog.ShopID != 0 || t.owner.Dialog.Thread() != nil {
 		finish()
 		return
 	}

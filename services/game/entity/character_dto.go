@@ -94,8 +94,8 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO := ch.ToDTO()
 
 	charDTO.SkillPoint = ch.SkillPoint
-	if ch.Marriage != nil {
-		charDTO.Marriage = ch.Marriage.ToDTO()
+	if ch.Wedding.Marriage != nil {
+		charDTO.Marriage = ch.Wedding.Marriage.ToDTO()
 	}
 	charDTO.TeleportStones = ch.TeleportStones.regular
 	charDTO.VipTeleportStones = ch.TeleportStones.vip

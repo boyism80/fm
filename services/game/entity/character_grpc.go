@@ -78,6 +78,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		regular: constant.NewTeleportStoneSlots(p.GetTeleportStones(), constant.TeleportStoneCount),
 		vip:     constant.NewTeleportStoneSlots(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
 	}
+	ch.Wedding = &Wedding{owner: ch, Marriage: NewMarriageFromInternalProto(reply.GetMarriage())}
 	ch.Pets = &Pets{owner: ch, summoned: p.GetSummonedPet(), HPItem: p.GetPetHpItem(), MPItem: p.GetPetMpItem()}
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
@@ -96,7 +97,6 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.LifeCore.setMp(p.GetMp())
 
 	ch.KeyLayout().LoadKeyLayoutProto(reply.GetKeyLayout())
-	ch.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
 	ch.CashWishlist = reply.GetCashWishlist()
 	ch.MonsterBook = NewMonsterBookFromInternalProto(p.GetMonsterBookCover(), reply.GetMonsterBook())
 	ch.LoadInventory(reply.GetInventory())
@@ -116,7 +116,7 @@ func (ch *Character) LoadInventory(items []*internal.Inventory) {
 			continue
 		}
 		itemID := pb.GetItemId()
-		if ch.Marriage == nil && (constant.IsEngagementRing(itemID) || constant.IsWeddingRing(itemID)) {
+		if ch.Wedding.Marriage == nil && (constant.IsEngagementRing(itemID) || constant.IsWeddingRing(itemID)) {
 			continue
 		}
 		item, err := NewItemFromInternalProto(pb, ch.GameWorld)

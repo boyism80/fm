@@ -41,10 +41,8 @@ type Character struct {
 	mega              bool
 	random            [3]stream.RandomStream
 	Quests            *Quests
-	Marriage          *Marriage
+	Wedding           *Wedding
 	CashWishlist      []uint32
-	proposal          proposal
-	weddingGift       weddingGiftWindow
 	TeleportStones    *TeleportStones
 	MonsterBook       *MonsterBook
 	Dialog            *Dialog
@@ -60,7 +58,6 @@ type Character struct {
 	Duey              *Duey
 	Skills            *Skills
 	keyLayout         *KeyLayout
-	CurrentShopID     uint32
 	Chair             uint32
 	lastHeal          lastHeal
 	BaseStats         BaseStats
@@ -135,7 +132,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MountFatigue:      spawnBuffData.MountFatigue,
 		CrushRing:         ch.Inventory.WornRing(ch.Inventory.Rings.Left),
 		FriendshipRing:    ch.Inventory.WornRing(ch.Inventory.Rings.Mid),
-		MarriageRing:      ch.MarriageRingToDTO(),
+		MarriageRing:      ch.Wedding.RingToDTO(),
 		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
 		Team:              carnivalTeam,
 	}

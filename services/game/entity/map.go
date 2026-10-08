@@ -362,7 +362,7 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 	if character == nil {
 		return fmt.Errorf("player %d not found on map", playerID)
 	}
-	character.HideFromSpouse(ctx)
+	character.Wedding.HideFromSpouse(ctx)
 
 	if root := m.GetLuaRoot(); root != nil {
 		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)

@@ -1641,11 +1641,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Marriage == nil {
+			if ch.Wedding.Marriage == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, ch.Marriage))
+			L.Push(luax.NewLuable(L, ch.Wedding.Marriage))
 			return 1
 		},
 		"reserve_wedding": func(L *lua.LState) int {
@@ -1660,7 +1660,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise, err := ch.ReserveWedding(cfg.ActorContext, uint32(L.CheckNumber(2)))
+			promise, err := ch.Wedding.Reserve(cfg.ActorContext, uint32(L.CheckNumber(2)))
 			if err != nil {
 				L.Push(lua.LFalse)
 				return 1
@@ -1684,7 +1684,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise, err := ch.BreakEngagement(cfg.ActorContext)
+			promise, err := ch.Wedding.BreakEngagement(cfg.ActorContext)
 			if err != nil {
 				L.Push(lua.LFalse)
 				return 1
@@ -1708,7 +1708,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			promise, err := ch.RequestDivorce(cfg.ActorContext)
+			promise, err := ch.Wedding.RequestDivorce(cfg.ActorContext)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1732,7 +1732,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise, err := ch.CancelDivorce(cfg.ActorContext)
+			promise, err := ch.Wedding.CancelDivorce(cfg.ActorContext)
 			if err != nil {
 				L.Push(lua.LFalse)
 				return 1
@@ -1748,7 +1748,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.InvitedTo(uint32(L.CheckNumber(2)))))
+			L.Push(lua.LBool(ch.Wedding.InvitedTo(uint32(L.CheckNumber(2)))))
 			return 1
 		},
 		"open_wedding_wishlist": func(L *lua.LState) int {
@@ -1775,7 +1775,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					wishes = append(wishes, value.String())
 				})
 			}
-			ch.OpenWeddingGift(receiverID, wishes)
+			ch.Wedding.OpenGift(receiverID, wishes)
 			return 0
 		},
 		"open_wedding_gift_box": func(L *lua.LState) int {
@@ -1790,7 +1790,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, ch.OpenWeddingGiftBox(cfg.ActorContext), func(result bool, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.GameWorld, ch.Wedding.OpenGiftBox(cfg.ActorContext), func(result bool, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}

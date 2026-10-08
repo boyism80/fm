@@ -27,6 +27,7 @@ type Dialog struct {
 	mutex  sync.Mutex
 	thread *lua.LState
 	asked  *npcDialog
+	ShopID uint32
 }
 
 func NewDialog(owner *Character) *Dialog {

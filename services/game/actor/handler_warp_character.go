@@ -38,7 +38,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
-	msg.Character.NotifySpouseMap(ctx, false)
+	msg.Character.Wedding.NotifySpouseMap(ctx, false)
 	if msg.OnEnter != nil {
 		msg.OnEnter(ctx)
 	}

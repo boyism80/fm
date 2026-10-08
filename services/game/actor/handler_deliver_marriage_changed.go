@@ -19,5 +19,5 @@ func (h *DeliverMarriageChangedHandler) Handle(ctx actor.Context, a *GameLogicAc
 	if ch == nil {
 		return
 	}
-	ch.RefreshMarriage(ctx, msg.Event)
+	ch.Wedding.Refresh(ctx, msg.Event)
 }

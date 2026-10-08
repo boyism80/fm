@@ -32,23 +32,23 @@ func (h *RingAction) Handle(ctx *core.ClientContext, req *request.RingAction) er
 
 	switch req.Mode {
 	case pconst.RingActionPropose:
-		ch.Propose(req.Name, req.ItemID)
+		ch.Wedding.Propose(req.Name, req.ItemID)
 		ch.Listener.OnUnlockAction(ch)
 	case pconst.RingActionCancelProposal:
-		ch.CancelProposal()
+		ch.Wedding.CancelProposal()
 	case pconst.RingActionAnswer:
-		ch.AnswerProposal(ctx.ActorContext, req.Accepted, req.Name, req.CharacterID)
+		ch.Wedding.AnswerProposal(ctx.ActorContext, req.Accepted, req.Name, req.CharacterID)
 		ch.Listener.OnUnlockAction(ch)
 	case pconst.RingActionDropRing:
-		ch.DropMarriageItem(ctx.ActorContext, req.ItemID)
+		ch.Wedding.DropItem(ctx.ActorContext, req.ItemID)
 		ch.Listener.OnUnlockAction(ch)
 	case pconst.RingActionInviteGuest:
-		ch.InviteWeddingGuest(ctx.ActorContext, req.Name, req.MarriageID, int16(req.Slot))
+		ch.Wedding.InviteGuest(ctx.ActorContext, req.Name, req.MarriageID, int16(req.Slot))
 		ch.Listener.OnUnlockAction(ch)
 	case pconst.RingActionOpenInvitation:
-		ch.OpenWeddingInvitation(ctx.ActorContext, int16(req.Slot), req.ItemID)
+		ch.Wedding.OpenInvitation(ctx.ActorContext, int16(req.Slot), req.ItemID)
 	case pconst.RingActionWeddingWishlist:
-		ch.SubmitWeddingWishlist(ctx.ActorContext, req.Wishes)
+		ch.Wedding.SubmitWishlist(ctx.ActorContext, req.Wishes)
 	}
 	return nil
 }

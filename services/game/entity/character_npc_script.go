@@ -16,7 +16,7 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 	npcID := npc.Wz.ID
 
 	if shop := ch.GameWorld.GetResources().GetShop(npcID); shop != nil {
-		ch.CurrentShopID = npcID
+		ch.Dialog.ShopID = npcID
 		ch.Listener.OnOpenNpcShop(ch, npcID, shop)
 		return nil
 	}

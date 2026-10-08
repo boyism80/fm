@@ -26,7 +26,7 @@ func (ch *Character) Inspect(targetID uint32) {
 		Level:       target.level,
 		Job:         target.Class,
 		Fame:        target.population,
-		Married:     target.Marriage != nil && target.Marriage.Status == MarriageStatusMarried,
+		Married:     target.Wedding.Marriage != nil && target.Wedding.Marriage.Status == MarriageStatusMarried,
 		GuildName:   "-",
 		Self:        target.GetID() == ch.GetID(),
 		Wishlist:    target.CashWishlist,

@@ -22,7 +22,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
-	msg.Character.NotifySpouseMap(ctx, msg.Init)
+	msg.Character.Wedding.NotifySpouseMap(ctx, msg.Init)
 	if msg.Init {
 		msg.Character.SendBuddyLoginSync()
 		msg.Character.Duey.CheckArrivals(ctx)

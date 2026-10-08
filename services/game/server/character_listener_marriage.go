@@ -220,7 +220,7 @@ func (l *CharacterListenerImpl) OnWeddingWishlistInput(ch *entity.Character) {
 func (l *CharacterListenerImpl) OnEngageResult(ch *entity.Character, result pconst.EngageResult) {
 	packet := &response.EngageResult{Result: result}
 	if result == pconst.EngageResultEngaged || result == pconst.EngageResultMarried {
-		packet.Marriage = ch.Marriage.ToDTO()
+		packet.Marriage = ch.Wedding.Marriage.ToDTO()
 	}
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }

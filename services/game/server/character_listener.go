@@ -1628,7 +1628,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
 		Character:      ch.ToDTO(),
 		CrushRing:      ch.Inventory.WornRing(ch.Inventory.Rings.Left),
 		FriendshipRing: ch.Inventory.WornRing(ch.Inventory.Rings.Mid),
-		MarriageRing:   ch.MarriageRingToDTO(),
+		MarriageRing:   ch.Wedding.RingToDTO(),
 	}
 
 	ch.Broadcast(lookPacket, nil)

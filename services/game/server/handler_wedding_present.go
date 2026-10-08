@@ -34,11 +34,11 @@ func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPre
 	var err error
 	switch req.Mode {
 	case pconst.WeddingPresentGive:
-		err = ch.GiveWeddingGift(ctx.ActorContext, req.Slot, req.ItemID, req.Count)
+		err = ch.Wedding.GiveGift(ctx.ActorContext, req.Slot, req.ItemID, req.Count)
 	case pconst.WeddingPresentReceive:
-		err = ch.ReceiveWeddingGift(ctx.ActorContext, constant.InventoryType(req.InventoryType), int(req.Index))
+		err = ch.Wedding.ReceiveGift(ctx.ActorContext, constant.InventoryType(req.InventoryType), int(req.Index))
 	case pconst.WeddingPresentClose:
-		ch.CloseWeddingGift()
+		ch.Wedding.CloseGift()
 	}
 	if err != nil {
 		ch.Listener.OnUnlockAction(ch)
