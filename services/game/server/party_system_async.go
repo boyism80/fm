@@ -37,7 +37,7 @@ func (s partySystem) UpdateMemberAsync(ctx actor.Context, ch *entity.Character) 
 	return pc.sendMemberUpdate(p, req)
 }
 
-func (pc *PartyContainer) sendMemberUpdate(p *async.Task, req *internal.UpdatePartyMemberRequest) *async.Task {
+func (pc *PartyCache) sendMemberUpdate(p *async.Task, req *internal.UpdatePartyMemberRequest) *async.Task {
 	cid := req.Member.GetCharacterId()
 	p.OnError(func(err error) {
 		log.Printf("UpdatePartyMember async char %d: %v", cid, err)

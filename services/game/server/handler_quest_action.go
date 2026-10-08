@@ -35,11 +35,6 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		return fmt.Errorf("character is nil")
 	}
 
-	if character.Quests == nil {
-		log.Printf("Quest container is nil for character %d", character.GetID())
-		return fmt.Errorf("quest container is nil")
-	}
-
 	resources := character.GameWorld.GetResources()
 	if resources == nil {
 		return fmt.Errorf("resources unavailable")

@@ -73,11 +73,11 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		vipTeleportStones: constant.NewTeleportStones(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
 	}
 	ch.Dialog = NewDialog(ch)
-	ch.Buffs = NewBuffContainer(ch)
-	ch.Skills = NewSkillContainer(ch)
-	ch.Quests = NewQuestContainer(ch)
-	ch.Summons = NewSummonContainer(ch)
-	ch.Doors = NewDoorContainer(ch)
+	ch.Buffs = NewBuffs(ch)
+	ch.Skills = NewSkills(ch)
+	ch.Quests = NewQuests(ch)
+	ch.Summons = NewSummons(ch)
+	ch.Doors = NewDoors(ch)
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
 	for i, limit := range p.GetSlotLimits() {

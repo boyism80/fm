@@ -11,7 +11,7 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (gc *GuildContainer) SyncGuildEventAsync(ctx actor.Context, evt GuildEventEnvelope, after func(guildID uint32)) *async.Task {
+func (gc *GuildCache) SyncGuildEventAsync(ctx actor.Context, evt GuildEventEnvelope, after func(guildID uint32)) *async.Task {
 	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil {
 		return promise
@@ -24,7 +24,7 @@ func (gc *GuildContainer) SyncGuildEventAsync(ctx actor.Context, evt GuildEventE
 	})
 }
 
-func (gc *GuildContainer) forEachOnlineGuildMember(g *entity.Guild, skipCharacterID uint32, fn func(memberID uint32)) {
+func (gc *GuildCache) forEachOnlineGuildMember(g *entity.Guild, skipCharacterID uint32, fn func(memberID uint32)) {
 	if g == nil || fn == nil {
 		return
 	}
@@ -43,7 +43,7 @@ func (gc *GuildContainer) forEachOnlineGuildMember(g *entity.Guild, skipCharacte
 	}
 }
 
-func (gc *GuildContainer) BroadcastNoticeChanged(guildID uint32) {
+func (gc *GuildCache) BroadcastNoticeChanged(guildID uint32) {
 	g := gc.Get(guildID)
 	if g == nil {
 		return
@@ -59,7 +59,7 @@ func (gc *GuildContainer) BroadcastNoticeChanged(guildID uint32) {
 	})
 }
 
-func (gc *GuildContainer) BroadcastMemberRankChanged(guildID uint32, targetCharacterID uint32) {
+func (gc *GuildCache) BroadcastMemberRankChanged(guildID uint32, targetCharacterID uint32) {
 	if targetCharacterID == 0 {
 		return
 	}
@@ -91,7 +91,7 @@ func (gc *GuildContainer) BroadcastMemberRankChanged(guildID uint32, targetChara
 	})
 }
 
-func (gc *GuildContainer) NotifyMemberFieldsChanged(ch *entity.Character) {
+func (gc *GuildCache) NotifyMemberFieldsChanged(ch *entity.Character) {
 	if gc == nil || gc.gs == nil || ch == nil {
 		return
 	}
@@ -113,7 +113,7 @@ func (gc *GuildContainer) NotifyMemberFieldsChanged(ch *entity.Character) {
 	gc.BroadcastMemberFieldsChanged(guildID, subjectID, level, classID)
 }
 
-func (gc *GuildContainer) BroadcastMemberFieldsChanged(guildID uint32, subjectID uint32, level uint32, classID uint32) {
+func (gc *GuildCache) BroadcastMemberFieldsChanged(guildID uint32, subjectID uint32, level uint32, classID uint32) {
 	if subjectID == 0 {
 		return
 	}
@@ -133,7 +133,7 @@ func (gc *GuildContainer) BroadcastMemberFieldsChanged(guildID uint32, subjectID
 	})
 }
 
-func (gc *GuildContainer) BroadcastMemberOnlineChanged(guildID uint32, subjectID uint32, online bool) {
+func (gc *GuildCache) BroadcastMemberOnlineChanged(guildID uint32, subjectID uint32, online bool) {
 	if subjectID == 0 {
 		return
 	}
@@ -156,7 +156,7 @@ func (gc *GuildContainer) BroadcastMemberOnlineChanged(guildID uint32, subjectID
 	}
 }
 
-func (gc *GuildContainer) BroadcastEmblemChanged(guildID uint32) {
+func (gc *GuildCache) BroadcastEmblemChanged(guildID uint32) {
 	g := gc.Get(guildID)
 	if g == nil || g.Logo == nil {
 		return
@@ -175,7 +175,7 @@ func (gc *GuildContainer) BroadcastEmblemChanged(guildID uint32) {
 	})
 }
 
-func (gc *GuildContainer) BroadcastCapacityChanged(guildID uint32) {
+func (gc *GuildCache) BroadcastCapacityChanged(guildID uint32) {
 	g := gc.Get(guildID)
 	if g == nil {
 		return
@@ -191,7 +191,7 @@ func (gc *GuildContainer) BroadcastCapacityChanged(guildID uint32) {
 	})
 }
 
-func (gc *GuildContainer) BroadcastGPChanged(guildID uint32, amount int32) {
+func (gc *GuildCache) BroadcastGPChanged(guildID uint32, amount int32) {
 	g := gc.Get(guildID)
 	if g == nil {
 		return
@@ -210,7 +210,7 @@ func (gc *GuildContainer) BroadcastGPChanged(guildID uint32, amount int32) {
 	})
 }
 
-func (gc *GuildContainer) BroadcastRankTitlesChanged(guildID uint32) {
+func (gc *GuildCache) BroadcastRankTitlesChanged(guildID uint32) {
 	g := gc.Get(guildID)
 	if g == nil {
 		return
@@ -226,7 +226,7 @@ func (gc *GuildContainer) BroadcastRankTitlesChanged(guildID uint32) {
 	})
 }
 
-func (gc *GuildContainer) BroadcastMemberJoined(guildID uint32, joinerCharacterID uint32) {
+func (gc *GuildCache) BroadcastMemberJoined(guildID uint32, joinerCharacterID uint32) {
 	if joinerCharacterID == 0 {
 		return
 	}
@@ -257,7 +257,7 @@ func (gc *GuildContainer) BroadcastMemberJoined(guildID uint32, joinerCharacterI
 	})
 }
 
-func (gc *GuildContainer) BroadcastMemberLeft(prevGuild *entity.Guild, leftCharacterID uint32, expelled bool) {
+func (gc *GuildCache) BroadcastMemberLeft(prevGuild *entity.Guild, leftCharacterID uint32, expelled bool) {
 	if prevGuild == nil || leftCharacterID == 0 {
 		return
 	}
@@ -307,7 +307,7 @@ func (gc *GuildContainer) BroadcastMemberLeft(prevGuild *entity.Guild, leftChara
 	}
 }
 
-func (gc *GuildContainer) BroadcastDisbanded(prevGuild *entity.Guild, memberCharacterIDs []uint32) {
+func (gc *GuildCache) BroadcastDisbanded(prevGuild *entity.Guild, memberCharacterIDs []uint32) {
 	if prevGuild == nil {
 		return
 	}
@@ -330,7 +330,7 @@ func (gc *GuildContainer) BroadcastDisbanded(prevGuild *entity.Guild, memberChar
 	}
 }
 
-func (gc *GuildContainer) BroadcastMessage(guildID uint32, messageType constant.ServerMessageType, message string) {
+func (gc *GuildCache) BroadcastMessage(guildID uint32, messageType constant.ServerMessageType, message string) {
 	g := gc.Get(guildID)
 	if g == nil {
 		return
@@ -344,7 +344,7 @@ func (gc *GuildContainer) BroadcastMessage(guildID uint32, messageType constant.
 	})
 }
 
-func (gc *GuildContainer) BroadcastMultiChat(guildID uint32, senderCharacterID uint32, senderName string, message string) {
+func (gc *GuildCache) BroadcastMultiChat(guildID uint32, senderCharacterID uint32, senderName string, message string) {
 	if senderCharacterID == 0 {
 		return
 	}

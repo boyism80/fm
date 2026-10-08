@@ -296,7 +296,7 @@ func (a *CharacterInfo) deserializeStats(reader *stream.StreamReader) {
 func (a *CharacterInfo) deserializeInventory(reader *stream.StreamReader) {
 	a.Character.Inventory = &dto.Inventory{
 		Meso:     reader.Read32(),
-		Tabs:     make(map[constant.InventoryType]*dto.ItemContainer),
+		Tabs:     make(map[constant.InventoryType]*dto.InventoryTab),
 		Equipped: make(map[constant.EquipmentPartsType]*dto.Equipment),
 	}
 	types := []constant.InventoryType{
@@ -307,7 +307,7 @@ func (a *CharacterInfo) deserializeInventory(reader *stream.StreamReader) {
 		constant.InventoryTypeCash,
 	}
 	for _, typ := range types {
-		a.Character.Inventory.Tabs[typ] = &dto.ItemContainer{Type: typ, SlotLimit: reader.ReadU8(), Items: make(map[int16]dto.Item)}
+		a.Character.Inventory.Tabs[typ] = &dto.InventoryTab{Type: typ, SlotLimit: reader.ReadU8(), Items: make(map[int16]dto.Item)}
 	}
 
 	for _, offset := range []int16{0, 100} {

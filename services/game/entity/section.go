@@ -15,15 +15,15 @@ type section struct {
 	objects  map[Object]struct{}
 }
 
-type sectionContainer struct {
+type sectionGrid struct {
 	sections map[sectionPosition]*section
 }
 
-func newSectionContainer() *sectionContainer {
-	return &sectionContainer{sections: make(map[sectionPosition]*section)}
+func newSectionGrid() *sectionGrid {
+	return &sectionGrid{sections: make(map[sectionPosition]*section)}
 }
 
-func (c *sectionContainer) add(obj Object) {
+func (c *sectionGrid) add(obj Object) {
 	if c == nil || obj == nil {
 		return
 	}
@@ -37,7 +37,7 @@ func (c *sectionContainer) add(obj Object) {
 	obj.setSection(current)
 }
 
-func (c *sectionContainer) remove(obj Object) {
+func (c *sectionGrid) remove(obj Object) {
 	if c == nil || obj == nil {
 		return
 	}
@@ -53,7 +53,7 @@ func (c *sectionContainer) remove(obj Object) {
 	}
 }
 
-func (c *sectionContainer) objectsNear(position types.Vector2[int16], filter constant.ObjectType) []Object {
+func (c *sectionGrid) objectsNear(position types.Vector2[int16], filter constant.ObjectType) []Object {
 	objects := c.objectsAround(position)
 	result := make([]Object, 0, len(objects))
 	for _, obj := range objects {
@@ -64,7 +64,7 @@ func (c *sectionContainer) objectsNear(position types.Vector2[int16], filter con
 	return result
 }
 
-func (c *sectionContainer) objectsIn(bounds types.Rect[int32], filter constant.ObjectType) []Object {
+func (c *sectionGrid) objectsIn(bounds types.Rect[int32], filter constant.ObjectType) []Object {
 	minX := floorSection(bounds.Left)
 	maxX := floorSection(bounds.Right)
 	minY := floorSection(bounds.Top)
@@ -90,7 +90,7 @@ func (c *sectionContainer) objectsIn(bounds types.Rect[int32], filter constant.O
 	return result
 }
 
-func (c *sectionContainer) objectsAround(position types.Vector2[int16]) []Object {
+func (c *sectionGrid) objectsAround(position types.Vector2[int16]) []Object {
 	center := sectionFor(position)
 	result := make([]Object, 0)
 	for y := center.y - 1; y <= center.y+1; y++ {
@@ -107,7 +107,7 @@ func (c *sectionContainer) objectsAround(position types.Vector2[int16]) []Object
 	return result
 }
 
-func (c *sectionContainer) section(position types.Vector2[int16]) *section {
+func (c *sectionGrid) section(position types.Vector2[int16]) *section {
 	key := sectionFor(position)
 	current := c.sections[key]
 	if current == nil {

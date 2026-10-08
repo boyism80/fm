@@ -94,7 +94,7 @@ type Map struct {
 	id                uint32
 	instance          *instanceState
 	objects           map[constant.ObjectType]map[uint32]Object
-	sections          *sectionContainer
+	sections          *sectionGrid
 	controllerTable   *ControllerTable
 	MobSpawns         map[uint32]*MobSpawn
 	SummonedMobSpawns []*MobSpawn
@@ -146,7 +146,7 @@ func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, ma
 	mapInstance := &Map{
 		id:              id,
 		objects:         make(map[constant.ObjectType]map[uint32]Object),
-		sections:        newSectionContainer(),
+		sections:        newSectionGrid(),
 		controllerTable: nil,
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		blockedMobGen:   make(map[uint32]struct{}),
@@ -985,8 +985,8 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	if mob.Listener == nil {
 		panic("SpawnMob: mob listener must not be nil")
 	}
-	mob.Skills = NewMobSkillContainer(mob)
-	mob.Buffs = NewMobBuffContainer(mob)
+	mob.Skills = NewMobSkills(mob)
+	mob.Buffs = NewMobBuffs(mob)
 	mob.LifeCore.ObjectCore.self = mob
 	mob.initTimers()
 	if spawnType == constant.MobSpawnTypeFake {

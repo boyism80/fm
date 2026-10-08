@@ -35,7 +35,7 @@ type questActionOpts struct {
 	NpcID     uint32
 }
 
-func (qc *QuestContainer) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts) error {
+func (qc *Quests) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts) error {
 	if qp == nil {
 		return nil
 	}
@@ -74,7 +74,7 @@ func (qc *QuestContainer) grant(qp *Quest, actions wz.QuestActions, opts questAc
 	return nil
 }
 
-func (qc *QuestContainer) buildPhaseExchange(actions wz.QuestActions, opts questActionOpts) ExchangeSpec {
+func (qc *Quests) buildPhaseExchange(actions wz.QuestActions, opts questActionOpts) ExchangeSpec {
 	spec := ExchangeSpec{}
 	if qc == nil {
 		return spec
@@ -122,7 +122,7 @@ func (qc *QuestContainer) buildPhaseExchange(actions wz.QuestActions, opts quest
 	return spec
 }
 
-func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
+func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	if qc == nil || questID == 0 || qc.owner == nil {
 		return nil, ErrQuestNotStartable
 	}
@@ -190,7 +190,7 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, er
 	return qp, nil
 }
 
-func (qc *QuestContainer) notifyQuestStart(qp *Quest, wireNPC uint32, opts QuestPhaseOpts) {
+func (qc *Quests) notifyQuestStart(qp *Quest, wireNPC uint32, opts QuestPhaseOpts) {
 	if qp == nil || qc.owner == nil {
 		return
 	}
@@ -207,7 +207,7 @@ func (qc *QuestContainer) notifyQuestStart(qp *Quest, wireNPC uint32, opts Quest
 	}
 }
 
-func (qc *QuestContainer) CanStart(questID uint32, opts QuestPhaseOpts) error {
+func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
 	if qc == nil || qc.owner == nil {
 		return ErrQuestNotStartable
 	}
@@ -249,7 +249,7 @@ func (qc *QuestContainer) CanStart(questID uint32, opts QuestPhaseOpts) error {
 	return nil
 }
 
-func (qc *QuestContainer) broadcastNpcAct(npcID uint32, act string) {
+func (qc *Quests) broadcastNpcAct(npcID uint32, act string) {
 	if qc == nil || qc.owner == nil || npcID == 0 || act == "" {
 		return
 	}
@@ -270,7 +270,7 @@ func (qc *QuestContainer) broadcastNpcAct(npcID uint32, act string) {
 	}
 }
 
-func (qc *QuestContainer) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
+func (qc *Quests) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
 	if qc == nil || len(quests) == 0 {
 		return
 	}
@@ -306,7 +306,7 @@ func (qc *QuestContainer) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
 	}
 }
 
-func (qc *QuestContainer) completeLinkedQuest(refID uint32) {
+func (qc *Quests) completeLinkedQuest(refID uint32) {
 	if qc == nil || refID == 0 {
 		return
 	}
@@ -318,7 +318,7 @@ func (qc *QuestContainer) completeLinkedQuest(refID uint32) {
 	refQP.CompletionTime = clock.Now()
 }
 
-func (qc *QuestContainer) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items []wz.QuestActionItem, selection *uint32) {
+func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items []wz.QuestActionItem, selection *uint32) {
 	if qc == nil || spec == nil {
 		return
 	}
@@ -399,7 +399,7 @@ func matchesQuestClass(classID uint16, codes []int) bool {
 	return false
 }
 
-func (qc *QuestContainer) completedQuestCount() int {
+func (qc *Quests) completedQuestCount() int {
 	if qc == nil {
 		return 0
 	}
@@ -416,7 +416,7 @@ func (qc *QuestContainer) completedQuestCount() int {
 	return count
 }
 
-func (qc *QuestContainer) matchesRewardItem(item wz.QuestRewardItem, classID uint16) bool {
+func (qc *Quests) matchesRewardItem(item wz.QuestRewardItem, classID uint16) bool {
 	if qc == nil || qc.owner == nil {
 		return false
 	}

@@ -4,7 +4,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (m *ItemContainer) ToProto(ownerID uint32) []*internal.Inventory {
+func (m *InventoryTab) ToProto(ownerID uint32) []*internal.Inventory {
 	if m == nil {
 		return nil
 	}

@@ -16,19 +16,19 @@ var (
 	ErrItemNotEquipment     = errors.New("item is not equipment")
 )
 
-type ItemContainer struct {
+type InventoryTab struct {
 	Items     map[int16]Item
 	SlotLimit uint8
 }
 
-func NewItemContainer() *ItemContainer {
-	return &ItemContainer{
+func NewInventoryTab() *InventoryTab {
+	return &InventoryTab{
 		SlotLimit: 32,
 		Items:     map[int16]Item{},
 	}
 }
 
-func (m *ItemContainer) NextSlot() (uint8, bool) {
+func (m *InventoryTab) NextSlot() (uint8, bool) {
 	for i := 1; i <= int(m.SlotLimit); i++ {
 		item := m.Items[int16(i)]
 		if item == nil {
@@ -38,7 +38,7 @@ func (m *ItemContainer) NextSlot() (uint8, bool) {
 	return 0, false
 }
 
-func (m *ItemContainer) FindSlot(model wz.Item) (uint8, bool) {
+func (m *InventoryTab) FindSlot(model wz.Item) (uint8, bool) {
 	if constant.IsRechargeable(model.GetID()) {
 		return m.NextSlot()
 	}
@@ -63,7 +63,7 @@ func (m *ItemContainer) FindSlot(model wz.Item) (uint8, bool) {
 	return m.NextSlot()
 }
 
-func (m *ItemContainer) EmptySlotCount() uint16 {
+func (m *InventoryTab) EmptySlotCount() uint16 {
 	count := uint16(0)
 	for i := 1; i <= int(m.SlotLimit); i++ {
 		if _, ok := m.Items[int16(i)]; !ok {
@@ -74,11 +74,11 @@ func (m *ItemContainer) EmptySlotCount() uint16 {
 	return count
 }
 
-func (m *ItemContainer) Get(slot uint8) Item {
+func (m *InventoryTab) Get(slot uint8) Item {
 	return m.Items[int16(slot)]
 }
 
-func (m *ItemContainer) Add(slot uint8, item Item) error {
+func (m *InventoryTab) Add(slot uint8, item Item) error {
 	if slot < 1 || slot > m.SlotLimit {
 		return ErrSlotNotFound
 	}
@@ -91,7 +91,7 @@ func (m *ItemContainer) Add(slot uint8, item Item) error {
 	return nil
 }
 
-func (m *ItemContainer) Remove(slot uint8) error {
+func (m *InventoryTab) Remove(slot uint8) error {
 	if slot < 1 || slot > m.SlotLimit {
 		return ErrSlotNotFound
 	}
@@ -104,7 +104,7 @@ func (m *ItemContainer) Remove(slot uint8) error {
 	return nil
 }
 
-func (m *ItemContainer) Find(itemID uint32) Item {
+func (m *InventoryTab) Find(itemID uint32) Item {
 	for _, item := range m.Items {
 		if item != nil && item.GetModel().GetID() == itemID {
 			return item

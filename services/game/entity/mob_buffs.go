@@ -69,28 +69,28 @@ func (e *MobBuff) Equal(values map[constant.MobBuffFlag]int32, stacks map[consta
 	return true
 }
 
-type MobBuffContainer struct {
+type MobBuffs struct {
 	owner       *Mob
 	byFlag      map[constant.MobBuffFlag]*MobBuff
 	entities    map[*MobBuff]struct{}
 	reflections []int32
 }
 
-func NewMobBuffContainer(owner *Mob) *MobBuffContainer {
+func NewMobBuffs(owner *Mob) *MobBuffs {
 	if owner == nil {
-		panic("MobBuffContainer owner is nil")
+		panic("MobBuffs owner is nil")
 	}
 	if owner.Listener == nil {
-		panic("MobBuffContainer: mob listener must not be nil")
+		panic("MobBuffs: mob listener must not be nil")
 	}
-	return &MobBuffContainer{
+	return &MobBuffs{
 		owner:    owner,
 		byFlag:   make(map[constant.MobBuffFlag]*MobBuff),
 		entities: make(map[*MobBuff]struct{}),
 	}
 }
 
-func (bc *MobBuffContainer) refreshDuration(now time.Time, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causer uint32, values map[constant.MobBuffFlag]int32, stacks map[constant.MobBuffFlag]uint8) bool {
+func (bc *MobBuffs) refreshDuration(now time.Time, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causer uint32, values map[constant.MobBuffFlag]int32, stacks map[constant.MobBuffFlag]uint8) bool {
 	if bc == nil || len(values) == 0 {
 		return false
 	}
@@ -114,7 +114,7 @@ func (bc *MobBuffContainer) refreshDuration(now time.Time, duration time.Duratio
 	return true
 }
 
-func (bc *MobBuffContainer) Add(duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causer uint32, values map[constant.MobBuffFlag]int32, stacks map[constant.MobBuffFlag]uint8) {
+func (bc *MobBuffs) Add(duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causer uint32, values map[constant.MobBuffFlag]int32, stacks map[constant.MobBuffFlag]uint8) {
 	if bc == nil || len(values) == 0 {
 		return
 	}
@@ -176,7 +176,7 @@ func (bc *MobBuffContainer) Add(duration time.Duration, skillWz *wz.Skill, skill
 	mob.Listener.OnMobBuffApplied(mob, ent, addedReflections, remaining)
 }
 
-func (bc *MobBuffContainer) Remove(flag constant.MobBuffFlag) {
+func (bc *MobBuffs) Remove(flag constant.MobBuffFlag) {
 	if bc == nil {
 		return
 	}
@@ -201,7 +201,7 @@ func (bc *MobBuffContainer) Remove(flag constant.MobBuffFlag) {
 	}
 }
 
-func (bc *MobBuffContainer) Dispel(skillID uint32) {
+func (bc *MobBuffs) Dispel(skillID uint32) {
 	if bc == nil || skillID == 0 {
 		return
 	}
@@ -220,7 +220,7 @@ func (bc *MobBuffContainer) Dispel(skillID uint32) {
 	}
 }
 
-func (bc *MobBuffContainer) getExpired(now time.Time) []*MobBuff {
+func (bc *MobBuffs) getExpired(now time.Time) []*MobBuff {
 	if bc == nil || len(bc.entities) == 0 {
 		return nil
 	}
@@ -239,7 +239,7 @@ func (bc *MobBuffContainer) getExpired(now time.Time) []*MobBuff {
 	return out
 }
 
-func (bc *MobBuffContainer) RemoveExpired() {
+func (bc *MobBuffs) RemoveExpired() {
 	expired := bc.getExpired(clock.Now())
 	for _, ent := range expired {
 		for flag := range ent.Values {
@@ -249,7 +249,7 @@ func (bc *MobBuffContainer) RemoveExpired() {
 	}
 }
 
-func (bc *MobBuffContainer) GetValue(flag constant.MobBuffFlag) int32 {
+func (bc *MobBuffs) GetValue(flag constant.MobBuffFlag) int32 {
 	if bc == nil {
 		return 0
 	}
@@ -260,7 +260,7 @@ func (bc *MobBuffContainer) GetValue(flag constant.MobBuffFlag) int32 {
 	return ent.Values[flag]
 }
 
-func (bc *MobBuffContainer) GetStack(flag constant.MobBuffFlag) uint8 {
+func (bc *MobBuffs) GetStack(flag constant.MobBuffFlag) uint8 {
 	if bc == nil {
 		return 0
 	}
@@ -275,7 +275,7 @@ func (bc *MobBuffContainer) GetStack(flag constant.MobBuffFlag) uint8 {
 	return s
 }
 
-func (bc *MobBuffContainer) SetStack(flag constant.MobBuffFlag, stack uint8) bool {
+func (bc *MobBuffs) SetStack(flag constant.MobBuffFlag, stack uint8) bool {
 	if bc == nil {
 		return false
 	}
@@ -290,7 +290,7 @@ func (bc *MobBuffContainer) SetStack(flag constant.MobBuffFlag, stack uint8) boo
 	return true
 }
 
-func (bc *MobBuffContainer) Has(flag constant.MobBuffFlag) bool {
+func (bc *MobBuffs) Has(flag constant.MobBuffFlag) bool {
 	if bc == nil {
 		return false
 	}
@@ -298,7 +298,7 @@ func (bc *MobBuffContainer) Has(flag constant.MobBuffFlag) bool {
 	return ok
 }
 
-func (bc *MobBuffContainer) Causer(flag constant.MobBuffFlag) (uint32, bool) {
+func (bc *MobBuffs) Causer(flag constant.MobBuffFlag) (uint32, bool) {
 	if bc == nil {
 		return 0, false
 	}
@@ -309,7 +309,7 @@ func (bc *MobBuffContainer) Causer(flag constant.MobBuffFlag) (uint32, bool) {
 	return ent.Causer, true
 }
 
-func (bc *MobBuffContainer) Clear() {
+func (bc *MobBuffs) Clear() {
 	if bc == nil {
 		return
 	}
@@ -323,7 +323,7 @@ func (bc *MobBuffContainer) Clear() {
 	bc.reflections = nil
 }
 
-func (bc *MobBuffContainer) Reflections() []int32 {
+func (bc *MobBuffs) Reflections() []int32 {
 	if bc == nil || len(bc.reflections) == 0 {
 		return nil
 	}
@@ -332,7 +332,7 @@ func (bc *MobBuffContainer) Reflections() []int32 {
 	return out
 }
 
-func (bc *MobBuffContainer) appendReflectionAdds(values map[constant.MobBuffFlag]int32) []int32 {
+func (bc *MobBuffs) appendReflectionAdds(values map[constant.MobBuffFlag]int32) []int32 {
 	if bc == nil || len(values) == 0 {
 		return nil
 	}
@@ -354,7 +354,7 @@ func (bc *MobBuffContainer) appendReflectionAdds(values map[constant.MobBuffFlag
 	return added
 }
 
-func (bc *MobBuffContainer) popReflection() {
+func (bc *MobBuffs) popReflection() {
 	if bc == nil || len(bc.reflections) == 0 {
 		return
 	}

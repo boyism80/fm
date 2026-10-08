@@ -23,7 +23,7 @@ type GuildEventEnvelope struct {
 	OccurredAt string `json:"occurred_at"`
 }
 
-type GuildContainer struct {
+type GuildCache struct {
 	gs             *GameServer
 	worldID        uint32
 	internalClient internal.InternalClient
@@ -32,8 +32,8 @@ type GuildContainer struct {
 	guilds         map[uint32]*entity.Guild
 }
 
-func NewGuildContainer(gs *GameServer, worldID uint32, ic internal.InternalClient) *GuildContainer {
-	return &GuildContainer{
+func NewGuildCache(gs *GameServer, worldID uint32, ic internal.InternalClient) *GuildCache {
+	return &GuildCache{
 		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
@@ -42,7 +42,7 @@ func NewGuildContainer(gs *GameServer, worldID uint32, ic internal.InternalClien
 	}
 }
 
-func (gc *GuildContainer) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope) *async.Task {
+func (gc *GuildCache) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope) *async.Task {
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil {
 		return p
@@ -76,7 +76,7 @@ func (gc *GuildContainer) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope)
 	return p
 }
 
-func (gc *GuildContainer) Update(guildPb *internal.Guild) {
+func (gc *GuildCache) Update(guildPb *internal.Guild) {
 	if gc == nil || guildPb == nil {
 		return
 	}
@@ -107,7 +107,7 @@ func (gc *GuildContainer) Update(guildPb *internal.Guild) {
 	}
 }
 
-func (gc *GuildContainer) NameToGuildID(guildName string) (uint32, bool) {
+func (gc *GuildCache) NameToGuildID(guildName string) (uint32, bool) {
 	if gc == nil || guildName == "" {
 		return 0, false
 	}
@@ -121,7 +121,7 @@ func (gc *GuildContainer) NameToGuildID(guildName string) (uint32, bool) {
 	return 0, false
 }
 
-func (gc *GuildContainer) TrySetAllianceInvite(targetGuildID, allianceID uint32, expiresAt time.Time) bool {
+func (gc *GuildCache) TrySetAllianceInvite(targetGuildID, allianceID uint32, expiresAt time.Time) bool {
 	if gc == nil || targetGuildID == 0 || allianceID == 0 {
 		return false
 	}
@@ -141,7 +141,7 @@ func (gc *GuildContainer) TrySetAllianceInvite(targetGuildID, allianceID uint32,
 	return true
 }
 
-func (gc *GuildContainer) PendingAllianceInvite(guildID uint32) (allianceID uint32, expiresAt time.Time, ok bool) {
+func (gc *GuildCache) PendingAllianceInvite(guildID uint32) (allianceID uint32, expiresAt time.Time, ok bool) {
 	if gc == nil || guildID == 0 {
 		return 0, time.Time{}, false
 	}
@@ -154,7 +154,7 @@ func (gc *GuildContainer) PendingAllianceInvite(guildID uint32) (allianceID uint
 	return g.PendingAllianceInvite()
 }
 
-func (gc *GuildContainer) ClearAllianceInvite(guildID, allianceID uint32) {
+func (gc *GuildCache) ClearAllianceInvite(guildID, allianceID uint32) {
 	if gc == nil || guildID == 0 || allianceID == 0 {
 		return
 	}
@@ -167,7 +167,7 @@ func (gc *GuildContainer) ClearAllianceInvite(guildID, allianceID uint32) {
 	g.ClearAllianceInvite(allianceID)
 }
 
-func (gc *GuildContainer) Get(guildID uint32) *entity.Guild {
+func (gc *GuildCache) Get(guildID uint32) *entity.Guild {
 	if gc == nil {
 		return nil
 	}
@@ -180,7 +180,7 @@ func (gc *GuildContainer) Get(guildID uint32) *entity.Guild {
 	return s.Clone()
 }
 
-func (gc *GuildContainer) GuildIDForCharacter(characterID uint32) (uint32, bool) {
+func (gc *GuildCache) GuildIDForCharacter(characterID uint32) (uint32, bool) {
 	if gc == nil || characterID == 0 {
 		return 0, false
 	}
@@ -199,7 +199,7 @@ func (gc *GuildContainer) GuildIDForCharacter(characterID uint32) (uint32, bool)
 	return 0, false
 }
 
-func (gc *GuildContainer) RefreshAsync(ctx actor.Context, guildIDs []uint32) *async.Task {
+func (gc *GuildCache) RefreshAsync(ctx actor.Context, guildIDs []uint32) *async.Task {
 	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil || gc.internalClient == nil {
 		return promise

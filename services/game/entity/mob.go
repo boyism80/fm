@@ -30,8 +30,8 @@ type Mob struct {
 	Fake          bool
 	Foothold      int16
 	Spawn         *MobSpawn
-	Buffs         *MobBuffContainer
-	Skills        *MobSkillContainer
+	Buffs         *MobBuffs
+	Skills        *MobSkills
 	ExpRate       int32
 	DropRate      int32
 	stealOutcome  *uint32

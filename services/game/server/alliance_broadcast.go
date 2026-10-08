@@ -11,7 +11,7 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (ac *AllianceContainer) BroadcastCreate(alliancePb *internal.Alliance) {
+func (ac *AllianceCache) BroadcastCreate(alliancePb *internal.Alliance) {
 	if ac.gs == nil || alliancePb == nil {
 		return
 	}
@@ -34,7 +34,7 @@ func (ac *AllianceContainer) BroadcastCreate(alliancePb *internal.Alliance) {
 	}
 }
 
-func (ac *AllianceContainer) guildInfos(alliancePb *internal.Alliance) []*dto.GuildInfo {
+func (ac *AllianceCache) guildInfos(alliancePb *internal.Alliance) []*dto.GuildInfo {
 	if guilds := entity.AllianceCreateGuildsFromProto(alliancePb); len(guilds) > 0 {
 		return guilds
 	}
@@ -63,7 +63,7 @@ func (ac *AllianceContainer) guildInfos(alliancePb *internal.Alliance) []*dto.Gu
 	return out
 }
 
-func (ac *AllianceContainer) membershipGuilds(alliancePb *internal.Alliance) []dto.AllianceMembershipChangeGuild {
+func (ac *AllianceCache) membershipGuilds(alliancePb *internal.Alliance) []dto.AllianceMembershipChangeGuild {
 	if ac.gs == nil || alliancePb == nil {
 		return nil
 	}
@@ -85,7 +85,7 @@ func (ac *AllianceContainer) membershipGuilds(alliancePb *internal.Alliance) []d
 	return out
 }
 
-func (ac *AllianceContainer) recipientIDs(alliancePb *internal.Alliance) []uint32 {
+func (ac *AllianceCache) recipientIDs(alliancePb *internal.Alliance) []uint32 {
 	if alliancePb == nil {
 		return nil
 	}
@@ -131,7 +131,7 @@ func (ac *AllianceContainer) recipientIDs(alliancePb *internal.Alliance) []uint3
 	return ids
 }
 
-func (ac *AllianceContainer) forEachOnlineAllianceMember(alliancePb *internal.Alliance, fn func(memberID uint32)) {
+func (ac *AllianceCache) forEachOnlineAllianceMember(alliancePb *internal.Alliance, fn func(memberID uint32)) {
 	if ac.gs == nil || alliancePb == nil || fn == nil {
 		return
 	}
@@ -160,7 +160,7 @@ func (ac *AllianceContainer) forEachOnlineAllianceMember(alliancePb *internal.Al
 	}
 }
 
-func (ac *AllianceContainer) deliverToOnlineMember(memberID uint32, msg interface{}) {
+func (ac *AllianceCache) deliverToOnlineMember(memberID uint32, msg interface{}) {
 	if ac.gs == nil || memberID == 0 || msg == nil {
 		return
 	}
@@ -170,7 +170,7 @@ func (ac *AllianceContainer) deliverToOnlineMember(memberID uint32, msg interfac
 	ac.gs.EnsureSend(nil, memberID, msg)
 }
 
-func (ac *AllianceContainer) BroadcastNoticeChanged(alliancePb *internal.Alliance, notice string) {
+func (ac *AllianceCache) BroadcastNoticeChanged(alliancePb *internal.Alliance, notice string) {
 	if ac.gs == nil || alliancePb == nil {
 		return
 	}
@@ -197,7 +197,7 @@ func (ac *AllianceContainer) BroadcastNoticeChanged(alliancePb *internal.Allianc
 	})
 }
 
-func (ac *AllianceContainer) BroadcastLeaderChanged(alliancePb *internal.Alliance, oldLeaderID uint32, newLeaderID uint32) {
+func (ac *AllianceCache) BroadcastLeaderChanged(alliancePb *internal.Alliance, oldLeaderID uint32, newLeaderID uint32) {
 	if ac.gs == nil || alliancePb == nil {
 		return
 	}
@@ -230,7 +230,7 @@ func (ac *AllianceContainer) BroadcastLeaderChanged(alliancePb *internal.Allianc
 	})
 }
 
-func (ac *AllianceContainer) BroadcastInfoUpdate(alliancePb *internal.Alliance) {
+func (ac *AllianceCache) BroadcastInfoUpdate(alliancePb *internal.Alliance) {
 	if ac.gs == nil || alliancePb == nil {
 		return
 	}
@@ -246,7 +246,7 @@ func (ac *AllianceContainer) BroadcastInfoUpdate(alliancePb *internal.Alliance) 
 	})
 }
 
-func (ac *AllianceContainer) broadcastAllianceStateRefresh(alliancePb *internal.Alliance) {
+func (ac *AllianceCache) broadcastAllianceStateRefresh(alliancePb *internal.Alliance) {
 	if ac.gs == nil || alliancePb == nil {
 		return
 	}
@@ -264,7 +264,7 @@ func (ac *AllianceContainer) broadcastAllianceStateRefresh(alliancePb *internal.
 	})
 }
 
-func (ac *AllianceContainer) allianceCharacterName(alliancePb *internal.Alliance, characterID uint32) string {
+func (ac *AllianceCache) allianceCharacterName(alliancePb *internal.Alliance, characterID uint32) string {
 	if alliancePb == nil || characterID == 0 {
 		return ""
 	}
@@ -281,7 +281,7 @@ func (ac *AllianceContainer) allianceCharacterName(alliancePb *internal.Alliance
 	return ""
 }
 
-func (ac *AllianceContainer) BroadcastMemberRankChanged(alliancePb *internal.Alliance, characterID uint32, allianceRank uint32) {
+func (ac *AllianceCache) BroadcastMemberRankChanged(alliancePb *internal.Alliance, characterID uint32, allianceRank uint32) {
 	if ac.gs == nil || alliancePb == nil || characterID == 0 {
 		return
 	}
@@ -311,7 +311,7 @@ func (ac *AllianceContainer) BroadcastMemberRankChanged(alliancePb *internal.All
 	ac.broadcastAllianceStateRefresh(alliancePb)
 }
 
-func (ac *AllianceContainer) BroadcastGuildAdded(alliancePb *internal.Alliance, addedGuildPb *internal.Guild) {
+func (ac *AllianceCache) BroadcastGuildAdded(alliancePb *internal.Alliance, addedGuildPb *internal.Guild) {
 	if ac.gs == nil || alliancePb == nil || addedGuildPb == nil {
 		return
 	}
@@ -375,7 +375,7 @@ func (ac *AllianceContainer) BroadcastGuildAdded(alliancePb *internal.Alliance, 
 	ac.broadcastAllianceStateRefresh(alliancePb)
 }
 
-func (ac *AllianceContainer) BroadcastGuildLeft(alliancePb *internal.Alliance, removedGuildPb *internal.Guild, expelled bool) {
+func (ac *AllianceCache) BroadcastGuildLeft(alliancePb *internal.Alliance, removedGuildPb *internal.Guild, expelled bool) {
 	if ac.gs == nil {
 		return
 	}
@@ -435,7 +435,7 @@ func (ac *AllianceContainer) BroadcastGuildLeft(alliancePb *internal.Alliance, r
 	}
 }
 
-func (ac *AllianceContainer) DisbandAsync(ctx actor.Context, allianceID uint32, guildIDs []uint32) *async.Task {
+func (ac *AllianceCache) DisbandAsync(ctx actor.Context, allianceID uint32, guildIDs []uint32) *async.Task {
 	if ac.gs == nil {
 		return async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	}
@@ -446,7 +446,7 @@ func (ac *AllianceContainer) DisbandAsync(ctx actor.Context, allianceID uint32, 
 	})
 }
 
-func (ac *AllianceContainer) broadcastDisband(allianceID uint32, guildIDs []uint32) {
+func (ac *AllianceCache) broadcastDisband(allianceID uint32, guildIDs []uint32) {
 	if ac.gs == nil {
 		return
 	}

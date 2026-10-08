@@ -6,24 +6,24 @@ import (
 
 type Inventory struct {
 	owner    *Character
-	Tabs     map[constant.InventoryType]*ItemContainer
+	Tabs     map[constant.InventoryType]*InventoryTab
 	Equipped map[constant.EquipmentPartsType]Equipment
-	Rings    RingContainer
+	Rings    Rings
 	Meso     int32
 }
 
 func NewInventory(owner *Character) *Inventory {
 	return &Inventory{
 		owner: owner,
-		Tabs: map[constant.InventoryType]*ItemContainer{
-			constant.InventoryTypeEquipment:    NewItemContainer(),
-			constant.InventoryTypeConsume:      NewItemContainer(),
-			constant.InventoryTypeInstallation: NewItemContainer(),
-			constant.InventoryTypeETC:          NewItemContainer(),
-			constant.InventoryTypeCash:         NewItemContainer(),
+		Tabs: map[constant.InventoryType]*InventoryTab{
+			constant.InventoryTypeEquipment:    NewInventoryTab(),
+			constant.InventoryTypeConsume:      NewInventoryTab(),
+			constant.InventoryTypeInstallation: NewInventoryTab(),
+			constant.InventoryTypeETC:          NewInventoryTab(),
+			constant.InventoryTypeCash:         NewInventoryTab(),
 		},
 		Equipped: map[constant.EquipmentPartsType]Equipment{},
-		Rings: RingContainer{
+		Rings: Rings{
 			Left: []*Ring{},
 			Mid:  []*Ring{},
 		},

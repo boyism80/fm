@@ -16,7 +16,7 @@ type Ring struct {
 	Equipped     bool
 }
 
-type RingContainer struct {
+type Rings struct {
 	Left []*Ring
 	Mid  []*Ring
 }

@@ -59,9 +59,9 @@ type GameServer struct {
 	internalClient    internal.InternalClient
 	internalConn      *grpc.ClientConn
 	rpcFaults         *fault.Injector
-	party             *PartyContainer
-	guild             *GuildContainer
-	alliance          *AllianceContainer
+	party             *PartyCache
+	guild             *GuildCache
+	alliance          *AllianceCache
 	stateMachines     *StateMachineRegistry
 	carnivalRegistry  *entity.CarnivalRegistry
 	expeditions       *entity.ExpeditionRegistry
@@ -215,9 +215,9 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		}
 	}
 
-	gs.party = NewPartyContainer(gs, config.WorldId, gs.internalClient)
-	gs.guild = NewGuildContainer(gs, config.WorldId, gs.internalClient)
-	gs.alliance = NewAllianceContainer(gs, config.WorldId, gs.internalClient)
+	gs.party = NewPartyCache(gs, config.WorldId, gs.internalClient)
+	gs.guild = NewGuildCache(gs, config.WorldId, gs.internalClient)
+	gs.alliance = NewAllianceCache(gs, config.WorldId, gs.internalClient)
 	gs.stateMachines = NewStateMachineRegistry(gs)
 	gs.carnivalRegistry = entity.NewCarnivalRegistry()
 	gs.expeditions = entity.NewExpeditionRegistry(gs)

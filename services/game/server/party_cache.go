@@ -23,7 +23,7 @@ type PartyEventEnvelope struct {
 	OccurredAt string `json:"occurred_at"`
 }
 
-type PartyContainer struct {
+type PartyCache struct {
 	gs             *GameServer
 	worldID        uint32
 	internalClient internal.InternalClient
@@ -33,8 +33,8 @@ type PartyContainer struct {
 	memberUpdates  map[uint32]*internal.UpdatePartyMemberRequest
 }
 
-func NewPartyContainer(gs *GameServer, worldID uint32, ic internal.InternalClient) *PartyContainer {
-	return &PartyContainer{
+func NewPartyCache(gs *GameServer, worldID uint32, ic internal.InternalClient) *PartyCache {
+	return &PartyCache{
 		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
@@ -44,7 +44,7 @@ func NewPartyContainer(gs *GameServer, worldID uint32, ic internal.InternalClien
 	}
 }
 
-func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *async.Task {
+func (pc *PartyCache) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *async.Task {
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if pc == nil {
 		return p
@@ -93,7 +93,7 @@ func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope)
 	return p
 }
 
-func (pc *PartyContainer) mergeGetPartyReplyLocked(partyID uint32, reply *internal.GetPartyReply) {
+func (pc *PartyCache) mergeGetPartyReplyLocked(partyID uint32, reply *internal.GetPartyReply) {
 	if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
 		delete(pc.revisions, partyID)
 		delete(pc.parties, partyID)
@@ -115,7 +115,7 @@ func (pc *PartyContainer) mergeGetPartyReplyLocked(partyID uint32, reply *intern
 	pc.parties[partyID] = stored
 }
 
-func (pc *PartyContainer) syncAfterFetch(evt PartyEventEnvelope) error {
+func (pc *PartyCache) syncAfterFetch(evt PartyEventEnvelope) error {
 	partyID := evt.PartyID
 	if evt.EventType == "log_onoff" {
 		if party := pc.parties[partyID]; party != nil {
@@ -139,7 +139,7 @@ func (pc *PartyContainer) syncAfterFetch(evt PartyEventEnvelope) error {
 	return nil
 }
 
-func (pc *PartyContainer) applyPartySnapshot(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
+func (pc *PartyCache) applyPartySnapshot(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
 	if pc == nil || partyPb == nil {
 		return false, nil
 	}
@@ -165,7 +165,7 @@ func (pc *PartyContainer) applyPartySnapshot(evt PartyEventEnvelope, partyPb *in
 	return true, nil
 }
 
-func (pc *PartyContainer) Update(partyPb *internal.Party) {
+func (pc *PartyCache) Update(partyPb *internal.Party) {
 	if pc == nil || partyPb == nil {
 		return
 	}
@@ -185,7 +185,7 @@ func (pc *PartyContainer) Update(partyPb *internal.Party) {
 	pc.Sync(stored)
 }
 
-func (pc *PartyContainer) Get(partyID uint32) *entity.Party {
+func (pc *PartyCache) Get(partyID uint32) *entity.Party {
 	if pc == nil {
 		return nil
 	}
@@ -198,7 +198,7 @@ func (pc *PartyContainer) Get(partyID uint32) *entity.Party {
 	return s.Clone()
 }
 
-func (pc *PartyContainer) Sync(party *entity.Party) {
+func (pc *PartyCache) Sync(party *entity.Party) {
 	if pc == nil || party == nil || pc.gs == nil {
 		return
 	}
@@ -216,7 +216,7 @@ func (pc *PartyContainer) Sync(party *entity.Party) {
 	}
 }
 
-func (pc *PartyContainer) ClearPartyMembers(memberIDs []uint32) {
+func (pc *PartyCache) ClearPartyMembers(memberIDs []uint32) {
 	if pc == nil || len(memberIDs) == 0 || pc.gs == nil {
 		return
 	}
@@ -231,7 +231,7 @@ func (pc *PartyContainer) ClearPartyMembers(memberIDs []uint32) {
 	}
 }
 
-func (pc *PartyContainer) DeliverPartySilent(party *entity.Party) {
+func (pc *PartyCache) DeliverPartySilent(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}
@@ -253,7 +253,7 @@ func (pc *PartyContainer) DeliverPartySilent(party *entity.Party) {
 
 // SendPartySilentAsync builds a Promise that sends party silent UI state to the character. Uses cache
 // when warm; otherwise schedules GetParty via ThenRPC (from map actor Receive).
-func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Character) *async.Task {
+func (pc *PartyCache) SendPartySilentAsync(ctx actor.Context, ch *entity.Character) *async.Task {
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if pc == nil || ch == nil || pc.gs == nil || ctx == nil {
 		return p
@@ -295,7 +295,7 @@ func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Cha
 	return p
 }
 
-func (pc *PartyContainer) sendPartySilentToCharacter(ch *entity.Character, party *entity.Party) {
+func (pc *PartyCache) sendPartySilentToCharacter(ch *entity.Character, party *entity.Party) {
 	if pc == nil || ch == nil || party == nil || pc.gs == nil {
 		return
 	}
@@ -310,7 +310,7 @@ func (pc *PartyContainer) sendPartySilentToCharacter(ch *entity.Character, party
 	})
 }
 
-func (pc *PartyContainer) PartyMemberIndex(characterID uint32, partyID *uint32) int {
+func (pc *PartyCache) PartyMemberIndex(characterID uint32, partyID *uint32) int {
 	if partyID == nil || pc == nil {
 		return 0
 	}

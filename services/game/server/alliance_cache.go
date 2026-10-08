@@ -21,7 +21,7 @@ type allianceStored struct {
 	guildIDs []uint32
 }
 
-type AllianceContainer struct {
+type AllianceCache struct {
 	gs             *GameServer
 	worldID        uint32
 	internalClient internal.InternalClient
@@ -30,8 +30,8 @@ type AllianceContainer struct {
 	alliances      map[uint32]*allianceStored
 }
 
-func NewAllianceContainer(gs *GameServer, worldID uint32, ic internal.InternalClient) *AllianceContainer {
-	return &AllianceContainer{
+func NewAllianceCache(gs *GameServer, worldID uint32, ic internal.InternalClient) *AllianceCache {
+	return &AllianceCache{
 		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
@@ -40,7 +40,7 @@ func NewAllianceContainer(gs *GameServer, worldID uint32, ic internal.InternalCl
 	}
 }
 
-func (ac *AllianceContainer) UpdateAsync(ctx actor.Context, evt AllianceEventEnvelope) *async.Task {
+func (ac *AllianceCache) UpdateAsync(ctx actor.Context, evt AllianceEventEnvelope) *async.Task {
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	allianceID := evt.AllianceID
 	p.OnError(func(err error) {
@@ -68,7 +68,7 @@ func (ac *AllianceContainer) UpdateAsync(ctx actor.Context, evt AllianceEventEnv
 	return p
 }
 
-func (ac *AllianceContainer) Update(alliancePb *internal.Alliance) {
+func (ac *AllianceCache) Update(alliancePb *internal.Alliance) {
 	if alliancePb == nil {
 		return
 	}
@@ -119,7 +119,7 @@ func (ac *AllianceContainer) Update(alliancePb *internal.Alliance) {
 	ac.mu.Unlock()
 }
 
-func (ac *AllianceContainer) Remove(allianceID uint32) []uint32 {
+func (ac *AllianceCache) Remove(allianceID uint32) []uint32 {
 	ac.mu.Lock()
 	defer ac.mu.Unlock()
 	entry := ac.alliances[allianceID]
@@ -131,7 +131,7 @@ func (ac *AllianceContainer) Remove(allianceID uint32) []uint32 {
 	return append([]uint32(nil), entry.guildIDs...)
 }
 
-func (ac *AllianceContainer) Get(allianceID uint32) *entity.Alliance {
+func (ac *AllianceCache) Get(allianceID uint32) *entity.Alliance {
 	ac.mu.Lock()
 	stored := ac.alliances[allianceID]
 	ac.mu.Unlock()
@@ -144,7 +144,7 @@ func (ac *AllianceContainer) Get(allianceID uint32) *entity.Alliance {
 	return stored.alliance.Clone()
 }
 
-func (ac *AllianceContainer) ShowData(allianceID uint32) (*dto.AllianceInfo, []*dto.GuildInfo) {
+func (ac *AllianceCache) ShowData(allianceID uint32) (*dto.AllianceInfo, []*dto.GuildInfo) {
 	ac.mu.Lock()
 	stored := ac.alliances[allianceID]
 	ac.mu.Unlock()
@@ -158,7 +158,7 @@ func (ac *AllianceContainer) ShowData(allianceID uint32) (*dto.AllianceInfo, []*
 	return stored.info, guilds
 }
 
-func (ac *AllianceContainer) GuildIDs(allianceID uint32) []uint32 {
+func (ac *AllianceCache) GuildIDs(allianceID uint32) []uint32 {
 	ac.mu.Lock()
 	stored := ac.alliances[allianceID]
 	ac.mu.Unlock()
@@ -168,7 +168,7 @@ func (ac *AllianceContainer) GuildIDs(allianceID uint32) []uint32 {
 	return append([]uint32(nil), stored.guildIDs...)
 }
 
-func (ac *AllianceContainer) NotifyMemberFieldsChanged(ch *entity.Character) {
+func (ac *AllianceCache) NotifyMemberFieldsChanged(ch *entity.Character) {
 	if ac.gs == nil || ch == nil {
 		return
 	}
@@ -191,7 +191,7 @@ func (ac *AllianceContainer) NotifyMemberFieldsChanged(ch *entity.Character) {
 	ac.deliverMemberFieldsChange(allianceID, guildID, subjectID, level, classID)
 }
 
-func (ac *AllianceContainer) deliverMemberFieldsChange(allianceID uint32, subjectGuildID uint32, subjectID uint32, level uint32, classID uint32) {
+func (ac *AllianceCache) deliverMemberFieldsChange(allianceID uint32, subjectGuildID uint32, subjectID uint32, level uint32, classID uint32) {
 	if ac.gs == nil || subjectID == 0 {
 		return
 	}
@@ -227,7 +227,7 @@ func (ac *AllianceContainer) deliverMemberFieldsChange(allianceID uint32, subjec
 	}
 }
 
-func (ac *AllianceContainer) DeliverMemberOnlineChange(allianceID uint32, subjectGuildID uint32, subjectID uint32, online bool) {
+func (ac *AllianceCache) DeliverMemberOnlineChange(allianceID uint32, subjectGuildID uint32, subjectID uint32, online bool) {
 	if ac.gs == nil || subjectID == 0 {
 		return
 	}
@@ -265,7 +265,7 @@ func (ac *AllianceContainer) DeliverMemberOnlineChange(allianceID uint32, subjec
 	}
 }
 
-func (ac *AllianceContainer) ValidateCreateAlliance(ch *entity.Character) (uint32, bool) {
+func (ac *AllianceCache) ValidateCreateAlliance(ch *entity.Character) (uint32, bool) {
 	if ac.gs == nil || ch == nil {
 		return 0, false
 	}

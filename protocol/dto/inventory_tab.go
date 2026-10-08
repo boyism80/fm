@@ -7,13 +7,13 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-type ItemContainer struct {
+type InventoryTab struct {
 	Type      constant.InventoryType
 	SlotLimit uint8
 	Items     map[int16]Item
 }
 
-func (inv *ItemContainer) Serialize(writer *stream.StreamWriter) {
+func (inv *InventoryTab) Serialize(writer *stream.StreamWriter) {
 	if inv == nil || inv.Items == nil {
 		writer.WriteU8(0)
 		return

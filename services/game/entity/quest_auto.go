@@ -14,7 +14,7 @@ const (
 	AutoQuestTriggerInfoStart
 )
 
-func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestTrigger, key uint32) {
+func (qc *Quests) RunAutoTriggers(actx actor.Context, trigger AutoQuestTrigger, key uint32) {
 	if qc == nil {
 		return
 	}
@@ -37,7 +37,7 @@ func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestT
 	}
 }
 
-func (qc *QuestContainer) autoCandidates(resources *wz.Resources, trigger AutoQuestTrigger, key uint32) []*wz.Quest {
+func (qc *Quests) autoCandidates(resources *wz.Resources, trigger AutoQuestTrigger, key uint32) []*wz.Quest {
 	if resources == nil {
 		return nil
 	}
@@ -53,7 +53,7 @@ func (qc *QuestContainer) autoCandidates(resources *wz.Resources, trigger AutoQu
 	}
 }
 
-func (qc *QuestContainer) tryRunAutoQuest(actx actor.Context, def *wz.Quest) {
+func (qc *Quests) tryRunAutoQuest(actx actor.Context, def *wz.Quest) {
 	if qc == nil || def == nil || qc.owner == nil || def.Meta.Blocked {
 		return
 	}

@@ -8,19 +8,19 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-type SummonContainer struct {
+type Summons struct {
 	owner   *Character
 	entries map[constant.SkillID]*Summon
 }
 
-func NewSummonContainer(owner *Character) *SummonContainer {
-	return &SummonContainer{
+func NewSummons(owner *Character) *Summons {
+	return &Summons{
 		owner:   owner,
 		entries: make(map[constant.SkillID]*Summon),
 	}
 }
 
-func (sc *SummonContainer) Spawn(skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, position types.Point[int16], duration time.Duration) *Summon {
+func (sc *Summons) Spawn(skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, position types.Point[int16], duration time.Duration) *Summon {
 	m := sc.owner.GetMap()
 	if m == nil {
 		return nil
@@ -58,7 +58,7 @@ func (sc *SummonContainer) Spawn(skillID constant.SkillID, skillLevel uint8, mov
 	return s
 }
 
-func (sc *SummonContainer) Remove(s *Summon, animated bool) {
+func (sc *Summons) Remove(s *Summon, animated bool) {
 	if s == nil {
 		return
 	}
@@ -69,11 +69,11 @@ func (sc *SummonContainer) Remove(s *Summon, animated bool) {
 	delete(sc.entries, s.SkillID)
 }
 
-func (sc *SummonContainer) Get(skillID constant.SkillID) *Summon {
+func (sc *Summons) Get(skillID constant.SkillID) *Summon {
 	return sc.entries[skillID]
 }
 
-func (sc *SummonContainer) All() []*Summon {
+func (sc *Summons) All() []*Summon {
 	out := make([]*Summon, 0, len(sc.entries))
 	for _, s := range sc.entries {
 		out = append(out, s)
@@ -81,16 +81,16 @@ func (sc *SummonContainer) All() []*Summon {
 	return out
 }
 
-func (sc *SummonContainer) Clear() {
+func (sc *Summons) Clear() {
 	for _, s := range sc.All() {
 		sc.Remove(s, true)
 	}
 }
 
-func (sc *SummonContainer) expire(skillID constant.SkillID) {
+func (sc *Summons) expire(skillID constant.SkillID) {
 	sc.Remove(sc.Get(skillID), true)
 }
 
-func (sc *SummonContainer) timerKey(skillID constant.SkillID) string {
+func (sc *Summons) timerKey(skillID constant.SkillID) string {
 	return fmt.Sprintf("summon:%d", skillID)
 }

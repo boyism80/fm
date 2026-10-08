@@ -103,20 +103,20 @@ func (e *ItemBuff) hookScript(ch *Character) (string, interface{}, bool) {
 	return fmt.Sprintf("script/item/%d.lua", e.Wz.ID), consume, true
 }
 
-type BuffContainer struct {
+type Buffs struct {
 	owner    *Character
 	byFlag   map[constant.BuffFlag]Buff
 	entities map[Buff]struct{}
 }
 
-func NewBuffContainer(owner *Character) *BuffContainer {
+func NewBuffs(owner *Character) *Buffs {
 	if owner == nil {
-		panic("buff container owner is nil")
+		panic("Buffs owner is nil")
 	}
 	if owner.Listener == nil {
-		panic("BuffContainer: character listener must not be nil")
+		panic("Buffs: character listener must not be nil")
 	}
-	return &BuffContainer{
+	return &Buffs{
 		owner:    owner,
 		byFlag:   make(map[constant.BuffFlag]Buff),
 		entities: make(map[Buff]struct{}),
@@ -133,7 +133,7 @@ func copyBuffValues(values map[constant.BuffFlag]int32) ([]constant.BuffFlag, ma
 	return flags, valCopy
 }
 
-func (bc *BuffContainer) callHook(entity Buff, hook string) {
+func (bc *Buffs) callHook(entity Buff, hook string) {
 	mapInstance := bc.owner.GetMap()
 	if mapInstance == nil {
 		return
@@ -156,7 +156,7 @@ func (bc *BuffContainer) callHook(entity Buff, hook string) {
 	})
 }
 
-func (bc *BuffContainer) callUnbuffScripts(removed []Buff) {
+func (bc *Buffs) callUnbuffScripts(removed []Buff) {
 	for _, entity := range removed {
 		if entity == nil {
 			continue
@@ -165,13 +165,13 @@ func (bc *BuffContainer) callUnbuffScripts(removed []Buff) {
 	}
 }
 
-func (bc *BuffContainer) restoreEffects() {
+func (bc *Buffs) restoreEffects() {
 	for entity := range bc.entities {
 		bc.callHook(entity, "on_buff")
 	}
 }
 
-func (bc *BuffContainer) updateMaxHpMp(flags []constant.BuffFlag) {
+func (bc *Buffs) updateMaxHpMp(flags []constant.BuffFlag) {
 	for _, flag := range flags {
 		if flag == constant.BuffFlagMaxHp || flag == constant.BuffFlagMaxMp {
 			bc.owner.updateMaxHpMp()
@@ -180,7 +180,7 @@ func (bc *BuffContainer) updateMaxHpMp(flags []constant.BuffFlag) {
 	}
 }
 
-func (bc *BuffContainer) notifyAdded(entity Buff, now time.Time) {
+func (bc *Buffs) notifyAdded(entity Buff, now time.Time) {
 	ch := bc.owner
 	values := entity.GetValues()
 	entityValues := make(map[constant.BuffFlag]int32, len(values))
@@ -190,7 +190,7 @@ func (bc *BuffContainer) notifyAdded(entity Buff, now time.Time) {
 	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
 }
 
-func (bc *BuffContainer) add(entity Buff) (removed []Buff) {
+func (bc *Buffs) add(entity Buff) (removed []Buff) {
 	if entity == nil || len(entity.GetFlags()) == 0 {
 		return nil
 	}
@@ -220,7 +220,7 @@ func (bc *BuffContainer) add(entity Buff) (removed []Buff) {
 	return removed
 }
 
-func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, removedFlags []constant.BuffFlag) {
+func (bc *Buffs) remove(flags []constant.BuffFlag) (removed []Buff, removedFlags []constant.BuffFlag) {
 	if len(flags) == 0 {
 		return nil, nil
 	}
@@ -255,7 +255,7 @@ func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, remo
 	return removed, removedFlags
 }
 
-func (bc *BuffContainer) commitBuff(entity Buff, now time.Time, notify bool) {
+func (bc *Buffs) commitBuff(entity Buff, now time.Time, notify bool) {
 	removed := bc.add(entity)
 	bc.scheduleExpire(entity, now)
 	bc.callUnbuffScripts(removed)
@@ -270,7 +270,7 @@ func (bc *BuffContainer) commitBuff(entity Buff, now time.Time, notify bool) {
 	}
 }
 
-func (bc *BuffContainer) scheduleExpire(entity Buff, now time.Time) {
+func (bc *Buffs) scheduleExpire(entity Buff, now time.Time) {
 	end, ok := entity.expiresAt()
 	if ok == false {
 		return
@@ -284,7 +284,7 @@ func (bc *BuffContainer) scheduleExpire(entity Buff, now time.Time) {
 	})
 }
 
-func (bc *BuffContainer) scheduleExpires() {
+func (bc *Buffs) scheduleExpires() {
 	now := clock.Now()
 	for entity := range bc.entities {
 		if bc.owner.GetTimerEntry(bc.timerKey(entity)) != nil {
@@ -294,27 +294,27 @@ func (bc *BuffContainer) scheduleExpires() {
 	}
 }
 
-func (bc *BuffContainer) expire(entity Buff) {
+func (bc *Buffs) expire(entity Buff) {
 	if _, ok := bc.entities[entity]; ok == false {
 		return
 	}
 	bc.RemoveBuff(entity.GetFlags())
 }
 
-func (bc *BuffContainer) timerKey(entity Buff) string {
+func (bc *Buffs) timerKey(entity Buff) string {
 	return fmt.Sprintf("buff:%p", entity)
 }
 
-func (bc *BuffContainer) Has(flag constant.BuffFlag) bool {
+func (bc *Buffs) Has(flag constant.BuffFlag) bool {
 	_, exists := bc.byFlag[flag]
 	return exists
 }
 
-func (bc *BuffContainer) GetEntity(flag constant.BuffFlag) Buff {
+func (bc *Buffs) GetEntity(flag constant.BuffFlag) Buff {
 	return bc.byFlag[flag]
 }
 
-func (bc *BuffContainer) Entities() []Buff {
+func (bc *Buffs) Entities() []Buff {
 	entities := make([]Buff, 0, len(bc.entities))
 	for entity := range bc.entities {
 		entities = append(entities, entity)
@@ -322,7 +322,7 @@ func (bc *BuffContainer) Entities() []Buff {
 	return entities
 }
 
-func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8, causerID uint32, values map[constant.BuffFlag]int32, notify bool) {
+func (bc *Buffs) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8, causerID uint32, values map[constant.BuffFlag]int32, notify bool) {
 	if len(values) == 0 {
 		return
 	}
@@ -342,7 +342,7 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 	bc.commitBuff(entity, now, notify)
 }
 
-func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool, notify bool) {
+func (bc *Buffs) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool, notify bool) {
 	if len(values) == 0 || consumeWz == nil {
 		return
 	}
@@ -365,7 +365,7 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 	bc.commitBuff(entity, now, notify)
 }
 
-func (bc *BuffContainer) Dispel() {
+func (bc *Buffs) Dispel() {
 	entities := bc.Entities()
 	if len(entities) == 0 {
 		return
@@ -380,7 +380,7 @@ func (bc *BuffContainer) Dispel() {
 	bc.RemoveBuff(flags)
 }
 
-func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
+func (bc *Buffs) RemoveBuff(flags []constant.BuffFlag) {
 	if len(flags) == 0 {
 		return
 	}
@@ -395,7 +395,7 @@ func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
 	bc.updateMaxHpMp(removedFlags)
 }
 
-func (bc *BuffContainer) CancelBySource(buffID int32) {
+func (bc *Buffs) CancelBySource(buffID int32) {
 	var flags []constant.BuffFlag
 	for entity := range bc.entities {
 		if entity.GetBuffID() == buffID {
@@ -405,7 +405,7 @@ func (bc *BuffContainer) CancelBySource(buffID int32) {
 	bc.RemoveBuff(flags)
 }
 
-func (bc *BuffContainer) GetBuffValue(flag constant.BuffFlag) (Buff, int32, bool) {
+func (bc *Buffs) GetBuffValue(flag constant.BuffFlag) (Buff, int32, bool) {
 	entity := bc.GetEntity(flag)
 	if entity == nil {
 		return nil, 0, false
@@ -421,7 +421,7 @@ func (bc *BuffContainer) GetBuffValue(flag constant.BuffFlag) (Buff, int32, bool
 	return entity, value, true
 }
 
-func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff, bool) {
+func (bc *Buffs) SetBuffValue(flag constant.BuffFlag, value int32) (Buff, bool) {
 	entity := bc.GetEntity(flag)
 	if entity == nil {
 		return nil, false
@@ -435,7 +435,7 @@ func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff
 	return entity, true
 }
 
-func (bc *BuffContainer) ShowAll() {
+func (bc *Buffs) ShowAll() {
 	now := clock.Now()
 	for entity := range bc.entities {
 		if entity == nil {

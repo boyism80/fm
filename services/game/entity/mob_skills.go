@@ -33,27 +33,27 @@ func (s *MobSkill) IsOnCooldown(now time.Time) bool {
 	return now.Sub(s.LastUsedAt) < cooldown
 }
 
-type MobSkillContainer struct {
+type MobSkills struct {
 	owner   *Mob
 	ordered []*MobSkill
 	byID    map[uint32]*MobSkill
 }
 
-func NewMobSkillContainer(owner *Mob) *MobSkillContainer {
+func NewMobSkills(owner *Mob) *MobSkills {
 	if owner == nil {
-		panic("MobSkillContainer owner is nil")
+		panic("MobSkills owner is nil")
 	}
 	if owner.Wz == nil {
-		panic("MobSkillContainer: mob model is nil")
+		panic("MobSkills: mob model is nil")
 	}
 	if owner.GameWorld == nil {
-		panic("MobSkillContainer: game world is nil")
+		panic("MobSkills: game world is nil")
 	}
 	resources := owner.GameWorld.GetResources()
 	if resources == nil {
-		panic("MobSkillContainer: resources are nil")
+		panic("MobSkills: resources are nil")
 	}
-	container := &MobSkillContainer{
+	skills := &MobSkills{
 		owner:   owner,
 		ordered: make([]*MobSkill, 0, len(owner.Wz.Skills)),
 		byID:    make(map[uint32]*MobSkill, len(owner.Wz.Skills)),
@@ -70,20 +70,20 @@ func NewMobSkillContainer(owner *Mob) *MobSkillContainer {
 			Slot:      slot,
 			LevelData: levelData,
 		}
-		container.ordered = append(container.ordered, entity)
-		container.byID[slot.SkillID] = entity
+		skills.ordered = append(skills.ordered, entity)
+		skills.byID[slot.SkillID] = entity
 	}
-	return container
+	return skills
 }
 
-func (sc *MobSkillContainer) Ordered() []*MobSkill {
+func (sc *MobSkills) Ordered() []*MobSkill {
 	if sc == nil {
 		return nil
 	}
 	return sc.ordered
 }
 
-func (sc *MobSkillContainer) Get(skillID uint32, level uint8) *MobSkill {
+func (sc *MobSkills) Get(skillID uint32, level uint8) *MobSkill {
 	if sc == nil {
 		return nil
 	}
@@ -94,7 +94,7 @@ func (sc *MobSkillContainer) Get(skillID uint32, level uint8) *MobSkill {
 	return entity
 }
 
-func (sc *MobSkillContainer) MarkUsed(skillID uint32, now time.Time) {
+func (sc *MobSkills) MarkUsed(skillID uint32, now time.Time) {
 	if sc == nil {
 		return
 	}
@@ -114,7 +114,7 @@ func (sc *MobSkillContainer) MarkUsed(skillID uint32, now time.Time) {
 	}
 }
 
-func (sc *MobSkillContainer) Choice(controller *Character) *MobSkill {
+func (sc *MobSkills) Choice(controller *Character) *MobSkill {
 	if sc == nil {
 		return nil
 	}
@@ -152,7 +152,7 @@ func (sc *MobSkillContainer) Choice(controller *Character) *MobSkill {
 	return nil
 }
 
-func (sc *MobSkillContainer) chooseByScript(controller *Character, skill *MobSkill) bool {
+func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool {
 	if sc == nil || sc.owner == nil || skill == nil || skill.LevelData == nil {
 		return false
 	}

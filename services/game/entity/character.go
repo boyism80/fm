@@ -43,7 +43,7 @@ type Character struct {
 	population        uint16
 	mega              bool
 	random            [3]stream.RandomStream
-	Quests            *QuestContainer
+	Quests            *Quests
 	Marriage          *Marriage
 	CashWishlist      []uint32
 	proposal          proposal
@@ -66,18 +66,18 @@ type Character struct {
 	Inventory         *Inventory
 	Storage           *Storage
 	Duey              *Duey
-	Skills            *SkillContainer
+	Skills            *Skills
 	keyLayout         *KeyLayout
 	CurrentShopID     uint32
 	Chair             uint32
 	lastHeal          lastHeal
 	BaseStats         BaseStats
 	BonusStats        BonusStats
-	Buffs             *BuffContainer
+	Buffs             *Buffs
 	debuffs           map[constant.DebuffFlag]*Debuff
-	Summons           *SummonContainer
+	Summons           *Summons
 	Pet               *ActivePet
-	Doors             *DoorContainer
+	Doors             *Doors
 	HomingTargetOID   *uint32
 	partyID           *uint32
 	guildID           *uint32

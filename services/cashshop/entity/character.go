@@ -204,14 +204,14 @@ func (ch *Character) ToDTO(world gentity.ItemWorld) *dto.Character {
 		TeleportStones:    constant.NewTeleportStones(p.GetTeleportStones(), constant.TeleportStoneCount),
 		VipTeleportStones: constant.NewTeleportStones(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
 		Inventory: &dto.Inventory{
-			Tabs:     make(map[constant.InventoryType]*dto.ItemContainer),
+			Tabs:     make(map[constant.InventoryType]*dto.InventoryTab),
 			Equipped: make(map[constant.EquipmentPartsType]*dto.Equipment),
 			Meso:     p.GetMeso(),
 		},
 	}
 
 	for _, invType := range []constant.InventoryType{constant.InventoryTypeEquipment, constant.InventoryTypeConsume, constant.InventoryTypeInstallation, constant.InventoryTypeETC, constant.InventoryTypeCash} {
-		character.Inventory.Tabs[invType] = &dto.ItemContainer{Type: invType, SlotLimit: ch.SlotLimit(invType), Items: make(map[int16]dto.Item)}
+		character.Inventory.Tabs[invType] = &dto.InventoryTab{Type: invType, SlotLimit: ch.SlotLimit(invType), Items: make(map[int16]dto.Item)}
 	}
 	for _, pb := range ch.Game.Inventory {
 		item, err := gentity.NewItemFromInternalProto(pb, world)

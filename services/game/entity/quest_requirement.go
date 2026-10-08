@@ -9,7 +9,7 @@ import (
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, opts QuestPhaseOpts) bool {
+func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts QuestPhaseOpts) bool {
 	if qc == nil || qc.owner == nil {
 		return false
 	}

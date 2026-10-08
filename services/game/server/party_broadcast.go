@@ -5,7 +5,7 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (pc *PartyContainer) BroadcastMemberJoined(party *entity.Party, joinedCharacterID uint32) {
+func (pc *PartyCache) BroadcastMemberJoined(party *entity.Party, joinedCharacterID uint32) {
 	if pc == nil || pc.gs == nil || party == nil || joinedCharacterID == 0 {
 		return
 	}
@@ -40,7 +40,7 @@ func (pc *PartyContainer) BroadcastMemberJoined(party *entity.Party, joinedChara
 	}
 }
 
-func (pc *PartyContainer) BroadcastMemberLeft(prev, current *entity.Party, targetCharacterID uint32, expelled bool) {
+func (pc *PartyCache) BroadcastMemberLeft(prev, current *entity.Party, targetCharacterID uint32, expelled bool) {
 	if pc == nil || pc.gs == nil || prev == nil || targetCharacterID == 0 {
 		return
 	}
@@ -103,7 +103,7 @@ func (pc *PartyContainer) BroadcastMemberLeft(prev, current *entity.Party, targe
 	}
 }
 
-func (pc *PartyContainer) BroadcastDisbanded(prev *entity.Party, leaderCharacterID uint32) {
+func (pc *PartyCache) BroadcastDisbanded(prev *entity.Party, leaderCharacterID uint32) {
 	if pc == nil || pc.gs == nil || prev == nil || leaderCharacterID == 0 {
 		return
 	}
@@ -143,7 +143,7 @@ func (pc *PartyContainer) BroadcastDisbanded(prev *entity.Party, leaderCharacter
 	}
 }
 
-func (pc *PartyContainer) BroadcastLeaderChanged(party *entity.Party, newLeaderCharacterID uint32, disconnected bool) {
+func (pc *PartyCache) BroadcastLeaderChanged(party *entity.Party, newLeaderCharacterID uint32, disconnected bool) {
 	if pc == nil || pc.gs == nil || party == nil || newLeaderCharacterID == 0 {
 		return
 	}
@@ -159,7 +159,7 @@ func (pc *PartyContainer) BroadcastLeaderChanged(party *entity.Party, newLeaderC
 	}
 }
 
-func (pc *PartyContainer) BroadcastLogOnOff(party *entity.Party) {
+func (pc *PartyCache) BroadcastLogOnOff(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}

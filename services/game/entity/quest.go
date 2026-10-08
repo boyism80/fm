@@ -20,7 +20,7 @@ const (
 )
 
 type Quest struct {
-	container      *QuestContainer
+	quests         *Quests
 	Wz             *wz.Quest
 	QuestID        uint32
 	Status         QuestStatusType
@@ -99,7 +99,7 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 	if qp.Wz.Meta.AutoPreComplete || qp.Wz.Meta.AutoComplete {
 		checkOpts.NpcID = nil
 	}
-	if !requirementsMet(qp.Wz.Complete.Requirements, qp.container, qp, checkOpts) {
+	if !requirementsMet(qp.Wz.Complete.Requirements, qp.quests, qp, checkOpts) {
 		return ErrQuestNotCompletable
 	}
 	exchange := ch.Quests.buildPhaseExchange(qp.Wz.Complete.Actions, questActionOpts{
@@ -301,26 +301,26 @@ func (qp *Quest) Forfeit(ch *Character) error {
 	return nil
 }
 
-type QuestContainer struct {
+type Quests struct {
 	owner    *Character
 	progress map[uint32]*Quest
 }
 
-func NewQuestContainer(owner *Character) *QuestContainer {
-	return &QuestContainer{
+func NewQuests(owner *Character) *Quests {
+	return &Quests{
 		owner:    owner,
 		progress: make(map[uint32]*Quest),
 	}
 }
 
-func (qc *QuestContainer) Get(questID uint32) *Quest {
+func (qc *Quests) Get(questID uint32) *Quest {
 	if qc == nil {
 		return nil
 	}
 	return qc.progress[questID]
 }
 
-func (qc *QuestContainer) wzDef(questID uint32) *wz.Quest {
+func (qc *Quests) wzDef(questID uint32) *wz.Quest {
 	if qc == nil || qc.owner == nil || qc.owner.GameWorld == nil {
 		return nil
 	}
@@ -331,7 +331,7 @@ func (qc *QuestContainer) wzDef(questID uint32) *wz.Quest {
 	return resources.GetQuest(questID)
 }
 
-func (qc *QuestContainer) Create(questID uint32, status QuestStatusType) *Quest {
+func (qc *Quests) Create(questID uint32, status QuestStatusType) *Quest {
 	if qc == nil || questID == 0 {
 		return nil
 	}
@@ -339,25 +339,25 @@ func (qc *QuestContainer) Create(questID uint32, status QuestStatusType) *Quest 
 		return nil
 	}
 	qp := &Quest{
-		container: qc,
-		Wz:        qc.wzDef(questID),
-		QuestID:   questID,
-		Status:    status,
-		MobKills:  make(map[uint32]int),
-		RecordEx:  make(map[string]string),
+		quests:   qc,
+		Wz:       qc.wzDef(questID),
+		QuestID:  questID,
+		Status:   status,
+		MobKills: make(map[uint32]int),
+		RecordEx: make(map[string]string),
 	}
 	qc.progress[questID] = qp
 	return qp
 }
 
-func (qc *QuestContainer) Remove(questID uint32) {
+func (qc *Quests) Remove(questID uint32) {
 	if qc == nil {
 		return
 	}
 	delete(qc.progress, questID)
 }
 
-func (qc *QuestContainer) Clear(questID uint32) bool {
+func (qc *Quests) Clear(questID uint32) bool {
 	if qc == nil {
 		return false
 	}
@@ -375,7 +375,7 @@ func (qc *QuestContainer) Clear(questID uint32) bool {
 	return true
 }
 
-func (qc *QuestContainer) ClearAll() int {
+func (qc *Quests) ClearAll() int {
 	if qc == nil {
 		return 0
 	}
@@ -406,7 +406,7 @@ func (qc *QuestContainer) ClearAll() int {
 	return count
 }
 
-func (qc *QuestContainer) ForEach(fn func(questID uint32, qp *Quest)) {
+func (qc *Quests) ForEach(fn func(questID uint32, qp *Quest)) {
 	if qc == nil {
 		return
 	}
@@ -418,7 +418,7 @@ func (qc *QuestContainer) ForEach(fn func(questID uint32, qp *Quest)) {
 	}
 }
 
-func (qc *QuestContainer) CompletedCount() int {
+func (qc *Quests) CompletedCount() int {
 	if qc == nil {
 		return 0
 	}
@@ -431,7 +431,7 @@ func (qc *QuestContainer) CompletedCount() int {
 	return n
 }
 
-func (qc *QuestContainer) RecordExWireMap() map[uint16]string {
+func (qc *Quests) RecordExWireMap() map[uint16]string {
 	result := make(map[uint16]string)
 	qc.ForEach(func(questID uint32, qp *Quest) {
 		if len(qp.RecordEx) == 0 {
@@ -488,15 +488,15 @@ func (qp *Quest) SetRecordExField(key, value string) bool {
 	if qp == nil || key == "" || value == "" || qp.Wz == nil {
 		return false
 	}
-	if qp.container == nil || qp.container.Get(qp.QuestID) == nil {
+	if qp.quests == nil || qp.quests.Get(qp.QuestID) == nil {
 		return false
 	}
 	if qp.RecordEx == nil {
 		qp.RecordEx = make(map[string]string)
 	}
 	qp.RecordEx[key] = value
-	if qp.container != nil {
-		ch := qp.container.owner
+	if qp.quests != nil {
+		ch := qp.quests.owner
 		if ch != nil && ch.Listener != nil {
 			ch.Listener.OnQuestRecordExChanged(ch, qp)
 		}

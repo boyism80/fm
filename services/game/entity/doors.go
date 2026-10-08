@@ -6,7 +6,7 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 )
 
-type DoorContainer struct {
+type Doors struct {
 	owner    *Character
 	sequence uint32
 	casts    map[constant.SkillID]*doorCast
@@ -19,14 +19,14 @@ type doorCast struct {
 	door *Door
 }
 
-func NewDoorContainer(owner *Character) *DoorContainer {
-	return &DoorContainer{
+func NewDoors(owner *Character) *Doors {
+	return &Doors{
 		owner: owner,
 		casts: make(map[constant.SkillID]*doorCast),
 	}
 }
 
-func (dc *DoorContainer) Spawn(buff *SkillBuff) {
+func (dc *Doors) Spawn(buff *SkillBuff) {
 	m := dc.owner.GetMap()
 	if m == nil || m.Wz == nil {
 		return
@@ -49,7 +49,7 @@ func (dc *DoorContainer) Spawn(buff *SkillBuff) {
 	cast.town = dc.owner.GameWorld.GetMapSystem().CreateReturnDoor(dc.owner, cast.key, skillID)
 }
 
-func (dc *DoorContainer) SpawnField(key DoorKey, skillID constant.SkillID, returnEp, fieldEp DoorEndpoint) *Door {
+func (dc *Doors) SpawnField(key DoorKey, skillID constant.SkillID, returnEp, fieldEp DoorEndpoint) *Door {
 	cast := dc.casts[skillID]
 	if cast == nil || cast.key != key || cast.door != nil {
 		return nil
@@ -71,7 +71,7 @@ func (dc *DoorContainer) SpawnField(key DoorKey, skillID constant.SkillID, retur
 	return door
 }
 
-func (dc *DoorContainer) Remove(buff *SkillBuff, animated bool) {
+func (dc *Doors) Remove(buff *SkillBuff, animated bool) {
 	skillID := constant.SkillID(buff.Wz.ID)
 	cast := dc.casts[skillID]
 	if cast == nil || cast.buff != buff {
@@ -80,7 +80,7 @@ func (dc *DoorContainer) Remove(buff *SkillBuff, animated bool) {
 	dc.despawn(skillID, cast, animated)
 }
 
-func (dc *DoorContainer) despawn(skillID constant.SkillID, cast *doorCast, animated bool) {
+func (dc *Doors) despawn(skillID constant.SkillID, cast *doorCast, animated bool) {
 	delete(dc.casts, skillID)
 	dc.owner.GameWorld.GetMapSystem().DespawnDoor(cast.town, cast.key, animated, false)
 	if cast.door == nil {
@@ -91,7 +91,7 @@ func (dc *DoorContainer) despawn(skillID constant.SkillID, cast *doorCast, anima
 	dc.owner.Listener.OnPartyMemberFieldsChanged(dc.owner)
 }
 
-func (dc *DoorContainer) forget(door *Door) {
+func (dc *Doors) forget(door *Door) {
 	cast := dc.casts[door.SkillID]
 	if cast == nil || cast.door != door {
 		return
@@ -99,7 +99,7 @@ func (dc *DoorContainer) forget(door *Door) {
 	delete(dc.casts, door.SkillID)
 }
 
-func (dc *DoorContainer) Find(skillID constant.SkillID) *Door {
+func (dc *Doors) Find(skillID constant.SkillID) *Door {
 	cast := dc.casts[skillID]
 	if cast == nil {
 		return nil
@@ -107,7 +107,7 @@ func (dc *DoorContainer) Find(skillID constant.SkillID) *Door {
 	return cast.door
 }
 
-func (dc *DoorContainer) SetPartyID(partyID *uint32) {
+func (dc *Doors) SetPartyID(partyID *uint32) {
 	for _, cast := range dc.casts {
 		if cast.door != nil {
 			cast.door.PartyID = partyID
