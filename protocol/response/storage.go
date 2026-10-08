@@ -24,6 +24,11 @@ func (p *Storage) Serialize(writer *stream.StreamWriter) error {
 	if p.Result == pconst.StorageResultOpen {
 		writer.WriteU32(p.NpcID)
 	}
+	p.serializeTabs(writer)
+	return nil
+}
+
+func (p *Storage) serializeTabs(writer *stream.StreamWriter) {
 	writer.WriteU8(p.Slots)
 
 	var mask uint64
@@ -50,7 +55,6 @@ func (p *Storage) Serialize(writer *stream.StreamWriter) error {
 			})
 		}
 	}
-	return nil
 }
 
 func (p *Storage) Deserialize(reader *stream.StreamReader) {
@@ -58,6 +62,10 @@ func (p *Storage) Deserialize(reader *stream.StreamReader) {
 	if p.Result == pconst.StorageResultOpen {
 		p.NpcID = reader.ReadU32()
 	}
+	p.deserializeTabs(reader)
+}
+
+func (p *Storage) deserializeTabs(reader *stream.StreamReader) {
 	p.Slots = reader.ReadU8()
 	mask := reader.ReadU64()
 	if mask&2 != 0 {

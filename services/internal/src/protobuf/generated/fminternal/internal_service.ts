@@ -1937,6 +1937,83 @@ export interface CheckParcelArrivalsReply {
   quick: boolean;
 }
 
+export interface HiredMerchantItem {
+  item: Inventory | undefined;
+  bundles: number;
+  perBundle: number;
+  price: number;
+}
+
+export interface HiredMerchantSale {
+  itemId: number;
+  bundles: number;
+  total: number;
+  buyer: string;
+}
+
+export interface HiredMerchant {
+  merchantId: number;
+  worldId: number;
+  accountId: number;
+  characterId: number;
+  ownerName: string;
+  channelId: number;
+  mapId: number;
+  itemId: number;
+  title: string;
+  meso: number;
+  items: HiredMerchantItem[];
+  sold: HiredMerchantSale[];
+  openedAtUnixMs: number;
+  closedAtUnixMs: number;
+}
+
+export interface FindHiredMerchantRequest {
+  worldId: number;
+  accountId: number;
+}
+
+export interface FindHiredMerchantReply {
+  merchant: HiredMerchant | undefined;
+}
+
+export interface OpenHiredMerchantRequest {
+  merchant: HiredMerchant | undefined;
+}
+
+export interface OpenHiredMerchantReply {
+  merchantId: number;
+  existing: HiredMerchant | undefined;
+}
+
+export interface SaveHiredMerchantRequest {
+  merchant: HiredMerchant | undefined;
+  characters: CharacterSaveEntry[];
+  close: boolean;
+}
+
+export interface SaveHiredMerchantReply {
+}
+
+export interface ClaimStoreBankRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+}
+
+export interface ClaimStoreBankReply {
+  merchant: HiredMerchant | undefined;
+}
+
+export interface CloseChannelMerchantsRequest {
+  worldId: number;
+  channelId: number;
+}
+
+export interface CloseChannelMerchantsReply {
+  count: number;
+}
+
 export interface SaveCharactersRequest {
   entries: CharacterSaveEntry[];
 }
@@ -14147,6 +14224,1288 @@ export const CheckParcelArrivalsReply: MessageFns<CheckParcelArrivalsReply> = {
     message.count = object.count ?? 0;
     message.senderName = object.senderName ?? "";
     message.quick = object.quick ?? false;
+    return message;
+  },
+};
+
+function createBaseHiredMerchantItem(): HiredMerchantItem {
+  return { item: undefined, bundles: 0, perBundle: 0, price: 0 };
+}
+
+export const HiredMerchantItem: MessageFns<HiredMerchantItem> = {
+  encode(message: HiredMerchantItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.item !== undefined) {
+      Inventory.encode(message.item, writer.uint32(10).fork()).join();
+    }
+    if (message.bundles !== 0) {
+      writer.uint32(16).uint32(message.bundles);
+    }
+    if (message.perBundle !== 0) {
+      writer.uint32(24).uint32(message.perBundle);
+    }
+    if (message.price !== 0) {
+      writer.uint32(32).int32(message.price);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): HiredMerchantItem {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHiredMerchantItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.item = Inventory.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.bundles = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.perBundle = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.price = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): HiredMerchantItem {
+    return {
+      item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
+      bundles: isSet(object.bundles) ? globalThis.Number(object.bundles) : 0,
+      perBundle: isSet(object.perBundle)
+        ? globalThis.Number(object.perBundle)
+        : isSet(object.per_bundle)
+        ? globalThis.Number(object.per_bundle)
+        : 0,
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+    };
+  },
+
+  toJSON(message: HiredMerchantItem): unknown {
+    const obj: any = {};
+    if (message.item !== undefined) {
+      obj.item = Inventory.toJSON(message.item);
+    }
+    if (message.bundles !== 0) {
+      obj.bundles = Math.round(message.bundles);
+    }
+    if (message.perBundle !== 0) {
+      obj.perBundle = Math.round(message.perBundle);
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<HiredMerchantItem>, I>>(base?: I): HiredMerchantItem {
+    return HiredMerchantItem.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<HiredMerchantItem>, I>>(object: I): HiredMerchantItem {
+    const message = createBaseHiredMerchantItem();
+    message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
+    message.bundles = object.bundles ?? 0;
+    message.perBundle = object.perBundle ?? 0;
+    message.price = object.price ?? 0;
+    return message;
+  },
+};
+
+function createBaseHiredMerchantSale(): HiredMerchantSale {
+  return { itemId: 0, bundles: 0, total: 0, buyer: "" };
+}
+
+export const HiredMerchantSale: MessageFns<HiredMerchantSale> = {
+  encode(message: HiredMerchantSale, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.itemId !== 0) {
+      writer.uint32(8).uint32(message.itemId);
+    }
+    if (message.bundles !== 0) {
+      writer.uint32(16).uint32(message.bundles);
+    }
+    if (message.total !== 0) {
+      writer.uint32(24).int32(message.total);
+    }
+    if (message.buyer !== "") {
+      writer.uint32(34).string(message.buyer);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): HiredMerchantSale {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHiredMerchantSale();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.itemId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.bundles = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.total = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.buyer = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): HiredMerchantSale {
+    return {
+      itemId: isSet(object.itemId)
+        ? globalThis.Number(object.itemId)
+        : isSet(object.item_id)
+        ? globalThis.Number(object.item_id)
+        : 0,
+      bundles: isSet(object.bundles) ? globalThis.Number(object.bundles) : 0,
+      total: isSet(object.total) ? globalThis.Number(object.total) : 0,
+      buyer: isSet(object.buyer) ? globalThis.String(object.buyer) : "",
+    };
+  },
+
+  toJSON(message: HiredMerchantSale): unknown {
+    const obj: any = {};
+    if (message.itemId !== 0) {
+      obj.itemId = Math.round(message.itemId);
+    }
+    if (message.bundles !== 0) {
+      obj.bundles = Math.round(message.bundles);
+    }
+    if (message.total !== 0) {
+      obj.total = Math.round(message.total);
+    }
+    if (message.buyer !== "") {
+      obj.buyer = message.buyer;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<HiredMerchantSale>, I>>(base?: I): HiredMerchantSale {
+    return HiredMerchantSale.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<HiredMerchantSale>, I>>(object: I): HiredMerchantSale {
+    const message = createBaseHiredMerchantSale();
+    message.itemId = object.itemId ?? 0;
+    message.bundles = object.bundles ?? 0;
+    message.total = object.total ?? 0;
+    message.buyer = object.buyer ?? "";
+    return message;
+  },
+};
+
+function createBaseHiredMerchant(): HiredMerchant {
+  return {
+    merchantId: 0,
+    worldId: 0,
+    accountId: 0,
+    characterId: 0,
+    ownerName: "",
+    channelId: 0,
+    mapId: 0,
+    itemId: 0,
+    title: "",
+    meso: 0,
+    items: [],
+    sold: [],
+    openedAtUnixMs: 0,
+    closedAtUnixMs: 0,
+  };
+}
+
+export const HiredMerchant: MessageFns<HiredMerchant> = {
+  encode(message: HiredMerchant, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.merchantId !== 0) {
+      writer.uint32(8).uint32(message.merchantId);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(16).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(24).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(32).uint32(message.characterId);
+    }
+    if (message.ownerName !== "") {
+      writer.uint32(42).string(message.ownerName);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(48).int32(message.channelId);
+    }
+    if (message.mapId !== 0) {
+      writer.uint32(56).uint32(message.mapId);
+    }
+    if (message.itemId !== 0) {
+      writer.uint32(64).uint32(message.itemId);
+    }
+    if (message.title !== "") {
+      writer.uint32(74).string(message.title);
+    }
+    if (message.meso !== 0) {
+      writer.uint32(80).int32(message.meso);
+    }
+    for (const v of message.items) {
+      HiredMerchantItem.encode(v!, writer.uint32(90).fork()).join();
+    }
+    for (const v of message.sold) {
+      HiredMerchantSale.encode(v!, writer.uint32(98).fork()).join();
+    }
+    if (message.openedAtUnixMs !== 0) {
+      writer.uint32(104).int64(message.openedAtUnixMs);
+    }
+    if (message.closedAtUnixMs !== 0) {
+      writer.uint32(112).int64(message.closedAtUnixMs);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): HiredMerchant {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHiredMerchant();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.merchantId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.ownerName = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.channelId = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.mapId = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.itemId = reader.uint32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.meso = reader.int32();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.items.push(HiredMerchantItem.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.sold.push(HiredMerchantSale.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.openedAtUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.closedAtUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): HiredMerchant {
+    return {
+      merchantId: isSet(object.merchantId)
+        ? globalThis.Number(object.merchantId)
+        : isSet(object.merchant_id)
+        ? globalThis.Number(object.merchant_id)
+        : 0,
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      ownerName: isSet(object.ownerName)
+        ? globalThis.String(object.ownerName)
+        : isSet(object.owner_name)
+        ? globalThis.String(object.owner_name)
+        : "",
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      mapId: isSet(object.mapId)
+        ? globalThis.Number(object.mapId)
+        : isSet(object.map_id)
+        ? globalThis.Number(object.map_id)
+        : 0,
+      itemId: isSet(object.itemId)
+        ? globalThis.Number(object.itemId)
+        : isSet(object.item_id)
+        ? globalThis.Number(object.item_id)
+        : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
+      items: globalThis.Array.isArray(object?.items)
+        ? object.items.map((e: any) => HiredMerchantItem.fromJSON(e))
+        : [],
+      sold: globalThis.Array.isArray(object?.sold)
+        ? object.sold.map((e: any) => HiredMerchantSale.fromJSON(e))
+        : [],
+      openedAtUnixMs: isSet(object.openedAtUnixMs)
+        ? globalThis.Number(object.openedAtUnixMs)
+        : isSet(object.opened_at_unix_ms)
+        ? globalThis.Number(object.opened_at_unix_ms)
+        : 0,
+      closedAtUnixMs: isSet(object.closedAtUnixMs)
+        ? globalThis.Number(object.closedAtUnixMs)
+        : isSet(object.closed_at_unix_ms)
+        ? globalThis.Number(object.closed_at_unix_ms)
+        : 0,
+    };
+  },
+
+  toJSON(message: HiredMerchant): unknown {
+    const obj: any = {};
+    if (message.merchantId !== 0) {
+      obj.merchantId = Math.round(message.merchantId);
+    }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.ownerName !== "") {
+      obj.ownerName = message.ownerName;
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.mapId !== 0) {
+      obj.mapId = Math.round(message.mapId);
+    }
+    if (message.itemId !== 0) {
+      obj.itemId = Math.round(message.itemId);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.meso !== 0) {
+      obj.meso = Math.round(message.meso);
+    }
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => HiredMerchantItem.toJSON(e));
+    }
+    if (message.sold?.length) {
+      obj.sold = message.sold.map((e) => HiredMerchantSale.toJSON(e));
+    }
+    if (message.openedAtUnixMs !== 0) {
+      obj.openedAtUnixMs = Math.round(message.openedAtUnixMs);
+    }
+    if (message.closedAtUnixMs !== 0) {
+      obj.closedAtUnixMs = Math.round(message.closedAtUnixMs);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<HiredMerchant>, I>>(base?: I): HiredMerchant {
+    return HiredMerchant.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<HiredMerchant>, I>>(object: I): HiredMerchant {
+    const message = createBaseHiredMerchant();
+    message.merchantId = object.merchantId ?? 0;
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.ownerName = object.ownerName ?? "";
+    message.channelId = object.channelId ?? 0;
+    message.mapId = object.mapId ?? 0;
+    message.itemId = object.itemId ?? 0;
+    message.title = object.title ?? "";
+    message.meso = object.meso ?? 0;
+    message.items = object.items?.map((e) => HiredMerchantItem.fromPartial(e)) || [];
+    message.sold = object.sold?.map((e) => HiredMerchantSale.fromPartial(e)) || [];
+    message.openedAtUnixMs = object.openedAtUnixMs ?? 0;
+    message.closedAtUnixMs = object.closedAtUnixMs ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindHiredMerchantRequest(): FindHiredMerchantRequest {
+  return { worldId: 0, accountId: 0 };
+}
+
+export const FindHiredMerchantRequest: MessageFns<FindHiredMerchantRequest> = {
+  encode(message: FindHiredMerchantRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindHiredMerchantRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindHiredMerchantRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindHiredMerchantRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: FindHiredMerchantRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindHiredMerchantRequest>, I>>(base?: I): FindHiredMerchantRequest {
+    return FindHiredMerchantRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindHiredMerchantRequest>, I>>(object: I): FindHiredMerchantRequest {
+    const message = createBaseFindHiredMerchantRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindHiredMerchantReply(): FindHiredMerchantReply {
+  return { merchant: undefined };
+}
+
+export const FindHiredMerchantReply: MessageFns<FindHiredMerchantReply> = {
+  encode(message: FindHiredMerchantReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.merchant !== undefined) {
+      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindHiredMerchantReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindHiredMerchantReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindHiredMerchantReply {
+    return { merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined };
+  },
+
+  toJSON(message: FindHiredMerchantReply): unknown {
+    const obj: any = {};
+    if (message.merchant !== undefined) {
+      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindHiredMerchantReply>, I>>(base?: I): FindHiredMerchantReply {
+    return FindHiredMerchantReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindHiredMerchantReply>, I>>(object: I): FindHiredMerchantReply {
+    const message = createBaseFindHiredMerchantReply();
+    message.merchant = (object.merchant !== undefined && object.merchant !== null)
+      ? HiredMerchant.fromPartial(object.merchant)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseOpenHiredMerchantRequest(): OpenHiredMerchantRequest {
+  return { merchant: undefined };
+}
+
+export const OpenHiredMerchantRequest: MessageFns<OpenHiredMerchantRequest> = {
+  encode(message: OpenHiredMerchantRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.merchant !== undefined) {
+      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): OpenHiredMerchantRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOpenHiredMerchantRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OpenHiredMerchantRequest {
+    return { merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined };
+  },
+
+  toJSON(message: OpenHiredMerchantRequest): unknown {
+    const obj: any = {};
+    if (message.merchant !== undefined) {
+      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OpenHiredMerchantRequest>, I>>(base?: I): OpenHiredMerchantRequest {
+    return OpenHiredMerchantRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<OpenHiredMerchantRequest>, I>>(object: I): OpenHiredMerchantRequest {
+    const message = createBaseOpenHiredMerchantRequest();
+    message.merchant = (object.merchant !== undefined && object.merchant !== null)
+      ? HiredMerchant.fromPartial(object.merchant)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseOpenHiredMerchantReply(): OpenHiredMerchantReply {
+  return { merchantId: 0, existing: undefined };
+}
+
+export const OpenHiredMerchantReply: MessageFns<OpenHiredMerchantReply> = {
+  encode(message: OpenHiredMerchantReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.merchantId !== 0) {
+      writer.uint32(8).uint32(message.merchantId);
+    }
+    if (message.existing !== undefined) {
+      HiredMerchant.encode(message.existing, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): OpenHiredMerchantReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOpenHiredMerchantReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.merchantId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.existing = HiredMerchant.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OpenHiredMerchantReply {
+    return {
+      merchantId: isSet(object.merchantId)
+        ? globalThis.Number(object.merchantId)
+        : isSet(object.merchant_id)
+        ? globalThis.Number(object.merchant_id)
+        : 0,
+      existing: isSet(object.existing) ? HiredMerchant.fromJSON(object.existing) : undefined,
+    };
+  },
+
+  toJSON(message: OpenHiredMerchantReply): unknown {
+    const obj: any = {};
+    if (message.merchantId !== 0) {
+      obj.merchantId = Math.round(message.merchantId);
+    }
+    if (message.existing !== undefined) {
+      obj.existing = HiredMerchant.toJSON(message.existing);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<OpenHiredMerchantReply>, I>>(base?: I): OpenHiredMerchantReply {
+    return OpenHiredMerchantReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<OpenHiredMerchantReply>, I>>(object: I): OpenHiredMerchantReply {
+    const message = createBaseOpenHiredMerchantReply();
+    message.merchantId = object.merchantId ?? 0;
+    message.existing = (object.existing !== undefined && object.existing !== null)
+      ? HiredMerchant.fromPartial(object.existing)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSaveHiredMerchantRequest(): SaveHiredMerchantRequest {
+  return { merchant: undefined, characters: [], close: false };
+}
+
+export const SaveHiredMerchantRequest: MessageFns<SaveHiredMerchantRequest> = {
+  encode(message: SaveHiredMerchantRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.merchant !== undefined) {
+      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.characters) {
+      CharacterSaveEntry.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.close !== false) {
+      writer.uint32(24).bool(message.close);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SaveHiredMerchantRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSaveHiredMerchantRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.characters.push(CharacterSaveEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.close = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SaveHiredMerchantRequest {
+    return {
+      merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined,
+      characters: globalThis.Array.isArray(object?.characters)
+        ? object.characters.map((e: any) => CharacterSaveEntry.fromJSON(e))
+        : [],
+      close: isSet(object.close) ? globalThis.Boolean(object.close) : false,
+    };
+  },
+
+  toJSON(message: SaveHiredMerchantRequest): unknown {
+    const obj: any = {};
+    if (message.merchant !== undefined) {
+      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    }
+    if (message.characters?.length) {
+      obj.characters = message.characters.map((e) => CharacterSaveEntry.toJSON(e));
+    }
+    if (message.close !== false) {
+      obj.close = message.close;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SaveHiredMerchantRequest>, I>>(base?: I): SaveHiredMerchantRequest {
+    return SaveHiredMerchantRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SaveHiredMerchantRequest>, I>>(object: I): SaveHiredMerchantRequest {
+    const message = createBaseSaveHiredMerchantRequest();
+    message.merchant = (object.merchant !== undefined && object.merchant !== null)
+      ? HiredMerchant.fromPartial(object.merchant)
+      : undefined;
+    message.characters = object.characters?.map((e) => CharacterSaveEntry.fromPartial(e)) || [];
+    message.close = object.close ?? false;
+    return message;
+  },
+};
+
+function createBaseSaveHiredMerchantReply(): SaveHiredMerchantReply {
+  return {};
+}
+
+export const SaveHiredMerchantReply: MessageFns<SaveHiredMerchantReply> = {
+  encode(_: SaveHiredMerchantReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SaveHiredMerchantReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSaveHiredMerchantReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): SaveHiredMerchantReply {
+    return {};
+  },
+
+  toJSON(_: SaveHiredMerchantReply): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SaveHiredMerchantReply>, I>>(base?: I): SaveHiredMerchantReply {
+    return SaveHiredMerchantReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SaveHiredMerchantReply>, I>>(_: I): SaveHiredMerchantReply {
+    const message = createBaseSaveHiredMerchantReply();
+    return message;
+  },
+};
+
+function createBaseClaimStoreBankRequest(): ClaimStoreBankRequest {
+  return { worldId: 0, accountId: 0, characterId: 0 };
+}
+
+export const ClaimStoreBankRequest: MessageFns<ClaimStoreBankRequest> = {
+  encode(message: ClaimStoreBankRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClaimStoreBankRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClaimStoreBankRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClaimStoreBankRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ClaimStoreBankRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClaimStoreBankRequest>, I>>(base?: I): ClaimStoreBankRequest {
+    return ClaimStoreBankRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClaimStoreBankRequest>, I>>(object: I): ClaimStoreBankRequest {
+    const message = createBaseClaimStoreBankRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseClaimStoreBankReply(): ClaimStoreBankReply {
+  return { merchant: undefined };
+}
+
+export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
+  encode(message: ClaimStoreBankReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.merchant !== undefined) {
+      HiredMerchant.encode(message.merchant, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClaimStoreBankReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClaimStoreBankReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.merchant = HiredMerchant.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClaimStoreBankReply {
+    return { merchant: isSet(object.merchant) ? HiredMerchant.fromJSON(object.merchant) : undefined };
+  },
+
+  toJSON(message: ClaimStoreBankReply): unknown {
+    const obj: any = {};
+    if (message.merchant !== undefined) {
+      obj.merchant = HiredMerchant.toJSON(message.merchant);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClaimStoreBankReply>, I>>(base?: I): ClaimStoreBankReply {
+    return ClaimStoreBankReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClaimStoreBankReply>, I>>(object: I): ClaimStoreBankReply {
+    const message = createBaseClaimStoreBankReply();
+    message.merchant = (object.merchant !== undefined && object.merchant !== null)
+      ? HiredMerchant.fromPartial(object.merchant)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCloseChannelMerchantsRequest(): CloseChannelMerchantsRequest {
+  return { worldId: 0, channelId: 0 };
+}
+
+export const CloseChannelMerchantsRequest: MessageFns<CloseChannelMerchantsRequest> = {
+  encode(message: CloseChannelMerchantsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(16).int32(message.channelId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelMerchantsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCloseChannelMerchantsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.channelId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CloseChannelMerchantsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CloseChannelMerchantsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CloseChannelMerchantsRequest>, I>>(base?: I): CloseChannelMerchantsRequest {
+    return CloseChannelMerchantsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CloseChannelMerchantsRequest>, I>>(object: I): CloseChannelMerchantsRequest {
+    const message = createBaseCloseChannelMerchantsRequest();
+    message.worldId = object.worldId ?? 0;
+    message.channelId = object.channelId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCloseChannelMerchantsReply(): CloseChannelMerchantsReply {
+  return { count: 0 };
+}
+
+export const CloseChannelMerchantsReply: MessageFns<CloseChannelMerchantsReply> = {
+  encode(message: CloseChannelMerchantsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.count !== 0) {
+      writer.uint32(8).uint32(message.count);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelMerchantsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCloseChannelMerchantsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.count = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CloseChannelMerchantsReply {
+    return { count: isSet(object.count) ? globalThis.Number(object.count) : 0 };
+  },
+
+  toJSON(message: CloseChannelMerchantsReply): unknown {
+    const obj: any = {};
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CloseChannelMerchantsReply>, I>>(base?: I): CloseChannelMerchantsReply {
+    return CloseChannelMerchantsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CloseChannelMerchantsReply>, I>>(object: I): CloseChannelMerchantsReply {
+    const message = createBaseCloseChannelMerchantsReply();
+    message.count = object.count ?? 0;
     return message;
   },
 };
@@ -31367,6 +32726,60 @@ export const InternalService = {
       Buffer.from(CheckParcelArrivalsReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): CheckParcelArrivalsReply => CheckParcelArrivalsReply.decode(value),
   },
+  findHiredMerchant: {
+    path: "/fm.internal.Internal/FindHiredMerchant" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FindHiredMerchantRequest): Buffer =>
+      Buffer.from(FindHiredMerchantRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FindHiredMerchantRequest => FindHiredMerchantRequest.decode(value),
+    responseSerialize: (value: FindHiredMerchantReply): Buffer =>
+      Buffer.from(FindHiredMerchantReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FindHiredMerchantReply => FindHiredMerchantReply.decode(value),
+  },
+  openHiredMerchant: {
+    path: "/fm.internal.Internal/OpenHiredMerchant" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: OpenHiredMerchantRequest): Buffer =>
+      Buffer.from(OpenHiredMerchantRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): OpenHiredMerchantRequest => OpenHiredMerchantRequest.decode(value),
+    responseSerialize: (value: OpenHiredMerchantReply): Buffer =>
+      Buffer.from(OpenHiredMerchantReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): OpenHiredMerchantReply => OpenHiredMerchantReply.decode(value),
+  },
+  saveHiredMerchant: {
+    path: "/fm.internal.Internal/SaveHiredMerchant" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SaveHiredMerchantRequest): Buffer =>
+      Buffer.from(SaveHiredMerchantRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SaveHiredMerchantRequest => SaveHiredMerchantRequest.decode(value),
+    responseSerialize: (value: SaveHiredMerchantReply): Buffer =>
+      Buffer.from(SaveHiredMerchantReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SaveHiredMerchantReply => SaveHiredMerchantReply.decode(value),
+  },
+  claimStoreBank: {
+    path: "/fm.internal.Internal/ClaimStoreBank" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ClaimStoreBankRequest): Buffer =>
+      Buffer.from(ClaimStoreBankRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ClaimStoreBankRequest => ClaimStoreBankRequest.decode(value),
+    responseSerialize: (value: ClaimStoreBankReply): Buffer => Buffer.from(ClaimStoreBankReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ClaimStoreBankReply => ClaimStoreBankReply.decode(value),
+  },
+  closeChannelMerchants: {
+    path: "/fm.internal.Internal/CloseChannelMerchants" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CloseChannelMerchantsRequest): Buffer =>
+      Buffer.from(CloseChannelMerchantsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CloseChannelMerchantsRequest => CloseChannelMerchantsRequest.decode(value),
+    responseSerialize: (value: CloseChannelMerchantsReply): Buffer =>
+      Buffer.from(CloseChannelMerchantsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CloseChannelMerchantsReply => CloseChannelMerchantsReply.decode(value),
+  },
   loginAccount: {
     path: "/fm.internal.Internal/LoginAccount" as const,
     requestStream: false as const,
@@ -32253,6 +33666,11 @@ export interface InternalServer extends UntypedServiceImplementation {
   claimParcel: handleUnaryCall<ClaimParcelRequest, ClaimParcelReply>;
   deleteParcel: handleUnaryCall<DeleteParcelRequest, DeleteParcelReply>;
   checkParcelArrivals: handleUnaryCall<CheckParcelArrivalsRequest, CheckParcelArrivalsReply>;
+  findHiredMerchant: handleUnaryCall<FindHiredMerchantRequest, FindHiredMerchantReply>;
+  openHiredMerchant: handleUnaryCall<OpenHiredMerchantRequest, OpenHiredMerchantReply>;
+  saveHiredMerchant: handleUnaryCall<SaveHiredMerchantRequest, SaveHiredMerchantReply>;
+  claimStoreBank: handleUnaryCall<ClaimStoreBankRequest, ClaimStoreBankReply>;
+  closeChannelMerchants: handleUnaryCall<CloseChannelMerchantsRequest, CloseChannelMerchantsReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
   getCharacterList: handleUnaryCall<GetCharacterListRequest, GetCharacterListReply>;
   checkCharacterName: handleUnaryCall<CheckCharacterNameRequest, CheckCharacterNameReply>;
@@ -32549,6 +33967,81 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: CheckParcelArrivalsReply) => void,
+  ): ClientUnaryCall;
+  findHiredMerchant(
+    request: FindHiredMerchantRequest,
+    callback: (error: ServiceError | null, response: FindHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  findHiredMerchant(
+    request: FindHiredMerchantRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FindHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  findHiredMerchant(
+    request: FindHiredMerchantRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FindHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  openHiredMerchant(
+    request: OpenHiredMerchantRequest,
+    callback: (error: ServiceError | null, response: OpenHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  openHiredMerchant(
+    request: OpenHiredMerchantRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: OpenHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  openHiredMerchant(
+    request: OpenHiredMerchantRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: OpenHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  saveHiredMerchant(
+    request: SaveHiredMerchantRequest,
+    callback: (error: ServiceError | null, response: SaveHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  saveHiredMerchant(
+    request: SaveHiredMerchantRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SaveHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  saveHiredMerchant(
+    request: SaveHiredMerchantRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SaveHiredMerchantReply) => void,
+  ): ClientUnaryCall;
+  claimStoreBank(
+    request: ClaimStoreBankRequest,
+    callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
+  ): ClientUnaryCall;
+  claimStoreBank(
+    request: ClaimStoreBankRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
+  ): ClientUnaryCall;
+  claimStoreBank(
+    request: ClaimStoreBankRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
+  ): ClientUnaryCall;
+  closeChannelMerchants(
+    request: CloseChannelMerchantsRequest,
+    callback: (error: ServiceError | null, response: CloseChannelMerchantsReply) => void,
+  ): ClientUnaryCall;
+  closeChannelMerchants(
+    request: CloseChannelMerchantsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CloseChannelMerchantsReply) => void,
+  ): ClientUnaryCall;
+  closeChannelMerchants(
+    request: CloseChannelMerchantsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CloseChannelMerchantsReply) => void,
   ): ClientUnaryCall;
   loginAccount(
     request: LoginAccountRequest,

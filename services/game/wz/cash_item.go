@@ -8,4 +8,5 @@ type CashItem struct {
 	PetSkill    constant.PetSkill
 	PetSkillAdd bool
 	PetFood     *PetFood
+	SoldInform  bool
 }

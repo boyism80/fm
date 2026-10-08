@@ -62,6 +62,8 @@ type Map struct {
 	MapMark           string
 	MapDesc           string
 	MiniMapOnOff      bool
+	PersonalShop      bool
+	EntrustedShop     bool
 	Portals           map[uint8]Portal
 	NpcSpawns         map[uint32]NpcSpawn
 	MobSpawns         map[uint32]MobSpawn

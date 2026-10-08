@@ -19,6 +19,11 @@ service Internal {
   rpc ClaimParcel (ClaimParcelRequest) returns (ClaimParcelReply);
   rpc DeleteParcel (DeleteParcelRequest) returns (DeleteParcelReply);
   rpc CheckParcelArrivals (CheckParcelArrivalsRequest) returns (CheckParcelArrivalsReply);
+  rpc FindHiredMerchant (FindHiredMerchantRequest) returns (FindHiredMerchantReply);
+  rpc OpenHiredMerchant (OpenHiredMerchantRequest) returns (OpenHiredMerchantReply);
+  rpc SaveHiredMerchant (SaveHiredMerchantRequest) returns (SaveHiredMerchantReply);
+  rpc ClaimStoreBank (ClaimStoreBankRequest) returns (ClaimStoreBankReply);
+  rpc CloseChannelMerchants (CloseChannelMerchantsRequest) returns (CloseChannelMerchantsReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
@@ -801,6 +806,83 @@ message CheckParcelArrivalsReply {
   uint32 count = 1;
   string sender_name = 2;
   bool quick = 3;
+}
+
+message HiredMerchantItem {
+  Inventory item = 1;
+  uint32 bundles = 2;
+  uint32 per_bundle = 3;
+  int32 price = 4;
+}
+
+message HiredMerchantSale {
+  uint32 item_id = 1;
+  uint32 bundles = 2;
+  int32 total = 3;
+  string buyer = 4;
+}
+
+message HiredMerchant {
+  uint32 merchant_id = 1;
+  uint32 world_id = 2;
+  uint32 account_id = 3;
+  uint32 character_id = 4;
+  string owner_name = 5;
+  int32 channel_id = 6;
+  uint32 map_id = 7;
+  uint32 item_id = 8;
+  string title = 9;
+  int32 meso = 10;
+  repeated HiredMerchantItem items = 11;
+  repeated HiredMerchantSale sold = 12;
+  int64 opened_at_unix_ms = 13;
+  int64 closed_at_unix_ms = 14;
+}
+
+message FindHiredMerchantRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+}
+
+message FindHiredMerchantReply {
+  HiredMerchant merchant = 1;
+}
+
+message OpenHiredMerchantRequest {
+  HiredMerchant merchant = 1;
+}
+
+message OpenHiredMerchantReply {
+  uint32 merchant_id = 1;
+  HiredMerchant existing = 2;
+}
+
+message SaveHiredMerchantRequest {
+  HiredMerchant merchant = 1;
+  repeated CharacterSaveEntry characters = 2;
+  bool close = 3;
+}
+
+message SaveHiredMerchantReply {
+}
+
+message ClaimStoreBankRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+}
+
+message ClaimStoreBankReply {
+  HiredMerchant merchant = 1;
+}
+
+message CloseChannelMerchantsRequest {
+  uint32 world_id = 1;
+  int32 channel_id = 2;
+}
+
+message CloseChannelMerchantsReply {
+  uint32 count = 1;
 }
 
 message SaveCharactersRequest {

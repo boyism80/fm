@@ -491,6 +491,20 @@ func (gs *GameServer) preCreateMaps() {
 func (gs *GameServer) Start() error {
 	log.Println("Starting MapleStory Game Server...")
 
+	if gs.internalClient != nil {
+		closeCtx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+		reply, err := gs.internalClient.CloseChannelMerchants(closeCtx, &internal.CloseChannelMerchantsRequest{
+			WorldId:   gs.config.WorldId,
+			ChannelId: int32(gs.config.ChannelId),
+		})
+		cancel()
+		if err != nil {
+			log.Printf("close channel hired merchants: %v", err)
+		} else {
+			log.Printf("Closed %d hired merchants into the store bank", reply.GetCount())
+		}
+	}
+
 	if err := gs.ServerCore.Start(gs.config.Host, gs.config.Port); err != nil {
 		return err
 	}

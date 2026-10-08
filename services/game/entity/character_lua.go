@@ -1815,6 +1815,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.OpenStorage(cfg.ActorContext, npcID, storeFee, takeOutFee)
 			return 0
 		},
+		"open_store_bank": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			npcID := uint32(L.CheckInt(2))
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil {
+				L.ArgError(1, "actor context not available")
+				return 0
+			}
+			ch.StoreBank.Open(cfg.ActorContext, npcID)
+			return 0
+		},
 		"open_duey": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

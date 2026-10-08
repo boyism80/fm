@@ -331,6 +331,9 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 
 	character := m.objects[constant.ObjectTypeCharacter][playerID].(*Character)
 	m.collectOwnedFieldDrops(character)
+	if character.MiniRoom != nil {
+		character.MiniRoom.Leave(character)
+	}
 
 	m.callMapLifecycleScript(character, "on_map_leave")
 

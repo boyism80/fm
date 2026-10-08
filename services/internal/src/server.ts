@@ -14,6 +14,7 @@ import { ChatGrpcController } from "./grpc/controllers/chat-controller";
 import { ServerTimeGrpcController } from "./grpc/controllers/server-time-controller";
 import { OperationLogGrpcController } from "./grpc/controllers/operation-log-controller";
 import { ParcelGrpcController } from "./grpc/controllers/parcel-controller";
+import { HiredMerchantGrpcController } from "./grpc/controllers/hired-merchant-controller";
 import { CashShopGrpcController } from "./grpc/controllers/cash-shop-controller";
 import { MarriageGrpcController } from "./grpc/controllers/marriage-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
@@ -123,6 +124,7 @@ async function main() {
         serverTimeController: awilix.asClass(ServerTimeGrpcController).scoped(),
         operationLogController: awilix.asClass(OperationLogGrpcController).scoped(),
         parcelController: awilix.asClass(ParcelGrpcController).scoped(),
+        hiredMerchantController: awilix.asClass(HiredMerchantGrpcController).scoped(),
         cashShopController: awilix.asClass(CashShopGrpcController).scoped(),
         marriageController: awilix.asClass(MarriageGrpcController).scoped(),
     });

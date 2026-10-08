@@ -85,6 +85,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		}
 	}
 	ch.Duey = &Duey{owner: ch}
+	ch.StoreBank = &StoreBank{owner: ch}
 	ch.SavedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
 	ch.KeyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch

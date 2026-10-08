@@ -50,6 +50,11 @@ var decoders = func() []decoder {
 			return len(body) > 0 && pconst.DueyResult(body[0]) == result
 		}
 	}
+	sub := func(code uint8) func([]byte) bool {
+		return func(body []byte) bool {
+			return len(body) > 0 && body[0] == code
+		}
+	}
 	partyUpdate := func(match func(body []byte) bool) func([]byte) bool {
 		return func(body []byte) bool {
 			return len(body) >= 11 && pconst.PartySubOpcode(body[0]) == pconst.PartyS2CPartyUpdate && match(body)
@@ -88,6 +93,26 @@ var decoders = func() []decoder {
 		newDecoder[response.DueyArrival](duey(pconst.DueyResultArrival)),
 		newDecoder[response.DueyArrivals](duey(pconst.DueyResultArrivals)),
 		newDecoder[response.Duey](nil),
+		newDecoder[response.EntrustedShopCheckResult](nil),
+		newDecoder[response.SpawnHiredMerchant](nil),
+		newDecoder[response.DestroyHiredMerchant](nil),
+		newDecoder[response.UpdateHiredMerchant](nil),
+		newDecoder[response.MiniRoomEnterFailed](func(body []byte) bool {
+			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter && body[1] == 0
+		}),
+		newDecoder[response.MiniRoomEnter](sub(uint8(pconst.MiniRoomResultEnter))),
+		newDecoder[response.MiniRoomVisited](sub(uint8(pconst.MiniRoomResultVisitor))),
+		newDecoder[response.MiniRoomChat](sub(uint8(pconst.MiniRoomResultChat))),
+		newDecoder[response.MiniRoomLeave](sub(uint8(pconst.MiniRoomResultLeave))),
+		newDecoder[response.MiniRoomBuyFailed](sub(uint8(pconst.MiniRoomResultBuy))),
+		newDecoder[response.MiniRoomItems](sub(uint8(pconst.MiniRoomResultItems))),
+		newDecoder[response.MiniRoomArranged](sub(uint8(pconst.MiniRoomResultArranged))),
+		newDecoder[response.MiniRoomClosed](sub(uint8(pconst.MiniRoomResultClosed))),
+		newDecoder[response.MiniRoomMesoWithdrawn](sub(uint8(pconst.MiniRoomResultMesoWithdrawn))),
+		newDecoder[response.StoreBankOpen](sub(uint8(pconst.StoreBankResultOpen))),
+		newDecoder[response.StoreBankFee](sub(uint8(pconst.StoreBankResultFee))),
+		newDecoder[response.StoreBankLocation](sub(uint8(pconst.StoreBankResultLocation))),
+		newDecoder[response.StoreBankResult](nil),
 		newDecoder[response.InventoryOperation](nil),
 		newDecoder[response.UpdateQuest](func(body []byte) bool { return len(body) > 0 && body[0] == 1 }),
 		newDecoder[response.GuildInvite](func(body []byte) bool {

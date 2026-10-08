@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
@@ -133,4 +134,20 @@ func (gs *GameServer) SaveAllCharactersAsync(ctx actor.Context) *async.Promise[*
 		}
 		return summary, nil
 	})
+}
+
+func (gs *GameServer) SaveHiredMerchantAsync(ctx actor.Context, merchant *internal.HiredMerchant, entries []*internal.CharacterSaveEntry, close bool) *async.Promise[*internal.SaveHiredMerchantReply] {
+	merchant.WorldId = gs.config.WorldId
+	merchant.ChannelId = int32(gs.config.ChannelId)
+	req := &internal.SaveHiredMerchantRequest{
+		Merchant:   merchant,
+		Characters: entries,
+		Close:      close,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.SaveHiredMerchantReply, error) {
+			return gs.internalClient.SaveHiredMerchant(c, req)
+		},
+		nil,
+	)
 }

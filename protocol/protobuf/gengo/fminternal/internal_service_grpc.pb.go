@@ -32,6 +32,11 @@ const (
 	Internal_ClaimParcel_FullMethodName                    = "/fm.internal.Internal/ClaimParcel"
 	Internal_DeleteParcel_FullMethodName                   = "/fm.internal.Internal/DeleteParcel"
 	Internal_CheckParcelArrivals_FullMethodName            = "/fm.internal.Internal/CheckParcelArrivals"
+	Internal_FindHiredMerchant_FullMethodName              = "/fm.internal.Internal/FindHiredMerchant"
+	Internal_OpenHiredMerchant_FullMethodName              = "/fm.internal.Internal/OpenHiredMerchant"
+	Internal_SaveHiredMerchant_FullMethodName              = "/fm.internal.Internal/SaveHiredMerchant"
+	Internal_ClaimStoreBank_FullMethodName                 = "/fm.internal.Internal/ClaimStoreBank"
+	Internal_CloseChannelMerchants_FullMethodName          = "/fm.internal.Internal/CloseChannelMerchants"
 	Internal_LoginAccount_FullMethodName                   = "/fm.internal.Internal/LoginAccount"
 	Internal_GetCharacterList_FullMethodName               = "/fm.internal.Internal/GetCharacterList"
 	Internal_CheckCharacterName_FullMethodName             = "/fm.internal.Internal/CheckCharacterName"
@@ -135,6 +140,11 @@ type InternalClient interface {
 	ClaimParcel(ctx context.Context, in *ClaimParcelRequest, opts ...grpc.CallOption) (*ClaimParcelReply, error)
 	DeleteParcel(ctx context.Context, in *DeleteParcelRequest, opts ...grpc.CallOption) (*DeleteParcelReply, error)
 	CheckParcelArrivals(ctx context.Context, in *CheckParcelArrivalsRequest, opts ...grpc.CallOption) (*CheckParcelArrivalsReply, error)
+	FindHiredMerchant(ctx context.Context, in *FindHiredMerchantRequest, opts ...grpc.CallOption) (*FindHiredMerchantReply, error)
+	OpenHiredMerchant(ctx context.Context, in *OpenHiredMerchantRequest, opts ...grpc.CallOption) (*OpenHiredMerchantReply, error)
+	SaveHiredMerchant(ctx context.Context, in *SaveHiredMerchantRequest, opts ...grpc.CallOption) (*SaveHiredMerchantReply, error)
+	ClaimStoreBank(ctx context.Context, in *ClaimStoreBankRequest, opts ...grpc.CallOption) (*ClaimStoreBankReply, error)
+	CloseChannelMerchants(ctx context.Context, in *CloseChannelMerchantsRequest, opts ...grpc.CallOption) (*CloseChannelMerchantsReply, error)
 	LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error)
 	GetCharacterList(ctx context.Context, in *GetCharacterListRequest, opts ...grpc.CallOption) (*GetCharacterListReply, error)
 	CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error)
@@ -353,6 +363,56 @@ func (c *internalClient) CheckParcelArrivals(ctx context.Context, in *CheckParce
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CheckParcelArrivalsReply)
 	err := c.cc.Invoke(ctx, Internal_CheckParcelArrivals_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) FindHiredMerchant(ctx context.Context, in *FindHiredMerchantRequest, opts ...grpc.CallOption) (*FindHiredMerchantReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FindHiredMerchantReply)
+	err := c.cc.Invoke(ctx, Internal_FindHiredMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) OpenHiredMerchant(ctx context.Context, in *OpenHiredMerchantRequest, opts ...grpc.CallOption) (*OpenHiredMerchantReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(OpenHiredMerchantReply)
+	err := c.cc.Invoke(ctx, Internal_OpenHiredMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SaveHiredMerchant(ctx context.Context, in *SaveHiredMerchantRequest, opts ...grpc.CallOption) (*SaveHiredMerchantReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveHiredMerchantReply)
+	err := c.cc.Invoke(ctx, Internal_SaveHiredMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ClaimStoreBank(ctx context.Context, in *ClaimStoreBankRequest, opts ...grpc.CallOption) (*ClaimStoreBankReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClaimStoreBankReply)
+	err := c.cc.Invoke(ctx, Internal_ClaimStoreBank_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CloseChannelMerchants(ctx context.Context, in *CloseChannelMerchantsRequest, opts ...grpc.CallOption) (*CloseChannelMerchantsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CloseChannelMerchantsReply)
+	err := c.cc.Invoke(ctx, Internal_CloseChannelMerchants_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1216,6 +1276,11 @@ type InternalServer interface {
 	ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error)
 	DeleteParcel(context.Context, *DeleteParcelRequest) (*DeleteParcelReply, error)
 	CheckParcelArrivals(context.Context, *CheckParcelArrivalsRequest) (*CheckParcelArrivalsReply, error)
+	FindHiredMerchant(context.Context, *FindHiredMerchantRequest) (*FindHiredMerchantReply, error)
+	OpenHiredMerchant(context.Context, *OpenHiredMerchantRequest) (*OpenHiredMerchantReply, error)
+	SaveHiredMerchant(context.Context, *SaveHiredMerchantRequest) (*SaveHiredMerchantReply, error)
+	ClaimStoreBank(context.Context, *ClaimStoreBankRequest) (*ClaimStoreBankReply, error)
+	CloseChannelMerchants(context.Context, *CloseChannelMerchantsRequest) (*CloseChannelMerchantsReply, error)
 	LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error)
 	GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error)
 	CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error)
@@ -1348,6 +1413,21 @@ func (UnimplementedInternalServer) DeleteParcel(context.Context, *DeleteParcelRe
 }
 func (UnimplementedInternalServer) CheckParcelArrivals(context.Context, *CheckParcelArrivalsRequest) (*CheckParcelArrivalsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckParcelArrivals not implemented")
+}
+func (UnimplementedInternalServer) FindHiredMerchant(context.Context, *FindHiredMerchantRequest) (*FindHiredMerchantReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindHiredMerchant not implemented")
+}
+func (UnimplementedInternalServer) OpenHiredMerchant(context.Context, *OpenHiredMerchantRequest) (*OpenHiredMerchantReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OpenHiredMerchant not implemented")
+}
+func (UnimplementedInternalServer) SaveHiredMerchant(context.Context, *SaveHiredMerchantRequest) (*SaveHiredMerchantReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveHiredMerchant not implemented")
+}
+func (UnimplementedInternalServer) ClaimStoreBank(context.Context, *ClaimStoreBankRequest) (*ClaimStoreBankReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ClaimStoreBank not implemented")
+}
+func (UnimplementedInternalServer) CloseChannelMerchants(context.Context, *CloseChannelMerchantsRequest) (*CloseChannelMerchantsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CloseChannelMerchants not implemented")
 }
 func (UnimplementedInternalServer) LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoginAccount not implemented")
@@ -1852,6 +1932,96 @@ func _Internal_CheckParcelArrivals_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).CheckParcelArrivals(ctx, req.(*CheckParcelArrivalsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_FindHiredMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindHiredMerchantRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).FindHiredMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_FindHiredMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).FindHiredMerchant(ctx, req.(*FindHiredMerchantRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_OpenHiredMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OpenHiredMerchantRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).OpenHiredMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_OpenHiredMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).OpenHiredMerchant(ctx, req.(*OpenHiredMerchantRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SaveHiredMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveHiredMerchantRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SaveHiredMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SaveHiredMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SaveHiredMerchant(ctx, req.(*SaveHiredMerchantRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ClaimStoreBank_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClaimStoreBankRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ClaimStoreBank(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ClaimStoreBank_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ClaimStoreBank(ctx, req.(*ClaimStoreBankRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CloseChannelMerchants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloseChannelMerchantsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CloseChannelMerchants(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CloseChannelMerchants_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CloseChannelMerchants(ctx, req.(*CloseChannelMerchantsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3426,6 +3596,26 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckParcelArrivals",
 			Handler:    _Internal_CheckParcelArrivals_Handler,
+		},
+		{
+			MethodName: "FindHiredMerchant",
+			Handler:    _Internal_FindHiredMerchant_Handler,
+		},
+		{
+			MethodName: "OpenHiredMerchant",
+			Handler:    _Internal_OpenHiredMerchant_Handler,
+		},
+		{
+			MethodName: "SaveHiredMerchant",
+			Handler:    _Internal_SaveHiredMerchant_Handler,
+		},
+		{
+			MethodName: "ClaimStoreBank",
+			Handler:    _Internal_ClaimStoreBank_Handler,
+		},
+		{
+			MethodName: "CloseChannelMerchants",
+			Handler:    _Internal_CloseChannelMerchants_Handler,
 		},
 		{
 			MethodName: "LoginAccount",

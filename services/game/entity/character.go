@@ -53,6 +53,9 @@ type Character struct {
 	Inventory       *Inventory
 	Storage         *Storage
 	Duey            *Duey
+	StoreBank       *StoreBank
+	MiniRoom        *HiredMerchant
+	miniRoomPending bool
 	Skills          *Skills
 	KeyLayout       *KeyLayout
 	Chair           uint32

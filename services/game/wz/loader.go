@@ -67,6 +67,8 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 					model.PetSkill |= constant.PetSkillConsumeHP
 				case "consumeMP":
 					model.PetSkill |= constant.PetSkillConsumeMP
+				case "soldInform":
+					model.SoldInform = intField.Value == 1
 				case "cash":
 				}
 			}
@@ -960,6 +962,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	model.MobRate = float32(info.Float("mobRate", 0))
 	model.RecoveryRate = float32(info.Float("recovery", 1))
 	model.MiniMapOnOff = info.Int("miniMapOnOff", 0) != 0
+	model.PersonalShop = info.Int("personalShop", 0) != 0
+	model.EntrustedShop = info.Int("entrustedShop", 0) != 0
 	model.BGM = info.Text("bgm", "")
 	model.MapMark = info.Text("mapMark", "")
 	model.MapDesc = info.Text("mapDesc", "")
