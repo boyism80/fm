@@ -64,17 +64,17 @@ func (ch *Character) ToDTO() *dto.Character {
 		Hair:          ch.look.Hair,
 		Level:         ch.level,
 		Class:         ch.Class,
-		Str:           ch.GetTotalStr(),
-		Dex:           ch.GetTotalDex(),
-		Int:           ch.GetTotalInt(),
-		Luk:           ch.GetTotalLuk(),
+		Str:           ch.Stats.TotalStr(),
+		Dex:           ch.Stats.TotalDex(),
+		Int:           ch.Stats.TotalInt(),
+		Luk:           ch.Stats.TotalLuk(),
 		Hp:            uint16(ch.GetHp()),
 		MaxHp:         uint16(ch.GetMaxHp()),
 		Mp:            uint16(ch.GetMp()),
 		MaxMp:         uint16(ch.GetMaxMp()),
-		AbilityPoint:  ch.AbilityPoint,
+		AbilityPoint:  ch.Points.AP,
 		Exp:           ch.exp,
-		Population:    ch.population,
+		Population:    ch.Stats.Population,
 		Map:           mapID,
 		SpawnPoint:    ch.GetSpawnPoint(),
 		Rank:          ch.Rank.World,
@@ -93,7 +93,7 @@ func (ch *Character) ToDTO() *dto.Character {
 func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO := ch.ToDTO()
 
-	charDTO.SkillPoint = ch.SkillPoint
+	charDTO.SkillPoint = ch.Points.SP
 	if ch.Wedding.Marriage != nil {
 		charDTO.Marriage = ch.Wedding.Marriage.ToDTO()
 	}

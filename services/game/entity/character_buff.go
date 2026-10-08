@@ -350,7 +350,7 @@ func (bc *Buffs) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, valu
 	flags, valCopy := copyBuffValues(values)
 	scaledDuration := duration
 	if applyPotionDurationScale && duration > 0 {
-		mul := bc.owner.PotionDurationMultiplierPercent()
+		mul := bc.owner.Stats.PotionDurationMultiplierPercent()
 		scaledDuration = time.Duration(int64(duration) * int64(mul) / 100)
 	}
 	entity := &ItemBuff{

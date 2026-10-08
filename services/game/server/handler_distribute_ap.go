@@ -41,11 +41,11 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	assigned := false
 	switch stat {
 	case constant.StatTypeHP:
-		assigned = character.AssignAPToHPMP(stat, h.apIncrease(character, "get_ap_to_hp", 10))
+		assigned = character.Points.AssignHPMP(stat, h.apIncrease(character, "get_ap_to_hp", 10))
 	case constant.StatTypeMP:
-		assigned = character.AssignAPToHPMP(stat, h.apIncrease(character, "get_ap_to_mp", 5))
+		assigned = character.Points.AssignHPMP(stat, h.apIncrease(character, "get_ap_to_mp", 5))
 	default:
-		assigned = character.AssignAP([]entity.APEntry{{Stat: stat, Amount: 1}})
+		assigned = character.Points.AssignStats([]entity.APEntry{{Stat: stat, Amount: 1}})
 	}
 	if assigned == false {
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)

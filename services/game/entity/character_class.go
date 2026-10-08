@@ -70,12 +70,12 @@ func (ch *Character) grantClassChangeSP(newClass uint16) {
 		return
 	}
 
-	ch.SkillPoint++
+	ch.Points.SP++
 
 	if newClass >= 100 {
 		thirdDigit := newClass % 10
 		if thirdDigit >= 2 {
-			ch.SkillPoint += 2
+			ch.Points.SP += 2
 		}
 	}
 
@@ -87,7 +87,7 @@ func (ch *Character) grantClassChangeSP(newClass uint16) {
 
 		if ch.level > minLevel {
 			spToGrant := uint16(3 * (int(ch.level) - int(minLevel)))
-			ch.SkillPoint += spToGrant
+			ch.Points.SP += spToGrant
 		}
 	}
 }

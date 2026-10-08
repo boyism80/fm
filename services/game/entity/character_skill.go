@@ -10,44 +10,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) DistributeSP(skillID uint32) bool {
-	if ch.SkillPoint == 0 || ch.canLearn(skillID) == false {
-		return false
-	}
-
-	skillEntry := ch.Skills.Get(skillID)
-	if skillEntry == nil {
-		if ch.GameWorld == nil {
-			return false
-		}
-		resources := ch.GameWorld.GetResources()
-		if resources == nil {
-			return false
-		}
-		wzSkill := resources.GetSkill(skillID)
-		if wzSkill == nil {
-			return false
-		}
-		skillEntry = NewSkillEntry(ch, wzSkill, 0, wzSkill.DefaultMasterLevel())
-	}
-
-	if skillEntry.Level() >= min(skillEntry.MasterLevel, skillEntry.Wz.MaxLevel) {
-		return false
-	}
-
-	ch.SkillPoint--
-	if skillEntry.Level() == 0 {
-		skillEntry.SetLevel(1)
-		ch.Skills.Bind(skillID, skillEntry)
-	} else {
-		skillEntry.SetLevel(skillEntry.Level() + 1)
-	}
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.StatAvailableSP: int32(ch.SkillPoint),
-	}, false)
-	return true
-}
-
 func (ch *Character) canLearn(skillID uint32) bool {
 	class := uint32(ch.Class)
 	skillClass := skillID / 10000

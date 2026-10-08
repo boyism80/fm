@@ -48,7 +48,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 	emptyStats := map[constant.Stat]int32{}
 	character.Listener.OnUpdateStats(character, emptyStats, true)
 
-	if character.AbilityPoint != uint16(totalAmount) {
+	if character.Points.AP != uint16(totalAmount) {
 		return nil
 	}
 
@@ -56,7 +56,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 	for i, e := range req.Entries {
 		entries[i] = entity.APEntry{Stat: constant.StatType(e.Stat), Amount: uint16(e.Amount)}
 	}
-	if !character.AssignAP(entries) {
+	if !character.Points.AssignStats(entries) {
 		character.Listener.OnUpdateStats(character, emptyStats, true)
 	}
 	return nil

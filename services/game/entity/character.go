@@ -37,7 +37,8 @@ type Character struct {
 	level             uint8
 	Rank              Ranking
 	exp               uint32
-	population        uint16
+	Stats             *Stats
+	Points            *Points
 	mega              bool
 	random            [3]stream.RandomStream
 	Quests            *Quests
@@ -50,9 +51,6 @@ type Character struct {
 	Class             uint16
 	Role              constant.CharacterRole
 	AccountID         uint32
-	AbilityPoint      uint16
-	SkillPoint        uint16
-	HpApUsed          uint16
 	Inventory         *Inventory
 	Storage           *Storage
 	Duey              *Duey
@@ -60,8 +58,6 @@ type Character struct {
 	keyLayout         *KeyLayout
 	Chair             uint32
 	lastHeal          lastHeal
-	BaseStats         BaseStats
-	BonusStats        BonusStats
 	Buffs             *Buffs
 	Debuffs           *Debuffs
 	Summons           *Summons
@@ -383,7 +379,7 @@ func (ch *Character) SetBonusMp(v int32, notify bool) {
 }
 
 func (ch *Character) SetMaxHpPercent(p int16, notify bool) {
-	ch.BonusStats.MaxHpPercent = p
+	ch.Stats.Bonus.MaxHpPercent = p
 	if ch.GetHp() > ch.GetMaxHp() {
 		ch.SetHp(ch.GetMaxHp(), false)
 	}
@@ -396,7 +392,7 @@ func (ch *Character) SetMaxHpPercent(p int16, notify bool) {
 }
 
 func (ch *Character) SetMaxMpPercent(p int16, notify bool) {
-	ch.BonusStats.MaxMpPercent = p
+	ch.Stats.Bonus.MaxMpPercent = p
 	if ch.GetMp() > ch.GetMaxMp() {
 		ch.SetMp(ch.GetMaxMp(), false)
 	}
@@ -530,133 +526,6 @@ func (ch *Character) AddBaseMp(amount uint32, notify bool) {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatMP:    int32(ch.GetMp()),
 			constant.StatMaxMP: int32(ch.GetMaxMp()),
-		}, false)
-	}
-}
-
-func (ch *Character) SetAbilityPoint(v uint16, notify bool) {
-	ch.AbilityPoint = v
-	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.StatAvailableAP: int32(ch.AbilityPoint),
-		}, false)
-	}
-}
-
-type APEntry struct {
-	Stat   constant.StatType
-	Amount uint16
-}
-
-// AssignAP validates all entries against current stats, then applies them atomically
-// and deducts AP. Returns false (without mutating state) if any entry is invalid.
-func (ch *Character) AssignAP(entries []APEntry) bool {
-	total := uint32(0)
-	for _, e := range entries {
-		if ch.canAddStat(e.Stat, e.Amount) == false {
-			return false
-		}
-		total += uint32(e.Amount)
-	}
-	if total > uint32(ch.AbilityPoint) {
-		return false
-	}
-
-	statUpdate := map[constant.Stat]int32{}
-	for _, e := range entries {
-		ch.applyStatDelta(e.Stat, e.Amount, statUpdate)
-	}
-	ch.AbilityPoint -= uint16(total)
-	statUpdate[constant.StatAvailableAP] = int32(ch.AbilityPoint)
-	ch.Listener.OnUpdateStats(ch, statUpdate, true)
-	return true
-}
-
-func (ch *Character) AssignAPToHPMP(stat constant.StatType, increase uint32) bool {
-	if ch.AbilityPoint == 0 || ch.HpApUsed >= constant.HpAPUsedMax {
-		return false
-	}
-
-	statUpdate := map[constant.Stat]int32{}
-	switch stat {
-	case constant.StatTypeHP:
-		if ch.GetMaxHp() >= constant.StatMaxHPMP {
-			return false
-		}
-		ch.AddBaseHp(increase, false)
-		statUpdate[constant.StatHP] = int32(ch.GetHp())
-		statUpdate[constant.StatMaxHP] = int32(ch.GetMaxHp())
-	case constant.StatTypeMP:
-		if ch.GetMaxMp() >= constant.StatMaxHPMP {
-			return false
-		}
-		ch.AddBaseMp(increase, false)
-		statUpdate[constant.StatMP] = int32(ch.GetMp())
-		statUpdate[constant.StatMaxMP] = int32(ch.GetMaxMp())
-	default:
-		return false
-	}
-
-	ch.HpApUsed++
-	ch.AbilityPoint--
-	statUpdate[constant.StatAvailableAP] = int32(ch.AbilityPoint)
-	ch.Listener.OnUpdateStats(ch, statUpdate, true)
-	return true
-}
-
-func (ch *Character) canAddStat(stat constant.StatType, amount uint16) bool {
-	switch stat {
-	case constant.StatTypeStr:
-		return ch.GetTotalStr()+amount <= constant.StatMaxStrDexIntLuk
-	case constant.StatTypeDex:
-		return ch.GetTotalDex()+amount <= constant.StatMaxStrDexIntLuk
-	case constant.StatTypeInt:
-		return ch.GetTotalInt()+amount <= constant.StatMaxStrDexIntLuk
-	case constant.StatTypeLuk:
-		return ch.GetTotalLuk()+amount <= constant.StatMaxStrDexIntLuk
-	default:
-		return false
-	}
-}
-
-func (ch *Character) applyStatDelta(stat constant.StatType, amount uint16, statUpdate map[constant.Stat]int32) {
-	switch stat {
-	case constant.StatTypeStr:
-		newStr := ch.BaseStats.Str + amount
-		if newStr > constant.StatMaxStrDexIntLuk {
-			newStr = constant.StatMaxStrDexIntLuk
-		}
-		ch.BaseStats.Str = newStr
-		statUpdate[constant.StatStr] = int32(ch.GetTotalStr())
-	case constant.StatTypeDex:
-		newDex := ch.BaseStats.Dex + amount
-		if newDex > constant.StatMaxStrDexIntLuk {
-			newDex = constant.StatMaxStrDexIntLuk
-		}
-		ch.BaseStats.Dex = newDex
-		statUpdate[constant.StatDex] = int32(ch.GetTotalDex())
-	case constant.StatTypeInt:
-		newInt := ch.BaseStats.Int + amount
-		if newInt > constant.StatMaxStrDexIntLuk {
-			newInt = constant.StatMaxStrDexIntLuk
-		}
-		ch.BaseStats.Int = newInt
-		statUpdate[constant.StatInt] = int32(ch.GetTotalInt())
-	case constant.StatTypeLuk:
-		newLuk := ch.BaseStats.Luk + amount
-		if newLuk > constant.StatMaxStrDexIntLuk {
-			newLuk = constant.StatMaxStrDexIntLuk
-		}
-		ch.BaseStats.Luk = newLuk
-		statUpdate[constant.StatLuk] = int32(ch.GetTotalLuk())
-	}
-}
-
-func (ch *Character) SetSkillPoint(v uint16, notify bool) {
-	ch.SkillPoint = v
-	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.StatAvailableSP: int32(ch.SkillPoint),
 		}, false)
 	}
 }
@@ -1003,8 +872,8 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 	}
 
 	exp := raw
-	if ch.BonusStats.ExpRate > 0 {
-		exp = mulClamp(exp, uint32(ch.BonusStats.ExpRate)) / 100
+	if ch.Stats.Bonus.ExpRate > 0 {
+		exp = mulClamp(exp, uint32(ch.Stats.Bonus.ExpRate)) / 100
 	}
 	exp = mulClamp(exp, uint32(ch.GetHolySymbolExpRate())) / 100
 	if ch.Debuffs.Has(constant.DebuffFlagCurse) {
@@ -1113,8 +982,8 @@ func (ch *Character) tryLevelUp() bool {
 			constant.StatMaxMP:       int32(ch.GetMaxMp()),
 			constant.StatHP:          int32(ch.GetHp()),
 			constant.StatMP:          int32(ch.GetMp()),
-			constant.StatAvailableAP: int32(ch.AbilityPoint),
-			constant.StatAvailableSP: int32(ch.SkillPoint),
+			constant.StatAvailableAP: int32(ch.Points.AP),
+			constant.StatAvailableSP: int32(ch.Points.SP),
 		}
 		ch.Listener.OnUpdateStats(ch, stats, false)
 		for i := 0; i < levelDiff; i++ {

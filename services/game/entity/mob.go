@@ -378,11 +378,11 @@ func (m *Mob) dropItems(attacker *Character) {
 	mesoRate := float32(m.GameWorld.GetMesoRate())
 	dropRateMul := int16(100)
 	mesoAmountMul := int16(100)
-	if attacker.BonusStats.DropRate > 0 {
-		dropRateMul = attacker.BonusStats.DropRate
+	if attacker.Stats.Bonus.DropRate > 0 {
+		dropRateMul = attacker.Stats.Bonus.DropRate
 	}
-	if attacker.BonusStats.MesoMultiplier > 0 {
-		mesoAmountMul = attacker.BonusStats.MesoMultiplier
+	if attacker.Stats.Bonus.MesoMultiplier > 0 {
+		mesoAmountMul = attacker.Stats.Bonus.MesoMultiplier
 	}
 	if _, v, ok := attacker.Buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
 		mesoAmountMul += int16(v - 100)

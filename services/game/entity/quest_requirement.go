@@ -73,7 +73,7 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 			return false
 		}
 	}
-	if req.Pop > 0 && int(ch.population) < req.Pop {
+	if req.Pop > 0 && int(ch.Stats.Population) < req.Pop {
 		return false
 	}
 	if req.FieldEnter > 0 {

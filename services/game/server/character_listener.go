@@ -1643,7 +1643,7 @@ func (l *CharacterListenerImpl) OnNpcAction(ch *entity.Character, bytes []byte) 
 func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uint16, newClass uint16) {
 	stats := map[constant.Stat]int32{
 		constant.StatClass:       int32(newClass),
-		constant.StatAvailableSP: int32(ch.SkillPoint),
+		constant.StatAvailableSP: int32(ch.Points.SP),
 	}
 
 	ch.Send(&response.UpdateStats{

@@ -195,7 +195,7 @@ func (ch *Character) recover(consumeItem *wz.Consume) bool {
 	if ch == nil || consumeItem == nil {
 		return false
 	}
-	healMul := ch.PotionHealMultiplierPercent()
+	healMul := ch.Stats.PotionHealMultiplierPercent()
 	hpChange := int(consumeItem.ActiveEffect.HP) * healMul / 100
 	mpChange := int(consumeItem.ActiveEffect.MP) * healMul / 100
 	hpRate := int(consumeItem.ActiveEffect.HPRate)

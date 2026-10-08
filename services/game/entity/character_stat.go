@@ -2,82 +2,9 @@ package entity
 
 import "github.com/boyism80/fm/services/game/constant"
 
-type BaseStats struct {
-	Str uint16
-	Dex uint16
-	Int uint16
-	Luk uint16
-}
-
-type BonusStats struct {
-	Str                int16
-	Dex                int16
-	Int                int16
-	Luk                int16
-	Watk               int16
-	Matk               int16
-	Wdef               int16
-	Mdef               int16
-	Acc                int16
-	Avoid              int16
-	Speed              int16
-	Jump               int16
-	MaxHpPercent       int16
-	MaxMpPercent       int16
-	MesoMultiplier     int16
-	DropRate           int16
-	ExpRate            int16
-	PotionHealRate     int16
-	PotionDurationRate int16
-}
-
-func (ch *Character) GetTotalStr() uint16 {
-	total := int32(ch.BaseStats.Str) + int32(ch.BonusStats.Str)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
-}
-
-func (ch *Character) GetTotalDex() uint16 {
-	total := int32(ch.BaseStats.Dex) + int32(ch.BonusStats.Dex)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
-}
-
-func (ch *Character) GetTotalInt() uint16 {
-	total := int32(ch.BaseStats.Int) + int32(ch.BonusStats.Int)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
-}
-
-func (ch *Character) GetTotalLuk() uint16 {
-	total := int32(ch.BaseStats.Luk) + int32(ch.BonusStats.Luk)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
-}
-
 func (ch *Character) GetMaxHp() uint32 {
 	base := int32(ch.BaseHp) + ch.BonusHp
-	percent := int32(ch.BonusStats.MaxHpPercent)
+	percent := int32(ch.Stats.Bonus.MaxHpPercent)
 	if _, v, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMaxHp); ok {
 		percent += v
 	}
@@ -91,25 +18,9 @@ func (ch *Character) GetMaxHp() uint32 {
 	return uint32(total)
 }
 
-func (ch *Character) PotionHealMultiplierPercent() int {
-	r := ch.BonusStats.PotionHealRate
-	if r <= 0 {
-		return 100
-	}
-	return int(r)
-}
-
-func (ch *Character) PotionDurationMultiplierPercent() int {
-	r := ch.BonusStats.PotionDurationRate
-	if r <= 0 {
-		return 100
-	}
-	return int(r)
-}
-
 func (ch *Character) GetMaxMp() uint32 {
 	base := int32(ch.BaseMp) + ch.BonusMp
-	percent := int32(ch.BonusStats.MaxMpPercent)
+	percent := int32(ch.Stats.Bonus.MaxMpPercent)
 	if _, v, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMaxMp); ok {
 		percent += v
 	}
@@ -132,13 +43,13 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	case constant.StatClass:
 		return int32(ch.Class), true
 	case constant.StatStr:
-		return int32(ch.GetTotalStr()), true
+		return int32(ch.Stats.TotalStr()), true
 	case constant.StatDex:
-		return int32(ch.GetTotalDex()), true
+		return int32(ch.Stats.TotalDex()), true
 	case constant.StatInt:
-		return int32(ch.GetTotalInt()), true
+		return int32(ch.Stats.TotalInt()), true
 	case constant.StatLuk:
-		return int32(ch.GetTotalLuk()), true
+		return int32(ch.Stats.TotalLuk()), true
 	case constant.StatHP:
 		return int32(ch.GetHp()), true
 	case constant.StatMaxHP:
@@ -148,11 +59,11 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	case constant.StatMaxMP:
 		return int32(ch.GetMaxMp()), true
 	case constant.StatAvailableAP:
-		return int32(ch.AbilityPoint), true
+		return int32(ch.Points.AP), true
 	case constant.StatAvailableSP:
-		return int32(ch.SkillPoint), true
+		return int32(ch.Points.SP), true
 	case constant.StatPopulation:
-		return int32(ch.population), true
+		return int32(ch.Stats.Population), true
 	case constant.StatMeso:
 		return ch.Inventory.Meso, true
 	default:
@@ -160,61 +71,17 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	}
 }
 
-func (ch *Character) setPopulationUnchecked(value int32) {
-	if ch == nil {
-		return
-	}
-	if value < 0 {
-		value = 0
-	}
-	if value > 65535 {
-		value = 65535
-	}
-	ch.population = uint16(value)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.StatPopulation: int32(ch.population),
-	}, false)
-}
-
-func (ch *Character) gainPopulationUnchecked(amount int32) {
-	if ch == nil || amount <= 0 {
-		return
-	}
-	sum := uint32(ch.population) + uint32(amount)
-	if sum > 65535 {
-		sum = 65535
-	}
-	ch.population = uint16(sum)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.StatPopulation: int32(ch.population),
-	}, false)
-}
-
-func (ch *Character) losePopulationUnchecked(amount int32) {
-	if ch == nil || amount <= 0 {
-		return
-	}
-	if uint32(amount) >= uint32(ch.population) {
-		ch.population = 0
-	} else {
-		ch.population -= uint16(amount)
-	}
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.StatPopulation: int32(ch.population),
-	}, false)
-}
-
 func (ch *Character) notifyStatChange(stat constant.Stat) {
 	stats := make(map[constant.Stat]int32)
 	switch stat {
 	case constant.StatStr:
-		stats[constant.StatStr] = int32(ch.GetTotalStr())
+		stats[constant.StatStr] = int32(ch.Stats.TotalStr())
 	case constant.StatDex:
-		stats[constant.StatDex] = int32(ch.GetTotalDex())
+		stats[constant.StatDex] = int32(ch.Stats.TotalDex())
 	case constant.StatInt:
-		stats[constant.StatInt] = int32(ch.GetTotalInt())
+		stats[constant.StatInt] = int32(ch.Stats.TotalInt())
 	case constant.StatLuk:
-		stats[constant.StatLuk] = int32(ch.GetTotalLuk())
+		stats[constant.StatLuk] = int32(ch.Stats.TotalLuk())
 	case constant.StatMaxHP:
 		stats[constant.StatMaxHP] = int32(ch.GetMaxHp())
 	case constant.StatMaxMP:

@@ -335,7 +335,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.AbilityPoint))
+				L.Push(lua.LNumber(ch.Points.AP))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -343,7 +343,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					v = 0
 				}
 				notify := argc == 2 || L.ToBool(3)
-				ch.SetAbilityPoint(uint16(v), notify)
+				ch.Points.SetAP(uint16(v), notify)
 				return 0
 			default:
 				L.ArgError(2, "ability_point() requires 0, 1 or 2 arguments")
@@ -360,7 +360,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.SkillPoint))
+				L.Push(lua.LNumber(ch.Points.SP))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -368,7 +368,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					v = 0
 				}
 				notify := argc == 2 || L.ToBool(3)
-				ch.SetSkillPoint(uint16(v), notify)
+				ch.Points.SetSP(uint16(v), notify)
 				return 0
 			default:
 				L.ArgError(2, "skill_point() requires 0, 1 or 2 arguments")
@@ -534,10 +534,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.population))
+				L.Push(lua.LNumber(ch.Stats.Population))
 				return 1
 			case 2:
-				ch.setPopulationUnchecked(int32(L.CheckInt(2)))
+				ch.Stats.setPopulation(int32(L.CheckInt(2)))
 				return 0
 			default:
 				L.ArgError(2, "population() getter: population(); setter: population(value)")
@@ -2895,7 +2895,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BaseStats.Str))
+				L.Push(lua.LNumber(ch.Stats.Base.Str))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -2905,7 +2905,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.BaseStats.Str = uint16(v)
+				ch.Stats.Base.Str = uint16(v)
 				ch.notifyStatChange(constant.StatStr)
 				return 0
 			default:
@@ -2923,7 +2923,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BaseStats.Dex))
+				L.Push(lua.LNumber(ch.Stats.Base.Dex))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -2933,7 +2933,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.BaseStats.Dex = uint16(v)
+				ch.Stats.Base.Dex = uint16(v)
 				ch.notifyStatChange(constant.StatDex)
 				return 0
 			default:
@@ -2951,7 +2951,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BaseStats.Int))
+				L.Push(lua.LNumber(ch.Stats.Base.Int))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -2961,7 +2961,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.BaseStats.Int = uint16(v)
+				ch.Stats.Base.Int = uint16(v)
 				ch.notifyStatChange(constant.StatInt)
 				return 0
 			default:
@@ -2979,7 +2979,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BaseStats.Luk))
+				L.Push(lua.LNumber(ch.Stats.Base.Luk))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -2989,7 +2989,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.BaseStats.Luk = uint16(v)
+				ch.Stats.Base.Luk = uint16(v)
 				ch.notifyStatChange(constant.StatLuk)
 				return 0
 			default:
@@ -3007,10 +3007,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.Str))
+				L.Push(lua.LNumber(ch.Stats.Bonus.Str))
 				return 1
 			case 2:
-				ch.BonusStats.Str = int16(L.CheckInt(2))
+				ch.Stats.Bonus.Str = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatStr)
 				return 0
 			default:
@@ -3028,10 +3028,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.Dex))
+				L.Push(lua.LNumber(ch.Stats.Bonus.Dex))
 				return 1
 			case 2:
-				ch.BonusStats.Dex = int16(L.CheckInt(2))
+				ch.Stats.Bonus.Dex = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatDex)
 				return 0
 			default:
@@ -3049,10 +3049,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.Int))
+				L.Push(lua.LNumber(ch.Stats.Bonus.Int))
 				return 1
 			case 2:
-				ch.BonusStats.Int = int16(L.CheckInt(2))
+				ch.Stats.Bonus.Int = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatInt)
 				return 0
 			default:
@@ -3070,10 +3070,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.Luk))
+				L.Push(lua.LNumber(ch.Stats.Bonus.Luk))
 				return 1
 			case 2:
-				ch.BonusStats.Luk = int16(L.CheckInt(2))
+				ch.Stats.Bonus.Luk = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatLuk)
 				return 0
 			default:
@@ -3091,10 +3091,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.Watk))
+				L.Push(lua.LNumber(ch.Stats.Bonus.Watk))
 				return 1
 			case 2:
-				ch.BonusStats.Watk = int16(L.CheckInt(2))
+				ch.Stats.Bonus.Watk = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_watk() requires 0 or 1 arguments")
@@ -3112,7 +3112,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			switch argc {
 			case 1:
 				L.Push(lua.LNumber(ch.GetBonusHp()))
-				L.Push(lua.LNumber(ch.BonusStats.MaxHpPercent))
+				L.Push(lua.LNumber(ch.Stats.Bonus.MaxHpPercent))
 				return 2
 			case 2:
 				ch.SetBonusHp(int32(L.CheckInt(2)), true)
@@ -3137,7 +3137,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			switch argc {
 			case 1:
 				L.Push(lua.LNumber(ch.GetBonusMp()))
-				L.Push(lua.LNumber(ch.BonusStats.MaxMpPercent))
+				L.Push(lua.LNumber(ch.Stats.Bonus.MaxMpPercent))
 				return 2
 			case 2:
 				ch.SetBonusMp(int32(L.CheckInt(2)), true)
@@ -3183,7 +3183,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.MaxHpPercent))
+				L.Push(lua.LNumber(ch.Stats.Bonus.MaxHpPercent))
 				return 1
 			case 2, 3:
 				p := int16(L.CheckInt(2))
@@ -3227,7 +3227,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.MaxMpPercent))
+				L.Push(lua.LNumber(ch.Stats.Bonus.MaxMpPercent))
 				return 1
 			case 2, 3:
 				p := int16(L.CheckInt(2))
@@ -3249,10 +3249,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.MesoMultiplier))
+				L.Push(lua.LNumber(ch.Stats.Bonus.MesoMultiplier))
 				return 1
 			case 2:
-				ch.BonusStats.MesoMultiplier = int16(L.CheckInt(2))
+				ch.Stats.Bonus.MesoMultiplier = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_meso_multiplier() requires 1 or 2 arguments")
@@ -3269,10 +3269,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.DropRate))
+				L.Push(lua.LNumber(ch.Stats.Bonus.DropRate))
 				return 1
 			case 2:
-				ch.BonusStats.DropRate = int16(L.CheckInt(2))
+				ch.Stats.Bonus.DropRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_drop_rate() requires 1 or 2 arguments")
@@ -3303,10 +3303,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.ExpRate))
+				L.Push(lua.LNumber(ch.Stats.Bonus.ExpRate))
 				return 1
 			case 2:
-				ch.BonusStats.ExpRate = int16(L.CheckInt(2))
+				ch.Stats.Bonus.ExpRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_exp_rate() requires 1 or 2 arguments")
@@ -3323,10 +3323,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.PotionHealRate))
+				L.Push(lua.LNumber(ch.Stats.Bonus.PotionHealRate))
 				return 1
 			case 2:
-				ch.BonusStats.PotionHealRate = int16(L.CheckInt(2))
+				ch.Stats.Bonus.PotionHealRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "potion_heal_rate() requires 1 or 2 arguments")
@@ -3343,10 +3343,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.PotionDurationRate))
+				L.Push(lua.LNumber(ch.Stats.Bonus.PotionDurationRate))
 				return 1
 			case 2:
-				ch.BonusStats.PotionDurationRate = int16(L.CheckInt(2))
+				ch.Stats.Bonus.PotionDurationRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "potion_duration_rate() requires 1 or 2 arguments")

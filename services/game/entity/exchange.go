@@ -124,7 +124,7 @@ func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
 	if side.Meso > 0 && ch.Inventory.Meso < side.Meso {
 		return ExchangeLackCost
 	}
-	if side.Population > 0 && uint32(side.Population) > uint32(ch.population) {
+	if side.Population > 0 && uint32(side.Population) > uint32(ch.Stats.Population) {
 		return ExchangeLackCost
 	}
 	if side.Exp > 0 && ch.exp < side.Exp {
