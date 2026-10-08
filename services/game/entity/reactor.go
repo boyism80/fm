@@ -163,7 +163,7 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 		}
 		r.ScheduleStateRevert(newState, oldState, timeout)
 	}
-	if done || timeout > 0 || trigger == nil || trigger.GetInstantKill() == false {
+	if done || timeout > 0 || trigger == nil || trigger.GM.InstantKill == false {
 		return
 	}
 	if newEvent.Type == constant.ReactorEventTypeHit || newEvent.Type == constant.ReactorEventTypeDirectionalHit {

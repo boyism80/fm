@@ -2083,10 +2083,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LBool(ch.GetInstantKill()))
+				L.Push(lua.LBool(ch.GM.InstantKill))
 				return 1
 			case 2:
-				ch.SetInstantKill(L.CheckBool(2))
+				ch.GM.InstantKill = L.CheckBool(2)
 				return 0
 			default:
 				L.ArgError(2, "instant_kill() requires 0 or 1 arguments")
@@ -2103,10 +2103,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LBool(ch.GetPlayerMode()))
+				L.Push(lua.LBool(ch.GM.PlayerMode))
 				return 1
 			case 2:
-				ch.SetPlayerMode(L.CheckBool(2))
+				ch.GM.PlayerMode = L.CheckBool(2)
 				return 0
 			default:
 				L.ArgError(2, "player_mode() requires 0 or 1 arguments")
@@ -2123,10 +2123,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.TimerLimit))
+				L.Push(lua.LNumber(ch.GM.TimerLimit))
 				return 1
 			case 2:
-				ch.TimerLimit = uint32(L.CheckNumber(2))
+				ch.GM.TimerLimit = uint32(L.CheckNumber(2))
 				return 0
 			default:
 				L.ArgError(2, "timer_limit() requires 0 or 1 arguments")

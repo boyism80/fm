@@ -35,10 +35,7 @@ type Character struct {
 	name              string
 	look              Look
 	level             uint8
-	rank              uint32
-	rankDiff          int32
-	classRank         uint32
-	classRankDiff     int32
+	Rank              Ranking
 	exp               uint32
 	population        uint16
 	mega              bool
@@ -51,7 +48,6 @@ type Character struct {
 	TeleportStones    *TeleportStones
 	MonsterBook       *MonsterBook
 	Dialog            *Dialog
-	hidden            bool
 	Listener          CharacterListener
 	Class             uint16
 	Role              constant.CharacterRole
@@ -80,9 +76,7 @@ type Character struct {
 	GuildInvites      map[uint32]time.Time
 	partySearchConfig *PartySearchConfig
 	buddyList         *BuddyList
-	InstantKill       bool
-	PlayerMode        bool
-	TimerLimit        uint32
+	GM                GMMode
 	stateMachine      *StateMachine
 	carnivalTeam      *CarnivalTeam
 	savedLocations    map[string]uint32
@@ -433,14 +427,6 @@ func (ch *Character) updateMaxHpMp() {
 }
 
 func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
-
-func (ch *Character) GetInstantKill() bool { return ch.InstantKill }
-
-func (ch *Character) SetInstantKill(b bool) { ch.InstantKill = b }
-
-func (ch *Character) GetPlayerMode() bool { return ch.PlayerMode }
-
-func (ch *Character) SetPlayerMode(b bool) { ch.PlayerMode = b }
 
 func (ch *Character) AddHp(amount int) {
 	n := int(ch.GetHp()) + amount
@@ -833,14 +819,14 @@ func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
 }
 
 func (ch *Character) IsHidden() bool {
-	return ch.hidden
+	return ch.GM.Hidden
 }
 
 func (ch *Character) SetHidden(hidden bool) {
-	if ch.hidden == hidden {
+	if ch.GM.Hidden == hidden {
 		return
 	}
-	ch.hidden = hidden
+	ch.GM.Hidden = hidden
 	ch.Listener.OnHiddenChanged(ch, hidden)
 }
 

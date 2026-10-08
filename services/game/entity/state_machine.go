@@ -9,7 +9,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
-	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -240,10 +239,10 @@ func (sm *StateMachine) AddKill(ch *Character, n int) {
 
 func (sm *StateMachine) LimitTimer(ms int64) int64 {
 	for _, ch := range append(sm.Players(), sm.Leader) {
-		if ch == nil || ch.TimerLimit == 0 {
+		if ch == nil || ch.GM.TimerLimit == 0 {
 			continue
 		}
-		if limit := int64(ch.TimerLimit) * 1000; limit < ms {
+		if limit := int64(ch.GM.TimerLimit) * 1000; limit < ms {
 			ms = limit
 		}
 	}
@@ -414,7 +413,7 @@ func (sm *StateMachine) Admits(ch *Character) bool {
 	if sm.HasPlayer(ch) {
 		return true
 	}
-	return ch.HasRoleAtLeast(constant.RoleAdmin) && ch.GetPlayerMode() == false
+	return ch.ActsAsGM()
 }
 
 func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {

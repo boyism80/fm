@@ -508,7 +508,7 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 		}
 	}
 
-	if attacker != nil && attacker.GetInstantKill() {
+	if attacker != nil && attacker.GM.InstantKill {
 		amount = m.GetHp()
 	}
 

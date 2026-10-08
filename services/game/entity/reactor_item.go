@@ -87,7 +87,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	}
 
 	delay := constant.ItemReactorActivateDelay
-	if owner != nil && owner.GetInstantKill() {
+	if owner != nil && owner.GM.InstantKill {
 		delay = time.Millisecond
 	}
 

@@ -324,7 +324,7 @@ func (e *Expedition) startBattle(leader *Character) (*StateMachine, []*Character
 		}
 		entrants = append(entrants, member.character)
 	}
-	exempt := leader.HasRoleAtLeast(constant.RoleAdmin) && leader.GetPlayerMode() == false
+	exempt := leader.ActsAsGM()
 	if len(entrants) < e.Spec.MinMembers && exempt == false {
 		return nil, nil, nil, ErrExpeditionTooFew
 	}
