@@ -2584,6 +2584,26 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.SavedLocations.Clear(L.CheckString(2))
 			return 0
 		},
+		"records": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(luax.NewLuable(L, ch.Records))
+			return 1
+		},
+		"account_records": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(luax.NewLuable(L, ch.AccountRecords))
+			return 1
+		},
 		"max_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

@@ -655,6 +655,8 @@ message EnterGameReply {
   repeated uint32 cash_wishlist = 15;
   repeated CashRing rings = 16;
   repeated MonsterBookCard monster_book = 17;
+  repeated Record records = 18;
+  repeated Record account_records = 19;
 }
 
 message Debuff {
@@ -713,6 +715,8 @@ message CharacterSaveEntry {
   repeated SavedLocation saved_locations = 9;
   Storage storage = 10;
   repeated MonsterBookCard monster_book = 11;
+  repeated Record records = 12;
+  repeated Record account_records = 13;
 }
 
 message Storage {
@@ -986,6 +990,14 @@ message SavedLocation {
   uint32 character_id = 1;
   string name = 2;
   uint32 map_id = 3;
+}
+
+message Record {
+  string key = 1;
+  int64 value = 2;
+  string text = 3;
+  uint32 period = 4;
+  int64 updated_at_unix_ms = 5;
 }
 
 message LoginAccountRequest {

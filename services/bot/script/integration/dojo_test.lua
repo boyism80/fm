@@ -12,8 +12,8 @@ local TUTORIAL = 925020010
 local BOSS = 9300184
 local SNAIL = 100100
 local WHITE_BELT = 1132000
-local POINT_QUEST = 150100
-local REST_QUEST = 150000
+local POINT_RECORD = "dojo.points"
+local REST_RECORD = "dojo.rest"
 local BAMBOO_RAIN = 1009
 local INVINCIBILITY = 1010
 local KILL_DAMAGE = 2147483647
@@ -128,7 +128,7 @@ test_suite {
 	on_initialize = function(ctx)
 		for i = 0, ctx:bot_count() - 1 do
 			local bot = ctx:bot(i)
-			if pq.command(bot, "/봇초기화 30 0 0 - - " .. POINT_QUEST .. "=16", "봇초기화 완료") == false then
+			if pq.command(bot, "/봇초기화 30 0 0 - - - " .. POINT_RECORD .. "=16", "봇초기화 완료") == false then
 				return ctx:fail(bot:name() .. " 봇 초기화 실패")
 			end
 			if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
@@ -207,7 +207,7 @@ test_suite {
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
-			if pq.command(bot, "/봇초기화 30 0 0 - - " .. POINT_QUEST .. "=20," .. REST_QUEST .. "=1", "봇초기화 완료") == false then
+			if pq.command(bot, "/봇초기화 30 0 0 - - - " .. POINT_RECORD .. "=20," .. REST_RECORD .. "=1", "봇초기화 완료") == false then
 				return ctx:fail("휴식층 저장 상태 설정 실패")
 			end
 			if bot:map_move(LOBBY) == false then

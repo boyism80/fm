@@ -11,6 +11,8 @@ import { SkillRepository } from "./repos/skill-repository";
 import { BuffRepository } from "./repos/buff-repository";
 import { QuestRepository } from "./repos/quest-repository";
 import { SavedLocationRepository } from "./repos/saved-location-repository";
+import { CharacterRecordRepository } from "./repos/character-record-repository";
+import { AccountRecordRepository } from "./repos/account-record-repository";
 import { MonsterBookRepository } from "./repos/monster-book-repository";
 import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
@@ -69,6 +71,8 @@ export function createAppContainer() {
         buffRepository: awilix.asClass(BuffRepository).scoped(),
         questRepository: awilix.asClass(QuestRepository).scoped(),
         savedLocationRepository: awilix.asClass(SavedLocationRepository).scoped(),
+        characterRecordRepository: awilix.asClass(CharacterRecordRepository).scoped(),
+        accountRecordRepository: awilix.asClass(AccountRecordRepository).scoped(),
         monsterBookRepository: awilix.asClass(MonsterBookRepository).scoped(),
         sessionRepository: awilix.asClass(SessionRepository).scoped(),
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),

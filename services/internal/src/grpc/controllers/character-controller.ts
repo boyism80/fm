@@ -102,6 +102,14 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
                 SAVED_LOCATION_MODEL
             )
         ),
+        records: (entry.records ?? []).map((record) => ({
+            ...record,
+            ownerId: msgChar.characterId,
+        })),
+        accountRecords: (entry.accountRecords ?? []).map((record) => ({
+            ...record,
+            ownerId: msgChar.accountId,
+        })),
         monsterBook: (entry.monsterBook ?? []).map((card) => ({
             characterId: entry.character?.characterId ?? 0,
             cardId: card.cardId,

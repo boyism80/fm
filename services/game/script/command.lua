@@ -628,7 +628,7 @@ local command_funcs = {
 	},
 	["봇초기화"] = {
 		privilege = ROLE.Admin,
-		usage = "<레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...|-] [퀘스트ID=기록,...] - 인벤토리·퀘스트를 비우고 상태 설정",
+		usage = "<레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...|-] [퀘스트ID=기록,...|-] [기록키=값,...] - 인벤토리·퀘스트·기록을 비우고 상태 설정",
 		command = function(me, args)
 			local level = tonumber(args[1])
 			local class = tonumber(args[2])
@@ -639,6 +639,7 @@ local command_funcs = {
 			end
 			me:clear_inventory()
 			me:clear_quests()
+			me:records():clear()
 			me:level(1)
 			me:level(level)
 			me:class(class)
@@ -656,6 +657,9 @@ local command_funcs = {
 				if ensure_quest_state(me, tonumber(quest_id), 1) then
 					me:quest(tonumber(quest_id)):record(record)
 				end
+			end
+			for key, value in string.gmatch(args[7] or "", "([%w_%.]+)=(-?%d+)") do
+				me:records():set(key, tonumber(value))
 			end
 			me:message("봇초기화 완료")
 			return true

@@ -74,6 +74,8 @@ type Character struct {
 	carnivalTeam    *CarnivalTeam
 	dojoEnergy      int
 	SavedLocations  *SavedLocations
+	Records         *Records
+	AccountRecords  *Records
 	session         session
 }
 

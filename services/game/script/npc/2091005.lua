@@ -25,14 +25,14 @@ local function challenge_solo(me, npc)
 		return
 	end
 	local group = state_machine(dojo.GROUP)
-	local rest = dojo.record(me, dojo.REST_QUEST)
+	local rest = me:records():get(dojo.REST_RECORD)
 	local floor = 1
 	if rest > 0 then
 		floor = rest * 6
 	end
 	group:set_property("start:" .. me:id(), tostring(floor))
 	if start(me, npc, group, nil) and rest > 0 then
-		dojo.set_record(me, dojo.REST_QUEST, 0)
+		me:records():remove(dojo.REST_RECORD)
 	end
 end
 
@@ -52,8 +52,8 @@ local function challenge_party(me, npc)
 end
 
 local function claim_belt(me, npc)
-	local points = dojo.record(me, dojo.POINT_QUEST)
-	local claimed = dojo.record(me, dojo.BELT_QUEST)
+	local points = me:records():get(dojo.POINT_RECORD)
+	local claimed = me:records():get(dojo.BELT_RECORD)
 	local options = {}
 	for i, belt in ipairs(dojo.BELTS) do
 		local suffix = ""
@@ -89,25 +89,25 @@ local function claim_belt(me, npc)
 		me:dialog(npc, "인벤토리에 충분한 공간이 있는지 확인해 줄래?")
 		return
 	end
-	dojo.set_record(me, dojo.BELT_QUEST, sel)
+	me:records():set(dojo.BELT_RECORD, sel)
 end
 
 local function reset_points(me, npc)
 	if not me:dialog_yes_no(npc, "수련 점수를 초기화 하겠다고? 수련점수를 초기화 하면 지금까지 모아놨던 수련점수가 모두 사라져. 어때? 정말 초기화 하고 싶어?") then
 		return
 	end
-	dojo.set_record(me, dojo.POINT_QUEST, 0)
+	me:records():remove(dojo.POINT_RECORD)
 	me:dialog(npc, "수련점수를 초기화 했어.")
 end
 
 local function show_record(me, npc)
-	local floor = dojo.record(me, dojo.BEST_FLOOR_QUEST)
+	local floor = me:records():get(dojo.BEST_FLOOR_RECORD)
 	if floor == 0 then
 		me:dialog(npc, "아직 한 층도 통과하지 못했잖아? 기록을 남기고 싶으면 먼저 도전부터 해 봐.")
 		return
 	end
 	local text = string.format("지금까지 #b%d층#k까지 통과했어.", floor)
-	local seconds = dojo.record(me, dojo.BEST_TIME_QUEST)
+	local seconds = me:records():get(dojo.BEST_TIME_RECORD)
 	if seconds > 0 then
 		text = text .. string.format("\r\n1층부터 옥상까지 가장 빨리 올라간 기록은 #b%s#k이야.", dojo.format_time(seconds))
 	end
@@ -182,7 +182,7 @@ local function rest_floor(me, npc, sm, floor)
 			me:dialog(npc, "같이 도전중일때는 진행상황을 저장할 수 없어.")
 			return
 		end
-		dojo.set_record(me, dojo.REST_QUEST, math.floor(floor / 6))
+		me:records():set(dojo.REST_RECORD, math.floor(floor / 6))
 		me:dialog(npc, "진행상황이 저장되었어. 다음에 다시 도전할때, 이 층으로 바로 올라올 수 있을거야.")
 	end
 end

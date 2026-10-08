@@ -87,6 +87,8 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Duey = &Duey{owner: ch}
 	ch.StoreBank = &StoreBank{owner: ch}
 	ch.SavedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
+	ch.Records = NewRecordsFromInternalProto(reply.GetRecords())
+	ch.AccountRecords = NewRecordsFromInternalProto(reply.GetAccountRecords())
 	ch.KeyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	ch.LifeCore.ObjectCore.initTimers()
@@ -380,6 +382,8 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		SavedLocations: ch.SavedLocations.ToProto(),
 		Storage:        ch.Storage.ToProto(worldID),
 		MonsterBook:    ch.MonsterBook.ToProto(),
+		Records:        ch.Records.ToProto(),
+		AccountRecords: ch.AccountRecords.ToProto(),
 	}
 }
 

@@ -554,6 +554,27 @@ export type SavedLocationRow = {
     deleted?: boolean;
 };
 
+export interface RecordModel {
+    ownerId: number;
+    key: string;
+    value: number;
+    text: string;
+    period: number;
+    updatedAtUnixMs: number;
+    updatedAt?: Date;
+}
+
+export type RecordRow = {
+    owner_id: number;
+    record_key: string;
+    value: number;
+    text: string;
+    period: number;
+    updated_at_unix_ms: number;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
 export interface MonsterBookCardModel {
     characterId: number;
     cardId: number;

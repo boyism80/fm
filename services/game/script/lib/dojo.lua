@@ -11,11 +11,11 @@ M.ROOF_PORTAL = 1
 M.LAST_FLOOR = 38
 M.DOOR_PORTAL = 6
 M.DOOR_REACTOR = 2508000
-M.POINT_QUEST = 150100
-M.BELT_QUEST = 150101
-M.REST_QUEST = 150000
-M.BEST_FLOOR_QUEST = 150102
-M.BEST_TIME_QUEST = 150103
+M.POINT_RECORD = "dojo.points"
+M.BELT_RECORD = "dojo.belt"
+M.REST_RECORD = "dojo.rest"
+M.BEST_FLOOR_RECORD = "dojo.best_floor"
+M.BEST_TIME_RECORD = "dojo.best_time"
 M.BOSS_SPAWNS = {
 	{ 140, 0 },
 	{ -193, 0 },
@@ -74,23 +74,6 @@ function M.time_limit_ms(floor)
 	return (4 + tier) * 60000
 end
 
-function M.record(me, quest_id)
-	local q = me:quest(quest_id)
-	if not q:started() then
-		return 0
-	end
-	return tonumber(q:record()) or 0
-end
-
-function M.set_record(me, quest_id, value)
-	local q = me:quest(quest_id)
-	if not q:started() then
-		q:start(tostring(value))
-		return
-	end
-	q:record(tostring(value))
-end
-
 function M.taunt(map)
 	if map:property("taunt") then
 		return
@@ -130,25 +113,24 @@ function M.grant_points(players, floor)
 		points = M.tier(floor) * 3
 	end
 	for _, player in ipairs(players) do
-		local total = M.record(player, M.POINT_QUEST) + points
-		M.set_record(player, M.POINT_QUEST, total)
+		local total = player:records():add(M.POINT_RECORD, points)
 		player:message(string.format("수련점수를 %d점 받았습니다. 총 수련점수가 %d점이 되었습니다.", points, total), Msg.PinkText)
 	end
 end
 
 function M.record_floor(players, floor)
 	for _, player in ipairs(players) do
-		if floor > M.record(player, M.BEST_FLOOR_QUEST) then
-			M.set_record(player, M.BEST_FLOOR_QUEST, floor)
+		if floor > player:records():get(M.BEST_FLOOR_RECORD) then
+			player:records():set(M.BEST_FLOOR_RECORD, floor)
 		end
 	end
 end
 
 function M.record_time(players, seconds)
 	for _, player in ipairs(players) do
-		local best = M.record(player, M.BEST_TIME_QUEST)
+		local best = player:records():get(M.BEST_TIME_RECORD)
 		if best == 0 or seconds < best then
-			M.set_record(player, M.BEST_TIME_QUEST, seconds)
+			player:records():set(M.BEST_TIME_RECORD, seconds)
 			player:message(string.format("무릉도장 최단 완주 기록을 세웠습니다: %s", M.format_time(seconds)), Msg.PinkText)
 		end
 	end

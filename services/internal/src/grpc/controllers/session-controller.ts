@@ -18,6 +18,8 @@ import type { InventoryRepository } from "../../repos/inventory-repository";
 import type { SkillRepository } from "../../repos/skill-repository";
 import type { QuestRepository } from "../../repos/quest-repository";
 import type { SavedLocationRepository } from "../../repos/saved-location-repository";
+import type { CharacterRecordRepository } from "../../repos/character-record-repository";
+import type { AccountRecordRepository } from "../../repos/account-record-repository";
 import type { MonsterBookRepository } from "../../repos/monster-book-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
 import type { InternalConfig } from "../../types/internal-config";
@@ -64,6 +66,8 @@ export class SessionGrpcController {
     private readonly buffService: BuffService;
     private readonly questRepository: QuestRepository;
     private readonly savedLocationRepository: SavedLocationRepository;
+    private readonly characterRecordRepository: CharacterRecordRepository;
+    private readonly accountRecordRepository: AccountRecordRepository;
     private readonly monsterBookRepository: MonsterBookRepository;
     private readonly sessionService: SessionService;
     private readonly buddyService: BuddyService;
@@ -80,6 +84,8 @@ export class SessionGrpcController {
         buffService: BuffService,
         questRepository: QuestRepository,
         savedLocationRepository: SavedLocationRepository,
+        characterRecordRepository: CharacterRecordRepository,
+        accountRecordRepository: AccountRecordRepository,
         monsterBookRepository: MonsterBookRepository,
         sessionService: SessionService,
         buddyService: BuddyService,
@@ -95,6 +101,8 @@ export class SessionGrpcController {
         this.buffService = buffService;
         this.questRepository = questRepository;
         this.savedLocationRepository = savedLocationRepository;
+        this.characterRecordRepository = characterRecordRepository;
+        this.accountRecordRepository = accountRecordRepository;
         this.monsterBookRepository = monsterBookRepository;
         this.sessionService = sessionService;
         this.buddyService = buddyService;
@@ -154,7 +162,7 @@ export class SessionGrpcController {
 
     private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
         const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings, monsterBook] = await Promise.all([
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords] = await Promise.all([
             this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.buffService.getBuffs(worldId, characterId),
@@ -166,6 +174,8 @@ export class SessionGrpcController {
             this.cashShopService.getWishlist(worldId, characterId),
             this.cashShopService.getRings(worldId, characterId),
             this.monsterBookRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.characterRecordRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.accountRecordRepository.getAll(worldId, String(row.accountId)).then((map) => [...map.values()]),
         ]);
         const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
         return {
@@ -222,6 +232,8 @@ export class SessionGrpcController {
             cashWishlist: cashWishlist.filter((sn) => sn !== 0),
             rings,
             monsterBook: monsterBook.map((card) => ({ cardId: card.cardId >>> 0, count: card.count >>> 0 })),
+            records: records.map(({ key, value, text, period, updatedAtUnixMs }) => ({ key, value, text, period, updatedAtUnixMs })),
+            accountRecords: accountRecords.map(({ key, value, text, period, updatedAtUnixMs }) => ({ key, value, text, period, updatedAtUnixMs })),
         };
     }
 
@@ -259,6 +271,8 @@ export class SessionGrpcController {
                     cashWishlist: [],
                     rings: [],
                     monsterBook: [],
+                    records: [],
+                    accountRecords: [],
                 });
                 return;
             }

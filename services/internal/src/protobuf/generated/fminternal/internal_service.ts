@@ -1784,6 +1784,8 @@ export interface EnterGameReply {
   cashWishlist: number[];
   rings: CashRing[];
   monsterBook: MonsterBookCard[];
+  records: Record[];
+  accountRecords: Record[];
 }
 
 export interface Debuff {
@@ -1842,6 +1844,8 @@ export interface CharacterSaveEntry {
   savedLocations: SavedLocation[];
   storage: Storage | undefined;
   monsterBook: MonsterBookCard[];
+  records: Record[];
+  accountRecords: Record[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -2120,6 +2124,14 @@ export interface SavedLocation {
   characterId: number;
   name: string;
   mapId: number;
+}
+
+export interface Record {
+  key: string;
+  value: number;
+  text: string;
+  period: number;
+  updatedAtUnixMs: number;
 }
 
 export interface LoginAccountRequest {
@@ -11224,6 +11236,8 @@ function createBaseEnterGameReply(): EnterGameReply {
     cashWishlist: [],
     rings: [],
     monsterBook: [],
+    records: [],
+    accountRecords: [],
   };
 }
 
@@ -11281,6 +11295,12 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.monsterBook) {
       MonsterBookCard.encode(v!, writer.uint32(138).fork()).join();
+    }
+    for (const v of message.records) {
+      Record.encode(v!, writer.uint32(146).fork()).join();
+    }
+    for (const v of message.accountRecords) {
+      Record.encode(v!, writer.uint32(154).fork()).join();
     }
     return writer;
   },
@@ -11438,6 +11458,22 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.monsterBook.push(MonsterBookCard.decode(reader, reader.uint32()));
           continue;
         }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.records.push(Record.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.accountRecords.push(Record.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -11502,6 +11538,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : globalThis.Array.isArray(object?.monster_book)
         ? object.monster_book.map((e: any) => MonsterBookCard.fromJSON(e))
         : [],
+      records: globalThis.Array.isArray(object?.records)
+        ? object.records.map((e: any) => Record.fromJSON(e))
+        : [],
+      accountRecords: globalThis.Array.isArray(object?.accountRecords)
+        ? object.accountRecords.map((e: any) => Record.fromJSON(e))
+        : globalThis.Array.isArray(object?.account_records)
+        ? object.account_records.map((e: any) => Record.fromJSON(e))
+        : [],
     };
   },
 
@@ -11558,6 +11602,12 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.monsterBook?.length) {
       obj.monsterBook = message.monsterBook.map((e) => MonsterBookCard.toJSON(e));
     }
+    if (message.records?.length) {
+      obj.records = message.records.map((e) => Record.toJSON(e));
+    }
+    if (message.accountRecords?.length) {
+      obj.accountRecords = message.accountRecords.map((e) => Record.toJSON(e));
+    }
     return obj;
   },
 
@@ -11587,6 +11637,8 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.cashWishlist = object.cashWishlist?.map((e) => e) || [];
     message.rings = object.rings?.map((e) => CashRing.fromPartial(e)) || [];
     message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
+    message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
+    message.accountRecords = object.accountRecords?.map((e) => Record.fromPartial(e)) || [];
     return message;
   },
 };
@@ -12396,6 +12448,8 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     savedLocations: [],
     storage: undefined,
     monsterBook: [],
+    records: [],
+    accountRecords: [],
   };
 }
 
@@ -12433,6 +12487,12 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     for (const v of message.monsterBook) {
       MonsterBookCard.encode(v!, writer.uint32(90).fork()).join();
+    }
+    for (const v of message.records) {
+      Record.encode(v!, writer.uint32(98).fork()).join();
+    }
+    for (const v of message.accountRecords) {
+      Record.encode(v!, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -12538,6 +12598,22 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.monsterBook.push(MonsterBookCard.decode(reader, reader.uint32()));
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.records.push(Record.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.accountRecords.push(Record.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12600,6 +12676,12 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.monster_book)
         ? object.monster_book.map((e: any) => MonsterBookCard.fromJSON(e))
         : [],
+      records: globalThis.Array.isArray(object?.records) ? object.records.map((e: any) => Record.fromJSON(e)) : [],
+      accountRecords: globalThis.Array.isArray(object?.accountRecords)
+        ? object.accountRecords.map((e: any) => Record.fromJSON(e))
+        : globalThis.Array.isArray(object?.account_records)
+        ? object.account_records.map((e: any) => Record.fromJSON(e))
+        : [],
     };
   },
 
@@ -12650,6 +12732,12 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.monsterBook?.length) {
       obj.monsterBook = message.monsterBook.map((e) => MonsterBookCard.toJSON(e));
     }
+    if (message.records?.length) {
+      obj.records = message.records.map((e) => Record.toJSON(e));
+    }
+    if (message.accountRecords?.length) {
+      obj.accountRecords = message.accountRecords.map((e) => Record.toJSON(e));
+    }
     return obj;
   },
 
@@ -12689,6 +12777,8 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
       ? Storage.fromPartial(object.storage)
       : undefined;
     message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
+    message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
+    message.accountRecords = object.accountRecords?.map((e) => Record.fromPartial(e)) || [];
     return message;
   },
 };
@@ -17457,6 +17547,134 @@ export const SavedLocation: MessageFns<SavedLocation> = {
     message.characterId = object.characterId ?? 0;
     message.name = object.name ?? "";
     message.mapId = object.mapId ?? 0;
+    return message;
+  },
+};
+
+function createBaseRecord(): Record {
+  return { key: "", value: 0, text: "", period: 0, updatedAtUnixMs: 0 };
+}
+
+export const Record: MessageFns<Record> = {
+  encode(message: Record, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== 0) {
+      writer.uint32(16).int64(message.value);
+    }
+    if (message.text !== "") {
+      writer.uint32(26).string(message.text);
+    }
+    if (message.period !== 0) {
+      writer.uint32(32).uint32(message.period);
+    }
+    if (message.updatedAtUnixMs !== 0) {
+      writer.uint32(40).int64(message.updatedAtUnixMs);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Record {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRecord();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.text = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.period = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.updatedAtUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Record {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+      text: isSet(object.text) ? globalThis.String(object.text) : "",
+      period: isSet(object.period) ? globalThis.Number(object.period) : 0,
+      updatedAtUnixMs: isSet(object.updatedAtUnixMs)
+        ? globalThis.Number(object.updatedAtUnixMs)
+        : isSet(object.updated_at_unix_ms)
+        ? globalThis.Number(object.updated_at_unix_ms)
+        : 0,
+    };
+  },
+
+  toJSON(message: Record): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    if (message.text !== "") {
+      obj.text = message.text;
+    }
+    if (message.period !== 0) {
+      obj.period = Math.round(message.period);
+    }
+    if (message.updatedAtUnixMs !== 0) {
+      obj.updatedAtUnixMs = Math.round(message.updatedAtUnixMs);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Record>, I>>(base?: I): Record {
+    return Record.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Record>, I>>(object: I): Record {
+    const message = createBaseRecord();
+    message.key = object.key ?? "";
+    message.value = object.value ?? 0;
+    message.text = object.text ?? "";
+    message.period = object.period ?? 0;
+    message.updatedAtUnixMs = object.updatedAtUnixMs ?? 0;
     return message;
   },
 };
