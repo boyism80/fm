@@ -34,6 +34,7 @@ var requests = []outbound{
 	&request.SwitchChannel{},
 	&request.QuestAction{},
 	&request.Attack{},
+	&request.ActiveSkill{},
 	&request.ItemLoot{},
 	&request.MoveItem{},
 	&request.DamageReactor{},
@@ -629,6 +630,9 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"attack": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			pkt, ok := a.attackPacket(b, uint32(L.CheckInt(2)), uint32(L.OptInt(3, 0)), uint8(L.OptInt(4, 1)))
+			if ok {
+				pkt.Skill = uint32(L.OptInt(5, 0))
+			}
 			if ok == false {
 				L.Push(lua.LFalse)
 				return 1

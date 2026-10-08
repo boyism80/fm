@@ -25,6 +25,10 @@ type ActiveSkill struct {
 func (*ActiveSkill) Opcode() byte { return 0x4A }
 
 func (s *ActiveSkill) Serialize(writer *stream.StreamWriter) error {
+	writer.Write16(s.OldX)
+	writer.Write16(s.OldY)
+	writer.WriteU32(s.SkillID)
+	writer.WriteU8(s.SkillLevel)
 	return nil
 }
 
