@@ -32,6 +32,10 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 		ch.TeleportStones.Use(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.Target.MapID, req.Target.Name)
 		return nil
 	}
+	if constant.IsShopScanner(req.ItemID) {
+		ch.UseShopScanner(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.SearchID, req.HighFirst)
+		return nil
+	}
 	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, req.Text, req.Ear, req.PetSN)
 	return nil
 }

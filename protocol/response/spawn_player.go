@@ -26,6 +26,7 @@ type SpawnPlayer struct {
 	MountLevel        uint32
 	MountExp          uint32
 	MountFatigue      uint32
+	MiniRoomBalloon   *MiniRoomBalloon
 	Chalkboard        string
 	HasTeam           bool
 	Team              constant.CarnivalTeam
@@ -95,7 +96,11 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.MountLevel)
 	writer.WriteU32(p.MountExp)
 	writer.WriteU32(p.MountFatigue)
-	writer.WriteU8(0)
+	if p.MiniRoomBalloon != nil {
+		p.MiniRoomBalloon.serialize(writer)
+	} else {
+		writer.WriteU8(0)
+	}
 	if p.Chalkboard != "" {
 		writer.WriteU8(1)
 		writer.WriteStr16(p.Chalkboard)

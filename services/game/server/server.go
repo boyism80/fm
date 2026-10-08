@@ -431,6 +431,10 @@ func (gs *GameServer) GetWorldID() uint32 {
 	return gs.config.WorldId
 }
 
+func (gs *GameServer) GetChannelID() int32 {
+	return int32(gs.config.ChannelId)
+}
+
 func (gs *GameServer) GetExpRate() int {
 	return gs.config.ExpRate
 }
@@ -493,15 +497,15 @@ func (gs *GameServer) Start() error {
 
 	if gs.internalClient != nil {
 		closeCtx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-		reply, err := gs.internalClient.CloseChannelEntrustedShops(closeCtx, &internal.CloseChannelEntrustedShopsRequest{
+		reply, err := gs.internalClient.CloseChannelShops(closeCtx, &internal.CloseChannelShopsRequest{
 			WorldId:   gs.config.WorldId,
 			ChannelId: int32(gs.config.ChannelId),
 		})
 		cancel()
 		if err != nil {
-			log.Printf("close channel entrusted shops: %v", err)
+			log.Printf("close channel shops: %v", err)
 		} else {
-			log.Printf("Closed %d entrusted shops into the store bank", reply.GetCount())
+			log.Printf("Closed %d shops into the store bank", reply.GetCount())
 		}
 	}
 

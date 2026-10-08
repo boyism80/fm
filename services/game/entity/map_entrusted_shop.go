@@ -28,7 +28,7 @@ func (m *Map) RemoveEntrustedShop(es *EntrustedShop) {
 		if ok == false {
 			return
 		}
-		es.SendDestroySyncToViewer(viewer)
+		es.sendDestroy(viewer)
 	}, nil)
 	es.ClearTimers()
 	m.sections.remove(es)
@@ -37,21 +37,59 @@ func (m *Map) RemoveEntrustedShop(es *EntrustedShop) {
 	es.Map = nil
 }
 
-func (m *Map) checkEntrustedShopSpot(position types.Vector2[int16]) error {
+func (m *Map) FindEntrustedShopByOwner(ownerID uint32) *EntrustedShop {
+	for _, obj := range m.objects[constant.ObjectTypeEntrustedShop] {
+		es, ok := obj.(*EntrustedShop)
+		if ok == false || es.OwnerID != ownerID {
+			continue
+		}
+		es.mu.Lock()
+		published := es.published && es.ended == false
+		es.mu.Unlock()
+		if published {
+			return es
+		}
+	}
+	return nil
+}
+
+func (m *Map) AddPersonalShop(ps *PersonalShop) {
+	ps.GameWorld = m.GameWorld
+	ps.Map = m
+	ps.OID = m.allocateOID()
+	if m.objects[constant.ObjectTypePersonalShop] == nil {
+		m.objects[constant.ObjectTypePersonalShop] = make(map[uint32]Object)
+	}
+	m.objects[constant.ObjectTypePersonalShop][ps.OID] = ps
+}
+
+func (m *Map) RemovePersonalShop(ps *PersonalShop) {
+	if m.objects[constant.ObjectTypePersonalShop][ps.OID] != ps {
+		return
+	}
+
+	delete(m.objects[constant.ObjectTypePersonalShop], ps.OID)
+	m.releaseOID(ps.OID)
+	ps.Map = nil
+}
+
+func (m *Map) checkShopSpot(position types.Vector2[int16]) error {
 	near := func(x, y int16) bool {
 		dx := int(position.X) - int(x)
 		dy := int(position.Y) - int(y)
-		return dx*dx+dy*dy < EntrustedShopSpacingSq
+		return dx*dx+dy*dy < ShopSpacingSq
 	}
 	for _, portal := range m.Wz.Portals {
-		if portal.Type == entrustedShopPortalType && near(portal.Position.X, portal.Position.Y) {
+		if portal.Type == shopPortalType && near(portal.Position.X, portal.Position.Y) {
 			return &MiniRoomEnterError{Code: pconst.MiniRoomEnterNearPortal}
 		}
 	}
-	for _, obj := range m.objects[constant.ObjectTypeEntrustedShop] {
-		other := obj.GetPosition()
-		if near(other.X, other.Y) {
-			return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
+	for _, typ := range []constant.ObjectType{constant.ObjectTypeEntrustedShop, constant.ObjectTypePersonalShop} {
+		for _, obj := range m.objects[typ] {
+			other := obj.GetPosition()
+			if near(other.X, other.Y) {
+				return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
+			}
 		}
 	}
 	return nil

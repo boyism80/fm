@@ -54,8 +54,9 @@ type Character struct {
 	Storage         *Storage
 	Duey            *Duey
 	StoreBank       *StoreBank
-	MiniRoom        *EntrustedShop
+	MiniRoom        MiniRoom
 	miniRoomPending bool
+	remoteShop      remoteShop
 	Skills          *Skills
 	KeyLayout       *KeyLayout
 	Chair           uint32
@@ -138,6 +139,10 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MarriageRing:      ch.Wedding.RingToDTO(),
 		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
 		Team:              carnivalTeam,
+	}
+	if ps, ok := ch.MiniRoom.(*PersonalShop); ok && ps.published && ps.owner == ch {
+		balloon := ps.balloon()
+		spawnPacket.MiniRoomBalloon = &balloon
 	}
 	if ch.Pets.Active != nil {
 		spawnPacket.Pet = ch.Pets.Active.ToDTO()

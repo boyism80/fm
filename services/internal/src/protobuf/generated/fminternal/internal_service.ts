@@ -1941,21 +1941,21 @@ export interface CheckParcelArrivalsReply {
   quick: boolean;
 }
 
-export interface EntrustedShopItem {
+export interface ShopItem {
   item: Inventory | undefined;
   bundles: number;
   perBundle: number;
   price: number;
 }
 
-export interface EntrustedShopSale {
+export interface ShopSale {
   itemId: number;
   bundles: number;
   total: number;
   buyer: string;
 }
 
-export interface EntrustedShop {
+export interface Shop {
   shopId: number;
   worldId: number;
   accountId: number;
@@ -1966,10 +1966,12 @@ export interface EntrustedShop {
   itemId: number;
   title: string;
   meso: number;
-  items: EntrustedShopItem[];
-  sold: EntrustedShopSale[];
+  items: ShopItem[];
+  sold: ShopSale[];
   openedAtUnixMs: number;
   closedAtUnixMs: number;
+  kind: number;
+  sn: number;
 }
 
 export interface FindEntrustedShopRequest {
@@ -1978,25 +1980,26 @@ export interface FindEntrustedShopRequest {
 }
 
 export interface FindEntrustedShopReply {
-  shop: EntrustedShop | undefined;
+  shop: Shop | undefined;
+  storeBank: Shop[];
 }
 
-export interface OpenEntrustedShopRequest {
-  shop: EntrustedShop | undefined;
+export interface OpenShopRequest {
+  shop: Shop | undefined;
 }
 
-export interface OpenEntrustedShopReply {
+export interface OpenShopReply {
   shopId: number;
-  existing: EntrustedShop | undefined;
+  existing: Shop | undefined;
 }
 
-export interface SaveEntrustedShopRequest {
-  shop: EntrustedShop | undefined;
+export interface SaveShopRequest {
+  shop: Shop | undefined;
   characters: CharacterSaveEntry[];
   close: boolean;
 }
 
-export interface SaveEntrustedShopReply {
+export interface SaveShopReply {
 }
 
 export interface ClaimStoreBankRequest {
@@ -2006,16 +2009,46 @@ export interface ClaimStoreBankRequest {
 }
 
 export interface ClaimStoreBankReply {
-  shop: EntrustedShop | undefined;
+  shops: Shop[];
 }
 
-export interface CloseChannelEntrustedShopsRequest {
+export interface CloseChannelShopsRequest {
   worldId: number;
   channelId: number;
 }
 
-export interface CloseChannelEntrustedShopsReply {
+export interface CloseChannelShopsReply {
   count: number;
+}
+
+export interface SearchShopsRequest {
+  worldId: number;
+  itemId: number;
+  highFirst: boolean;
+}
+
+export interface ShopSearchEntry {
+  ownerName: string;
+  channelId: number;
+  mapId: number;
+  title: string;
+  perBundle: number;
+  bundles: number;
+  price: number;
+  sn: number;
+  item: Inventory | undefined;
+}
+
+export interface SearchShopsReply {
+  entries: ShopSearchEntry[];
+}
+
+export interface FindPopularShopSearchesRequest {
+  worldId: number;
+}
+
+export interface FindPopularShopSearchesReply {
+  itemIds: number[];
 }
 
 export interface SaveCharactersRequest {
@@ -14318,12 +14351,12 @@ export const CheckParcelArrivalsReply: MessageFns<CheckParcelArrivalsReply> = {
   },
 };
 
-function createBaseEntrustedShopItem(): EntrustedShopItem {
+function createBaseShopItem(): ShopItem {
   return { item: undefined, bundles: 0, perBundle: 0, price: 0 };
 }
 
-export const EntrustedShopItem: MessageFns<EntrustedShopItem> = {
-  encode(message: EntrustedShopItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ShopItem: MessageFns<ShopItem> = {
+  encode(message: ShopItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.item !== undefined) {
       Inventory.encode(message.item, writer.uint32(10).fork()).join();
     }
@@ -14339,10 +14372,10 @@ export const EntrustedShopItem: MessageFns<EntrustedShopItem> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EntrustedShopItem {
+  decode(input: BinaryReader | Uint8Array, length?: number): ShopItem {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEntrustedShopItem();
+    const message = createBaseShopItem();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14387,7 +14420,7 @@ export const EntrustedShopItem: MessageFns<EntrustedShopItem> = {
     return message;
   },
 
-  fromJSON(object: any): EntrustedShopItem {
+  fromJSON(object: any): ShopItem {
     return {
       item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
       bundles: isSet(object.bundles) ? globalThis.Number(object.bundles) : 0,
@@ -14400,7 +14433,7 @@ export const EntrustedShopItem: MessageFns<EntrustedShopItem> = {
     };
   },
 
-  toJSON(message: EntrustedShopItem): unknown {
+  toJSON(message: ShopItem): unknown {
     const obj: any = {};
     if (message.item !== undefined) {
       obj.item = Inventory.toJSON(message.item);
@@ -14417,11 +14450,11 @@ export const EntrustedShopItem: MessageFns<EntrustedShopItem> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EntrustedShopItem>, I>>(base?: I): EntrustedShopItem {
-    return EntrustedShopItem.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ShopItem>, I>>(base?: I): ShopItem {
+    return ShopItem.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EntrustedShopItem>, I>>(object: I): EntrustedShopItem {
-    const message = createBaseEntrustedShopItem();
+  fromPartial<I extends Exact<DeepPartial<ShopItem>, I>>(object: I): ShopItem {
+    const message = createBaseShopItem();
     message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
     message.bundles = object.bundles ?? 0;
     message.perBundle = object.perBundle ?? 0;
@@ -14430,12 +14463,12 @@ export const EntrustedShopItem: MessageFns<EntrustedShopItem> = {
   },
 };
 
-function createBaseEntrustedShopSale(): EntrustedShopSale {
+function createBaseShopSale(): ShopSale {
   return { itemId: 0, bundles: 0, total: 0, buyer: "" };
 }
 
-export const EntrustedShopSale: MessageFns<EntrustedShopSale> = {
-  encode(message: EntrustedShopSale, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ShopSale: MessageFns<ShopSale> = {
+  encode(message: ShopSale, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.itemId !== 0) {
       writer.uint32(8).uint32(message.itemId);
     }
@@ -14451,10 +14484,10 @@ export const EntrustedShopSale: MessageFns<EntrustedShopSale> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EntrustedShopSale {
+  decode(input: BinaryReader | Uint8Array, length?: number): ShopSale {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEntrustedShopSale();
+    const message = createBaseShopSale();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14499,7 +14532,7 @@ export const EntrustedShopSale: MessageFns<EntrustedShopSale> = {
     return message;
   },
 
-  fromJSON(object: any): EntrustedShopSale {
+  fromJSON(object: any): ShopSale {
     return {
       itemId: isSet(object.itemId)
         ? globalThis.Number(object.itemId)
@@ -14512,7 +14545,7 @@ export const EntrustedShopSale: MessageFns<EntrustedShopSale> = {
     };
   },
 
-  toJSON(message: EntrustedShopSale): unknown {
+  toJSON(message: ShopSale): unknown {
     const obj: any = {};
     if (message.itemId !== 0) {
       obj.itemId = Math.round(message.itemId);
@@ -14529,11 +14562,11 @@ export const EntrustedShopSale: MessageFns<EntrustedShopSale> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EntrustedShopSale>, I>>(base?: I): EntrustedShopSale {
-    return EntrustedShopSale.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<ShopSale>, I>>(base?: I): ShopSale {
+    return ShopSale.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EntrustedShopSale>, I>>(object: I): EntrustedShopSale {
-    const message = createBaseEntrustedShopSale();
+  fromPartial<I extends Exact<DeepPartial<ShopSale>, I>>(object: I): ShopSale {
+    const message = createBaseShopSale();
     message.itemId = object.itemId ?? 0;
     message.bundles = object.bundles ?? 0;
     message.total = object.total ?? 0;
@@ -14542,7 +14575,7 @@ export const EntrustedShopSale: MessageFns<EntrustedShopSale> = {
   },
 };
 
-function createBaseEntrustedShop(): EntrustedShop {
+function createBaseShop(): Shop {
   return {
     shopId: 0,
     worldId: 0,
@@ -14558,11 +14591,13 @@ function createBaseEntrustedShop(): EntrustedShop {
     sold: [],
     openedAtUnixMs: 0,
     closedAtUnixMs: 0,
+    kind: 0,
+    sn: 0,
   };
 }
 
-export const EntrustedShop: MessageFns<EntrustedShop> = {
-  encode(message: EntrustedShop, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Shop: MessageFns<Shop> = {
+  encode(message: Shop, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.shopId !== 0) {
       writer.uint32(8).uint32(message.shopId);
     }
@@ -14594,10 +14629,10 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
       writer.uint32(80).int32(message.meso);
     }
     for (const v of message.items) {
-      EntrustedShopItem.encode(v!, writer.uint32(90).fork()).join();
+      ShopItem.encode(v!, writer.uint32(90).fork()).join();
     }
     for (const v of message.sold) {
-      EntrustedShopSale.encode(v!, writer.uint32(98).fork()).join();
+      ShopSale.encode(v!, writer.uint32(98).fork()).join();
     }
     if (message.openedAtUnixMs !== 0) {
       writer.uint32(104).int64(message.openedAtUnixMs);
@@ -14605,13 +14640,19 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
     if (message.closedAtUnixMs !== 0) {
       writer.uint32(112).int64(message.closedAtUnixMs);
     }
+    if (message.kind !== 0) {
+      writer.uint32(120).uint32(message.kind);
+    }
+    if (message.sn !== 0) {
+      writer.uint32(128).uint32(message.sn);
+    }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EntrustedShop {
+  decode(input: BinaryReader | Uint8Array, length?: number): Shop {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEntrustedShop();
+    const message = createBaseShop();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -14700,7 +14741,7 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
             break;
           }
 
-          message.items.push(EntrustedShopItem.decode(reader, reader.uint32()));
+          message.items.push(ShopItem.decode(reader, reader.uint32()));
           continue;
         }
         case 12: {
@@ -14708,7 +14749,7 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
             break;
           }
 
-          message.sold.push(EntrustedShopSale.decode(reader, reader.uint32()));
+          message.sold.push(ShopSale.decode(reader, reader.uint32()));
           continue;
         }
         case 13: {
@@ -14727,6 +14768,22 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
           message.closedAtUnixMs = longToNumber(reader.int64());
           continue;
         }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.kind = reader.uint32();
+          continue;
+        }
+        case 16: {
+          if (tag !== 128) {
+            break;
+          }
+
+          message.sn = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14736,7 +14793,7 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
     return message;
   },
 
-  fromJSON(object: any): EntrustedShop {
+  fromJSON(object: any): Shop {
     return {
       shopId: isSet(object.shopId)
         ? globalThis.Number(object.shopId)
@@ -14781,10 +14838,10 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
       items: globalThis.Array.isArray(object?.items)
-        ? object.items.map((e: any) => EntrustedShopItem.fromJSON(e))
+        ? object.items.map((e: any) => ShopItem.fromJSON(e))
         : [],
       sold: globalThis.Array.isArray(object?.sold)
-        ? object.sold.map((e: any) => EntrustedShopSale.fromJSON(e))
+        ? object.sold.map((e: any) => ShopSale.fromJSON(e))
         : [],
       openedAtUnixMs: isSet(object.openedAtUnixMs)
         ? globalThis.Number(object.openedAtUnixMs)
@@ -14796,10 +14853,12 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
         : isSet(object.closed_at_unix_ms)
         ? globalThis.Number(object.closed_at_unix_ms)
         : 0,
+      kind: isSet(object.kind) ? globalThis.Number(object.kind) : 0,
+      sn: isSet(object.sn) ? globalThis.Number(object.sn) : 0,
     };
   },
 
-  toJSON(message: EntrustedShop): unknown {
+  toJSON(message: Shop): unknown {
     const obj: any = {};
     if (message.shopId !== 0) {
       obj.shopId = Math.round(message.shopId);
@@ -14832,10 +14891,10 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
       obj.meso = Math.round(message.meso);
     }
     if (message.items?.length) {
-      obj.items = message.items.map((e) => EntrustedShopItem.toJSON(e));
+      obj.items = message.items.map((e) => ShopItem.toJSON(e));
     }
     if (message.sold?.length) {
-      obj.sold = message.sold.map((e) => EntrustedShopSale.toJSON(e));
+      obj.sold = message.sold.map((e) => ShopSale.toJSON(e));
     }
     if (message.openedAtUnixMs !== 0) {
       obj.openedAtUnixMs = Math.round(message.openedAtUnixMs);
@@ -14843,14 +14902,20 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
     if (message.closedAtUnixMs !== 0) {
       obj.closedAtUnixMs = Math.round(message.closedAtUnixMs);
     }
+    if (message.kind !== 0) {
+      obj.kind = Math.round(message.kind);
+    }
+    if (message.sn !== 0) {
+      obj.sn = Math.round(message.sn);
+    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EntrustedShop>, I>>(base?: I): EntrustedShop {
-    return EntrustedShop.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Shop>, I>>(base?: I): Shop {
+    return Shop.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EntrustedShop>, I>>(object: I): EntrustedShop {
-    const message = createBaseEntrustedShop();
+  fromPartial<I extends Exact<DeepPartial<Shop>, I>>(object: I): Shop {
+    const message = createBaseShop();
     message.shopId = object.shopId ?? 0;
     message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
@@ -14861,10 +14926,12 @@ export const EntrustedShop: MessageFns<EntrustedShop> = {
     message.itemId = object.itemId ?? 0;
     message.title = object.title ?? "";
     message.meso = object.meso ?? 0;
-    message.items = object.items?.map((e) => EntrustedShopItem.fromPartial(e)) || [];
-    message.sold = object.sold?.map((e) => EntrustedShopSale.fromPartial(e)) || [];
+    message.items = object.items?.map((e) => ShopItem.fromPartial(e)) || [];
+    message.sold = object.sold?.map((e) => ShopSale.fromPartial(e)) || [];
     message.openedAtUnixMs = object.openedAtUnixMs ?? 0;
     message.closedAtUnixMs = object.closedAtUnixMs ?? 0;
+    message.kind = object.kind ?? 0;
+    message.sn = object.sn ?? 0;
     return message;
   },
 };
@@ -14954,13 +15021,16 @@ export const FindEntrustedShopRequest: MessageFns<FindEntrustedShopRequest> = {
 };
 
 function createBaseFindEntrustedShopReply(): FindEntrustedShopReply {
-  return { shop: undefined };
+  return { shop: undefined, storeBank: [] };
 }
 
 export const FindEntrustedShopReply: MessageFns<FindEntrustedShopReply> = {
   encode(message: FindEntrustedShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.shop !== undefined) {
-      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
+      Shop.encode(message.shop, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.storeBank) {
+      Shop.encode(v!, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -14977,7 +15047,15 @@ export const FindEntrustedShopReply: MessageFns<FindEntrustedShopReply> = {
             break;
           }
 
-          message.shop = EntrustedShop.decode(reader, reader.uint32());
+          message.shop = Shop.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.storeBank.push(Shop.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -14990,13 +15068,23 @@ export const FindEntrustedShopReply: MessageFns<FindEntrustedShopReply> = {
   },
 
   fromJSON(object: any): FindEntrustedShopReply {
-    return { shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined };
+    return {
+      shop: isSet(object.shop) ? Shop.fromJSON(object.shop) : undefined,
+      storeBank: globalThis.Array.isArray(object?.storeBank)
+        ? object.storeBank.map((e: any) => Shop.fromJSON(e))
+        : globalThis.Array.isArray(object?.store_bank)
+        ? object.store_bank.map((e: any) => Shop.fromJSON(e))
+        : [],
+    };
   },
 
   toJSON(message: FindEntrustedShopReply): unknown {
     const obj: any = {};
     if (message.shop !== undefined) {
-      obj.shop = EntrustedShop.toJSON(message.shop);
+      obj.shop = Shop.toJSON(message.shop);
+    }
+    if (message.storeBank?.length) {
+      obj.storeBank = message.storeBank.map((e) => Shop.toJSON(e));
     }
     return obj;
   },
@@ -15006,29 +15094,28 @@ export const FindEntrustedShopReply: MessageFns<FindEntrustedShopReply> = {
   },
   fromPartial<I extends Exact<DeepPartial<FindEntrustedShopReply>, I>>(object: I): FindEntrustedShopReply {
     const message = createBaseFindEntrustedShopReply();
-    message.shop = (object.shop !== undefined && object.shop !== null)
-      ? EntrustedShop.fromPartial(object.shop)
-      : undefined;
+    message.shop = (object.shop !== undefined && object.shop !== null) ? Shop.fromPartial(object.shop) : undefined;
+    message.storeBank = object.storeBank?.map((e) => Shop.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseOpenEntrustedShopRequest(): OpenEntrustedShopRequest {
+function createBaseOpenShopRequest(): OpenShopRequest {
   return { shop: undefined };
 }
 
-export const OpenEntrustedShopRequest: MessageFns<OpenEntrustedShopRequest> = {
-  encode(message: OpenEntrustedShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const OpenShopRequest: MessageFns<OpenShopRequest> = {
+  encode(message: OpenShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.shop !== undefined) {
-      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
+      Shop.encode(message.shop, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): OpenEntrustedShopRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): OpenShopRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOpenEntrustedShopRequest();
+    const message = createBaseOpenShopRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15037,7 +15124,7 @@ export const OpenEntrustedShopRequest: MessageFns<OpenEntrustedShopRequest> = {
             break;
           }
 
-          message.shop = EntrustedShop.decode(reader, reader.uint32());
+          message.shop = Shop.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -15049,49 +15136,47 @@ export const OpenEntrustedShopRequest: MessageFns<OpenEntrustedShopRequest> = {
     return message;
   },
 
-  fromJSON(object: any): OpenEntrustedShopRequest {
-    return { shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined };
+  fromJSON(object: any): OpenShopRequest {
+    return { shop: isSet(object.shop) ? Shop.fromJSON(object.shop) : undefined };
   },
 
-  toJSON(message: OpenEntrustedShopRequest): unknown {
+  toJSON(message: OpenShopRequest): unknown {
     const obj: any = {};
     if (message.shop !== undefined) {
-      obj.shop = EntrustedShop.toJSON(message.shop);
+      obj.shop = Shop.toJSON(message.shop);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<OpenEntrustedShopRequest>, I>>(base?: I): OpenEntrustedShopRequest {
-    return OpenEntrustedShopRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<OpenShopRequest>, I>>(base?: I): OpenShopRequest {
+    return OpenShopRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<OpenEntrustedShopRequest>, I>>(object: I): OpenEntrustedShopRequest {
-    const message = createBaseOpenEntrustedShopRequest();
-    message.shop = (object.shop !== undefined && object.shop !== null)
-      ? EntrustedShop.fromPartial(object.shop)
-      : undefined;
+  fromPartial<I extends Exact<DeepPartial<OpenShopRequest>, I>>(object: I): OpenShopRequest {
+    const message = createBaseOpenShopRequest();
+    message.shop = (object.shop !== undefined && object.shop !== null) ? Shop.fromPartial(object.shop) : undefined;
     return message;
   },
 };
 
-function createBaseOpenEntrustedShopReply(): OpenEntrustedShopReply {
+function createBaseOpenShopReply(): OpenShopReply {
   return { shopId: 0, existing: undefined };
 }
 
-export const OpenEntrustedShopReply: MessageFns<OpenEntrustedShopReply> = {
-  encode(message: OpenEntrustedShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const OpenShopReply: MessageFns<OpenShopReply> = {
+  encode(message: OpenShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.shopId !== 0) {
       writer.uint32(8).uint32(message.shopId);
     }
     if (message.existing !== undefined) {
-      EntrustedShop.encode(message.existing, writer.uint32(18).fork()).join();
+      Shop.encode(message.existing, writer.uint32(18).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): OpenEntrustedShopReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): OpenShopReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOpenEntrustedShopReply();
+    const message = createBaseOpenShopReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15108,7 +15193,7 @@ export const OpenEntrustedShopReply: MessageFns<OpenEntrustedShopReply> = {
             break;
           }
 
-          message.existing = EntrustedShop.decode(reader, reader.uint32());
+          message.existing = Shop.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -15120,49 +15205,49 @@ export const OpenEntrustedShopReply: MessageFns<OpenEntrustedShopReply> = {
     return message;
   },
 
-  fromJSON(object: any): OpenEntrustedShopReply {
+  fromJSON(object: any): OpenShopReply {
     return {
       shopId: isSet(object.shopId)
         ? globalThis.Number(object.shopId)
         : isSet(object.shop_id)
         ? globalThis.Number(object.shop_id)
         : 0,
-      existing: isSet(object.existing) ? EntrustedShop.fromJSON(object.existing) : undefined,
+      existing: isSet(object.existing) ? Shop.fromJSON(object.existing) : undefined,
     };
   },
 
-  toJSON(message: OpenEntrustedShopReply): unknown {
+  toJSON(message: OpenShopReply): unknown {
     const obj: any = {};
     if (message.shopId !== 0) {
       obj.shopId = Math.round(message.shopId);
     }
     if (message.existing !== undefined) {
-      obj.existing = EntrustedShop.toJSON(message.existing);
+      obj.existing = Shop.toJSON(message.existing);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<OpenEntrustedShopReply>, I>>(base?: I): OpenEntrustedShopReply {
-    return OpenEntrustedShopReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<OpenShopReply>, I>>(base?: I): OpenShopReply {
+    return OpenShopReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<OpenEntrustedShopReply>, I>>(object: I): OpenEntrustedShopReply {
-    const message = createBaseOpenEntrustedShopReply();
+  fromPartial<I extends Exact<DeepPartial<OpenShopReply>, I>>(object: I): OpenShopReply {
+    const message = createBaseOpenShopReply();
     message.shopId = object.shopId ?? 0;
     message.existing = (object.existing !== undefined && object.existing !== null)
-      ? EntrustedShop.fromPartial(object.existing)
+      ? Shop.fromPartial(object.existing)
       : undefined;
     return message;
   },
 };
 
-function createBaseSaveEntrustedShopRequest(): SaveEntrustedShopRequest {
+function createBaseSaveShopRequest(): SaveShopRequest {
   return { shop: undefined, characters: [], close: false };
 }
 
-export const SaveEntrustedShopRequest: MessageFns<SaveEntrustedShopRequest> = {
-  encode(message: SaveEntrustedShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SaveShopRequest: MessageFns<SaveShopRequest> = {
+  encode(message: SaveShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.shop !== undefined) {
-      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
+      Shop.encode(message.shop, writer.uint32(10).fork()).join();
     }
     for (const v of message.characters) {
       CharacterSaveEntry.encode(v!, writer.uint32(18).fork()).join();
@@ -15173,10 +15258,10 @@ export const SaveEntrustedShopRequest: MessageFns<SaveEntrustedShopRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SaveEntrustedShopRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): SaveShopRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSaveEntrustedShopRequest();
+    const message = createBaseSaveShopRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15185,7 +15270,7 @@ export const SaveEntrustedShopRequest: MessageFns<SaveEntrustedShopRequest> = {
             break;
           }
 
-          message.shop = EntrustedShop.decode(reader, reader.uint32());
+          message.shop = Shop.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -15213,9 +15298,9 @@ export const SaveEntrustedShopRequest: MessageFns<SaveEntrustedShopRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SaveEntrustedShopRequest {
+  fromJSON(object: any): SaveShopRequest {
     return {
-      shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined,
+      shop: isSet(object.shop) ? Shop.fromJSON(object.shop) : undefined,
       characters: globalThis.Array.isArray(object?.characters)
         ? object.characters.map((e: any) => CharacterSaveEntry.fromJSON(e))
         : [],
@@ -15223,10 +15308,10 @@ export const SaveEntrustedShopRequest: MessageFns<SaveEntrustedShopRequest> = {
     };
   },
 
-  toJSON(message: SaveEntrustedShopRequest): unknown {
+  toJSON(message: SaveShopRequest): unknown {
     const obj: any = {};
     if (message.shop !== undefined) {
-      obj.shop = EntrustedShop.toJSON(message.shop);
+      obj.shop = Shop.toJSON(message.shop);
     }
     if (message.characters?.length) {
       obj.characters = message.characters.map((e) => CharacterSaveEntry.toJSON(e));
@@ -15237,33 +15322,31 @@ export const SaveEntrustedShopRequest: MessageFns<SaveEntrustedShopRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SaveEntrustedShopRequest>, I>>(base?: I): SaveEntrustedShopRequest {
-    return SaveEntrustedShopRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SaveShopRequest>, I>>(base?: I): SaveShopRequest {
+    return SaveShopRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SaveEntrustedShopRequest>, I>>(object: I): SaveEntrustedShopRequest {
-    const message = createBaseSaveEntrustedShopRequest();
-    message.shop = (object.shop !== undefined && object.shop !== null)
-      ? EntrustedShop.fromPartial(object.shop)
-      : undefined;
+  fromPartial<I extends Exact<DeepPartial<SaveShopRequest>, I>>(object: I): SaveShopRequest {
+    const message = createBaseSaveShopRequest();
+    message.shop = (object.shop !== undefined && object.shop !== null) ? Shop.fromPartial(object.shop) : undefined;
     message.characters = object.characters?.map((e) => CharacterSaveEntry.fromPartial(e)) || [];
     message.close = object.close ?? false;
     return message;
   },
 };
 
-function createBaseSaveEntrustedShopReply(): SaveEntrustedShopReply {
+function createBaseSaveShopReply(): SaveShopReply {
   return {};
 }
 
-export const SaveEntrustedShopReply: MessageFns<SaveEntrustedShopReply> = {
-  encode(_: SaveEntrustedShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SaveShopReply: MessageFns<SaveShopReply> = {
+  encode(_: SaveShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SaveEntrustedShopReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): SaveShopReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSaveEntrustedShopReply();
+    const message = createBaseSaveShopReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15276,20 +15359,20 @@ export const SaveEntrustedShopReply: MessageFns<SaveEntrustedShopReply> = {
     return message;
   },
 
-  fromJSON(_: any): SaveEntrustedShopReply {
+  fromJSON(_: any): SaveShopReply {
     return {};
   },
 
-  toJSON(_: SaveEntrustedShopReply): unknown {
+  toJSON(_: SaveShopReply): unknown {
     const obj: any = {};
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SaveEntrustedShopReply>, I>>(base?: I): SaveEntrustedShopReply {
-    return SaveEntrustedShopReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SaveShopReply>, I>>(base?: I): SaveShopReply {
+    return SaveShopReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SaveEntrustedShopReply>, I>>(_: I): SaveEntrustedShopReply {
-    const message = createBaseSaveEntrustedShopReply();
+  fromPartial<I extends Exact<DeepPartial<SaveShopReply>, I>>(_: I): SaveShopReply {
+    const message = createBaseSaveShopReply();
     return message;
   },
 };
@@ -15399,13 +15482,13 @@ export const ClaimStoreBankRequest: MessageFns<ClaimStoreBankRequest> = {
 };
 
 function createBaseClaimStoreBankReply(): ClaimStoreBankReply {
-  return { shop: undefined };
+  return { shops: [] };
 }
 
 export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
   encode(message: ClaimStoreBankReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.shop !== undefined) {
-      EntrustedShop.encode(message.shop, writer.uint32(10).fork()).join();
+    for (const v of message.shops) {
+      Shop.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -15422,7 +15505,7 @@ export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
             break;
           }
 
-          message.shop = EntrustedShop.decode(reader, reader.uint32());
+          message.shops.push(Shop.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -15435,13 +15518,13 @@ export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
   },
 
   fromJSON(object: any): ClaimStoreBankReply {
-    return { shop: isSet(object.shop) ? EntrustedShop.fromJSON(object.shop) : undefined };
+    return { shops: globalThis.Array.isArray(object?.shops) ? object.shops.map((e: any) => Shop.fromJSON(e)) : [] };
   },
 
   toJSON(message: ClaimStoreBankReply): unknown {
     const obj: any = {};
-    if (message.shop !== undefined) {
-      obj.shop = EntrustedShop.toJSON(message.shop);
+    if (message.shops?.length) {
+      obj.shops = message.shops.map((e) => Shop.toJSON(e));
     }
     return obj;
   },
@@ -15451,19 +15534,17 @@ export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
   },
   fromPartial<I extends Exact<DeepPartial<ClaimStoreBankReply>, I>>(object: I): ClaimStoreBankReply {
     const message = createBaseClaimStoreBankReply();
-    message.shop = (object.shop !== undefined && object.shop !== null)
-      ? EntrustedShop.fromPartial(object.shop)
-      : undefined;
+    message.shops = object.shops?.map((e) => Shop.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseCloseChannelEntrustedShopsRequest(): CloseChannelEntrustedShopsRequest {
+function createBaseCloseChannelShopsRequest(): CloseChannelShopsRequest {
   return { worldId: 0, channelId: 0 };
 }
 
-export const CloseChannelEntrustedShopsRequest: MessageFns<CloseChannelEntrustedShopsRequest> = {
-  encode(message: CloseChannelEntrustedShopsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const CloseChannelShopsRequest: MessageFns<CloseChannelShopsRequest> = {
+  encode(message: CloseChannelShopsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.worldId !== 0) {
       writer.uint32(8).uint32(message.worldId);
     }
@@ -15473,10 +15554,10 @@ export const CloseChannelEntrustedShopsRequest: MessageFns<CloseChannelEntrusted
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelEntrustedShopsRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelShopsRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCloseChannelEntrustedShopsRequest();
+    const message = createBaseCloseChannelShopsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15505,7 +15586,7 @@ export const CloseChannelEntrustedShopsRequest: MessageFns<CloseChannelEntrusted
     return message;
   },
 
-  fromJSON(object: any): CloseChannelEntrustedShopsRequest {
+  fromJSON(object: any): CloseChannelShopsRequest {
     return {
       worldId: isSet(object.worldId)
         ? globalThis.Number(object.worldId)
@@ -15520,7 +15601,7 @@ export const CloseChannelEntrustedShopsRequest: MessageFns<CloseChannelEntrusted
     };
   },
 
-  toJSON(message: CloseChannelEntrustedShopsRequest): unknown {
+  toJSON(message: CloseChannelShopsRequest): unknown {
     const obj: any = {};
     if (message.worldId !== 0) {
       obj.worldId = Math.round(message.worldId);
@@ -15531,37 +15612,33 @@ export const CloseChannelEntrustedShopsRequest: MessageFns<CloseChannelEntrusted
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CloseChannelEntrustedShopsRequest>, I>>(
-    base?: I,
-  ): CloseChannelEntrustedShopsRequest {
-    return CloseChannelEntrustedShopsRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<CloseChannelShopsRequest>, I>>(base?: I): CloseChannelShopsRequest {
+    return CloseChannelShopsRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CloseChannelEntrustedShopsRequest>, I>>(
-    object: I,
-  ): CloseChannelEntrustedShopsRequest {
-    const message = createBaseCloseChannelEntrustedShopsRequest();
+  fromPartial<I extends Exact<DeepPartial<CloseChannelShopsRequest>, I>>(object: I): CloseChannelShopsRequest {
+    const message = createBaseCloseChannelShopsRequest();
     message.worldId = object.worldId ?? 0;
     message.channelId = object.channelId ?? 0;
     return message;
   },
 };
 
-function createBaseCloseChannelEntrustedShopsReply(): CloseChannelEntrustedShopsReply {
+function createBaseCloseChannelShopsReply(): CloseChannelShopsReply {
   return { count: 0 };
 }
 
-export const CloseChannelEntrustedShopsReply: MessageFns<CloseChannelEntrustedShopsReply> = {
-  encode(message: CloseChannelEntrustedShopsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const CloseChannelShopsReply: MessageFns<CloseChannelShopsReply> = {
+  encode(message: CloseChannelShopsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.count !== 0) {
       writer.uint32(8).uint32(message.count);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelEntrustedShopsReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): CloseChannelShopsReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCloseChannelEntrustedShopsReply();
+    const message = createBaseCloseChannelShopsReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -15582,11 +15659,11 @@ export const CloseChannelEntrustedShopsReply: MessageFns<CloseChannelEntrustedSh
     return message;
   },
 
-  fromJSON(object: any): CloseChannelEntrustedShopsReply {
+  fromJSON(object: any): CloseChannelShopsReply {
     return { count: isSet(object.count) ? globalThis.Number(object.count) : 0 };
   },
 
-  toJSON(message: CloseChannelEntrustedShopsReply): unknown {
+  toJSON(message: CloseChannelShopsReply): unknown {
     const obj: any = {};
     if (message.count !== 0) {
       obj.count = Math.round(message.count);
@@ -15594,14 +15671,534 @@ export const CloseChannelEntrustedShopsReply: MessageFns<CloseChannelEntrustedSh
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CloseChannelEntrustedShopsReply>, I>>(base?: I): CloseChannelEntrustedShopsReply {
-    return CloseChannelEntrustedShopsReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<CloseChannelShopsReply>, I>>(base?: I): CloseChannelShopsReply {
+    return CloseChannelShopsReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CloseChannelEntrustedShopsReply>, I>>(
-    object: I,
-  ): CloseChannelEntrustedShopsReply {
-    const message = createBaseCloseChannelEntrustedShopsReply();
+  fromPartial<I extends Exact<DeepPartial<CloseChannelShopsReply>, I>>(object: I): CloseChannelShopsReply {
+    const message = createBaseCloseChannelShopsReply();
     message.count = object.count ?? 0;
+    return message;
+  },
+};
+
+function createBaseSearchShopsRequest(): SearchShopsRequest {
+  return { worldId: 0, itemId: 0, highFirst: false };
+}
+
+export const SearchShopsRequest: MessageFns<SearchShopsRequest> = {
+  encode(message: SearchShopsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.itemId !== 0) {
+      writer.uint32(16).uint32(message.itemId);
+    }
+    if (message.highFirst !== false) {
+      writer.uint32(24).bool(message.highFirst);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SearchShopsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchShopsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.itemId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.highFirst = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchShopsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      itemId: isSet(object.itemId)
+        ? globalThis.Number(object.itemId)
+        : isSet(object.item_id)
+        ? globalThis.Number(object.item_id)
+        : 0,
+      highFirst: isSet(object.highFirst)
+        ? globalThis.Boolean(object.highFirst)
+        : isSet(object.high_first)
+        ? globalThis.Boolean(object.high_first)
+        : false,
+    };
+  },
+
+  toJSON(message: SearchShopsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.itemId !== 0) {
+      obj.itemId = Math.round(message.itemId);
+    }
+    if (message.highFirst !== false) {
+      obj.highFirst = message.highFirst;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SearchShopsRequest>, I>>(base?: I): SearchShopsRequest {
+    return SearchShopsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SearchShopsRequest>, I>>(object: I): SearchShopsRequest {
+    const message = createBaseSearchShopsRequest();
+    message.worldId = object.worldId ?? 0;
+    message.itemId = object.itemId ?? 0;
+    message.highFirst = object.highFirst ?? false;
+    return message;
+  },
+};
+
+function createBaseShopSearchEntry(): ShopSearchEntry {
+  return {
+    ownerName: "",
+    channelId: 0,
+    mapId: 0,
+    title: "",
+    perBundle: 0,
+    bundles: 0,
+    price: 0,
+    sn: 0,
+    item: undefined,
+  };
+}
+
+export const ShopSearchEntry: MessageFns<ShopSearchEntry> = {
+  encode(message: ShopSearchEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ownerName !== "") {
+      writer.uint32(10).string(message.ownerName);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(16).int32(message.channelId);
+    }
+    if (message.mapId !== 0) {
+      writer.uint32(24).uint32(message.mapId);
+    }
+    if (message.title !== "") {
+      writer.uint32(34).string(message.title);
+    }
+    if (message.perBundle !== 0) {
+      writer.uint32(40).uint32(message.perBundle);
+    }
+    if (message.bundles !== 0) {
+      writer.uint32(48).uint32(message.bundles);
+    }
+    if (message.price !== 0) {
+      writer.uint32(56).int32(message.price);
+    }
+    if (message.sn !== 0) {
+      writer.uint32(64).uint32(message.sn);
+    }
+    if (message.item !== undefined) {
+      Inventory.encode(message.item, writer.uint32(74).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ShopSearchEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseShopSearchEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.ownerName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.channelId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.mapId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.perBundle = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.bundles = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.price = reader.int32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.sn = reader.uint32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.item = Inventory.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ShopSearchEntry {
+    return {
+      ownerName: isSet(object.ownerName)
+        ? globalThis.String(object.ownerName)
+        : isSet(object.owner_name)
+        ? globalThis.String(object.owner_name)
+        : "",
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      mapId: isSet(object.mapId)
+        ? globalThis.Number(object.mapId)
+        : isSet(object.map_id)
+        ? globalThis.Number(object.map_id)
+        : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      perBundle: isSet(object.perBundle)
+        ? globalThis.Number(object.perBundle)
+        : isSet(object.per_bundle)
+        ? globalThis.Number(object.per_bundle)
+        : 0,
+      bundles: isSet(object.bundles) ? globalThis.Number(object.bundles) : 0,
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      sn: isSet(object.sn) ? globalThis.Number(object.sn) : 0,
+      item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: ShopSearchEntry): unknown {
+    const obj: any = {};
+    if (message.ownerName !== "") {
+      obj.ownerName = message.ownerName;
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.mapId !== 0) {
+      obj.mapId = Math.round(message.mapId);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.perBundle !== 0) {
+      obj.perBundle = Math.round(message.perBundle);
+    }
+    if (message.bundles !== 0) {
+      obj.bundles = Math.round(message.bundles);
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    if (message.sn !== 0) {
+      obj.sn = Math.round(message.sn);
+    }
+    if (message.item !== undefined) {
+      obj.item = Inventory.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ShopSearchEntry>, I>>(base?: I): ShopSearchEntry {
+    return ShopSearchEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ShopSearchEntry>, I>>(object: I): ShopSearchEntry {
+    const message = createBaseShopSearchEntry();
+    message.ownerName = object.ownerName ?? "";
+    message.channelId = object.channelId ?? 0;
+    message.mapId = object.mapId ?? 0;
+    message.title = object.title ?? "";
+    message.perBundle = object.perBundle ?? 0;
+    message.bundles = object.bundles ?? 0;
+    message.price = object.price ?? 0;
+    message.sn = object.sn ?? 0;
+    message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseSearchShopsReply(): SearchShopsReply {
+  return { entries: [] };
+}
+
+export const SearchShopsReply: MessageFns<SearchShopsReply> = {
+  encode(message: SearchShopsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.entries) {
+      ShopSearchEntry.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SearchShopsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchShopsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.entries.push(ShopSearchEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchShopsReply {
+    return {
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => ShopSearchEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SearchShopsReply): unknown {
+    const obj: any = {};
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => ShopSearchEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SearchShopsReply>, I>>(base?: I): SearchShopsReply {
+    return SearchShopsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SearchShopsReply>, I>>(object: I): SearchShopsReply {
+    const message = createBaseSearchShopsReply();
+    message.entries = object.entries?.map((e) => ShopSearchEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseFindPopularShopSearchesRequest(): FindPopularShopSearchesRequest {
+  return { worldId: 0 };
+}
+
+export const FindPopularShopSearchesRequest: MessageFns<FindPopularShopSearchesRequest> = {
+  encode(message: FindPopularShopSearchesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindPopularShopSearchesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindPopularShopSearchesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindPopularShopSearchesRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: FindPopularShopSearchesRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindPopularShopSearchesRequest>, I>>(base?: I): FindPopularShopSearchesRequest {
+    return FindPopularShopSearchesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindPopularShopSearchesRequest>, I>>(
+    object: I,
+  ): FindPopularShopSearchesRequest {
+    const message = createBaseFindPopularShopSearchesRequest();
+    message.worldId = object.worldId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindPopularShopSearchesReply(): FindPopularShopSearchesReply {
+  return { itemIds: [] };
+}
+
+export const FindPopularShopSearchesReply: MessageFns<FindPopularShopSearchesReply> = {
+  encode(message: FindPopularShopSearchesReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    writer.uint32(10).fork();
+    for (const v of message.itemIds) {
+      writer.uint32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindPopularShopSearchesReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindPopularShopSearchesReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag === 8) {
+            message.itemIds.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.itemIds.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindPopularShopSearchesReply {
+    return {
+      itemIds: globalThis.Array.isArray(object?.itemIds)
+        ? object.itemIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.item_ids)
+        ? object.item_ids.map((e: any) => globalThis.Number(e))
+        : [],
+    };
+  },
+
+  toJSON(message: FindPopularShopSearchesReply): unknown {
+    const obj: any = {};
+    if (message.itemIds?.length) {
+      obj.itemIds = message.itemIds.map((e) => Math.round(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindPopularShopSearchesReply>, I>>(base?: I): FindPopularShopSearchesReply {
+    return FindPopularShopSearchesReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindPopularShopSearchesReply>, I>>(object: I): FindPopularShopSearchesReply {
+    const message = createBaseFindPopularShopSearchesReply();
+    message.itemIds = object.itemIds?.map((e) => e) || [];
     return message;
   },
 };
@@ -32965,27 +33562,23 @@ export const InternalService = {
       Buffer.from(FindEntrustedShopReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): FindEntrustedShopReply => FindEntrustedShopReply.decode(value),
   },
-  openEntrustedShop: {
-    path: "/fm.internal.Internal/OpenEntrustedShop" as const,
+  openShop: {
+    path: "/fm.internal.Internal/OpenShop" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: OpenEntrustedShopRequest): Buffer =>
-      Buffer.from(OpenEntrustedShopRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): OpenEntrustedShopRequest => OpenEntrustedShopRequest.decode(value),
-    responseSerialize: (value: OpenEntrustedShopReply): Buffer =>
-      Buffer.from(OpenEntrustedShopReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): OpenEntrustedShopReply => OpenEntrustedShopReply.decode(value),
+    requestSerialize: (value: OpenShopRequest): Buffer => Buffer.from(OpenShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): OpenShopRequest => OpenShopRequest.decode(value),
+    responseSerialize: (value: OpenShopReply): Buffer => Buffer.from(OpenShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): OpenShopReply => OpenShopReply.decode(value),
   },
-  saveEntrustedShop: {
-    path: "/fm.internal.Internal/SaveEntrustedShop" as const,
+  saveShop: {
+    path: "/fm.internal.Internal/SaveShop" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: SaveEntrustedShopRequest): Buffer =>
-      Buffer.from(SaveEntrustedShopRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): SaveEntrustedShopRequest => SaveEntrustedShopRequest.decode(value),
-    responseSerialize: (value: SaveEntrustedShopReply): Buffer =>
-      Buffer.from(SaveEntrustedShopReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): SaveEntrustedShopReply => SaveEntrustedShopReply.decode(value),
+    requestSerialize: (value: SaveShopRequest): Buffer => Buffer.from(SaveShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SaveShopRequest => SaveShopRequest.decode(value),
+    responseSerialize: (value: SaveShopReply): Buffer => Buffer.from(SaveShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SaveShopReply => SaveShopReply.decode(value),
   },
   claimStoreBank: {
     path: "/fm.internal.Internal/ClaimStoreBank" as const,
@@ -32997,18 +33590,36 @@ export const InternalService = {
     responseSerialize: (value: ClaimStoreBankReply): Buffer => Buffer.from(ClaimStoreBankReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): ClaimStoreBankReply => ClaimStoreBankReply.decode(value),
   },
-  closeChannelEntrustedShops: {
-    path: "/fm.internal.Internal/CloseChannelEntrustedShops" as const,
+  closeChannelShops: {
+    path: "/fm.internal.Internal/CloseChannelShops" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: CloseChannelEntrustedShopsRequest): Buffer =>
-      Buffer.from(CloseChannelEntrustedShopsRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): CloseChannelEntrustedShopsRequest =>
-      CloseChannelEntrustedShopsRequest.decode(value),
-    responseSerialize: (value: CloseChannelEntrustedShopsReply): Buffer =>
-      Buffer.from(CloseChannelEntrustedShopsReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): CloseChannelEntrustedShopsReply =>
-      CloseChannelEntrustedShopsReply.decode(value),
+    requestSerialize: (value: CloseChannelShopsRequest): Buffer =>
+      Buffer.from(CloseChannelShopsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CloseChannelShopsRequest => CloseChannelShopsRequest.decode(value),
+    responseSerialize: (value: CloseChannelShopsReply): Buffer =>
+      Buffer.from(CloseChannelShopsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CloseChannelShopsReply => CloseChannelShopsReply.decode(value),
+  },
+  searchShops: {
+    path: "/fm.internal.Internal/SearchShops" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SearchShopsRequest): Buffer => Buffer.from(SearchShopsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SearchShopsRequest => SearchShopsRequest.decode(value),
+    responseSerialize: (value: SearchShopsReply): Buffer => Buffer.from(SearchShopsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SearchShopsReply => SearchShopsReply.decode(value),
+  },
+  findPopularShopSearches: {
+    path: "/fm.internal.Internal/FindPopularShopSearches" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FindPopularShopSearchesRequest): Buffer =>
+      Buffer.from(FindPopularShopSearchesRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FindPopularShopSearchesRequest => FindPopularShopSearchesRequest.decode(value),
+    responseSerialize: (value: FindPopularShopSearchesReply): Buffer =>
+      Buffer.from(FindPopularShopSearchesReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FindPopularShopSearchesReply => FindPopularShopSearchesReply.decode(value),
   },
   loginAccount: {
     path: "/fm.internal.Internal/LoginAccount" as const,
@@ -33897,10 +34508,12 @@ export interface InternalServer extends UntypedServiceImplementation {
   deleteParcel: handleUnaryCall<DeleteParcelRequest, DeleteParcelReply>;
   checkParcelArrivals: handleUnaryCall<CheckParcelArrivalsRequest, CheckParcelArrivalsReply>;
   findEntrustedShop: handleUnaryCall<FindEntrustedShopRequest, FindEntrustedShopReply>;
-  openEntrustedShop: handleUnaryCall<OpenEntrustedShopRequest, OpenEntrustedShopReply>;
-  saveEntrustedShop: handleUnaryCall<SaveEntrustedShopRequest, SaveEntrustedShopReply>;
+  openShop: handleUnaryCall<OpenShopRequest, OpenShopReply>;
+  saveShop: handleUnaryCall<SaveShopRequest, SaveShopReply>;
   claimStoreBank: handleUnaryCall<ClaimStoreBankRequest, ClaimStoreBankReply>;
-  closeChannelEntrustedShops: handleUnaryCall<CloseChannelEntrustedShopsRequest, CloseChannelEntrustedShopsReply>;
+  closeChannelShops: handleUnaryCall<CloseChannelShopsRequest, CloseChannelShopsReply>;
+  searchShops: handleUnaryCall<SearchShopsRequest, SearchShopsReply>;
+  findPopularShopSearches: handleUnaryCall<FindPopularShopSearchesRequest, FindPopularShopSearchesReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
   getCharacterList: handleUnaryCall<GetCharacterListRequest, GetCharacterListReply>;
   checkCharacterName: handleUnaryCall<CheckCharacterNameRequest, CheckCharacterNameReply>;
@@ -34213,35 +34826,35 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: FindEntrustedShopReply) => void,
   ): ClientUnaryCall;
-  openEntrustedShop(
-    request: OpenEntrustedShopRequest,
-    callback: (error: ServiceError | null, response: OpenEntrustedShopReply) => void,
+  openShop(
+    request: OpenShopRequest,
+    callback: (error: ServiceError | null, response: OpenShopReply) => void,
   ): ClientUnaryCall;
-  openEntrustedShop(
-    request: OpenEntrustedShopRequest,
+  openShop(
+    request: OpenShopRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: OpenEntrustedShopReply) => void,
+    callback: (error: ServiceError | null, response: OpenShopReply) => void,
   ): ClientUnaryCall;
-  openEntrustedShop(
-    request: OpenEntrustedShopRequest,
-    metadata: Metadata,
-    options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: OpenEntrustedShopReply) => void,
-  ): ClientUnaryCall;
-  saveEntrustedShop(
-    request: SaveEntrustedShopRequest,
-    callback: (error: ServiceError | null, response: SaveEntrustedShopReply) => void,
-  ): ClientUnaryCall;
-  saveEntrustedShop(
-    request: SaveEntrustedShopRequest,
-    metadata: Metadata,
-    callback: (error: ServiceError | null, response: SaveEntrustedShopReply) => void,
-  ): ClientUnaryCall;
-  saveEntrustedShop(
-    request: SaveEntrustedShopRequest,
+  openShop(
+    request: OpenShopRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: SaveEntrustedShopReply) => void,
+    callback: (error: ServiceError | null, response: OpenShopReply) => void,
+  ): ClientUnaryCall;
+  saveShop(
+    request: SaveShopRequest,
+    callback: (error: ServiceError | null, response: SaveShopReply) => void,
+  ): ClientUnaryCall;
+  saveShop(
+    request: SaveShopRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SaveShopReply) => void,
+  ): ClientUnaryCall;
+  saveShop(
+    request: SaveShopRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SaveShopReply) => void,
   ): ClientUnaryCall;
   claimStoreBank(
     request: ClaimStoreBankRequest,
@@ -34258,20 +34871,50 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
   ): ClientUnaryCall;
-  closeChannelEntrustedShops(
-    request: CloseChannelEntrustedShopsRequest,
-    callback: (error: ServiceError | null, response: CloseChannelEntrustedShopsReply) => void,
+  closeChannelShops(
+    request: CloseChannelShopsRequest,
+    callback: (error: ServiceError | null, response: CloseChannelShopsReply) => void,
   ): ClientUnaryCall;
-  closeChannelEntrustedShops(
-    request: CloseChannelEntrustedShopsRequest,
+  closeChannelShops(
+    request: CloseChannelShopsRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: CloseChannelEntrustedShopsReply) => void,
+    callback: (error: ServiceError | null, response: CloseChannelShopsReply) => void,
   ): ClientUnaryCall;
-  closeChannelEntrustedShops(
-    request: CloseChannelEntrustedShopsRequest,
+  closeChannelShops(
+    request: CloseChannelShopsRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: CloseChannelEntrustedShopsReply) => void,
+    callback: (error: ServiceError | null, response: CloseChannelShopsReply) => void,
+  ): ClientUnaryCall;
+  searchShops(
+    request: SearchShopsRequest,
+    callback: (error: ServiceError | null, response: SearchShopsReply) => void,
+  ): ClientUnaryCall;
+  searchShops(
+    request: SearchShopsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SearchShopsReply) => void,
+  ): ClientUnaryCall;
+  searchShops(
+    request: SearchShopsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SearchShopsReply) => void,
+  ): ClientUnaryCall;
+  findPopularShopSearches(
+    request: FindPopularShopSearchesRequest,
+    callback: (error: ServiceError | null, response: FindPopularShopSearchesReply) => void,
+  ): ClientUnaryCall;
+  findPopularShopSearches(
+    request: FindPopularShopSearchesRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FindPopularShopSearchesReply) => void,
+  ): ClientUnaryCall;
+  findPopularShopSearches(
+    request: FindPopularShopSearchesRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FindPopularShopSearchesReply) => void,
   ): ClientUnaryCall;
   loginAccount(
     request: LoginAccountRequest,

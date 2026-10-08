@@ -28,6 +28,8 @@ type MiniRoom struct {
 	PerBundle     uint16
 	Price         int32
 	Index         uint16
+	Name          string
+	Names         []string
 }
 
 func (*MiniRoom) Opcode() byte { return 0x65 }
@@ -48,17 +50,25 @@ func (p *MiniRoom) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteStr16(p.Message)
 	case constant.MiniRoomOpen:
 		writer.WriteU8(1)
-	case constant.MiniRoomAddItem:
+	case constant.MiniRoomAddItem, constant.MiniRoomPersonalAddItem:
 		writer.WriteU8(p.InventoryType)
 		writer.Write16(p.Slot)
 		writer.WriteU16(p.Bundles)
 		writer.WriteU16(p.PerBundle)
 		writer.Write32(p.Price)
-	case constant.MiniRoomBuy:
+	case constant.MiniRoomBuy, constant.MiniRoomPersonalBuy:
 		writer.WriteU8(uint8(p.Index))
 		writer.WriteU16(p.Bundles)
-	case constant.MiniRoomRemoveItem:
+	case constant.MiniRoomRemoveItem, constant.MiniRoomPersonalRemoveItem:
 		writer.WriteU16(p.Index)
+	case constant.MiniRoomKick, constant.MiniRoomKickTimeout:
+		writer.WriteU8(uint8(p.Slot))
+		writer.WriteStr16(p.Name)
+	case constant.MiniRoomBlacklist:
+		writer.WriteU16(uint16(len(p.Names)))
+		for _, name := range p.Names {
+			writer.WriteStr16(name)
+		}
 	}
 	return nil
 }
@@ -76,18 +86,42 @@ func (p *MiniRoom) Deserialize(reader *stream.StreamReader) {
 		p.SN = reader.ReadU32()
 	case constant.MiniRoomChat:
 		p.Message = reader.ReadStr16()
-	case constant.MiniRoomAddItem:
+	case constant.MiniRoomAddItem, constant.MiniRoomPersonalAddItem:
 		p.InventoryType = reader.ReadU8()
 		p.Slot = reader.Read16()
 		p.Bundles = reader.ReadU16()
 		p.PerBundle = reader.ReadU16()
 		p.Price = reader.Read32()
-	case constant.MiniRoomBuy:
+	case constant.MiniRoomBuy, constant.MiniRoomPersonalBuy:
 		p.Index = uint16(reader.ReadU8())
 		p.Bundles = reader.ReadU16()
-	case constant.MiniRoomRemoveItem:
+	case constant.MiniRoomRemoveItem, constant.MiniRoomPersonalRemoveItem:
 		p.Index = reader.ReadU16()
+	case constant.MiniRoomKick, constant.MiniRoomKickTimeout:
+		p.Slot = int16(reader.ReadU8())
+		p.Name = reader.ReadStr16()
+	case constant.MiniRoomBlacklist:
+		count := int(reader.ReadU16())
+		p.Names = make([]string, 0, count)
+		for i := 0; i < count; i++ {
+			p.Names = append(p.Names, reader.ReadStr16())
+		}
 	}
+}
+
+type RemoteEntrustedShop struct {
+	Slot int16
+}
+
+func (*RemoteEntrustedShop) Opcode() byte { return 0x2A }
+
+func (p *RemoteEntrustedShop) Serialize(writer *stream.StreamWriter) error {
+	writer.Write16(p.Slot)
+	return nil
+}
+
+func (p *RemoteEntrustedShop) Deserialize(reader *stream.StreamReader) {
+	p.Slot = reader.Read16()
 }
 
 type StoreBank struct {

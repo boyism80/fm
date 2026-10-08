@@ -19,7 +19,7 @@ import { KeyLayoutRepository } from "./repos/key-layout-repository";
 import { StorageRepository } from "./repos/storage-repository";
 import { StorageItemRepository } from "./repos/storage-item-repository";
 import { ParcelRepository } from "./repos/parcel-repository";
-import { EntrustedShopRepository } from "./repos/entrusted-shop-repository";
+import { ShopRepository } from "./repos/shop-repository";
 import { CashShopRepository } from "./repos/cash-shop-repository";
 import { MarriageRepository } from "./repos/marriage-repository";
 import { PartyRepository } from "./repos/party-repository";
@@ -47,7 +47,7 @@ import { DistributedLockService } from "./services/distributed-lock-service";
 import { ServerTimeService } from "./services/server-time-service";
 import { OperationLogService } from "./services/operation-log-service";
 import { ParcelService } from "./services/parcel-service";
-import { EntrustedShopService } from "./services/entrusted-shop-service";
+import { ShopSearchRanking, ShopService } from "./services/shop-service";
 import { CashShopService } from "./services/cash-shop-service";
 import { MarriageService } from "./services/marriage-service";
 
@@ -79,7 +79,7 @@ export function createAppContainer() {
         storageRepository: awilix.asClass(StorageRepository).scoped(),
         storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),
         parcelRepository: awilix.asClass(ParcelRepository).scoped(),
-        entrustedShopRepository: awilix.asClass(EntrustedShopRepository).scoped(),
+        shopRepository: awilix.asClass(ShopRepository).scoped(),
         cashShopRepository: awilix.asClass(CashShopRepository).scoped(),
         marriageRepository: awilix.asClass(MarriageRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),
@@ -105,7 +105,8 @@ export function createAppContainer() {
         serverTimeService: awilix.asClass(ServerTimeService).singleton(),
         operationLogService: awilix.asClass(OperationLogService).transient(),
         parcelService: awilix.asClass(ParcelService).transient(),
-        entrustedShopService: awilix.asClass(EntrustedShopService).transient(),
+        shopService: awilix.asClass(ShopService).transient(),
+        shopSearchRanking: awilix.asClass(ShopSearchRanking).singleton(),
         cashShopService: awilix.asClass(CashShopService).transient(),
         marriageService: awilix.asClass(MarriageService).transient(),
     });

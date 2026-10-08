@@ -11,6 +11,7 @@ const (
 	ObjectTypeMist          ObjectType = ObjectTypeObject | 0x0080
 	ObjectTypeDoor          ObjectType = ObjectTypeObject | 0x0100
 	ObjectTypeEntrustedShop ObjectType = ObjectTypeObject | 0x0400
+	ObjectTypePersonalShop  ObjectType = ObjectTypeObject | 0x0800
 	ObjectTypeCharacter     ObjectType = ObjectTypeLife | 0x1000
 	ObjectTypeMob           ObjectType = ObjectTypeLife | 0x2000
 	ObjectTypeSummon        ObjectType = ObjectTypeLife | 0x4000
@@ -33,5 +34,6 @@ func AllObjectTypeConstants() map[string]ObjectType {
 		"Mist":          ObjectTypeMist,
 		"Door":          ObjectTypeDoor,
 		"EntrustedShop": ObjectTypeEntrustedShop,
+		"PersonalShop":  ObjectTypePersonalShop,
 	}
 }

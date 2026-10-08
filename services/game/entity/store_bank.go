@@ -26,11 +26,12 @@ var (
 )
 
 type StoreBank struct {
-	owner   *Character
-	shop    *internal.EntrustedShop
-	Meso    int32
-	Items   []*EntrustedShopItem
-	pending bool
+	owner    *Character
+	shops    []*internal.Shop
+	closedAt time.Time
+	Meso     int32
+	Items    []*ShopItem
+	pending  bool
 }
 
 func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
@@ -41,15 +42,21 @@ func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
 	sb.pending = true
 	sb.owner.Listener.FindEntrustedShopAsync(actx, sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
 		sb.pending = false
+		var shops []*internal.Shop
+		for _, closed := range v.GetStoreBank() {
+			if closed.GetCharacterId() == sb.owner.GetID() {
+				shops = append(shops, closed)
+			}
+		}
 		shop := v.GetShop()
 		switch {
-		case shop == nil || shop.GetCharacterId() != sb.owner.GetID():
-			sb.owner.Listener.OnStoreBankLocation(sb.owner, npcID, StoreBankNothingMapID, StoreBankNothingChannel)
-		case shop.GetClosedAtUnixMs() == 0:
+		case len(shops) > 0:
+			sb.load(shops)
+			sb.owner.Listener.OnOpenStoreBank(sb.owner, npcID)
+		case shop != nil && shop.GetCharacterId() == sb.owner.GetID():
 			sb.owner.Listener.OnStoreBankLocation(sb.owner, npcID, shop.GetMapId(), uint8(shop.GetChannelId()))
 		default:
-			sb.load(shop)
-			sb.owner.Listener.OnOpenStoreBank(sb.owner, npcID)
+			sb.owner.Listener.OnStoreBankLocation(sb.owner, npcID, StoreBankNothingMapID, StoreBankNothingChannel)
 		}
 		return nil
 	}).OnError(func(err error) {
@@ -58,32 +65,39 @@ func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
 	})
 }
 
-func (sb *StoreBank) load(shop *internal.EntrustedShop) {
-	sb.shop = shop
-	sb.Meso = shop.GetMeso()
+func (sb *StoreBank) load(shops []*internal.Shop) {
+	sb.shops = shops
+	sb.closedAt = time.UnixMilli(shops[0].GetClosedAtUnixMs())
+	sb.Meso = 0
 	sb.Items = nil
-	for _, pb := range shop.GetItems() {
-		item, err := NewItemFromInternalProto(pb.GetItem(), sb.owner.GameWorld)
-		if err != nil || pb.GetBundles() == 0 {
-			continue
+	for _, shop := range shops {
+		if closedAt := time.UnixMilli(shop.GetClosedAtUnixMs()); closedAt.Before(sb.closedAt) {
+			sb.closedAt = closedAt
 		}
-		sb.Items = append(sb.Items, &EntrustedShopItem{
-			Item:      item,
-			Bundles:   uint16(pb.GetBundles()),
-			PerBundle: uint16(pb.GetPerBundle()),
-			Price:     pb.GetPrice(),
-		})
+		sb.Meso = int32(min(int64(sb.Meso)+int64(shop.GetMeso()), math.MaxInt32))
+		for _, pb := range shop.GetItems() {
+			item, err := NewItemFromInternalProto(pb.GetItem(), sb.owner.GameWorld)
+			if err != nil || pb.GetBundles() == 0 {
+				continue
+			}
+			sb.Items = append(sb.Items, &ShopItem{
+				Item:      item,
+				Bundles:   uint16(pb.GetBundles()),
+				PerBundle: uint16(pb.GetPerBundle()),
+				Price:     pb.GetPrice(),
+			})
+		}
 	}
 }
 
 func (sb *StoreBank) Close() {
-	sb.shop = nil
+	sb.shops = nil
 	sb.Items = nil
 	sb.Meso = 0
 }
 
 func (sb *StoreBank) fee() (uint32, int32) {
-	days := int64(clock.Now().Sub(time.UnixMilli(sb.shop.GetClosedAtUnixMs())) / StoreBankFeeGrace)
+	days := int64(clock.Now().Sub(sb.closedAt) / StoreBankFeeGrace)
 	if days <= 0 {
 		return 0, 0
 	}
@@ -96,7 +110,7 @@ func (sb *StoreBank) fee() (uint32, int32) {
 }
 
 func (sb *StoreBank) Withdraw() error {
-	if sb.shop == nil {
+	if sb.shops == nil {
 		return ErrStoreBankClosed
 	}
 
@@ -127,7 +141,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 }
 
 func (sb *StoreBank) Confirm(actx actor.Context) error {
-	if sb.shop == nil {
+	if sb.shops == nil {
 		return ErrStoreBankClosed
 	}
 	if sb.pending {
@@ -142,8 +156,8 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 	sb.pending = true
 	sb.owner.Listener.ClaimStoreBankAsync(actx, sb.owner).Do(func(v *internal.ClaimStoreBankReply) error {
 		sb.pending = false
-		claimed := v.GetShop()
-		if claimed == nil {
+		claimed := v.GetShops()
+		if len(claimed) == 0 {
 			sb.Close()
 			sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultInventoryFull)
 			return nil
@@ -152,9 +166,11 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 		sb.load(claimed)
 		_, fee := sb.fee()
 		if result := sb.check(fee); result != pconst.StoreBankResultClaimed {
-			sb.owner.Listener.OpenEntrustedShopAsync(actx, sb.owner, claimed).OnError(func(err error) {
-				log.Printf("StoreBank.Confirm restore character=%d shop=%d: %v", sb.owner.GetID(), claimed.GetShopId(), err)
-			})
+			for _, shop := range claimed {
+				sb.owner.Listener.OpenShopAsync(actx, sb.owner, shop).OnError(func(err error) {
+					log.Printf("StoreBank.Confirm restore character=%d shop=%d: %v", sb.owner.GetID(), shop.GetShopId(), err)
+				})
+			}
 			sb.Close()
 			sb.owner.Listener.OnStoreBankResult(sb.owner, result)
 			return nil

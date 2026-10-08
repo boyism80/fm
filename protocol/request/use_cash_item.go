@@ -3,12 +3,14 @@ package request
 import "github.com/boyism80/fm/stream"
 
 type UseCashItem struct {
-	Slot   uint16
-	ItemID uint32
-	Text   string
-	Ear    bool
-	PetSN  uint64
-	Target TeleportStoneTarget
+	Slot      uint16
+	ItemID    uint32
+	Text      string
+	Ear       bool
+	PetSN     uint64
+	Target    TeleportStoneTarget
+	SearchID  uint32
+	HighFirst bool
 }
 
 func (*UseCashItem) Opcode() byte { return 0x3E }
@@ -26,6 +28,11 @@ func (p *UseCashItem) Serialize(writer *stream.StreamWriter) error {
 		return nil
 	case 504:
 		p.Target.Serialize(writer)
+		return nil
+	case 523:
+		writer.WriteU32(p.SearchID)
+		writer.WriteBoolean(p.HighFirst)
+		writer.WriteU32(0)
 		return nil
 	case 507:
 	default:
@@ -54,6 +61,10 @@ func (p *UseCashItem) Deserialize(reader *stream.StreamReader) {
 		return
 	case 504:
 		p.Target.Deserialize(reader)
+		return
+	case 523:
+		p.SearchID = reader.ReadU32()
+		p.HighFirst = reader.ReadU8() != 0
 		return
 	case 507:
 	default:

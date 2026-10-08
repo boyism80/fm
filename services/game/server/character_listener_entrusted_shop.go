@@ -28,13 +28,13 @@ func (l *CharacterListenerImpl) FindEntrustedShopAsync(ctx actor.Context, ch *en
 	)
 }
 
-func (l *CharacterListenerImpl) OpenEntrustedShopAsync(ctx actor.Context, ch *entity.Character, shop *internal.EntrustedShop) *async.Promise[*internal.OpenEntrustedShopReply] {
+func (l *CharacterListenerImpl) OpenShopAsync(ctx actor.Context, ch *entity.Character, shop *internal.Shop) *async.Promise[*internal.OpenShopReply] {
 	shop.WorldId = l.gs.config.WorldId
 	shop.ChannelId = int32(l.gs.config.ChannelId)
-	req := &internal.OpenEntrustedShopRequest{Shop: shop}
+	req := &internal.OpenShopRequest{Shop: shop}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.OpenEntrustedShopReply, error) {
-			return l.gs.internalClient.OpenEntrustedShop(c, req)
+		func(c context.Context) (*internal.OpenShopReply, error) {
+			return l.gs.internalClient.OpenShop(c, req)
 		},
 		nil,
 	)
@@ -62,8 +62,15 @@ func (l *CharacterListenerImpl) OnEntrustedShopCheck(ch *entity.Character, resul
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) miniRoomItems(items []*entity.EntrustedShopItem) []response.MiniRoomItem {
-	out := make([]response.MiniRoomItem, 0, len(items))
+func (l *CharacterListenerImpl) OnEntrustedShopRemoteVisit(ch *entity.Character, sn uint32) {
+	ch.Send(&response.EntrustedShopCheckResult{
+		Result: pconst.EntrustedShopRemoteVisit,
+		SN:     sn,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) miniRoomItems(items []*entity.ShopItem) response.MiniRoomItemList {
+	out := make(response.MiniRoomItemList, 0, len(items))
 	for _, listed := range items {
 		out = append(out, response.MiniRoomItem{
 			Bundles:   listed.Bundles,

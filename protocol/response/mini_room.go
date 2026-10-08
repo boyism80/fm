@@ -25,9 +25,34 @@ type MiniRoomVisitor struct {
 	Character *dto.Character
 }
 
+type MiniRoomItemList []MiniRoomItem
+
+func (l MiniRoomItemList) serialize(writer *stream.StreamWriter) {
+	writer.WriteU8(uint8(len(l)))
+	for _, item := range l {
+		writer.WriteU16(item.Bundles)
+		writer.WriteU16(item.PerBundle)
+		writer.Write32(item.Price)
+		item.Item.Serialize(writer, dto.ItemSerializeOption{SlotMode: dto.SlotEncodeOmit})
+	}
+}
+
+func (l *MiniRoomItemList) deserialize(reader *stream.StreamReader) {
+	count := int(reader.ReadU8())
+	*l = make(MiniRoomItemList, 0, count)
+	for i := 0; i < count; i++ {
+		*l = append(*l, MiniRoomItem{
+			Bundles:   reader.ReadU16(),
+			PerBundle: reader.ReadU16(),
+			Price:     reader.Read32(),
+			Item:      dto.NewItemFromStream(reader),
+		})
+	}
+}
+
 type MiniRoomItems struct {
 	Meso  int32
-	Items []MiniRoomItem
+	Items MiniRoomItemList
 }
 
 func (p *MiniRoomItems) Opcode() uint16 {
@@ -42,13 +67,7 @@ func (p *MiniRoomItems) Serialize(writer *stream.StreamWriter) error {
 
 func (p *MiniRoomItems) serializeItems(writer *stream.StreamWriter) {
 	writer.Write32(p.Meso)
-	writer.WriteU8(uint8(len(p.Items)))
-	for _, item := range p.Items {
-		writer.WriteU16(item.Bundles)
-		writer.WriteU16(item.PerBundle)
-		writer.Write32(item.Price)
-		item.Item.Serialize(writer, dto.ItemSerializeOption{SlotMode: dto.SlotEncodeOmit})
-	}
+	p.Items.serialize(writer)
 }
 
 func (p *MiniRoomItems) Deserialize(reader *stream.StreamReader) {
@@ -58,16 +77,174 @@ func (p *MiniRoomItems) Deserialize(reader *stream.StreamReader) {
 
 func (p *MiniRoomItems) deserializeItems(reader *stream.StreamReader) {
 	p.Meso = reader.Read32()
-	count := int(reader.ReadU8())
-	p.Items = make([]MiniRoomItem, 0, count)
-	for i := 0; i < count; i++ {
-		p.Items = append(p.Items, MiniRoomItem{
-			Bundles:   reader.ReadU16(),
-			PerBundle: reader.ReadU16(),
-			Price:     reader.Read32(),
-			Item:      dto.NewItemFromStream(reader),
-		})
+	p.Items.deserialize(reader)
+}
+
+type PersonalShopItems struct {
+	Items MiniRoomItemList
+}
+
+func (p *PersonalShopItems) Opcode() uint16 {
+	return 0xEF
+}
+
+func (p *PersonalShopItems) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(pconst.MiniRoomResultItems))
+	p.Items.serialize(writer)
+	return nil
+}
+
+func (p *PersonalShopItems) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.Items.deserialize(reader)
+}
+
+type PersonalShopEnter struct {
+	MySlot   uint8
+	Members  []MiniRoomVisitor
+	Title    string
+	MaxItems uint8
+	Items    MiniRoomItemList
+}
+
+func (p *PersonalShopEnter) Opcode() uint16 {
+	return 0xEF
+}
+
+func (p *PersonalShopEnter) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(pconst.MiniRoomResultEnter))
+	writer.WriteU8(pconst.MiniRoomTypePersonalShop)
+	writer.WriteU8(pconst.MiniRoomShopUsers)
+	writer.WriteU8(p.MySlot)
+	for _, member := range p.Members {
+		writer.WriteU8(member.Slot)
+		member.Character.SerializeLook(writer)
+		writer.WriteStr16(member.Character.Name)
 	}
+	writer.WriteU8(0xFF)
+	writer.WriteStr16(p.Title)
+	writer.WriteU8(p.MaxItems)
+	p.Items.serialize(writer)
+	return nil
+}
+
+func (p *PersonalShopEnter) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	reader.ReadU8()
+	reader.ReadU8()
+	p.MySlot = reader.ReadU8()
+	for slot := int8(reader.ReadU8()); slot >= 0; slot = int8(reader.ReadU8()) {
+		member := MiniRoomVisitor{Slot: uint8(slot), Character: &dto.Character{}}
+		member.Character.DeserializeLook(reader)
+		member.Character.Name = reader.ReadStr16()
+		p.Members = append(p.Members, member)
+	}
+	p.Title = reader.ReadStr16()
+	p.MaxItems = reader.ReadU8()
+	p.Items.deserialize(reader)
+}
+
+type MiniRoomSold struct {
+	Index   uint8
+	Bundles uint16
+	Buyer   string
+}
+
+func (p *MiniRoomSold) Opcode() uint16 {
+	return 0xEF
+}
+
+func (p *MiniRoomSold) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(pconst.MiniRoomResultSold))
+	writer.WriteU8(p.Index)
+	writer.WriteU16(p.Bundles)
+	writer.WriteStr16(p.Buyer)
+	return nil
+}
+
+func (p *MiniRoomSold) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.Index = reader.ReadU8()
+	p.Bundles = reader.ReadU16()
+	p.Buyer = reader.ReadStr16()
+}
+
+type MiniRoomItemRemoved struct {
+	Count uint8
+	Index uint16
+}
+
+func (p *MiniRoomItemRemoved) Opcode() uint16 {
+	return 0xEF
+}
+
+func (p *MiniRoomItemRemoved) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(pconst.MiniRoomResultRemoved))
+	writer.WriteU8(p.Count)
+	writer.WriteU16(p.Index)
+	return nil
+}
+
+func (p *MiniRoomItemRemoved) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.Count = reader.ReadU8()
+	p.Index = reader.ReadU16()
+}
+
+type MiniRoomBalloon struct {
+	SN     uint32
+	Title  string
+	ItemID uint32
+	Users  uint8
+}
+
+func (b *MiniRoomBalloon) serialize(writer *stream.StreamWriter) {
+	writer.WriteU8(pconst.MiniRoomTypePersonalShop)
+	writer.WriteU32(b.SN)
+	writer.WriteStr16(b.Title)
+	writer.WriteU8(0)
+	writer.WriteU8(uint8(b.ItemID % 10))
+	writer.WriteU8(b.Users)
+	writer.WriteU8(pconst.MiniRoomShopUsers)
+	writer.WriteU8(0)
+}
+
+func (b *MiniRoomBalloon) deserialize(reader *stream.StreamReader) {
+	b.SN = reader.ReadU32()
+	b.Title = reader.ReadStr16()
+	reader.ReadU8()
+	reader.ReadU8()
+	b.Users = reader.ReadU8()
+	reader.ReadU8()
+	reader.ReadU8()
+}
+
+type UserMiniRoomBalloon struct {
+	CharacterID uint32
+	Balloon     *MiniRoomBalloon
+}
+
+func (p *UserMiniRoomBalloon) Opcode() uint16 {
+	return 0x72
+}
+
+func (p *UserMiniRoomBalloon) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.CharacterID)
+	if p.Balloon == nil {
+		writer.WriteU8(0)
+		return nil
+	}
+	p.Balloon.serialize(writer)
+	return nil
+}
+
+func (p *UserMiniRoomBalloon) Deserialize(reader *stream.StreamReader) {
+	p.CharacterID = reader.ReadU32()
+	if reader.ReadU8() == 0 {
+		return
+	}
+	p.Balloon = &MiniRoomBalloon{}
+	p.Balloon.deserialize(reader)
 }
 
 type MiniRoomEnter struct {
@@ -90,7 +267,7 @@ func (p *MiniRoomEnter) Opcode() uint16 {
 func (p *MiniRoomEnter) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(pconst.MiniRoomResultEnter))
 	writer.WriteU8(pconst.MiniRoomTypeEntrustedShop)
-	writer.WriteU8(pconst.MiniRoomEntrustedShopUsers)
+	writer.WriteU8(pconst.MiniRoomShopUsers)
 	writer.WriteU8(p.MySlot)
 	writer.WriteU8(0)
 	writer.WriteU32(p.PermitItemID)

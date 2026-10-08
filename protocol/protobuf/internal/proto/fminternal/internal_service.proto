@@ -20,10 +20,12 @@ service Internal {
   rpc DeleteParcel (DeleteParcelRequest) returns (DeleteParcelReply);
   rpc CheckParcelArrivals (CheckParcelArrivalsRequest) returns (CheckParcelArrivalsReply);
   rpc FindEntrustedShop (FindEntrustedShopRequest) returns (FindEntrustedShopReply);
-  rpc OpenEntrustedShop (OpenEntrustedShopRequest) returns (OpenEntrustedShopReply);
-  rpc SaveEntrustedShop (SaveEntrustedShopRequest) returns (SaveEntrustedShopReply);
+  rpc OpenShop (OpenShopRequest) returns (OpenShopReply);
+  rpc SaveShop (SaveShopRequest) returns (SaveShopReply);
   rpc ClaimStoreBank (ClaimStoreBankRequest) returns (ClaimStoreBankReply);
-  rpc CloseChannelEntrustedShops (CloseChannelEntrustedShopsRequest) returns (CloseChannelEntrustedShopsReply);
+  rpc CloseChannelShops (CloseChannelShopsRequest) returns (CloseChannelShopsReply);
+  rpc SearchShops (SearchShopsRequest) returns (SearchShopsReply);
+  rpc FindPopularShopSearches (FindPopularShopSearchesRequest) returns (FindPopularShopSearchesReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
@@ -812,21 +814,21 @@ message CheckParcelArrivalsReply {
   bool quick = 3;
 }
 
-message EntrustedShopItem {
+message ShopItem {
   Inventory item = 1;
   uint32 bundles = 2;
   uint32 per_bundle = 3;
   int32 price = 4;
 }
 
-message EntrustedShopSale {
+message ShopSale {
   uint32 item_id = 1;
   uint32 bundles = 2;
   int32 total = 3;
   string buyer = 4;
 }
 
-message EntrustedShop {
+message Shop {
   uint32 shop_id = 1;
   uint32 world_id = 2;
   uint32 account_id = 3;
@@ -837,10 +839,12 @@ message EntrustedShop {
   uint32 item_id = 8;
   string title = 9;
   int32 meso = 10;
-  repeated EntrustedShopItem items = 11;
-  repeated EntrustedShopSale sold = 12;
+  repeated ShopItem items = 11;
+  repeated ShopSale sold = 12;
   int64 opened_at_unix_ms = 13;
   int64 closed_at_unix_ms = 14;
+  uint32 kind = 15;
+  uint32 sn = 16;
 }
 
 message FindEntrustedShopRequest {
@@ -849,25 +853,26 @@ message FindEntrustedShopRequest {
 }
 
 message FindEntrustedShopReply {
-  EntrustedShop shop = 1;
+  Shop shop = 1;
+  repeated Shop store_bank = 2;
 }
 
-message OpenEntrustedShopRequest {
-  EntrustedShop shop = 1;
+message OpenShopRequest {
+  Shop shop = 1;
 }
 
-message OpenEntrustedShopReply {
+message OpenShopReply {
   uint32 shop_id = 1;
-  EntrustedShop existing = 2;
+  Shop existing = 2;
 }
 
-message SaveEntrustedShopRequest {
-  EntrustedShop shop = 1;
+message SaveShopRequest {
+  Shop shop = 1;
   repeated CharacterSaveEntry characters = 2;
   bool close = 3;
 }
 
-message SaveEntrustedShopReply {
+message SaveShopReply {
 }
 
 message ClaimStoreBankRequest {
@@ -877,16 +882,46 @@ message ClaimStoreBankRequest {
 }
 
 message ClaimStoreBankReply {
-  EntrustedShop shop = 1;
+  repeated Shop shops = 1;
 }
 
-message CloseChannelEntrustedShopsRequest {
+message CloseChannelShopsRequest {
   uint32 world_id = 1;
   int32 channel_id = 2;
 }
 
-message CloseChannelEntrustedShopsReply {
+message CloseChannelShopsReply {
   uint32 count = 1;
+}
+
+message SearchShopsRequest {
+  uint32 world_id = 1;
+  uint32 item_id = 2;
+  bool high_first = 3;
+}
+
+message ShopSearchEntry {
+  string owner_name = 1;
+  int32 channel_id = 2;
+  uint32 map_id = 3;
+  string title = 4;
+  uint32 per_bundle = 5;
+  uint32 bundles = 6;
+  int32 price = 7;
+  uint32 sn = 8;
+  Inventory item = 9;
+}
+
+message SearchShopsReply {
+  repeated ShopSearchEntry entries = 1;
+}
+
+message FindPopularShopSearchesRequest {
+  uint32 world_id = 1;
+}
+
+message FindPopularShopSearchesReply {
+  repeated uint32 item_ids = 1;
 }
 
 message SaveCharactersRequest {

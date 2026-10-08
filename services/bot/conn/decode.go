@@ -55,6 +55,19 @@ var decoders = func() []decoder {
 			return len(body) > 0 && body[0] == code
 		}
 	}
+	personalShopItems := func(body []byte) (ok bool) {
+		if len(body) == 0 || pconst.MiniRoomResult(body[0]) != pconst.MiniRoomResultItems {
+			return false
+		}
+		defer func() {
+			if recover() != nil {
+				ok = false
+			}
+		}()
+		reader := stream.NewStreamReader(&body, stream.LittleEndian)
+		(&response.PersonalShopItems{}).Deserialize(reader)
+		return reader.Remaining() == 0
+	}
 	partyUpdate := func(match func(body []byte) bool) func([]byte) bool {
 		return func(body []byte) bool {
 			return len(body) >= 11 && pconst.PartySubOpcode(body[0]) == pconst.PartyS2CPartyUpdate && match(body)
@@ -100,12 +113,18 @@ var decoders = func() []decoder {
 		newDecoder[response.MiniRoomEnterFailed](func(body []byte) bool {
 			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter && body[1] == 0
 		}),
+		newDecoder[response.PersonalShopEnter](func(body []byte) bool {
+			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter && body[1] == pconst.MiniRoomTypePersonalShop
+		}),
 		newDecoder[response.MiniRoomEnter](sub(uint8(pconst.MiniRoomResultEnter))),
 		newDecoder[response.MiniRoomVisited](sub(uint8(pconst.MiniRoomResultVisitor))),
 		newDecoder[response.MiniRoomChat](sub(uint8(pconst.MiniRoomResultChat))),
 		newDecoder[response.MiniRoomLeave](sub(uint8(pconst.MiniRoomResultLeave))),
 		newDecoder[response.MiniRoomBuyFailed](sub(uint8(pconst.MiniRoomResultBuy))),
+		newDecoder[response.PersonalShopItems](personalShopItems),
 		newDecoder[response.MiniRoomItems](sub(uint8(pconst.MiniRoomResultItems))),
+		newDecoder[response.MiniRoomSold](sub(uint8(pconst.MiniRoomResultSold))),
+		newDecoder[response.MiniRoomItemRemoved](sub(uint8(pconst.MiniRoomResultRemoved))),
 		newDecoder[response.MiniRoomArranged](sub(uint8(pconst.MiniRoomResultArranged))),
 		newDecoder[response.MiniRoomClosed](sub(uint8(pconst.MiniRoomResultClosed))),
 		newDecoder[response.MiniRoomMesoWithdrawn](sub(uint8(pconst.MiniRoomResultMesoWithdrawn))),
@@ -113,6 +132,9 @@ var decoders = func() []decoder {
 		newDecoder[response.StoreBankFee](sub(uint8(pconst.StoreBankResultFee))),
 		newDecoder[response.StoreBankLocation](sub(uint8(pconst.StoreBankResultLocation))),
 		newDecoder[response.StoreBankResult](nil),
+		newDecoder[response.UserMiniRoomBalloon](nil),
+		newDecoder[response.ShopScannerResult](sub(uint8(pconst.ShopScannerResultSearch))),
+		newDecoder[response.ShopScannerPopular](sub(uint8(pconst.ShopScannerResultPopular))),
 		newDecoder[response.InventoryOperation](nil),
 		newDecoder[response.UpdateQuest](func(body []byte) bool { return len(body) > 0 && body[0] == 1 }),
 		newDecoder[response.GuildInvite](func(body []byte) bool {

@@ -382,6 +382,9 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 		}
 	}
 
+	if character.MiniRoom != nil {
+		character.MiniRoom.Leave(character)
+	}
 	entry := character.ToProto(m.GameWorld.GetWorldID())
 	err := m.RemovePlayer(playerID)
 	character.ClearTimers()

@@ -9,6 +9,7 @@ type EntrustedShopCheckResult struct {
 	Result  pconst.EntrustedShopCheck
 	MapID   uint32
 	Channel uint8
+	SN      uint32
 }
 
 func (p *EntrustedShopCheckResult) Opcode() uint16 {
@@ -17,18 +18,24 @@ func (p *EntrustedShopCheckResult) Opcode() uint16 {
 
 func (p *EntrustedShopCheckResult) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Result))
-	if p.Result == pconst.EntrustedShopAlreadyOpen {
+	switch p.Result {
+	case pconst.EntrustedShopAlreadyOpen, pconst.EntrustedShopRemoteLocation:
 		writer.WriteU32(p.MapID)
 		writer.WriteU8(p.Channel)
+	case pconst.EntrustedShopRemoteVisit:
+		writer.WriteU32(p.SN)
 	}
 	return nil
 }
 
 func (p *EntrustedShopCheckResult) Deserialize(reader *stream.StreamReader) {
 	p.Result = pconst.EntrustedShopCheck(reader.ReadU8())
-	if p.Result == pconst.EntrustedShopAlreadyOpen {
+	switch p.Result {
+	case pconst.EntrustedShopAlreadyOpen, pconst.EntrustedShopRemoteLocation:
 		p.MapID = reader.ReadU32()
 		p.Channel = reader.ReadU8()
+	case pconst.EntrustedShopRemoteVisit:
+		p.SN = reader.ReadU32()
 	}
 }
 
@@ -45,7 +52,7 @@ func (b *EntrustedShopBalloon) serialize(writer *stream.StreamWriter) {
 	writer.WriteStr16(b.Title)
 	writer.WriteU8(uint8(b.ItemID % 10))
 	writer.WriteU8(b.Users)
-	writer.WriteU8(pconst.MiniRoomEntrustedShopUsers)
+	writer.WriteU8(pconst.MiniRoomShopUsers)
 }
 
 func (b *EntrustedShopBalloon) deserialize(reader *stream.StreamReader) {

@@ -59,9 +59,19 @@ type CharacterListener interface {
 	OnDueyRemoved(ch *Character, parcelID uint32, reason uint8)
 	OnDueyArrival(ch *Character, sender string, quick bool, count int)
 	FindEntrustedShopAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FindEntrustedShopReply]
-	OpenEntrustedShopAsync(ctx actor.Context, ch *Character, shop *internal.EntrustedShop) *async.Promise[*internal.OpenEntrustedShopReply]
+	OpenShopAsync(ctx actor.Context, ch *Character, shop *internal.Shop) *async.Promise[*internal.OpenShopReply]
 	ClaimStoreBankAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.ClaimStoreBankReply]
+	SearchShopsAsync(ctx actor.Context, ch *Character, itemID uint32, highFirst bool) *async.Promise[*internal.SearchShopsReply]
+	FindPopularShopSearchesAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FindPopularShopSearchesReply]
 	OnEntrustedShopCheck(ch *Character, result pconst.EntrustedShopCheck, mapID uint32, channel uint8)
+	OnEntrustedShopRemoteVisit(ch *Character, sn uint32)
+	OnShopScannerResult(ch *Character, itemID uint32, entries []*internal.ShopSearchEntry)
+	OnShopScannerPopular(ch *Character, itemIDs []uint32)
+	OnPersonalShopEntered(ch *Character, ps *PersonalShop)
+	OnPersonalShopItems(ch *Character, ps *PersonalShop)
+	OnMiniRoomSold(ch *Character, index uint8, bundles uint16, buyer string)
+	OnMiniRoomItemRemoved(ch *Character, count uint8, index uint16)
+	OnMiniRoomBalloon(ch *Character, balloon *response.MiniRoomBalloon)
 	OnMiniRoomEntered(ch *Character, es *EntrustedShop, firstTime bool)
 	OnMiniRoomEnterFailed(ch *Character, code pconst.MiniRoomEnterError)
 	OnMiniRoomVisited(ch *Character, slot uint8, visitor *Character)
