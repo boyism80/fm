@@ -2439,7 +2439,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "party() takes no arguments")
 				return 0
 			}
-			pid := ch.GetPartyID()
+			pid := ch.Party.ID()
 			if pid == nil || ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1

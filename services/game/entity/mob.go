@@ -350,7 +350,7 @@ func (m *Mob) mobDropType(dropChar *Character) constant.DropType {
 	if m.Wz.FfaLoot {
 		return constant.DropTypeFFA
 	}
-	if dropChar != nil && dropChar.GetPartyID() != nil {
+	if dropChar != nil && dropChar.Party.ID() != nil {
 		return constant.DropTypeParty
 	}
 	return constant.DropTypeOwnerOnly
@@ -519,7 +519,7 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 
 	if attacker != nil {
 		bucketID := int64(-1)
-		if pid := attacker.GetPartyID(); pid != nil {
+		if pid := attacker.Party.ID(); pid != nil {
 			bucketID = int64(*pid)
 		}
 		bucket := m.accDamage[bucketID]

@@ -16,7 +16,7 @@ func (s partySystem) UpdateMemberAsync(ctx actor.Context, ch *entity.Character) 
 	if s.gs == nil || ch == nil || s.gs.internalClient == nil {
 		return p
 	}
-	if ch.GetPartyID() == nil {
+	if ch.Party.ID() == nil {
 		return p
 	}
 	mm := ch.ToProtoPartyMember(uint32(s.gs.config.WorldId), int32(s.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)

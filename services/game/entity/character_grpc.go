@@ -55,7 +55,6 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		Role:      constant.CharacterRole(p.GetRole()),
 		GM:        GMMode{Hidden: p.GetHidden()},
 		exp:       p.GetExp(),
-		partyID:   partyID,
 		guildID:   guildID,
 		buddyList: NewBuddyList(),
 
@@ -63,6 +62,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	}
 	ch.Stats = &Stats{owner: ch, Base: BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())}, Population: uint16(p.GetPopulation())}
 	ch.Points = &Points{owner: ch, AP: uint16(p.GetAbilityPoint()), SP: uint16(p.GetSkillPoint()), HPMPUsed: uint16(p.GetHpApUsed())}
+	ch.Party = &PartyMembership{owner: ch, id: partyID}
 	ch.Dialog = NewDialog(ch)
 	ch.Buffs = NewBuffs(ch)
 	ch.Debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}

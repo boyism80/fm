@@ -53,7 +53,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 
 		var targets []*Character
 		if wzConsume.Party {
-			if pid := ch.GetPartyID(); pid != nil {
+			if pid := ch.Party.ID(); pid != nil {
 				if m := ch.GetMap(); m != nil {
 					if members := m.GetPartyMembers(*pid); len(members) > 0 {
 						targets = members

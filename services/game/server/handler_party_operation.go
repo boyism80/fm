@@ -66,7 +66,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					return nil
 				}
 				h.gs.party.Update(reply.GetParty())
-				ch.SetPartyID(reply.PartyId)
+				ch.Party.SetID(reply.PartyId)
 				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 				return nil
 			},
@@ -89,8 +89,8 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
 					return nil
 				}
-				if cur := ch.GetPartyID(); cur != nil && reply.PartyId != nil && *cur == *reply.PartyId {
-					ch.SetPartyID(nil)
+				if cur := ch.Party.ID(); cur != nil && reply.PartyId != nil && *cur == *reply.PartyId {
+					ch.Party.SetID(nil)
 				}
 				return nil
 			},
@@ -121,7 +121,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(join): ok but missing party_id character=%d", charID)
 					return nil
 				}
-				ch.SetPartyID(reply.PartyId)
+				ch.Party.SetID(reply.PartyId)
 				return nil
 			},
 		).OnError(func(err error) {
@@ -130,7 +130,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		return nil
 
 	case constant.PartyC2SChangeLeader:
-		partyIDPtr := ch.GetPartyID()
+		partyIDPtr := ch.Party.ID()
 		if partyIDPtr == nil || req.TargetCharacterID == 0 {
 			return nil
 		}
@@ -157,7 +157,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 
 	case constant.PartyC2SInvite:
 		targetName := req.TargetName
-		pid := ch.GetPartyID()
+		pid := ch.Party.ID()
 		hasParty := pid != nil
 		var inv *internal.InvitePartyReply
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
@@ -178,7 +178,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 							return fmt.Errorf("party create before invite failed")
 						}
 						h.gs.party.Update(reply.GetParty())
-						ch.SetPartyID(reply.PartyId)
+						ch.Party.SetID(reply.PartyId)
 						ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 						return nil
 					}

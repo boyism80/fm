@@ -34,7 +34,7 @@ func (h *DeliverPartyUpdateJoinHandler) Handle(ctx actor.Context, a *GameLogicAc
 		if !ok || peer == nil || peer.GetID() == ch.GetID() {
 			continue
 		}
-		pPeer := peer.GetPartyID()
+		pPeer := peer.Party.ID()
 		if pPeer == nil || *pPeer != msg.PartyID {
 			continue
 		}

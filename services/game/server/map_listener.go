@@ -117,7 +117,7 @@ func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Char
 	if effectivePartyID != nil {
 		partyID = *effectivePartyID
 		inParty = true
-	} else if pid := character.GetPartyID(); pid != nil {
+	} else if pid := character.Party.ID(); pid != nil {
 		partyID = *pid
 		inParty = true
 	}
@@ -130,7 +130,7 @@ func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Char
 		if !ok || peer == nil || peer.GetID() == character.GetID() {
 			continue
 		}
-		pPeer := peer.GetPartyID()
+		pPeer := peer.Party.ID()
 		if pPeer == nil || *pPeer != partyID {
 			continue
 		}

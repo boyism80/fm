@@ -31,52 +31,51 @@ type Character struct {
 	LifeCore
 	Sendable
 
-	id                uint32
-	name              string
-	look              Look
-	level             uint8
-	Rank              Ranking
-	exp               uint32
-	Stats             *Stats
-	Points            *Points
-	mega              bool
-	random            [3]stream.RandomStream
-	Quests            *Quests
-	Wedding           *Wedding
-	CashWishlist      []uint32
-	TeleportStones    *TeleportStones
-	MonsterBook       *MonsterBook
-	Dialog            *Dialog
-	Listener          CharacterListener
-	Class             uint16
-	Role              constant.CharacterRole
-	AccountID         uint32
-	Inventory         *Inventory
-	Storage           *Storage
-	Duey              *Duey
-	Skills            *Skills
-	keyLayout         *KeyLayout
-	Chair             uint32
-	lastHeal          lastHeal
-	Buffs             *Buffs
-	Debuffs           *Debuffs
-	Summons           *Summons
-	Pets              *Pets
-	Doors             *Doors
-	HomingTargetOID   *uint32
-	partyID           *uint32
-	guildID           *uint32
-	GuildInvites      map[uint32]time.Time
-	partySearchConfig *PartySearchConfig
-	buddyList         *BuddyList
-	GM                GMMode
-	stateMachine      *StateMachine
-	carnivalTeam      *CarnivalTeam
-	savedLocations    map[string]uint32
-	loggedOut         atomic.Bool
-	logoutEntry       chan *internal.CharacterSaveEntry
-	destination       atomic.Pointer[Map]
-	cashItemInUse     atomic.Bool
+	id              uint32
+	name            string
+	look            Look
+	level           uint8
+	Rank            Ranking
+	exp             uint32
+	Stats           *Stats
+	Points          *Points
+	mega            bool
+	random          [3]stream.RandomStream
+	Quests          *Quests
+	Wedding         *Wedding
+	CashWishlist    []uint32
+	TeleportStones  *TeleportStones
+	MonsterBook     *MonsterBook
+	Dialog          *Dialog
+	Listener        CharacterListener
+	Class           uint16
+	Role            constant.CharacterRole
+	AccountID       uint32
+	Inventory       *Inventory
+	Storage         *Storage
+	Duey            *Duey
+	Skills          *Skills
+	keyLayout       *KeyLayout
+	Chair           uint32
+	lastHeal        lastHeal
+	Buffs           *Buffs
+	Debuffs         *Debuffs
+	Summons         *Summons
+	Pets            *Pets
+	Doors           *Doors
+	HomingTargetOID *uint32
+	Party           *PartyMembership
+	guildID         *uint32
+	GuildInvites    map[uint32]time.Time
+	buddyList       *BuddyList
+	GM              GMMode
+	stateMachine    *StateMachine
+	carnivalTeam    *CarnivalTeam
+	savedLocations  map[string]uint32
+	loggedOut       atomic.Bool
+	logoutEntry     chan *internal.CharacterSaveEntry
+	destination     atomic.Pointer[Map]
+	cashItemInUse   atomic.Bool
 }
 
 func (ch *Character) Destination() *Map {
@@ -737,20 +736,6 @@ func (ch *Character) ToProtoGuildMember(worldID uint32, channelID int32, rank in
 	return nil
 }
 
-func (ch *Character) GetPartyID() *uint32 {
-	if ch == nil || ch.partyID == nil {
-		return nil
-	}
-	p := new(uint32)
-	*p = *ch.partyID
-	return p
-}
-
-func (ch *Character) SetPartyID(partyID *uint32) {
-	ch.partyID = partyID
-	ch.Doors.SetPartyID(partyID)
-}
-
 func (ch *Character) BuddyList() *BuddyList {
 	if ch == nil {
 		return nil
@@ -902,7 +887,7 @@ func (ch *Character) GetHolySymbolExpRate() int32 {
 	}
 	full := sb.Wz.ID == uint32(constant.SkillGmHolySymbol)
 	if !full {
-		pid := ch.GetPartyID()
+		pid := ch.Party.ID()
 		m := ch.GetMap()
 		full = pid != nil && m != nil && len(m.GetPartyMembers(*pid)) >= 2
 	}

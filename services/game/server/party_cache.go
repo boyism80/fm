@@ -258,7 +258,7 @@ func (pc *PartyCache) SendPartySilentAsync(ctx actor.Context, ch *entity.Charact
 	if pc == nil || ch == nil || pc.gs == nil || ctx == nil {
 		return p
 	}
-	partyIDPtr := ch.GetPartyID()
+	partyIDPtr := ch.Party.ID()
 	if partyIDPtr == nil {
 		return p
 	}

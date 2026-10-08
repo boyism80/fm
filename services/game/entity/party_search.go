@@ -9,20 +9,6 @@ type PartySearchConfig struct {
 	ClassMask     int32
 }
 
-func (ch *Character) SetPartySearchConfig(cfg *PartySearchConfig) {
-	if ch == nil {
-		return
-	}
-	ch.partySearchConfig = cfg
-}
-
-func (ch *Character) GetPartySearchConfig() *PartySearchConfig {
-	if ch == nil {
-		return nil
-	}
-	return ch.partySearchConfig
-}
-
 func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32) bool {
 	if accepter == nil || accepter.GameWorld == nil {
 		return false
@@ -46,15 +32,15 @@ func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32)
 	if leader == nil {
 		return false
 	}
-	lpid := leader.GetPartyID()
+	lpid := leader.Party.ID()
 	if lpid == nil || *lpid != partyID {
 		return false
 	}
-	cfg := leader.GetPartySearchConfig()
+	cfg := leader.Party.Search
 	if cfg == nil {
 		return false
 	}
-	if accepter.GetPartyID() != nil {
+	if accepter.Party.ID() != nil {
 		return false
 	}
 	lvl := int32(accepter.GetLevel())

@@ -306,7 +306,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				if owner.GetPartyID() != nil {
+				if owner.Party.ID() != nil {
 					dropType = constant.DropTypeParty
 				} else {
 					dropType = constant.DropTypeOwnerOnly
@@ -407,7 +407,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				if owner.GetPartyID() != nil {
+				if owner.Party.ID() != nil {
 					dropType = constant.DropTypeParty
 				} else {
 					dropType = constant.DropTypeOwnerOnly
@@ -973,7 +973,7 @@ func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16],
 	dropType := constant.DropTypeFFA
 	ownerID := uint32(0)
 	if owner != nil {
-		if owner.GetPartyID() != nil {
+		if owner.Party.ID() != nil {
 			dropType = constant.DropTypeParty
 		} else {
 			dropType = constant.DropTypeOwnerOnly

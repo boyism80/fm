@@ -221,7 +221,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 			} else {
-				pid := leader.GetPartyID()
+				pid := leader.Party.ID()
 				if pid == nil || leader.GameWorld == nil {
 					L.Push(lua.LNil)
 					L.Push(lua.LString("no party"))

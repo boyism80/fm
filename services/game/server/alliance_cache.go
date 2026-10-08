@@ -285,7 +285,7 @@ func (ac *AllianceCache) ValidateCreateAlliance(ch *entity.Character) (uint32, b
 		return 0, false
 	}
 
-	partyID := ch.GetPartyID()
+	partyID := ch.Party.ID()
 	if partyID == nil {
 		return 0, false
 	}

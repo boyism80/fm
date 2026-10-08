@@ -63,7 +63,7 @@ func (dc *Doors) SpawnField(key DoorKey, skillID constant.SkillID, returnEp, fie
 		return nil
 	}
 
-	door := NewDoor(key, dc.owner.GetID(), skillID, fieldEp, returnEp, dc.owner.partyID)
+	door := NewDoor(key, dc.owner.GetID(), skillID, fieldEp, returnEp, dc.owner.Party.id)
 	door.fieldRef = ref
 	cast.door = door
 	m.AddDoor(door)

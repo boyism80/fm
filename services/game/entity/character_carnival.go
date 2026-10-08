@@ -41,7 +41,7 @@ func (ch *Character) CarnivalMember() *CarnivalMember {
 }
 
 func (ch *Character) PartyOnMap() ([]*Character, *Party) {
-	partyID := ch.GetPartyID()
+	partyID := ch.Party.ID()
 	if partyID == nil || ch.GameWorld == nil {
 		return nil, nil
 	}

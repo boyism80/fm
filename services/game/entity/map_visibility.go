@@ -61,8 +61,8 @@ func syncPartyMemberHP(a, b *Character) {
 	if a == nil || b == nil {
 		return
 	}
-	pa := a.GetPartyID()
-	pb := b.GetPartyID()
+	pa := a.Party.ID()
+	pb := b.Party.ID()
 	if pa == nil || pb == nil || *pa != *pb {
 		return
 	}

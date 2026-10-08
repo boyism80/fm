@@ -133,7 +133,7 @@ func reactorDropOwner(trigger *Character) (uint32, constant.DropType) {
 	if trigger == nil {
 		return 0, constant.DropTypeFFA
 	}
-	if trigger.GetPartyID() != nil {
+	if trigger.Party.ID() != nil {
 		return trigger.GetID(), constant.DropTypeParty
 	}
 	return trigger.GetID(), constant.DropTypeOwnerOnly

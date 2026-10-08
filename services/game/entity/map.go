@@ -347,7 +347,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	character.Dialog.Close()
 	character.RemoveTimer(clockTimer)
 	character.SuspendTimers()
-	character.SetPartySearchConfig(nil)
+	character.Party.Search = nil
 	m.controllerTable.LeavePlayer(character)
 	character.Map = nil
 
@@ -452,7 +452,7 @@ func (m *Map) GetPartyMembers(partyID uint32) []*Character {
 		if !ok || ch == nil {
 			continue
 		}
-		pid := ch.GetPartyID()
+		pid := ch.Party.ID()
 		if pid != nil && *pid == partyID {
 			out = append(out, ch)
 		}

@@ -64,7 +64,7 @@ func (d *Door) UsableBy(ch *Character) bool {
 	if d.PartyID == nil {
 		return false
 	}
-	vParty := ch.GetPartyID()
+	vParty := ch.Party.ID()
 	if vParty == nil {
 		return false
 	}
@@ -87,7 +87,7 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	isOwner := viewer.GetID() == d.OwnerID
 	sameParty := false
 	if d.PartyID != nil {
-		if vid := viewer.GetPartyID(); vid != nil && *vid == *d.PartyID {
+		if vid := viewer.Party.ID(); vid != nil && *vid == *d.PartyID {
 			sameParty = true
 		}
 	}
@@ -107,7 +107,7 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 			Animated: false,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
-	vParty := viewer.GetPartyID()
+	vParty := viewer.Party.ID()
 	usePartyPortal := d.PartyID != nil && vParty != nil && (isOwner || *vParty == *d.PartyID)
 	if usePartyPortal {
 		viewer.Send(&response.PartyPortal{

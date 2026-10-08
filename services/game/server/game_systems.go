@@ -525,7 +525,7 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, key entity.DoorKey, sk
 		closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchorPt)
 	}
 	slot := 0
-	slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
+	slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.Party.ID())
 	root.Send(destPID, &g_actor.RequestSpawnDoor{
 		ReplyTo:     srcPID,
 		TargetMap:   destMap,
@@ -539,7 +539,7 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, key entity.DoorKey, sk
 			Position: ch.Position,
 		},
 		PartyOwnerSlot: slot,
-		PartyID:        ch.GetPartyID(),
+		PartyID:        ch.Party.ID(),
 	})
 	return destMap
 }

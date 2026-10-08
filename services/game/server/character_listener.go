@@ -1660,7 +1660,7 @@ func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, recipient *entity.Character) {
-	partyIDPtr := ch.GetPartyID()
+	partyIDPtr := ch.Party.ID()
 	if partyIDPtr == nil {
 		return
 	}
@@ -1680,7 +1680,7 @@ func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, rec
 		if recipient.GetMap() != mapInstance {
 			return
 		}
-		rPID := recipient.GetPartyID()
+		rPID := recipient.Party.ID()
 		if rPID == nil || *rPID != *partyIDPtr {
 			return
 		}
@@ -1692,7 +1692,7 @@ func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, rec
 		if !ok || peer == nil || peer.GetID() == ch.GetID() {
 			continue
 		}
-		pid := peer.GetPartyID()
+		pid := peer.Party.ID()
 		if pid == nil || *pid != *partyIDPtr {
 			continue
 		}

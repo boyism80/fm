@@ -34,17 +34,17 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 		if !ok || ch == nil {
 			continue
 		}
-		cfg := ch.GetPartySearchConfig()
+		cfg := ch.Party.Search
 		if cfg == nil {
 			continue
 		}
-		pid := ch.GetPartyID()
+		pid := ch.Party.ID()
 		if pid == nil {
-			ch.SetPartySearchConfig(nil)
+			ch.Party.Search = nil
 			continue
 		}
 		if reachedPartySearchTarget(mapData, *pid, cfg) {
-			ch.SetPartySearchConfig(nil)
+			ch.Party.Search = nil
 			continue
 		}
 		targetIDs := make([]uint32, 0)
@@ -53,7 +53,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 			if !ok || target == nil || target.GetID() == ch.GetID() {
 				continue
 			}
-			if target.GetPartyID() != nil {
+			if target.Party.ID() != nil {
 				continue
 			}
 			lvl := int32(target.GetLevel())
@@ -80,7 +80,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 			target.Listener.OnPartyInvite(target, *pid, inviterName, true)
 		}
 		if reachedPartySearchTarget(mapData, *pid, cfg) {
-			ch.SetPartySearchConfig(nil)
+			ch.Party.Search = nil
 		}
 	}
 	return nil

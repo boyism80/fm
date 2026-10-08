@@ -43,7 +43,7 @@ func (m *Map) isDropOwnerInParty(character *Character, ownerID uint32) bool {
 	if character.GetID() == ownerID {
 		return true
 	}
-	partyID := character.GetPartyID()
+	partyID := character.Party.ID()
 	if partyID == nil || m.GameWorld == nil {
 		return false
 	}

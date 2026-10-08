@@ -166,7 +166,7 @@ func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("party multi chat: actor context required")
 	}
-	pid := ch.GetPartyID()
+	pid := ch.Party.ID()
 	if pid == nil {
 		return nil
 	}
