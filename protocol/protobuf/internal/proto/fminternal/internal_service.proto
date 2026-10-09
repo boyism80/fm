@@ -161,11 +161,11 @@ message EnterCashShopReply {
   uint32 character_slot_count = 7;
   uint32 storage_slot_count = 8;
   repeated CashGift gifts = 9;
-  repeated uint64 expired = 10;
+  repeated uint64 expired = 10 [jstype = JS_STRING];
 }
 
 message CashGift {
-  uint64 serial = 1;
+  uint64 serial = 1 [jstype = JS_STRING];
   uint32 item_id = 2;
   string sender_name = 3;
   string message = 4;
@@ -259,8 +259,8 @@ message BuyCashRingReply {
 }
 
 message CashRing {
-  uint64 serial = 1;
-  uint64 partner_serial = 2;
+  uint64 serial = 1 [jstype = JS_STRING];
+  uint64 partner_serial = 2 [jstype = JS_STRING];
   uint32 partner_id = 3;
   string partner_name = 4;
   uint32 item_id = 5;
@@ -269,7 +269,7 @@ message CashRing {
 message PayBackCashItemRequest {
   uint32 world_id = 1;
   uint32 account_id = 2;
-  uint64 serial = 3;
+  uint64 serial = 3 [jstype = JS_STRING];
   uint32 maple_point = 4;
 }
 
@@ -621,7 +621,7 @@ message Character {
   uint32 hp_ap_used = 31;
   uint32 pet_hp_item = 32;
   uint32 pet_mp_item = 33;
-  uint64 summoned_pet = 34;
+  uint64 summoned_pet = 34 [jstype = JS_STRING];
   repeated uint32 slot_limits = 35;
   uint32 monster_book_cover = 36;
   repeated uint32 teleport_stones = 37;
@@ -847,7 +847,7 @@ message Shop {
   int64 closed_at_unix_ms = 14;
   uint32 kind = 15;
   uint32 sn = 16;
-  uint64 store_bank_id = 17;
+  uint64 store_bank_id = 17 [jstype = JS_STRING];
 }
 
 message FindEntrustedShopRequest {
@@ -945,7 +945,7 @@ message EquipmentBonusStats {
 }
 
 message Inventory {
-  optional uint64 unique_id = 1;
+  optional uint64 unique_id = 1 [jstype = JS_STRING];
   uint32 owner_id = 2;
   uint32 item_id = 3;
   int32 slot = 4;

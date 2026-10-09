@@ -1335,11 +1335,11 @@ export interface EnterCashShopReply {
   characterSlotCount: number;
   storageSlotCount: number;
   gifts: CashGift[];
-  expired: number[];
+  expired: string[];
 }
 
 export interface CashGift {
-  serial: number;
+  serial: string;
   itemId: number;
   senderName: string;
   message: string;
@@ -1409,8 +1409,8 @@ export interface BuyCashRingReply {
 }
 
 export interface CashRing {
-  serial: number;
-  partnerSerial: number;
+  serial: string;
+  partnerSerial: string;
   partnerId: number;
   partnerName: string;
   itemId: number;
@@ -1419,7 +1419,7 @@ export interface CashRing {
 export interface PayBackCashItemRequest {
   worldId: number;
   accountId: number;
-  serial: number;
+  serial: string;
   maplePoint: number;
 }
 
@@ -1748,7 +1748,7 @@ export interface Character {
   hpApUsed: number;
   petHpItem: number;
   petMpItem: number;
-  summonedPet: number;
+  summonedPet: string;
   slotLimits: number[];
   monsterBookCover: number;
   teleportStones: number[];
@@ -1974,7 +1974,7 @@ export interface Shop {
   closedAtUnixMs: number;
   kind: number;
   sn: number;
-  storeBankId: number;
+  storeBankId: string;
 }
 
 export interface FindEntrustedShopRequest {
@@ -2072,7 +2072,7 @@ export interface EquipmentBonusStats {
 }
 
 export interface Inventory {
-  uniqueId?: number | undefined;
+  uniqueId?: string | undefined;
   ownerId: number;
   itemId: number;
   slot: number;
@@ -3660,11 +3660,9 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
     for (const v of message.gifts) {
       CashGift.encode(v!, writer.uint32(74).fork()).join();
     }
-    writer.uint32(82).fork();
     for (const v of message.expired) {
-      writer.uint64(v);
+      writer.uint32(80).uint64(v!);
     }
-    writer.join();
     return writer;
   },
 
@@ -3759,7 +3757,7 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
         }
         case 10: {
           if (tag === 80) {
-            message.expired.push(longToNumber(reader.uint64()));
+            message.expired.push(reader.uint64().toString());
 
             continue;
           }
@@ -3767,7 +3765,7 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
           if (tag === 82) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
-              message.expired.push(longToNumber(reader.uint64()));
+              message.expired.push(reader.uint64().toString());
             }
 
             continue;
@@ -3817,7 +3815,7 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
       gifts: globalThis.Array.isArray(object?.gifts)
         ? object.gifts.map((e: any) => CashGift.fromJSON(e))
         : [],
-      expired: globalThis.Array.isArray(object?.expired) ? object.expired.map((e: any) => globalThis.Number(e)) : [],
+      expired: globalThis.Array.isArray(object?.expired) ? object.expired.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
@@ -3851,7 +3849,7 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
       obj.gifts = message.gifts.map((e) => CashGift.toJSON(e));
     }
     if (message.expired?.length) {
-      obj.expired = message.expired.map((e) => Math.round(e));
+      obj.expired = message.expired.map((e) => globalThis.String(e));
     }
     return obj;
   },
@@ -3878,12 +3876,12 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
 };
 
 function createBaseCashGift(): CashGift {
-  return { serial: 0, itemId: 0, senderName: "", message: "" };
+  return { serial: "0", itemId: 0, senderName: "", message: "" };
 }
 
 export const CashGift: MessageFns<CashGift> = {
   encode(message: CashGift, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.serial !== 0) {
+    if (message.serial !== "0") {
       writer.uint32(8).uint64(message.serial);
     }
     if (message.itemId !== 0) {
@@ -3910,7 +3908,7 @@ export const CashGift: MessageFns<CashGift> = {
             break;
           }
 
-          message.serial = longToNumber(reader.uint64());
+          message.serial = reader.uint64().toString();
           continue;
         }
         case 2: {
@@ -3948,7 +3946,7 @@ export const CashGift: MessageFns<CashGift> = {
 
   fromJSON(object: any): CashGift {
     return {
-      serial: isSet(object.serial) ? globalThis.Number(object.serial) : 0,
+      serial: isSet(object.serial) ? globalThis.String(object.serial) : "0",
       itemId: isSet(object.itemId)
         ? globalThis.Number(object.itemId)
         : isSet(object.item_id)
@@ -3965,8 +3963,8 @@ export const CashGift: MessageFns<CashGift> = {
 
   toJSON(message: CashGift): unknown {
     const obj: any = {};
-    if (message.serial !== 0) {
-      obj.serial = Math.round(message.serial);
+    if (message.serial !== "0") {
+      obj.serial = globalThis.String(message.serial);
     }
     if (message.itemId !== 0) {
       obj.itemId = Math.round(message.itemId);
@@ -3985,7 +3983,7 @@ export const CashGift: MessageFns<CashGift> = {
   },
   fromPartial<I extends Exact<DeepPartial<CashGift>, I>>(object: I): CashGift {
     const message = createBaseCashGift();
-    message.serial = object.serial ?? 0;
+    message.serial = object.serial ?? "0";
     message.itemId = object.itemId ?? 0;
     message.senderName = object.senderName ?? "";
     message.message = object.message ?? "";
@@ -5082,15 +5080,15 @@ export const BuyCashRingReply: MessageFns<BuyCashRingReply> = {
 };
 
 function createBaseCashRing(): CashRing {
-  return { serial: 0, partnerSerial: 0, partnerId: 0, partnerName: "", itemId: 0 };
+  return { serial: "0", partnerSerial: "0", partnerId: 0, partnerName: "", itemId: 0 };
 }
 
 export const CashRing: MessageFns<CashRing> = {
   encode(message: CashRing, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.serial !== 0) {
+    if (message.serial !== "0") {
       writer.uint32(8).uint64(message.serial);
     }
-    if (message.partnerSerial !== 0) {
+    if (message.partnerSerial !== "0") {
       writer.uint32(16).uint64(message.partnerSerial);
     }
     if (message.partnerId !== 0) {
@@ -5117,7 +5115,7 @@ export const CashRing: MessageFns<CashRing> = {
             break;
           }
 
-          message.serial = longToNumber(reader.uint64());
+          message.serial = reader.uint64().toString();
           continue;
         }
         case 2: {
@@ -5125,7 +5123,7 @@ export const CashRing: MessageFns<CashRing> = {
             break;
           }
 
-          message.partnerSerial = longToNumber(reader.uint64());
+          message.partnerSerial = reader.uint64().toString();
           continue;
         }
         case 3: {
@@ -5163,12 +5161,12 @@ export const CashRing: MessageFns<CashRing> = {
 
   fromJSON(object: any): CashRing {
     return {
-      serial: isSet(object.serial) ? globalThis.Number(object.serial) : 0,
+      serial: isSet(object.serial) ? globalThis.String(object.serial) : "0",
       partnerSerial: isSet(object.partnerSerial)
-        ? globalThis.Number(object.partnerSerial)
+        ? globalThis.String(object.partnerSerial)
         : isSet(object.partner_serial)
-        ? globalThis.Number(object.partner_serial)
-        : 0,
+        ? globalThis.String(object.partner_serial)
+        : "0",
       partnerId: isSet(object.partnerId)
         ? globalThis.Number(object.partnerId)
         : isSet(object.partner_id)
@@ -5189,11 +5187,11 @@ export const CashRing: MessageFns<CashRing> = {
 
   toJSON(message: CashRing): unknown {
     const obj: any = {};
-    if (message.serial !== 0) {
-      obj.serial = Math.round(message.serial);
+    if (message.serial !== "0") {
+      obj.serial = globalThis.String(message.serial);
     }
-    if (message.partnerSerial !== 0) {
-      obj.partnerSerial = Math.round(message.partnerSerial);
+    if (message.partnerSerial !== "0") {
+      obj.partnerSerial = globalThis.String(message.partnerSerial);
     }
     if (message.partnerId !== 0) {
       obj.partnerId = Math.round(message.partnerId);
@@ -5212,8 +5210,8 @@ export const CashRing: MessageFns<CashRing> = {
   },
   fromPartial<I extends Exact<DeepPartial<CashRing>, I>>(object: I): CashRing {
     const message = createBaseCashRing();
-    message.serial = object.serial ?? 0;
-    message.partnerSerial = object.partnerSerial ?? 0;
+    message.serial = object.serial ?? "0";
+    message.partnerSerial = object.partnerSerial ?? "0";
     message.partnerId = object.partnerId ?? 0;
     message.partnerName = object.partnerName ?? "";
     message.itemId = object.itemId ?? 0;
@@ -5222,7 +5220,7 @@ export const CashRing: MessageFns<CashRing> = {
 };
 
 function createBasePayBackCashItemRequest(): PayBackCashItemRequest {
-  return { worldId: 0, accountId: 0, serial: 0, maplePoint: 0 };
+  return { worldId: 0, accountId: 0, serial: "0", maplePoint: 0 };
 }
 
 export const PayBackCashItemRequest: MessageFns<PayBackCashItemRequest> = {
@@ -5233,7 +5231,7 @@ export const PayBackCashItemRequest: MessageFns<PayBackCashItemRequest> = {
     if (message.accountId !== 0) {
       writer.uint32(16).uint32(message.accountId);
     }
-    if (message.serial !== 0) {
+    if (message.serial !== "0") {
       writer.uint32(24).uint64(message.serial);
     }
     if (message.maplePoint !== 0) {
@@ -5270,7 +5268,7 @@ export const PayBackCashItemRequest: MessageFns<PayBackCashItemRequest> = {
             break;
           }
 
-          message.serial = longToNumber(reader.uint64());
+          message.serial = reader.uint64().toString();
           continue;
         }
         case 4: {
@@ -5302,7 +5300,7 @@ export const PayBackCashItemRequest: MessageFns<PayBackCashItemRequest> = {
         : isSet(object.account_id)
         ? globalThis.Number(object.account_id)
         : 0,
-      serial: isSet(object.serial) ? globalThis.Number(object.serial) : 0,
+      serial: isSet(object.serial) ? globalThis.String(object.serial) : "0",
       maplePoint: isSet(object.maplePoint)
         ? globalThis.Number(object.maplePoint)
         : isSet(object.maple_point)
@@ -5319,8 +5317,8 @@ export const PayBackCashItemRequest: MessageFns<PayBackCashItemRequest> = {
     if (message.accountId !== 0) {
       obj.accountId = Math.round(message.accountId);
     }
-    if (message.serial !== 0) {
-      obj.serial = Math.round(message.serial);
+    if (message.serial !== "0") {
+      obj.serial = globalThis.String(message.serial);
     }
     if (message.maplePoint !== 0) {
       obj.maplePoint = Math.round(message.maplePoint);
@@ -5335,7 +5333,7 @@ export const PayBackCashItemRequest: MessageFns<PayBackCashItemRequest> = {
     const message = createBasePayBackCashItemRequest();
     message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
-    message.serial = object.serial ?? 0;
+    message.serial = object.serial ?? "0";
     message.maplePoint = object.maplePoint ?? 0;
     return message;
   },
@@ -10275,7 +10273,7 @@ function createBaseCharacter(): Character {
     hpApUsed: 0,
     petHpItem: 0,
     petMpItem: 0,
-    summonedPet: 0,
+    summonedPet: "0",
     slotLimits: [],
     monsterBookCover: 0,
     teleportStones: [],
@@ -10385,7 +10383,7 @@ export const Character: MessageFns<Character> = {
     if (message.petMpItem !== 0) {
       writer.uint32(264).uint32(message.petMpItem);
     }
-    if (message.summonedPet !== 0) {
+    if (message.summonedPet !== "0") {
       writer.uint32(272).uint64(message.summonedPet);
     }
     writer.uint32(282).fork();
@@ -10688,7 +10686,7 @@ export const Character: MessageFns<Character> = {
             break;
           }
 
-          message.summonedPet = longToNumber(reader.uint64());
+          message.summonedPet = reader.uint64().toString();
           continue;
         }
         case 35: {
@@ -10874,10 +10872,10 @@ export const Character: MessageFns<Character> = {
         ? globalThis.Number(object.pet_mp_item)
         : 0,
       summonedPet: isSet(object.summonedPet)
-        ? globalThis.Number(object.summonedPet)
+        ? globalThis.String(object.summonedPet)
         : isSet(object.summoned_pet)
-        ? globalThis.Number(object.summoned_pet)
-        : 0,
+        ? globalThis.String(object.summoned_pet)
+        : "0",
       slotLimits: globalThis.Array.isArray(object?.slotLimits)
         ? object.slotLimits.map((e: any) => globalThis.Number(e))
         : globalThis.Array.isArray(object?.slot_limits)
@@ -11007,8 +11005,8 @@ export const Character: MessageFns<Character> = {
     if (message.petMpItem !== 0) {
       obj.petMpItem = Math.round(message.petMpItem);
     }
-    if (message.summonedPet !== 0) {
-      obj.summonedPet = Math.round(message.summonedPet);
+    if (message.summonedPet !== "0") {
+      obj.summonedPet = globalThis.String(message.summonedPet);
     }
     if (message.slotLimits?.length) {
       obj.slotLimits = message.slotLimits.map((e) => Math.round(e));
@@ -11066,7 +11064,7 @@ export const Character: MessageFns<Character> = {
     message.hpApUsed = object.hpApUsed ?? 0;
     message.petHpItem = object.petHpItem ?? 0;
     message.petMpItem = object.petMpItem ?? 0;
-    message.summonedPet = object.summonedPet ?? 0;
+    message.summonedPet = object.summonedPet ?? "0";
     message.slotLimits = object.slotLimits?.map((e) => e) || [];
     message.monsterBookCover = object.monsterBookCover ?? 0;
     message.teleportStones = object.teleportStones?.map((e) => e) || [];
@@ -14624,7 +14622,7 @@ function createBaseShop(): Shop {
     closedAtUnixMs: 0,
     kind: 0,
     sn: 0,
-    storeBankId: 0,
+    storeBankId: "0",
   };
 }
 
@@ -14678,7 +14676,7 @@ export const Shop: MessageFns<Shop> = {
     if (message.sn !== 0) {
       writer.uint32(128).uint32(message.sn);
     }
-    if (message.storeBankId !== 0) {
+    if (message.storeBankId !== "0") {
       writer.uint32(136).uint64(message.storeBankId);
     }
     return writer;
@@ -14824,7 +14822,7 @@ export const Shop: MessageFns<Shop> = {
             break;
           }
 
-          message.storeBankId = longToNumber(reader.uint64());
+          message.storeBankId = reader.uint64().toString();
           continue;
         }
       }
@@ -14899,10 +14897,10 @@ export const Shop: MessageFns<Shop> = {
       kind: isSet(object.kind) ? globalThis.Number(object.kind) : 0,
       sn: isSet(object.sn) ? globalThis.Number(object.sn) : 0,
       storeBankId: isSet(object.storeBankId)
-        ? globalThis.Number(object.storeBankId)
+        ? globalThis.String(object.storeBankId)
         : isSet(object.store_bank_id)
-        ? globalThis.Number(object.store_bank_id)
-        : 0,
+        ? globalThis.String(object.store_bank_id)
+        : "0",
     };
   },
 
@@ -14956,8 +14954,8 @@ export const Shop: MessageFns<Shop> = {
     if (message.sn !== 0) {
       obj.sn = Math.round(message.sn);
     }
-    if (message.storeBankId !== 0) {
-      obj.storeBankId = Math.round(message.storeBankId);
+    if (message.storeBankId !== "0") {
+      obj.storeBankId = globalThis.String(message.storeBankId);
     }
     return obj;
   },
@@ -14983,7 +14981,7 @@ export const Shop: MessageFns<Shop> = {
     message.closedAtUnixMs = object.closedAtUnixMs ?? 0;
     message.kind = object.kind ?? 0;
     message.sn = object.sn ?? 0;
-    message.storeBankId = object.storeBankId ?? 0;
+    message.storeBankId = object.storeBankId ?? "0";
     return message;
   },
 };
@@ -16627,7 +16625,7 @@ export const Inventory: MessageFns<Inventory> = {
             break;
           }
 
-          message.uniqueId = longToNumber(reader.uint64());
+          message.uniqueId = reader.uint64().toString();
           continue;
         }
         case 2: {
@@ -16754,9 +16752,9 @@ export const Inventory: MessageFns<Inventory> = {
   fromJSON(object: any): Inventory {
     return {
       uniqueId: isSet(object.uniqueId)
-        ? globalThis.Number(object.uniqueId)
+        ? globalThis.String(object.uniqueId)
         : isSet(object.unique_id)
-        ? globalThis.Number(object.unique_id)
+        ? globalThis.String(object.unique_id)
         : undefined,
       ownerId: isSet(object.ownerId)
         ? globalThis.Number(object.ownerId)
@@ -16818,7 +16816,7 @@ export const Inventory: MessageFns<Inventory> = {
   toJSON(message: Inventory): unknown {
     const obj: any = {};
     if (message.uniqueId !== undefined) {
-      obj.uniqueId = Math.round(message.uniqueId);
+      obj.uniqueId = globalThis.String(message.uniqueId);
     }
     if (message.ownerId !== 0) {
       obj.ownerId = Math.round(message.ownerId);

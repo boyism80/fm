@@ -18,7 +18,7 @@ export type ShopRow = {
     sold: unknown[];
     opened_at: Date;
     closed_at: Date | null;
-    store_bank_id: number | string | null;
+    store_bank_id: string | null;
 };
 
 export type ShopInsert = {
@@ -34,7 +34,7 @@ export type ShopInsert = {
     items: unknown[];
     sold: unknown[];
     closedAt: Date | null;
-    storeBankId: number | null;
+    storeBankId: string | null;
 };
 
 export type ShopUpdate = {

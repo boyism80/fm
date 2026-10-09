@@ -5,7 +5,6 @@ import {
     type Shop,
     type ShopSearchEntry,
 } from "../protobuf/generated/fminternal/internal_service";
-import { toPgInt } from "../repos/pg-int";
 import { ShopRepository, type ShopRow } from "../repos/shop-repository";
 import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
@@ -66,7 +65,7 @@ export class ShopService {
             closedAtUnixMs: row.closed_at ? new Date(row.closed_at).getTime() : 0,
             kind: row.kind,
             sn: row.sn ?? 0,
-            storeBankId: toPgInt(row.store_bank_id),
+            storeBankId: row.store_bank_id ?? "0",
         };
     }
 

@@ -41,7 +41,7 @@ createMap(
     forMember((destination: any) => destination.hpApUsed, mapFrom((source: CharacterModel) => (source.hpApUsed ?? 0) >>> 0)),
     forMember((destination: any) => destination.petHpItem, mapFrom((source: CharacterModel) => (source.petHpItem ?? 0) >>> 0)),
     forMember((destination: any) => destination.petMpItem, mapFrom((source: CharacterModel) => (source.petMpItem ?? 0) >>> 0)),
-    forMember((destination: any) => destination.summonedPet, mapFrom((source: CharacterModel) => source.summonedPet ?? 0)),
+    forMember((destination: any) => destination.summonedPet, mapFrom((source: CharacterModel) => source.summonedPet ?? "0")),
     forMember((destination: any) => destination.slotLimits, mapFrom((source: CharacterModel) => source.slotLimits ?? [])),
     forMember((destination: any) => destination.monsterBookCover, mapFrom((source: CharacterModel) => (source.monsterBookCover ?? 0) >>> 0)),
     forMember((destination: any) => destination.teleportStones, mapFrom((source: CharacterModel) => source.teleportStones ?? [])),

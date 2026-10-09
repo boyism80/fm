@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	epoch        = 1767225600
+	epochMs      = 1767225600000
 	nodeBits     = 10
 	seqBits      = 12
 	seqLimit     = 1 << seqBits
@@ -16,10 +16,10 @@ const (
 )
 
 type Generator struct {
-	mu     sync.Mutex
-	node   uint64
-	second int64
-	seq    uint64
+	mu   sync.Mutex
+	node uint64
+	ms   int64
+	seq  uint64
 }
 
 func NewForChannel(worldID uint32, channelID uint32) *Generator {
@@ -40,8 +40,8 @@ func (u *Generator) Next() uint64 {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 
-	now := max(time.Now().Unix()-epoch, u.second)
-	if now == u.second {
+	now := max(time.Now().UnixMilli()-epochMs, u.ms)
+	if now == u.ms {
 		u.seq++
 		if u.seq == seqLimit {
 			now++
@@ -50,6 +50,6 @@ func (u *Generator) Next() uint64 {
 	} else {
 		u.seq = 0
 	}
-	u.second = now
+	u.ms = now
 	return uint64(now)<<(nodeBits+seqBits) | u.node<<seqBits | u.seq
 }

@@ -72,7 +72,7 @@ for /r "%PROTO_SRC%" %%F in (*.proto) do (
     -I "%PROTO_SRC%" ^
     --plugin=protoc-gen-ts_proto="%TS_PROTO_PLUGIN%" ^
     --ts_proto_out="%TS_PROTO_OUT%" ^
-    --ts_proto_opt=outputServices=grpc-js,env=node,esModuleInterop=true,useOptionals=none ^
+    --ts_proto_opt=outputServices=grpc-js,env=node,esModuleInterop=true,useOptionals=none,useJsTypeOverride=true ^
     "%%F"
   if errorlevel 1 exit /b 1
 )

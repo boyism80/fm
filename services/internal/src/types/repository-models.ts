@@ -68,7 +68,7 @@ export interface CharacterModel {
     hpApUsed?: number;
     petHpItem?: number;
     petMpItem?: number;
-    summonedPet?: number;
+    summonedPet?: string;
     slotLimits?: number[];
     monsterBookCover?: number;
     teleportStones?: number[];
@@ -111,7 +111,7 @@ export type CharacterRow = {
     hp_ap_used: number;
     pet_hp_item: number;
     pet_mp_item: number;
-    summoned_pet: number | string;
+    summoned_pet: string;
     slot_limits: number[] | null;
     monster_book_cover: number;
     teleport_stones: number[] | null;
@@ -190,7 +190,7 @@ export type CharacterRealtimeStateRow = {
 export type CharacterRealtimeStateDeleteRow = { worldId: number; characterId: number };
 
 export interface InventoryModel {
-    uniqueId: number | null;
+    uniqueId: string | null;
     ownerId: number;
     inventoryType: number;
     itemId: number;
@@ -209,7 +209,7 @@ export interface InventoryModel {
 }
 
 export type InventoryRow = {
-    unique_id: number | null;
+    unique_id: string | null;
     owner_id: number;
     inventory_type: number;
     item_id: number;

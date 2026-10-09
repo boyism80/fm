@@ -94,8 +94,8 @@ export class CashShopService {
         const locker = items.map((row) => this.toProto(row));
         const expired = locker
             .filter((item) => (item.item?.expirationUnixMs ?? 0) > 0 && (item.item?.expirationUnixMs ?? 0) <= now)
-            .map((item) => item.item?.uniqueId ?? 0);
-        await this.cashShopRepo.deleteItems(worldId, accountId, expired.map((serial) => String(serial)));
+            .map((item) => item.item?.uniqueId ?? "0");
+        await this.cashShopRepo.deleteItems(worldId, accountId, expired);
         return {
             nxCash: balance.nxCash,
             maplePoint: balance.maplePoint,
@@ -104,7 +104,7 @@ export class CashShopService {
             characterSlotCount: account?.characterSlotCount ?? 0,
             storageSlotCount: storage?.slots ?? DEFAULT_STORAGE_SLOTS,
             gifts: gifts.map((row) => ({
-                serial: Number(row.serial),
+                serial: row.serial,
                 itemId: row.item_id,
                 senderName: row.sender_name,
                 message: row.message,
@@ -400,8 +400,8 @@ export class CashShopService {
     async getRings(worldId: number, characterId: number): Promise<CashRing[]> {
         const rows = await this.cashShopRepo.findRings(worldId, characterId);
         return rows.map((row) => ({
-            serial: Number(row.serial),
-            partnerSerial: Number(row.partner_serial),
+            serial: row.serial,
+            partnerSerial: row.partner_serial,
             partnerId: row.partner_id,
             partnerName: row.partner_name,
             itemId: row.item_id,

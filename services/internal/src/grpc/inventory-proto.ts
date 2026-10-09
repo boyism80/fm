@@ -74,7 +74,7 @@ createMap(
     INVENTORY_PROTO,
     forMember((destination: any) => destination.uniqueId, mapFrom((source: InventoryModel) => {
         const uid = source.uniqueId;
-        return uid != null && uid !== 0 ? uid : undefined;
+        return uid != null && uid !== "0" ? uid : undefined;
     })),
     forMember((destination: any) => destination.ownerId, mapFrom((source: InventoryModel) => source.ownerId >>> 0)),
     forMember((destination: any) => destination.inventoryType, mapFrom((source: InventoryModel) => (source.inventoryType ?? 0) >>> 0)),

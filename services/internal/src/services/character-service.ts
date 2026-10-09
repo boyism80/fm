@@ -74,7 +74,7 @@ type CharacterInput = {
     hpApUsed?: number;
     petHpItem?: number;
     petMpItem?: number;
-    summonedPet?: number;
+    summonedPet?: string;
     slotLimits?: number[];
     monsterBookCover?: number;
     teleportStones?: number[];
