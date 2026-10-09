@@ -269,7 +269,6 @@ export interface PartyModel {
     partyId: number;
     leaderCharacterId: number;
     state: PartyState;
-    revision: number;
     disbandedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
@@ -280,7 +279,6 @@ export type PartyRow = {
     party_id: number;
     leader_character_id: number;
     state: number | null;
-    revision: number;
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
     updated_at?: Date | string;
@@ -329,7 +327,6 @@ export interface GuildModel {
     logo: GuildLogoModel;
     rankTitles: GuildRankTitlesModel;
     allianceId?: number | null;
-    revision: number;
     disbandedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
@@ -346,7 +343,6 @@ export type GuildRow = {
     logo: GuildLogoModel | null;
     rank_titles: GuildRankTitlesModel;
     alliance_id?: number | null;
-    revision: number;
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
     updated_at?: Date | string;
@@ -391,7 +387,6 @@ export interface AllianceModel {
     rankTitles: import("./alliance-json").AllianceRankTitles;
     capacity: number;
     notice: string;
-    revision: number;
     disbandedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
@@ -406,7 +401,6 @@ export type AllianceRow = {
     rank_titles: import("./alliance-json").AllianceRankTitles;
     capacity: number;
     notice: string;
-    revision: number;
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
     updated_at?: Date | string;

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -15,10 +16,11 @@ import (
 )
 
 type allianceStored struct {
-	alliance *entity.Alliance
-	info     *dto.AllianceInfo
-	guilds   []*dto.GuildInfo
-	guildIDs []uint32
+	alliance  *entity.Alliance
+	info      *dto.AllianceInfo
+	guilds    []*dto.GuildInfo
+	guildIDs  []uint32
+	updatedAt time.Time
 }
 
 type AllianceCache struct {
@@ -26,7 +28,6 @@ type AllianceCache struct {
 	worldID        uint32
 	internalClient internal.InternalClient
 	mu             sync.Mutex
-	revisions      map[uint32]uint64
 	alliances      map[uint32]*allianceStored
 }
 
@@ -35,7 +36,6 @@ func NewAllianceCache(gs *GameServer, worldID uint32, ic internal.InternalClient
 		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
-		revisions:      make(map[uint32]uint64),
 		alliances:      make(map[uint32]*allianceStored),
 	}
 }
@@ -108,13 +108,17 @@ func (ac *AllianceCache) Update(alliancePb *internal.Alliance) {
 	}
 	ent.LeaderCharacterID = alliancePb.GetLeaderCharacterId()
 	stored := &allianceStored{
-		alliance: ent,
-		info:     info,
-		guilds:   guilds,
-		guildIDs: guildIDs,
+		alliance:  ent,
+		info:      info,
+		guilds:    guilds,
+		guildIDs:  guildIDs,
+		updatedAt: time.UnixMilli(alliancePb.GetUpdatedAtUnixMs()),
 	}
 	ac.mu.Lock()
-	ac.revisions[allianceID] = alliancePb.GetRevision()
+	if prev := ac.alliances[allianceID]; prev != nil && stored.updatedAt.Before(prev.updatedAt) {
+		ac.mu.Unlock()
+		return
+	}
 	ac.alliances[allianceID] = stored
 	ac.mu.Unlock()
 }
@@ -123,7 +127,6 @@ func (ac *AllianceCache) Remove(allianceID uint32) []uint32 {
 	ac.mu.Lock()
 	defer ac.mu.Unlock()
 	entry := ac.alliances[allianceID]
-	delete(ac.revisions, allianceID)
 	delete(ac.alliances, allianceID)
 	if entry == nil {
 		return nil

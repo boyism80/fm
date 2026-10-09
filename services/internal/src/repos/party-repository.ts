@@ -5,7 +5,7 @@ import type { RepositoryQuery } from "../types/repository-contracts";
 import type { PartyDeleteRow, PartyModel, PartyRow } from "../types/repository-models";
 import { DEFAULT_PARTY_STATE, partyStateFromDb, partyStateToDb } from "../types/party-state";
 
-const SELECT_COLS = "world_id, party_id, leader_character_id, state, revision, disbanded_at, created_at, updated_at";
+const SELECT_COLS = "world_id, party_id, leader_character_id, state, disbanded_at, created_at, updated_at";
 
 export type { PartyModel };
 
@@ -34,21 +34,19 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
 
     override onUpsert(row: PartyRow): RepositoryQuery {
         return {
-            text: `INSERT INTO parties (world_id, party_id, leader_character_id, state, revision, disbanded_at, created_at, updated_at)
-                   VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
+            text: `INSERT INTO parties (world_id, party_id, leader_character_id, state, disbanded_at, created_at, updated_at)
+                   VALUES ($1,$2,$3,$4,$5,NOW(),clock_timestamp())
                    ON CONFLICT (world_id, party_id) DO UPDATE
                    SET leader_character_id = EXCLUDED.leader_character_id,
                        state = EXCLUDED.state,
-                       revision = EXCLUDED.revision,
                        disbanded_at = EXCLUDED.disbanded_at,
-                       updated_at = NOW()
+                       updated_at = clock_timestamp()
                    RETURNING ${SELECT_COLS}`,
             values: [
                 row.world_id,
                 row.party_id,
                 row.leader_character_id,
                 partyStateToDb(row.state ?? DEFAULT_PARTY_STATE),
-                row.revision,
                 row.disbanded_at ?? null,
             ],
         };
@@ -65,7 +63,6 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
         return {
             ...row,
             party_id: toPgInt(row.party_id),
-            revision: toPgInt(row.revision),
         };
     }
 
@@ -75,7 +72,6 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
             partyId: toPgInt(row.party_id),
             leaderCharacterId: row.leader_character_id,
             state: partyStateFromDb(row.state),
-            revision: toPgInt(row.revision),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
@@ -88,7 +84,6 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
             party_id: model.partyId,
             leader_character_id: model.leaderCharacterId,
             state: partyStateToDb(model.state ?? DEFAULT_PARTY_STATE),
-            revision: model.revision ?? 1,
             disbanded_at: model.disbandedAt ?? null,
         };
     }

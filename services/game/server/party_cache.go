@@ -19,7 +19,6 @@ type PartyEventEnvelope struct {
 	EventType  string `json:"event_type"`
 	WorldID    uint32 `json:"world_id"`
 	PartyID    uint32 `json:"party_id"`
-	Revision   uint64 `json:"revision"`
 	OccurredAt string `json:"occurred_at"`
 }
 
@@ -28,7 +27,6 @@ type PartyCache struct {
 	worldID        uint32
 	internalClient internal.InternalClient
 	mu             sync.Mutex
-	revisions      map[uint32]uint64
 	parties        map[uint32]*entity.Party
 	memberUpdates  map[uint32]*internal.UpdatePartyMemberRequest
 }
@@ -38,7 +36,6 @@ func NewPartyCache(gs *GameServer, worldID uint32, ic internal.InternalClient) *
 		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
-		revisions:      make(map[uint32]uint64),
 		parties:        make(map[uint32]*entity.Party),
 		memberUpdates:  make(map[uint32]*internal.UpdatePartyMemberRequest),
 	}
@@ -60,7 +57,6 @@ func (pc *PartyCache) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 			memberIDs = entity.PartyMemberCharacterIDs(party.GetMembers())
 		}
 		if len(memberIDs) > 0 {
-			delete(pc.revisions, evt.PartyID)
 			delete(pc.parties, evt.PartyID)
 			pc.ClearPartyMembers(memberIDs)
 			pc.mu.Unlock()
@@ -95,23 +91,22 @@ func (pc *PartyCache) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 
 func (pc *PartyCache) mergeGetPartyReplyLocked(partyID uint32, reply *internal.GetPartyReply) {
 	if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
-		delete(pc.revisions, partyID)
 		delete(pc.parties, partyID)
 		return
 	}
 	ent := entity.PartyFromProto(pc.gs, reply.GetParty())
 	if ent == nil {
-		delete(pc.revisions, partyID)
 		delete(pc.parties, partyID)
 		return
 	}
 	stored := ent.Clone()
 	if stored == nil {
-		delete(pc.revisions, partyID)
 		delete(pc.parties, partyID)
 		return
 	}
-	pc.revisions[partyID] = stored.Revision
+	if prev := pc.parties[partyID]; prev != nil && stored.UpdatedAt.Before(prev.UpdatedAt) {
+		return
+	}
 	pc.parties[partyID] = stored
 }
 
@@ -128,7 +123,6 @@ func (pc *PartyCache) syncAfterFetch(evt PartyEventEnvelope) error {
 		if party, ok := pc.parties[partyID]; ok && party != nil {
 			memberIDs = entity.PartyMemberCharacterIDs(party.GetMembers())
 		}
-		delete(pc.revisions, partyID)
 		delete(pc.parties, partyID)
 		pc.ClearPartyMembers(memberIDs)
 		return nil
@@ -152,9 +146,11 @@ func (pc *PartyCache) applyPartySnapshot(evt PartyEventEnvelope, partyPb *intern
 	if cloned == nil {
 		return false, errors.New("party: clone failed")
 	}
-	rev := cloned.Revision
 	pc.mu.Lock()
-	pc.revisions[partyID] = rev
+	if prev := pc.parties[partyID]; prev != nil && cloned.UpdatedAt.Before(prev.UpdatedAt) {
+		pc.mu.Unlock()
+		return false, nil
+	}
 	pc.parties[partyID] = cloned
 	pc.mu.Unlock()
 
@@ -180,7 +176,9 @@ func (pc *PartyCache) Update(partyPb *internal.Party) {
 	partyID := stored.PartyID
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
-	pc.revisions[partyID] = stored.Revision
+	if prev := pc.parties[partyID]; prev != nil && stored.UpdatedAt.Before(prev.UpdatedAt) {
+		return
+	}
 	pc.parties[partyID] = stored
 	pc.Sync(stored)
 }
@@ -251,8 +249,6 @@ func (pc *PartyCache) DeliverPartySilent(party *entity.Party) {
 	}
 }
 
-// SendPartySilentAsync builds a Promise that sends party silent UI state to the character. Uses cache
-// when warm; otherwise schedules GetParty via ThenRPC (from map actor Receive).
 func (pc *PartyCache) SendPartySilentAsync(ctx actor.Context, ch *entity.Character) *async.Task {
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if pc == nil || ch == nil || pc.gs == nil || ctx == nil {

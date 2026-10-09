@@ -51,7 +51,6 @@ export class PartyGrpcController {
                     ok: true,
                     errorCode: PartyErrorCode.NONE,
                     partyId: result.partyId,
-                    revision: result.revision ?? 0,
                     party: result.party,
                 });
             } else {
@@ -59,7 +58,6 @@ export class PartyGrpcController {
                     ok: false,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     partyId: undefined,
-                    revision: 0,
                     party: undefined,
                 });
             }
@@ -82,14 +80,12 @@ export class PartyGrpcController {
                     ok: true,
                     errorCode: PartyErrorCode.NONE,
                     partyId: result.partyId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     partyId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -127,7 +123,6 @@ export class PartyGrpcController {
                     ok: true,
                     errorCode: PartyErrorCode.NONE,
                     partyId: result.partyId,
-                    revision: result.revision ?? 0,
                     disbanded: result.disbanded ?? false,
                 });
             } else {
@@ -135,7 +130,6 @@ export class PartyGrpcController {
                     ok: false,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     partyId: undefined,
-                    revision: 0,
                     disbanded: false,
                 });
             }
@@ -153,7 +147,6 @@ export class PartyGrpcController {
                     ok: true,
                     errorCode: PartyErrorCode.NONE,
                     partyId: result.partyId,
-                    revision: result.revision ?? 0,
                     disbanded: result.disbanded ?? false,
                 });
             } else {
@@ -161,7 +154,6 @@ export class PartyGrpcController {
                     ok: false,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     partyId: undefined,
-                    revision: 0,
                     disbanded: false,
                 });
             }
@@ -184,14 +176,12 @@ export class PartyGrpcController {
                     ok: true,
                     errorCode: PartyErrorCode.NONE,
                     partyId: result.partyId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     partyId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -224,14 +214,12 @@ export class PartyGrpcController {
                     ok: true,
                     errorCode: PartyErrorCode.NONE,
                     partyId: result.partyId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     partyId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {

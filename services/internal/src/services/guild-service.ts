@@ -27,7 +27,6 @@ import {
     type GuildRankTitles,
 } from "../types/guild-json";
 
-// Re-export bulletin board and alliance result types for backward compatibility
 export type {
     ListGuildBulletinBoardThreadsResult,
     ShowGuildBulletinBoardThreadResult,
@@ -89,7 +88,6 @@ export type CreateGuildResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
     guild?: GuildMessage;
 };
 
@@ -105,49 +103,42 @@ export type LeaveGuildResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
 };
 
 export type ExpelGuildResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
 };
 
 export type ChangeGuildRankTitlesResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
 };
 
 export type ChangeGuildMemberRankResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
 };
 
 export type ChangeGuildEmblemResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
 };
 
 export type ChangeGuildNoticeResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
 };
 
 export type DisbandGuildResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
     allianceId?: number | null;
 };
 
@@ -155,7 +146,6 @@ export type IncreaseGuildCapacityResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
     capacity?: number;
     gp?: number;
 };
@@ -164,7 +154,6 @@ export type GainGuildGPResult = {
     ok: boolean;
     code?: GuildErrorCode;
     guildId?: number;
-    revision?: number;
     gp?: number;
 };
 
@@ -257,7 +246,6 @@ export class GuildService {
         eventType: string,
         worldId: number,
         guildId: number,
-        revision: number,
         extraPayload: Record<string, unknown> = {}
     ) {
         await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
@@ -266,7 +254,6 @@ export class GuildService {
             event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             world_id: worldId,
             guild_id: guildId,
-            revision,
             occurred_at: new Date().toISOString(),
             ...extraPayload,
         });
@@ -336,7 +323,6 @@ export class GuildService {
             throw err;
         }
 
-        let revision = 1;
         let savedGuild: GuildModel;
         try {
             savedGuild = await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
@@ -352,7 +338,6 @@ export class GuildService {
                         notice: "",
                         logo: DEFAULT_GUILD_LOGO,
                         rankTitles: DEFAULT_GUILD_RANK_TITLES,
-                        revision: 1,
                     },
                     { txClient: dataTx }
                 );
@@ -372,7 +357,6 @@ export class GuildService {
                 return savedGuild;
             });
 
-            revision = savedGuild.revision;
 
             await this.ctx.withPgDataTransaction(worldId, leaderCharacterId, async (dataTx: PoolClient) => {
                 const state = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId, { txClient: dataTx });
@@ -405,7 +389,7 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, leaderCharacterId);
 
-        await this.publishToGuildRoutes(EVT.CREATED, worldId, guildId, revision, {
+        await this.publishToGuildRoutes(EVT.CREATED, worldId, guildId, {
             leader_character_id: leaderCharacterId,
             guild_name: normalizedName,
         });
@@ -420,7 +404,7 @@ export class GuildService {
         };
         const guildMessage = await this.guildToPb(worldId, savedGuild, [leaderMember]);
 
-        return { ok: true, guildId, revision, guild: guildMessage };
+        return { ok: true, guildId, guild: guildMessage };
     }
 
     async acceptGuildInvite(
@@ -492,17 +476,16 @@ export class GuildService {
                 { txClient }
             );
 
-            const nextRevision = guild.revision + 1;
             const updatedGuild = await this.guildRepo.set(
                 worldId,
-                { ...guild, revision: nextRevision },
+                guild,
                 { txClient }
             );
 
-            return { ok: true as const, revision: updatedGuild.revision };
+            return { ok: true as const };
         });
 
-        if (!result.ok || result.revision == null) {
+        if (!result.ok) {
             return { ok: false, code: result.code ?? messages.GuildErrorCode.GUILD_ERROR_UNKNOWN };
         }
 
@@ -524,7 +507,7 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
 
-        await this.publishToGuildRoutes(EVT.MEMBER_JOINED, worldId, guildId, result.revision, {
+        await this.publishToGuildRoutes(EVT.MEMBER_JOINED, worldId, guildId, {
             character_id: characterId,
         });
 
@@ -563,7 +546,7 @@ export class GuildService {
         const guildResult = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
             const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
-                return { ok: true as const, guildId: lockedGuildId, revision: 0, clearRealtime: true as const };
+                return { ok: true as const, guildId: lockedGuildId, clearRealtime: true as const };
             }
 
             if (guild.leaderCharacterId === characterId) {
@@ -577,12 +560,11 @@ export class GuildService {
 
             await this.guildMemberRepo.del(worldId, String(lockedGuildId), characterId, { txClient });
 
-            const nextRevision = guild.revision + 1;
-            const updatedGuild = await this.guildRepo.set(worldId, { ...guild, revision: nextRevision }, { txClient });
-            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision, clearRealtime: true as const };
+            const updatedGuild = await this.guildRepo.set(worldId, guild, { txClient });
+            return { ok: true as const, guildId: updatedGuild.guildId, clearRealtime: true as const };
         });
 
-        if (!guildResult.ok || guildResult.guildId == null || guildResult.revision == null) {
+        if (!guildResult.ok || guildResult.guildId == null) {
             return guildResult;
         }
 
@@ -607,11 +589,11 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
 
-        await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, result.revision, {
+        await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, {
             character_id: characterId,
         });
 
-        return { ok: true, guildId: result.guildId, revision: result.revision };
+        return { ok: true, guildId: result.guildId };
     }
 
     private canExpelGuildMembers(rank: GuildMemberRank | undefined) {
@@ -702,12 +684,11 @@ export class GuildService {
 
             await this.guildMemberRepo.del(worldId, String(lockedGuildId), targetCharacterId, { txClient });
 
-            const nextRevision = guild.revision + 1;
-            const updatedGuild = await this.guildRepo.set(worldId, { ...guild, revision: nextRevision }, { txClient });
-            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision };
+            const updatedGuild = await this.guildRepo.set(worldId, guild, { txClient });
+            return { ok: true as const, guildId: updatedGuild.guildId };
         });
 
-        if (!guildResult.ok || guildResult.guildId == null || guildResult.revision == null) {
+        if (!guildResult.ok || guildResult.guildId == null) {
             return guildResult;
         }
 
@@ -730,7 +711,7 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, targetCharacterId);
 
-        await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, result.revision, {
+        await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, {
             character_id: targetCharacterId,
             expelled: true,
         });
@@ -739,7 +720,7 @@ export class GuildService {
             // TODO: game server -> internal sendNote RPC (promise) when offline member is expelled
         }
 
-        return { ok: true, guildId: result.guildId, revision: result.revision };
+        return { ok: true, guildId: result.guildId };
     }
 
     private normalizeRankTitles(rankTitles: string[] | null | undefined): GuildRankTitles | null {
@@ -799,24 +780,23 @@ export class GuildService {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
             }
 
-            const nextRevision = guild.revision + 1;
             const updatedGuild = await this.guildRepo.set(
                 worldId,
-                { ...guild, rankTitles: normalizedRankTitles, revision: nextRevision },
+                { ...guild, rankTitles: normalizedRankTitles },
                 { txClient }
             );
-            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision };
+            return { ok: true as const, guildId: updatedGuild.guildId };
         });
 
-        if (!result.ok || result.guildId == null || result.revision == null) {
+        if (!result.ok || result.guildId == null) {
             return result;
         }
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.RANK_TITLES_CHANGED, worldId, result.guildId, result.revision, {});
+        await this.publishToGuildRoutes(EVT.RANK_TITLES_CHANGED, worldId, result.guildId, {});
 
-        return { ok: true, guildId: result.guildId, revision: result.revision };
+        return { ok: true, guildId: result.guildId };
     }
 
     private canChangeMemberRank(rank: GuildMemberRank | undefined) {
@@ -918,23 +898,22 @@ export class GuildService {
                 { txClient }
             );
 
-            const nextRevision = guild.revision + 1;
-            const updatedGuild = await this.guildRepo.set(worldId, { ...guild, revision: nextRevision }, { txClient });
-            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision };
+            const updatedGuild = await this.guildRepo.set(worldId, guild, { txClient });
+            return { ok: true as const, guildId: updatedGuild.guildId };
         });
 
-        if (!result.ok || result.guildId == null || result.revision == null) {
+        if (!result.ok || result.guildId == null) {
             return result;
         }
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
         await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
 
-        await this.publishToGuildRoutes(EVT.MEMBER_RANK_CHANGED, worldId, result.guildId, result.revision, {
+        await this.publishToGuildRoutes(EVT.MEMBER_RANK_CHANGED, worldId, result.guildId, {
             character_id: targetCharacterId,
         });
 
-        return { ok: true, guildId: result.guildId, revision: result.revision };
+        return { ok: true, guildId: result.guildId };
     }
 
     private normalizeGuildLogo(logo: GuildLogoMessage | null | undefined): GuildLogo | null {
@@ -1009,24 +988,23 @@ export class GuildService {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
             }
 
-            const nextRevision = guild.revision + 1;
             const updatedGuild = await this.guildRepo.set(
                 worldId,
-                { ...guild, logo: normalizedLogo, revision: nextRevision },
+                { ...guild, logo: normalizedLogo },
                 { txClient }
             );
-            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision };
+            return { ok: true as const, guildId: updatedGuild.guildId };
         });
 
-        if (!result.ok || result.guildId == null || result.revision == null) {
+        if (!result.ok || result.guildId == null) {
             return result;
         }
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.EMBLEM_CHANGED, worldId, result.guildId, result.revision, {});
+        await this.publishToGuildRoutes(EVT.EMBLEM_CHANGED, worldId, result.guildId, {});
 
-        return { ok: true, guildId: result.guildId, revision: result.revision };
+        return { ok: true, guildId: result.guildId };
     }
 
     private normalizeGuildNotice(notice: string | null | undefined): string | null {
@@ -1086,24 +1064,23 @@ export class GuildService {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
             }
 
-            const nextRevision = guild.revision + 1;
             const updatedGuild = await this.guildRepo.set(
                 worldId,
-                { ...guild, notice: normalizedNotice, revision: nextRevision },
+                { ...guild, notice: normalizedNotice },
                 { txClient }
             );
-            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision };
+            return { ok: true as const, guildId: updatedGuild.guildId };
         });
 
-        if (!result.ok || result.guildId == null || result.revision == null) {
+        if (!result.ok || result.guildId == null) {
             return result;
         }
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.NOTICE_CHANGED, worldId, result.guildId, result.revision, {});
+        await this.publishToGuildRoutes(EVT.NOTICE_CHANGED, worldId, result.guildId, {});
 
-        return { ok: true, guildId: result.guildId, revision: result.revision };
+        return { ok: true, guildId: result.guildId };
     }
 
     async increaseGuildCapacity(
@@ -1161,33 +1138,30 @@ export class GuildService {
                 nextGP -= GUILD_CAPACITY_EXTENDED_GP_COST;
             }
 
-            const nextRevision = guild.revision + 1;
             const updatedGuild = await this.guildRepo.set(
                 worldId,
                 {
                     ...guild,
                     capacity: guild.capacity + GUILD_CAPACITY_STEP,
                     gp: nextGP,
-                    revision: nextRevision,
                 },
                 { txClient }
             );
             return {
                 ok: true as const,
                 guildId: updatedGuild.guildId,
-                revision: updatedGuild.revision,
                 capacity: updatedGuild.capacity,
                 gp: updatedGuild.gp,
             };
         });
 
-        if (!result.ok || result.guildId == null || result.revision == null) {
+        if (!result.ok || result.guildId == null) {
             return result;
         }
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.CAPACITY_CHANGED, worldId, result.guildId, result.revision, {
+        await this.publishToGuildRoutes(EVT.CAPACITY_CHANGED, worldId, result.guildId, {
             capacity: result.capacity,
             gp: result.gp,
             gp_amount: extendedCap ? -GUILD_CAPACITY_EXTENDED_GP_COST : 0,
@@ -1196,7 +1170,6 @@ export class GuildService {
         return {
             ok: true,
             guildId: result.guildId,
-            revision: result.revision,
             capacity: result.capacity,
             gp: result.gp,
         };
@@ -1224,18 +1197,17 @@ export class GuildService {
 
             const nextGP = Math.min(GUILD_GP_MAX, Math.max(0, guild.gp + amount));
             if (nextGP === guild.gp) {
-                return { ok: true as const, guildId, revision: guild.revision, gp: guild.gp, changed: 0 };
+                return { ok: true as const, guildId, gp: guild.gp, changed: 0 };
             }
 
             const updatedGuild = await this.guildRepo.set(
                 worldId,
-                { ...guild, gp: nextGP, revision: guild.revision + 1 },
+                { ...guild, gp: nextGP },
                 { txClient }
             );
             return {
                 ok: true as const,
                 guildId,
-                revision: updatedGuild.revision,
                 gp: updatedGuild.gp,
                 changed: nextGP - guild.gp,
             };
@@ -1245,17 +1217,17 @@ export class GuildService {
             return result;
         }
         if (result.changed === 0) {
-            return { ok: true, guildId: result.guildId, revision: result.revision, gp: result.gp };
+            return { ok: true, guildId: result.guildId, gp: result.gp };
         }
 
         await this.guildRepo.invalidateCache(worldId, guildId);
 
-        await this.publishToGuildRoutes(EVT.GP_CHANGED, worldId, guildId, result.revision, {
+        await this.publishToGuildRoutes(EVT.GP_CHANGED, worldId, guildId, {
             gp: result.gp,
             amount: result.changed,
         });
 
-        return { ok: true, guildId: result.guildId, revision: result.revision, gp: result.gp };
+        return { ok: true, guildId: result.guildId, gp: result.gp };
     }
 
     async sendGuildMessage(worldId: number, guildId: number, messageType: number, message: string): Promise<boolean> {
@@ -1270,7 +1242,7 @@ export class GuildService {
             return false;
         }
 
-        await this.publishToGuildRoutes(EVT.MESSAGE, worldId, guildId, guild.revision, {
+        await this.publishToGuildRoutes(EVT.MESSAGE, worldId, guildId, {
             message_type: messageType,
             message: trimmed,
         });
@@ -1340,10 +1312,9 @@ export class GuildService {
             }
 
             const memberCharacterIds = [...members.values()].map((m) => m.characterId);
-            const nextRevision = guild.revision + 1;
             await this.guildRepo.set(
                 worldId,
-                { ...guild, revision: nextRevision, disbandedAt: new Date() },
+                { ...guild, disbandedAt: new Date() },
                 { txClient }
             );
             await this.guildMemberRepo.deleteAllForGuild(worldId, lockedGuildId, { txClient });
@@ -1351,13 +1322,12 @@ export class GuildService {
             return {
                 ok: true as const,
                 guildId: lockedGuildId,
-                revision: nextRevision,
                 memberCharacterIds,
                 allianceId: guild.allianceId,
             };
         });
 
-        if (!guildResult.ok || guildResult.guildId == null || guildResult.revision == null) {
+        if (!guildResult.ok || guildResult.guildId == null) {
             return guildResult;
         }
 
@@ -1391,12 +1361,12 @@ export class GuildService {
         }
         await this.unifiedRepo.deleteGuildName(result.guildId).catch(() => {});
 
-        await this.publishToGuildRoutes(EVT.DISBANDED, worldId, result.guildId, result.revision, {
+        await this.publishToGuildRoutes(EVT.DISBANDED, worldId, result.guildId, {
             requester_character_id: characterId,
             member_character_ids: result.memberCharacterIds ?? [],
         });
 
-        return { ok: true, guildId: result.guildId, revision: result.revision, allianceId: result.allianceId };
+        return { ok: true, guildId: result.guildId, allianceId: result.allianceId };
     }
 
     async publishMemberOnline(worldId: number, characterId: number, online: boolean) {
@@ -1421,7 +1391,7 @@ export class GuildService {
             return;
         }
 
-        await this.publishToGuildRoutes(EVT.MEMBER_ONLINE_CHANGED, worldId, guildId, guild.revision, {
+        await this.publishToGuildRoutes(EVT.MEMBER_ONLINE_CHANGED, worldId, guildId, {
             character_id: characterId,
             online,
         });
@@ -1488,7 +1458,7 @@ export class GuildService {
             guildId: guild.guildId,
             name: guild.name,
             leaderCharacterId: guild.leaderCharacterId,
-            revision: guild.revision,
+            updatedAtUnixMs: guild.updatedAt?.getTime() ?? 0,
             gp: guild.gp,
             capacity: guild.capacity,
             notice: guild.notice,
@@ -1546,7 +1516,7 @@ export class GuildService {
             return { ok: false };
         }
         const guild = loaded.guild;
-        await this.publishToGuildRoutes("multi_chat", worldId, guildId, guild.revision, {
+        await this.publishToGuildRoutes("multi_chat", worldId, guildId, {
             guild_id: guildId,
             sender_character_id: senderCharacterId,
             chat_mode: 2,

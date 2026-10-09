@@ -136,7 +136,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                     guild: result.guild,
                 });
             } else {
@@ -144,7 +143,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -200,14 +198,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -229,14 +225,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -261,14 +255,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -294,14 +286,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -323,14 +313,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -352,14 +340,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -384,7 +370,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                     capacity: result.capacity ?? 0,
                     gp: result.gp ?? 0,
                 });
@@ -393,7 +378,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                     capacity: 0,
                     gp: 0,
                 });
@@ -413,7 +397,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                     gp: result.gp ?? 0,
                 });
             } else {
@@ -421,7 +404,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                     gp: 0,
                 });
             }
@@ -710,7 +692,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     alliance: result.alliance,
                 });
             } else {
@@ -718,7 +699,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     alliance: undefined,
                 });
             }
@@ -739,7 +719,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     disbanded: result.disbanded ?? false,
                     removedGuildId: result.removedGuildId ?? 0,
                     alliance: result.alliance,
@@ -749,7 +728,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     disbanded: false,
                     removedGuildId: 0,
                     alliance: undefined,
@@ -778,7 +756,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     disbanded: result.disbanded ?? false,
                     removedGuildId: result.removedGuildId ?? 0,
                     alliance: result.alliance,
@@ -788,7 +765,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     disbanded: false,
                     removedGuildId: 0,
                     alliance: undefined,
@@ -811,14 +787,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                 });
             }
         } catch (err) {
@@ -844,7 +818,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     alliance: result.alliance,
                 });
             } else {
@@ -852,7 +825,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     alliance: undefined,
                 });
             }
@@ -876,7 +848,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     alliance: result.alliance,
                 });
             } else {
@@ -884,7 +855,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     alliance: undefined,
                 });
             }
@@ -910,7 +880,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     alliance: result.alliance,
                 });
             } else {
@@ -918,7 +887,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     alliance: undefined,
                 });
             }
@@ -944,7 +912,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     oldLeaderCharacterId: result.oldLeaderCharacterId ?? 0,
                     newLeaderCharacterId: result.newLeaderCharacterId ?? 0,
                     alliance: result.alliance,
@@ -954,7 +921,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     oldLeaderCharacterId: 0,
                     newLeaderCharacterId: 0,
                     alliance: undefined,
@@ -982,7 +948,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     alliance: result.alliance,
                 });
             } else {
@@ -990,7 +955,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     alliance: undefined,
                 });
             }
@@ -1017,7 +981,6 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
                     allianceId: result.allianceId ?? 0,
-                    revision: result.revision ?? 0,
                     targetCharacterId: result.targetCharacterId ?? 0,
                     newAllianceRank: result.newAllianceRank ?? 0,
                     alliance: result.alliance,
@@ -1027,7 +990,6 @@ export class GuildGrpcController {
                     ok: false,
                     errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
                     allianceId: 0,
-                    revision: 0,
                     targetCharacterId: 0,
                     newAllianceRank: 0,
                     alliance: undefined,
@@ -1068,14 +1030,12 @@ export class GuildGrpcController {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,
                     guildId: result.guildId,
-                    revision: result.revision ?? 0,
                 });
             } else {
                 callback(null, {
                     ok: false,
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
-                    revision: 0,
                 });
             }
         } catch (err) {

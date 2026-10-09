@@ -60,18 +60,6 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(guild.LeaderCharacterID))
 			return 1
 		},
-		"revision": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
-			if L.GetTop() != 1 {
-				L.ArgError(2, "revision() is read-only")
-				return 0
-			}
-			L.Push(lua.LNumber(guild.Revision))
-			return 1
-		},
 		"gp": func(L *lua.LState) int {
 			guild, ok := LuaCheckGuild(L, 1)
 			if !ok {

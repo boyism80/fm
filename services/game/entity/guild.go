@@ -29,7 +29,7 @@ type Guild struct {
 	GuildID           uint32
 	Name              string
 	LeaderCharacterID uint32
-	Revision          uint64
+	UpdatedAt         time.Time
 	GP                uint32
 	Capacity          uint32
 	Notice            string
@@ -138,10 +138,6 @@ func (g *Guild) GetLeaderCharacterId() uint32 {
 	return g.LeaderCharacterID
 }
 
-func (g *Guild) GetRevision() uint64 {
-	return g.Revision
-}
-
 func (g *Guild) Level() uint32 {
 	for level := 1; level < len(constant.GuildLevelGP); level++ {
 		if g.GP < constant.GuildLevelGP[level] {
@@ -220,7 +216,7 @@ func (g *Guild) Clone() *Guild {
 		GuildID:           g.GuildID,
 		Name:              g.Name,
 		LeaderCharacterID: g.LeaderCharacterID,
-		Revision:          g.Revision,
+		UpdatedAt:         g.UpdatedAt,
 		GP:                g.GP,
 		Capacity:          g.Capacity,
 		Notice:            g.Notice,
@@ -297,7 +293,7 @@ func GuildFromProto(gw GameWorld, pb *internal.Guild) *Guild {
 		GuildID:           pb.GetGuildId(),
 		Name:              pb.GetName(),
 		LeaderCharacterID: pb.GetLeaderCharacterId(),
-		Revision:          pb.GetRevision(),
+		UpdatedAt:         time.UnixMilli(pb.GetUpdatedAtUnixMs()),
 		GP:                pb.GetGp(),
 		Capacity:          pb.GetCapacity(),
 		Notice:            pb.GetNotice(),
@@ -332,7 +328,7 @@ func (g *Guild) ToProto() *internal.Guild {
 		GuildId:           g.GuildID,
 		Name:              g.Name,
 		LeaderCharacterId: g.LeaderCharacterID,
-		Revision:          g.Revision,
+		UpdatedAtUnixMs:   g.UpdatedAt.UnixMilli(),
 		Gp:                g.GP,
 		Capacity:          g.Capacity,
 		Notice:            g.Notice,

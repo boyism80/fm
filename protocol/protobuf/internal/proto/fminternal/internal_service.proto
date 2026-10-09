@@ -1242,7 +1242,6 @@ message CreatePartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
-  uint64 revision = 4;
   Party party = 5;
 }
 
@@ -1257,7 +1256,6 @@ message JoinPartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
-  uint64 revision = 4;
 }
 
 message LeavePartyRequest {
@@ -1269,7 +1267,6 @@ message LeavePartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
-  uint64 revision = 4;
   bool disbanded = 5;
 }
 
@@ -1283,7 +1280,6 @@ message ExpelPartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
-  uint64 revision = 4;
   bool disbanded = 5;
 }
 
@@ -1298,7 +1294,6 @@ message ChangePartyLeaderReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
-  uint64 revision = 4;
 }
 
 enum PartyState {
@@ -1310,7 +1305,7 @@ message Party {
   uint32 world_id = 1;
   uint32 party_id = 2;
   uint32 leader_character_id = 3;
-  uint64 revision = 4;
+  int64 updated_at_unix_ms = 4;
   PartyState state = 5;
   repeated PartyMember members = 6;
 }
@@ -1333,7 +1328,6 @@ message UpdatePartyMemberReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
-  uint64 revision = 4;
 }
 
 message InvitePartyRequest {
@@ -1542,7 +1536,6 @@ message CreateGuildReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
   optional Guild guild = 5;
 }
 
@@ -1567,7 +1560,6 @@ message LeaveGuildReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
 }
 
 message ExpelGuildRequest {
@@ -1580,7 +1572,6 @@ message ExpelGuildReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
 }
 
 message ChangeGuildRankTitlesRequest {
@@ -1593,7 +1584,6 @@ message ChangeGuildRankTitlesReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
 }
 
 message ChangeGuildMemberRankRequest {
@@ -1607,7 +1597,6 @@ message ChangeGuildMemberRankReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
 }
 
 message ChangeGuildEmblemRequest {
@@ -1620,7 +1609,6 @@ message ChangeGuildEmblemReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
 }
 
 message ChangeGuildNoticeRequest {
@@ -1633,7 +1621,6 @@ message ChangeGuildNoticeReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
 }
 
 message IncreaseGuildCapacityRequest {
@@ -1646,7 +1633,6 @@ message IncreaseGuildCapacityReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
   uint32 capacity = 5;
   uint32 gp = 6;
 }
@@ -1661,7 +1647,6 @@ message GainGuildGPReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
   uint32 gp = 5;
 }
 
@@ -1700,7 +1685,6 @@ message DisbandGuildReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
-  uint64 revision = 4;
 }
 
 message GuildLogo {
@@ -1715,7 +1699,7 @@ message Guild {
   uint32 guild_id = 2;
   string name = 3;
   uint32 leader_character_id = 4;
-  uint64 revision = 5;
+  int64 updated_at_unix_ms = 5;
   uint32 gp = 6;
   uint32 capacity = 7;
   string notice = 8;
@@ -1754,7 +1738,7 @@ message Alliance {
   uint32 alliance_id = 2;
   string name = 3;
   uint32 leader_character_id = 4;
-  uint64 revision = 5;
+  int64 updated_at_unix_ms = 5;
   uint32 capacity = 6;
   string notice = 7;
   repeated string rank_titles = 8;
@@ -1773,7 +1757,6 @@ message CreateAllianceReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   Alliance alliance = 5;
 }
 
@@ -1796,7 +1779,6 @@ message DisbandAllianceReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
 }
 
 message LeaveAllianceRequest {
@@ -1808,7 +1790,6 @@ message LeaveAllianceReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   bool disbanded = 5;
   uint32 removed_guild_id = 6;
   Alliance alliance = 7;
@@ -1825,7 +1806,6 @@ message ExpelAllianceGuildReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   bool disbanded = 5;
   uint32 removed_guild_id = 6;
   Alliance alliance = 7;
@@ -1842,7 +1822,6 @@ message AcceptAllianceInviteReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   Alliance alliance = 5;
 }
 
@@ -1855,7 +1834,6 @@ message IncreaseAllianceCapacityReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   Alliance alliance = 5;
 }
 
@@ -1869,7 +1847,6 @@ message ChangeAllianceRankTitlesReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   Alliance alliance = 5;
 }
 
@@ -1884,7 +1861,6 @@ message ChangeAllianceMemberRankReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   uint32 target_character_id = 5;
   uint32 new_alliance_rank = 6;
   Alliance alliance = 7;
@@ -1900,7 +1876,6 @@ message ChangeAllianceLeaderReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   uint32 old_leader_character_id = 5;
   uint32 new_leader_character_id = 6;
   Alliance alliance = 7;
@@ -1916,7 +1891,6 @@ message ChangeAllianceNoticeReply {
   bool ok = 1;
   AllianceErrorCode error_code = 2;
   uint32 alliance_id = 3;
-  uint64 revision = 4;
   Alliance alliance = 5;
 }
 

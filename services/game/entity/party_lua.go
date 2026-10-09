@@ -53,20 +53,6 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(party.LeaderCharacterID))
 			return 1
 		},
-		"revision": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			party, ok := ud.Value.(*Party)
-			if !ok || party == nil {
-				L.ArgError(1, "Party expected")
-				return 0
-			}
-			if L.GetTop() != 1 {
-				L.ArgError(2, "revision() is read-only")
-				return 0
-			}
-			L.Push(lua.LNumber(party.Revision))
-			return 1
-		},
 		"state": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			party, ok := ud.Value.(*Party)

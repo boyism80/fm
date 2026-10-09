@@ -1,8 +1,11 @@
 package entity
 
-import internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+import (
+	"time"
 
-// PartyFromProto builds an entity Party from an internal protobuf message.
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+)
+
 func PartyFromProto(gw GameWorld, pb *internal.Party) *Party {
 	if pb == nil {
 		return nil
@@ -18,13 +21,12 @@ func PartyFromProto(gw GameWorld, pb *internal.Party) *Party {
 		WorldID:           pb.GetWorldId(),
 		PartyID:           pb.GetPartyId(),
 		LeaderCharacterID: pb.GetLeaderCharacterId(),
-		Revision:          pb.GetRevision(),
+		UpdatedAt:         time.UnixMilli(pb.GetUpdatedAtUnixMs()),
 		State:             pb.GetState(),
 		Members:           members,
 	}
 }
 
-// ToProto serializes this party to the internal protobuf message.
 func (p *Party) ToProto() *internal.Party {
 	if p == nil {
 		return nil
@@ -39,7 +41,7 @@ func (p *Party) ToProto() *internal.Party {
 		WorldId:           p.WorldID,
 		PartyId:           p.PartyID,
 		LeaderCharacterId: p.LeaderCharacterID,
-		Revision:          p.Revision,
+		UpdatedAtUnixMs:   p.UpdatedAt.UnixMilli(),
 		State:             p.State,
 		Members:           members,
 	}

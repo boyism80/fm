@@ -38,7 +38,7 @@ const INVITE_PENDING_TTL_SEC = 300;
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
 const PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE = 22;
 
-export type PartyMutationResult = { ok: boolean; code?: number; partyId?: number; revision?: number };
+export type PartyMutationResult = { ok: boolean; code?: number; partyId?: number };
 export type CreatePartyResult = PartyMutationResult & { party?: PartyMessage };
 export type InvitePartyResult = PartyMutationResult & { targetCharacterId?: number; targetChannelId?: number };
 export type DenyPartyResult = { ok: boolean; code?: number };
@@ -93,7 +93,6 @@ export class PartyService {
         eventType: string,
         worldId: number,
         partyId: number,
-        revision: number,
         extraPayload: Record<string, unknown> = {}
     ) {
         await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
@@ -101,7 +100,6 @@ export class PartyService {
         return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
             event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             party_id: partyId,
-            revision,
             occurred_at: new Date().toISOString(),
             ...extraPayload,
         });
@@ -168,10 +166,9 @@ export class PartyService {
         eventType: string,
         worldId: number,
         partyId: number,
-        revision: number,
         extraPayload: Record<string, unknown> = {}
     ) {
-        await this.publishToPartyRoutes(eventType, worldId, partyId, revision, {
+        await this.publishToPartyRoutes(eventType, worldId, partyId, {
             world_id: worldId,
             ...extraPayload,
         });
@@ -232,7 +229,7 @@ export class PartyService {
             worldId,
             partyId: party.partyId,
             leaderCharacterId: party.leaderCharacterId,
-            revision: party.revision,
+            updatedAtUnixMs: party.updatedAt?.getTime() ?? 0,
             state: party.state,
             members,
         };
@@ -299,8 +296,7 @@ export class PartyService {
                 { ...self, characterName: name, level: memberLevel, classId: memberClassId, mapId: member.mapId ?? 0, door: doorJson },
                 { txClient }
             );
-            const nextRevision = party.revision + 1;
-            const updatedParty = await this.partyRepo.set(worldId, { ...party, revision: nextRevision }, { txClient });
+            const updatedParty = await this.partyRepo.set(worldId, party, { txClient });
             return { ok: true, party: updatedParty, triggerCharacterId: characterId };
         });
         if (!result.ok || !result.party) {
@@ -312,11 +308,11 @@ export class PartyService {
         const membersMap = await this.partyMemberRepo.getAll(worldId, String(result.party.partyId));
         const partyPb = await this.partyToPb(worldId, result.party, [...membersMap.values()]);
         const wire = Party.encode(partyPb).finish();
-        await this.publishPartyEvent(EVT.PARTY_SYNC, worldId, result.party.partyId, result.party.revision, {
+        await this.publishPartyEvent(EVT.PARTY_SYNC, worldId, result.party.partyId, {
             trigger_character_id: result.triggerCharacterId,
             party_pb: Buffer.from(wire).toString("base64"),
         });
-        return { ok: true, partyId: result.party.partyId, revision: result.party.revision };
+        return { ok: true, partyId: result.party.partyId };
     }
 
     async publishMemberLogOnOff(worldId: number, characterId: number) {
@@ -342,7 +338,7 @@ export class PartyService {
 
         const partyPb = await this.partyToPb(worldId, party, [...membersMap.values()]);
         const wire = Party.encode(partyPb).finish();
-        await this.publishPartyEvent(EVT.LOG_ONOFF, worldId, party.partyId, party.revision, {
+        await this.publishPartyEvent(EVT.LOG_ONOFF, worldId, party.partyId, {
             character_id: characterId,
             party_pb: Buffer.from(wire).toString("base64"),
         });
@@ -385,12 +381,11 @@ export class PartyService {
             }
             return Number(id);
         });
-        let revision: number;
         try {
             const party = await this.ctx.withPgDataTransaction(worldId, partyId, async (txClient: PoolClient) => {
                 const created = await this.partyRepo.set(
                     worldId,
-                    { worldId, partyId, leaderCharacterId, state: PartyState.PARTY_STATE_ACTIVE, revision: 1 },
+                    { worldId, partyId, leaderCharacterId, state: PartyState.PARTY_STATE_ACTIVE },
                     { txClient }
                 );
                 await this.partyMemberRepo.set(worldId, {
@@ -399,7 +394,6 @@ export class PartyService {
                 }, { txClient });
                 return created;
             });
-            revision = party.revision;
             await this.ctx.withPgDataTransaction(worldId, leaderCharacterId, async (txClient: PoolClient) => {
                 await this.characterRealtimeStateRepo.set(
                     worldId,
@@ -414,8 +408,8 @@ export class PartyService {
             }).catch(() => {});
             throw err;
         }
-        const result = { ok: true as const, partyId, revision };
-        if (!result.ok || result.partyId == null || result.revision == null) {
+        const result = { ok: true as const, partyId };
+        if (!result.ok || result.partyId == null) {
             return result;
         }
         await this.partyRepo.invalidateCache(worldId, result.partyId);
@@ -605,11 +599,10 @@ export class PartyService {
                 worldId, partyId, characterId, characterName: name, level: memberLevel, classId: memberClassId, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER,
                 mapId: member.mapId ?? 0, door: doorJson,
             }, { txClient });
-            const nextRevision = party.revision + 1;
-            const updatedParty = await this.partyRepo.set(worldId, { ...party, revision: nextRevision }, { txClient });
-            return { ok: true, partyId: updatedParty.partyId, revision: updatedParty.revision };
+            const updatedParty = await this.partyRepo.set(worldId, party, { txClient });
+            return { ok: true, partyId: updatedParty.partyId };
         });
-        if (!result.ok || result.partyId == null || result.revision == null) {
+        if (!result.ok || result.partyId == null) {
             return result;
         }
         await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
@@ -623,7 +616,7 @@ export class PartyService {
         await this.partyRepo.invalidateCache(worldId, partyId);
         await this.partyMemberRepo.invalidateCache(worldId, String(partyId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
-        await this.publishPartyEvent(EVT.MEMBER_JOINED, worldId, result.partyId, result.revision, { character_id: characterId });
+        await this.publishPartyEvent(EVT.MEMBER_JOINED, worldId, result.partyId, { character_id: characterId });
         return result;
     }
 
@@ -674,7 +667,7 @@ export class PartyService {
         const partyResult = await this.ctx.withPgDataTransaction(worldId, lockedPartyId, async (txClient: PoolClient) => {
             const party = await this.partyRepo.get(worldId, lockedPartyId, { txClient });
             if (!party) {
-                return { ok: true as const, partyId: lockedPartyId, revision: 0, disbanded: false as const, realtimeStateCharacterIds: [characterId] as number[] };
+                return { ok: true as const, partyId: lockedPartyId, disbanded: false as const, realtimeStateCharacterIds: [characterId] as number[] };
             }
 
             await this.partyMemberRepo.del(worldId, String(lockedPartyId), characterId, { txClient });
@@ -685,7 +678,6 @@ export class PartyService {
                 return {
                     ok: true as const,
                     partyId: lockedPartyId,
-                    revision: party.revision + 1,
                     disbanded: true as const,
                     realtimeStateCharacterIds: [characterId],
                 };
@@ -703,7 +695,6 @@ export class PartyService {
                 return {
                     ok: true as const,
                     partyId: lockedPartyId,
-                    revision: party.revision + 1,
                     disbanded: true as const,
                     realtimeStateCharacterIds: disbandCharacterIds,
                 };
@@ -720,12 +711,10 @@ export class PartyService {
                 nextLeaderCharacterId = topMember.characterId;
                 await this.partyMemberRepo.set(worldId, { ...topMember, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER }, { txClient });
             }
-            const nextRevision = party.revision + 1;
-            const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: nextLeaderCharacterId, revision: nextRevision }, { txClient });
+            const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: nextLeaderCharacterId }, { txClient });
             return {
                 ok: true as const,
                 partyId: updatedParty.partyId,
-                revision: updatedParty.revision,
                 disbanded: false as const,
                 leaderChanged: previousLeaderCharacterId !== nextLeaderCharacterId,
                 oldLeaderCharacterId: previousLeaderCharacterId,
@@ -733,7 +722,7 @@ export class PartyService {
                 realtimeStateCharacterIds: [characterId],
             };
         });
-        if (!partyResult.ok || partyResult.partyId == null || partyResult.revision == null) {
+        if (!partyResult.ok || partyResult.partyId == null) {
             return partyResult;
         }
 
@@ -755,9 +744,9 @@ export class PartyService {
         }
 
         if (result.disbanded) {
-            await this.publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, result.revision, { character_id: characterId });
+            await this.publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, { character_id: characterId });
         } else {
-            await this.publishPartyEvent(EVT.MEMBER_LEFT, worldId, result.partyId, result.revision, {
+            await this.publishPartyEvent(EVT.MEMBER_LEFT, worldId, result.partyId, {
                 character_id: characterId,
                 leader_changed: result.leaderChanged ?? false,
                 old_leader_character_id: result.oldLeaderCharacterId ?? 0,
@@ -825,23 +814,20 @@ export class PartyService {
                 return {
                     ok: true as const,
                     partyId: lockedPartyId,
-                    revision: party.revision + 1,
                     disbanded: true as const,
                     realtimeStateCharacterIds: [targetCharacterId],
                 };
             }
 
-            const nextRevision = party.revision + 1;
-            const updatedParty = await this.partyRepo.set(worldId, { ...party, revision: nextRevision }, { txClient });
+            const updatedParty = await this.partyRepo.set(worldId, party, { txClient });
             return {
                 ok: true as const,
                 partyId: updatedParty.partyId,
-                revision: updatedParty.revision,
                 disbanded: false as const,
                 realtimeStateCharacterIds: [targetCharacterId],
             };
         });
-        if (!partyResult.ok || partyResult.partyId == null || partyResult.revision == null) {
+        if (!partyResult.ok || partyResult.partyId == null) {
             return partyResult;
         }
 
@@ -864,12 +850,12 @@ export class PartyService {
         }
 
         if (result.disbanded) {
-            await this.publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, result.revision, {
+            await this.publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, {
                 character_id: targetCharacterId,
                 expelled_by_character_id: requesterCharacterId,
             });
         } else {
-            await this.publishPartyEvent(EVT.MEMBER_LEFT, worldId, result.partyId, result.revision, {
+            await this.publishPartyEvent(EVT.MEMBER_LEFT, worldId, result.partyId, {
                 character_id: targetCharacterId,
                 expelled_by_character_id: requesterCharacterId,
             });
@@ -915,16 +901,15 @@ export class PartyService {
             if (requester) {
                 await this.partyMemberRepo.set(worldId, { ...requester, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER }, { txClient });
             }
-            const nextRevision = party.revision + 1;
-            const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: newLeaderCharacterId, revision: nextRevision }, { txClient });
-            return { ok: true, partyId: updatedParty.partyId, revision: updatedParty.revision };
+            const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: newLeaderCharacterId }, { txClient });
+            return { ok: true, partyId: updatedParty.partyId };
         });
-        if (!result.ok || result.partyId == null || result.revision == null) {
+        if (!result.ok || result.partyId == null) {
             return result;
         }
         await this.partyRepo.invalidateCache(worldId, partyId);
         await this.partyMemberRepo.invalidateCache(worldId, String(partyId));
-        await this.publishPartyEvent(EVT.LEADER_CHANGED, worldId, result.partyId, result.revision, {
+        await this.publishPartyEvent(EVT.LEADER_CHANGED, worldId, result.partyId, {
             old_leader_character_id: requesterCharacterId,
             new_leader_character_id: newLeaderCharacterId,
         });
@@ -945,7 +930,7 @@ export class PartyService {
         if (!Number.isInteger(mode) || mode < 0 || mode > 255) {
             return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
         }
-        await this.publishToPartyRoutes("multi_chat", worldId, memberId, 0, {
+        await this.publishToPartyRoutes("multi_chat", worldId, memberId, {
             world_id: worldId,
             member_id: memberId,
             sender_character_id: senderCharacterId,

@@ -10,7 +10,6 @@ type AllianceEventEnvelope struct {
 	EventType  string `json:"event_type"`
 	WorldID    uint32 `json:"world_id"`
 	AllianceID uint32 `json:"alliance_id"`
-	Revision   uint64 `json:"revision"`
 	OccurredAt string `json:"occurred_at"`
 }
 

@@ -19,7 +19,6 @@ type GuildEventEnvelope struct {
 	EventType  string `json:"event_type"`
 	WorldID    uint32 `json:"world_id"`
 	GuildID    uint32 `json:"guild_id"`
-	Revision   uint64 `json:"revision"`
 	OccurredAt string `json:"occurred_at"`
 }
 
@@ -28,7 +27,6 @@ type GuildCache struct {
 	worldID        uint32
 	internalClient internal.InternalClient
 	mu             sync.Mutex
-	revisions      map[uint32]uint64
 	guilds         map[uint32]*entity.Guild
 }
 
@@ -37,7 +35,6 @@ func NewGuildCache(gs *GameServer, worldID uint32, ic internal.InternalClient) *
 		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
-		revisions:      make(map[uint32]uint64),
 		guilds:         make(map[uint32]*entity.Guild),
 	}
 }
@@ -64,7 +61,6 @@ func (gc *GuildCache) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope) *as
 		func(reply *internal.GetGuildReply) error {
 			if reply == nil || !reply.GetFound() || reply.GetGuild() == nil {
 				gc.mu.Lock()
-				delete(gc.revisions, guildID)
 				delete(gc.guilds, guildID)
 				gc.mu.Unlock()
 				return nil
@@ -92,15 +88,13 @@ func (gc *GuildCache) Update(guildPb *internal.Guild) {
 	gc.mu.Lock()
 	defer gc.mu.Unlock()
 	if prev := gc.guilds[guildID]; prev != nil {
-		// GetGuild replies for concurrent events can arrive out of order.
-		if stored.Revision < prev.Revision {
+		if stored.UpdatedAt.Before(prev.UpdatedAt) {
 			return
 		}
 		if _, inAlliance := stored.GetAllianceID(); !inAlliance {
 			stored.AllianceInvites = entity.CloneAllianceInvites(prev.AllianceInvites)
 		}
 	}
-	gc.revisions[guildID] = stored.Revision
 	gc.guilds[guildID] = stored
 	if _, inAlliance := stored.GetAllianceID(); inAlliance {
 		stored.ClearAllianceInvites()

@@ -11,7 +11,7 @@ import {
 } from "../types/guild-json";
 
 const SELECT_COLS = `world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles,
-  alliance_id, revision, disbanded_at, created_at, updated_at`;
+  alliance_id, disbanded_at, created_at, updated_at`;
 
 export type { GuildModel };
 
@@ -71,8 +71,8 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
 
     override onUpsert(row: GuildRow): RepositoryQuery {
         return {
-            text: `INSERT INTO guilds (world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles, alliance_id, revision, disbanded_at, created_at, updated_at)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,$12,NOW(),NOW())
+            text: `INSERT INTO guilds (world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles, alliance_id, disbanded_at, created_at, updated_at)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,NOW(),clock_timestamp())
                    ON CONFLICT (world_id, guild_id) DO UPDATE
                    SET name = EXCLUDED.name,
                        leader_character_id = EXCLUDED.leader_character_id,
@@ -82,9 +82,8 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
                        logo = EXCLUDED.logo,
                        rank_titles = EXCLUDED.rank_titles,
                        alliance_id = EXCLUDED.alliance_id,
-                       revision = EXCLUDED.revision,
                        disbanded_at = EXCLUDED.disbanded_at,
-                       updated_at = NOW()
+                       updated_at = clock_timestamp()
                    RETURNING ${SELECT_COLS}`,
             values: [
                 row.world_id,
@@ -97,7 +96,6 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
                 row.logo,
                 row.rank_titles,
                 row.alliance_id ?? null,
-                row.revision,
                 row.disbanded_at ?? null,
             ],
         };
@@ -115,7 +113,6 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             ...row,
             guild_id: toPgInt(row.guild_id),
             alliance_id: toPgIntOrNull(row.alliance_id),
-            revision: toPgInt(row.revision),
         };
     }
 
@@ -131,7 +128,6 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             logo: this.logoFromRow(row.logo),
             rankTitles: this.rankTitlesFromRow(row.rank_titles),
             allianceId: toPgIntOrNull(row.alliance_id),
-            revision: toPgInt(row.revision),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
@@ -165,7 +161,6 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             logo: model.logo,
             rank_titles: model.rankTitles,
             alliance_id: model.allianceId ?? null,
-            revision: model.revision ?? 1,
             disbanded_at: model.disbandedAt ?? null,
         };
     }

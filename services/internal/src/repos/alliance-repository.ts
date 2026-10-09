@@ -10,7 +10,7 @@ import {
 } from "../types/alliance-json";
 
 const SELECT_COLS = `world_id, alliance_id, name, leader_character_id, guild_ids, rank_titles,
-  capacity, notice, revision, disbanded_at, created_at, updated_at`;
+  capacity, notice, disbanded_at, created_at, updated_at`;
 
 export type { AllianceModel };
 
@@ -56,8 +56,8 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
 
     override onUpsert(row: AllianceRow): RepositoryQuery {
         return {
-            text: `INSERT INTO alliances (world_id, alliance_id, name, leader_character_id, guild_ids, rank_titles, capacity, notice, revision, disbanded_at, created_at, updated_at)
-                   VALUES ($1, CASE WHEN $2::bigint IS NULL OR $2::bigint < 1 THEN nextval('alliance_id_seq') ELSE $2::bigint END, $3, $4, $5::bigint[], $6::text[], $7, $8, $9, $10, NOW(), NOW())
+            text: `INSERT INTO alliances (world_id, alliance_id, name, leader_character_id, guild_ids, rank_titles, capacity, notice, disbanded_at, created_at, updated_at)
+                   VALUES ($1, CASE WHEN $2::bigint IS NULL OR $2::bigint < 1 THEN nextval('alliance_id_seq') ELSE $2::bigint END, $3, $4, $5::bigint[], $6::text[], $7, $8, $9, NOW(), clock_timestamp())
                    ON CONFLICT (world_id, alliance_id) DO UPDATE
                    SET name = EXCLUDED.name,
                        leader_character_id = EXCLUDED.leader_character_id,
@@ -65,9 +65,8 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
                        rank_titles = EXCLUDED.rank_titles,
                        capacity = EXCLUDED.capacity,
                        notice = EXCLUDED.notice,
-                       revision = EXCLUDED.revision,
                        disbanded_at = EXCLUDED.disbanded_at,
-                       updated_at = NOW()
+                       updated_at = clock_timestamp()
                    RETURNING ${SELECT_COLS}`,
             values: [
                 row.world_id,
@@ -78,7 +77,6 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
                 row.rank_titles,
                 row.capacity,
                 row.notice,
-                row.revision,
                 row.disbanded_at ?? null,
             ],
         };
@@ -95,7 +93,6 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
         return {
             ...row,
             alliance_id: toPgInt(row.alliance_id),
-            revision: toPgInt(row.revision),
         };
     }
 
@@ -109,7 +106,6 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
             rankTitles: this.rankTitlesFromRow(row.rank_titles),
             capacity: row.capacity,
             notice: row.notice,
-            revision: toPgInt(row.revision),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
@@ -126,7 +122,6 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
             rank_titles: model.rankTitles,
             capacity: model.capacity ?? DEFAULT_ALLIANCE_CAPACITY,
             notice: model.notice ?? "",
-            revision: model.revision ?? 1,
             disbanded_at: model.disbandedAt ?? null,
         };
     }

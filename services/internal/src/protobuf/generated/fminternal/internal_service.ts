@@ -2381,7 +2381,6 @@ export interface CreatePartyReply {
   ok: boolean;
   errorCode: PartyErrorCode;
   partyId?: number | undefined;
-  revision: number;
   party: Party | undefined;
 }
 
@@ -2396,7 +2395,6 @@ export interface JoinPartyReply {
   ok: boolean;
   errorCode: PartyErrorCode;
   partyId?: number | undefined;
-  revision: number;
 }
 
 export interface LeavePartyRequest {
@@ -2408,7 +2406,6 @@ export interface LeavePartyReply {
   ok: boolean;
   errorCode: PartyErrorCode;
   partyId?: number | undefined;
-  revision: number;
   disbanded: boolean;
 }
 
@@ -2422,7 +2419,6 @@ export interface ExpelPartyReply {
   ok: boolean;
   errorCode: PartyErrorCode;
   partyId?: number | undefined;
-  revision: number;
   disbanded: boolean;
 }
 
@@ -2437,14 +2433,13 @@ export interface ChangePartyLeaderReply {
   ok: boolean;
   errorCode: PartyErrorCode;
   partyId?: number | undefined;
-  revision: number;
 }
 
 export interface Party {
   worldId: number;
   partyId: number;
   leaderCharacterId: number;
-  revision: number;
+  updatedAtUnixMs: number;
   state: PartyState;
   members: PartyMember[];
 }
@@ -2467,7 +2462,6 @@ export interface UpdatePartyMemberReply {
   ok: boolean;
   errorCode: PartyErrorCode;
   partyId?: number | undefined;
-  revision: number;
 }
 
 export interface InvitePartyRequest {
@@ -2641,7 +2635,6 @@ export interface CreateGuildReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
   guild?: Guild | undefined;
 }
 
@@ -2666,7 +2659,6 @@ export interface LeaveGuildReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
 }
 
 export interface ExpelGuildRequest {
@@ -2679,7 +2671,6 @@ export interface ExpelGuildReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
 }
 
 export interface ChangeGuildRankTitlesRequest {
@@ -2692,7 +2683,6 @@ export interface ChangeGuildRankTitlesReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
 }
 
 export interface ChangeGuildMemberRankRequest {
@@ -2706,7 +2696,6 @@ export interface ChangeGuildMemberRankReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
 }
 
 export interface ChangeGuildEmblemRequest {
@@ -2719,7 +2708,6 @@ export interface ChangeGuildEmblemReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
 }
 
 export interface ChangeGuildNoticeRequest {
@@ -2732,7 +2720,6 @@ export interface ChangeGuildNoticeReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
 }
 
 export interface IncreaseGuildCapacityRequest {
@@ -2745,7 +2732,6 @@ export interface IncreaseGuildCapacityReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
   capacity: number;
   gp: number;
 }
@@ -2760,7 +2746,6 @@ export interface GainGuildGPReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
   gp: number;
 }
 
@@ -2799,7 +2784,6 @@ export interface DisbandGuildReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
-  revision: number;
 }
 
 export interface GuildLogo {
@@ -2814,7 +2798,7 @@ export interface Guild {
   guildId: number;
   name: string;
   leaderCharacterId: number;
-  revision: number;
+  updatedAtUnixMs: number;
   gp: number;
   capacity: number;
   notice: string;
@@ -2829,7 +2813,7 @@ export interface Alliance {
   allianceId: number;
   name: string;
   leaderCharacterId: number;
-  revision: number;
+  updatedAtUnixMs: number;
   capacity: number;
   notice: string;
   rankTitles: string[];
@@ -2848,7 +2832,6 @@ export interface CreateAllianceReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   alliance: Alliance | undefined;
 }
 
@@ -2871,7 +2854,6 @@ export interface DisbandAllianceReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
 }
 
 export interface LeaveAllianceRequest {
@@ -2883,7 +2865,6 @@ export interface LeaveAllianceReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   disbanded: boolean;
   removedGuildId: number;
   alliance: Alliance | undefined;
@@ -2900,7 +2881,6 @@ export interface ExpelAllianceGuildReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   disbanded: boolean;
   removedGuildId: number;
   alliance: Alliance | undefined;
@@ -2917,7 +2897,6 @@ export interface AcceptAllianceInviteReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   alliance: Alliance | undefined;
 }
 
@@ -2930,7 +2909,6 @@ export interface IncreaseAllianceCapacityReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   alliance: Alliance | undefined;
 }
 
@@ -2944,7 +2922,6 @@ export interface ChangeAllianceRankTitlesReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   alliance: Alliance | undefined;
 }
 
@@ -2959,7 +2936,6 @@ export interface ChangeAllianceMemberRankReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   targetCharacterId: number;
   newAllianceRank: number;
   alliance: Alliance | undefined;
@@ -2975,7 +2951,6 @@ export interface ChangeAllianceLeaderReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   oldLeaderCharacterId: number;
   newLeaderCharacterId: number;
   alliance: Alliance | undefined;
@@ -2991,7 +2966,6 @@ export interface ChangeAllianceNoticeReply {
   ok: boolean;
   errorCode: AllianceErrorCode;
   allianceId: number;
-  revision: number;
   alliance: Alliance | undefined;
 }
 
@@ -21093,7 +21067,7 @@ export const CreatePartyRequest: MessageFns<CreatePartyRequest> = {
 };
 
 function createBaseCreatePartyReply(): CreatePartyReply {
-  return { ok: false, errorCode: 0, partyId: undefined, revision: 0, party: undefined };
+  return { ok: false, errorCode: 0, partyId: undefined, party: undefined };
 }
 
 export const CreatePartyReply: MessageFns<CreatePartyReply> = {
@@ -21106,9 +21080,6 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
     }
     if (message.partyId !== undefined) {
       writer.uint32(24).uint32(message.partyId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.party !== undefined) {
       Party.encode(message.party, writer.uint32(42).fork()).join();
@@ -21147,14 +21118,6 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
           message.partyId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -21185,7 +21148,6 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
         : isSet(object.party_id)
         ? globalThis.Number(object.party_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       party: isSet(object.party) ? Party.fromJSON(object.party) : undefined,
     };
   },
@@ -21201,9 +21163,6 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
     if (message.partyId !== undefined) {
       obj.partyId = Math.round(message.partyId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.party !== undefined) {
       obj.party = Party.toJSON(message.party);
     }
@@ -21218,7 +21177,6 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.partyId = object.partyId ?? undefined;
-    message.revision = object.revision ?? 0;
     message.party = (object.party !== undefined && object.party !== null) ? Party.fromPartial(object.party) : undefined;
     return message;
   },
@@ -21347,7 +21305,7 @@ export const JoinPartyRequest: MessageFns<JoinPartyRequest> = {
 };
 
 function createBaseJoinPartyReply(): JoinPartyReply {
-  return { ok: false, errorCode: 0, partyId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, partyId: undefined };
 }
 
 export const JoinPartyReply: MessageFns<JoinPartyReply> = {
@@ -21360,9 +21318,6 @@ export const JoinPartyReply: MessageFns<JoinPartyReply> = {
     }
     if (message.partyId !== undefined) {
       writer.uint32(24).uint32(message.partyId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -21398,14 +21353,6 @@ export const JoinPartyReply: MessageFns<JoinPartyReply> = {
           message.partyId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -21428,7 +21375,6 @@ export const JoinPartyReply: MessageFns<JoinPartyReply> = {
         : isSet(object.party_id)
         ? globalThis.Number(object.party_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -21443,9 +21389,6 @@ export const JoinPartyReply: MessageFns<JoinPartyReply> = {
     if (message.partyId !== undefined) {
       obj.partyId = Math.round(message.partyId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -21457,7 +21400,6 @@ export const JoinPartyReply: MessageFns<JoinPartyReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.partyId = object.partyId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -21547,7 +21489,7 @@ export const LeavePartyRequest: MessageFns<LeavePartyRequest> = {
 };
 
 function createBaseLeavePartyReply(): LeavePartyReply {
-  return { ok: false, errorCode: 0, partyId: undefined, revision: 0, disbanded: false };
+  return { ok: false, errorCode: 0, partyId: undefined, disbanded: false };
 }
 
 export const LeavePartyReply: MessageFns<LeavePartyReply> = {
@@ -21560,9 +21502,6 @@ export const LeavePartyReply: MessageFns<LeavePartyReply> = {
     }
     if (message.partyId !== undefined) {
       writer.uint32(24).uint32(message.partyId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.disbanded !== false) {
       writer.uint32(40).bool(message.disbanded);
@@ -21601,14 +21540,6 @@ export const LeavePartyReply: MessageFns<LeavePartyReply> = {
           message.partyId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -21639,7 +21570,6 @@ export const LeavePartyReply: MessageFns<LeavePartyReply> = {
         : isSet(object.party_id)
         ? globalThis.Number(object.party_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       disbanded: isSet(object.disbanded) ? globalThis.Boolean(object.disbanded) : false,
     };
   },
@@ -21655,9 +21585,6 @@ export const LeavePartyReply: MessageFns<LeavePartyReply> = {
     if (message.partyId !== undefined) {
       obj.partyId = Math.round(message.partyId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.disbanded !== false) {
       obj.disbanded = message.disbanded;
     }
@@ -21672,7 +21599,6 @@ export const LeavePartyReply: MessageFns<LeavePartyReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.partyId = object.partyId ?? undefined;
-    message.revision = object.revision ?? 0;
     message.disbanded = object.disbanded ?? false;
     return message;
   },
@@ -21783,7 +21709,7 @@ export const ExpelPartyRequest: MessageFns<ExpelPartyRequest> = {
 };
 
 function createBaseExpelPartyReply(): ExpelPartyReply {
-  return { ok: false, errorCode: 0, partyId: undefined, revision: 0, disbanded: false };
+  return { ok: false, errorCode: 0, partyId: undefined, disbanded: false };
 }
 
 export const ExpelPartyReply: MessageFns<ExpelPartyReply> = {
@@ -21796,9 +21722,6 @@ export const ExpelPartyReply: MessageFns<ExpelPartyReply> = {
     }
     if (message.partyId !== undefined) {
       writer.uint32(24).uint32(message.partyId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.disbanded !== false) {
       writer.uint32(40).bool(message.disbanded);
@@ -21837,14 +21760,6 @@ export const ExpelPartyReply: MessageFns<ExpelPartyReply> = {
           message.partyId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -21875,7 +21790,6 @@ export const ExpelPartyReply: MessageFns<ExpelPartyReply> = {
         : isSet(object.party_id)
         ? globalThis.Number(object.party_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       disbanded: isSet(object.disbanded) ? globalThis.Boolean(object.disbanded) : false,
     };
   },
@@ -21891,9 +21805,6 @@ export const ExpelPartyReply: MessageFns<ExpelPartyReply> = {
     if (message.partyId !== undefined) {
       obj.partyId = Math.round(message.partyId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.disbanded !== false) {
       obj.disbanded = message.disbanded;
     }
@@ -21908,7 +21819,6 @@ export const ExpelPartyReply: MessageFns<ExpelPartyReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.partyId = object.partyId ?? undefined;
-    message.revision = object.revision ?? 0;
     message.disbanded = object.disbanded ?? false;
     return message;
   },
@@ -22039,7 +21949,7 @@ export const ChangePartyLeaderRequest: MessageFns<ChangePartyLeaderRequest> = {
 };
 
 function createBaseChangePartyLeaderReply(): ChangePartyLeaderReply {
-  return { ok: false, errorCode: 0, partyId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, partyId: undefined };
 }
 
 export const ChangePartyLeaderReply: MessageFns<ChangePartyLeaderReply> = {
@@ -22052,9 +21962,6 @@ export const ChangePartyLeaderReply: MessageFns<ChangePartyLeaderReply> = {
     }
     if (message.partyId !== undefined) {
       writer.uint32(24).uint32(message.partyId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -22090,14 +21997,6 @@ export const ChangePartyLeaderReply: MessageFns<ChangePartyLeaderReply> = {
           message.partyId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -22120,7 +22019,6 @@ export const ChangePartyLeaderReply: MessageFns<ChangePartyLeaderReply> = {
         : isSet(object.party_id)
         ? globalThis.Number(object.party_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -22135,9 +22033,6 @@ export const ChangePartyLeaderReply: MessageFns<ChangePartyLeaderReply> = {
     if (message.partyId !== undefined) {
       obj.partyId = Math.round(message.partyId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -22149,13 +22044,12 @@ export const ChangePartyLeaderReply: MessageFns<ChangePartyLeaderReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.partyId = object.partyId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
 
 function createBaseParty(): Party {
-  return { worldId: 0, partyId: 0, leaderCharacterId: 0, revision: 0, state: 0, members: [] };
+  return { worldId: 0, partyId: 0, leaderCharacterId: 0, updatedAtUnixMs: 0, state: 0, members: [] };
 }
 
 export const Party: MessageFns<Party> = {
@@ -22169,8 +22063,8 @@ export const Party: MessageFns<Party> = {
     if (message.leaderCharacterId !== 0) {
       writer.uint32(24).uint32(message.leaderCharacterId);
     }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
+    if (message.updatedAtUnixMs !== 0) {
+      writer.uint32(32).int64(message.updatedAtUnixMs);
     }
     if (message.state !== 0) {
       writer.uint32(40).int32(message.state);
@@ -22217,7 +22111,7 @@ export const Party: MessageFns<Party> = {
             break;
           }
 
-          message.revision = longToNumber(reader.uint64());
+          message.updatedAtUnixMs = longToNumber(reader.int64());
           continue;
         }
         case 5: {
@@ -22262,9 +22156,15 @@ export const Party: MessageFns<Party> = {
         : isSet(object.leader_character_id)
         ? globalThis.Number(object.leader_character_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      updatedAtUnixMs: isSet(object.updatedAtUnixMs)
+        ? globalThis.Number(object.updatedAtUnixMs)
+        : isSet(object.updated_at_unix_ms)
+        ? globalThis.Number(object.updated_at_unix_ms)
+        : 0,
       state: isSet(object.state) ? partyStateFromJSON(object.state) : 0,
-      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => PartyMember.fromJSON(e)) : [],
+      members: globalThis.Array.isArray(object?.members)
+        ? object.members.map((e: any) => PartyMember.fromJSON(e))
+        : [],
     };
   },
 
@@ -22279,8 +22179,8 @@ export const Party: MessageFns<Party> = {
     if (message.leaderCharacterId !== 0) {
       obj.leaderCharacterId = Math.round(message.leaderCharacterId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
+    if (message.updatedAtUnixMs !== 0) {
+      obj.updatedAtUnixMs = Math.round(message.updatedAtUnixMs);
     }
     if (message.state !== 0) {
       obj.state = partyStateToJSON(message.state);
@@ -22299,7 +22199,7 @@ export const Party: MessageFns<Party> = {
     message.worldId = object.worldId ?? 0;
     message.partyId = object.partyId ?? 0;
     message.leaderCharacterId = object.leaderCharacterId ?? 0;
-    message.revision = object.revision ?? 0;
+    message.updatedAtUnixMs = object.updatedAtUnixMs ?? 0;
     message.state = object.state ?? 0;
     message.members = object.members?.map((e) => PartyMember.fromPartial(e)) || [];
     return message;
@@ -22527,7 +22427,7 @@ export const UpdatePartyMemberRequest: MessageFns<UpdatePartyMemberRequest> = {
 };
 
 function createBaseUpdatePartyMemberReply(): UpdatePartyMemberReply {
-  return { ok: false, errorCode: 0, partyId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, partyId: undefined };
 }
 
 export const UpdatePartyMemberReply: MessageFns<UpdatePartyMemberReply> = {
@@ -22540,9 +22440,6 @@ export const UpdatePartyMemberReply: MessageFns<UpdatePartyMemberReply> = {
     }
     if (message.partyId !== undefined) {
       writer.uint32(24).uint32(message.partyId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -22578,14 +22475,6 @@ export const UpdatePartyMemberReply: MessageFns<UpdatePartyMemberReply> = {
           message.partyId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -22608,7 +22497,6 @@ export const UpdatePartyMemberReply: MessageFns<UpdatePartyMemberReply> = {
         : isSet(object.party_id)
         ? globalThis.Number(object.party_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -22623,9 +22511,6 @@ export const UpdatePartyMemberReply: MessageFns<UpdatePartyMemberReply> = {
     if (message.partyId !== undefined) {
       obj.partyId = Math.round(message.partyId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -22637,7 +22522,6 @@ export const UpdatePartyMemberReply: MessageFns<UpdatePartyMemberReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.partyId = object.partyId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -25554,7 +25438,7 @@ export const DeleteGuildBulletinBoardReplyReply: MessageFns<DeleteGuildBulletinB
 };
 
 function createBaseCreateGuildReply(): CreateGuildReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0, guild: undefined };
+  return { ok: false, errorCode: 0, guildId: undefined, guild: undefined };
 }
 
 export const CreateGuildReply: MessageFns<CreateGuildReply> = {
@@ -25567,9 +25451,6 @@ export const CreateGuildReply: MessageFns<CreateGuildReply> = {
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.guild !== undefined) {
       Guild.encode(message.guild, writer.uint32(42).fork()).join();
@@ -25608,14 +25489,6 @@ export const CreateGuildReply: MessageFns<CreateGuildReply> = {
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -25646,7 +25519,6 @@ export const CreateGuildReply: MessageFns<CreateGuildReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       guild: isSet(object.guild) ? Guild.fromJSON(object.guild) : undefined,
     };
   },
@@ -25662,9 +25534,6 @@ export const CreateGuildReply: MessageFns<CreateGuildReply> = {
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.guild !== undefined) {
       obj.guild = Guild.toJSON(message.guild);
     }
@@ -25679,7 +25548,6 @@ export const CreateGuildReply: MessageFns<CreateGuildReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     message.guild = (object.guild !== undefined && object.guild !== null) ? Guild.fromPartial(object.guild) : undefined;
     return message;
   },
@@ -25968,7 +25836,7 @@ export const LeaveGuildRequest: MessageFns<LeaveGuildRequest> = {
 };
 
 function createBaseLeaveGuildReply(): LeaveGuildReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined };
 }
 
 export const LeaveGuildReply: MessageFns<LeaveGuildReply> = {
@@ -25981,9 +25849,6 @@ export const LeaveGuildReply: MessageFns<LeaveGuildReply> = {
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -26019,14 +25884,6 @@ export const LeaveGuildReply: MessageFns<LeaveGuildReply> = {
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -26049,7 +25906,6 @@ export const LeaveGuildReply: MessageFns<LeaveGuildReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -26064,9 +25920,6 @@ export const LeaveGuildReply: MessageFns<LeaveGuildReply> = {
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -26078,7 +25931,6 @@ export const LeaveGuildReply: MessageFns<LeaveGuildReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -26188,7 +26040,7 @@ export const ExpelGuildRequest: MessageFns<ExpelGuildRequest> = {
 };
 
 function createBaseExpelGuildReply(): ExpelGuildReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined };
 }
 
 export const ExpelGuildReply: MessageFns<ExpelGuildReply> = {
@@ -26201,9 +26053,6 @@ export const ExpelGuildReply: MessageFns<ExpelGuildReply> = {
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -26239,14 +26088,6 @@ export const ExpelGuildReply: MessageFns<ExpelGuildReply> = {
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -26269,7 +26110,6 @@ export const ExpelGuildReply: MessageFns<ExpelGuildReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -26284,9 +26124,6 @@ export const ExpelGuildReply: MessageFns<ExpelGuildReply> = {
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -26298,7 +26135,6 @@ export const ExpelGuildReply: MessageFns<ExpelGuildReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -26408,7 +26244,7 @@ export const ChangeGuildRankTitlesRequest: MessageFns<ChangeGuildRankTitlesReque
 };
 
 function createBaseChangeGuildRankTitlesReply(): ChangeGuildRankTitlesReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined };
 }
 
 export const ChangeGuildRankTitlesReply: MessageFns<ChangeGuildRankTitlesReply> = {
@@ -26421,9 +26257,6 @@ export const ChangeGuildRankTitlesReply: MessageFns<ChangeGuildRankTitlesReply> 
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -26459,14 +26292,6 @@ export const ChangeGuildRankTitlesReply: MessageFns<ChangeGuildRankTitlesReply> 
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -26489,7 +26314,6 @@ export const ChangeGuildRankTitlesReply: MessageFns<ChangeGuildRankTitlesReply> 
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -26504,9 +26328,6 @@ export const ChangeGuildRankTitlesReply: MessageFns<ChangeGuildRankTitlesReply> 
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -26518,7 +26339,6 @@ export const ChangeGuildRankTitlesReply: MessageFns<ChangeGuildRankTitlesReply> 
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -26648,7 +26468,7 @@ export const ChangeGuildMemberRankRequest: MessageFns<ChangeGuildMemberRankReque
 };
 
 function createBaseChangeGuildMemberRankReply(): ChangeGuildMemberRankReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined };
 }
 
 export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> = {
@@ -26661,9 +26481,6 @@ export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> 
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -26699,14 +26516,6 @@ export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> 
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -26729,7 +26538,6 @@ export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> 
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -26744,9 +26552,6 @@ export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> 
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -26758,7 +26563,6 @@ export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> 
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -26864,7 +26668,7 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
 };
 
 function createBaseChangeGuildEmblemReply(): ChangeGuildEmblemReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined };
 }
 
 export const ChangeGuildEmblemReply: MessageFns<ChangeGuildEmblemReply> = {
@@ -26877,9 +26681,6 @@ export const ChangeGuildEmblemReply: MessageFns<ChangeGuildEmblemReply> = {
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -26915,14 +26716,6 @@ export const ChangeGuildEmblemReply: MessageFns<ChangeGuildEmblemReply> = {
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -26945,7 +26738,6 @@ export const ChangeGuildEmblemReply: MessageFns<ChangeGuildEmblemReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -26960,9 +26752,6 @@ export const ChangeGuildEmblemReply: MessageFns<ChangeGuildEmblemReply> = {
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -26974,7 +26763,6 @@ export const ChangeGuildEmblemReply: MessageFns<ChangeGuildEmblemReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -27080,7 +26868,7 @@ export const ChangeGuildNoticeRequest: MessageFns<ChangeGuildNoticeRequest> = {
 };
 
 function createBaseChangeGuildNoticeReply(): ChangeGuildNoticeReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined };
 }
 
 export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
@@ -27093,9 +26881,6 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -27131,14 +26916,6 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -27161,7 +26938,6 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -27176,9 +26952,6 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -27190,7 +26963,6 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -27300,7 +27072,7 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
 };
 
 function createBaseIncreaseGuildCapacityReply(): IncreaseGuildCapacityReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0, capacity: 0, gp: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined, capacity: 0, gp: 0 };
 }
 
 export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> = {
@@ -27313,9 +27085,6 @@ export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> 
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.capacity !== 0) {
       writer.uint32(40).uint32(message.capacity);
@@ -27357,14 +27126,6 @@ export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> 
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -27403,7 +27164,6 @@ export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> 
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       capacity: isSet(object.capacity) ? globalThis.Number(object.capacity) : 0,
       gp: isSet(object.gp) ? globalThis.Number(object.gp) : 0,
     };
@@ -27419,9 +27179,6 @@ export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> 
     }
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
-    }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
     }
     if (message.capacity !== 0) {
       obj.capacity = Math.round(message.capacity);
@@ -27440,7 +27197,6 @@ export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> 
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     message.capacity = object.capacity ?? 0;
     message.gp = object.gp ?? 0;
     return message;
@@ -27548,7 +27304,7 @@ export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
 };
 
 function createBaseGainGuildGPReply(): GainGuildGPReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0, gp: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined, gp: 0 };
 }
 
 export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
@@ -27561,9 +27317,6 @@ export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.gp !== 0) {
       writer.uint32(40).uint32(message.gp);
@@ -27602,14 +27355,6 @@ export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -27640,7 +27385,6 @@ export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       gp: isSet(object.gp) ? globalThis.Number(object.gp) : 0,
     };
   },
@@ -27656,9 +27400,6 @@ export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.gp !== 0) {
       obj.gp = Math.round(message.gp);
     }
@@ -27673,7 +27414,6 @@ export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     message.gp = object.gp ?? 0;
     return message;
   },
@@ -28180,7 +27920,7 @@ export const DisbandGuildRequest: MessageFns<DisbandGuildRequest> = {
 };
 
 function createBaseDisbandGuildReply(): DisbandGuildReply {
-  return { ok: false, errorCode: 0, guildId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, guildId: undefined };
 }
 
 export const DisbandGuildReply: MessageFns<DisbandGuildReply> = {
@@ -28193,9 +27933,6 @@ export const DisbandGuildReply: MessageFns<DisbandGuildReply> = {
     }
     if (message.guildId !== undefined) {
       writer.uint32(24).uint32(message.guildId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -28231,14 +27968,6 @@ export const DisbandGuildReply: MessageFns<DisbandGuildReply> = {
           message.guildId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -28261,7 +27990,6 @@ export const DisbandGuildReply: MessageFns<DisbandGuildReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -28276,9 +28004,6 @@ export const DisbandGuildReply: MessageFns<DisbandGuildReply> = {
     if (message.guildId !== undefined) {
       obj.guildId = Math.round(message.guildId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -28290,7 +28015,6 @@ export const DisbandGuildReply: MessageFns<DisbandGuildReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guildId = object.guildId ?? undefined;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -28421,7 +28145,7 @@ function createBaseGuild(): Guild {
     guildId: 0,
     name: "",
     leaderCharacterId: 0,
-    revision: 0,
+    updatedAtUnixMs: 0,
     gp: 0,
     capacity: 0,
     notice: "",
@@ -28446,8 +28170,8 @@ export const Guild: MessageFns<Guild> = {
     if (message.leaderCharacterId !== 0) {
       writer.uint32(32).uint32(message.leaderCharacterId);
     }
-    if (message.revision !== 0) {
-      writer.uint32(40).uint64(message.revision);
+    if (message.updatedAtUnixMs !== 0) {
+      writer.uint32(40).int64(message.updatedAtUnixMs);
     }
     if (message.gp !== 0) {
       writer.uint32(48).uint32(message.gp);
@@ -28517,7 +28241,7 @@ export const Guild: MessageFns<Guild> = {
             break;
           }
 
-          message.revision = longToNumber(reader.uint64());
+          message.updatedAtUnixMs = longToNumber(reader.int64());
           continue;
         }
         case 6: {
@@ -28603,7 +28327,11 @@ export const Guild: MessageFns<Guild> = {
         : isSet(object.leader_character_id)
         ? globalThis.Number(object.leader_character_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      updatedAtUnixMs: isSet(object.updatedAtUnixMs)
+        ? globalThis.Number(object.updatedAtUnixMs)
+        : isSet(object.updated_at_unix_ms)
+        ? globalThis.Number(object.updated_at_unix_ms)
+        : 0,
       gp: isSet(object.gp) ? globalThis.Number(object.gp) : 0,
       capacity: isSet(object.capacity) ? globalThis.Number(object.capacity) : 0,
       notice: isSet(object.notice) ? globalThis.String(object.notice) : "",
@@ -28613,9 +28341,7 @@ export const Guild: MessageFns<Guild> = {
         : globalThis.Array.isArray(object?.rank_titles)
         ? object.rank_titles.map((e: any) => globalThis.String(e))
         : [],
-      members: globalThis.Array.isArray(object?.members)
-        ? object.members.map((e: any) => GuildMember.fromJSON(e))
-        : [],
+      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => GuildMember.fromJSON(e)) : [],
       allianceId: isSet(object.allianceId)
         ? globalThis.Number(object.allianceId)
         : isSet(object.alliance_id)
@@ -28638,8 +28364,8 @@ export const Guild: MessageFns<Guild> = {
     if (message.leaderCharacterId !== 0) {
       obj.leaderCharacterId = Math.round(message.leaderCharacterId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
+    if (message.updatedAtUnixMs !== 0) {
+      obj.updatedAtUnixMs = Math.round(message.updatedAtUnixMs);
     }
     if (message.gp !== 0) {
       obj.gp = Math.round(message.gp);
@@ -28674,7 +28400,7 @@ export const Guild: MessageFns<Guild> = {
     message.guildId = object.guildId ?? 0;
     message.name = object.name ?? "";
     message.leaderCharacterId = object.leaderCharacterId ?? 0;
-    message.revision = object.revision ?? 0;
+    message.updatedAtUnixMs = object.updatedAtUnixMs ?? 0;
     message.gp = object.gp ?? 0;
     message.capacity = object.capacity ?? 0;
     message.notice = object.notice ?? "";
@@ -28692,7 +28418,7 @@ function createBaseAlliance(): Alliance {
     allianceId: 0,
     name: "",
     leaderCharacterId: 0,
-    revision: 0,
+    updatedAtUnixMs: 0,
     capacity: 0,
     notice: "",
     rankTitles: [],
@@ -28715,8 +28441,8 @@ export const Alliance: MessageFns<Alliance> = {
     if (message.leaderCharacterId !== 0) {
       writer.uint32(32).uint32(message.leaderCharacterId);
     }
-    if (message.revision !== 0) {
-      writer.uint32(40).uint64(message.revision);
+    if (message.updatedAtUnixMs !== 0) {
+      writer.uint32(40).int64(message.updatedAtUnixMs);
     }
     if (message.capacity !== 0) {
       writer.uint32(48).uint32(message.capacity);
@@ -28782,7 +28508,7 @@ export const Alliance: MessageFns<Alliance> = {
             break;
           }
 
-          message.revision = longToNumber(reader.uint64());
+          message.updatedAtUnixMs = longToNumber(reader.int64());
           continue;
         }
         case 6: {
@@ -28862,7 +28588,11 @@ export const Alliance: MessageFns<Alliance> = {
         : isSet(object.leader_character_id)
         ? globalThis.Number(object.leader_character_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      updatedAtUnixMs: isSet(object.updatedAtUnixMs)
+        ? globalThis.Number(object.updatedAtUnixMs)
+        : isSet(object.updated_at_unix_ms)
+        ? globalThis.Number(object.updated_at_unix_ms)
+        : 0,
       capacity: isSet(object.capacity) ? globalThis.Number(object.capacity) : 0,
       notice: isSet(object.notice) ? globalThis.String(object.notice) : "",
       rankTitles: globalThis.Array.isArray(object?.rankTitles)
@@ -28875,7 +28605,9 @@ export const Alliance: MessageFns<Alliance> = {
         : globalThis.Array.isArray(object?.guild_ids)
         ? object.guild_ids.map((e: any) => globalThis.Number(e))
         : [],
-      guilds: globalThis.Array.isArray(object?.guilds) ? object.guilds.map((e: any) => Guild.fromJSON(e)) : [],
+      guilds: globalThis.Array.isArray(object?.guilds)
+        ? object.guilds.map((e: any) => Guild.fromJSON(e))
+        : [],
     };
   },
 
@@ -28893,8 +28625,8 @@ export const Alliance: MessageFns<Alliance> = {
     if (message.leaderCharacterId !== 0) {
       obj.leaderCharacterId = Math.round(message.leaderCharacterId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
+    if (message.updatedAtUnixMs !== 0) {
+      obj.updatedAtUnixMs = Math.round(message.updatedAtUnixMs);
     }
     if (message.capacity !== 0) {
       obj.capacity = Math.round(message.capacity);
@@ -28923,7 +28655,7 @@ export const Alliance: MessageFns<Alliance> = {
     message.allianceId = object.allianceId ?? 0;
     message.name = object.name ?? "";
     message.leaderCharacterId = object.leaderCharacterId ?? 0;
-    message.revision = object.revision ?? 0;
+    message.updatedAtUnixMs = object.updatedAtUnixMs ?? 0;
     message.capacity = object.capacity ?? 0;
     message.notice = object.notice ?? "";
     message.rankTitles = object.rankTitles?.map((e) => e) || [];
@@ -29058,7 +28790,7 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
 };
 
 function createBaseCreateAllianceReply(): CreateAllianceReply {
-  return { ok: false, errorCode: 0, allianceId: 0, revision: 0, alliance: undefined };
+  return { ok: false, errorCode: 0, allianceId: 0, alliance: undefined };
 }
 
 export const CreateAllianceReply: MessageFns<CreateAllianceReply> = {
@@ -29071,9 +28803,6 @@ export const CreateAllianceReply: MessageFns<CreateAllianceReply> = {
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.alliance !== undefined) {
       Alliance.encode(message.alliance, writer.uint32(42).fork()).join();
@@ -29112,14 +28841,6 @@ export const CreateAllianceReply: MessageFns<CreateAllianceReply> = {
           message.allianceId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -29150,7 +28871,6 @@ export const CreateAllianceReply: MessageFns<CreateAllianceReply> = {
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
     };
   },
@@ -29166,9 +28886,6 @@ export const CreateAllianceReply: MessageFns<CreateAllianceReply> = {
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.alliance !== undefined) {
       obj.alliance = Alliance.toJSON(message.alliance);
     }
@@ -29183,7 +28900,6 @@ export const CreateAllianceReply: MessageFns<CreateAllianceReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
       ? Alliance.fromPartial(object.alliance)
       : undefined;
@@ -29438,7 +29154,7 @@ export const DisbandAllianceRequest: MessageFns<DisbandAllianceRequest> = {
 };
 
 function createBaseDisbandAllianceReply(): DisbandAllianceReply {
-  return { ok: false, errorCode: 0, allianceId: 0, revision: 0 };
+  return { ok: false, errorCode: 0, allianceId: 0 };
 }
 
 export const DisbandAllianceReply: MessageFns<DisbandAllianceReply> = {
@@ -29451,9 +29167,6 @@ export const DisbandAllianceReply: MessageFns<DisbandAllianceReply> = {
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     return writer;
   },
@@ -29489,14 +29202,6 @@ export const DisbandAllianceReply: MessageFns<DisbandAllianceReply> = {
           message.allianceId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -29519,7 +29224,6 @@ export const DisbandAllianceReply: MessageFns<DisbandAllianceReply> = {
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
     };
   },
 
@@ -29534,9 +29238,6 @@ export const DisbandAllianceReply: MessageFns<DisbandAllianceReply> = {
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     return obj;
   },
 
@@ -29548,7 +29249,6 @@ export const DisbandAllianceReply: MessageFns<DisbandAllianceReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     return message;
   },
 };
@@ -29638,15 +29338,7 @@ export const LeaveAllianceRequest: MessageFns<LeaveAllianceRequest> = {
 };
 
 function createBaseLeaveAllianceReply(): LeaveAllianceReply {
-  return {
-    ok: false,
-    errorCode: 0,
-    allianceId: 0,
-    revision: 0,
-    disbanded: false,
-    removedGuildId: 0,
-    alliance: undefined,
-  };
+  return { ok: false, errorCode: 0, allianceId: 0, disbanded: false, removedGuildId: 0, alliance: undefined };
 }
 
 export const LeaveAllianceReply: MessageFns<LeaveAllianceReply> = {
@@ -29659,9 +29351,6 @@ export const LeaveAllianceReply: MessageFns<LeaveAllianceReply> = {
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.disbanded !== false) {
       writer.uint32(40).bool(message.disbanded);
@@ -29704,14 +29393,6 @@ export const LeaveAllianceReply: MessageFns<LeaveAllianceReply> = {
           }
 
           message.allianceId = reader.uint32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
           continue;
         }
         case 5: {
@@ -29760,7 +29441,6 @@ export const LeaveAllianceReply: MessageFns<LeaveAllianceReply> = {
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       disbanded: isSet(object.disbanded) ? globalThis.Boolean(object.disbanded) : false,
       removedGuildId: isSet(object.removedGuildId)
         ? globalThis.Number(object.removedGuildId)
@@ -29782,9 +29462,6 @@ export const LeaveAllianceReply: MessageFns<LeaveAllianceReply> = {
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.disbanded !== false) {
       obj.disbanded = message.disbanded;
     }
@@ -29805,7 +29482,6 @@ export const LeaveAllianceReply: MessageFns<LeaveAllianceReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.disbanded = object.disbanded ?? false;
     message.removedGuildId = object.removedGuildId ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
@@ -29940,15 +29616,7 @@ export const ExpelAllianceGuildRequest: MessageFns<ExpelAllianceGuildRequest> = 
 };
 
 function createBaseExpelAllianceGuildReply(): ExpelAllianceGuildReply {
-  return {
-    ok: false,
-    errorCode: 0,
-    allianceId: 0,
-    revision: 0,
-    disbanded: false,
-    removedGuildId: 0,
-    alliance: undefined,
-  };
+  return { ok: false, errorCode: 0, allianceId: 0, disbanded: false, removedGuildId: 0, alliance: undefined };
 }
 
 export const ExpelAllianceGuildReply: MessageFns<ExpelAllianceGuildReply> = {
@@ -29961,9 +29629,6 @@ export const ExpelAllianceGuildReply: MessageFns<ExpelAllianceGuildReply> = {
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.disbanded !== false) {
       writer.uint32(40).bool(message.disbanded);
@@ -30006,14 +29671,6 @@ export const ExpelAllianceGuildReply: MessageFns<ExpelAllianceGuildReply> = {
           }
 
           message.allianceId = reader.uint32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
           continue;
         }
         case 5: {
@@ -30062,7 +29719,6 @@ export const ExpelAllianceGuildReply: MessageFns<ExpelAllianceGuildReply> = {
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       disbanded: isSet(object.disbanded) ? globalThis.Boolean(object.disbanded) : false,
       removedGuildId: isSet(object.removedGuildId)
         ? globalThis.Number(object.removedGuildId)
@@ -30084,9 +29740,6 @@ export const ExpelAllianceGuildReply: MessageFns<ExpelAllianceGuildReply> = {
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.disbanded !== false) {
       obj.disbanded = message.disbanded;
     }
@@ -30107,7 +29760,6 @@ export const ExpelAllianceGuildReply: MessageFns<ExpelAllianceGuildReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.disbanded = object.disbanded ?? false;
     message.removedGuildId = object.removedGuildId ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
@@ -30242,7 +29894,7 @@ export const AcceptAllianceInviteRequest: MessageFns<AcceptAllianceInviteRequest
 };
 
 function createBaseAcceptAllianceInviteReply(): AcceptAllianceInviteReply {
-  return { ok: false, errorCode: 0, allianceId: 0, revision: 0, alliance: undefined };
+  return { ok: false, errorCode: 0, allianceId: 0, alliance: undefined };
 }
 
 export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = {
@@ -30255,9 +29907,6 @@ export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = 
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.alliance !== undefined) {
       Alliance.encode(message.alliance, writer.uint32(42).fork()).join();
@@ -30296,14 +29945,6 @@ export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = 
           message.allianceId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -30334,7 +29975,6 @@ export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = 
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
     };
   },
@@ -30350,9 +29990,6 @@ export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = 
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.alliance !== undefined) {
       obj.alliance = Alliance.toJSON(message.alliance);
     }
@@ -30367,7 +30004,6 @@ export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = 
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
       ? Alliance.fromPartial(object.alliance)
       : undefined;
@@ -30462,7 +30098,7 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
 };
 
 function createBaseIncreaseAllianceCapacityReply(): IncreaseAllianceCapacityReply {
-  return { ok: false, errorCode: 0, allianceId: 0, revision: 0, alliance: undefined };
+  return { ok: false, errorCode: 0, allianceId: 0, alliance: undefined };
 }
 
 export const IncreaseAllianceCapacityReply: MessageFns<IncreaseAllianceCapacityReply> = {
@@ -30475,9 +30111,6 @@ export const IncreaseAllianceCapacityReply: MessageFns<IncreaseAllianceCapacityR
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.alliance !== undefined) {
       Alliance.encode(message.alliance, writer.uint32(42).fork()).join();
@@ -30516,14 +30149,6 @@ export const IncreaseAllianceCapacityReply: MessageFns<IncreaseAllianceCapacityR
           message.allianceId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -30554,7 +30179,6 @@ export const IncreaseAllianceCapacityReply: MessageFns<IncreaseAllianceCapacityR
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
     };
   },
@@ -30569,9 +30193,6 @@ export const IncreaseAllianceCapacityReply: MessageFns<IncreaseAllianceCapacityR
     }
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
     }
     if (message.alliance !== undefined) {
       obj.alliance = Alliance.toJSON(message.alliance);
@@ -30589,7 +30210,6 @@ export const IncreaseAllianceCapacityReply: MessageFns<IncreaseAllianceCapacityR
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
       ? Alliance.fromPartial(object.alliance)
       : undefined;
@@ -30704,7 +30324,7 @@ export const ChangeAllianceRankTitlesRequest: MessageFns<ChangeAllianceRankTitle
 };
 
 function createBaseChangeAllianceRankTitlesReply(): ChangeAllianceRankTitlesReply {
-  return { ok: false, errorCode: 0, allianceId: 0, revision: 0, alliance: undefined };
+  return { ok: false, errorCode: 0, allianceId: 0, alliance: undefined };
 }
 
 export const ChangeAllianceRankTitlesReply: MessageFns<ChangeAllianceRankTitlesReply> = {
@@ -30717,9 +30337,6 @@ export const ChangeAllianceRankTitlesReply: MessageFns<ChangeAllianceRankTitlesR
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.alliance !== undefined) {
       Alliance.encode(message.alliance, writer.uint32(42).fork()).join();
@@ -30758,14 +30375,6 @@ export const ChangeAllianceRankTitlesReply: MessageFns<ChangeAllianceRankTitlesR
           message.allianceId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -30796,7 +30405,6 @@ export const ChangeAllianceRankTitlesReply: MessageFns<ChangeAllianceRankTitlesR
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
     };
   },
@@ -30811,9 +30419,6 @@ export const ChangeAllianceRankTitlesReply: MessageFns<ChangeAllianceRankTitlesR
     }
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
     }
     if (message.alliance !== undefined) {
       obj.alliance = Alliance.toJSON(message.alliance);
@@ -30831,7 +30436,6 @@ export const ChangeAllianceRankTitlesReply: MessageFns<ChangeAllianceRankTitlesR
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
       ? Alliance.fromPartial(object.alliance)
       : undefined;
@@ -30962,15 +30566,7 @@ export const ChangeAllianceMemberRankRequest: MessageFns<ChangeAllianceMemberRan
 };
 
 function createBaseChangeAllianceMemberRankReply(): ChangeAllianceMemberRankReply {
-  return {
-    ok: false,
-    errorCode: 0,
-    allianceId: 0,
-    revision: 0,
-    targetCharacterId: 0,
-    newAllianceRank: 0,
-    alliance: undefined,
-  };
+  return { ok: false, errorCode: 0, allianceId: 0, targetCharacterId: 0, newAllianceRank: 0, alliance: undefined };
 }
 
 export const ChangeAllianceMemberRankReply: MessageFns<ChangeAllianceMemberRankReply> = {
@@ -30983,9 +30579,6 @@ export const ChangeAllianceMemberRankReply: MessageFns<ChangeAllianceMemberRankR
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.targetCharacterId !== 0) {
       writer.uint32(40).uint32(message.targetCharacterId);
@@ -31028,14 +30621,6 @@ export const ChangeAllianceMemberRankReply: MessageFns<ChangeAllianceMemberRankR
           }
 
           message.allianceId = reader.uint32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
           continue;
         }
         case 5: {
@@ -31084,7 +30669,6 @@ export const ChangeAllianceMemberRankReply: MessageFns<ChangeAllianceMemberRankR
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       targetCharacterId: isSet(object.targetCharacterId)
         ? globalThis.Number(object.targetCharacterId)
         : isSet(object.target_character_id)
@@ -31110,9 +30694,6 @@ export const ChangeAllianceMemberRankReply: MessageFns<ChangeAllianceMemberRankR
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.targetCharacterId !== 0) {
       obj.targetCharacterId = Math.round(message.targetCharacterId);
     }
@@ -31135,7 +30716,6 @@ export const ChangeAllianceMemberRankReply: MessageFns<ChangeAllianceMemberRankR
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.targetCharacterId = object.targetCharacterId ?? 0;
     message.newAllianceRank = object.newAllianceRank ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
@@ -31254,7 +30834,6 @@ function createBaseChangeAllianceLeaderReply(): ChangeAllianceLeaderReply {
     ok: false,
     errorCode: 0,
     allianceId: 0,
-    revision: 0,
     oldLeaderCharacterId: 0,
     newLeaderCharacterId: 0,
     alliance: undefined,
@@ -31271,9 +30850,6 @@ export const ChangeAllianceLeaderReply: MessageFns<ChangeAllianceLeaderReply> = 
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.oldLeaderCharacterId !== 0) {
       writer.uint32(40).uint32(message.oldLeaderCharacterId);
@@ -31316,14 +30892,6 @@ export const ChangeAllianceLeaderReply: MessageFns<ChangeAllianceLeaderReply> = 
           }
 
           message.allianceId = reader.uint32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
           continue;
         }
         case 5: {
@@ -31372,7 +30940,6 @@ export const ChangeAllianceLeaderReply: MessageFns<ChangeAllianceLeaderReply> = 
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       oldLeaderCharacterId: isSet(object.oldLeaderCharacterId)
         ? globalThis.Number(object.oldLeaderCharacterId)
         : isSet(object.old_leader_character_id)
@@ -31398,9 +30965,6 @@ export const ChangeAllianceLeaderReply: MessageFns<ChangeAllianceLeaderReply> = 
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.oldLeaderCharacterId !== 0) {
       obj.oldLeaderCharacterId = Math.round(message.oldLeaderCharacterId);
     }
@@ -31421,7 +30985,6 @@ export const ChangeAllianceLeaderReply: MessageFns<ChangeAllianceLeaderReply> = 
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.oldLeaderCharacterId = object.oldLeaderCharacterId ?? 0;
     message.newLeaderCharacterId = object.newLeaderCharacterId ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
@@ -31532,7 +31095,7 @@ export const ChangeAllianceNoticeRequest: MessageFns<ChangeAllianceNoticeRequest
 };
 
 function createBaseChangeAllianceNoticeReply(): ChangeAllianceNoticeReply {
-  return { ok: false, errorCode: 0, allianceId: 0, revision: 0, alliance: undefined };
+  return { ok: false, errorCode: 0, allianceId: 0, alliance: undefined };
 }
 
 export const ChangeAllianceNoticeReply: MessageFns<ChangeAllianceNoticeReply> = {
@@ -31545,9 +31108,6 @@ export const ChangeAllianceNoticeReply: MessageFns<ChangeAllianceNoticeReply> = 
     }
     if (message.allianceId !== 0) {
       writer.uint32(24).uint32(message.allianceId);
-    }
-    if (message.revision !== 0) {
-      writer.uint32(32).uint64(message.revision);
     }
     if (message.alliance !== undefined) {
       Alliance.encode(message.alliance, writer.uint32(42).fork()).join();
@@ -31586,14 +31146,6 @@ export const ChangeAllianceNoticeReply: MessageFns<ChangeAllianceNoticeReply> = 
           message.allianceId = reader.uint32();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.revision = longToNumber(reader.uint64());
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -31624,7 +31176,6 @@ export const ChangeAllianceNoticeReply: MessageFns<ChangeAllianceNoticeReply> = 
         : isSet(object.alliance_id)
         ? globalThis.Number(object.alliance_id)
         : 0,
-      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
       alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
     };
   },
@@ -31640,9 +31191,6 @@ export const ChangeAllianceNoticeReply: MessageFns<ChangeAllianceNoticeReply> = 
     if (message.allianceId !== 0) {
       obj.allianceId = Math.round(message.allianceId);
     }
-    if (message.revision !== 0) {
-      obj.revision = Math.round(message.revision);
-    }
     if (message.alliance !== undefined) {
       obj.alliance = Alliance.toJSON(message.alliance);
     }
@@ -31657,7 +31205,6 @@ export const ChangeAllianceNoticeReply: MessageFns<ChangeAllianceNoticeReply> = 
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.allianceId = object.allianceId ?? 0;
-    message.revision = object.revision ?? 0;
     message.alliance = (object.alliance !== undefined && object.alliance !== null)
       ? Alliance.fromPartial(object.alliance)
       : undefined;

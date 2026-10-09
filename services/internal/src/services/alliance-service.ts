@@ -49,7 +49,6 @@ export type CreateAllianceResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     alliance?: AllianceMessage;
 };
 
@@ -59,14 +58,12 @@ export type DisbandAllianceResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
 };
 
 export type LeaveAllianceResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     disbanded?: boolean;
     removedGuildId?: number;
     alliance?: AllianceMessage;
@@ -76,7 +73,6 @@ export type ExpelAllianceGuildResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     disbanded?: boolean;
     removedGuildId?: number;
     alliance?: AllianceMessage;
@@ -86,7 +82,6 @@ export type AcceptAllianceInviteResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     alliance?: AllianceMessage;
 };
 
@@ -94,7 +89,6 @@ export type IncreaseAllianceCapacityResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     alliance?: AllianceMessage;
 };
 
@@ -102,7 +96,6 @@ export type ChangeAllianceRankTitlesResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     alliance?: AllianceMessage;
 };
 
@@ -110,7 +103,6 @@ export type ChangeAllianceMemberRankResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     targetCharacterId?: number;
     newAllianceRank?: number;
     alliance?: AllianceMessage;
@@ -120,7 +112,6 @@ export type ChangeAllianceLeaderResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     oldLeaderCharacterId?: number;
     newLeaderCharacterId?: number;
     alliance?: AllianceMessage;
@@ -130,7 +121,6 @@ export type ChangeAllianceNoticeResult = {
     ok: boolean;
     code?: AllianceErrorCode;
     allianceId?: number;
-    revision?: number;
     alliance?: AllianceMessage;
 };
 
@@ -200,7 +190,6 @@ export class AllianceService {
         eventType: string,
         worldId: number,
         allianceId: number,
-        revision: number,
         extraPayload: Record<string, unknown> = {}
     ) {
         await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
@@ -209,7 +198,6 @@ export class AllianceService {
             event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             world_id: worldId,
             alliance_id: allianceId,
-            revision,
             occurred_at: new Date().toISOString(),
             ...extraPayload,
         });
@@ -232,7 +220,7 @@ export class AllianceService {
             allianceId: alliance.allianceId,
             name: alliance.name,
             leaderCharacterId: alliance.leaderCharacterId,
-            revision: alliance.revision,
+            updatedAtUnixMs: alliance.updatedAt?.getTime() ?? 0,
             capacity: alliance.capacity,
             notice: alliance.notice,
             rankTitles: [...alliance.rankTitles],
@@ -283,7 +271,7 @@ export class AllianceService {
                 if (guild) {
                     await this.guildRepo.set(
                         worldId,
-                        { ...guild, allianceId: null, revision: guild.revision + 1 },
+                        { ...guild, allianceId: null },
                         { txClient: dataTx }
                     );
                 }
@@ -413,7 +401,6 @@ export class AllianceService {
                         rankTitles: [...DEFAULT_ALLIANCE_RANK_TITLES],
                         capacity: DEFAULT_ALLIANCE_CAPACITY,
                         notice: "",
-                        revision: 1,
                     },
                     { txClient: dataTx }
                 );
@@ -422,7 +409,7 @@ export class AllianceService {
             await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
                 await this.guildRepo.set(
                     worldId,
-                    { ...guild1, allianceId: newAllianceId, revision: guild1.revision + 1 },
+                    { ...guild1, allianceId: newAllianceId },
                     { txClient: dataTx }
                 );
                 await this.assignAllianceRanks(worldId, guildId, 1, dataTx);
@@ -431,7 +418,7 @@ export class AllianceService {
             await this.ctx.withPgDataTransaction(worldId, partnerGuildId, async (dataTx: PoolClient) => {
                 await this.guildRepo.set(
                     worldId,
-                    { ...guild2, allianceId: newAllianceId, revision: guild2.revision + 1 },
+                    { ...guild2, allianceId: newAllianceId },
                     { txClient: dataTx }
                 );
                 await this.assignAllianceRanks(worldId, partnerGuildId, 2, dataTx);
@@ -457,7 +444,7 @@ export class AllianceService {
 
         const allianceMessage = await this.allianceToPb(worldId, savedAlliance, initialGuildIds);
         const wire = Alliance.encode(allianceMessage).finish();
-        await this.publishToAllianceRoutes(ALLIANCE_EVT.CREATED, worldId, createdAllianceId, savedAlliance.revision, {
+        await this.publishToAllianceRoutes(ALLIANCE_EVT.CREATED, worldId, createdAllianceId, {
             alliance_name: trimmedName,
             guild_ids: [guildId, partnerGuildId],
             leader_character_id: leaderCharacterId,
@@ -467,7 +454,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: createdAllianceId,
-            revision: savedAlliance.revision,
             alliance: allianceMessage,
         };
     }
@@ -480,7 +466,6 @@ export class AllianceService {
         | {
               ok: true;
               allianceId: number;
-              revision: number;
               guildIds: number[];
               memberCharacterIds: number[];
           }
@@ -492,7 +477,6 @@ export class AllianceService {
         }
 
         const memberCharacterIds: number[] = [];
-        const nextRevision = lockedAlliance.revision + 1;
 
         for (const gid of lockedAlliance.guildIds) {
             if (!Number.isInteger(gid) || gid < 0) {
@@ -504,7 +488,7 @@ export class AllianceService {
             }
             await this.guildRepo.set(
                 worldId,
-                { ...g, allianceId: null, revision: g.revision + 1 },
+                { ...g, allianceId: null },
                 { txClient: dataTx }
             );
             const members = [...(await this.guildMemberRepo.getAll(worldId, String(gid), { txClient: dataTx })).values()];
@@ -524,7 +508,6 @@ export class AllianceService {
             worldId,
             {
                 ...lockedAlliance,
-                revision: nextRevision,
                 disbandedAt: new Date(),
             },
             { txClient: dataTx }
@@ -533,7 +516,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId,
-            revision: nextRevision,
             guildIds: lockedAlliance.guildIds,
             memberCharacterIds,
         };
@@ -553,7 +535,7 @@ export class AllianceService {
             await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
-        await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {
+        await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, {
             guild_ids: result.guildIds,
             member_character_ids: result.memberCharacterIds,
         });
@@ -580,7 +562,7 @@ export class AllianceService {
                 }
                 await this.guildRepo.set(
                     worldId,
-                    { ...lockedGuild, allianceId: null, revision: lockedGuild.revision + 1 },
+                    { ...lockedGuild, allianceId: null },
                     { txClient: dataTx }
                 );
                 const members = [...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values()];
@@ -593,20 +575,17 @@ export class AllianceService {
                 }
             }
 
-            const nextRevision = lockedAlliance.revision + 1;
             const savedAlliance = await this.allianceRepo.set(
                 worldId,
                 {
                     ...lockedAlliance,
                     guildIds: lockedAlliance.guildIds.filter((id) => id !== guildId),
-                    revision: nextRevision,
                 },
                 { txClient: dataTx }
             );
 
             return {
                 ok: true as const,
-                revision: nextRevision,
                 guildIds: lockedAlliance.guildIds,
                 savedAlliance,
             };
@@ -644,14 +623,12 @@ export class AllianceService {
             ALLIANCE_EVT.GUILD_LEFT,
             worldId,
             allianceId,
-            txResult.revision,
             extraPayload
         );
 
         return {
             ok: true as const,
             allianceId,
-            revision: txResult.revision,
             disbanded: false,
             removedGuildId: guildId,
             alliance: allianceMessage,
@@ -759,12 +736,11 @@ export class AllianceService {
                 return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE };
             }
 
-            const nextRevision = lockedAlliance.revision + 1;
             const nextGuildIds = [...lockedAlliance.guildIds, guildId];
 
             await this.guildRepo.set(
                 worldId,
-                { ...lockedGuild, allianceId, revision: lockedGuild.revision + 1 },
+                { ...lockedGuild, allianceId },
                 { txClient: dataTx }
             );
             await this.assignAllianceRanks(worldId, guildId, 2, dataTx);
@@ -774,7 +750,6 @@ export class AllianceService {
                 {
                     ...lockedAlliance,
                     guildIds: nextGuildIds,
-                    revision: nextRevision,
                 },
                 { txClient: dataTx }
             );
@@ -782,12 +757,11 @@ export class AllianceService {
             return {
                 ok: true as const,
                 allianceId,
-                revision: nextRevision,
                 savedAlliance,
             };
         });
 
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null) {
+        if (!txResult.ok || txResult.allianceId == null) {
             return txResult;
         }
 
@@ -806,7 +780,6 @@ export class AllianceService {
             ALLIANCE_EVT.GUILD_ADDED,
             worldId,
             txResult.allianceId,
-            txResult.revision,
             {
                 added_guild_id: guildId,
                 alliance_pb: Buffer.from(wireAlliance).toString("base64"),
@@ -816,7 +789,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: txResult.allianceId,
-            revision: txResult.revision,
             alliance: allianceMessage,
         };
     }
@@ -908,13 +880,11 @@ export class AllianceService {
                 return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_CAPACITY_MAX };
             }
 
-            const nextRevision = lockedAlliance.revision + 1;
             const savedAlliance = await this.allianceRepo.set(
                 worldId,
                 {
                     ...lockedAlliance,
                     capacity: lockedAlliance.capacity + 1,
-                    revision: nextRevision,
                 },
                 { txClient: dataTx }
             );
@@ -922,12 +892,11 @@ export class AllianceService {
             return {
                 ok: true as const,
                 allianceId,
-                revision: nextRevision,
                 savedAlliance,
             };
         });
 
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null) {
+        if (!txResult.ok || txResult.allianceId == null) {
             return txResult;
         }
 
@@ -939,7 +908,6 @@ export class AllianceService {
             ALLIANCE_EVT.CAPACITY_CHANGED,
             worldId,
             txResult.allianceId,
-            txResult.revision,
             {
                 alliance_pb: Buffer.from(wireAlliance).toString("base64"),
             }
@@ -948,7 +916,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: txResult.allianceId,
-            revision: txResult.revision,
             alliance: allianceMessage,
         };
     }
@@ -1002,13 +969,11 @@ export class AllianceService {
                 return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
             }
 
-            const nextRevision = lockedAlliance.revision + 1;
             const savedAlliance = await this.allianceRepo.set(
                 worldId,
                 {
                     ...lockedAlliance,
                     rankTitles: normalizedRankTitles,
-                    revision: nextRevision,
                 },
                 { txClient: dataTx }
             );
@@ -1016,12 +981,11 @@ export class AllianceService {
             return {
                 ok: true as const,
                 allianceId,
-                revision: nextRevision,
                 savedAlliance,
             };
         });
 
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null) {
+        if (!txResult.ok || txResult.allianceId == null) {
             return txResult;
         }
 
@@ -1033,7 +997,6 @@ export class AllianceService {
             ALLIANCE_EVT.RANK_TITLES_CHANGED,
             worldId,
             txResult.allianceId,
-            txResult.revision,
             {
                 alliance_pb: Buffer.from(wireAlliance).toString("base64"),
             }
@@ -1042,7 +1005,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: txResult.allianceId,
-            revision: txResult.revision,
             alliance: allianceMessage,
         };
     }
@@ -1078,13 +1040,11 @@ export class AllianceService {
                 return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
             }
 
-            const nextRevision = lockedAlliance.revision + 1;
             const savedAlliance = await this.allianceRepo.set(
                 worldId,
                 {
                     ...lockedAlliance,
                     notice,
-                    revision: nextRevision,
                 },
                 { txClient: dataTx }
             );
@@ -1092,12 +1052,11 @@ export class AllianceService {
             return {
                 ok: true as const,
                 allianceId,
-                revision: nextRevision,
                 savedAlliance,
             };
         });
 
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null) {
+        if (!txResult.ok || txResult.allianceId == null) {
             return txResult;
         }
 
@@ -1109,7 +1068,6 @@ export class AllianceService {
             ALLIANCE_EVT.NOTICE_CHANGED,
             worldId,
             txResult.allianceId,
-            txResult.revision,
             {
                 notice,
                 alliance_pb: Buffer.from(wireAlliance).toString("base64"),
@@ -1119,7 +1077,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: txResult.allianceId,
-            revision: txResult.revision,
             alliance: allianceMessage,
         };
     }
@@ -1239,14 +1196,12 @@ export class AllianceService {
             nextGuildIds[0] = newLeaderGuildId;
             nextGuildIds[newLeaderIndex] = leaderGuildAt0;
 
-            const nextRevision = lockedAlliance.revision + 1;
             const savedAlliance = await this.allianceRepo.set(
                 worldId,
                 {
                     ...lockedAlliance,
                     leaderCharacterId: newLeaderCharacterId,
                     guildIds: nextGuildIds,
-                    revision: nextRevision,
                 },
                 { txClient: dataTx }
             );
@@ -1255,7 +1210,7 @@ export class AllianceService {
             if (oldGuild) {
                 await this.guildRepo.set(
                     worldId,
-                    { ...oldGuild, revision: oldGuild.revision + 1 },
+                    oldGuild,
                     { txClient: dataTx }
                 );
             }
@@ -1263,7 +1218,7 @@ export class AllianceService {
             if (newGuild) {
                 await this.guildRepo.set(
                     worldId,
-                    { ...newGuild, revision: newGuild.revision + 1 },
+                    newGuild,
                     { txClient: dataTx }
                 );
             }
@@ -1271,7 +1226,6 @@ export class AllianceService {
             return {
                 ok: true as const,
                 allianceId,
-                revision: nextRevision,
                 oldLeaderCharacterId,
                 newLeaderCharacterId,
                 savedAlliance,
@@ -1280,7 +1234,7 @@ export class AllianceService {
             };
         });
 
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null) {
+        if (!txResult.ok || txResult.allianceId == null) {
             return txResult;
         }
 
@@ -1303,7 +1257,6 @@ export class AllianceService {
             ALLIANCE_EVT.LEADER_CHANGED,
             worldId,
             txResult.allianceId,
-            txResult.revision,
             {
                 old_leader_character_id: txResult.oldLeaderCharacterId,
                 new_leader_character_id: txResult.newLeaderCharacterId,
@@ -1314,7 +1267,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: txResult.allianceId,
-            revision: txResult.revision,
             oldLeaderCharacterId: txResult.oldLeaderCharacterId,
             newLeaderCharacterId: txResult.newLeaderCharacterId,
             alliance: allianceMessage,
@@ -1400,7 +1352,7 @@ export class AllianceService {
             if (targetGuild) {
                 await this.guildRepo.set(
                     worldId,
-                    { ...targetGuild, revision: targetGuild.revision + 1 },
+                    targetGuild,
                     { txClient: dataTx }
                 );
             }
@@ -1410,17 +1362,15 @@ export class AllianceService {
                 return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
             }
 
-            const nextRevision = lockedAlliance.revision + 1;
             const savedAlliance = await this.allianceRepo.set(
                 worldId,
-                { ...lockedAlliance, revision: nextRevision },
+                lockedAlliance,
                 { txClient: dataTx }
             );
 
             return {
                 ok: true as const,
                 allianceId,
-                revision: nextRevision,
                 targetCharacterId,
                 newAllianceRank,
                 savedAlliance,
@@ -1428,7 +1378,7 @@ export class AllianceService {
             };
         });
 
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null) {
+        if (!txResult.ok || txResult.allianceId == null) {
             return txResult;
         }
 
@@ -1448,7 +1398,6 @@ export class AllianceService {
             ALLIANCE_EVT.MEMBER_RANK_CHANGED,
             worldId,
             txResult.allianceId,
-            txResult.revision,
             {
                 character_id: txResult.targetCharacterId,
                 new_alliance_rank: txResult.newAllianceRank,
@@ -1459,7 +1408,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: txResult.allianceId,
-            revision: txResult.revision,
             targetCharacterId: txResult.targetCharacterId,
             newAllianceRank: txResult.newAllianceRank,
             alliance: allianceMessage,
@@ -1497,7 +1445,6 @@ export class AllianceService {
             return {
                 ok: true,
                 allianceId: result.allianceId,
-                revision: result.revision,
                 disbanded: true,
                 removedGuildId: guildId,
             };
@@ -1592,7 +1539,6 @@ export class AllianceService {
         return {
             ok: true,
             allianceId: result.allianceId,
-            revision: result.revision,
         };
     }
 
@@ -1632,7 +1578,7 @@ export class AllianceService {
         if (!guildMembers.has(String(senderCharacterId))) {
             return { ok: false };
         }
-        await this.publishToAllianceRoutes("multi_chat", worldId, allianceId, alliance.revision, {
+        await this.publishToAllianceRoutes("multi_chat", worldId, allianceId, {
             alliance_id: allianceId,
             sender_character_id: senderCharacterId,
             chat_mode: 3,
