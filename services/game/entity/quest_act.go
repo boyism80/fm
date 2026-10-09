@@ -357,6 +357,12 @@ func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items 
 			spec.Reward.Items = make(map[uint32]uint16)
 		}
 		spec.Reward.Items[item.ItemID] += uint16(item.Count)
+		if item.Period > 0 {
+			if spec.Reward.Period == nil {
+				spec.Reward.Period = make(map[uint32]time.Duration)
+			}
+			spec.Reward.Period[item.ItemID] = time.Duration(item.Period) * time.Minute
+		}
 	}
 }
 
