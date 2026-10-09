@@ -67,6 +67,15 @@ func (s *Storage) count() int {
 	return count
 }
 
+func (s *Storage) has(invType constant.InventoryType, itemID uint32) bool {
+	for _, stored := range s.Tabs[invType] {
+		if stored.GetModel().GetID() == itemID {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if s.opened == false {
 		return ErrStorageClosed
@@ -83,6 +92,20 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if constant.ItemCategoryOf(itemID) == constant.ItemCategoryPet {
 		return ErrStorageNotStorable
 	}
+	model := item.GetModel()
+	if model.IsOnly() && s.has(invType, itemID) {
+		return ErrStorageNotStorable
+	}
+	flags := item.GetFlags()
+	untradeable := model.IsTradeBlock() || model.IsQuest()
+	karma := constant.ItemFlagBundleKarma
+	if invType == constant.InventoryTypeEquipment {
+		untradeable = untradeable || flags&constant.ItemFlagUntradeable != 0
+		karma = constant.ItemFlagEquipKarma
+	}
+	if untradeable && flags&karma == 0 {
+		return ErrStorageNotStorable
+	}
 	if constant.IsRechargeable(itemID) {
 		count = item.GetCount()
 	}
@@ -94,6 +117,9 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	}
 
 	stored := item.Clone(count)
+	if untradeable {
+		stored.SetFlags(flags &^ karma)
+	}
 	s.owner.Inventory.removeMesoUnchecked(s.storeFee)
 	s.owner.Inventory.RemoveItem(invType, slot, count)
 	s.Tabs[invType] = append(s.Tabs[invType], stored)
@@ -110,6 +136,9 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 		return ErrStorageItemNotFound
 	}
 	item := items[index]
+	if item.GetModel().IsOnly() && s.owner.Inventory.HasItem(item.GetModel().GetID()) {
+		return ErrStorageNotStorable
+	}
 
 	spec := ExchangeSpec{
 		Cost: ExchangeSide{
