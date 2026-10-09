@@ -1933,6 +1933,79 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LTrue)
 			return 1
 		},
+		"set_pet_closeness": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pets.Active == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			ch.Pets.Active.SetCloseness(L.CheckInt(2))
+			L.Push(lua.LTrue)
+			return 1
+		},
+		"set_pet_fullness": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pets.Active == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			ch.Pets.Active.SetFullness(L.CheckInt(2))
+			L.Push(lua.LTrue)
+			return 1
+		},
+		"hunger_pet": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pets.Active == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			ch.Pets.Active.hunger()
+			L.Push(lua.LTrue)
+			return 1
+		},
+		"pet_level": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pets.Active == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(ch.Pets.Active.Item.Level))
+			return 1
+		},
+		"pet_fullness": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pets.Active == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(ch.Pets.Active.Item.Fullness))
+			return 1
+		},
 		"rename_pet": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

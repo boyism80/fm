@@ -13,6 +13,9 @@ type EnhanceEquipment struct {
 func (*EnhanceEquipment) Opcode() byte { return 0x45 }
 
 func (p *EnhanceEquipment) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.Write16(p.ScrollSlot)
+	writer.Write16(p.TargetSlot)
 	return nil
 }
 

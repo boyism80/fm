@@ -32,9 +32,10 @@ func (item *Pet) Alive(now time.Time) bool {
 	return item.GetModel().(*wz.Pet).LimitedLife == 0 || item.SecondsLeft > 0
 }
 
-func (item *Pet) AddCloseness(n int) bool {
-	item.Closeness = uint16(min(int(item.Closeness)+n, constant.PetMaxCloseness))
+func (item *Pet) SetCloseness(n int) bool {
 	level := item.Level
+	item.Closeness = uint16(min(max(n, 0), constant.PetMaxCloseness))
+	item.Level = 1
 	for item.Level < constant.PetMaxLevel && item.Closeness >= constant.PetClosenessByLevel[item.Level] {
 		item.Level++
 	}

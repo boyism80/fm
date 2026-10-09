@@ -25,4 +25,10 @@ func (p *ShowScrollEffect) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ShowScrollEffect) Deserialize(reader *stream.StreamReader) {
+	p.CharacterID = reader.ReadU32()
+	p.Success = reader.ReadBool()
+	p.DestroyedByCurse = reader.ReadBool()
+	p.LegendarySpirit = reader.ReadBool()
+	p.WhiteScroll = reader.ReadBool()
+	reader.Skip(4)
 }

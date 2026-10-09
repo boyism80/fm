@@ -599,6 +599,64 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["펫정보"] = {
+		privilege = ROLE.Admin,
+		usage = "- 소환한 펫의 친밀도, 레벨, 포만감 보기",
+		command = function(me, args)
+			if me:pet_id() == 0 then
+				me:message("소환한 펫이 없습니다.")
+				return true
+			end
+			me:message(string.format("펫 친밀도 %d 레벨 %d 포만감 %d", me:pet_closeness(), me:pet_level(), me:pet_fullness()))
+			return true
+		end,
+	},
+	["펫친밀도"] = {
+		privilege = ROLE.Admin,
+		usage = "<친밀도> - 소환한 펫의 친밀도 설정 (레벨 재계산)",
+		command = function(me, args)
+			local closeness = tonumber(args[1])
+			if closeness == nil then
+				me:message("사용법: /펫친밀도 <친밀도>")
+				return true
+			end
+			if me:set_pet_closeness(closeness) == false then
+				me:message("소환한 펫이 없습니다.")
+				return true
+			end
+			me:message(string.format("펫 친밀도 %d 레벨 %d", me:pet_closeness(), me:pet_level()))
+			return true
+		end,
+	},
+	["펫포만감"] = {
+		privilege = ROLE.Admin,
+		usage = "<포만감> - 소환한 펫의 포만감 설정 (0~100)",
+		command = function(me, args)
+			local fullness = tonumber(args[1])
+			if fullness == nil then
+				me:message("사용법: /펫포만감 <포만감>")
+				return true
+			end
+			if me:set_pet_fullness(fullness) == false then
+				me:message("소환한 펫이 없습니다.")
+				return true
+			end
+			me:message(string.format("펫 포만감 %d", me:pet_fullness()))
+			return true
+		end,
+	},
+	["펫배고픔"] = {
+		privilege = ROLE.Admin,
+		usage = "- 소환한 펫의 포만감 감소를 지금 한 번 실행",
+		command = function(me, args)
+			if me:hunger_pet() == false then
+				me:message("소환한 펫이 없습니다.")
+				return true
+			end
+			me:message(string.format("펫 포만감 %d", me:pet_fullness()))
+			return true
+		end,
+	},
 	["아이템드롭"] = {
 		privilege = ROLE.Admin,
 		usage = "<아이템ID> [개수] - 내 위치에 아이템 떨어뜨리기",

@@ -20,6 +20,18 @@ type KeymapChange struct {
 func (*ChangeKeymap) Opcode() byte { return 0x71 }
 
 func (c *ChangeKeymap) Serialize(writer *stream.StreamWriter) error {
+	writer.Write32(c.Mode)
+	if c.Mode != 0 {
+		writer.Write32(c.Data)
+		return nil
+	}
+
+	writer.Write32(int32(len(c.Changes)))
+	for _, change := range c.Changes {
+		writer.Write32(change.Key)
+		writer.WriteU8(change.Type)
+		writer.Write32(change.Action)
+	}
 	return nil
 }
 

@@ -212,11 +212,20 @@ func (p *ActivePet) SetExceptions(itemIDs []uint32) {
 }
 
 func (p *ActivePet) AddCloseness(n int) {
-	levelUp := p.Item.AddCloseness(n)
+	p.SetCloseness(int(p.Item.Closeness) + n)
+}
+
+func (p *ActivePet) SetCloseness(n int) {
+	levelUp := p.Item.SetCloseness(n)
 	p.owner.Listener.OnPetUpdated(p.owner, p.Item)
 	if levelUp {
 		p.owner.Listener.OnPetLevelUp(p.owner)
 	}
+}
+
+func (p *ActivePet) SetFullness(n int) {
+	p.Item.Fullness = uint8(min(max(n, 0), constant.PetMaxFullness))
+	p.owner.Listener.OnPetUpdated(p.owner, p.Item)
 }
 
 func (p *ActivePet) scheduleTimers() {
