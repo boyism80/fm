@@ -79,6 +79,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Pets = &Pets{owner: ch, summoned: p.GetSummonedPet(), HPItem: p.GetPetHpItem(), MPItem: p.GetPetMpItem()}
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
+	ch.Escrow = &Escrow{owner: ch}
 	for i, limit := range p.GetSlotLimits() {
 		if tab := ch.Inventory.Tabs[constant.InventoryType(i+1)]; tab != nil {
 			tab.SlotLimit = uint8(limit)
@@ -355,7 +356,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		PositionX:         int32(ch.Position.X),
 		PositionY:         int32(ch.Position.Y),
 		Stance:            uint32(ch.Stance),
-		Meso:              ch.Inventory.Meso,
+		Meso:              ch.Escrow.mergeMeso(ch.Inventory.Meso),
 		SkillPoint:        uint32(ch.Points.SP),
 		Population:        uint32(ch.Stats.Population),
 		HpApUsed:          uint32(ch.Points.HPMPUsed),
@@ -398,7 +399,7 @@ func (ch *Character) InventoryToProto() []*internal.Inventory {
 	for _, inv := range ch.Inventory.Tabs {
 		items = append(items, inv.ToProto(ownerID)...)
 	}
-	return items
+	return ch.Escrow.mergeProto(items)
 }
 
 func (ch *Character) SkillsToProto() []*internal.Skill {

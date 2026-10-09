@@ -41,11 +41,15 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 			err = ch.CreateEntrustedShop(ctx.ActorContext, req.Title, req.Slot, req.ItemID)
 		case pconst.MiniRoomTypePersonalShop:
 			err = ch.CreatePersonalShop(ctx.ActorContext, req.Title, req.Slot, req.ItemID)
+		case pconst.MiniRoomTypeTrade:
+			err = ch.CreateTrade()
 		default:
 			err = entity.ErrMiniRoomInvalid
 		}
 	case pconst.MiniRoomVisit:
 		err = ch.VisitMiniRoom(req.SN)
+	case pconst.MiniRoomDecline:
+		err = ch.DeclineTrade(req.SN, req.Reason)
 	case pconst.MiniRoomExit:
 		if ch.MiniRoom != nil {
 			ch.MiniRoom.Leave(ch)
@@ -72,22 +76,32 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *entity.Character, req
 		return entity.ErrMiniRoomInvalid
 	}
 
-	switch req.Mode {
-	case pconst.MiniRoomChat:
+	if req.Mode == pconst.MiniRoomChat {
 		return ch.MiniRoom.Chat(ch, req.Message)
-	case pconst.MiniRoomOpen:
-		return ch.MiniRoom.Open(ctx.ActorContext, ch)
-	case pconst.MiniRoomAddItem, pconst.MiniRoomPersonalAddItem:
-		return ch.MiniRoom.AddItem(ctx.ActorContext, ch, constant.InventoryType(req.InventoryType), req.Slot, req.Bundles, req.PerBundle, req.Price)
-	case pconst.MiniRoomBuy, pconst.MiniRoomPersonalBuy:
-		return ch.MiniRoom.Buy(ctx.ActorContext, ch, req.Index, req.Bundles)
-	case pconst.MiniRoomRemoveItem, pconst.MiniRoomPersonalRemoveItem:
-		return ch.MiniRoom.RemoveItem(ctx.ActorContext, ch, req.Index)
 	}
 
 	switch room := ch.MiniRoom.(type) {
+	case *entity.Trade:
+		switch req.Mode {
+		case pconst.MiniRoomInvite:
+			return room.Invite(ch, req.TargetID)
+		case pconst.MiniRoomTradePutItem:
+			return room.PutItem(ch, constant.InventoryType(req.InventoryType), req.Slot, req.Count, req.TradeSlot)
+		case pconst.MiniRoomTradePutMeso:
+			return room.PutMeso(ch, req.Meso)
+		case pconst.MiniRoomTradeConfirm:
+			return room.Confirm(ch)
+		}
 	case *entity.EntrustedShop:
 		switch req.Mode {
+		case pconst.MiniRoomOpen:
+			return room.Open(ctx.ActorContext, ch)
+		case pconst.MiniRoomAddItem:
+			return room.AddItem(ctx.ActorContext, ch, constant.InventoryType(req.InventoryType), req.Slot, req.Bundles, req.PerBundle, req.Price)
+		case pconst.MiniRoomBuy:
+			return room.Buy(ctx.ActorContext, ch, req.Index, req.Bundles)
+		case pconst.MiniRoomRemoveItem:
+			return room.RemoveItem(ctx.ActorContext, ch, req.Index)
 		case pconst.MiniRoomMaintenanceOff:
 			return room.EndMaintenance(ch)
 		case pconst.MiniRoomArrange:
@@ -99,6 +113,14 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *entity.Character, req
 		}
 	case *entity.PersonalShop:
 		switch req.Mode {
+		case pconst.MiniRoomOpen:
+			return room.Open(ctx.ActorContext, ch)
+		case pconst.MiniRoomPersonalAddItem:
+			return room.AddItem(ctx.ActorContext, ch, constant.InventoryType(req.InventoryType), req.Slot, req.Bundles, req.PerBundle, req.Price)
+		case pconst.MiniRoomPersonalBuy:
+			return room.Buy(ctx.ActorContext, ch, req.Index, req.Bundles)
+		case pconst.MiniRoomPersonalRemoveItem:
+			return room.RemoveItem(ctx.ActorContext, ch, req.Index)
 		case pconst.MiniRoomKick:
 			return room.Kick(ch, uint8(req.Slot), req.Name, pconst.MiniRoomLeaveKicked)
 		case pconst.MiniRoomKickTimeout:

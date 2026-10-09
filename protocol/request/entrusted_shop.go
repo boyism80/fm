@@ -30,6 +30,11 @@ type MiniRoom struct {
 	Index         uint16
 	Name          string
 	Names         []string
+	TargetID      uint32
+	Reason        uint8
+	Count         uint16
+	TradeSlot     uint8
+	Meso          int32
 }
 
 func (*MiniRoom) Opcode() byte { return 0x65 }
@@ -39,13 +44,29 @@ func (p *MiniRoom) Serialize(writer *stream.StreamWriter) error {
 	switch p.Mode {
 	case constant.MiniRoomCreate:
 		writer.WriteU8(p.Type)
+		if p.Type == constant.MiniRoomTypeTrade {
+			writer.WriteU8(0)
+			break
+		}
 		writer.WriteStr16(p.Title)
 		writer.WriteU8(0)
 		writer.Write16(p.Slot)
 		writer.WriteU32(p.ItemID)
+	case constant.MiniRoomInvite:
+		writer.WriteU32(p.TargetID)
+	case constant.MiniRoomDecline:
+		writer.WriteU32(p.SN)
+		writer.WriteU8(p.Reason)
 	case constant.MiniRoomVisit:
 		writer.WriteU32(p.SN)
 		writer.WriteU8(0)
+	case constant.MiniRoomTradePutItem:
+		writer.WriteU8(p.InventoryType)
+		writer.Write16(p.Slot)
+		writer.WriteU16(p.Count)
+		writer.WriteU8(p.TradeSlot)
+	case constant.MiniRoomTradePutMeso:
+		writer.Write32(p.Meso)
 	case constant.MiniRoomChat:
 		writer.WriteStr16(p.Message)
 	case constant.MiniRoomOpen:
@@ -78,12 +99,28 @@ func (p *MiniRoom) Deserialize(reader *stream.StreamReader) {
 	switch p.Mode {
 	case constant.MiniRoomCreate:
 		p.Type = reader.ReadU8()
+		if p.Type == constant.MiniRoomTypeTrade {
+			reader.ReadU8()
+			break
+		}
 		p.Title = reader.ReadStr16()
 		reader.ReadU8()
 		p.Slot = reader.Read16()
 		p.ItemID = reader.ReadU32()
+	case constant.MiniRoomInvite:
+		p.TargetID = reader.ReadU32()
+	case constant.MiniRoomDecline:
+		p.SN = reader.ReadU32()
+		p.Reason = reader.ReadU8()
 	case constant.MiniRoomVisit:
 		p.SN = reader.ReadU32()
+	case constant.MiniRoomTradePutItem:
+		p.InventoryType = reader.ReadU8()
+		p.Slot = reader.Read16()
+		p.Count = reader.ReadU16()
+		p.TradeSlot = reader.ReadU8()
+	case constant.MiniRoomTradePutMeso:
+		p.Meso = reader.Read32()
 	case constant.MiniRoomChat:
 		p.Message = reader.ReadStr16()
 	case constant.MiniRoomAddItem, constant.MiniRoomPersonalAddItem:

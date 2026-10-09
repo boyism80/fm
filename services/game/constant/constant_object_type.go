@@ -15,6 +15,7 @@ const (
 	ObjectTypeCharacter     ObjectType = ObjectTypeLife | 0x1000
 	ObjectTypeMob           ObjectType = ObjectTypeLife | 0x2000
 	ObjectTypeSummon        ObjectType = ObjectTypeLife | 0x4000
+	ObjectTypeTrade         ObjectType = ObjectTypeObject | 0x8000
 )
 
 func (t ObjectType) Has(other ObjectType) bool {
@@ -35,5 +36,6 @@ func AllObjectTypeConstants() map[string]ObjectType {
 		"Door":          ObjectTypeDoor,
 		"EntrustedShop": ObjectTypeEntrustedShop,
 		"PersonalShop":  ObjectTypePersonalShop,
+		"Trade":         ObjectTypeTrade,
 	}
 }

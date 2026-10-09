@@ -31,6 +31,8 @@ type Item interface {
 	GetCount() uint16
 	GetCount32() int32
 	SetCount(count uint16)
+	GetFlags() constant.ItemFlag
+	SetFlags(flags constant.ItemFlag)
 	Increase(count uint16) uint16
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
@@ -76,7 +78,11 @@ func (e *EquipmentCore) GetEquipmentCore() *EquipmentCore { return e }
 func (e *EquipmentCore) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeEquipment
 }
-func (e *EquipmentCore) GetCount() uint16             { return 1 }
+func (e *EquipmentCore) GetCount() uint16            { return 1 }
+func (e *EquipmentCore) GetFlags() constant.ItemFlag { return constant.ItemFlag(e.Flag) }
+func (e *EquipmentCore) SetFlags(flags constant.ItemFlag) {
+	e.Flag = uint16(flags)
+}
 func (e *EquipmentCore) Reduce(count uint16) uint16   { return 0 }
 func (e *EquipmentCore) Increase(count uint16) uint16 { return 0 }
 func (e *EquipmentCore) Clone(count uint16) Item      { return cloneEquipmentCore(e, count) }
@@ -167,6 +173,8 @@ func (item *ItemCore) Getcount() uint16                             { return ite
 func (item *ItemCore) GetCount32() int32                            { return int32(item.Count) }
 func (item *ItemCore) IsMeso() bool                                 { return false }
 func (item *ItemCore) SetCount(count uint16)                        { item.Count = count }
+func (item *ItemCore) GetFlags() constant.ItemFlag                  { return 0 }
+func (item *ItemCore) SetFlags(flags constant.ItemFlag)             {}
 func (item *ItemCore) GetModel() wz.Item                            { return item.Wz }
 func (item *ItemCore) GetExpiration() time.Time                     { return item.Expiration }
 func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.FieldPlacement = placement }

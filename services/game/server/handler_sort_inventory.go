@@ -31,6 +31,10 @@ func (h *SortInventory) Handle(ctx *core.ClientContext, req *request.SortInvento
 		log.Printf("Character is nil for client")
 		return fmt.Errorf("character is nil")
 	}
+	if character.Trading() {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
 
 	character.MergeItems(req.InventoryType)
 	character.SortItems(req.InventoryType)

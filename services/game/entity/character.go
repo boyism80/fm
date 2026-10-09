@@ -51,6 +51,7 @@ type Character struct {
 	Role            constant.CharacterRole
 	AccountID       uint32
 	Inventory       *Inventory
+	Escrow          *Escrow
 	Storage         *Storage
 	Duey            *Duey
 	StoreBank       *StoreBank

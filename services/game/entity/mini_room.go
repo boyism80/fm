@@ -49,10 +49,6 @@ func (e *MiniRoomBuyError) Error() string {
 type MiniRoom interface {
 	Leave(ch *Character)
 	Chat(ch *Character, message string) error
-	Open(actx actor.Context, ch *Character) error
-	AddItem(actx actor.Context, ch *Character, invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) error
-	Buy(actx actor.Context, ch *Character, index uint16, bundles uint16) error
-	RemoveItem(actx actor.Context, ch *Character, index uint16) error
 }
 
 type ShopItem struct {
@@ -206,18 +202,11 @@ func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bu
 		return nil, ErrMiniRoomInvalid
 	}
 
-	item := ch.Inventory.GetItem(invType, slot)
-	if item == nil {
-		return nil, ErrMiniRoomItemNotFound
+	item, err := ch.Inventory.findTradable(invType, slot)
+	if err != nil {
+		return nil, err
 	}
-	model := item.GetModel()
-	if model.IsTradeBlock() || model.IsAccountSharable() || model.IsQuest() {
-		return nil, ErrMiniRoomInvalid
-	}
-	if constant.ItemCategoryOf(model.GetID()) == constant.ItemCategoryPet {
-		return nil, ErrMiniRoomInvalid
-	}
-	if constant.IsRechargeable(model.GetID()) {
+	if constant.IsRechargeable(item.GetModel().GetID()) {
 		bundles = 1
 		perBundle = item.GetCount()
 	}
@@ -237,6 +226,41 @@ func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bu
 	}
 	ch.Inventory.RemoveItem(invType, slot, uint16(total))
 	return listed, nil
+}
+
+func (inv *Inventory) findTradable(invType constant.InventoryType, slot int16) (Item, error) {
+	item := inv.GetItem(invType, slot)
+	if item == nil {
+		return nil, ErrMiniRoomItemNotFound
+	}
+	model := item.GetModel()
+	if model.IsQuest() || constant.ItemCategoryOf(model.GetID()) == constant.ItemCategoryPet {
+		return nil, ErrMiniRoomInvalid
+	}
+	flags := item.GetFlags()
+	if flags&constant.ItemFlagLock != 0 {
+		return nil, ErrMiniRoomInvalid
+	}
+
+	untradeable := model.IsTradeBlock() || model.IsAccountSharable()
+	karma := constant.ItemFlagBundleKarma
+	if invType == constant.InventoryTypeEquipment {
+		untradeable = untradeable || flags&constant.ItemFlagUntradeable != 0
+		karma = constant.ItemFlagEquipKarma
+	}
+	if untradeable && flags&karma == 0 {
+		return nil, ErrMiniRoomInvalid
+	}
+	return item, nil
+}
+
+func (inv *Inventory) receive(item Item) {
+	karma := constant.ItemFlagBundleKarma
+	if item.GetInventoryType() == constant.InventoryTypeEquipment {
+		karma = constant.ItemFlagEquipKarma
+	}
+	item.SetFlags(item.GetFlags() &^ karma)
+	inv.addItemUnchecked(item, true)
 }
 
 func (ch *Character) collectShopGoods(meso int32, items []*ShopItem) (int32, []*ShopItem) {
@@ -314,7 +338,7 @@ func (r *shopRoom) sell(ch *Character, index uint16, bundles uint16, held int32)
 	}
 
 	ch.Inventory.removeMesoUnchecked(int32(total))
-	ch.Inventory.addItemUnchecked(listed.Item.Clone(count), true)
+	ch.Inventory.receive(listed.Item.Clone(count))
 	listed.Bundles -= bundles
 	return listed, int32(total), income, nil
 }

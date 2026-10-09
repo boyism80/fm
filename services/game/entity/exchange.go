@@ -58,6 +58,9 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 	if spec.Cost.isEmpty() && spec.Reward.isEmpty() {
 		return ExchangeOK
 	}
+	if ch.Trading() && (spec.Reward.Meso > 0 || exchangeItemsEmpty(spec.Reward.Items) == false) {
+		return ExchangeLackCapacity
+	}
 
 	if result := ch.validateMesoExchange(spec.Cost.Meso, spec.Reward.Meso); result != ExchangeOK {
 		return result

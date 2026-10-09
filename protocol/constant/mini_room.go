@@ -4,10 +4,15 @@ type MiniRoomMode uint8
 
 const (
 	MiniRoomCreate             MiniRoomMode = 0x00
+	MiniRoomInvite             MiniRoomMode = 0x02
+	MiniRoomDecline            MiniRoomMode = 0x03
 	MiniRoomVisit              MiniRoomMode = 0x04
 	MiniRoomChat               MiniRoomMode = 0x06
 	MiniRoomExit               MiniRoomMode = 0x0A
 	MiniRoomOpen               MiniRoomMode = 0x0B
+	MiniRoomTradePutItem       MiniRoomMode = 0x0D
+	MiniRoomTradePutMeso       MiniRoomMode = 0x0E
+	MiniRoomTradeConfirm       MiniRoomMode = 0x0F
 	MiniRoomPersonalAddItem    MiniRoomMode = 0x12
 	MiniRoomPersonalBuy        MiniRoomMode = 0x13
 	MiniRoomPersonalRemoveItem MiniRoomMode = 0x17
@@ -26,10 +31,15 @@ const (
 type MiniRoomResult uint8
 
 const (
+	MiniRoomResultInvite        MiniRoomResult = 0x02
+	MiniRoomResultInviteResult  MiniRoomResult = 0x03
 	MiniRoomResultVisitor       MiniRoomResult = 0x04
 	MiniRoomResultEnter         MiniRoomResult = 0x05
 	MiniRoomResultChat          MiniRoomResult = 0x06
 	MiniRoomResultLeave         MiniRoomResult = 0x0A
+	MiniRoomResultTradeItem     MiniRoomResult = 0x0D
+	MiniRoomResultTradeMeso     MiniRoomResult = 0x0E
+	MiniRoomResultTradeConfirm  MiniRoomResult = 0x0F
 	MiniRoomResultBuy           MiniRoomResult = 0x14
 	MiniRoomResultItems         MiniRoomResult = 0x15
 	MiniRoomResultSold          MiniRoomResult = 0x16
@@ -40,10 +50,21 @@ const (
 )
 
 const (
+	MiniRoomTypeTrade         uint8 = 3
 	MiniRoomTypePersonalShop  uint8 = 4
 	MiniRoomTypeEntrustedShop uint8 = 5
+	MiniRoomTradeUsers        uint8 = 2
 	MiniRoomShopUsers         uint8 = 4
 	MiniRoomChatShop          uint8 = 8
+)
+
+type MiniRoomInviteResult uint8
+
+const (
+	MiniRoomInviteNotFound MiniRoomInviteResult = 1
+	MiniRoomInviteBusy     MiniRoomInviteResult = 2
+	MiniRoomInviteDeclined MiniRoomInviteResult = 3
+	MiniRoomInviteBlocked  MiniRoomInviteResult = 4
 )
 
 type MiniRoomEnterError uint8
@@ -62,8 +83,12 @@ type MiniRoomLeaveReason uint8
 
 const (
 	MiniRoomLeaveExit        MiniRoomLeaveReason = 0
+	MiniRoomLeaveTradeCancel MiniRoomLeaveReason = 2
 	MiniRoomLeaveShopClosed  MiniRoomLeaveReason = 3
 	MiniRoomLeaveKicked      MiniRoomLeaveReason = 5
+	MiniRoomLeaveTradeDone   MiniRoomLeaveReason = 6
+	MiniRoomLeaveTradeFail   MiniRoomLeaveReason = 7
+	MiniRoomLeaveTradeOnly   MiniRoomLeaveReason = 8
 	MiniRoomLeaveSoldOut     MiniRoomLeaveReason = 10
 	MiniRoomLeaveStayTimeout MiniRoomLeaveReason = 11
 	MiniRoomLeaveOrganizing  MiniRoomLeaveReason = 13

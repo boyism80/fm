@@ -35,6 +35,10 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 		log.Printf("Character is nil for client")
 		return fmt.Errorf("character is nil")
 	}
+	if character.Trading() {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
 
 	switch {
 	case req.Dest == 0:

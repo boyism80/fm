@@ -1349,6 +1349,9 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 	if m.objects[constant.ObjectTypeItem] == nil {
 		return constant.LootFailedItemNotFound
 	}
+	if character.Trading() {
+		return constant.LootFailedTrading
+	}
 
 	switch item := obj.(type) {
 	case Item:

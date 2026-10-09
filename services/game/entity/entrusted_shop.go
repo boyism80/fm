@@ -688,6 +688,9 @@ func (ch *Character) VisitMiniRoom(sn uint32) error {
 	if ps, ok := m.GetObject(constant.ObjectTypePersonalShop, sn).(*PersonalShop); ok {
 		return ps.Visit(ch)
 	}
+	if t, ok := m.GetObject(constant.ObjectTypeTrade, sn).(*Trade); ok {
+		return t.Visit(ch)
+	}
 	if ch.remoteShop.sn != sn {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}

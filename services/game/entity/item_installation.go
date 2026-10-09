@@ -13,7 +13,11 @@ type Installation struct {
 func (item *Installation) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeInstallation
 }
-func (item *Installation) GetCount() uint16             { return 1 }
+func (item *Installation) GetCount() uint16            { return 1 }
+func (item *Installation) GetFlags() constant.ItemFlag { return constant.ItemFlag(item.Flags) }
+func (item *Installation) SetFlags(flags constant.ItemFlag) {
+	item.Flags = uint16(flags)
+}
 func (item *Installation) Reduce(count uint16) uint16   { return 0 }
 func (item *Installation) Increase(count uint16) uint16 { return 0 }
 func (item *Installation) Clone(count uint16) Item {

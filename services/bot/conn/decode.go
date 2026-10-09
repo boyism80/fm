@@ -116,7 +116,15 @@ var decoders = func() []decoder {
 		newDecoder[response.PersonalShopEnter](func(body []byte) bool {
 			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter && body[1] == pconst.MiniRoomTypePersonalShop
 		}),
+		newDecoder[response.TradeEnter](func(body []byte) bool {
+			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter && body[1] == pconst.MiniRoomTypeTrade
+		}),
 		newDecoder[response.MiniRoomEnter](sub(uint8(pconst.MiniRoomResultEnter))),
+		newDecoder[response.TradeInvite](sub(uint8(pconst.MiniRoomResultInvite))),
+		newDecoder[response.TradeInviteResult](sub(uint8(pconst.MiniRoomResultInviteResult))),
+		newDecoder[response.TradeItem](sub(uint8(pconst.MiniRoomResultTradeItem))),
+		newDecoder[response.TradeMeso](sub(uint8(pconst.MiniRoomResultTradeMeso))),
+		newDecoder[response.TradeConfirm](sub(uint8(pconst.MiniRoomResultTradeConfirm))),
 		newDecoder[response.MiniRoomVisited](sub(uint8(pconst.MiniRoomResultVisitor))),
 		newDecoder[response.MiniRoomChat](sub(uint8(pconst.MiniRoomResultChat))),
 		newDecoder[response.MiniRoomLeave](sub(uint8(pconst.MiniRoomResultLeave))),
