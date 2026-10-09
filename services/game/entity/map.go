@@ -8,6 +8,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
@@ -335,6 +336,9 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 
 	character := m.objects[constant.ObjectTypeCharacter][playerID].(*Character)
 	m.collectOwnedFieldDrops(character)
+	if es, ok := character.MiniRoom.(*EntrustedShop); ok && es.OwnerID == character.GetID() {
+		character.Listener.OnMiniRoomLeft(character, 0, pconst.MiniRoomLeaveMapMoved)
+	}
 	if character.MiniRoom != nil {
 		character.MiniRoom.Leave(character)
 	}
@@ -785,7 +789,6 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpart != nil && m.GameWorld != nil {
 		m.GameWorld.GetMapSystem().DespawnDoor(counterpart, door.Key, animated, false)
 	}
-	// Last, because releasing the field's ref may close and remove this map.
 	if m == door.Field.Map {
 		door.fieldRef.Release()
 	}

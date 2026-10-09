@@ -93,6 +93,7 @@ const (
 	MiniRoomLeaveStayTimeout MiniRoomLeaveReason = 11
 	MiniRoomLeaveOrganizing  MiniRoomLeaveReason = 13
 	MiniRoomLeaveTimeUp      MiniRoomLeaveReason = 14
+	MiniRoomLeaveMapMoved    MiniRoomLeaveReason = 15
 	MiniRoomLeaveClosed      MiniRoomLeaveReason = 16
 )
 
