@@ -367,6 +367,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		MonsterBookCover:  ch.MonsterBook.Cover,
 		TeleportStones:    ch.TeleportStones.regular.Registered(),
 		VipTeleportStones: ch.TeleportStones.vip.Registered(),
+		SavedAtUnixMs:     clock.Now().UnixMilli(),
 	}
 	return &internal.CharacterSaveEntry{
 		Character:      pb,

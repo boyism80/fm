@@ -74,6 +74,7 @@ export interface CharacterModel {
     teleportStones?: number[];
     vipTeleportStones?: number[];
     hidden?: boolean;
+    savedAtUnixMs?: number;
     updatedAt?: Date;
 }
 
@@ -116,6 +117,7 @@ export type CharacterRow = {
     teleport_stones: number[] | null;
     vip_teleport_stones: number[] | null;
     hidden: boolean;
+    saved_at: Date | string | null;
     deleted?: boolean;
     created_at?: Date | string;
     updated_at?: Date | string;

@@ -708,7 +708,6 @@ func (ch *Character) GetID() uint32 {
 	return ch.id
 }
 
-// MarkLoggedOut runs on the disconnect goroutine; whichever actor holds the character next logs it out.
 func (ch *Character) MarkLoggedOut() <-chan *internal.CharacterSaveEntry {
 	ch.session.logoutEntry = make(chan *internal.CharacterSaveEntry, 1)
 	ch.session.loggedOut.Store(true)

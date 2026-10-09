@@ -47,7 +47,8 @@ createMap(
     forMember((destination: any) => destination.teleportStones, mapFrom((source: CharacterModel) => source.teleportStones ?? [])),
     forMember((destination: any) => destination.vipTeleportStones, mapFrom((source: CharacterModel) => source.vipTeleportStones ?? [])),
     forMember((destination: any) => destination.accountId, mapFrom((source: CharacterModel) => source.accountId >>> 0)),
-    forMember((destination: any) => destination.hidden, mapFrom((source: CharacterModel) => source.hidden ?? false))
+    forMember((destination: any) => destination.hidden, mapFrom((source: CharacterModel) => source.hidden ?? false)),
+    forMember((destination: any) => destination.savedAtUnixMs, mapFrom((source: CharacterModel) => source.savedAtUnixMs ?? 0))
 );
 
 createMap(
@@ -91,5 +92,6 @@ createMap(
     forMember((destination: any) => destination.teleportStones, mapFrom((source: Character) => source.teleportStones ?? [])),
     forMember((destination: any) => destination.vipTeleportStones, mapFrom((source: Character) => source.vipTeleportStones ?? [])),
     forMember((destination: any) => destination.accountId, mapFrom((source: Character) => source.accountId >>> 0)),
-    forMember((destination: any) => destination.hidden, mapFrom((source: Character) => source.hidden))
+    forMember((destination: any) => destination.hidden, mapFrom((source: Character) => source.hidden)),
+    forMember((destination: any) => destination.savedAtUnixMs, mapFrom((source: Character) => source.savedAtUnixMs))
 );

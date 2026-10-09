@@ -79,6 +79,7 @@ type CharacterInput = {
     teleportStones?: number[];
     vipTeleportStones?: number[];
     hidden?: boolean;
+    savedAtUnixMs?: number;
 };
 
 export type CharacterRowModel = CharacterModel;
@@ -272,10 +273,16 @@ export class CharacterService {
                 .map((characterId) => `character:${characterId}`);
             await using _characterLocks = await this.distributedLockService.acquireWorldDataLocks(worldId, lockKeys);
 
-            const models = group.map(({ character }) => character);
+            const saved = await this.repo.getMany(worldId, group.map(({ character }) => character.characterId));
+            const latest = group.filter(({ character }) => (character.savedAtUnixMs ?? 0) >= (saved.get(character.characterId)?.savedAtUnixMs ?? 0));
+            if (latest.length === 0) {
+                continue;
+            }
+
+            const models = latest.map(({ character }) => character);
             await this.repo.setAll(worldId, models);
 
-            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage } of group) {
+            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage } of latest) {
                 if (!character.accountId) {
                     continue;
                 }
@@ -476,8 +483,6 @@ export class CharacterService {
             await this.overviewRepo.set(wid, overview);
             await this.unifiedRepo.confirmCharacterName(name);
         } catch (err) {
-            // Remove any data written for this characterId so the reserved slot
-            // stays clean and the name reservation can be reclaimed later.
             await Promise.allSettled([
                 this.repo.delete({ worldId: wid, characterId, accountId }),
                 this.keyLayoutRepo.delete({ worldId: wid, characterId }),

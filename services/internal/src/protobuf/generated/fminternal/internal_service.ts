@@ -1753,6 +1753,7 @@ export interface Character {
   monsterBookCover: number;
   teleportStones: number[];
   vipTeleportStones: number[];
+  savedAtUnixMs: number;
 }
 
 export interface MonsterBookCard {
@@ -10313,6 +10314,7 @@ function createBaseCharacter(): Character {
     monsterBookCover: 0,
     teleportStones: [],
     vipTeleportStones: [],
+    savedAtUnixMs: 0,
   };
 }
 
@@ -10438,6 +10440,9 @@ export const Character: MessageFns<Character> = {
       writer.uint32(v);
     }
     writer.join();
+    if (message.savedAtUnixMs !== 0) {
+      writer.uint32(312).int64(message.savedAtUnixMs);
+    }
     return writer;
   },
 
@@ -10782,6 +10787,14 @@ export const Character: MessageFns<Character> = {
 
           break;
         }
+        case 39: {
+          if (tag !== 312) {
+            break;
+          }
+
+          message.savedAtUnixMs = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10919,6 +10932,11 @@ export const Character: MessageFns<Character> = {
         : globalThis.Array.isArray(object?.vip_teleport_stones)
         ? object.vip_teleport_stones.map((e: any) => globalThis.Number(e))
         : [],
+      savedAtUnixMs: isSet(object.savedAtUnixMs)
+        ? globalThis.Number(object.savedAtUnixMs)
+        : isSet(object.saved_at_unix_ms)
+        ? globalThis.Number(object.saved_at_unix_ms)
+        : 0,
     };
   },
 
@@ -11038,6 +11056,9 @@ export const Character: MessageFns<Character> = {
     if (message.vipTeleportStones?.length) {
       obj.vipTeleportStones = message.vipTeleportStones.map((e) => Math.round(e));
     }
+    if (message.savedAtUnixMs !== 0) {
+      obj.savedAtUnixMs = Math.round(message.savedAtUnixMs);
+    }
     return obj;
   },
 
@@ -11084,6 +11105,7 @@ export const Character: MessageFns<Character> = {
     message.monsterBookCover = object.monsterBookCover ?? 0;
     message.teleportStones = object.teleportStones?.map((e) => e) || [];
     message.vipTeleportStones = object.vipTeleportStones?.map((e) => e) || [];
+    message.savedAtUnixMs = object.savedAtUnixMs ?? 0;
     return message;
   },
 };

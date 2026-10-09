@@ -627,6 +627,7 @@ message Character {
   uint32 monster_book_cover = 36;
   repeated uint32 teleport_stones = 37;
   repeated uint32 vip_teleport_stones = 38;
+  int64 saved_at_unix_ms = 39;
 }
 
 message MonsterBookCard {
