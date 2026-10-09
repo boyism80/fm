@@ -18,6 +18,7 @@ export type ShopRow = {
     sold: unknown[];
     opened_at: Date;
     closed_at: Date | null;
+    store_bank_id: number | string | null;
 };
 
 export type ShopInsert = {
@@ -33,6 +34,7 @@ export type ShopInsert = {
     items: unknown[];
     sold: unknown[];
     closedAt: Date | null;
+    storeBankId: number | null;
 };
 
 export type ShopUpdate = {
@@ -46,7 +48,7 @@ export type ShopUpdate = {
 };
 
 const SELECT_COLS =
-    "shop_id, kind, account_id, character_id, owner_name, channel_id, map_id, sn, item_id, title, meso, items, sold, opened_at, closed_at";
+    "shop_id, kind, account_id, character_id, owner_name, channel_id, map_id, sn, item_id, title, meso, items, sold, opened_at, closed_at, store_bank_id";
 
 export class ShopRepository {
     private readonly ctx: InternalContext;
@@ -69,7 +71,7 @@ export class ShopRepository {
     async findByAccount(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<ShopRow[]> {
         const client = options.txClient ?? this.pool(worldId, accountId);
         const res = await client.query(
-            `SELECT ${SELECT_COLS} FROM shops WHERE account_id = $1 ORDER BY closed_at NULLS FIRST, shop_id`,
+            `SELECT ${SELECT_COLS} FROM shops WHERE account_id = $1 AND claimed_at IS NULL ORDER BY closed_at NULLS FIRST, shop_id`,
             [accountId]
         );
         return res.rows as ShopRow[];
@@ -86,12 +88,13 @@ export class ShopRepository {
         return [...rows.values()];
     }
 
-    async insert(worldId: number, shop: ShopInsert, options: RepositoryTxOptions = {}): Promise<ShopRow> {
+    async insert(worldId: number, shop: ShopInsert, options: RepositoryTxOptions = {}): Promise<ShopRow | undefined> {
         const client = options.txClient ?? this.pool(worldId, shop.accountId);
         const res = await client.query(
             `INSERT INTO shops
-                (kind, account_id, character_id, owner_name, channel_id, map_id, item_id, title, meso, items, sold, closed_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                (kind, account_id, character_id, owner_name, channel_id, map_id, item_id, title, meso, items, sold, closed_at, store_bank_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+             ON CONFLICT (store_bank_id) WHERE store_bank_id IS NOT NULL DO NOTHING
              RETURNING ${SELECT_COLS}`,
             [
                 shop.kind,
@@ -106,9 +109,10 @@ export class ShopRepository {
                 JSON.stringify(shop.items),
                 JSON.stringify(shop.sold),
                 shop.closedAt,
+                shop.storeBankId,
             ]
         );
-        return res.rows[0] as ShopRow;
+        return res.rows[0] as ShopRow | undefined;
     }
 
     async update(worldId: number, shop: ShopUpdate, options: RepositoryTxOptions = {}): Promise<void> {
@@ -137,10 +141,26 @@ export class ShopRepository {
         );
     }
 
-    async deleteClosed(worldId: number, accountId: number, characterId: number, options: RepositoryTxOptions = {}): Promise<ShopRow[]> {
+    async unclaim(worldId: number, accountId: number, storeBankId: number, options: RepositoryTxOptions = {}): Promise<ShopRow | undefined> {
         const client = options.txClient ?? this.pool(worldId, accountId);
         const res = await client.query(
-            `DELETE FROM shops WHERE account_id = $1 AND character_id = $2 AND closed_at IS NOT NULL
+            `UPDATE shops SET claimed_at = NULL
+             WHERE account_id = $1 AND store_bank_id = $2 AND claimed_at IS NOT NULL
+             RETURNING ${SELECT_COLS}`,
+            [accountId, storeBankId]
+        );
+        return res.rows[0] as ShopRow | undefined;
+    }
+
+    async claim(worldId: number, accountId: number, characterId: number, options: RepositoryTxOptions = {}): Promise<ShopRow[]> {
+        const client = options.txClient ?? this.pool(worldId, accountId);
+        await client.query(
+            "DELETE FROM shops WHERE account_id = $1 AND claimed_at < NOW() - INTERVAL '1 day'",
+            [accountId]
+        );
+        const res = await client.query(
+            `UPDATE shops SET claimed_at = NOW()
+             WHERE account_id = $1 AND character_id = $2 AND closed_at IS NOT NULL AND claimed_at IS NULL
              RETURNING ${SELECT_COLS}`,
             [accountId, characterId]
         );

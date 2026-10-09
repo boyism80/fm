@@ -28,7 +28,6 @@ const (
 
 type EntrustedShop struct {
 	shopRoom
-	home       *Map
 	soldInform bool
 	managing   bool
 }

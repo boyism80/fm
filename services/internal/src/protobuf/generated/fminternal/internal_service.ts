@@ -1973,6 +1973,7 @@ export interface Shop {
   closedAtUnixMs: number;
   kind: number;
   sn: number;
+  storeBankId: number;
 }
 
 export interface FindEntrustedShopRequest {
@@ -14625,6 +14626,7 @@ function createBaseShop(): Shop {
     closedAtUnixMs: 0,
     kind: 0,
     sn: 0,
+    storeBankId: 0,
   };
 }
 
@@ -14677,6 +14679,9 @@ export const Shop: MessageFns<Shop> = {
     }
     if (message.sn !== 0) {
       writer.uint32(128).uint32(message.sn);
+    }
+    if (message.storeBankId !== 0) {
+      writer.uint32(136).uint64(message.storeBankId);
     }
     return writer;
   },
@@ -14816,6 +14821,14 @@ export const Shop: MessageFns<Shop> = {
           message.sn = reader.uint32();
           continue;
         }
+        case 17: {
+          if (tag !== 136) {
+            break;
+          }
+
+          message.storeBankId = longToNumber(reader.uint64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14887,6 +14900,11 @@ export const Shop: MessageFns<Shop> = {
         : 0,
       kind: isSet(object.kind) ? globalThis.Number(object.kind) : 0,
       sn: isSet(object.sn) ? globalThis.Number(object.sn) : 0,
+      storeBankId: isSet(object.storeBankId)
+        ? globalThis.Number(object.storeBankId)
+        : isSet(object.store_bank_id)
+        ? globalThis.Number(object.store_bank_id)
+        : 0,
     };
   },
 
@@ -14940,6 +14958,9 @@ export const Shop: MessageFns<Shop> = {
     if (message.sn !== 0) {
       obj.sn = Math.round(message.sn);
     }
+    if (message.storeBankId !== 0) {
+      obj.storeBankId = Math.round(message.storeBankId);
+    }
     return obj;
   },
 
@@ -14964,6 +14985,7 @@ export const Shop: MessageFns<Shop> = {
     message.closedAtUnixMs = object.closedAtUnixMs ?? 0;
     message.kind = object.kind ?? 0;
     message.sn = object.sn ?? 0;
+    message.storeBankId = object.storeBankId ?? 0;
     return message;
   },
 };

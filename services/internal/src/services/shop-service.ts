@@ -5,6 +5,7 @@ import {
     type Shop,
     type ShopSearchEntry,
 } from "../protobuf/generated/fminternal/internal_service";
+import { toPgInt } from "../repos/pg-int";
 import { ShopRepository, type ShopRow } from "../repos/shop-repository";
 import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
@@ -65,6 +66,7 @@ export class ShopService {
             closedAtUnixMs: row.closed_at ? new Date(row.closed_at).getTime() : 0,
             kind: row.kind,
             sn: row.sn ?? 0,
+            storeBankId: toPgInt(row.store_bank_id),
         };
     }
 
@@ -92,6 +94,12 @@ export class ShopService {
                     return { shopId: 0, existing: this.toProto(shop.worldId, existing) };
                 }
             }
+            if (closed && shop.storeBankId !== 0) {
+                const restored = await this.shopRepo.unclaim(shop.worldId, shop.accountId, shop.storeBankId, { txClient });
+                if (restored != null) {
+                    return { shopId: restored.shop_id, existing: undefined };
+                }
+            }
             const row = await this.shopRepo.insert(
                 shop.worldId,
                 {
@@ -107,10 +115,11 @@ export class ShopService {
                     items: shop.items.map((item) => ShopItem.toJSON(item)),
                     sold: shop.sold.map((sale) => ShopSale.toJSON(sale)),
                     closedAt: closed ? new Date(shop.closedAtUnixMs) : null,
+                    storeBankId: closed && shop.storeBankId !== 0 ? shop.storeBankId : null,
                 },
                 { txClient }
             );
-            return { shopId: row.shop_id, existing: undefined };
+            return { shopId: row?.shop_id ?? 0, existing: undefined };
         });
     }
 
@@ -135,6 +144,7 @@ export class ShopService {
                         items: kept.items.map((item) => ShopItem.toJSON(item)),
                         sold: [],
                         closedAt: new Date(),
+                        storeBankId: kept.storeBankId,
                     },
                     { txClient }
                 );
@@ -162,7 +172,7 @@ export class ShopService {
 
     async claimStoreBank(worldId: number, accountId: number, characterId: number): Promise<Shop[]> {
         return this.shopRepo.withAccountLock(worldId, accountId, async (txClient) => {
-            const rows = await this.shopRepo.deleteClosed(worldId, accountId, characterId, { txClient });
+            const rows = await this.shopRepo.claim(worldId, accountId, characterId, { txClient });
             return rows.map((row) => this.toProto(worldId, row));
         });
     }

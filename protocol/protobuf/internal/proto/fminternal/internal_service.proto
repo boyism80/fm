@@ -847,6 +847,7 @@ message Shop {
   int64 closed_at_unix_ms = 14;
   uint32 kind = 15;
   uint32 sn = 16;
+  uint64 store_bank_id = 17;
 }
 
 message FindEntrustedShopRequest {

@@ -42,6 +42,7 @@ func (r *shopRoom) storeBankToProto(meso int32, items []*ShopItem) *internal.Sho
 		Meso:        meso,
 		Items:       r.itemsToProto(items),
 		Kind:        uint32(r.kind),
+		StoreBankId: r.GameWorld.NewUniqueID(),
 	}
 }
 

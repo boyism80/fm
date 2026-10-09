@@ -18,6 +18,7 @@ const (
 	ShopSpacingSq      = 15000
 	ShopMaxBundleTotal = math.MaxInt16
 	shopPortalType     = 2
+	shopSaveRetryDelay = 5 * time.Second
 )
 
 var (
@@ -88,6 +89,7 @@ type shopRoom struct {
 	Items     []*ShopItem
 	Sold      []ShopSale
 	OpenedAt  time.Time
+	home      *Map
 	published bool
 	owner     *Character
 	Visitors  [ShopVisitors]*Character
@@ -375,6 +377,18 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("shopRoom.save shop=%d: %v", r.ID, err)
-		done()
+		for _, entry := range entries {
+			id := entry.GetCharacter().GetCharacterId()
+			if _, ok := r.entries[id]; ok == false {
+				r.entries[id] = entry
+			}
+		}
+		r.storeBank = append(storeBank, r.storeBank...)
+		time.AfterFunc(shopSaveRetryDelay, func() {
+			r.GameWorld.GetMapSystem().Call(r.home, func(ctx actor.Context) {
+				r.saving = false
+				r.save(ctx, r.closing)
+			})
+		})
 	})
 }

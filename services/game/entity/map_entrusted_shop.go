@@ -51,6 +51,7 @@ func (m *Map) FindEntrustedShopByOwner(ownerID uint32) (uint32, bool) {
 func (m *Map) AddPersonalShop(ps *PersonalShop) {
 	ps.GameWorld = m.GameWorld
 	ps.Map = m
+	ps.home = m
 	ps.OID = m.allocateOID()
 	if m.objects[constant.ObjectTypePersonalShop] == nil {
 		m.objects[constant.ObjectTypePersonalShop] = make(map[uint32]Object)
