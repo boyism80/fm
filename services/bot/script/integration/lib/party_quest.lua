@@ -306,16 +306,23 @@ function M.feed(ctx, bot, reactor_id, item_id, count)
 	if reactor == false then
 		return false
 	end
-	if bot:drop(item_id, count) == nil then
-		return ctx:fail(bot:name() .. " 아이템 버리기 실패: " .. item_id)
+	-- A reactor still waiting on another drop (a mob drop that landed in its area) ignores this one, so drop it again once that wait is over.
+	for _ = 1, 2 do
+		local oid = bot:drop(item_id, count)
+		if oid == nil then
+			return ctx:fail(bot:name() .. " 아이템 버리기 실패: " .. item_id)
+		end
+		local p = bot:request({ resp.trigger_reactor, resp.destroy_reactor }, nil, function(p)
+			return p.reactor.oid == reactor.oid
+		end, 12000)
+		if p ~= false then
+			return reactor
+		end
+		if bot:loot(oid) == false then
+			break
+		end
 	end
-	local p = bot:request({ resp.trigger_reactor, resp.destroy_reactor }, nil, function(p)
-		return p.reactor.oid == reactor.oid
-	end, 12000)
-	if p == false then
-		return ctx:fail(string.format("%s 리액터가 아이템에 반응하지 않음: %d <- %d", bot:name(), reactor_id, item_id))
-	end
-	return reactor
+	return ctx:fail(string.format("%s 리액터가 아이템에 반응하지 않음: %d <- %d", bot:name(), reactor_id, item_id))
 end
 
 function M.pick_up(ctx, bot, item_id)

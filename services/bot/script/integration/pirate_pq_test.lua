@@ -253,7 +253,11 @@ test_suite {
 				return false
 			end
 			for i = 0, 3 do
-				if pq.feed(ctx, leader, DOOR + i, KEY, 1) == false then
+				local door = pq.seek_reactor(ctx, leader, pq.reactor_by_id(DOOR + i))
+				if door == false then
+					return false
+				end
+				if door.state == 0 and pq.feed(ctx, leader, DOOR + i, KEY, 1) == false then
 					return false
 				end
 			end
