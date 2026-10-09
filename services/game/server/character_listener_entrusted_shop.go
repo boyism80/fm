@@ -82,31 +82,30 @@ func (l *CharacterListenerImpl) miniRoomItems(items []*entity.ShopItem) response
 	return out
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *entity.Character, es *entity.EntrustedShop, firstTime bool) {
-	slot, _ := es.SlotOf(ch)
+func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *entity.Character, slot uint8, view entity.EntrustedShopView, firstTime bool) {
 	enter := &response.MiniRoomEnter{
 		MySlot:       slot,
-		PermitItemID: es.ItemID,
-		OwnerName:    es.OwnerName,
-		Elapsed:      uint32(es.Elapsed().Milliseconds()),
+		PermitItemID: view.ItemID,
+		OwnerName:    view.OwnerName,
+		Elapsed:      uint32(view.Elapsed.Milliseconds()),
 		FirstTime:    firstTime,
-		Title:        es.Title,
+		Title:        view.Title,
 		MaxItems:     entity.EntrustedShopMaxItems,
 		MiniRoomItems: response.MiniRoomItems{
-			Meso:  es.Meso,
-			Items: l.miniRoomItems(es.Items),
+			Meso:  view.Meso,
+			Items: l.miniRoomItems(view.Items),
 		},
 	}
-	for i, visitor := range es.Visitors {
+	for i, visitor := range view.Visitors {
 		if visitor == nil {
 			continue
 		}
 		enter.Visitors = append(enter.Visitors, response.MiniRoomVisitor{
 			Slot:      uint8(i + 1),
-			Character: visitor.ToDTO(),
+			Character: visitor,
 		})
 	}
-	for _, sale := range es.Sold {
+	for _, sale := range view.Sold {
 		enter.Sold = append(enter.Sold, response.MiniRoomSale{
 			ItemID:  sale.ItemID,
 			Bundles: sale.Bundles,
@@ -144,10 +143,10 @@ func (l *CharacterListenerImpl) OnMiniRoomLeft(ch *entity.Character, slot uint8,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomItems(ch *entity.Character, es *entity.EntrustedShop) {
+func (l *CharacterListenerImpl) OnMiniRoomItems(ch *entity.Character, view entity.EntrustedShopView) {
 	ch.Send(&response.MiniRoomItems{
-		Meso:  es.Meso,
-		Items: l.miniRoomItems(es.Items),
+		Meso:  view.Meso,
+		Items: l.miniRoomItems(view.Items),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -155,9 +154,9 @@ func (l *CharacterListenerImpl) OnMiniRoomBuyFailed(ch *entity.Character, result
 	ch.Send(&response.MiniRoomBuyFailed{Result: result}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomArranged(ch *entity.Character, es *entity.EntrustedShop) {
-	ch.Send(&response.MiniRoomArranged{Meso: es.Meso}, types.SEND_POLICY_ENCRYPT)
-	l.OnMiniRoomItems(ch, es)
+func (l *CharacterListenerImpl) OnMiniRoomArranged(ch *entity.Character, view entity.EntrustedShopView) {
+	ch.Send(&response.MiniRoomArranged{Meso: view.Meso}, types.SEND_POLICY_ENCRYPT)
+	l.OnMiniRoomItems(ch, view)
 }
 
 func (l *CharacterListenerImpl) OnMiniRoomClosed(ch *entity.Character, result pconst.MiniRoomCloseResult) {

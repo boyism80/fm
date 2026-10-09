@@ -870,6 +870,7 @@ message SaveShopRequest {
   Shop shop = 1;
   repeated CharacterSaveEntry characters = 2;
   bool close = 3;
+  repeated Shop store_bank = 4;
 }
 
 message SaveShopReply {

@@ -9,6 +9,7 @@ import (
 func (m *Map) AddEntrustedShop(es *EntrustedShop) {
 	es.GameWorld = m.GameWorld
 	es.Map = m
+	es.home = m
 	es.OID = m.allocateOID()
 	es.initTimers()
 	if m.objects[constant.ObjectTypeEntrustedShop] == nil {
@@ -28,7 +29,7 @@ func (m *Map) RemoveEntrustedShop(es *EntrustedShop) {
 		if ok == false {
 			return
 		}
-		es.sendDestroy(viewer)
+		es.SendDestroySyncToViewer(viewer)
 	}, nil)
 	es.ClearTimers()
 	m.sections.remove(es)
@@ -37,20 +38,14 @@ func (m *Map) RemoveEntrustedShop(es *EntrustedShop) {
 	es.Map = nil
 }
 
-func (m *Map) FindEntrustedShopByOwner(ownerID uint32) *EntrustedShop {
+func (m *Map) FindEntrustedShopByOwner(ownerID uint32) (uint32, bool) {
 	for _, obj := range m.objects[constant.ObjectTypeEntrustedShop] {
 		es, ok := obj.(*EntrustedShop)
-		if ok == false || es.OwnerID != ownerID {
-			continue
-		}
-		es.mu.Lock()
-		published := es.published && es.ended == false
-		es.mu.Unlock()
-		if published {
-			return es
+		if ok && es.OwnerID == ownerID && es.published {
+			return es.OID, true
 		}
 	}
-	return nil
+	return 0, false
 }
 
 func (m *Map) AddPersonalShop(ps *PersonalShop) {

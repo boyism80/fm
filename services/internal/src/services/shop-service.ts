@@ -114,10 +114,30 @@ export class ShopService {
         });
     }
 
-    async saveShop(shop: Shop, characters: SaveCharacterEntry[], close: boolean): Promise<void> {
+    async saveShop(shop: Shop, characters: SaveCharacterEntry[], close: boolean, storeBank: Shop[]): Promise<void> {
         await this.shopRepo.withAccountLock(shop.worldId, shop.accountId, async (txClient) => {
             if (characters.length > 0) {
                 await this.characterService.saveCharacters(characters);
+            }
+            for (const kept of storeBank) {
+                await this.shopRepo.insert(
+                    shop.worldId,
+                    {
+                        kind: kept.kind,
+                        accountId: shop.accountId,
+                        characterId: kept.characterId,
+                        ownerName: kept.ownerName,
+                        channelId: null,
+                        mapId: null,
+                        itemId: kept.itemId,
+                        title: kept.title,
+                        meso: kept.meso,
+                        items: kept.items.map((item) => ShopItem.toJSON(item)),
+                        sold: [],
+                        closedAt: new Date(),
+                    },
+                    { txClient }
+                );
             }
             await this.shopRepo.update(
                 shop.worldId,

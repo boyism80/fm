@@ -1997,6 +1997,7 @@ export interface SaveShopRequest {
   shop: Shop | undefined;
   characters: CharacterSaveEntry[];
   close: boolean;
+  storeBank: Shop[];
 }
 
 export interface SaveShopReply {
@@ -15241,7 +15242,7 @@ export const OpenShopReply: MessageFns<OpenShopReply> = {
 };
 
 function createBaseSaveShopRequest(): SaveShopRequest {
-  return { shop: undefined, characters: [], close: false };
+  return { shop: undefined, characters: [], close: false, storeBank: [] };
 }
 
 export const SaveShopRequest: MessageFns<SaveShopRequest> = {
@@ -15254,6 +15255,9 @@ export const SaveShopRequest: MessageFns<SaveShopRequest> = {
     }
     if (message.close !== false) {
       writer.uint32(24).bool(message.close);
+    }
+    for (const v of message.storeBank) {
+      Shop.encode(v!, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -15289,6 +15293,14 @@ export const SaveShopRequest: MessageFns<SaveShopRequest> = {
           message.close = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.storeBank.push(Shop.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -15305,6 +15317,11 @@ export const SaveShopRequest: MessageFns<SaveShopRequest> = {
         ? object.characters.map((e: any) => CharacterSaveEntry.fromJSON(e))
         : [],
       close: isSet(object.close) ? globalThis.Boolean(object.close) : false,
+      storeBank: globalThis.Array.isArray(object?.storeBank)
+        ? object.storeBank.map((e: any) => Shop.fromJSON(e))
+        : globalThis.Array.isArray(object?.store_bank)
+        ? object.store_bank.map((e: any) => Shop.fromJSON(e))
+        : [],
     };
   },
 
@@ -15319,6 +15336,9 @@ export const SaveShopRequest: MessageFns<SaveShopRequest> = {
     if (message.close !== false) {
       obj.close = message.close;
     }
+    if (message.storeBank?.length) {
+      obj.storeBank = message.storeBank.map((e) => Shop.toJSON(e));
+    }
     return obj;
   },
 
@@ -15330,6 +15350,7 @@ export const SaveShopRequest: MessageFns<SaveShopRequest> = {
     message.shop = (object.shop !== undefined && object.shop !== null) ? Shop.fromPartial(object.shop) : undefined;
     message.characters = object.characters?.map((e) => CharacterSaveEntry.fromPartial(e)) || [];
     message.close = object.close ?? false;
+    message.storeBank = object.storeBank?.map((e) => Shop.fromPartial(e)) || [];
     return message;
   },
 };

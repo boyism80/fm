@@ -136,13 +136,14 @@ func (gs *GameServer) SaveAllCharactersAsync(ctx actor.Context) *async.Promise[*
 	})
 }
 
-func (gs *GameServer) SaveShopAsync(ctx actor.Context, shop *internal.Shop, entries []*internal.CharacterSaveEntry, close bool) *async.Promise[*internal.SaveShopReply] {
+func (gs *GameServer) SaveShopAsync(ctx actor.Context, shop *internal.Shop, entries []*internal.CharacterSaveEntry, storeBank []*internal.Shop, close bool) *async.Promise[*internal.SaveShopReply] {
 	shop.WorldId = gs.config.WorldId
 	shop.ChannelId = int32(gs.config.ChannelId)
 	req := &internal.SaveShopRequest{
 		Shop:       shop,
 		Characters: entries,
 		Close:      close,
+		StoreBank:  storeBank,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SaveShopReply, error) {

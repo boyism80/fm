@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -81,7 +80,6 @@ type remoteShop struct {
 
 type shopRoom struct {
 	ObjectCore
-	mu        sync.Mutex
 	kind      uint8
 	ID        uint32
 	AccountID uint32
@@ -101,6 +99,7 @@ type shopRoom struct {
 	dirty     bool
 	closing   bool
 	entries   map[uint32]*internal.CharacterSaveEntry
+	storeBank []*internal.Shop
 }
 
 func (r *shopRoom) SlotOf(ch *Character) (uint8, bool) {
@@ -180,20 +179,43 @@ func (r *shopRoom) Chat(ch *Character, message string) error {
 }
 
 func (r *shopRoom) list(ch *Character, invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) error {
+	if item := ch.Inventory.GetItem(invType, slot); item != nil && r.holds(item.GetModel().GetID()) {
+		return ErrMiniRoomOnlyHeld
+	}
+
+	listed, err := ch.takeShopItem(invType, slot, bundles, perBundle, price)
+	if err != nil {
+		return err
+	}
+	r.Items = append(r.Items, listed)
+	return nil
+}
+
+func (r *shopRoom) holds(itemID uint32) bool {
+	for _, listed := range r.Items {
+		model := listed.Item.GetModel()
+		if model.IsOnly() && model.GetID() == itemID {
+			return true
+		}
+	}
+	return false
+}
+
+func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) (*ShopItem, error) {
 	if bundles == 0 || perBundle == 0 || price <= 0 {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
 
 	item := ch.Inventory.GetItem(invType, slot)
 	if item == nil {
-		return ErrMiniRoomItemNotFound
+		return nil, ErrMiniRoomItemNotFound
 	}
 	model := item.GetModel()
 	if model.IsTradeBlock() || model.IsAccountSharable() || model.IsQuest() {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
 	if constant.ItemCategoryOf(model.GetID()) == constant.ItemCategoryPet {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
 	if constant.IsRechargeable(model.GetID()) {
 		bundles = 1
@@ -201,17 +223,10 @@ func (r *shopRoom) list(ch *Character, invType constant.InventoryType, slot int1
 	}
 	total := int(bundles) * int(perBundle)
 	if total > ShopMaxBundleTotal || total > int(item.GetCount()) {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
 	if int64(price)*int64(bundles) > math.MaxInt32 {
-		return ErrMiniRoomInvalid
-	}
-	if model.IsOnly() {
-		for _, listed := range r.Items {
-			if listed.Item.GetModel().GetID() == model.GetID() {
-				return ErrMiniRoomOnlyHeld
-			}
-		}
+		return nil, ErrMiniRoomInvalid
 	}
 
 	listed := &ShopItem{
@@ -221,8 +236,26 @@ func (r *shopRoom) list(ch *Character, invType constant.InventoryType, slot int1
 		Price:     price,
 	}
 	ch.Inventory.RemoveItem(invType, slot, uint16(total))
-	r.Items = append(r.Items, listed)
-	return nil
+	return listed, nil
+}
+
+func (ch *Character) collectShopGoods(meso int32, items []*ShopItem) (int32, []*ShopItem) {
+	if meso > 0 && (ExchangeSpec{Reward: ExchangeSide{Meso: meso}}).Valid(ch) == ExchangeOK {
+		ch.Inventory.addMesoUnchecked(meso)
+		meso = 0
+	}
+
+	var kept []*ShopItem
+	for _, listed := range items {
+		model := listed.Item.GetModel()
+		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
+		if (model.IsOnly() && ch.Inventory.HasItem(model.GetID())) || spec.Valid(ch) != ExchangeOK {
+			kept = append(kept, listed)
+			continue
+		}
+		ch.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
+	}
+	return meso, kept
 }
 
 func (r *shopRoom) unlist(ch *Character, index uint16) error {
@@ -303,17 +336,17 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 		entries = append(entries, entry)
 	}
 	r.entries = make(map[uint32]*internal.CharacterSaveEntry)
+	storeBank := r.storeBank
+	r.storeBank = nil
 	r.saving = true
 	r.dirty = false
 	done := func() {
-		r.mu.Lock()
-		defer r.mu.Unlock()
 		r.saving = false
 		if r.dirty {
 			r.save(actx, r.closing)
 		}
 	}
-	r.GameWorld.SaveShopAsync(actx, r.ToProto(), entries, r.closing).Do(func(*internal.SaveShopReply) error {
+	r.GameWorld.SaveShopAsync(actx, r.ToProto(), entries, storeBank, r.closing).Do(func(*internal.SaveShopReply) error {
 		done()
 		return nil
 	}).OnError(func(err error) {

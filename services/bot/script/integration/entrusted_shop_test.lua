@@ -336,6 +336,83 @@ local function store_bank_flow(ctx)
 	return check(ctx, p.map_id == NOTHING_MAP, "찾은 뒤에도 스토어뱅크가 비지 않음")
 end
 
+local function overflow_flow(ctx)
+	local owner = ctx:bot(0)
+	local buyer = ctx:bot(1)
+	if setup(ctx, owner, 0, PERMIT .. ":1," .. POTION .. ":10") == false then
+		return false
+	end
+	if setup(ctx, buyer, 100000, "-") == false then
+		return false
+	end
+	if clear_store_bank(ctx, owner) == false then
+		return false
+	end
+	if setup(ctx, owner, 2147483000, PERMIT .. ":1," .. POTION .. ":10") == false then
+		return false
+	end
+
+	if move_to(ctx, buyer, MARKET_ROOM, { x = -1300, y = 102 }) == false then
+		return false
+	end
+	if move_to(ctx, owner, MARKET_ROOM, SPOT) == false then
+		return false
+	end
+	if entered(ctx, owner, create_request(owner, "넘침 상점"), 0, "개설") == false then
+		return false
+	end
+	if items(ctx, owner, add_item(owner, POTION, 2, 5, 5000), 1, "물약 등록") == false then
+		return false
+	end
+	local spawn = owner:request_on(buyer, resp.spawn_entrusted_shop, req.mini_room { mode = MODE.open }, function(s)
+		return s.employer_id == owner:id()
+	end, 5000)
+	if spawn == false then
+		return ctx:fail("상점 개설이 다른 캐릭터에게 보이지 않음")
+	end
+	local sn = spawn.entrusted_shop_balloon.sn
+	if entered(ctx, buyer, req.mini_room { mode = MODE.visit, sn = sn }, 1, "손님 방문") == false then
+		return false
+	end
+	if items(ctx, buyer, req.mini_room { mode = MODE.buy, index = 0, bundles = 1 }, 1, "물약 1묶음 구매") == false then
+		return false
+	end
+
+	if owner:request_on(buyer, resp.mini_room_leave, req.mini_room { mode = MODE.visit, sn = sn }, nil, 5000) == false then
+		return ctx:fail("주인 관리 시작에 손님이 나가지 않음")
+	end
+	local popup = owner:request(resp.notice, req.mini_room { mode = MODE.withdraw_meso }, function(p)
+		return p.message:find("프레드릭", 1, true) ~= nil
+	end, 5000)
+	if popup == false then
+		return ctx:fail("메소 한도 초과 시 프레드릭 보관 팝업이 오지 않음")
+	end
+	ctx:sleep(300)
+	if meso_is(ctx, owner, 2147483000) == false then
+		return false
+	end
+
+	if owner:request_on(buyer, resp.destroy_entrusted_shop, req.mini_room { mode = MODE.close }, nil, 5000) == false then
+		return ctx:fail("상점을 닫아도 맵에서 사라지지 않음")
+	end
+	ctx:sleep(300)
+	if has(ctx, owner, POTION, 5) == false then
+		return false
+	end
+
+	local p = claim_store_bank(ctx, owner)
+	if p == false then
+		return false
+	end
+	if check(ctx, p.storage ~= nil and p.storage.meso == 5000, "프레드릭 보관 메소가 다름: " .. tostring(p.storage and p.storage.meso)) == false then
+		return false
+	end
+	if setup(ctx, owner, 0, "-") == false then
+		return false
+	end
+	return clear_store_bank(ctx, owner)
+end
+
 test_suite {
 	name = "EntrustedShop: 고용상인 개설·판매·관리·스토어뱅크",
 	bot_count = 2,
@@ -343,5 +420,6 @@ test_suite {
 	scenarios = {
 		shop_flow,
 		store_bank_flow,
+		overflow_flow,
 	},
 }

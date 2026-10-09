@@ -62,7 +62,8 @@ export class ShopGrpcController {
             await this.shopService.saveShop(
                 req.shop,
                 (req.characters ?? []).map((entry) => makeSaveCharacterEntry(entry)),
-                req.close === true
+                req.close === true,
+                req.storeBank ?? []
             );
             callback(null, {});
         } catch (err) {
