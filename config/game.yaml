@@ -20,6 +20,7 @@ rabbitmq:
   pwd: "guest"
   vhost: "/fm"
 high_rate: false
+dev: true
 lua:
   always_reload: true
 duey:
