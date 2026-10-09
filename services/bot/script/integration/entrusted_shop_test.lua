@@ -208,7 +208,8 @@ local function shop_flow(ctx)
 	if has(ctx, owner, POTION, 50) == false or has(ctx, owner, SWORD, 0) == false then
 		return false
 	end
-	if items(ctx, owner, req.mini_room { mode = MODE.remove_item, index = 1 }, 1, "검 회수") == false then
+	local removed = owner:request(resp.mini_room_item_removed, req.mini_room { mode = MODE.remove_item, index = 1 }, nil, 5000)
+	if check(ctx, removed ~= false and removed.count == 1 and removed.index == 1, "검 회수 응답이 다름") == false then
 		return false
 	end
 	if has(ctx, owner, SWORD, 1) == false then

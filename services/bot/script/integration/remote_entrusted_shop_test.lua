@@ -198,7 +198,8 @@ local function remote_flow(ctx)
 	if items(ctx, owner, add_item(owner, SWORD, 1, 1, 50000), 2, "원격 검 등록") == false then
 		return false
 	end
-	if items(ctx, owner, req.mini_room { mode = MODE.remove_item, index = 1 }, 1, "원격 검 회수") == false then
+	local removed = owner:request(resp.mini_room_item_removed, req.mini_room { mode = MODE.remove_item, index = 1 }, nil, 5000)
+	if check(ctx, removed ~= false and removed.count == 1 and removed.index == 1, "원격 검 회수 응답이 다름") == false then
 		return false
 	end
 	if owner:request(resp.mini_room_meso_withdrawn, req.mini_room { mode = MODE.withdraw_meso }, nil, 3000) == false then

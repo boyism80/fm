@@ -1265,20 +1265,11 @@ func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *entity.Character, inv
 
 func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
-
-	fromDrop := true
-	if item != nil {
-		model := item.GetModel()
-		if model != nil && model.GetCapacity() >= 2 {
-			fromDrop = false
-		}
-	}
-
 	ch.Send(&response.AddInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
-		FromDrop:      fromDrop,
+		FromDrop:      true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

@@ -317,9 +317,9 @@ func (es *EntrustedShop) RemoveItem(actx actor.Context, ch *Character, index uin
 		if listed.Bundles > 0 {
 			items = append(items, listed)
 		}
-		view := es.view()
+		count := uint8(len(es.Items))
 		es.payOwner(0, items, false, func(owner *Character) {
-			owner.Listener.OnMiniRoomItems(owner, view)
+			owner.Listener.OnMiniRoomItemRemoved(owner, count, index)
 		})
 	})
 	return nil
