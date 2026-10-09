@@ -659,10 +659,10 @@ local command_funcs = {
 	},
 	["탈것정보"] = {
 		privilege = ROLE.Admin,
-		usage = "- 탈것 레벨, 경험치, 피로도, 배틀쉽 HP, 탑승 중인 탈것 보기",
+		usage = "- 탈것 레벨, 경험치, 피로도, HP, 탑승 중인 탈것 보기",
 		command = function(me, args)
-			local level, exp, fatigue, battleship_hp, vehicle = me:mount()
-			me:message(string.format("탈것 레벨 %d 경험치 %d 피로도 %d 배틀쉽 HP %d 탑승 %d", level, exp, fatigue, battleship_hp, vehicle))
+			local level, exp, fatigue, hp, vehicle = me:mount()
+			me:message(string.format("탈것 레벨 %d 경험치 %d 피로도 %d HP %d 탑승 %d", level, exp, fatigue, hp, vehicle))
 			return true
 		end,
 	},

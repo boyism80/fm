@@ -21,4 +21,7 @@ func (m *GainExp) Serialize(sw *stream.StreamWriter) error {
 }
 
 func (m *GainExp) Deserialize(sr *stream.StreamReader) {
+	sr.ReadU8()
+	m.White = sr.ReadBool()
+	m.Gain = sr.ReadU32()
 }

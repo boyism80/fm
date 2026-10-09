@@ -205,13 +205,8 @@ func (m *Mob) resistsElement(skillWz *wz.Skill) bool {
 	if skillWz.ElemAttr != "" {
 		elements = append(elements, strings.ToLower(skillWz.ElemAttr[:1]))
 	}
-	switch constant.SkillID(skillWz.ID) {
-	case constant.SkillElementComposition, constant.SkillVenom, constant.SkillVenom4220005, constant.SkillVenomCygnus:
-		elements = append(elements, "s")
-	case constant.SkillElementComposition2211006:
-		elements = append(elements, "i")
-	case constant.SkillFlamethrower:
-		elements = append(elements, "f")
+	if skillWz.ExtraElement != "" {
+		elements = append(elements, skillWz.ExtraElement)
 	}
 	for _, element := range elements {
 		switch m.Wz.ElemResist[element] {

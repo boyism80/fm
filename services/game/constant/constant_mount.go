@@ -6,8 +6,6 @@ const (
 	MountMaxLevel        = 30
 	MountMaxFatigue      = 100
 	MountFatigueInterval = 33 * time.Second
-	BattleshipVehicle    = 1932000
-	BattleshipGauge      = 5221999
 )
 
 var MountExpByLevel = [MountMaxLevel]uint32{0, 6, 25, 50, 105, 134, 196, 254, 263, 315, 367, 430, 543, 587, 679, 725, 897, 1146, 1394, 1701, 2247, 2543, 2898, 3156, 3313, 3584, 3923, 4150, 4305, 4550}

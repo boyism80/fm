@@ -57,6 +57,11 @@ type Skill struct {
 	ElemAttr     string
 	MobSkill     bool
 	LevelData    map[int]*SkillLevelData
+
+	ManualCooldown bool
+	ExtraElement   string
+	Dojo           bool
+	FullHolySymbol bool
 }
 
 func (s *Skill) DefaultMasterLevel() int {

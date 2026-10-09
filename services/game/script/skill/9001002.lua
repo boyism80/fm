@@ -3,6 +3,8 @@
 local combat = require("script/lib/combat")
 
 return {
+	full_holy_symbol = true,
+
 	on_activated = function(me, skill, params)
 		local effect = skill:effect()
 		if effect == nil then

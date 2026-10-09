@@ -9,7 +9,6 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
@@ -84,11 +83,6 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	if constant.SkillID(req.SkillID) == constant.SkillMysticDoor && mapInstance.Wz.Limits(constant.FieldLimitMysticDoor) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		log.Printf("No lua root state for map %d", mapInstance.GetMapID())
@@ -97,6 +91,11 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	}
 
 	params := h.skillParams(root, mapInstance, req)
+
+	if !ch.CallSkillHook(ctx.ActorContext, skillEntry, "can_activate", params) {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	if !ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activating", params) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
@@ -114,8 +113,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	// The battleship's cooltime starts when the ship is destroyed, not when boarding.
-	if levelData.Cooldown > 0 && constant.SkillID(req.SkillID) != constant.SkillBattleship {
+	if levelData.Cooldown > 0 && !wzSkill.ManualCooldown {
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 	h.showActiveSkillEffect(ch, req)

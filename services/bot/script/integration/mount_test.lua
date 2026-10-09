@@ -37,12 +37,12 @@ local function mount(ctx, bot)
 		ctx:fail(bot:name() .. " 탈것 정보 없음")
 		return nil
 	end
-	local level, exp, fatigue, hp, vehicle = p.message:match("탈것 레벨 (%d+) 경험치 (%d+) 피로도 (%d+) 배틀쉽 HP (%d+) 탑승 (%d+)")
+	local level, exp, fatigue, hp, vehicle = p.message:match("탈것 레벨 (%d+) 경험치 (%d+) 피로도 (%d+) HP (%d+) 탑승 (%d+)")
 	return {
 		level = tonumber(level),
 		exp = tonumber(exp),
 		fatigue = tonumber(fatigue),
-		battleship_hp = tonumber(hp),
+		hp = tonumber(hp),
 		vehicle = tonumber(vehicle),
 	}
 end
@@ -300,7 +300,18 @@ local function battleship(ctx)
 	if m == nil then
 		return false
 	end
-	if check(ctx, m.vehicle == BATTLESHIP_VEHICLE and m.battleship_hp == 2400, string.format("배틀쉽 탑승 상태가 다름: 탑승 %d HP %d", m.vehicle, m.battleship_hp)) == false then
+	if check(ctx, m.vehicle == BATTLESHIP_VEHICLE and m.hp == 2400, string.format("배틀쉽 탑승 상태가 다름: 탑승 %d HP %d", m.vehicle, m.hp)) == false then
+		return false
+	end
+
+	bot:send(req.cancel_buff { source_id = BATTLESHIP })
+	if riding(ctx, bot, 0, "배틀쉽 버프 취소 후") == false then
+		return false
+	end
+	if ride(ctx, bot, BATTLESHIP) == false then
+		return false
+	end
+	if riding(ctx, bot, BATTLESHIP_VEHICLE, "배틀쉽 다시 탑승") == false then
 		return false
 	end
 

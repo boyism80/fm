@@ -1,6 +1,10 @@
 -- Skill name (String.wz/Skill.img.xml): 미스틱 도어
 
 return {
+	can_activate = function(me, skill, params)
+		return not me:map():wz():limits(FieldLimit.MysticDoor)
+	end,
+
 	on_activated = function(me, skill, params)
 		local effect = skill:effect()
 		if effect == nil or effect.time <= 0 then

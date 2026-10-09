@@ -1,7 +1,5 @@
 package entity
 
-import "github.com/boyism80/fm/services/game/constant"
-
 type Skills struct {
 	owner   *Character
 	entries map[uint32]*SkillEntry
@@ -61,17 +59,14 @@ func (sc *Skills) Get(skillID uint32) *SkillEntry {
 }
 
 func (sc *Skills) dojoSkill(skillID uint32) *SkillEntry {
-	switch constant.SkillID(skillID) {
-	case constant.SkillBambooRain, constant.SkillInvincibility, constant.SkillPowerExplosion,
-		constant.SkillBambooRainCygnus, constant.SkillInvincibilityCygnus, constant.SkillPowerExplosionCygnus:
-	default:
-		return nil
-	}
-	if sc.owner.dojoEnergy < DojoEnergyFull || !sc.owner.OnDojoField() {
+	if sc.owner.GameWorld == nil {
 		return nil
 	}
 	w := sc.owner.GameWorld.GetResources().GetSkill(skillID)
-	if w == nil {
+	if w == nil || !w.Dojo {
+		return nil
+	}
+	if sc.owner.dojoEnergy < DojoEnergyFull || !sc.owner.OnDojoField() {
 		return nil
 	}
 	return NewSkillEntry(sc.owner, w, 1, 1)

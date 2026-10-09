@@ -15,6 +15,8 @@ local function has_positive_hit(hits)
 end
 
 return {
+	extra_element = "f",
+
 	on_attack = function(me, skill, damages)
 		if skill == nil or damages == nil then
 			return

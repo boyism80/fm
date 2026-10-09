@@ -3,6 +3,8 @@
 local combat = require("script/lib/combat")
 
 return {
+	extra_element = "i",
+
 	on_attack = function(me, skill, damages)
 		combat.apply_prob_status(me, skill, damages, MobBuff.Freeze)
 	end

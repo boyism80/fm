@@ -221,6 +221,8 @@ var decoders = func() []decoder {
 			return len(body) >= 4+4*constant.MaxBuffFlag+2+8 && binary.LittleEndian.Uint32(body[at:])&uint32(flag.Mask) != 0
 		}),
 		newDecoder[response.SkillCooldown](nil),
+		newDecoder[response.SpawnDoor](nil),
+		newDecoder[response.GainExp](func(body []byte) bool { return len(body) > 0 && body[0] == 3 }),
 		newDecoder[response.SetCashShop](nil),
 		newDecoder[response.CashShopBalance](nil),
 		newDecoder[response.CashShopResult](nil),

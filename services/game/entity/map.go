@@ -276,7 +276,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 	character.Buffs.scheduleExpires()
 	if m.Wz.Limits(constant.FieldLimitMount) {
-		character.Mount.dismount()
+		character.Mount.Dismount()
 	} else if init {
 		character.Mount.start()
 	}

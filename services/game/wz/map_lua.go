@@ -62,6 +62,16 @@ func (*Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(m.Limits(constant.FieldLimitPotion)))
 			return 1
 		},
+		"limits": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			m, ok := ud.Value.(*Map)
+			if !ok || m == nil {
+				L.ArgError(1, "WzMap expected")
+				return 0
+			}
+			L.Push(lua.LBool(m.Limits(constant.FieldLimit(L.CheckInt(2)))))
+			return 1
+		},
 		"area": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			m, ok := ud.Value.(*Map)

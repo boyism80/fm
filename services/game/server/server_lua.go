@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -230,6 +231,30 @@ func (gs *GameServer) registerRoleConstants(luaState *lua.LState) {
 	luaState.SetGlobal("ROLE", t)
 }
 
+func (gs *GameServer) registerFieldLimitConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	t.RawSetString("Jump", lua.LNumber(constant.FieldLimitJump))
+	t.RawSetString("MovementSkill", lua.LNumber(constant.FieldLimitMovementSkill))
+	t.RawSetString("SummoningBag", lua.LNumber(constant.FieldLimitSummoningBag))
+	t.RawSetString("MysticDoor", lua.LNumber(constant.FieldLimitMysticDoor))
+	t.RawSetString("Migrate", lua.LNumber(constant.FieldLimitMigrate))
+	t.RawSetString("ReturnScroll", lua.LNumber(constant.FieldLimitReturnScroll))
+	t.RawSetString("TeleportStone", lua.LNumber(constant.FieldLimitTeleportStone))
+	t.RawSetString("Minigame", lua.LNumber(constant.FieldLimitMinigame))
+	t.RawSetString("MapReturnScroll", lua.LNumber(constant.FieldLimitMapReturnScroll))
+	t.RawSetString("Mount", lua.LNumber(constant.FieldLimitMount))
+	t.RawSetString("Potion", lua.LNumber(constant.FieldLimitPotion))
+	t.RawSetString("PartyLeaderChange", lua.LNumber(constant.FieldLimitPartyLeaderChange))
+	t.RawSetString("WeddingInvitation", lua.LNumber(constant.FieldLimitWeddingInvitation))
+	t.RawSetString("Weather", lua.LNumber(constant.FieldLimitWeather))
+	t.RawSetString("LieDetector", lua.LNumber(constant.FieldLimitLieDetector))
+	t.RawSetString("FallDown", lua.LNumber(constant.FieldLimitFallDown))
+	t.RawSetString("SummonNpc", lua.LNumber(constant.FieldLimitSummonNpc))
+	t.RawSetString("NoFallDamage", lua.LNumber(constant.FieldLimitNoFallDamage))
+	t.RawSetString("Drop", lua.LNumber(constant.FieldLimitDrop))
+	luaState.SetGlobal("FieldLimit", t)
+}
+
 func (gs *GameServer) registerMobDieAnimationConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllMobDieAnimationTypes() {
@@ -325,6 +350,27 @@ func (gs *GameServer) runStartupScript() {
 	})
 	if err := luaState.DoFile(constant.StartupScriptPath); err != nil {
 		log.Printf("startup script: %v", err)
+	}
+	gs.loadSkillScripts(luaState)
+}
+
+func (gs *GameServer) loadSkillScripts(luaState *lua.LState) {
+	for id, skill := range gs.resources.Skills {
+		path := fmt.Sprintf("script/skill/%d.lua", id)
+		if _, err := os.Stat(path); err != nil {
+			continue
+		}
+		mod, err := luax.LoadModule(luaState, path)
+		if err != nil {
+			log.Printf("skill script %s: %v", path, err)
+			continue
+		}
+		skill.ManualCooldown = lua.LVAsBool(mod.RawGetString("manual_cooldown"))
+		skill.Dojo = lua.LVAsBool(mod.RawGetString("dojo"))
+		skill.FullHolySymbol = lua.LVAsBool(mod.RawGetString("full_holy_symbol"))
+		if element, ok := mod.RawGetString("extra_element").(lua.LString); ok {
+			skill.ExtraElement = string(element)
+		}
 	}
 }
 
@@ -424,6 +470,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	gs.registerStanceConstants(luaState)
 	gs.registerObjectTypeConstants(luaState)
 	gs.registerRoleConstants(luaState)
+	gs.registerFieldLimitConstants(luaState)
 	gs.registerMobDieAnimationConstants(luaState)
 	gs.registerMobSpawnTypeConstants(luaState)
 	gs.registerSummonConstants(luaState)

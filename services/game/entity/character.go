@@ -878,7 +878,7 @@ func (ch *Character) GetHolySymbolExpRate() int32 {
 	if !valOk || x <= 0 {
 		return 100
 	}
-	full := sb.Wz.ID == uint32(constant.SkillGmHolySymbol)
+	full := sb.Wz.FullHolySymbol
 	if !full {
 		pid := ch.Party.ID()
 		m := ch.GetMap()

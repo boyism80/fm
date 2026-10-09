@@ -16,11 +16,11 @@ var (
 )
 
 type Mount struct {
-	owner        *Character
-	Level        uint32
-	Exp          uint32
-	Fatigue      uint32
-	BattleshipHP uint32
+	owner   *Character
+	Level   uint32
+	Exp     uint32
+	Fatigue uint32
+	HP      uint32
 }
 
 func (m *Mount) SetLevel(level uint32) {
@@ -45,23 +45,7 @@ func (m *Mount) SetFatigue(fatigue uint32) {
 	m.owner.Listener.OnMountUpdated(m.owner, false)
 }
 
-func (m *Mount) Ride(skill *SkillEntry) error {
-	var vehicle int32
-	switch constant.SkillID(skill.Wz.ID) {
-	case constant.SkillMonsterRider, constant.SkillMonsterRiderCygnus:
-		tamingMob := m.owner.Inventory.Equipped[constant.EquipmentPartsTamingMob]
-		if tamingMob == nil || m.owner.Inventory.Equipped[constant.EquipmentPartsSaddle] == nil {
-			return ErrCannotRide
-		}
-		if m.Fatigue >= constant.MountMaxFatigue {
-			return ErrCannotRide
-		}
-		vehicle = int32(tamingMob.GetModel().GetID())
-	case constant.SkillBattleship:
-		vehicle = constant.BattleshipVehicle
-	default:
-		return ErrCannotRide
-	}
+func (m *Mount) Ride(skill *SkillEntry, vehicle int32) error {
 	if m.owner.GetMap().Wz.Limits(constant.FieldLimitMount) {
 		return ErrCannotRide
 	}
@@ -72,52 +56,42 @@ func (m *Mount) Ride(skill *SkillEntry) error {
 	return nil
 }
 
-func (m *Mount) start() {
-	_, vehicle, riding := m.owner.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
-	if !riding {
-		return
+func (m *Mount) riding() *SkillEntry {
+	buff, ok := m.owner.Buffs.GetEntity(constant.BuffFlagMonsterRiding).(*SkillBuff)
+	if !ok {
+		return nil
 	}
+	return m.owner.Skills.Get(buff.Wz.ID)
+}
 
-	if vehicle != constant.BattleshipVehicle {
-		m.owner.AddTimer(mountFatigueTimer, constant.MountFatigueInterval, true, m.tire)
-		return
-	}
-	skill := m.owner.Skills.Get(uint32(constant.SkillBattleship))
+func (m *Mount) start() {
+	skill := m.riding()
 	if skill == nil {
 		return
 	}
-	maxHP := m.maxBattleshipHP(skill)
-	if m.BattleshipHP == 0 || m.BattleshipHP > maxHP {
-		m.BattleshipHP = maxHP
-	}
-	if m.BattleshipHP < maxHP {
-		m.owner.Listener.OnSkillCooldown(m.owner, constant.BattleshipGauge, uint16(m.BattleshipHP))
-	}
+	m.owner.CallSkillHook(nil, skill, "on_ride")
 }
 
-func (m *Mount) maxBattleshipHP(skill *SkillEntry) uint32 {
-	return uint32(max(200*(int(m.owner.GetLevel())+2*skill.Level()-120), 1))
+func (m *Mount) startFatigue() {
+	m.owner.AddTimer(mountFatigueTimer, constant.MountFatigueInterval, true, m.tire)
 }
 
-func (m *Mount) dismount() {
+func (m *Mount) Dismount() {
 	m.owner.RemoveTimer(mountFatigueTimer)
 	m.owner.Buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagMonsterRiding})
 }
 
-func (m *Mount) dismountRider(parts constant.EquipmentPartsType) {
-	if parts != constant.EquipmentPartsTamingMob && parts != constant.EquipmentPartsSaddle {
+func (m *Mount) changeEquipment(parts constant.EquipmentPartsType) {
+	skill := m.riding()
+	if skill == nil {
 		return
 	}
-	_, vehicle, riding := m.owner.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
-	if !riding || vehicle == constant.BattleshipVehicle {
-		return
-	}
-	m.dismount()
+	m.owner.CallSkillHook(nil, skill, "on_rider_equipment_changed", int(parts))
 }
 
 func (m *Mount) tire() {
 	_, vehicle, riding := m.owner.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
-	if !riding || vehicle == constant.BattleshipVehicle {
+	if !riding {
 		m.owner.RemoveTimer(mountFatigueTimer)
 		return
 	}
@@ -131,7 +105,7 @@ func (m *Mount) tire() {
 	m.Fatigue = min(m.Fatigue+uint32(fatigue), constant.MountMaxFatigue)
 	m.owner.Listener.OnMountUpdated(m.owner, false)
 	if m.Fatigue >= constant.MountMaxFatigue {
-		m.dismount()
+		m.Dismount()
 	}
 }
 
@@ -144,8 +118,7 @@ func (m *Mount) Feed(slot int16, itemID uint32) error {
 	if !ok || food.MountFatigue == 0 {
 		return ErrMountFoodInvalid
 	}
-	_, vehicle, riding := m.owner.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
-	if !riding || vehicle == constant.BattleshipVehicle {
+	if m.owner.GetTimerEntry(mountFatigueTimer) == nil {
 		return ErrMountFoodInvalid
 	}
 
@@ -168,21 +141,10 @@ func (m *Mount) Feed(slot int16, itemID uint32) error {
 	return nil
 }
 
-func (m *Mount) hitBattleship(damage int32) {
-	_, vehicle, riding := m.owner.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
-	if !riding || vehicle != constant.BattleshipVehicle {
+func (m *Mount) takeDamage(damage int32) {
+	skill := m.riding()
+	if skill == nil {
 		return
 	}
-
-	m.BattleshipHP = uint32(max(int(m.BattleshipHP)-int(damage), 0))
-	m.owner.Listener.OnSkillCooldown(m.owner, constant.BattleshipGauge, uint16(m.BattleshipHP))
-	if m.BattleshipHP > 0 {
-		return
-	}
-	m.dismount()
-	if skill := m.owner.Skills.Get(uint32(constant.SkillBattleship)); skill != nil {
-		if level := skill.Wz.GetLevelData(skill.Level()); level != nil {
-			skill.StartCooldown(level.Cooldown)
-		}
-	}
+	m.owner.CallSkillHook(nil, skill, "on_rider_damaged", int(damage))
 }

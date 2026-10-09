@@ -23,4 +23,9 @@ func (p *SpawnDoor) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnDoor) Deserialize(*stream.StreamReader) {}
+func (p *SpawnDoor) Deserialize(r *stream.StreamReader) {
+	p.Animated = !r.ReadBool()
+	p.OwnerID = r.ReadU32()
+	p.Position.X = r.Read16()
+	p.Position.Y = r.Read16()
+}

@@ -874,8 +874,18 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "SkillEntry with Wz expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Mount.Ride(skillEntry) == nil))
+			L.Push(lua.LBool(ch.Mount.Ride(skillEntry, int32(L.CheckInt(3))) == nil))
 			return 1
+		},
+		"dismount": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Mount.Dismount()
+			return 0
 		},
 		"show_skill_effect": func(L *lua.LState) int {
 			argc := L.GetTop()
@@ -1976,7 +1986,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(ch.Mount.Level))
 			L.Push(lua.LNumber(ch.Mount.Exp))
 			L.Push(lua.LNumber(ch.Mount.Fatigue))
-			L.Push(lua.LNumber(ch.Mount.BattleshipHP))
+			L.Push(lua.LNumber(ch.Mount.HP))
 			_, vehicle, _ := ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
 			L.Push(lua.LNumber(vehicle))
 			return 5
@@ -1999,6 +2009,36 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			ch.Mount.SetFatigue(uint32(L.CheckInt(2)))
+			return 0
+		},
+		"set_mount_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Mount.HP = uint32(max(L.CheckInt(2), 0))
+			return 0
+		},
+		"start_mount_fatigue": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Mount.startFatigue()
+			return 0
+		},
+		"show_skill_cooldown": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Listener.OnSkillCooldown(ch, uint32(L.CheckInt(2)), uint16(L.CheckInt(3)))
 			return 0
 		},
 		"tire_mount": func(L *lua.LState) int {
