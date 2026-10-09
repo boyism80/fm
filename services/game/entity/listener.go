@@ -105,6 +105,8 @@ type CharacterListener interface {
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
 	OnNotice(ch *Character, messageType constant.ServerMessageType, message string, channel int, ear bool)
 	BroadcastNoticeAsync(ctx actor.Context, ch *Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise[*internal.BroadcastNoticeReply]
+	SetAccountRoleAsync(ctx actor.Context, ch *Character, role constant.CharacterRole) *async.Promise[*internal.SetAccountRoleReply]
+	Disconnect(ch *Character)
 	OnKeyMap(ch *Character)
 	OnClock(ch *Character, seconds int32)
 	OnStopClock(ch *Character)

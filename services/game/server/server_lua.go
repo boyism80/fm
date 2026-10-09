@@ -433,6 +433,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	gs.registerEffectTypeConstants(luaState)
 	gs.registerExchangeResultConstants(luaState)
 	gs.registerServerMessageConstants(luaState)
+	luaState.SetGlobal("DEV", lua.LBool(gs.config.Dev))
 	registerClockLuaFuncs(gs, luaState)
 	registerMarriageLuaFuncs(gs, luaState)
 	registerFaultLuaFuncs(gs, luaState)

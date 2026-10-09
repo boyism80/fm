@@ -154,6 +154,7 @@ type GameConfig struct {
 	InternalAddr                     string
 	InternalHeartbeatIntervalSeconds int
 	RabbitMQ                         config.RabbitMQEndpoint
+	Dev                              bool
 	LuaAlwaysReload                  bool
 	DueyIdentityPrompt               bool
 }

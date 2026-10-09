@@ -2237,6 +2237,15 @@ export function loginAccountReply_StatusToJSON(object: LoginAccountReply_Status)
   }
 }
 
+export interface SetAccountRoleRequest {
+  accountId: number;
+  role: number;
+}
+
+export interface SetAccountRoleReply {
+  ok: boolean;
+}
+
 export interface CharacterOverview {
   characterId: number;
   name: string;
@@ -18621,6 +18630,144 @@ export const LoginAccountReply: MessageFns<LoginAccountReply> = {
   },
 };
 
+function createBaseSetAccountRoleRequest(): SetAccountRoleRequest {
+  return { accountId: 0, role: 0 };
+}
+
+export const SetAccountRoleRequest: MessageFns<SetAccountRoleRequest> = {
+  encode(message: SetAccountRoleRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.accountId !== 0) {
+      writer.uint32(8).uint32(message.accountId);
+    }
+    if (message.role !== 0) {
+      writer.uint32(16).uint32(message.role);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAccountRoleRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAccountRoleRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.role = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetAccountRoleRequest {
+    return {
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      role: isSet(object.role) ? globalThis.Number(object.role) : 0,
+    };
+  },
+
+  toJSON(message: SetAccountRoleRequest): unknown {
+    const obj: any = {};
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.role !== 0) {
+      obj.role = Math.round(message.role);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetAccountRoleRequest>, I>>(base?: I): SetAccountRoleRequest {
+    return SetAccountRoleRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetAccountRoleRequest>, I>>(object: I): SetAccountRoleRequest {
+    const message = createBaseSetAccountRoleRequest();
+    message.accountId = object.accountId ?? 0;
+    message.role = object.role ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetAccountRoleReply(): SetAccountRoleReply {
+  return { ok: false };
+}
+
+export const SetAccountRoleReply: MessageFns<SetAccountRoleReply> = {
+  encode(message: SetAccountRoleReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAccountRoleReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAccountRoleReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetAccountRoleReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: SetAccountRoleReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetAccountRoleReply>, I>>(base?: I): SetAccountRoleReply {
+    return SetAccountRoleReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetAccountRoleReply>, I>>(object: I): SetAccountRoleReply {
+    const message = createBaseSetAccountRoleReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
 function createBaseCharacterOverview(): CharacterOverview {
   return {
     characterId: 0,
@@ -33651,6 +33798,16 @@ export const InternalService = {
     responseSerialize: (value: LoginAccountReply): Buffer => Buffer.from(LoginAccountReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): LoginAccountReply => LoginAccountReply.decode(value),
   },
+  setAccountRole: {
+    path: "/fm.internal.Internal/SetAccountRole" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetAccountRoleRequest): Buffer =>
+      Buffer.from(SetAccountRoleRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetAccountRoleRequest => SetAccountRoleRequest.decode(value),
+    responseSerialize: (value: SetAccountRoleReply): Buffer => Buffer.from(SetAccountRoleReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SetAccountRoleReply => SetAccountRoleReply.decode(value),
+  },
   getCharacterList: {
     path: "/fm.internal.Internal/GetCharacterList" as const,
     requestStream: false as const,
@@ -34536,6 +34693,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   searchShops: handleUnaryCall<SearchShopsRequest, SearchShopsReply>;
   findPopularShopSearches: handleUnaryCall<FindPopularShopSearchesRequest, FindPopularShopSearchesReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
+  setAccountRole: handleUnaryCall<SetAccountRoleRequest, SetAccountRoleReply>;
   getCharacterList: handleUnaryCall<GetCharacterListRequest, GetCharacterListReply>;
   checkCharacterName: handleUnaryCall<CheckCharacterNameRequest, CheckCharacterNameReply>;
   createCharacter: handleUnaryCall<CreateCharacterRequest, CreateCharacterReply>;
@@ -34951,6 +35109,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: LoginAccountReply) => void,
+  ): ClientUnaryCall;
+  setAccountRole(
+    request: SetAccountRoleRequest,
+    callback: (error: ServiceError | null, response: SetAccountRoleReply) => void,
+  ): ClientUnaryCall;
+  setAccountRole(
+    request: SetAccountRoleRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SetAccountRoleReply) => void,
+  ): ClientUnaryCall;
+  setAccountRole(
+    request: SetAccountRoleRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SetAccountRoleReply) => void,
   ): ClientUnaryCall;
   getCharacterList(
     request: GetCharacterListRequest,

@@ -2148,6 +2148,31 @@ local command_funcs = {
 	["RPC장애"] = fault_command("RPC", "메서드", rpc_fault),
 }
 
+if DEV then
+	command_funcs["권한"] = {
+		privilege = ROLE.User,
+		usage = "<유저|GM> - 계정·캐릭터 권한을 바꾸고 접속 종료 (재접속 후 적용, 개발환경 전용)",
+		command = function(me, args)
+			local roles = { ["유저"] = ROLE.User, ["GM"] = ROLE.Admin }
+			local role = roles[args[1] or ""]
+			if role == nil then
+				me:message("사용법: /권한 <유저|GM>")
+				return true
+			end
+			if me:role() == role then
+				me:message("이미 해당 권한입니다.")
+				return true
+			end
+			if me:account_role(role) == false then
+				me:message("권한 변경 실패")
+				return true
+			end
+			me:disconnect()
+			return true
+		end,
+	}
+end
+
 return {
 	on_chat = function(me, message, shout)
 		if string.sub(message, 1, 1) ~= "/" then

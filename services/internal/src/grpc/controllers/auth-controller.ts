@@ -1,8 +1,13 @@
 import { LoginAccountReply_Status } from "../../protobuf/generated/fminternal/internal_service";
 import type { AccountService } from "../../services/account-service";
 import type { SessionService } from "../../services/session-service";
-import type { LoginAccountReply, LoginAccountRequest } from "../../protobuf/generated/fminternal/internal_service";
-import type { GrpcCallback, GrpcErrorHandler } from "./types";
+import type {
+    LoginAccountReply,
+    LoginAccountRequest,
+    SetAccountRoleReply,
+    SetAccountRoleRequest,
+} from "../../protobuf/generated/fminternal/internal_service";
+import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type LoginAccountCall = { request: LoginAccountRequest };
@@ -67,6 +72,16 @@ export class AuthGrpcController {
                 characterSlotCount: result.characterSlotCount ?? 6,
                 role: result.role ?? 0,
             });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("setAccountRole")
+    async setAccountRole(call: GrpcCall<SetAccountRoleRequest>, callback: GrpcCallback<SetAccountRoleReply>) {
+        try {
+            const ok = await this.accountService.setAccountRole(call.request.accountId >>> 0, call.request.role >>> 0);
+            callback(null, { ok });
         } catch (err) {
             this.grpcError(err, callback);
         }

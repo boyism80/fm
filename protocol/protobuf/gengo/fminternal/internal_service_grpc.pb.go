@@ -40,6 +40,7 @@ const (
 	Internal_SearchShops_FullMethodName                    = "/fm.internal.Internal/SearchShops"
 	Internal_FindPopularShopSearches_FullMethodName        = "/fm.internal.Internal/FindPopularShopSearches"
 	Internal_LoginAccount_FullMethodName                   = "/fm.internal.Internal/LoginAccount"
+	Internal_SetAccountRole_FullMethodName                 = "/fm.internal.Internal/SetAccountRole"
 	Internal_GetCharacterList_FullMethodName               = "/fm.internal.Internal/GetCharacterList"
 	Internal_CheckCharacterName_FullMethodName             = "/fm.internal.Internal/CheckCharacterName"
 	Internal_CreateCharacter_FullMethodName                = "/fm.internal.Internal/CreateCharacter"
@@ -150,6 +151,7 @@ type InternalClient interface {
 	SearchShops(ctx context.Context, in *SearchShopsRequest, opts ...grpc.CallOption) (*SearchShopsReply, error)
 	FindPopularShopSearches(ctx context.Context, in *FindPopularShopSearchesRequest, opts ...grpc.CallOption) (*FindPopularShopSearchesReply, error)
 	LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error)
+	SetAccountRole(ctx context.Context, in *SetAccountRoleRequest, opts ...grpc.CallOption) (*SetAccountRoleReply, error)
 	GetCharacterList(ctx context.Context, in *GetCharacterListRequest, opts ...grpc.CallOption) (*GetCharacterListReply, error)
 	CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error)
 	CreateCharacter(ctx context.Context, in *CreateCharacterRequest, opts ...grpc.CallOption) (*CreateCharacterReply, error)
@@ -447,6 +449,16 @@ func (c *internalClient) LoginAccount(ctx context.Context, in *LoginAccountReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginAccountReply)
 	err := c.cc.Invoke(ctx, Internal_LoginAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SetAccountRole(ctx context.Context, in *SetAccountRoleRequest, opts ...grpc.CallOption) (*SetAccountRoleReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetAccountRoleReply)
+	err := c.cc.Invoke(ctx, Internal_SetAccountRole_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1308,6 +1320,7 @@ type InternalServer interface {
 	SearchShops(context.Context, *SearchShopsRequest) (*SearchShopsReply, error)
 	FindPopularShopSearches(context.Context, *FindPopularShopSearchesRequest) (*FindPopularShopSearchesReply, error)
 	LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error)
+	SetAccountRole(context.Context, *SetAccountRoleRequest) (*SetAccountRoleReply, error)
 	GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error)
 	CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error)
 	CreateCharacter(context.Context, *CreateCharacterRequest) (*CreateCharacterReply, error)
@@ -1463,6 +1476,9 @@ func (UnimplementedInternalServer) FindPopularShopSearches(context.Context, *Fin
 }
 func (UnimplementedInternalServer) LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoginAccount not implemented")
+}
+func (UnimplementedInternalServer) SetAccountRole(context.Context, *SetAccountRoleRequest) (*SetAccountRoleReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetAccountRole not implemented")
 }
 func (UnimplementedInternalServer) GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCharacterList not implemented")
@@ -2108,6 +2124,24 @@ func _Internal_LoginAccount_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).LoginAccount(ctx, req.(*LoginAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SetAccountRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetAccountRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetAccountRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetAccountRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetAccountRole(ctx, req.(*SetAccountRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3696,6 +3730,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LoginAccount",
 			Handler:    _Internal_LoginAccount_Handler,
+		},
+		{
+			MethodName: "SetAccountRole",
+			Handler:    _Internal_SetAccountRole_Handler,
 		},
 		{
 			MethodName: "GetCharacterList",

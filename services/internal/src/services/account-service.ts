@@ -93,4 +93,13 @@ export class AccountService {
             characterSlotCount: account.characterSlotCount,
         };
     }
+
+    async setAccountRole(accountId: number, role: number) {
+        const account = await this.accountRepo.get(this.worldId(), accountId);
+        if (!account) {
+            return false;
+        }
+        await this.accountRepo.set(this.worldId(), { ...account, role });
+        return true;
+    }
 }

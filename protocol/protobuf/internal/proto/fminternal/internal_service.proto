@@ -27,6 +27,7 @@ service Internal {
   rpc SearchShops (SearchShopsRequest) returns (SearchShopsReply);
   rpc FindPopularShopSearches (FindPopularShopSearchesRequest) returns (FindPopularShopSearchesReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
+  rpc SetAccountRole (SetAccountRoleRequest) returns (SetAccountRoleReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
   rpc CreateCharacter (CreateCharacterRequest) returns (CreateCharacterReply);
@@ -1059,6 +1060,15 @@ message LoginAccountReply {
   int64 chat_blocked_until_unix_ms = 5;
   uint32 character_slot_count = 6;
   uint32 role = 7;
+}
+
+message SetAccountRoleRequest {
+  uint32 account_id = 1;
+  uint32 role = 2;
+}
+
+message SetAccountRoleReply {
+  bool ok = 1;
 }
 
 message CharacterOverview {

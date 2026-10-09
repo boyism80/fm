@@ -50,6 +50,7 @@ rabbitmq:
   pwd: "guest"
   vhost: "/fm"
 high_rate: false
+dev: false
 lua:
   always_reload: false
 duey:
@@ -59,6 +60,7 @@ duey:
 		log.Println("  - internal.heartbeat_interval_seconds: periodic Ping to internal (seconds); omit or 0 to disable loop.")
 		log.Println("  - internal: omit host or set port: 0 if no internal gRPC (limited functionality).")
 		log.Println("  - high_rate: when true, overrides world, max_players, and rate (exp/drop/meso).")
+		log.Println("  - dev: when true, enables development-only commands (config/dev/*.yaml sets it).")
 		log.Println("\nExample usage:")
 		log.Println("  ./game-server")
 		log.Println("  ./game-server -config=config/game.yaml")
@@ -104,6 +106,7 @@ duey:
 		InternalAddr:                     g.Internal.GRPCAddr(),
 		InternalHeartbeatIntervalSeconds: g.Internal.HeartbeatIntervalSeconds,
 		RabbitMQ:                         g.RabbitMQ,
+		Dev:                              g.Dev,
 		LuaAlwaysReload:                  g.Lua.AlwaysReload,
 		DueyIdentityPrompt:               g.Duey.IdentityPrompt,
 	}

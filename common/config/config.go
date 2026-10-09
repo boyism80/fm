@@ -119,6 +119,7 @@ type Game struct {
 	Internal   InternalEndpoint `yaml:"internal"`
 	RabbitMQ   RabbitMQEndpoint `yaml:"rabbitmq"`
 	HighRate   bool             `yaml:"high_rate"`
+	Dev        bool             `yaml:"dev"`
 	Lua        GameLuaConfig    `yaml:"lua"`
 	Duey       GameDueyConfig   `yaml:"duey"`
 }

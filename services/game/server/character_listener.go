@@ -13,6 +13,7 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
@@ -151,6 +152,37 @@ func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *enti
 			return nil
 		},
 	)
+}
+
+func (l *CharacterListenerImpl) SetAccountRoleAsync(ctx actor.Context, ch *entity.Character, role constant.CharacterRole) *async.Promise[*internal.SetAccountRoleReply] {
+	if l.gs.internalClient == nil || ctx == nil {
+		p := async.NewDeferred[*internal.SetAccountRoleReply](ctx)
+		p.SetError(fmt.Errorf("set account role unavailable"))
+		return p
+	}
+	accountID := ch.AccountID
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.SetAccountRoleReply, error) {
+			return l.gs.internalClient.SetAccountRole(c, &internal.SetAccountRoleRequest{
+				AccountId: accountID,
+				Role:      uint32(role),
+			})
+		},
+		func(reply *internal.SetAccountRoleReply) error {
+			if reply.GetOk() == false {
+				return fmt.Errorf("set account role failed")
+			}
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) Disconnect(ch *entity.Character) {
+	c, ok := ch.Sendable.(*client.GameClient)
+	if ok == false {
+		return
+	}
+	_ = c.GetConnection().Close()
 }
 
 func (l *CharacterListenerImpl) OnClock(ch *entity.Character, seconds int32) {

@@ -2069,6 +2069,37 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"account_role": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			role := constant.CharacterRole(L.CheckInt(2))
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			return LuaYieldPromise(L, ch.GameWorld, ch.Listener.SetAccountRoleAsync(cfg.ActorContext, ch, role), func(_ *internal.SetAccountRoleReply, err error) []lua.LValue {
+				if err != nil {
+					return []lua.LValue{lua.LFalse}
+				}
+				ch.Role = role
+				return []lua.LValue{lua.LTrue}
+			})
+		},
+		"disconnect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Listener.Disconnect(ch)
+			return 0
+		},
 		"invincible": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

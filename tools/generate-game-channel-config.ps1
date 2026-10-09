@@ -17,6 +17,11 @@ $port = $basePort + $ChannelId
 $content = Get-Content -LiteralPath $TemplatePath -Raw
 $content = [regex]::Replace($content, '(?m)^channel_id:\s*\d+', "channel_id: $ChannelId")
 $content = [regex]::Replace($content, '(?m)^port:\s*\d+', "port: $port")
+if ($content -match '(?m)^dev:') {
+    $content = [regex]::Replace($content, '(?m)^dev:.*$', "dev: true")
+} else {
+    $content = $content.TrimEnd() + "`ndev: true`n"
+}
 
 $outDir = Split-Path -Parent $OutputPath
 if ($outDir -and -not (Test-Path -LiteralPath $outDir)) {
