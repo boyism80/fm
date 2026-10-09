@@ -1173,14 +1173,16 @@ func (m *Map) OnMoved(obj Object, before types.Vector2[int16]) {
 	}
 	beforeSection := obj.getSection()
 	m.sections.add(obj)
+	if obj.getSection() == beforeSection {
+		return
+	}
+
 	m.updateVisibility(obj, before)
-	if obj.getSection() != beforeSection {
-		switch value := obj.(type) {
-		case *Character:
-			m.controllerTable.Update(value)
-		case *Mob:
-			m.controllerTable.MoveMob(value)
-		}
+	switch value := obj.(type) {
+	case *Character:
+		m.controllerTable.Update(value)
+	case *Mob:
+		m.controllerTable.MoveMob(value)
 	}
 }
 

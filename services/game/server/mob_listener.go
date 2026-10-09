@@ -15,10 +15,6 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *entity.Mob, ent *entity.MobBuff,
 	if mob == nil || ent == nil || len(ent.Values) == 0 {
 		return
 	}
-	mapInstance := mob.GetMap()
-	if mapInstance == nil {
-		return
-	}
 	buffTime := int16(32767)
 	if remaining > 0 {
 		sec := remaining / time.Second
@@ -55,7 +51,7 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *entity.Mob, ent *entity.MobBuff,
 			Delay:       0,
 			StatusSize:  byte(len(flags)),
 		}
-		mapInstance.Broadcast(pkt, nil)
+		mob.Broadcast(pkt, nil)
 		return
 	}
 	for _, flag := range flags {
@@ -69,7 +65,7 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *entity.Mob, ent *entity.MobBuff,
 			Delay:      0,
 			StatusSize: 1,
 		}
-		mapInstance.Broadcast(pkt, nil)
+		mob.Broadcast(pkt, nil)
 	}
 }
 
@@ -77,24 +73,16 @@ func (l *MobListenerImpl) OnMobBuffCancelled(mob *entity.Mob, buff constant.MobB
 	if mob == nil {
 		return
 	}
-	mapInstance := mob.GetMap()
-	if mapInstance == nil {
-		return
-	}
 	pkt := &response.CancelMobBuff{
 		OID:    mob.OID,
 		Status: int32(buff),
 		Size:   1,
 	}
-	mapInstance.Broadcast(pkt, nil)
+	mob.Broadcast(pkt, nil)
 }
 
 func (l *MobListenerImpl) OnMobDamaged(mob *entity.Mob, amount int32) {
 	if mob == nil {
-		return
-	}
-	mapInstance := mob.GetMap()
-	if mapInstance == nil {
 		return
 	}
 	pkt := &response.DamageMob{
@@ -102,15 +90,11 @@ func (l *MobListenerImpl) OnMobDamaged(mob *entity.Mob, amount int32) {
 		Display: constant.MobDamageDisplayNormal,
 		Damage:  amount,
 	}
-	mapInstance.Broadcast(pkt, nil)
+	mob.Broadcast(pkt, nil)
 }
 
 func (l *MobListenerImpl) OnMobAllyDamaged(mob *entity.Mob, amount int32) {
 	if mob == nil {
-		return
-	}
-	mapInstance := mob.GetMap()
-	if mapInstance == nil {
 		return
 	}
 	pkt := &response.DamageMob{
@@ -120,7 +104,7 @@ func (l *MobListenerImpl) OnMobAllyDamaged(mob *entity.Mob, amount int32) {
 		HP:      int32(mob.GetHp()),
 		MaxHP:   int32(mob.GetMaxHp()),
 	}
-	mapInstance.Broadcast(pkt, nil)
+	mob.Broadcast(pkt, nil)
 }
 
 func (l *MobListenerImpl) OnShowBossHp(mob *entity.Mob, clear bool) {
