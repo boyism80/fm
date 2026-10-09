@@ -192,31 +192,35 @@ func (p *MiniRoomItemRemoved) Deserialize(reader *stream.StreamReader) {
 }
 
 type MiniRoomBalloon struct {
-	SN     uint32
-	Title  string
-	ItemID uint32
-	Users  uint8
+	Type     uint8
+	SN       uint32
+	Title    string
+	Private  bool
+	Spec     uint8
+	Users    uint8
+	MaxUsers uint8
+	Playing  bool
 }
 
 func (b *MiniRoomBalloon) serialize(writer *stream.StreamWriter) {
-	writer.WriteU8(pconst.MiniRoomTypePersonalShop)
+	writer.WriteU8(b.Type)
 	writer.WriteU32(b.SN)
 	writer.WriteStr16(b.Title)
-	writer.WriteU8(0)
-	writer.WriteU8(uint8(b.ItemID % 10))
+	writer.WriteBoolean(b.Private)
+	writer.WriteU8(b.Spec)
 	writer.WriteU8(b.Users)
-	writer.WriteU8(pconst.MiniRoomShopUsers)
-	writer.WriteU8(0)
+	writer.WriteU8(b.MaxUsers)
+	writer.WriteBoolean(b.Playing)
 }
 
 func (b *MiniRoomBalloon) deserialize(reader *stream.StreamReader) {
 	b.SN = reader.ReadU32()
 	b.Title = reader.ReadStr16()
-	reader.ReadU8()
-	reader.ReadU8()
+	b.Private = reader.ReadBool()
+	b.Spec = reader.ReadU8()
 	b.Users = reader.ReadU8()
-	reader.ReadU8()
-	reader.ReadU8()
+	b.MaxUsers = reader.ReadU8()
+	b.Playing = reader.ReadBool()
 }
 
 type UserMiniRoomBalloon struct {
@@ -240,10 +244,11 @@ func (p *UserMiniRoomBalloon) Serialize(writer *stream.StreamWriter) error {
 
 func (p *UserMiniRoomBalloon) Deserialize(reader *stream.StreamReader) {
 	p.CharacterID = reader.ReadU32()
-	if reader.ReadU8() == 0 {
+	typ := reader.ReadU8()
+	if typ == 0 {
 		return
 	}
-	p.Balloon = &MiniRoomBalloon{}
+	p.Balloon = &MiniRoomBalloon{Type: typ}
 	p.Balloon.deserialize(reader)
 }
 

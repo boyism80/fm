@@ -80,7 +80,7 @@ func (m *Map) checkShopSpot(position types.Vector2[int16]) error {
 			return &MiniRoomEnterError{Code: pconst.MiniRoomEnterNearPortal}
 		}
 	}
-	for _, typ := range []constant.ObjectType{constant.ObjectTypeEntrustedShop, constant.ObjectTypePersonalShop} {
+	for _, typ := range []constant.ObjectType{constant.ObjectTypeEntrustedShop, constant.ObjectTypePersonalShop, constant.ObjectTypeMiniGame} {
 		for _, obj := range m.objects[typ] {
 			other := obj.GetPosition()
 			if near(other.X, other.Y) {

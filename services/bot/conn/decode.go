@@ -119,7 +119,24 @@ var decoders = func() []decoder {
 		newDecoder[response.TradeEnter](func(body []byte) bool {
 			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter && body[1] == pconst.MiniRoomTypeTrade
 		}),
+		newDecoder[response.MiniGameEnter](func(body []byte) bool {
+			return len(body) > 1 && pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultEnter &&
+				(body[1] == pconst.MiniRoomTypeOmok || body[1] == pconst.MiniRoomTypeMatchCard)
+		}),
 		newDecoder[response.MiniRoomEnter](sub(uint8(pconst.MiniRoomResultEnter))),
+		newDecoder[response.MiniGameReady](func(body []byte) bool {
+			return len(body) > 0 && (pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultReady || pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultUnready)
+		}),
+		newDecoder[response.MiniGameExitAfter](func(body []byte) bool {
+			return len(body) > 0 && (pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultExitAfterGame || pconst.MiniRoomResult(body[0]) == pconst.MiniRoomResultCancelExit)
+		}),
+		newDecoder[response.MiniGameStart](sub(uint8(pconst.MiniRoomResultStart))),
+		newDecoder[response.MiniGameOver](sub(uint8(pconst.MiniRoomResultGameOver))),
+		newDecoder[response.MiniGameSkip](sub(uint8(pconst.MiniRoomResultSkip))),
+		newDecoder[response.MiniGameMoveOmok](sub(uint8(pconst.MiniRoomResultMoveOmok))),
+		newDecoder[response.MiniGameSelectCard](sub(uint8(pconst.MiniRoomResultSelectCard))),
+		newDecoder[response.MiniGameRequestTie](sub(uint8(pconst.MiniRoomResultRequestTie))),
+		newDecoder[response.MiniGameDenyTie](sub(uint8(pconst.MiniRoomResultDenyTie))),
 		newDecoder[response.TradeInvite](sub(uint8(pconst.MiniRoomResultInvite))),
 		newDecoder[response.TradeInviteResult](sub(uint8(pconst.MiniRoomResultInviteResult))),
 		newDecoder[response.TradeItem](sub(uint8(pconst.MiniRoomResultTradeItem))),

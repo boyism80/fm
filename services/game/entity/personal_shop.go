@@ -33,10 +33,12 @@ func (ps *PersonalShop) Is(typ constant.ObjectType) bool {
 
 func (ps *PersonalShop) balloon() response.MiniRoomBalloon {
 	return response.MiniRoomBalloon{
-		SN:     ps.OID,
-		Title:  ps.Title,
-		ItemID: ps.ItemID,
-		Users:  ps.users(),
+		Type:     pconst.MiniRoomTypePersonalShop,
+		SN:       ps.OID,
+		Title:    ps.Title,
+		Spec:     uint8(ps.ItemID % 10),
+		Users:    ps.users(),
+		MaxUsers: pconst.MiniRoomShopUsers,
 	}
 }
 

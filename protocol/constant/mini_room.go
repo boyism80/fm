@@ -26,6 +26,20 @@ const (
 	MiniRoomArrange            MiniRoomMode = 0x24
 	MiniRoomClose              MiniRoomMode = 0x25
 	MiniRoomWithdrawMeso       MiniRoomMode = 0x27
+	MiniRoomRequestTie         MiniRoomMode = 0x2A
+	MiniRoomAnswerTie          MiniRoomMode = 0x2B
+	MiniRoomGiveUp             MiniRoomMode = 0x2C
+	MiniRoomRequestRetreat     MiniRoomMode = 0x2E
+	MiniRoomAnswerRetreat      MiniRoomMode = 0x2F
+	MiniRoomExitAfterGame      MiniRoomMode = 0x30
+	MiniRoomCancelExit         MiniRoomMode = 0x31
+	MiniRoomReady              MiniRoomMode = 0x32
+	MiniRoomUnready            MiniRoomMode = 0x33
+	MiniRoomExpel              MiniRoomMode = 0x34
+	MiniRoomStart              MiniRoomMode = 0x35
+	MiniRoomSkip               MiniRoomMode = 0x37
+	MiniRoomMoveOmok           MiniRoomMode = 0x38
+	MiniRoomSelectCard         MiniRoomMode = 0x3C
 )
 
 type MiniRoomResult uint8
@@ -47,14 +61,36 @@ const (
 	MiniRoomResultArranged      MiniRoomResult = 0x24
 	MiniRoomResultClosed        MiniRoomResult = 0x26
 	MiniRoomResultMesoWithdrawn MiniRoomResult = 0x28
+	MiniRoomResultRequestTie    MiniRoomResult = 0x2A
+	MiniRoomResultDenyTie       MiniRoomResult = 0x2B
+	MiniRoomResultExitAfterGame MiniRoomResult = 0x30
+	MiniRoomResultCancelExit    MiniRoomResult = 0x31
+	MiniRoomResultReady         MiniRoomResult = 0x32
+	MiniRoomResultUnready       MiniRoomResult = 0x33
+	MiniRoomResultStart         MiniRoomResult = 0x35
+	MiniRoomResultGameOver      MiniRoomResult = 0x36
+	MiniRoomResultSkip          MiniRoomResult = 0x37
+	MiniRoomResultMoveOmok      MiniRoomResult = 0x38
+	MiniRoomResultSelectCard    MiniRoomResult = 0x3C
+)
+
+type MiniGameOutcome uint8
+
+const (
+	MiniGameGiveUp MiniGameOutcome = 0
+	MiniGameTie    MiniGameOutcome = 1
+	MiniGameWin    MiniGameOutcome = 2
 )
 
 const (
+	MiniRoomTypeOmok          uint8 = 1
+	MiniRoomTypeMatchCard     uint8 = 2
 	MiniRoomTypeTrade         uint8 = 3
 	MiniRoomTypePersonalShop  uint8 = 4
 	MiniRoomTypeEntrustedShop uint8 = 5
 	MiniRoomTradeUsers        uint8 = 2
 	MiniRoomShopUsers         uint8 = 4
+	MiniRoomGameUsers         uint8 = 2
 	MiniRoomChatShop          uint8 = 8
 )
 

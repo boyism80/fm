@@ -672,7 +672,7 @@ func (ch *Character) UseRemoteEntrustedShop(actx actor.Context, slot int16) erro
 	return nil
 }
 
-func (ch *Character) VisitMiniRoom(sn uint32) error {
+func (ch *Character) VisitMiniRoom(sn uint32, password string) error {
 	m := ch.GetMap()
 	if m == nil {
 		return ErrMiniRoomInvalid
@@ -692,6 +692,9 @@ func (ch *Character) VisitMiniRoom(sn uint32) error {
 	}
 	if t, ok := m.GetObject(constant.ObjectTypeTrade, sn).(*Trade); ok {
 		return t.Visit(ch)
+	}
+	if g, ok := m.GetObject(constant.ObjectTypeMiniGame, sn).(*MiniGame); ok {
+		return g.Visit(ch, password)
 	}
 	if ch.remoteShop.sn != sn {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}

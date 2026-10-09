@@ -91,7 +91,7 @@ func (ch *Character) VisitShopBySearch(actx actor.Context, sn uint32, mapID uint
 		return ErrMiniRoomInvalid
 	}
 	if m.TemplateID() == mapID {
-		return ch.VisitMiniRoom(sn)
+		return ch.VisitMiniRoom(sn, "")
 	}
 
 	target := ch.GameWorld.GetMapSystem().Get(mapID)
@@ -99,7 +99,7 @@ func (ch *Character) VisitShopBySearch(actx actor.Context, sn uint32, mapID uint
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}
 	return ch.GameWorld.GetMapSystem().Warp(actx, ch, target, 0, func(actor.Context) {
-		ch.RejectMiniRoom(ch.VisitMiniRoom(sn))
+		ch.RejectMiniRoom(ch.VisitMiniRoom(sn, ""))
 	})
 }
 

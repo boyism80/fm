@@ -142,9 +142,17 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
 		Team:              carnivalTeam,
 	}
-	if ps, ok := ch.MiniRoom.(*PersonalShop); ok && ps.published && ps.owner == ch {
-		balloon := ps.balloon()
-		spawnPacket.MiniRoomBalloon = &balloon
+	switch room := ch.MiniRoom.(type) {
+	case *PersonalShop:
+		if room.published && room.owner == ch {
+			balloon := room.balloon()
+			spawnPacket.MiniRoomBalloon = &balloon
+		}
+	case *MiniGame:
+		if room.owner == ch {
+			balloon := room.balloon()
+			spawnPacket.MiniRoomBalloon = &balloon
+		}
 	}
 	if ch.Pets.Active != nil {
 		spawnPacket.Pet = ch.Pets.Active.ToDTO()

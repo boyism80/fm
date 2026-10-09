@@ -43,11 +43,13 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 			err = ch.CreatePersonalShop(ctx.ActorContext, req.Title, req.Slot, req.ItemID)
 		case pconst.MiniRoomTypeTrade:
 			err = ch.CreateTrade()
+		case pconst.MiniRoomTypeOmok, pconst.MiniRoomTypeMatchCard:
+			err = ch.CreateMiniGame(req.Type, req.Title, req.Password, req.Piece)
 		default:
 			err = entity.ErrMiniRoomInvalid
 		}
 	case pconst.MiniRoomVisit:
-		err = ch.VisitMiniRoom(req.SN)
+		err = ch.VisitMiniRoom(req.SN, req.Password)
 	case pconst.MiniRoomDecline:
 		err = ch.DeclineTrade(req.SN, req.Reason)
 	case pconst.MiniRoomExit:
@@ -127,6 +129,33 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *entity.Character, req
 			return room.Kick(ch, uint8(req.Slot), req.Name, pconst.MiniRoomLeaveStayTimeout)
 		case pconst.MiniRoomBlacklist:
 			return room.Ban(ch, req.Names)
+		}
+	case *entity.MiniGame:
+		switch req.Mode {
+		case pconst.MiniRoomReady:
+			return room.Ready(ch, true)
+		case pconst.MiniRoomUnready:
+			return room.Ready(ch, false)
+		case pconst.MiniRoomExpel:
+			return room.Expel(ch)
+		case pconst.MiniRoomStart:
+			return room.Start(ch)
+		case pconst.MiniRoomMoveOmok:
+			return room.MoveOmok(ch, req.X, req.Y, req.Stone)
+		case pconst.MiniRoomSelectCard:
+			return room.SelectCard(ch, req.FirstPick, req.Card)
+		case pconst.MiniRoomSkip:
+			return room.Skip(ch)
+		case pconst.MiniRoomGiveUp:
+			return room.GiveUp(ch)
+		case pconst.MiniRoomRequestTie:
+			return room.RequestTie(ch)
+		case pconst.MiniRoomAnswerTie:
+			return room.AnswerTie(ch, req.Accept)
+		case pconst.MiniRoomExitAfterGame:
+			return room.ExitAfterGame(ch, true)
+		case pconst.MiniRoomCancelExit:
+			return room.ExitAfterGame(ch, false)
 		}
 	}
 	return nil
