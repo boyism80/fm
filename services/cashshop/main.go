@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/common/config"
+	"github.com/boyism80/fm/common/logfile"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/services/cashshop/server"
 )
@@ -25,6 +28,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Config: %v", err)
 	}
+	log.SetOutput(io.MultiWriter(os.Stderr, logfile.New("cashshop")))
+	log.SetPrefix(fmt.Sprintf("[%d] ", cfg.CashShopID))
+	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
 	if cfg.Internal.TimeoutSeconds > 0 {
 		core.InternalRPCPerStepTimeout = time.Duration(cfg.Internal.TimeoutSeconds) * time.Second
 	} else {

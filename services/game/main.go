@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/common/config"
+	"github.com/boyism80/fm/common/logfile"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/services/game/server"
 )
@@ -77,6 +80,9 @@ duey:
 	if err != nil {
 		log.Fatalf("Config: %v", err)
 	}
+	log.SetOutput(io.MultiWriter(os.Stderr, logfile.New("game")))
+	log.SetPrefix(fmt.Sprintf("[ch%d] ", g.ChannelId))
+	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
 
 	if g.HighRate {
 		g.World = "HighRate"

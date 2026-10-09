@@ -18,6 +18,7 @@ import { ShopGrpcController } from "./grpc/controllers/shop-controller";
 import { CashShopGrpcController } from "./grpc/controllers/cash-shop-controller";
 import { MarriageGrpcController } from "./grpc/controllers/marriage-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
+import { DailyLogFile } from "./log-file";
 import type { AppConfiguration } from "./config/app-configuration";
 import type { InternalContext } from "./context/internal-context";
 import type { RabbitMQService } from "./services/rabbitmq-service";
@@ -81,6 +82,7 @@ function validateGrpcRouteCoverage(routes: Array<{ grpcMethod: string }>) {
 }
 
 async function main() {
+    new DailyLogFile("internal").captureConsole();
     const container = createAppContainer() as awilix.AwilixContainer<ServerContainerCradle>;
     const appConfiguration = container.resolve("appConfiguration");
     const internalConfig = appConfiguration.raw;

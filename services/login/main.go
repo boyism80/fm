@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/common/config"
+	"github.com/boyism80/fm/common/logfile"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/services/login/server"
 )
@@ -49,6 +52,7 @@ internal:
 		log.Println("  ./login-server -config=config/login.yaml")
 		return
 	}
+	log.SetOutput(io.MultiWriter(os.Stderr, logfile.New("login")))
 
 	cfgFile, err := config.FindConfigFilePath(*cfgPath)
 	if err != nil {
@@ -60,6 +64,8 @@ internal:
 	if err != nil {
 		log.Fatalf("Config: %v", err)
 	}
+	log.SetPrefix(fmt.Sprintf("[%s] ", l.LoginInstanceID))
+	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
 	if l.Internal.TimeoutSeconds > 0 {
 		core.InternalRPCPerStepTimeout = time.Duration(l.Internal.TimeoutSeconds) * time.Second
 	} else {
