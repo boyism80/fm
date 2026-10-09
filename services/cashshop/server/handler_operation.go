@@ -177,7 +177,7 @@ func (h *Operation) purchase(ctx *core.ClientContext, character *entity.Characte
 	promise := h.start(ctx, character, failed)
 	promise.ThenRPC(func(c context.Context) (*internal.BuyCashItemReply, error) {
 		return h.cs.internalClient.BuyCashItem(c, &internal.BuyCashItemRequest{
-			WorldId:   h.cs.worldID(),
+			WorldId:   uint32(h.cs.config.WorldID),
 			AccountId: character.AccountID(),
 			Currency:  pay,
 			Price:     price,
@@ -243,7 +243,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 	promise := h.start(ctx, character, constant.CashShopResultQuestItemFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.BuyCashQuestItemReply, error) {
 		return h.cs.internalClient.BuyCashQuestItem(c, &internal.BuyCashQuestItemRequest{
-			WorldId:     h.cs.worldID(),
+			WorldId:     uint32(h.cs.config.WorldID),
 			CharacterId: character.ID(),
 			Price:       commodity.Price,
 			Item:        pb,
@@ -293,7 +293,7 @@ func (h *Operation) payBack(ctx *core.ClientContext, character *entity.Character
 	promise := h.start(ctx, character, constant.CashShopResultPayBackFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.PayBackCashItemReply, error) {
 		return h.cs.internalClient.PayBackCashItem(c, &internal.PayBackCashItemRequest{
-			WorldId:    h.cs.worldID(),
+			WorldId:    uint32(h.cs.config.WorldID),
 			AccountId:  character.AccountID(),
 			Serial:     req.Serial,
 			MaplePoint: refund,
@@ -324,7 +324,7 @@ func (h *Operation) setWishlist(ctx *core.ClientContext, character *entity.Chara
 	promise := h.start(ctx, character, constant.CashShopResultWishlistFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.SetCashWishlistReply, error) {
 		return h.cs.internalClient.SetCashWishlist(c, &internal.SetCashWishlistRequest{
-			WorldId:      h.cs.worldID(),
+			WorldId:      uint32(h.cs.config.WorldID),
 			CharacterId:  character.ID(),
 			CommoditySns: wishlist,
 		})
@@ -363,7 +363,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 	promise := h.start(ctx, character, constant.CashShopResultTakeOutFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.TakeOutCashItemReply, error) {
 		return h.cs.internalClient.TakeOutCashItem(c, &internal.TakeOutCashItemRequest{
-			WorldId:     h.cs.worldID(),
+			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),
 			Item:        pb,
@@ -398,7 +398,7 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *entity.Character, 
 	promise := h.start(ctx, character, constant.CashShopResultPutInFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.PutInCashItemReply, error) {
 		return h.cs.internalClient.PutInCashItem(c, &internal.PutInCashItemRequest{
-			WorldId:     h.cs.worldID(),
+			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),
 			Item:        cashItem,

@@ -53,7 +53,7 @@ func (h *Operation) gift(ctx *core.ClientContext, character *entity.Character, r
 	promise := h.start(ctx, character, constant.CashShopResultGiftFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.GiftCashItemReply, error) {
 		return h.cs.internalClient.GiftCashItem(c, &internal.GiftCashItemRequest{
-			WorldId:       h.cs.worldID(),
+			WorldId:       uint32(h.cs.config.WorldID),
 			AccountId:     character.AccountID(),
 			RecipientName: req.Recipient,
 			Message:       req.Message,

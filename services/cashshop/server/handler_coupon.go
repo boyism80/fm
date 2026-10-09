@@ -70,7 +70,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 
 	promise := h.start(ctx, character)
 	promise.ThenRPC(func(c context.Context) (*internal.FindCashCouponReply, error) {
-		return h.cs.internalClient.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: h.cs.worldID(), Code: req.Code})
+		return h.cs.internalClient.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: uint32(h.cs.config.WorldID), Code: req.Code})
 	}, func(reply *internal.FindCashCouponReply) error {
 		character.Busy = false
 		switch reply.GetResult() {
@@ -106,7 +106,7 @@ func (h *Coupon) claim(ctx *core.ClientContext, character *entity.Character, cod
 	promise := h.start(ctx, character)
 	promise.ThenRPC(func(c context.Context) (*internal.RedeemCashCouponReply, error) {
 		return h.cs.internalClient.RedeemCashCoupon(c, &internal.RedeemCashCouponRequest{
-			WorldId:     h.cs.worldID(),
+			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),
 			Code:        code,

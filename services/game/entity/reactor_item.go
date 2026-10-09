@@ -79,7 +79,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	if !r.ContainsPoint(fp.Position) {
 		return false
 	}
-	if r.itemActivationPending() {
+	if r.GetTimerEntry(reactorTimerItemActivateKey) != nil {
 		return false
 	}
 	if !r.matchesItemDrop(item) {
@@ -117,8 +117,4 @@ func (r *Reactor) matchesItemDrop(item Item) bool {
 		}
 	}
 	return false
-}
-
-func (r *Reactor) itemActivationPending() bool {
-	return r.GetTimerEntry(reactorTimerItemActivateKey) != nil
 }

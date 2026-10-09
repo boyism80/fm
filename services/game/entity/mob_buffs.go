@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/clock"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -192,8 +193,8 @@ func (bc *MobBuffs) Remove(flag constant.MobBuffFlag) {
 	}
 	mob := bc.owner
 	for f := range ent.Values {
-		if f == constant.MobBuffWeaponDamageReflect || f == constant.MobBuffMagicDamageReflect {
-			bc.popReflection()
+		if (f == constant.MobBuffWeaponDamageReflect || f == constant.MobBuffMagicDamageReflect) && len(bc.reflections) > 0 {
+			bc.reflections = bc.reflections[1:]
 		}
 	}
 	for f := range ent.Values {
@@ -352,11 +353,4 @@ func (bc *MobBuffs) appendReflectionAdds(values map[constant.MobBuffFlag]int32) 
 	}
 	bc.reflections = append(bc.reflections, added...)
 	return added
-}
-
-func (bc *MobBuffs) popReflection() {
-	if bc == nil || len(bc.reflections) == 0 {
-		return
-	}
-	bc.reflections = bc.reflections[1:]
 }

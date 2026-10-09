@@ -35,9 +35,9 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise.ThenRPC(func(c context.Context) (*internal.EnterCashShopReply, error) {
 		return h.cs.internalClient.EnterCashShop(c, &internal.EnterCashShopRequest{
-			WorldId:     h.cs.worldID(),
+			WorldId:     uint32(h.cs.config.WorldID),
 			CharacterId: req.PlayerId,
-			CashShopId:  h.cs.cashShopID(),
+			CashShopId:  uint32(h.cs.config.CashShopID),
 			ClientIp:    ctx.Client.GetRemoteIP(),
 		})
 	}, func(reply *internal.EnterCashShopReply) error {
@@ -87,11 +87,11 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 		}
 
 		characterID := req.PlayerId
-		cashShopID := h.cs.cashShopID()
+		cashShopID := uint32(h.cs.config.CashShopID)
 		logout := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		logout.ThenRPC(func(c context.Context) (*internal.LogoutSessionReply, error) {
 			return h.cs.internalClient.LogoutSession(c, &internal.LogoutSessionRequest{
-				WorldId:          h.cs.worldID(),
+				WorldId:          uint32(h.cs.config.WorldID),
 				AccountId:        entered.GetGame().GetCharacter().GetAccountId(),
 				CharacterId:      &characterID,
 				CashShopId:       &cashShopID,

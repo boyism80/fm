@@ -29,7 +29,7 @@ const (
 func (h *Operation) expandSlot(ctx *core.ClientContext, character *entity.Character, req *request.CashShopOperation) {
 	var failed, expanded constant.CashShopResultKind
 	expansion := &internal.ExpandCashSlotRequest{
-		WorldId:     h.cs.worldID(),
+		WorldId:     uint32(h.cs.config.WorldID),
 		AccountId:   character.AccountID(),
 		CharacterId: character.ID(),
 		Price:       slotExpansionPrice,

@@ -52,7 +52,7 @@ func (sc *Summons) Spawn(skillID constant.SkillID, skillLevel uint8, movementTyp
 	m.AddSummon(s)
 	if duration > 0 {
 		_ = sc.owner.AddTimer(sc.timerKey(skillID), duration, false, func() {
-			sc.expire(skillID)
+			sc.Remove(sc.Get(skillID), true)
 		})
 	}
 	return s
@@ -85,10 +85,6 @@ func (sc *Summons) Clear() {
 	for _, s := range sc.All() {
 		sc.Remove(s, true)
 	}
-}
-
-func (sc *Summons) expire(skillID constant.SkillID) {
-	sc.Remove(sc.Get(skillID), true)
 }
 
 func (sc *Summons) timerKey(skillID constant.SkillID) string {

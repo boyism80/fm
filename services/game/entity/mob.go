@@ -661,13 +661,6 @@ func (m *Mob) Kill(attacker *Character, dieAnim constant.MobDieAnimationType) bo
 	return m.onDead(attacker, dieAnim)
 }
 
-func (m *Mob) dieAnimation() constant.MobDieAnimationType {
-	if m.Wz == nil || m.Wz.SelfDestructionAction < 0 {
-		return constant.MobDieAnimationTypeFadeOut
-	}
-	return constant.MobDieAnimationType(m.Wz.SelfDestructionAction)
-}
-
 func (m *Mob) SpawnRevives(reviveIDs []uint32, pos types.Point[int16], spawnType constant.MobSpawnType, link uint32) map[uint32][]*Mob {
 	spawned := make(map[uint32][]*Mob)
 	if m == nil || len(reviveIDs) == 0 {

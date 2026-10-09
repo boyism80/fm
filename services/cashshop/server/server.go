@@ -89,14 +89,6 @@ func (cs *CashShopServer) NewUniqueID() uint64 {
 	return cs.uniqueIDs.Next()
 }
 
-func (cs *CashShopServer) worldID() uint32 {
-	return uint32(cs.config.WorldID)
-}
-
-func (cs *CashShopServer) cashShopID() uint32 {
-	return uint32(cs.config.CashShopID)
-}
-
 func (cs *CashShopServer) handleClient(c core.Client) {
 	csClient := c.(*client.CashShopClient)
 	props := actor.PropsFromProducer(func() actor.Actor {
@@ -116,14 +108,14 @@ func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 	}
 
 	characterID := character.ID()
-	cashShopID := cs.cashShopID()
+	cashShopID := uint32(cs.config.CashShopID)
 	p := async.NewTask(nil, core.InternalRPCPerStepTimeout)
 	p.OnError(func(err error) {
 		log.Printf("LogoutSession (cash shop disconnect) failed for character %d: %v", characterID, err)
 	})
 	p.ThenRPC(func(ctx context.Context) (*internal.LogoutSessionReply, error) {
 		return cs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
-			WorldId:          cs.worldID(),
+			WorldId:          uint32(cs.config.WorldID),
 			AccountId:        character.AccountID(),
 			DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
 			CharacterId:      &characterID,
@@ -139,8 +131,8 @@ func (cs *CashShopServer) pingInternal(ctx context.Context, interval time.Durati
 		pingCtx, cancel := context.WithTimeout(ctx, core.InternalRPCPerStepTimeout)
 		_, err := cs.internalClient.Ping(pingCtx, &internal.PingRequest{
 			Role:       internal.ServerRole_SERVER_ROLE_CASH_SHOP,
-			WorldId:    cs.worldID(),
-			CashShopId: cs.cashShopID(),
+			WorldId:    uint32(cs.config.WorldID),
+			CashShopId: uint32(cs.config.CashShopID),
 		})
 		cancel()
 		if err != nil {

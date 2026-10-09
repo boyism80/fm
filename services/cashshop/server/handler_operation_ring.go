@@ -61,7 +61,7 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *entity.Character
 	promise := h.start(ctx, character, constant.CashShopResultBuyFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.BuyCashRingReply, error) {
 		return h.cs.internalClient.BuyCashRing(c, &internal.BuyCashRingRequest{
-			WorldId:       h.cs.worldID(),
+			WorldId:       uint32(h.cs.config.WorldID),
 			AccountId:     character.AccountID(),
 			CharacterId:   character.ID(),
 			CharacterName: character.Name(),

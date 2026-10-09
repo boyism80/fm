@@ -19,7 +19,6 @@ const saveCharactersPromiseTimeout = 30 * time.Second
 
 const saveCharactersChunkSize = 100
 
-// SaveAsync builds a Promise that saves entries in parallel chunks.
 func (gs *GameServer) SaveAsync(ctx actor.Context, entries []*internal.CharacterSaveEntry) *async.Task {
 	p := async.NewTask(ctx, saveCharactersPromiseTimeout)
 	if gs == nil || gs.internalClient == nil || len(entries) == 0 {
