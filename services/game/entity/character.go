@@ -58,6 +58,7 @@ type Character struct {
 	MiniRoom        MiniRoom
 	miniRoomPending bool
 	remoteShop      remoteShop
+	shopScan        shopScan
 	Skills          *Skills
 	KeyLayout       *KeyLayout
 	Chair           uint32

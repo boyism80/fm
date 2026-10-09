@@ -195,6 +195,10 @@ local function search_flow(ctx)
 	end
 
 	local cash = req.use_cash_item { slot = finder:slot(CASH_OWL) or 0, item_id = CASH_OWL, search_id = TARGET, high_first = false }
+	if check(ctx, finder:request(resp.shop_scanner_result, cash, nil, 1500) == false, "결과 없는 검색 직후 다시 검색됨") == false or has(ctx, finder, CASH_OWL, 2) == false then
+		return false
+	end
+	ctx:sleep(5000)
 	p = search(ctx, finder, cash, "캐시 부엉이")
 	if p == false then
 		return false

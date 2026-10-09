@@ -3,6 +3,7 @@ package entity
 import (
 	"errors"
 	"log"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
@@ -14,7 +15,14 @@ import (
 const (
 	FreeMarketEntranceMapID = 910000000
 	FreeMarketLastMapID     = 910000022
+	shopScanRetryDelay      = 5 * time.Second
 )
+
+type shopScan struct {
+	pending bool
+	retryAt time.Time
+	found   map[remoteShop]bool
+}
 
 func (ch *Character) FindPopularShopSearches(actx actor.Context) {
 	ch.Listener.FindPopularShopSearchesAsync(actx, ch).Do(func(v *internal.FindPopularShopSearchesReply) error {
@@ -40,17 +48,35 @@ func (ch *Character) UseShopScanner(actx actor.Context, invType constant.Invento
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
+	if ch.shopScan.pending || clock.Now().Before(ch.shopScan.retryAt) {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return
+	}
+	if _, ok := ch.GameWorld.GetResources().Items[searchID]; ok == false {
+		ch.shopScan.retryAt = clock.Now().Add(shopScanRetryDelay)
+		ch.Listener.OnShopScannerResult(ch, searchID, nil)
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return
+	}
 
+	ch.shopScan.pending = true
 	ch.Listener.SearchShopsAsync(actx, ch, searchID, highFirst).Do(func(v *internal.SearchShopsReply) error {
-		ch.Listener.OnShopScannerResult(ch, searchID, v.GetEntries())
-		if len(v.GetEntries()) > 0 {
-			if item := ch.Inventory.GetItem(invType, slot); item != nil && item.GetModel().GetID() == itemID {
-				ch.Inventory.RemoveItem(invType, slot, 1)
-			}
+		ch.shopScan.pending = false
+		entries := v.GetEntries()
+		ch.shopScan.found = make(map[remoteShop]bool, len(entries))
+		for _, entry := range entries {
+			ch.shopScan.found[remoteShop{sn: entry.GetSn(), mapID: entry.GetMapId()}] = true
+		}
+		ch.Listener.OnShopScannerResult(ch, searchID, entries)
+		if len(entries) == 0 {
+			ch.shopScan.retryAt = clock.Now().Add(shopScanRetryDelay)
+		} else if item := ch.Inventory.GetItem(invType, slot); item != nil && item.GetModel().GetID() == itemID {
+			ch.Inventory.RemoveItem(invType, slot, 1)
 		}
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}).OnError(func(err error) {
+		ch.shopScan.pending = false
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		log.Printf("UseShopScanner character=%d: %v", ch.GetID(), err)
 	})
@@ -61,7 +87,7 @@ func (ch *Character) VisitShopBySearch(actx actor.Context, sn uint32, mapID uint
 	if m == nil || m.TemplateID() < FreeMarketEntranceMapID || m.TemplateID() > FreeMarketLastMapID {
 		return ErrMiniRoomInvalid
 	}
-	if mapID <= FreeMarketEntranceMapID || mapID > FreeMarketLastMapID {
+	if ch.shopScan.found[remoteShop{sn: sn, mapID: mapID}] == false {
 		return ErrMiniRoomInvalid
 	}
 	if m.TemplateID() == mapID {

@@ -182,8 +182,6 @@ export class ShopService {
     }
 
     async searchShops(worldId: number, itemId: number, highFirst: boolean): Promise<ShopSearchEntry[]> {
-        this.ranking.add(worldId, itemId);
-
         const entries: ShopSearchEntry[] = [];
         for (const row of await this.shopRepo.findOpen(worldId)) {
             for (const json of row.items) {
@@ -203,6 +201,9 @@ export class ShopService {
                     item: item.item,
                 });
             }
+        }
+        if (entries.length > 0) {
+            this.ranking.add(worldId, itemId);
         }
         entries.sort((a, b) => {
             if (highFirst) {
