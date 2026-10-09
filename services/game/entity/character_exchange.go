@@ -4,6 +4,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -134,6 +135,9 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 				}
 			}
 			eq.GetEquipmentCore().SetBonus(side.Bonus)
+		}
+		if period := side.Period[id]; period > 0 {
+			item.SetExpiration(clock.Now().Add(period))
 		}
 		ch.Inventory.addItemUnchecked(item, true)
 	}

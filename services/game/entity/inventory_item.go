@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"slices"
+	"time"
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/response"
@@ -232,6 +233,33 @@ func (inv *Inventory) ClearInventory() int {
 		}
 	}
 	return cleared
+}
+
+func (inv *Inventory) ExpireItems(now time.Time) {
+	var expired []wz.Item
+	for parts, equipment := range inv.Equipped {
+		if equipment == nil || now.After(equipment.GetExpiration()) == false {
+			continue
+		}
+		inv.RemoveEquipped(parts)
+		expired = append(expired, equipment.GetModel())
+	}
+	for invType, inven := range inv.Tabs {
+		for slot, item := range inven.Items {
+			if item == nil || now.After(item.GetExpiration()) == false {
+				continue
+			}
+			if _, ok := item.(*Pet); ok {
+				continue
+			}
+			inv.RemoveItem(invType, slot, item.GetCount())
+			expired = append(expired, item.GetModel())
+		}
+	}
+	if len(expired) == 0 {
+		return
+	}
+	inv.owner.Listener.OnItemExpired(inv.owner, expired)
 }
 
 func (inv *Inventory) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {

@@ -28,6 +28,7 @@ type Item interface {
 	GetModel() wz.Item
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
+	SetExpiration(expiration time.Time)
 	GetCount() uint16
 	GetCount32() int32
 	SetCount(count uint16)
@@ -177,6 +178,7 @@ func (item *ItemCore) GetFlags() constant.ItemFlag                  { return 0 }
 func (item *ItemCore) SetFlags(flags constant.ItemFlag)             {}
 func (item *ItemCore) GetModel() wz.Item                            { return item.Wz }
 func (item *ItemCore) GetExpiration() time.Time                     { return item.Expiration }
+func (item *ItemCore) SetExpiration(expiration time.Time)           { item.Expiration = expiration }
 func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.FieldPlacement = placement }
 
 func (fp *FieldPlacement) RegisterExpire(duration time.Duration) {

@@ -81,6 +81,7 @@ func (a *GameLogicActor) registerTimers() {
 	a.timerReg.Register(&timers.MobSpawnTimer{})
 	a.timerReg.Register(&timers.ItemCleanupTimer{})
 	a.timerReg.Register(&timers.CooldownCheckTimer{})
+	a.timerReg.Register(&timers.ItemExpireTimer{})
 	a.timerReg.Register(&timers.ClientPingTimer{})
 	a.timerReg.Register(&timers.MobBuffExpireTimer{})
 	a.timerReg.Register(&timers.MobPoisonTickTimer{})

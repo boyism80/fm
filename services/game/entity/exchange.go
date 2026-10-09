@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
@@ -21,6 +23,7 @@ type ExchangeSkill struct {
 
 type ExchangeSide struct {
 	Items      map[uint32]uint16
+	Period     map[uint32]time.Duration
 	Meso       int32
 	Exp        uint32
 	Population int32

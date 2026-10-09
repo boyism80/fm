@@ -117,6 +117,50 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 		}
 	}
 
+	if periodLV := tbl.RawGetString("period"); periodLV != lua.LNil {
+		periodTbl, ok := periodLV.(*lua.LTable)
+		if !ok {
+			L.ArgError(argIndex, "exchange side.period must be a table")
+			return ExchangeSide{}, false
+		}
+		side.Period = make(map[uint32]time.Duration)
+		failed := false
+		periodTbl.ForEach(func(k, v lua.LValue) {
+			if failed {
+				return
+			}
+			minutes, ok := v.(lua.LNumber)
+			if !ok || minutes <= 0 {
+				L.ArgError(argIndex, "exchange side.period values must be positive minutes")
+				failed = true
+				return
+			}
+			switch key := k.(type) {
+			case lua.LNumber:
+				side.Period[uint32(key)] = time.Duration(minutes) * time.Minute
+			case lua.LString:
+				if nameToItem == nil {
+					L.ArgError(argIndex, "exchange item name lookup unavailable")
+					failed = true
+					return
+				}
+				id, ok := nameToItem(string(key))
+				if !ok {
+					L.ArgError(argIndex, "unknown item name in exchange side.period")
+					failed = true
+					return
+				}
+				side.Period[id] = time.Duration(minutes) * time.Minute
+			default:
+				L.ArgError(argIndex, "exchange side.period keys must be item id or name")
+				failed = true
+			}
+		})
+		if failed {
+			return ExchangeSide{}, false
+		}
+	}
+
 	if mesoLV := tbl.RawGetString("meso"); mesoLV != lua.LNil {
 		n, ok := mesoLV.(lua.LNumber)
 		if !ok || n < 0 {

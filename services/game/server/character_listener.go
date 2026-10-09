@@ -1630,6 +1630,21 @@ func (l *CharacterListenerImpl) OnRemoveInventorySlot(ch *entity.Character, inve
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnItemExpired(ch *entity.Character, items []wz.Item) {
+	var expired []uint32
+	for _, model := range items {
+		if model.IsCash() {
+			ch.Send(&response.CashItemExpired{ItemID: model.GetID()}, types.SEND_POLICY_ENCRYPT)
+		} else {
+			expired = append(expired, model.GetID())
+		}
+	}
+	if len(expired) == 0 {
+		return
+	}
+	ch.Send(&response.ItemExpired{ItemIDs: expired}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnFullMergeInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
 	ch.Send(&response.FullMergeInventorySlot{
 		InventoryType: inventoryType,

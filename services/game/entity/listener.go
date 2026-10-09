@@ -190,6 +190,7 @@ type CharacterListener interface {
 	OnEndSortInventory(ch *Character, inventoryType constant.InventoryType)
 	OnSwapInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8)
 	OnRemoveInventorySlot(ch *Character, inventoryType constant.InventoryType, slot int16)
+	OnItemExpired(ch *Character, items []wz.Item)
 	OnFullMergeInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, count uint16)
 	OnPartialMergeInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16)
 	OnUpdateCharacterLook(ch *Character)
