@@ -34,6 +34,7 @@ import type { MonsterBookCardModel } from "../repos/monster-book-repository";
 import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
 import { SessionRepository } from "../repos/session-repository";
+import { ShopRepository } from "../repos/shop-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { WzService } from "./wz-service";
 import { DistributedLockService } from "./distributed-lock-service";
@@ -98,6 +99,7 @@ export type SaveCharacterEntry = {
     monsterBook?: MonsterBookCardModel[];
     keyLayout?: KeyLayoutBindingModel[];
     storage?: { storage: StorageModel; items: InventoryModel[] };
+    claimedShops?: number[];
 };
 
 export class CharacterService {
@@ -124,6 +126,7 @@ export class CharacterService {
     private readonly distributedLockService: DistributedLockService;
     private readonly guildService: GuildService;
     private readonly partyService: PartyService;
+    private readonly shopRepo: ShopRepository;
 
     constructor(
         characterRepository: CharacterRepository,
@@ -148,7 +151,8 @@ export class CharacterService {
         wzService: WzService,
         distributedLockService: DistributedLockService,
         guildService: GuildService,
-        partyService: PartyService
+        partyService: PartyService,
+        shopRepository: ShopRepository
     ) {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -173,6 +177,7 @@ export class CharacterService {
         this.distributedLockService = distributedLockService;
         this.guildService = guildService;
         this.partyService = partyService;
+        this.shopRepo = shopRepository;
     }
 
     private worldId() {
@@ -251,7 +256,7 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage } of entries) {
+        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage, claimedShops } of entries) {
             this.assertWorld(character.worldId);
             this.assertCharacterId(character.characterId);
             this.assertAccountId(character.accountId);
@@ -263,7 +268,7 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage });
+            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage, claimedShops });
         }
 
         for (const [worldId, group] of byWorld) {
@@ -282,7 +287,7 @@ export class CharacterService {
             const models = latest.map(({ character }) => character);
             await this.repo.setAll(worldId, models);
 
-            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage } of latest) {
+            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage, claimedShops } of latest) {
                 if (!character.accountId) {
                     continue;
                 }
@@ -342,6 +347,9 @@ export class CharacterService {
                 if (storage !== undefined) {
                     await this.storageRepo.set(character.worldId, { ...storage.storage, accountId: character.accountId, worldId: character.worldId });
                     await this.storageItemRepo.replaceBySnapshot(character.worldId, String(character.accountId), storage.items);
+                }
+                if (claimedShops !== undefined && claimedShops.length > 0) {
+                    await this.shopRepo.claim(character.worldId, character.accountId, character.characterId, claimedShops);
                 }
             }
         }

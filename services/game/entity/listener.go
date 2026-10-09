@@ -60,7 +60,6 @@ type CharacterListener interface {
 	OnDueyArrival(ch *Character, sender string, quick bool, count int)
 	FindEntrustedShopAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FindEntrustedShopReply]
 	OpenShopAsync(ctx actor.Context, ch *Character, shop *internal.Shop) *async.Promise[*internal.OpenShopReply]
-	ClaimStoreBankAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.ClaimStoreBankReply]
 	SearchShopsAsync(ctx actor.Context, ch *Character, itemID uint32, highFirst bool) *async.Promise[*internal.SearchShopsReply]
 	FindPopularShopSearchesAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FindPopularShopSearchesReply]
 	OnEntrustedShopCheck(ch *Character, result pconst.EntrustedShopCheck, mapID uint32, channel uint8)

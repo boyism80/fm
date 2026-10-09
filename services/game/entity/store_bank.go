@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -20,14 +21,12 @@ const (
 	StoreBankFeePercentMax  int64 = 100
 )
 
-var (
-	ErrStoreBankClosed = errors.New("store bank is not open")
-	ErrStoreBankBusy   = errors.New("store bank request is pending")
-)
+var ErrStoreBankClosed = errors.New("store bank is not open")
 
 type StoreBank struct {
 	owner    *Character
 	shops    []*internal.Shop
+	claimed  []uint32
 	closedAt time.Time
 	Meso     int64
 	Items    []*ShopItem
@@ -43,7 +42,7 @@ func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
 	sb.owner.Listener.FindEntrustedShopAsync(actx, sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
 		sb.pending = false
 		var shops []*internal.Shop
-		for _, closed := range v.GetStoreBank() {
+		for _, closed := range sb.unclaimed(v.GetStoreBank()) {
 			if closed.GetCharacterId() == sb.owner.GetID() {
 				shops = append(shops, closed)
 			}
@@ -62,6 +61,12 @@ func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
 	}).OnError(func(err error) {
 		sb.pending = false
 		log.Printf("StoreBank.Open character=%d: %v", sb.owner.GetID(), err)
+	})
+}
+
+func (sb *StoreBank) unclaimed(shops []*internal.Shop) []*internal.Shop {
+	return slices.DeleteFunc(slices.Clone(shops), func(shop *internal.Shop) bool {
+		return slices.Contains(sb.claimed, shop.GetShopId())
 	})
 }
 
@@ -144,53 +149,31 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 	if sb.shops == nil {
 		return ErrStoreBankClosed
 	}
-	if sb.pending {
-		return ErrStoreBankBusy
-	}
 	_, fee := sb.fee()
 	if result := sb.check(fee); result != pconst.StoreBankResultClaimed {
 		sb.owner.Listener.OnStoreBankResult(sb.owner, result)
 		return nil
 	}
 
-	sb.pending = true
-	sb.owner.Listener.ClaimStoreBankAsync(actx, sb.owner).Do(func(v *internal.ClaimStoreBankReply) error {
-		sb.pending = false
-		claimed := v.GetShops()
-		if len(claimed) == 0 {
-			sb.Close()
-			sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultInventoryFull)
-			return nil
-		}
+	sb.owner.Inventory.removeMesoUnchecked(fee)
+	sb.owner.Inventory.addMesoUnchecked(int32(sb.Meso))
+	for _, listed := range sb.Items {
+		sb.owner.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
+	}
+	for _, shop := range sb.shops {
+		sb.claimed = append(sb.claimed, shop.GetShopId())
+	}
+	sb.Close()
+	sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultClaimed)
 
-		sb.load(claimed)
-		_, fee := sb.fee()
-		if result := sb.check(fee); result != pconst.StoreBankResultClaimed {
-			for _, shop := range claimed {
-				sb.owner.Listener.OpenShopAsync(actx, sb.owner, shop).OnError(func(err error) {
-					log.Printf("StoreBank.Confirm restore character=%d shop=%d: %v", sb.owner.GetID(), shop.GetShopId(), err)
-				})
-			}
-			sb.Close()
-			sb.owner.Listener.OnStoreBankResult(sb.owner, result)
-			return nil
-		}
-
-		sb.owner.Inventory.removeMesoUnchecked(fee)
-		sb.owner.Inventory.addMesoUnchecked(int32(sb.Meso))
-		for _, listed := range sb.Items {
-			sb.owner.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
-		}
-		sb.Close()
-		sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultClaimed)
-		sb.owner.GameWorld.SaveAsync(actx, []*internal.CharacterSaveEntry{sb.owner.ToProto(sb.owner.GameWorld.GetWorldID())}).OnError(func(err error) {
-			log.Printf("StoreBank.Confirm save character=%d: %v", sb.owner.GetID(), err)
+	entry := sb.owner.ToProto(sb.owner.GameWorld.GetWorldID())
+	sb.owner.GameWorld.SaveAsync(actx, []*internal.CharacterSaveEntry{entry}).Do(func() error {
+		sb.claimed = slices.DeleteFunc(sb.claimed, func(id uint32) bool {
+			return slices.Contains(entry.GetClaimedShops(), id)
 		})
 		return nil
 	}).OnError(func(err error) {
-		sb.pending = false
-		sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultInventoryFull)
-		log.Printf("StoreBank.Confirm character=%d: %v", sb.owner.GetID(), err)
+		log.Printf("StoreBank.Confirm save character=%d: %v", sb.owner.GetID(), err)
 	})
 	return nil
 }

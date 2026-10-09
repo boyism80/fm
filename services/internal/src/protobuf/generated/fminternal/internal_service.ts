@@ -1847,6 +1847,7 @@ export interface CharacterSaveEntry {
   monsterBook: MonsterBookCard[];
   records: Record[];
   accountRecords: Record[];
+  claimedShops: number[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -2003,16 +2004,6 @@ export interface SaveShopRequest {
 }
 
 export interface SaveShopReply {
-}
-
-export interface ClaimStoreBankRequest {
-  worldId: number;
-  accountId: number;
-  characterId: number;
-}
-
-export interface ClaimStoreBankReply {
-  shops: Shop[];
 }
 
 export interface CloseChannelShopsRequest {
@@ -12490,6 +12481,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     monsterBook: [],
     records: [],
     accountRecords: [],
+    claimedShops: [],
   };
 }
 
@@ -12534,6 +12526,11 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     for (const v of message.accountRecords) {
       Record.encode(v!, writer.uint32(106).fork()).join();
     }
+    writer.uint32(114).fork();
+    for (const v of message.claimedShops) {
+      writer.uint32(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -12654,6 +12651,24 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.accountRecords.push(Record.decode(reader, reader.uint32()));
           continue;
         }
+        case 14: {
+          if (tag === 112) {
+            message.claimedShops.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 114) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.claimedShops.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12722,6 +12737,11 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.account_records)
         ? object.account_records.map((e: any) => Record.fromJSON(e))
         : [],
+      claimedShops: globalThis.Array.isArray(object?.claimedShops)
+        ? object.claimedShops.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.claimed_shops)
+        ? object.claimed_shops.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -12778,6 +12798,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.accountRecords?.length) {
       obj.accountRecords = message.accountRecords.map((e) => Record.toJSON(e));
     }
+    if (message.claimedShops?.length) {
+      obj.claimedShops = message.claimedShops.map((e) => Math.round(e));
+    }
     return obj;
   },
 
@@ -12819,6 +12842,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
     message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
     message.accountRecords = object.accountRecords?.map((e) => Record.fromPartial(e)) || [];
+    message.claimedShops = object.claimedShops?.map((e) => e) || [];
     return message;
   },
 };
@@ -15421,168 +15445,6 @@ export const SaveShopReply: MessageFns<SaveShopReply> = {
   },
   fromPartial<I extends Exact<DeepPartial<SaveShopReply>, I>>(_: I): SaveShopReply {
     const message = createBaseSaveShopReply();
-    return message;
-  },
-};
-
-function createBaseClaimStoreBankRequest(): ClaimStoreBankRequest {
-  return { worldId: 0, accountId: 0, characterId: 0 };
-}
-
-export const ClaimStoreBankRequest: MessageFns<ClaimStoreBankRequest> = {
-  encode(message: ClaimStoreBankRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.worldId !== 0) {
-      writer.uint32(8).uint32(message.worldId);
-    }
-    if (message.accountId !== 0) {
-      writer.uint32(16).uint32(message.accountId);
-    }
-    if (message.characterId !== 0) {
-      writer.uint32(24).uint32(message.characterId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ClaimStoreBankRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseClaimStoreBankRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.worldId = reader.uint32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.accountId = reader.uint32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.characterId = reader.uint32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ClaimStoreBankRequest {
-    return {
-      worldId: isSet(object.worldId)
-        ? globalThis.Number(object.worldId)
-        : isSet(object.world_id)
-        ? globalThis.Number(object.world_id)
-        : 0,
-      accountId: isSet(object.accountId)
-        ? globalThis.Number(object.accountId)
-        : isSet(object.account_id)
-        ? globalThis.Number(object.account_id)
-        : 0,
-      characterId: isSet(object.characterId)
-        ? globalThis.Number(object.characterId)
-        : isSet(object.character_id)
-        ? globalThis.Number(object.character_id)
-        : 0,
-    };
-  },
-
-  toJSON(message: ClaimStoreBankRequest): unknown {
-    const obj: any = {};
-    if (message.worldId !== 0) {
-      obj.worldId = Math.round(message.worldId);
-    }
-    if (message.accountId !== 0) {
-      obj.accountId = Math.round(message.accountId);
-    }
-    if (message.characterId !== 0) {
-      obj.characterId = Math.round(message.characterId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ClaimStoreBankRequest>, I>>(base?: I): ClaimStoreBankRequest {
-    return ClaimStoreBankRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ClaimStoreBankRequest>, I>>(object: I): ClaimStoreBankRequest {
-    const message = createBaseClaimStoreBankRequest();
-    message.worldId = object.worldId ?? 0;
-    message.accountId = object.accountId ?? 0;
-    message.characterId = object.characterId ?? 0;
-    return message;
-  },
-};
-
-function createBaseClaimStoreBankReply(): ClaimStoreBankReply {
-  return { shops: [] };
-}
-
-export const ClaimStoreBankReply: MessageFns<ClaimStoreBankReply> = {
-  encode(message: ClaimStoreBankReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.shops) {
-      Shop.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ClaimStoreBankReply {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseClaimStoreBankReply();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.shops.push(Shop.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ClaimStoreBankReply {
-    return { shops: globalThis.Array.isArray(object?.shops) ? object.shops.map((e: any) => Shop.fromJSON(e)) : [] };
-  },
-
-  toJSON(message: ClaimStoreBankReply): unknown {
-    const obj: any = {};
-    if (message.shops?.length) {
-      obj.shops = message.shops.map((e) => Shop.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ClaimStoreBankReply>, I>>(base?: I): ClaimStoreBankReply {
-    return ClaimStoreBankReply.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ClaimStoreBankReply>, I>>(object: I): ClaimStoreBankReply {
-    const message = createBaseClaimStoreBankReply();
-    message.shops = object.shops?.map((e) => Shop.fromPartial(e)) || [];
     return message;
   },
 };
@@ -33339,16 +33201,6 @@ export const InternalService = {
     responseSerialize: (value: SaveShopReply): Buffer => Buffer.from(SaveShopReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SaveShopReply => SaveShopReply.decode(value),
   },
-  claimStoreBank: {
-    path: "/fm.internal.Internal/ClaimStoreBank" as const,
-    requestStream: false as const,
-    responseStream: false as const,
-    requestSerialize: (value: ClaimStoreBankRequest): Buffer =>
-      Buffer.from(ClaimStoreBankRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): ClaimStoreBankRequest => ClaimStoreBankRequest.decode(value),
-    responseSerialize: (value: ClaimStoreBankReply): Buffer => Buffer.from(ClaimStoreBankReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): ClaimStoreBankReply => ClaimStoreBankReply.decode(value),
-  },
   closeChannelShops: {
     path: "/fm.internal.Internal/CloseChannelShops" as const,
     requestStream: false as const,
@@ -34279,7 +34131,6 @@ export interface InternalServer extends UntypedServiceImplementation {
   findEntrustedShop: handleUnaryCall<FindEntrustedShopRequest, FindEntrustedShopReply>;
   openShop: handleUnaryCall<OpenShopRequest, OpenShopReply>;
   saveShop: handleUnaryCall<SaveShopRequest, SaveShopReply>;
-  claimStoreBank: handleUnaryCall<ClaimStoreBankRequest, ClaimStoreBankReply>;
   closeChannelShops: handleUnaryCall<CloseChannelShopsRequest, CloseChannelShopsReply>;
   searchShops: handleUnaryCall<SearchShopsRequest, SearchShopsReply>;
   findPopularShopSearches: handleUnaryCall<FindPopularShopSearchesRequest, FindPopularShopSearchesReply>;
@@ -34625,21 +34476,6 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SaveShopReply) => void,
-  ): ClientUnaryCall;
-  claimStoreBank(
-    request: ClaimStoreBankRequest,
-    callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
-  ): ClientUnaryCall;
-  claimStoreBank(
-    request: ClaimStoreBankRequest,
-    metadata: Metadata,
-    callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
-  ): ClientUnaryCall;
-  claimStoreBank(
-    request: ClaimStoreBankRequest,
-    metadata: Metadata,
-    options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: ClaimStoreBankReply) => void,
   ): ClientUnaryCall;
   closeChannelShops(
     request: CloseChannelShopsRequest,

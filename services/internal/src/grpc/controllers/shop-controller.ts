@@ -1,7 +1,5 @@
 import type { ShopService } from "../../services/shop-service";
 import type {
-    ClaimStoreBankReply,
-    ClaimStoreBankRequest,
     CloseChannelShopsReply,
     CloseChannelShopsRequest,
     FindEntrustedShopReply,
@@ -66,16 +64,6 @@ export class ShopGrpcController {
                 req.storeBank ?? []
             );
             callback(null, {});
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
-    }
-
-    @Method("claimStoreBank")
-    async claimStoreBank(call: GrpcCall<ClaimStoreBankRequest>, callback: GrpcCallback<ClaimStoreBankReply>) {
-        try {
-            const req = call.request;
-            callback(null, { shops: await this.shopService.claimStoreBank(req.worldId, req.accountId, req.characterId) });
         } catch (err) {
             this.grpcError(err, callback);
         }

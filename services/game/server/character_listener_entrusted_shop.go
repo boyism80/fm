@@ -41,20 +41,6 @@ func (l *CharacterListenerImpl) OpenShopAsync(ctx actor.Context, ch *entity.Char
 	)
 }
 
-func (l *CharacterListenerImpl) ClaimStoreBankAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.ClaimStoreBankReply] {
-	req := &internal.ClaimStoreBankRequest{
-		WorldId:     l.gs.config.WorldId,
-		AccountId:   ch.AccountID,
-		CharacterId: ch.GetID(),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.ClaimStoreBankReply, error) {
-			return l.gs.internalClient.ClaimStoreBank(c, req)
-		},
-		nil,
-	)
-}
-
 func (l *CharacterListenerImpl) OnEntrustedShopCheck(ch *entity.Character, result pconst.EntrustedShopCheck, mapID uint32, channel uint8) {
 	ch.Send(&response.EntrustedShopCheckResult{
 		Result:  result,

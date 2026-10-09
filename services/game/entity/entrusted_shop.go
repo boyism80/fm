@@ -534,7 +534,7 @@ func (ch *Character) UseEntrustedShop(actx actor.Context) {
 		ch.miniRoomPending = false
 		shop := v.GetShop()
 		switch {
-		case len(v.GetStoreBank()) > 0:
+		case len(ch.StoreBank.unclaimed(v.GetStoreBank())) > 0:
 			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopStoreBankFull, 0, 0)
 		case shop == nil:
 			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopTitle, 0, 0)

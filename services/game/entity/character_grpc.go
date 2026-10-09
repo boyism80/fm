@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"slices"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -383,6 +384,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		MonsterBook:    ch.MonsterBook.ToProto(),
 		Records:        ch.Records.ToProto(),
 		AccountRecords: ch.AccountRecords.ToProto(),
+		ClaimedShops:   slices.Clone(ch.StoreBank.claimed),
 	}
 }
 

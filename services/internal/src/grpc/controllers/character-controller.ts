@@ -133,6 +133,7 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
                 ),
             }
             : undefined,
+        claimedShops: entry.claimedShops ?? [],
     };
 }
 

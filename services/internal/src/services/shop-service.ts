@@ -81,24 +81,15 @@ export class ShopService {
 
     async openShop(shop: Shop): Promise<OpenShopReply> {
         return this.shopRepo.withAccountLock(shop.worldId, shop.accountId, async (txClient) => {
-            const closed = shop.closedAtUnixMs !== 0;
-            if (closed === false) {
-                const rows = await this.shopRepo.findByAccount(shop.worldId, shop.accountId, { txClient });
-                const existing = rows.find((row) => {
-                    if (shop.kind === ShopKindEntrusted) {
-                        return row.closed_at != null || row.kind === ShopKindEntrusted;
-                    }
-                    return row.closed_at == null && row.kind === shop.kind && row.character_id === shop.characterId;
-                });
-                if (existing != null) {
-                    return { shopId: 0, existing: this.toProto(shop.worldId, existing) };
+            const rows = await this.shopRepo.findByAccount(shop.worldId, shop.accountId, { txClient });
+            const existing = rows.find((row) => {
+                if (shop.kind === ShopKindEntrusted) {
+                    return row.closed_at != null || row.kind === ShopKindEntrusted;
                 }
-            }
-            if (closed && shop.storeBankId !== 0) {
-                const restored = await this.shopRepo.unclaim(shop.worldId, shop.accountId, shop.storeBankId, { txClient });
-                if (restored != null) {
-                    return { shopId: restored.shop_id, existing: undefined };
-                }
+                return row.closed_at == null && row.kind === shop.kind && row.character_id === shop.characterId;
+            });
+            if (existing != null) {
+                return { shopId: 0, existing: this.toProto(shop.worldId, existing) };
             }
             const row = await this.shopRepo.insert(
                 shop.worldId,
@@ -107,15 +98,15 @@ export class ShopService {
                     accountId: shop.accountId,
                     characterId: shop.characterId,
                     ownerName: shop.ownerName,
-                    channelId: closed ? null : shop.channelId,
-                    mapId: closed ? null : shop.mapId,
+                    channelId: shop.channelId,
+                    mapId: shop.mapId,
                     itemId: shop.itemId,
                     title: shop.title,
                     meso: shop.meso,
                     items: shop.items.map((item) => ShopItem.toJSON(item)),
                     sold: shop.sold.map((sale) => ShopSale.toJSON(sale)),
-                    closedAt: closed ? new Date(shop.closedAtUnixMs) : null,
-                    storeBankId: closed && shop.storeBankId !== 0 ? shop.storeBankId : null,
+                    closedAt: null,
+                    storeBankId: null,
                 },
                 { txClient }
             );
@@ -167,13 +158,6 @@ export class ShopService {
             }
             await this.shopRepo.deleteEmpty(shop.worldId, shop.shopId, shop.accountId, { txClient });
             await this.shopRepo.close(shop.worldId, shop.shopId, shop.accountId, { txClient });
-        });
-    }
-
-    async claimStoreBank(worldId: number, accountId: number, characterId: number): Promise<Shop[]> {
-        return this.shopRepo.withAccountLock(worldId, accountId, async (txClient) => {
-            const rows = await this.shopRepo.claim(worldId, accountId, characterId, { txClient });
-            return rows.map((row) => this.toProto(worldId, row));
         });
     }
 

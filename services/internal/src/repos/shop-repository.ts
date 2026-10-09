@@ -141,30 +141,17 @@ export class ShopRepository {
         );
     }
 
-    async unclaim(worldId: number, accountId: number, storeBankId: number, options: RepositoryTxOptions = {}): Promise<ShopRow | undefined> {
-        const client = options.txClient ?? this.pool(worldId, accountId);
-        const res = await client.query(
-            `UPDATE shops SET claimed_at = NULL
-             WHERE account_id = $1 AND store_bank_id = $2 AND claimed_at IS NOT NULL
-             RETURNING ${SELECT_COLS}`,
-            [accountId, storeBankId]
-        );
-        return res.rows[0] as ShopRow | undefined;
-    }
-
-    async claim(worldId: number, accountId: number, characterId: number, options: RepositoryTxOptions = {}): Promise<ShopRow[]> {
-        const client = options.txClient ?? this.pool(worldId, accountId);
-        await client.query(
+    async claim(worldId: number, accountId: number, characterId: number, shopIds: number[]): Promise<void> {
+        const pool = this.pool(worldId, accountId);
+        await pool.query(
             "DELETE FROM shops WHERE account_id = $1 AND claimed_at < NOW() - INTERVAL '1 day'",
             [accountId]
         );
-        const res = await client.query(
+        await pool.query(
             `UPDATE shops SET claimed_at = NOW()
-             WHERE account_id = $1 AND character_id = $2 AND closed_at IS NOT NULL AND claimed_at IS NULL
-             RETURNING ${SELECT_COLS}`,
-            [accountId, characterId]
+             WHERE account_id = $1 AND character_id = $2 AND shop_id = ANY($3::bigint[]) AND closed_at IS NOT NULL AND claimed_at IS NULL`,
+            [accountId, characterId, shopIds]
         );
-        return res.rows as ShopRow[];
     }
 
     async deleteEmpty(worldId: number, shopId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<void> {

@@ -22,7 +22,6 @@ service Internal {
   rpc FindEntrustedShop (FindEntrustedShopRequest) returns (FindEntrustedShopReply);
   rpc OpenShop (OpenShopRequest) returns (OpenShopReply);
   rpc SaveShop (SaveShopRequest) returns (SaveShopReply);
-  rpc ClaimStoreBank (ClaimStoreBankRequest) returns (ClaimStoreBankReply);
   rpc CloseChannelShops (CloseChannelShopsRequest) returns (CloseChannelShopsReply);
   rpc SearchShops (SearchShopsRequest) returns (SearchShopsReply);
   rpc FindPopularShopSearches (FindPopularShopSearchesRequest) returns (FindPopularShopSearchesReply);
@@ -721,6 +720,7 @@ message CharacterSaveEntry {
   repeated MonsterBookCard monster_book = 11;
   repeated Record records = 12;
   repeated Record account_records = 13;
+  repeated uint32 claimed_shops = 14;
 }
 
 message Storage {
@@ -877,16 +877,6 @@ message SaveShopRequest {
 }
 
 message SaveShopReply {
-}
-
-message ClaimStoreBankRequest {
-  uint32 world_id = 1;
-  uint32 account_id = 2;
-  uint32 character_id = 3;
-}
-
-message ClaimStoreBankReply {
-  repeated Shop shops = 1;
 }
 
 message CloseChannelShopsRequest {
