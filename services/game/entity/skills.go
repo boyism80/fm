@@ -67,7 +67,7 @@ func (sc *Skills) dojoSkill(skillID uint32) *SkillEntry {
 	default:
 		return nil
 	}
-	if sc.owner.dojoEnergy < DojoEnergyFull || sc.owner.OnDojoField() == false {
+	if sc.owner.dojoEnergy < DojoEnergyFull || !sc.owner.OnDojoField() {
 		return nil
 	}
 	w := sc.owner.GameWorld.GetResources().GetSkill(skillID)

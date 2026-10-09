@@ -26,14 +26,14 @@ func (ch *Character) SetDojoEnergy(energy int) {
 }
 
 func (ch *Character) AddDojoEnergy(n int) {
-	if ch.OnDojoField() == false {
+	if !ch.OnDojoField() {
 		return
 	}
 	ch.SetDojoEnergy(ch.dojoEnergy + n)
 }
 
 func (ch *Character) chargeDojoEnergy(mob *Mob, damage uint64) {
-	if ch.OnDojoField() == false || mob.Wz.Boss {
+	if !ch.OnDojoField() || mob.Wz.Boss {
 		return
 	}
 	maxHp := uint64(mob.GetMaxHp())

@@ -49,7 +49,7 @@ func (a *sessionActor) ping() {
 		_ = a.client.GetConnection().Close()
 		return
 	}
-	if sendPing == false {
+	if !sendPing {
 		return
 	}
 	if err := a.client.Send(&response.Ping{}, types.SEND_POLICY_ENCRYPT); err != nil {

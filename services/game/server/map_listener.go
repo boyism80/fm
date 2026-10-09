@@ -209,10 +209,10 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Ite
 
 	for _, obj := range mapInstance.GetObjectsNear(placementObj.Position, constant.ObjectTypeCharacter, &entity.SearchOption{IncludeHidden: true}) {
 		viewer, ok := obj.(*entity.Character)
-		if ok == false {
+		if !ok {
 			continue
 		}
-		if viewer.NeedsQuestItem(placement.Quest, item.GetModel().GetID()) == false {
+		if !viewer.NeedsQuestItem(placement.Quest, item.GetModel().GetID()) {
 			continue
 		}
 		viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)

@@ -26,7 +26,7 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		return
 	}
 	portalID, townPos, ok := targetMap.FindMysticReturnPortal(msg.PartyOwnerSlot)
-	if ok == false {
+	if !ok {
 		ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 			Ok:          false,
 			Key:         msg.Key,

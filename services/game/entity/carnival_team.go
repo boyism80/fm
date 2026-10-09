@@ -142,7 +142,7 @@ func (t *CarnivalTeam) SummonMob(ch *Character, field *Map, num int) CarnivalSum
 	}
 
 	gen, ok := t.freeMobGenPos(field)
-	if ok == false {
+	if !ok {
 		return CarnivalSummonNoSlot
 	}
 	if field.SummonMob(entry.ID, gen.Pos, t.TeamID) != nil {
@@ -162,7 +162,7 @@ func (t *CarnivalTeam) freeMobGenPos(field *Map) (wz.CarnivalGenPos, bool) {
 			pos := spawn.Wz.Position
 			return pos.X == gen.Pos.X && pos.Y == gen.Pos.Y && (gen.Team == int(constant.CarnivalTeamNone) || spawn.Wz.Team == gen.Team)
 		})
-		if used == false {
+		if !used {
 			return gen, true
 		}
 	}
@@ -185,7 +185,7 @@ func (t *CarnivalTeam) UseSkill(ch *Character, field *Map, num int) CarnivalSumm
 	}
 
 	enemy := t.Match.enemyTeam(t.TeamID)
-	if enemy == nil || enemy.Debuff(field, skillID) == false {
+	if enemy == nil || !enemy.Debuff(field, skillID) {
 		return CarnivalSummonFailed
 	}
 
@@ -211,7 +211,7 @@ func (t *CarnivalTeam) SummonGuardian(ch *Character, field *Map, num uint32) Car
 	}
 
 	gen, ok := t.freeGuardianGenPos(field)
-	if ok == false {
+	if !ok {
 		return CarnivalSummonNoSlot
 	}
 	reactorID := carnival.ReactorBlue
@@ -258,7 +258,7 @@ func (t *CarnivalTeam) freeGuardianGenPos(field *Map) (wz.CarnivalGenPos, bool) 
 				break
 			}
 		}
-		if used == false {
+		if !used {
 			return gen, true
 		}
 	}
@@ -267,7 +267,7 @@ func (t *CarnivalTeam) freeGuardianGenPos(field *Map) (wz.CarnivalGenPos, bool) 
 
 func (t *CarnivalTeam) buffGuardian(mob *Mob, guardian *wz.CarnivalGuardian) {
 	flag, ok := carnivalGuardianBuffs[guardian.MobSkillID]
-	if ok == false {
+	if !ok {
 		return
 	}
 	levelData := mob.GameWorld.GetResources().GetMobSkill(guardian.MobSkillID, guardian.Level)
@@ -280,7 +280,7 @@ func (t *CarnivalTeam) buffGuardian(mob *Mob, guardian *wz.CarnivalGuardian) {
 
 func (t *CarnivalTeam) buffGuardians(mob *Mob) {
 	for num, reactor := range t.guardians {
-		if t.isGuardianAlive(reactor) == false {
+		if !t.isGuardianAlive(reactor) {
 			continue
 		}
 		guardian := mob.GameWorld.GetResources().GetCarnivalGuardian(num)
@@ -355,7 +355,7 @@ func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
 	rand.Shuffle(len(targets), func(i, j int) {
 		targets[i], targets[j] = targets[j], targets[i]
 	})
-	if skillDef.TargetsAll == false {
+	if !skillDef.TargetsAll {
 		targets = targets[:1]
 	}
 
@@ -364,7 +364,7 @@ func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
 		if skillDef.TargetsAll && rand.Intn(100) >= chance {
 			continue
 		}
-		if target.GiveMobSkillDebuff(skillDef.MobSkillID, skillDef.Level) == false {
+		if !target.GiveMobSkillDebuff(skillDef.MobSkillID, skillDef.Level) {
 			target.Buffs.Dispel()
 		}
 	}

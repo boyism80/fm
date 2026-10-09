@@ -85,7 +85,7 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 	items := mapInstance.GetItems()
 	for _, oid := range oids {
 		meso, ok := items[oid].(*Meso)
-		if ok == false {
+		if !ok {
 			continue
 		}
 		fp := meso.GetFieldPlacement()
@@ -93,7 +93,7 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 			continue
 		}
 		pos := meso.GetPosition()
-		if area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) == false {
+		if !area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) {
 			continue
 		}
 		if err := mapInstance.RemoveItem(oid, constant.RemoveItemTypeExplosion, ch.GetID()); err != nil {

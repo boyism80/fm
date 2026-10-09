@@ -17,7 +17,7 @@ func (ch *Character) Inspect(targetID uint32) {
 	if target == nil {
 		return
 	}
-	if target.IsHidden() && ch.HasRoleAtLeast(target.Role) == false {
+	if target.IsHidden() && !ch.HasRoleAtLeast(target.Role) {
 		return
 	}
 

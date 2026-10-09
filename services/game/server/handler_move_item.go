@@ -110,7 +110,7 @@ func (h *MoveItem) drop(ctx *core.ClientContext, ch *entity.Character, invenType
 		}
 
 		spawned = item.Clone(actualCount)
-		if ch.Inventory.RemoveItem(invenType, slot, actualCount) == false {
+		if !ch.Inventory.RemoveItem(invenType, slot, actualCount) {
 			return
 		}
 	}

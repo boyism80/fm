@@ -51,7 +51,7 @@ func (g *GuildMembership) AcceptInvite(guildID uint32) error {
 		return ErrGuildAlreadyJoined
 	}
 	g.dropExpiredInvites(clock.Now())
-	if _, ok := g.invites[guildID]; ok == false {
+	if _, ok := g.invites[guildID]; !ok {
 		return ErrGuildInviteNotFound
 	}
 
@@ -65,7 +65,7 @@ func (g *GuildMembership) ClearInvites() {
 
 func (g *GuildMembership) dropExpiredInvites(now time.Time) {
 	for id, expiresAt := range g.invites {
-		if now.Before(expiresAt) == false {
+		if !now.Before(expiresAt) {
 			delete(g.invites, id)
 		}
 	}

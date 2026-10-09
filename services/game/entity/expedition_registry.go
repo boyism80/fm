@@ -82,7 +82,7 @@ func (r *ExpeditionRegistry) Register(name string, leader *Character, spec Exped
 	notice := leader.GetName() + spec.Notice
 	for _, obj := range e.BeginMap.GetAllPlayers() {
 		ch, ok := obj.(*Character)
-		if ok == false {
+		if !ok {
 			continue
 		}
 		ch.Listener.OnClock(ch, seconds)

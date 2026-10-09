@@ -35,7 +35,7 @@ func (ch *Character) HealOverTime(hp, mp uint16, endure bool, now time.Time) {
 		return
 	}
 	limit, ok := ret.(*lua.LTable)
-	if ok == false {
+	if !ok {
 		return
 	}
 

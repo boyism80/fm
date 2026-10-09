@@ -41,7 +41,7 @@ func (ps *PersonalShop) balloon() response.MiniRoomBalloon {
 }
 
 func (ps *PersonalShop) updateBalloon() {
-	if ps.published == false {
+	if !ps.published {
 		return
 	}
 	balloon := ps.balloon()
@@ -52,14 +52,14 @@ func (ps *PersonalShop) Visit(ch *Character) error {
 	if ch.MiniRoom != nil {
 		return ErrMiniRoomInvalid
 	}
-	if ps.published == false {
+	if !ps.published {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}
 	if _, ok := ps.banned[ch.GetName()]; ok {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterBlocked}
 	}
 	index, ok := ps.freeSlot()
-	if ok == false {
+	if !ok {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterFull}
 	}
 
@@ -76,7 +76,7 @@ func (ps *PersonalShop) Visit(ch *Character) error {
 
 func (ps *PersonalShop) Leave(ch *Character) {
 	slot, ok := ps.SlotOf(ch)
-	if ok == false {
+	if !ok {
 		return
 	}
 	if slot == 0 {
@@ -145,7 +145,7 @@ func (ps *PersonalShop) Open(actx actor.Context, ch *Character) error {
 
 func (ps *PersonalShop) Buy(actx actor.Context, ch *Character, index uint16, bundles uint16) error {
 	slot, ok := ps.SlotOf(ch)
-	if ok == false || slot == 0 || ps.published == false {
+	if !ok || slot == 0 || !ps.published {
 		return ErrMiniRoomInvalid
 	}
 
@@ -255,7 +255,7 @@ func (ch *Character) CreatePersonalShop(actx actor.Context, title string, slot i
 	if m == nil || ch.MiniRoom != nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
-	if m.Wz.PersonalShop == false {
+	if !m.Wz.PersonalShop {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterFreeMarket}
 	}
 	if ch.miniRoomPending {
@@ -265,7 +265,7 @@ func (ch *Character) CreatePersonalShop(actx actor.Context, title string, slot i
 	if permit == nil || permit.GetModel().GetID() != itemID || itemID/10000 != 514 {
 		return ErrMiniRoomInvalid
 	}
-	if expiration := permit.GetExpiration(); expiration.IsZero() == false && clock.Now().After(expiration) {
+	if expiration := permit.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {
 		return ErrMiniRoomInvalid
 	}
 	if title == "" {

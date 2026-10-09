@@ -194,7 +194,7 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 	if recvMesos > math.MaxInt32-ch.Inventory.Meso {
 		return
 	}
-	if ch.Inventory.RemoveItem(inventoryType, tx.Slot, quantity) == false {
+	if !ch.Inventory.RemoveItem(inventoryType, tx.Slot, quantity) {
 		return
 	}
 

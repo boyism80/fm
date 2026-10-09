@@ -158,12 +158,12 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 	}
 	timeout := r.StateTimeOut(newState)
 	if timeout > 0 {
-		if done == false {
+		if !done {
 			r.callScript("on_reactor")
 		}
 		r.ScheduleStateRevert(newState, oldState, timeout)
 	}
-	if done || timeout > 0 || trigger == nil || trigger.GM.InstantKill == false {
+	if done || timeout > 0 || trigger == nil || !trigger.GM.InstantKill {
 		return
 	}
 	if newEvent.Type == constant.ReactorEventTypeHit || newEvent.Type == constant.ReactorEventTypeDirectionalHit {

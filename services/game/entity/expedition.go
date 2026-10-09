@@ -107,7 +107,7 @@ func (e *Expedition) Join(ch *Character) error {
 func (e *Expedition) addMember(ch *Character) error {
 	e.registry.mu.Lock()
 	defer e.registry.mu.Unlock()
-	if e.openLocked() == false {
+	if !e.openLocked() {
 		return ErrExpeditionClosed
 	}
 	if e.memberIndex(ch.GetID()) >= 0 {
@@ -145,7 +145,7 @@ func (e *Expedition) Leave(ch *Character) error {
 func (e *Expedition) removeMember(id uint32) error {
 	e.registry.mu.Lock()
 	defer e.registry.mu.Unlock()
-	if e.openLocked() == false {
+	if !e.openLocked() {
 		return ErrExpeditionClosed
 	}
 	i := e.memberIndex(id)
@@ -170,7 +170,7 @@ func (e *Expedition) Kick(leader *Character, memberID uint32) error {
 func (e *Expedition) ban(leader *Character, memberID uint32) (*Character, error) {
 	e.registry.mu.Lock()
 	defer e.registry.mu.Unlock()
-	if e.openLocked() == false {
+	if !e.openLocked() {
 		return nil, ErrExpeditionClosed
 	}
 	if leader.GetID() != e.Leader.GetID() {
@@ -203,7 +203,7 @@ func (e *Expedition) Allow(leader *Character, memberID uint32) error {
 func (e *Expedition) unban(leader *Character, memberID uint32) (*Character, error) {
 	e.registry.mu.Lock()
 	defer e.registry.mu.Unlock()
-	if e.openLocked() == false {
+	if !e.openLocked() {
 		return nil, ErrExpeditionClosed
 	}
 	if leader.GetID() != e.Leader.GetID() {
@@ -229,7 +229,7 @@ func (e *Expedition) unban(leader *Character, memberID uint32) (*Character, erro
 func (e *Expedition) Role(ch *Character) ExpeditionRole {
 	e.registry.mu.Lock()
 	defer e.registry.mu.Unlock()
-	if e.openLocked() == false {
+	if !e.openLocked() {
 		return ExpeditionRoleNone
 	}
 
@@ -300,7 +300,7 @@ func (e *Expedition) stopClock() {
 func (e *Expedition) startBattle(leader *Character) (*StateMachine, []*Character, []*Character, error) {
 	e.registry.mu.Lock()
 	defer e.registry.mu.Unlock()
-	if e.openLocked() == false {
+	if !e.openLocked() {
 		return nil, nil, nil, ErrExpeditionClosed
 	}
 	if leader.GetID() != e.Leader.GetID() {
@@ -325,7 +325,7 @@ func (e *Expedition) startBattle(leader *Character) (*StateMachine, []*Character
 		entrants = append(entrants, member.character)
 	}
 	exempt := leader.ActsAsGM()
-	if len(entrants) < e.Spec.MinMembers && exempt == false {
+	if len(entrants) < e.Spec.MinMembers && !exempt {
 		return nil, nil, nil, ErrExpeditionTooFew
 	}
 

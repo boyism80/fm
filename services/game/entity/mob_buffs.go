@@ -122,7 +122,7 @@ func (bc *MobBuffs) Add(duration time.Duration, skillWz *wz.Skill, skillLevel ui
 		filtered := make(map[constant.MobBuffFlag]int32, len(values))
 		filteredStacks := make(map[constant.MobBuffFlag]uint8, len(values))
 		for flag, value := range values {
-			if bc.owner.canReceiveMobBuff(flag, skillWz) == false {
+			if !bc.owner.canReceiveMobBuff(flag, skillWz) {
 				continue
 			}
 			filtered[flag] = value

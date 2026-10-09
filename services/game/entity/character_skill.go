@@ -62,7 +62,7 @@ func (ch *Character) CallSkillHook(ctx actor.Context, skill *SkillEntry, hook st
 			log.Printf("skill hook %s %s: %v", path, hook, err)
 			return false
 		}
-		if ret != nil && ret.Type() == lua.LTBool && lua.LVAsBool(ret) == false {
+		if ret != nil && ret.Type() == lua.LTBool && !lua.LVAsBool(ret) {
 			return false
 		}
 	}
@@ -103,7 +103,7 @@ func (ch *Character) UseAttackSkill(skillID uint32, activate func() bool) bool {
 	if levelData.Cooldown > 0 && (skillEntry == nil || skillEntry.IsCooling()) {
 		return false
 	}
-	if activate() == false {
+	if !activate() {
 		return false
 	}
 	if levelData.Cooldown > 0 {

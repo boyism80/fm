@@ -73,7 +73,7 @@ func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guil
 		}
 		return guildEmblemChangePayment{usedCashItem: true}, true
 	}
-	if ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost) == false {
+	if !ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost) {
 		return guildEmblemChangePayment{}, false
 	}
 	return guildEmblemChangePayment{mesoSpent: gameconst.GuildEmblemChangeMesoCost}, true
@@ -128,7 +128,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultNotAllowed)
 			return nil
 		}
-		if ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost) == false {
+		if !ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost) {
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultInsufficientMeso)
 			return nil
 		}

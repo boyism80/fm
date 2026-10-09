@@ -54,7 +54,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	activated := character.UseAttackSkill(req.Skill, func() bool {
 		return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
 	})
-	if activated == false {
+	if !activated {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}

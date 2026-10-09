@@ -47,7 +47,7 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	default:
 		assigned = character.Points.AssignStats([]entity.APEntry{{Stat: stat, Amount: 1}})
 	}
-	if assigned == false {
+	if !assigned {
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)
 	}
 	return nil
@@ -73,7 +73,7 @@ func (h *DistributeAP) apIncrease(character *entity.Character, funcName string, 
 		return fallback
 	}
 	n, ok := value.(lua.LNumber)
-	if ok == false || n <= 0 {
+	if !ok || n <= 0 {
 		return fallback
 	}
 	if float64(n) >= math.MaxUint32 {

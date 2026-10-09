@@ -26,7 +26,7 @@ func (p *Points) SetAP(v uint16, notify bool) {
 func (p *Points) AssignStats(entries []APEntry) bool {
 	total := uint32(0)
 	for _, e := range entries {
-		if p.owner.Stats.canAdd(e.Stat, e.Amount) == false {
+		if !p.owner.Stats.canAdd(e.Stat, e.Amount) {
 			return false
 		}
 		total += uint32(e.Amount)
@@ -87,7 +87,7 @@ func (p *Points) SetSP(v uint16, notify bool) {
 }
 
 func (p *Points) DistributeSkill(skillID uint32) bool {
-	if p.SP == 0 || p.owner.canLearn(skillID) == false {
+	if p.SP == 0 || !p.owner.canLearn(skillID) {
 		return false
 	}
 

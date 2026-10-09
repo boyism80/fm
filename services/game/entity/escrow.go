@@ -34,7 +34,7 @@ func (e *Escrow) hold(invType constant.InventoryType, slot int16, count uint16) 
 }
 
 func (e *Escrow) holdMeso(amount int32) error {
-	if amount <= 0 || e.owner.Inventory.RemoveMeso(amount) == false {
+	if amount <= 0 || !e.owner.Inventory.RemoveMeso(amount) {
 		return ErrMiniRoomInvalid
 	}
 	e.Meso += amount
@@ -56,7 +56,7 @@ func (e *Escrow) restore() {
 			ch.Listener.OnInventorySlotUpdated(ch, held.invType, held.slot, exists)
 		default:
 			slot, ok := inven.NextSlot()
-			if ok == false {
+			if !ok {
 				log.Printf("Escrow.restore character=%d: no slot for item %d x%d", ch.GetID(), model.GetID(), held.item.GetCount())
 				continue
 			}

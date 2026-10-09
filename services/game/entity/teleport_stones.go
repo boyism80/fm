@@ -31,7 +31,7 @@ func (t *TeleportStones) Register(vip bool) {
 	if m == nil {
 		return
 	}
-	if m.BlocksTeleportStone() || t.query(m, "can_register_teleport_stone", m.TemplateID()) == false {
+	if m.BlocksTeleportStone() || !t.query(m, "can_register_teleport_stone", m.TemplateID()) {
 		t.owner.Listener.OnTeleportStoneFailed(t.owner, vip, pconst.TeleportStoneResultCannotRegister)
 		return
 	}
@@ -69,7 +69,7 @@ func (t *TeleportStones) Reset() {
 }
 
 func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, slot int16, itemID uint32, mapID uint32, name string) {
-	if t.owner.session.cashItemInUse.CompareAndSwap(false, true) == false {
+	if !t.owner.session.cashItemInUse.CompareAndSwap(false, true) {
 		t.owner.Listener.OnUpdateStats(t.owner, nil, true)
 		return
 	}
@@ -85,7 +85,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 
 	switch invType {
 	case constant.InventoryTypeCash:
-		if constant.IsCashTeleportStone(itemID) == false {
+		if !constant.IsCashTeleportStone(itemID) {
 			finish()
 			return
 		}
@@ -117,7 +117,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 	}
 
 	if name == "" {
-		if mapID == constant.TeleportStoneEmpty || t.Slots(vip).Contains(mapID) == false {
+		if mapID == constant.TeleportStoneEmpty || !t.Slots(vip).Contains(mapID) {
 			fail(pconst.TeleportStoneResultCannotGo)
 			return
 		}
@@ -126,7 +126,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 	}
 
 	targetID, found := t.owner.GameWorld.GetDispatchSystem().FindCharacterID(name)
-	if found == false || targetID == t.owner.GetID() {
+	if !found || targetID == t.owner.GetID() {
 		fail(pconst.TeleportStoneResultNotFound)
 		return
 	}
@@ -145,7 +145,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 		})
 	})
 	t.owner.GameWorld.GetDispatchSystem().CallCharacter(targetID, func(_ actor.Context, target *Character) {
-		if target == nil || ((target.IsHidden() || target.HasRoleAtLeast(constant.RoleAdmin)) && admin == false) {
+		if target == nil || ((target.IsHidden() || target.HasRoleAtLeast(constant.RoleAdmin)) && !admin) {
 			settle(func(actor.Context) {
 				fail(pconst.TeleportStoneResultNotFound)
 			})
@@ -173,11 +173,11 @@ func (t *TeleportStones) teleport(ctx actor.Context, itemID uint32, vip bool, ta
 		onFail(pconst.TeleportStoneResultCannotGo)
 		return
 	}
-	if vip == false && m.TemplateID()/100000000 != target.TemplateID()/100000000 {
+	if !vip && m.TemplateID()/100000000 != target.TemplateID()/100000000 {
 		onFail(pconst.TeleportStoneResultCannotGo)
 		return
 	}
-	if t.query(m, "can_teleport_stone", itemID, m.TemplateID(), target.TemplateID(), byName) == false {
+	if !t.query(m, "can_teleport_stone", itemID, m.TemplateID(), target.TemplateID(), byName) {
 		onFail(pconst.TeleportStoneResultCannotGo)
 		return
 	}

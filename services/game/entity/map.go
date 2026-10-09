@@ -738,7 +738,7 @@ func (m *Map) RemoveDoorByKey(key DoorKey, animated bool, notifyCounterpart bool
 func (m *Map) FindDoorByKey(key DoorKey) *Door {
 	for _, object := range m.GetObjects(constant.ObjectTypeDoor) {
 		door, ok := object.(*Door)
-		if ok == false || door.OID == 0 || door.Key != key {
+		if !ok || door.OID == 0 || door.Key != key {
 			continue
 		}
 		return door
@@ -1363,7 +1363,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedInvalidItem
 		}
 
-		if fp.Quest > 0 && character.Quests.Get(fp.Quest).IsStarted() == false {
+		if fp.Quest > 0 && !character.Quests.Get(fp.Quest).IsStarted() {
 			return constant.LootFailedNoOwnership
 		}
 
@@ -1373,16 +1373,16 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 
 		if item.GetModel().IsConsumeOnPickup() {
 			consume, ok := item.(*Consume)
-			if ok == false {
+			if !ok {
 				return constant.LootFailedInvalidItem
 			}
-			if character.UseConsume(consume) == false {
+			if !character.UseConsume(consume) {
 				return constant.LootFailedInvalidItem
 			}
 			return constant.LootSuccess
 		}
 
-		if fp.Quest > 0 && character.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) == false {
+		if fp.Quest > 0 && !character.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) {
 			return constant.LootFailedInventoryFull
 		}
 

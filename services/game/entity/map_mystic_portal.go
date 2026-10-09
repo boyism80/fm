@@ -6,7 +6,7 @@ import (
 
 func (m *Map) FindMysticReturnPortal(partySlot int) (portalID uint8, pos types.Vector2[int16], ok bool) {
 	portalID, ok = m.Wz.DoorReturnPortalSpawnID(partySlot)
-	if ok == false {
+	if !ok {
 		return 0, types.Vector2[int16]{}, false
 	}
 

@@ -77,10 +77,10 @@ func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map
 		}
 		capacity := max(int(model.GetCapacity()), 1)
 		need := int(count)
-		if capacity > 1 && constant.IsRechargeable(id) == false {
+		if capacity > 1 && !constant.IsRechargeable(id) {
 			for _, slot := range slotsByID[id] {
 				snap, ok := slots[slot]
-				if ok == false {
+				if !ok {
 					continue
 				}
 				need -= min(need, max(capacity-int(snap.count), 0))

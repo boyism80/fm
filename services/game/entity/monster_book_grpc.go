@@ -8,7 +8,7 @@ import (
 func NewMonsterBookFromInternalProto(cover uint32, cards []*internal.MonsterBookCard) *MonsterBook {
 	book := &MonsterBook{Cover: cover, Cards: make(map[uint32]uint32, len(cards))}
 	for _, pb := range cards {
-		if constant.IsMonsterCard(pb.GetCardId()) == false || pb.GetCount() == 0 {
+		if !constant.IsMonsterCard(pb.GetCardId()) || pb.GetCount() == 0 {
 			continue
 		}
 		book.Cards[pb.GetCardId()] = min(pb.GetCount(), constant.MonsterBookCardMax)

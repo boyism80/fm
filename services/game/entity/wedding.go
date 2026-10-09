@@ -89,7 +89,7 @@ func (w *Wedding) Propose(name string, boxItemID uint32) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultSameGender)
 		return
 	}
-	if boxItemID < constant.RingBoxFirst || boxItemID > constant.RingBoxLast || w.owner.Inventory.HasItem(boxItemID) == false {
+	if boxItemID < constant.RingBoxFirst || boxItemID > constant.RingBoxLast || !w.owner.Inventory.HasItem(boxItemID) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultBroken)
 		return
 	}
@@ -103,11 +103,11 @@ func (w *Wedding) Propose(name string, boxItemID uint32) {
 	}
 
 	ring := constant.EngagementRingFirst + (boxItemID - constant.RingBoxFirst)
-	if w.owner.canReceive(ring, 1) == false {
+	if !w.owner.canReceive(ring, 1) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultInventoryFull)
 		return
 	}
-	if target.canReceive(ring, 1) == false {
+	if !target.canReceive(ring, 1) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultPartnerInventory)
 		return
 	}
@@ -122,23 +122,23 @@ func (w *Wedding) CancelProposal() {
 
 func (w *Wedding) AnswerProposal(actx actor.Context, accepted bool, name string, proposerID uint32) {
 	proposer := w.owner.GetMap().GetPlayer(proposerID)
-	if proposer == nil || strings.EqualFold(proposer.GetName(), name) == false || proposer.Wedding.proposal.targetID != w.owner.GetID() {
+	if proposer == nil || !strings.EqualFold(proposer.GetName(), name) || proposer.Wedding.proposal.targetID != w.owner.GetID() {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultProposalCancelled)
 		return
 	}
 	boxItemID := proposer.Wedding.proposal.boxItemID
 	proposer.Wedding.proposal = proposal{}
-	if w.Marriage != nil || proposer.Wedding.Marriage != nil || proposer.Inventory.HasItem(boxItemID) == false || w.owner.IsAlive() == false || proposer.IsAlive() == false {
+	if w.Marriage != nil || proposer.Wedding.Marriage != nil || !proposer.Inventory.HasItem(boxItemID) || !w.owner.IsAlive() || !proposer.IsAlive() {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultProposalCancelled)
 		return
 	}
-	if accepted == false {
+	if !accepted {
 		proposer.Listener.OnEngageResult(proposer, pconst.EngageResultDeclined)
 		return
 	}
 
 	ring := constant.EngagementRingFirst + (boxItemID - constant.RingBoxFirst)
-	if w.owner.canReceive(ring, 1) == false || proposer.canReceive(ring, 1) == false {
+	if !w.owner.canReceive(ring, 1) || !proposer.canReceive(ring, 1) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultPartnerInventory)
 		return
 	}
@@ -199,10 +199,10 @@ func (w *Wedding) discardRings() {
 }
 
 func (w *Wedding) DropItem(actx actor.Context, itemID uint32) {
-	if constant.ItemCategoryOf(itemID) != 421 || w.owner.Inventory.HasItem(itemID) == false {
+	if constant.ItemCategoryOf(itemID) != 421 || !w.owner.Inventory.HasItem(itemID) {
 		return
 	}
-	if constant.IsEngagementRing(itemID) == false || w.Marriage == nil || w.Marriage.Status != MarriageStatusEngaged {
+	if !constant.IsEngagementRing(itemID) || w.Marriage == nil || w.Marriage.Status != MarriageStatusEngaged {
 		w.owner.Inventory.RemoveByItemIDCount(itemID, w.owner.Inventory.GetCountByItemID(itemID))
 		return
 	}
@@ -267,7 +267,7 @@ func (w *Wedding) Reserve(actx actor.Context, ticketItemID uint32) (*async.Promi
 	if w.Marriage == nil || w.Marriage.Status != MarriageStatusEngaged || w.Marriage.TicketItemID != 0 {
 		return nil, ErrMarriageInvalid
 	}
-	if _, ok := constant.WeddingTickets[ticketItemID]; ok == false || w.owner.Inventory.HasItem(ticketItemID) == false {
+	if _, ok := constant.WeddingTickets[ticketItemID]; !ok || !w.owner.Inventory.HasItem(ticketItemID) {
 		return nil, ErrMarriageInvalid
 	}
 	partner := w.owner.GetMap().GetPlayer(w.Marriage.PartnerID(w.owner.GetID()))
@@ -297,7 +297,7 @@ func (w *Wedding) SubmitWishlist(actx actor.Context, wishes []string) {
 		return
 	}
 	ticket := constant.WeddingTickets[w.Marriage.TicketItemID]
-	if w.owner.canReceive(ticket.Invitation, ticket.InvitationCount) == false {
+	if !w.owner.canReceive(ticket.Invitation, ticket.InvitationCount) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultInventoryFull)
 		return
 	}
@@ -384,7 +384,7 @@ func (w *Wedding) InvitedTo(marriageID uint32) bool {
 
 func (w *Wedding) OpenInvitation(actx actor.Context, slot int16, itemID uint32) {
 	item, ok := w.owner.Inventory.GetItem(constant.InventoryTypeETC, slot).(*MiscItem)
-	if ok == false || item.GetModel().GetID() != itemID || item.MarriageID == 0 {
+	if !ok || item.GetModel().GetID() != itemID || item.MarriageID == 0 {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultInvalidInvitation)
 		return
 	}
@@ -559,7 +559,7 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftOneOfAKind, nil, nil)
 		return nil
 	}
-	if w.owner.canReceive(gift.Item.GetModel().GetID(), gift.Item.GetCount()) == false {
+	if !w.owner.canReceive(gift.Item.GetModel().GetID(), gift.Item.GetCount()) {
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 		w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "인벤토리 공간이 부족합니다.")
 		return nil

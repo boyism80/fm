@@ -77,7 +77,7 @@ func (s *Storage) has(invType constant.InventoryType, itemID uint32) bool {
 }
 
 func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
-	if s.opened == false {
+	if !s.opened {
 		return ErrStorageClosed
 	}
 	if s.count() >= int(s.Slots) {
@@ -128,7 +128,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 }
 
 func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
-	if s.opened == false {
+	if !s.opened {
 		return ErrStorageClosed
 	}
 	items := s.Tabs[invType]
@@ -163,7 +163,7 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 }
 
 func (s *Storage) Arrange() error {
-	if s.opened == false {
+	if !s.opened {
 		return ErrStorageClosed
 	}
 
@@ -177,7 +177,7 @@ func (s *Storage) Arrange() error {
 }
 
 func (s *Storage) DepositMeso(amount int32) error {
-	if s.opened == false {
+	if !s.opened {
 		return ErrStorageClosed
 	}
 	amount = min(amount, math.MaxInt32-s.Meso)
@@ -195,7 +195,7 @@ func (s *Storage) DepositMeso(amount int32) error {
 }
 
 func (s *Storage) WithdrawMeso(amount int32) error {
-	if s.opened == false {
+	if !s.opened {
 		return ErrStorageClosed
 	}
 	amount = min(amount, math.MaxInt32-s.owner.Inventory.Meso)

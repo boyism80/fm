@@ -119,7 +119,7 @@ func (ch *Character) FreeSlot(invType constant.InventoryType) (int16, bool) {
 		}
 	}
 	for slot := int16(1); slot <= int16(ch.SlotLimit(invType)); slot++ {
-		if used[slot] == false {
+		if !used[slot] {
 			return slot, true
 		}
 	}

@@ -31,7 +31,7 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *entity.Character
 	if couple {
 		ring = gconstant.IsCrushRing(commodity.ItemID)
 	}
-	if ring == false {
+	if !ring {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}

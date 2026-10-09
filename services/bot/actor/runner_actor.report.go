@@ -39,7 +39,7 @@ func (r *RunnerActor) report() {
 	for _, res := range r.results {
 		status := "PASS"
 		switch {
-		case res.Passed == false:
+		case !res.Passed:
 			status = "FAIL"
 			failed++
 		case res.Skipped:
@@ -64,7 +64,7 @@ func (r *RunnerActor) report() {
 	doc := junitSuite{Name: "fm-bot", Tests: len(r.results), Failures: failed, Skipped: skipped, Time: fmt.Sprintf("%.3f", elapsed.Seconds())}
 	for _, res := range r.results {
 		c := junitCase{Name: res.Name, Time: fmt.Sprintf("%.3f", res.Elapsed.Seconds())}
-		if res.Passed == false {
+		if !res.Passed {
 			c.Failure = &junitFailure{Message: strings.Join(res.Failures, "; "), Text: strings.Join(res.Failures, "\n")}
 		} else if res.Skipped {
 			c.Skipped = &struct{}{}

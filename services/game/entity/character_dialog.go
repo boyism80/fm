@@ -90,7 +90,7 @@ func (d *Dialog) Resume(actx actor.Context, dialogType constant.DialogType, next
 	case constant.DialogTypeDefault, constant.DialogTypeYesNo, constant.DialogTypeAccept, constant.DialogTypeAcceptEscape:
 		args = append(args, lua.LBool(next))
 	case constant.DialogTypeList, constant.DialogTypeStyle:
-		if next == false {
+		if !next {
 			args = append(args, lua.LNil)
 			break
 		}

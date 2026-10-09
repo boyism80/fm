@@ -59,7 +59,7 @@ func (h *allianceMqGuildLeft) Handle(ctx actor.Context, raw json.RawMessage) err
 	}
 	_ = json.Unmarshal(raw, &extra)
 	gs.alliance.UpdateAsync(ctx, evt).Do(func() error {
-		if removedGuildFound == false {
+		if !removedGuildFound {
 			gs.alliance.BroadcastInfoUpdate(alliancePb)
 			return nil
 		}

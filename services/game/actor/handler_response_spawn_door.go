@@ -20,7 +20,7 @@ func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	if m := a.GetCharacter(msg.CharacterID); m != nil {
 		ch = m.GetPlayer(msg.CharacterID)
 	}
-	if msg.Ok == false {
+	if !msg.Ok {
 		if ch != nil {
 			ch.Listener.OnMessage(ch, constant.MsgPinkText, constant.DoorNoTownPortalMessage)
 		}

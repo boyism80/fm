@@ -209,7 +209,7 @@ func (m *Map) SetReactorGenEnabled(enabled bool) {
 	if m == nil {
 		return
 	}
-	m.reactorGenBlocked = enabled == false
+	m.reactorGenBlocked = !enabled
 }
 
 func (m *Map) GetReactorSpawn(spawnID uint32) *ReactorSpawn {

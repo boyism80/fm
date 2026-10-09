@@ -564,7 +564,7 @@ func (m *Mob) showHp(attacker *Character, percent uint8) {
 	}
 	for _, player := range mapInstance.GetAllPlayers() {
 		ch, ok := player.(*Character)
-		if ok == false {
+		if !ok {
 			continue
 		}
 		ch.Listener.OnShowMobHp(ch, m, percent)

@@ -45,7 +45,7 @@ func (p *Storage) serializeTabs(writer *stream.StreamWriter) {
 	}
 	for invType := constant.InventoryTypeEquipment; invType <= constant.InventoryTypeCash; invType++ {
 		items, ok := p.Tabs[invType]
-		if ok == false {
+		if !ok {
 			continue
 		}
 		writer.WriteU8(uint8(len(items)))

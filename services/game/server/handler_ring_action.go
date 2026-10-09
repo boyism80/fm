@@ -21,7 +21,7 @@ func (RingAction) New(gs *GameServer) *RingAction {
 
 func (h *RingAction) Handle(ctx *core.ClientContext, req *request.RingAction) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

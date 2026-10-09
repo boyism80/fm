@@ -91,12 +91,12 @@ func (a *SuiteActor) move(thread *lua.LState, i int, pkt outbound, label string,
 			return false
 		}
 	}, func(pkt any, ok bool) {
-		if ok == false {
+		if !ok {
 			done(a.Fail(fmt.Sprintf("%s %s 이동: 응답 없음", b.Name, label)))
 			return
 		}
 		route, ok := pkt.(*response.SwitchChannel)
-		if ok == false {
+		if !ok {
 			done(a.Fail(fmt.Sprintf("%s %s 이동: 거절 %d", b.Name, label, pkt.(*response.ServerBlocked).Reason)))
 			return
 		}
@@ -147,7 +147,7 @@ func (a *SuiteActor) packetReceived(msg *PacketReceived) {
 		if w.bot != b || w.gen != msg.Gen {
 			continue
 		}
-		if w.match != nil && w.match(pkt) == false {
+		if w.match != nil && !w.match(pkt) {
 			continue
 		}
 		a.removeWaiter(w)

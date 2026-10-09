@@ -204,7 +204,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.IsInstance() == false || mapInstance.StateMachine() != nil {
+			if !mapInstance.IsInstance() || mapInstance.StateMachine() != nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
@@ -225,7 +225,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"state_machine": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Map expected")
 				return 0
 			}

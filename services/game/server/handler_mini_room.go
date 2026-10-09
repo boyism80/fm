@@ -24,7 +24,7 @@ func (MiniRoom) New(gs *GameServer) *MiniRoom {
 
 func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

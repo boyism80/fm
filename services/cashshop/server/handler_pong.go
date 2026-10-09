@@ -44,7 +44,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 		if reply.GetOk() {
 			return nil
 		}
-		if csClient.Leaving() == false {
+		if !csClient.Leaving() {
 			_ = csClient.GetConnection().Close()
 		}
 		return fmt.Errorf("refresh session failed: %s", reply.GetErrorCode())

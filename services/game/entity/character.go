@@ -347,7 +347,7 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 	}
 
-	if wasAlive && ch.IsAlive() == false {
+	if wasAlive && !ch.IsAlive() {
 		ch.die()
 	}
 }
@@ -664,7 +664,7 @@ func (ch *Character) EnterInnerPortal(portalName string, to types.Vector2[int16]
 	if portal == nil || portal.Wz == nil {
 		return fmt.Errorf("portal %q not found", portalName)
 	}
-	if portal.Wz.Position.DistanceSq(ch.Position) > 22500 && ch.HasRoleAtLeast(constant.RoleAdmin) == false {
+	if portal.Wz.Position.DistanceSq(ch.Position) > 22500 && !ch.HasRoleAtLeast(constant.RoleAdmin) {
 		return fmt.Errorf("portal %q is too far", portalName)
 	}
 	ch.moveTo(m, to)

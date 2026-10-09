@@ -24,7 +24,7 @@ func (m *Marshal) Name(goName string) string {
 		if i > 0 && unicode.IsUpper(r) {
 			prev := runes[i-1]
 			plural := i+2 == len(runes) && runes[i+1] == 's'
-			nextLower := i+1 < len(runes) && unicode.IsLower(runes[i+1]) && plural == false
+			nextLower := i+1 < len(runes) && unicode.IsLower(runes[i+1]) && !plural
 			if unicode.IsLower(prev) || unicode.IsDigit(prev) || (unicode.IsUpper(prev) && nextLower) {
 				sb.WriteByte('_')
 			}
@@ -74,7 +74,7 @@ func (m *Marshal) toLua(L *lua.LState, v reflect.Value) lua.LValue {
 		tbl := L.NewTable()
 		t := v.Type()
 		for i := 0; i < t.NumField(); i++ {
-			if t.Field(i).IsExported() == false {
+			if !t.Field(i).IsExported() {
 				continue
 			}
 			tbl.RawSetString(m.Name(t.Field(i).Name), m.toLua(L, v.Field(i)))
@@ -108,35 +108,35 @@ func (m *Marshal) fromLua(lv lua.LValue, v reflect.Value) error {
 		return nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		n, ok := lv.(lua.LNumber)
-		if ok == false {
+		if !ok {
 			return fmt.Errorf("want number, got %s", lv.Type())
 		}
 		v.SetInt(int64(n))
 		return nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		n, ok := lv.(lua.LNumber)
-		if ok == false {
+		if !ok {
 			return fmt.Errorf("want number, got %s", lv.Type())
 		}
 		v.SetUint(uint64(n))
 		return nil
 	case reflect.Float32, reflect.Float64:
 		n, ok := lv.(lua.LNumber)
-		if ok == false {
+		if !ok {
 			return fmt.Errorf("want number, got %s", lv.Type())
 		}
 		v.SetFloat(float64(n))
 		return nil
 	case reflect.String:
 		s, ok := lv.(lua.LString)
-		if ok == false {
+		if !ok {
 			return fmt.Errorf("want string, got %s", lv.Type())
 		}
 		v.SetString(string(s))
 		return nil
 	case reflect.Slice:
 		tbl, ok := lv.(*lua.LTable)
-		if ok == false {
+		if !ok {
 			return fmt.Errorf("want table, got %s", lv.Type())
 		}
 		n := tbl.Len()
@@ -150,7 +150,7 @@ func (m *Marshal) fromLua(lv lua.LValue, v reflect.Value) error {
 		return nil
 	case reflect.Struct:
 		tbl, ok := lv.(*lua.LTable)
-		if ok == false {
+		if !ok {
 			return fmt.Errorf("want table, got %s", lv.Type())
 		}
 		fields := m.fieldIndex(v.Type())
@@ -161,7 +161,7 @@ func (m *Marshal) fromLua(lv lua.LValue, v reflect.Value) error {
 			}
 			name := key.String()
 			i, ok := fields[name]
-			if ok == false {
+			if !ok {
 				err = fmt.Errorf("%s has no field %q", v.Type().Name(), name)
 				return
 			}

@@ -111,7 +111,7 @@ func parseReactorEvent(eventNode *node, event0 *node) *ReactorEvent {
 				itemID, ok = value, err == nil
 			}
 		}
-		if ok == false {
+		if !ok {
 			continue
 		}
 		quantity, _ := child.IntOK("1")

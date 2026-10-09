@@ -234,7 +234,7 @@ var Responses = func() []any {
 
 func Decode(opcode uint16, body []byte) (any, error) {
 	for _, d := range decodersByOpcode[opcode] {
-		if d.peek != nil && d.peek(body) == false {
+		if d.peek != nil && !d.peek(body) {
 			continue
 		}
 		pkt := d.new()

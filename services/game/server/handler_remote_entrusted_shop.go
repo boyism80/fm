@@ -20,7 +20,7 @@ func (RemoteEntrustedShop) New(gs *GameServer) *RemoteEntrustedShop {
 
 func (h *RemoteEntrustedShop) Handle(ctx *core.ClientContext, req *request.RemoteEntrustedShop) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

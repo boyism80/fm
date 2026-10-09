@@ -238,7 +238,7 @@ func (inv *Inventory) ClearInventory() int {
 func (inv *Inventory) ExpireItems(now time.Time) {
 	var expired []wz.Item
 	for parts, equipment := range inv.Equipped {
-		if equipment == nil || now.After(equipment.GetExpiration()) == false {
+		if equipment == nil || !now.After(equipment.GetExpiration()) {
 			continue
 		}
 		inv.RemoveEquipped(parts)
@@ -246,7 +246,7 @@ func (inv *Inventory) ExpireItems(now time.Time) {
 	}
 	for invType, inven := range inv.Tabs {
 		for slot, item := range inven.Items {
-			if item == nil || now.After(item.GetExpiration()) == false {
+			if item == nil || !now.After(item.GetExpiration()) {
 				continue
 			}
 			if _, ok := item.(*Pet); ok {
@@ -474,11 +474,11 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	if !ok {
 		return ErrItemNotEquipment
 	}
-	if constant.CanEquipAt(newEq.GetModel().GetID(), parts) == false {
+	if !constant.CanEquipAt(newEq.GetModel().GetID(), parts) {
 		return ErrInvalidEquipmentPart
 	}
 	if armor, ok := newEq.GetModel().(*wz.Armor); ok && constant.GetEquipmentType(armor.ID) == constant.EquipmentTypePetEquip {
-		if ch.Pets.Active == nil || slices.Contains(armor.Pets, ch.Pets.Active.Item.GetModel().GetID()) == false {
+		if ch.Pets.Active == nil || !slices.Contains(armor.Pets, ch.Pets.Active.Item.GetModel().GetID()) {
 			return ErrInvalidEquipmentPart
 		}
 	}

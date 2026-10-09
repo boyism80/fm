@@ -11,7 +11,7 @@ import (
 func (gs *GameServer) subscribeDeadLetters() {
 	gs.actorSystem.GetSystem().EventStream.Subscribe(func(evt interface{}) {
 		dead, ok := evt.(*actor.DeadLetterEvent)
-		if ok == false {
+		if !ok {
 			return
 		}
 		switch msg := dead.Message.(type) {
@@ -34,7 +34,7 @@ func (gs *GameServer) recoverWarp(deadPID *actor.PID, msg *g_actor.WarpCharacter
 		log.Printf("invariant: character %d stranded; map %d has no return map", msg.Character.GetID(), msg.TargetMap.GetMapID())
 		return
 	}
-	if msg.Character.BeginMove(exitMap) == false {
+	if !msg.Character.BeginMove(exitMap) {
 		log.Printf("invariant: character %d stranded; it is already moving elsewhere", msg.Character.GetID())
 		return
 	}

@@ -54,7 +54,7 @@ func (a *SuiteActor) wzFuncs() map[string]lua.LGFunction {
 			found, missing := L.NewTable(), L.NewTable()
 			for _, id := range ids {
 				spots, ok := placed[id]
-				if ok == false {
+				if !ok {
 					missing.Append(lua.LNumber(id))
 					continue
 				}
@@ -81,7 +81,7 @@ func (a *SuiteActor) wzFuncs() map[string]lua.LGFunction {
 			found, missing := L.NewTable(), L.NewTable()
 			for _, id := range ids {
 				quest := a.wz.GetQuest(id)
-				if quest == nil || (quest.HasStartScript() == false && quest.HasEndScript() == false) {
+				if quest == nil || (!quest.HasStartScript() && !quest.HasEndScript()) {
 					missing.Append(lua.LNumber(id))
 					continue
 				}
@@ -198,7 +198,7 @@ func (a *SuiteActor) wzFuncs() map[string]lua.LGFunction {
 			found, missing := L.NewTable(), L.NewTable()
 			for _, name := range names {
 				entry, ok := placed[strings.ToLower(name)]
-				if ok == false {
+				if !ok {
 					missing.Append(lua.LString(name))
 					continue
 				}
@@ -306,7 +306,7 @@ func (a *SuiteActor) rewardItems(data []byte) []uint32 {
 	paid := a.itemIDs(costs)
 	var ids []uint32
 	for _, id := range a.itemIDs(rewards) {
-		if slices.Contains(paid, id) == false {
+		if !slices.Contains(paid, id) {
 			ids = append(ids, id)
 		}
 	}
@@ -361,7 +361,7 @@ func (a *SuiteActor) mapIDs(matches [][][]byte) []uint32 {
 		if err != nil || slices.Contains(ids, uint32(id)) {
 			continue
 		}
-		if _, ok := a.wz.Maps[uint32(id)]; ok == false {
+		if _, ok := a.wz.Maps[uint32(id)]; !ok {
 			continue
 		}
 		ids = append(ids, uint32(id))

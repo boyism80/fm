@@ -29,7 +29,7 @@ func LuaYieldTask(L *lua.LState, gw GameWorld, task *async.Task, resume func(err
 		return 0
 	}
 	cfg, ok := luax.GetConfiguration(L)
-	if ok == false {
+	if !ok {
 		return 0
 	}
 	var pid *actor.PID

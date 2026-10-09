@@ -22,7 +22,7 @@ func (WeddingPresent) New(gs *GameServer) *WeddingPresent {
 
 func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPresent) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

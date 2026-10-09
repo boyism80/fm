@@ -40,7 +40,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return nil
 	}
 
-	if character.IsAlive() == false {
+	if !character.IsAlive() {
 		return nil
 	}
 
@@ -56,7 +56,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		activated := character.UseAttackSkill(req.Skill, func() bool {
 			return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
 		})
-		if activated == false {
+		if !activated {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}

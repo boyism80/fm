@@ -27,7 +27,7 @@ func (gs *GameServer) WriteOperationLogAsync(ctx actor.Context, charID uint32, k
 			Detail:      detail,
 		})
 	}, func(reply *internal.WriteOperationLogReply) error {
-		if reply.GetOk() == false {
+		if !reply.GetOk() {
 			log.Printf("operation log: rejected kind=%s character=%d", kind, charID)
 		}
 		return nil

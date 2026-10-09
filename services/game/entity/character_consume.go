@@ -92,7 +92,7 @@ func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
 		return
 	}
 	consume, ok := item.GetModel().(*wz.Consume)
-	if ok == false {
+	if !ok {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -128,7 +128,7 @@ func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint3
 		return nil
 	}
 	consume, ok := item.GetModel().(*wz.Consume)
-	if ok == false || consume.MoveTo <= 0 {
+	if !ok || consume.MoveTo <= 0 {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
@@ -184,7 +184,7 @@ func (ch *Character) addItemBuff(consumeItem *wz.Consume) bool {
 	if len(buffValues) == 0 {
 		return false
 	}
-	if m := ch.GetMap(); m != nil && consumeItem.IsAvailableAt(m.TemplateID()) == false {
+	if m := ch.GetMap(); m != nil && !consumeItem.IsAvailableAt(m.TemplateID()) {
 		return false
 	}
 	ch.Buffs.AddItemBuff(consumeItem, consumeItem.BuffDuration, buffValues, true, true)

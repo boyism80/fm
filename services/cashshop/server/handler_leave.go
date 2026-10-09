@@ -50,7 +50,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 			ChannelId: character.ReturnChannel,
 		})
 	}, func(reply *internal.GetGameChannelStatusReply) error {
-		if reply.GetFound() == false || reply.GetAlive() == false || reply.GetChannelFull() {
+		if !reply.GetFound() || !reply.GetAlive() || reply.GetChannelFull() {
 			blocked()
 			return fmt.Errorf("return channel %d unavailable", character.ReturnChannel)
 		}
@@ -67,7 +67,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 			SourceCashShopId: &cashShopID,
 		})
 	}, func(reply *internal.BeginGameTransitionReply) error {
-		if reply.GetOk() == false {
+		if !reply.GetOk() {
 			blocked()
 			return fmt.Errorf("begin transition failed: %s", reply.GetErrorCode())
 		}

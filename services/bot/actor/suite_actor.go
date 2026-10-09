@@ -95,7 +95,7 @@ func (a *SuiteActor) Receive(ctx actor.Context) {
 	case *WaitTimeout:
 		a.waitTimeout(msg)
 	case *SleepDone:
-		if a.sleeping[msg.Thread] == false {
+		if !a.sleeping[msg.Thread] {
 			return
 		}
 		delete(a.sleeping, msg.Thread)
@@ -194,7 +194,7 @@ func (a *SuiteActor) botEntered(msg *BotEntered) {
 	}
 
 	fn, ok := a.def.RawGetString("on_initialize").(*lua.LFunction)
-	if ok == false {
+	if !ok {
 		a.runScenarios(1)
 		return
 	}
@@ -246,7 +246,7 @@ func (a *SuiteActor) runScenarios(i int) {
 	failures := len(a.failures)
 	done := func(passed bool) {
 		a.callHook("on_scenario_finished", a.ctxUD, lua.LNumber(i), lua.LBool(passed))
-		if passed == false {
+		if !passed {
 			if len(a.failures) == failures {
 				a.Fail(fmt.Sprintf("시나리오 %d 실패", i))
 			}
@@ -280,7 +280,7 @@ func (a *SuiteActor) runScenario(fn *lua.LFunction, done func(bool)) {
 
 func (a *SuiteActor) runParallel(tbl *lua.LTable, done func(bool)) {
 	queues, ok := tbl.RawGetString("parallel").(*lua.LTable)
-	if ok == false || queues.Len() == 0 {
+	if !ok || queues.Len() == 0 {
 		a.Fail("parallel block needs a non-empty parallel list")
 		done(false)
 		return
@@ -317,7 +317,7 @@ func (a *SuiteActor) runQueue(q int, fns []*lua.LFunction, j int, done func(bool
 	a.callHook("on_parallel_scenario_started", a.ctxUD, lua.LNumber(q), lua.LNumber(j+1))
 	a.runScenario(fns[j], func(passed bool) {
 		a.callHook("on_parallel_scenario_finished", a.ctxUD, lua.LNumber(q), lua.LNumber(j+1), lua.LBool(passed))
-		if passed == false {
+		if !passed {
 			done(false)
 			return
 		}
@@ -331,7 +331,7 @@ func (a *SuiteActor) end() {
 	}
 	a.ended = true
 	fn, ok := a.def.RawGetString("on_finished").(*lua.LFunction)
-	if ok == false {
+	if !ok {
 		a.cleanup()
 		return
 	}
@@ -345,7 +345,7 @@ func (a *SuiteActor) end() {
 
 func (a *SuiteActor) callHook(name string, args ...lua.LValue) {
 	fn, ok := a.def.RawGetString(name).(*lua.LFunction)
-	if ok == false {
+	if !ok {
 		return
 	}
 	values := make([]interface{}, len(args))

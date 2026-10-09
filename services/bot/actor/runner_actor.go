@@ -64,7 +64,7 @@ func (r *RunnerActor) Receive(ctx actor.Context) {
 		r.schedule(ctx)
 	case *SuiteFinished:
 		r.results = append(r.results, msg)
-		if msg.Serial == false {
+		if !msg.Serial {
 			r.seats = append(r.seats, msg.Seat)
 		}
 		r.running--
@@ -84,7 +84,7 @@ func (r *RunnerActor) loadRegistry() error {
 				s.TimeoutMs = int(n)
 			}
 		}
-		if strings.Contains(s.Name, r.filter) == false {
+		if !strings.Contains(s.Name, r.filter) {
 			return 0
 		}
 		if s.Explicit && r.filter == "" {
@@ -132,7 +132,7 @@ func (r *RunnerActor) exitCode() int {
 		if res.Infra {
 			return 2
 		}
-		if res.Passed == false {
+		if !res.Passed {
 			code = 1
 		}
 	}

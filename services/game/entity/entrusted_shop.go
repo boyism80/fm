@@ -82,7 +82,7 @@ func (es *EntrustedShop) balloon() response.EntrustedShopBalloon {
 }
 
 func (es *EntrustedShop) SendSpawnSyncToViewer(viewer *Character) {
-	if es.published == false {
+	if !es.published {
 		return
 	}
 	footholdID := uint16(0)
@@ -100,14 +100,14 @@ func (es *EntrustedShop) SendSpawnSyncToViewer(viewer *Character) {
 }
 
 func (es *EntrustedShop) SendDestroySyncToViewer(viewer *Character) {
-	if es.published == false {
+	if !es.published {
 		return
 	}
 	viewer.Send(&response.DestroyEntrustedShop{EmployerID: es.OwnerID}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (es *EntrustedShop) updateBalloon() {
-	if es.published == false || es.Map == nil {
+	if !es.published || es.Map == nil {
 		return
 	}
 	es.Broadcast(&response.UpdateEntrustedShop{
@@ -117,7 +117,7 @@ func (es *EntrustedShop) updateBalloon() {
 }
 
 func (es *EntrustedShop) accepting() bool {
-	return es.published && es.managing == false && es.Map != nil
+	return es.published && !es.managing && es.Map != nil
 }
 
 func (es *EntrustedShop) release(member *Character, slot uint8, reason pconst.MiniRoomLeaveReason) {
@@ -174,14 +174,14 @@ func (es *EntrustedShop) Visit(ch *Character) error {
 	if ch.MiniRoom != nil {
 		return ErrMiniRoomInvalid
 	}
-	if es.published == false || es.Map == nil {
+	if !es.published || es.Map == nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}
 	if es.managing {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterOrganizing}
 	}
 	index, ok := es.freeSlot()
-	if ok == false {
+	if !ok {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterFull}
 	}
 
@@ -197,7 +197,7 @@ func (es *EntrustedShop) Visit(ch *Character) error {
 }
 
 func (es *EntrustedShop) Manage(ownerID uint32) {
-	if es.accepting() == false || es.OwnerID != ownerID {
+	if !es.accepting() || es.OwnerID != ownerID {
 		es.GameWorld.GetDispatchSystem().CallCharacter(ownerID, func(ctx actor.Context, c *Character) {
 			if c == nil {
 				return
@@ -229,7 +229,7 @@ func (es *EntrustedShop) Manage(ownerID uint32) {
 }
 
 func (es *EntrustedShop) stopManaging(ctx actor.Context) {
-	if es.managing == false {
+	if !es.managing {
 		return
 	}
 
@@ -249,7 +249,7 @@ func (es *EntrustedShop) Leave(ch *Character) {
 	}
 
 	slot, ok := es.SlotOf(ch)
-	if ok == false {
+	if !ok {
 		return
 	}
 	ch.MiniRoom = nil
@@ -279,7 +279,7 @@ func (es *EntrustedShop) AddItem(actx actor.Context, ch *Character, invType cons
 
 	entry := ch.ToProto(es.GameWorld.GetWorldID())
 	es.GameWorld.GetMapSystem().Call(es.home, func(ctx actor.Context) {
-		if es.managing == false || len(es.Items) >= EntrustedShopMaxItems || es.holds(listed.Item.GetModel().GetID()) {
+		if !es.managing || len(es.Items) >= EntrustedShopMaxItems || es.holds(listed.Item.GetModel().GetID()) {
 			es.payOwner(0, []*ShopItem{listed}, false, func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
 			})
@@ -303,7 +303,7 @@ func (es *EntrustedShop) RemoveItem(actx actor.Context, ch *Character, index uin
 	}
 
 	es.GameWorld.GetMapSystem().Call(es.home, func(ctx actor.Context) {
-		if es.managing == false || int(index) >= len(es.Items) {
+		if !es.managing || int(index) >= len(es.Items) {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
 			})
@@ -330,7 +330,7 @@ func (es *EntrustedShop) Open(actx actor.Context, ch *Character) error {
 	}
 
 	es.GameWorld.GetMapSystem().Call(es.home, func(ctx actor.Context) {
-		if es.managing == false || es.published || len(es.Items) == 0 || es.Map == nil {
+		if !es.managing || es.published || len(es.Items) == 0 || es.Map == nil {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
 			})
@@ -341,7 +341,7 @@ func (es *EntrustedShop) Open(actx actor.Context, ch *Character) error {
 		es.published = true
 		es.BroadcastCall(func(obj Object) {
 			viewer, ok := obj.(*Character)
-			if ok == false {
+			if !ok {
 				return
 			}
 			es.SendSpawnSyncToViewer(viewer)
@@ -391,7 +391,7 @@ func (es *EntrustedShop) EndMaintenance(ch *Character) error {
 }
 
 func (es *EntrustedShop) Buy(actx actor.Context, ch *Character, index uint16, bundles uint16) error {
-	if _, ok := es.SlotOf(ch); ok == false || es.accepting() == false {
+	if _, ok := es.SlotOf(ch); !ok || !es.accepting() {
 		return ErrMiniRoomInvalid
 	}
 
@@ -416,7 +416,7 @@ func (es *EntrustedShop) Buy(actx actor.Context, ch *Character, index uint16, bu
 	}
 	es.save(actx, false, ch)
 
-	if es.soldInform == false {
+	if !es.soldInform {
 		return nil
 	}
 	message := fmt.Sprintf("고용상점에서 %s %d개가 판매되었습니다.", es.GameWorld.GetResources().GetItemName(model.GetID()), bundles*listed.PerBundle)
@@ -435,7 +435,7 @@ func (es *EntrustedShop) Arrange(actx actor.Context, ch *Character) error {
 	}
 
 	es.GameWorld.GetMapSystem().Call(es.home, func(ctx actor.Context) {
-		if es.managing == false {
+		if !es.managing {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
 			})
@@ -465,7 +465,7 @@ func (es *EntrustedShop) WithdrawMeso(actx actor.Context, ch *Character) error {
 	}
 
 	es.GameWorld.GetMapSystem().Call(es.home, func(ctx actor.Context) {
-		if es.managing == false || es.Meso <= 0 {
+		if !es.managing || es.Meso <= 0 {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
 			})
@@ -487,7 +487,7 @@ func (es *EntrustedShop) Close(actx actor.Context, ch *Character) error {
 	}
 
 	es.GameWorld.GetMapSystem().Call(es.home, func(ctx actor.Context) {
-		if es.managing == false || es.Map == nil {
+		if !es.managing || es.Map == nil {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
 			})
@@ -524,7 +524,7 @@ func (es *EntrustedShop) close(actx actor.Context) {
 
 func (ch *Character) UseEntrustedShop(actx actor.Context) {
 	m := ch.GetMap()
-	if m == nil || m.Wz.EntrustedShop == false || ch.MiniRoom != nil || ch.miniRoomPending {
+	if m == nil || !m.Wz.EntrustedShop || ch.MiniRoom != nil || ch.miniRoomPending {
 		ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
 		return
 	}
@@ -553,7 +553,7 @@ func (ch *Character) UseEntrustedShop(actx actor.Context) {
 
 func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot int16, itemID uint32) error {
 	m := ch.GetMap()
-	if m == nil || m.Wz.EntrustedShop == false || ch.MiniRoom != nil {
+	if m == nil || !m.Wz.EntrustedShop || ch.MiniRoom != nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
 	if ch.miniRoomPending {
@@ -563,7 +563,7 @@ func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot 
 	if permit == nil || permit.GetModel().GetID() != itemID || itemID/10000 != 503 {
 		return ErrMiniRoomInvalid
 	}
-	if expiration := permit.GetExpiration(); expiration.IsZero() == false && clock.Now().After(expiration) {
+	if expiration := permit.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {
 		return ErrMiniRoomInvalid
 	}
 	if title == "" {
@@ -628,7 +628,7 @@ func (ch *Character) UseRemoteEntrustedShop(actx actor.Context, slot int16) erro
 	if item == nil || item.GetModel().GetID() != RemoteEntrustedShopItemID {
 		return ErrMiniRoomInvalid
 	}
-	if expiration := item.GetExpiration(); expiration.IsZero() == false && clock.Now().After(expiration) {
+	if expiration := item.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {
 		return ErrMiniRoomInvalid
 	}
 	if ch.MiniRoom != nil || ch.miniRoomPending {
@@ -654,7 +654,7 @@ func (ch *Character) UseRemoteEntrustedShop(actx actor.Context, slot int16) erro
 					if c == nil {
 						return
 					}
-					if ok == false {
+					if !ok {
 						c.Listener.OnEntrustedShopCheck(c, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
 						return
 					}
@@ -709,7 +709,7 @@ func (ch *Character) VisitMiniRoom(sn uint32) error {
 	ownerID := ch.GetID()
 	ch.GameWorld.GetMapSystem().Call(target, func(actor.Context) {
 		es, ok := target.GetObject(constant.ObjectTypeEntrustedShop, sn).(*EntrustedShop)
-		if ok == false {
+		if !ok {
 			ch.GameWorld.GetDispatchSystem().CallCharacter(ownerID, func(ctx actor.Context, c *Character) {
 				if c == nil {
 					return

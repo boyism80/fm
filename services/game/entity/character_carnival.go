@@ -25,7 +25,7 @@ func (ch *Character) CarnivalMatch() *CarnivalMatch {
 
 // The team outlives the match slot so reward NPCs can read the result after Conclude.
 func (ch *Character) CarnivalTeam() *CarnivalTeam {
-	if ch.carnivalTeam == nil || ch.carnivalTeam.HasMember(ch.GetID()) == false {
+	if ch.carnivalTeam == nil || !ch.carnivalTeam.HasMember(ch.GetID()) {
 		return nil
 	}
 	return ch.carnivalTeam

@@ -24,7 +24,7 @@ func (ch *Character) RunQuestHook(questID uint32, hook string, args ...interface
 	if err != nil {
 		return false
 	}
-	if luax.HasFunc(thread, hook) == false {
+	if !luax.HasFunc(thread, hook) {
 		luax.Close(thread)
 		return false
 	}

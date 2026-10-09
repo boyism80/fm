@@ -110,7 +110,7 @@ func (t *Trade) Invite(ch *Character, targetID uint32) error {
 
 func (ch *Character) DeclineTrade(sn uint32, reason uint8) error {
 	t, ok := ch.GetMap().GetObject(constant.ObjectTypeTrade, sn).(*Trade)
-	if ok == false || t.invited != ch.GetID() || t.sides[1] != nil {
+	if !ok || t.invited != ch.GetID() || t.sides[1] != nil {
 		return ErrMiniRoomInvalid
 	}
 
@@ -142,7 +142,7 @@ func (t *Trade) Visit(ch *Character) error {
 
 func (t *Trade) Chat(ch *Character, message string) error {
 	slot, ok := t.SlotOf(ch)
-	if ok == false {
+	if !ok {
 		return ErrMiniRoomInvalid
 	}
 
@@ -155,7 +155,7 @@ func (t *Trade) Chat(ch *Character, message string) error {
 
 func (t *Trade) unlockedSide(ch *Character) (*tradeSide, error) {
 	slot, ok := t.SlotOf(ch)
-	if ok == false || t.sides[1] == nil || t.sides[0].confirmed || t.sides[1].confirmed {
+	if !ok || t.sides[1] == nil || t.sides[0].confirmed || t.sides[1].confirmed {
 		return nil, ErrMiniRoomInvalid
 	}
 	return t.sides[slot], nil
@@ -216,13 +216,13 @@ func (t *Trade) PutMeso(ch *Character, meso int32) error {
 
 func (t *Trade) Confirm(ch *Character) error {
 	slot, ok := t.SlotOf(ch)
-	if ok == false || t.sides[1] == nil || t.sides[slot].confirmed {
+	if !ok || t.sides[1] == nil || t.sides[slot].confirmed {
 		return ErrMiniRoomInvalid
 	}
 
 	t.sides[slot].confirmed = true
 	other := t.sides[1-slot]
-	if other.confirmed == false {
+	if !other.confirmed {
 		other.ch.Listener.OnTradeConfirmed(other.ch)
 		return nil
 	}
@@ -232,7 +232,7 @@ func (t *Trade) Confirm(ch *Character) error {
 
 func (t *Trade) Leave(ch *Character) {
 	slot, ok := t.SlotOf(ch)
-	if ok == false {
+	if !ok {
 		return
 	}
 

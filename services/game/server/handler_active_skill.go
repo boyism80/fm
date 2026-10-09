@@ -98,7 +98,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 
 	params := h.skillParams(root, mapInstance, req)
 
-	if ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activating", params) == false {
+	if !ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activating", params) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
@@ -110,7 +110,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	if ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activated", params) == false {
+	if !ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activated", params) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}

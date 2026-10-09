@@ -42,7 +42,7 @@ func (h *EnterCashShop) Handle(ctx *core.ClientContext, req *request.EnterCashSh
 		if err != nil {
 			return nil, err
 		}
-		if reply.GetFound() == false {
+		if !reply.GetFound() {
 			return nil, nil
 		}
 		return &response.SwitchChannel{IP: reply.GetHost(), Port: uint16(reply.GetPort())}, nil

@@ -23,7 +23,7 @@ func (h *HandlePacketHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 
 	// The character may have changed maps after the packet was queued here; only its current actor may touch its map.
 	pid := a.GameWorld.PacketActorPID(msg.Client)
-	if pid != nil && pid.Equal(ctx.Self()) == false {
+	if pid != nil && !pid.Equal(ctx.Self()) {
 		msg.LogicActorPID = pid
 		ctx.Send(pid, msg)
 		return

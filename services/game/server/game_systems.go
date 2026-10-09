@@ -237,7 +237,7 @@ func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 // CloseInstance refuses new arrivals, takes down its doors and sends everyone on the map to its return map;
 // the map is removed when the last ref goes.
 func (s mapSystem) CloseInstance(m *entity.Map) {
-	if m.IsInstance() == false {
+	if !m.IsInstance() {
 		return
 	}
 	m.Close()
@@ -256,7 +256,7 @@ func (s mapSystem) CloseInstance(m *entity.Map) {
 		}
 		for _, obj := range m.GetAllPlayers() {
 			ch, ok := obj.(*entity.Character)
-			if ok == false || ch.GetMap() != m {
+			if !ok || ch.GetMap() != m {
 				continue
 			}
 			if err := s.Warp(ctx, ch, exitMap, 0, nil); err != nil {
@@ -309,7 +309,7 @@ func (s mapSystem) SlotInstance(templateID uint32, slot uint32) (*entity.Map, er
 
 	s.gs.slotMutex.Lock()
 	defer s.gs.slotMutex.Unlock()
-	if found := s.gs.slotInstances[key]; found != nil && found.Closing() == false {
+	if found := s.gs.slotInstances[key]; found != nil && !found.Closing() {
 		return found, nil
 	}
 	created, err := s.CreateInstanceMap(templateID, entity.DefaultMapInitOpts())
@@ -416,7 +416,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 	if character == nil {
 		return fmt.Errorf("character is nil")
 	}
-	if sm := targetMap.StateMachine(); sm != nil && sm.Admits(character) == false {
+	if sm := targetMap.StateMachine(); sm != nil && !sm.Admits(character) {
 		return entity.ErrStateMachineEntryDenied
 	}
 	// The ticket is released on every failure below, or carried to the target actor and released after AddPlayer.
@@ -434,7 +434,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		return fmt.Errorf("character %d is on no map", character.GetID())
 	}
 	ownerPID := owner.LogicActorPID()
-	if currentMap == nil || actorCtx == nil || ownerPID.Equal(actorCtx.Self()) == false {
+	if currentMap == nil || actorCtx == nil || !ownerPID.Equal(actorCtx.Self()) {
 		s.gs.GetRootContext().Send(ownerPID, &g_actor.HandoffCharacter{
 			Character: character,
 			TargetMap: targetMap,
@@ -467,7 +467,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		}
 		return nil
 	}
-	if character.BeginMove(targetMap) == false {
+	if !character.BeginMove(targetMap) {
 		ticket.Release()
 		return fmt.Errorf("character %d is already moving", character.GetID())
 	}

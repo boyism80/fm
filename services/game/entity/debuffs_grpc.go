@@ -42,7 +42,7 @@ func (d *Debuffs) ToProto() []*internal.Debuff {
 		var endUnixMs int64
 		if holder.Duration > 0 {
 			end := holder.StartTime.Add(holder.Duration)
-			if end.After(now) == false {
+			if !end.After(now) {
 				continue
 			}
 			endUnixMs = end.UnixMilli()

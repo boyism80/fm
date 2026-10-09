@@ -17,11 +17,11 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	}
 	useInventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
 	scrollItem, ok := useInventory.Get(uint8(scrollSlot)).(*Consume)
-	if ok == false {
+	if !ok {
 		return ErrCannotScroll
 	}
 	scroll, ok := scrollItem.GetModel().(*wz.Consume)
-	if ok == false {
+	if !ok {
 		return ErrCannotScroll
 	}
 
@@ -36,7 +36,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 		return ErrCannotScroll
 	}
 	model, ok := target.GetModel().(wz.Equipment)
-	if ok == false {
+	if !ok {
 		return ErrCannotScroll
 	}
 	core := target.GetEquipmentCore()
@@ -44,7 +44,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	recovery := scroll.ScrollRecover > 0
 	chaos := scroll.ScrollRandStat > 0
 	special := scroll.ScrollFlag != 0
-	if recovery == false && special == false && core.EnhanceChance < 1 {
+	if !recovery && !special && core.EnhanceChance < 1 {
 		return ErrCannotScroll
 	}
 	if (recovery || chaos || special) && model.IsCash() {
@@ -54,10 +54,10 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	case constant.EquipmentTypeTaming, constant.EquipmentTypeDragon, constant.EquipmentTypeMechanic, constant.EquipmentTypeAndroid:
 		return ErrCannotScroll
 	}
-	if len(scroll.ScrollReqs) > 0 && slices.Contains(scroll.ScrollReqs, model.GetID()) == false {
+	if len(scroll.ScrollReqs) > 0 && !slices.Contains(scroll.ScrollReqs, model.GetID()) {
 		return ErrCannotScroll
 	}
-	if recovery == false && chaos == false && special == false && scroll.GetID()/100%100 != model.GetID()/10000%100 {
+	if !recovery && !chaos && !special && scroll.GetID()/100%100 != model.GetID()/10000%100 {
 		return ErrCannotScroll
 	}
 	if scroll.ScrollReqRUC > 0 && int32(model.GetEnhanceChance())-int32(core.EnhanceCount) < scroll.ScrollReqRUC {
@@ -87,7 +87,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 		core.EnhanceChance--
 		core.EnhanceCount++
 	default:
-		if recovery == false {
+		if !recovery {
 			core.EnhanceChance--
 		}
 		destroyed = rand.Intn(100) < int(scroll.ScrollCursed)

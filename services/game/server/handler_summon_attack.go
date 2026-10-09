@@ -29,7 +29,7 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 	if character.Spectating() {
 		return nil
 	}
-	if character.IsAlive() == false {
+	if !character.IsAlive() {
 		return nil
 	}
 	mapInstance := character.GetMap()

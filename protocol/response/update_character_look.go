@@ -48,7 +48,7 @@ func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
 }
 
 func readLookRing(reader *stream.StreamReader) *dto.Ring {
-	if reader.ReadBool() == false {
+	if !reader.ReadBool() {
 		return nil
 	}
 	return &dto.Ring{

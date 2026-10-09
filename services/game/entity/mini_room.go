@@ -165,7 +165,7 @@ func (r *shopRoom) tax(meso int32) int32 {
 
 func (r *shopRoom) Chat(ch *Character, message string) error {
 	slot, ok := r.SlotOf(ch)
-	if ok == false {
+	if !ok {
 		return ErrMiniRoomInvalid
 	}
 
@@ -379,7 +379,7 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 		log.Printf("shopRoom.save shop=%d: %v", r.ID, err)
 		for _, entry := range entries {
 			id := entry.GetCharacter().GetCharacterId()
-			if _, ok := r.entries[id]; ok == false {
+			if _, ok := r.entries[id]; !ok {
 				r.entries[id] = entry
 			}
 		}

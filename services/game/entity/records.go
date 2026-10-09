@@ -42,14 +42,14 @@ func (reset RecordReset) expiresAt(now time.Time) time.Time {
 	switch reset.Kind {
 	case RecordResetDaily:
 		boundary := midnight.Add(reset.At)
-		if boundary.After(now) == false {
+		if !boundary.After(now) {
 			boundary = boundary.AddDate(0, 0, 1)
 		}
 		return boundary
 	case RecordResetWeekly:
 		monday := midnight.AddDate(0, 0, -((int(now.Weekday()) + 6) % 7))
 		boundary := monday.Add(reset.At)
-		if boundary.After(now) == false {
+		if !boundary.After(now) {
 			boundary = boundary.AddDate(0, 0, 7)
 		}
 		return boundary
@@ -63,7 +63,7 @@ func (r *Record) expired(now time.Time) bool {
 	if r.ExpiresAt.IsZero() {
 		return false
 	}
-	return now.Before(r.ExpiresAt) == false
+	return !now.Before(r.ExpiresAt)
 }
 
 func (r *Records) find(key string) *Record {

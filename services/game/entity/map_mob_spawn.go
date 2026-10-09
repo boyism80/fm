@@ -58,7 +58,7 @@ func (m *Map) SummonMob(mobID uint32, position types.Point[int16], team constant
 			},
 		},
 	}
-	if m.trySpawnMobRezen(mobSpawn, clock.Now(), false, true) == false {
+	if !m.trySpawnMobRezen(mobSpawn, clock.Now(), false, true) {
 		return fmt.Errorf("failed to summon mob %d", mobID)
 	}
 	m.SummonedMobSpawns = append(m.SummonedMobSpawns, mobSpawn)

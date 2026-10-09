@@ -38,7 +38,7 @@ func (r *Records) ToProto() []*internal.Record {
 			Text:             record.Text,
 			RecordedAtUnixMs: record.RecordedAt.UnixMilli(),
 		}
-		if record.ExpiresAt.IsZero() == false {
+		if !record.ExpiresAt.IsZero() {
 			pb.ExpiresAtUnixMs = record.ExpiresAt.UnixMilli()
 		}
 		out = append(out, pb)

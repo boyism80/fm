@@ -144,7 +144,7 @@ func (d *Duey) Fee(meso int32, quick bool) int32 {
 		permille = 5
 	}
 	fee := int64(meso) * permille / 1000
-	if quick == false {
+	if !quick {
 		fee += 5000
 	}
 	return int32(fee)
@@ -160,7 +160,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	if meso < 0 || count < 0 || recipient == "" || d.owner.PersistMapID() == 0 {
 		return ErrDueyInvalid
 	}
-	if quick == false && message != "" {
+	if !quick && message != "" {
 		return ErrDueyInvalid
 	}
 	messageBytes := 0
@@ -196,7 +196,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		return ErrDueyInvalid
 	}
 
-	if quick && d.owner.Inventory.HasItem(QuickDeliveryCoupon) == false {
+	if quick && !d.owner.Inventory.HasItem(QuickDeliveryCoupon) {
 		return ErrDueyInvalid
 	}
 
@@ -230,7 +230,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		if sent != nil {
 			d.owner.Inventory.addItemUnchecked(sent, true)
 		}
-		if quick == false {
+		if !quick {
 			return
 		}
 		if restored, err := NewItem(QuickDeliveryCoupon, 1, d.owner.GameWorld); err == nil {

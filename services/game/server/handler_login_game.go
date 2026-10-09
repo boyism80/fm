@@ -179,7 +179,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		return fmt.Errorf("runtime register: %w", err)
 	}
 	character.BeginMove(mapInstance)
-	if gameClient.SetCharacter(character) == false {
+	if !gameClient.SetCharacter(character) {
 		h.gs.characterRuntime.UnregisterCharacter(character.GetID())
 		return fmt.Errorf("character %d: client disconnected during login", character.GetID())
 	}

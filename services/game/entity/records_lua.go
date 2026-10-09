@@ -115,7 +115,7 @@ func (reset *RecordReset) ParseLua(L *lua.LState, idx int) {
 	if weekly := opts.RawGetString("weekly"); weekly != lua.LNil {
 		reset.Kind = RecordResetWeekly
 		text, ok := weekly.(lua.LString)
-		if ok == false {
+		if !ok {
 			return
 		}
 		fields := strings.Fields(string(text))
@@ -140,7 +140,7 @@ func (reset *RecordReset) ParseLua(L *lua.LState, idx int) {
 
 	if every := opts.RawGetString("every"); every != lua.LNil {
 		seconds, ok := every.(lua.LNumber)
-		if ok == false || seconds <= 0 {
+		if !ok || seconds <= 0 {
 			L.ArgError(idx, "every must be a positive number of seconds")
 			return
 		}

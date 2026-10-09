@@ -21,7 +21,7 @@ func (UseShopScanner) New(gs *GameServer) *UseShopScanner {
 
 func (h *UseShopScanner) Handle(ctx *core.ClientContext, req *request.UseShopScanner) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

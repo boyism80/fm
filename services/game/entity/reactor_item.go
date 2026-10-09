@@ -76,13 +76,13 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	if fp == nil {
 		return false
 	}
-	if r.ContainsPoint(fp.Position) == false {
+	if !r.ContainsPoint(fp.Position) {
 		return false
 	}
 	if r.itemActivationPending() {
 		return false
 	}
-	if r.matchesItemDrop(item) == false {
+	if !r.matchesItemDrop(item) {
 		return false
 	}
 

@@ -91,7 +91,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			amount := L.CheckInt(2)
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				return 0
 			}
 			guild.GameWorld.GetGuildSystem().GainGPAsync(cfg.ActorContext, guild.GuildID, int32(amount))
@@ -108,7 +108,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				msgType = constant.ServerMessageType(L.CheckInt(3))
 			}
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				return 0
 			}
 			guild.GameWorld.GetGuildSystem().SendMessageAsync(cfg.ActorContext, guild.GuildID, msgType, message)

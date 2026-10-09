@@ -28,7 +28,7 @@ func (a *SuiteActor) cleanup() {
 			continue
 		}
 		commands := []string{"/인벤토리초기화", "/메소초기화"}
-		if reset[b.Map] == false {
+		if !reset[b.Map] {
 			reset[b.Map] = true
 			commands = append(commands, "/맵리셋")
 		}
@@ -73,7 +73,7 @@ func (a *SuiteActor) close(ctx actor.Context) {
 
 func (a *SuiteActor) closeLate(b *bot.Bot) {
 	b.Close()
-	if a.closed == false || len(a.entering) > 0 || len(a.moving) > 0 {
+	if !a.closed || len(a.entering) > 0 || len(a.moving) > 0 {
 		return
 	}
 	a.actors.Stop(a.self)

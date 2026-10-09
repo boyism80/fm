@@ -17,7 +17,7 @@ func (tabs WeddingGiftTabs) serialize(writer *stream.StreamWriter) {
 	writer.WriteU64(mask)
 	for typ := constant.InventoryTypeEquipment; typ <= constant.InventoryTypeCash; typ++ {
 		items, ok := tabs[typ]
-		if ok == false {
+		if !ok {
 			continue
 		}
 		writer.WriteU8(uint8(len(items)))

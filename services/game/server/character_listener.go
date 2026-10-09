@@ -169,7 +169,7 @@ func (l *CharacterListenerImpl) SetAccountRoleAsync(ctx actor.Context, ch *entit
 			})
 		},
 		func(reply *internal.SetAccountRoleReply) error {
-			if reply.GetOk() == false {
+			if !reply.GetOk() {
 				return fmt.Errorf("set account role failed")
 			}
 			return nil
@@ -179,7 +179,7 @@ func (l *CharacterListenerImpl) SetAccountRoleAsync(ctx actor.Context, ch *entit
 
 func (l *CharacterListenerImpl) Disconnect(ch *entity.Character) {
 	c, ok := ch.Sendable.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return
 	}
 	_ = c.GetConnection().Close()
@@ -1908,7 +1908,7 @@ func (l *CharacterListenerImpl) OnPetFood(ch *entity.Character, success bool) {
 
 func (l *CharacterListenerImpl) OnPetUpdated(ch *entity.Character, pet *entity.Pet) {
 	slot, ok := ch.Inventory.FindSlot(constant.InventoryTypeCash, pet)
-	if ok == false {
+	if !ok {
 		return
 	}
 	l.OnInventorySlotUpdated(ch, constant.InventoryTypeCash, slot, pet)

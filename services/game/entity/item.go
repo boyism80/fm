@@ -138,7 +138,7 @@ func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
 	if fp == nil {
 		return
 	}
-	if fp.Quest > 0 && viewer.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) == false {
+	if fp.Quest > 0 && !viewer.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) {
 		return
 	}
 	viewer.Send(&response.SpawnItem{

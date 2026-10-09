@@ -118,7 +118,7 @@ func LoadModule(root *lua.LState, path string) (*lua.LTable, error) {
 		return nil, err
 	}
 	tbl, ok := mod.(*lua.LTable)
-	if ok == false {
+	if !ok {
 		return nil, fmt.Errorf("%s: script must return a module table", path)
 	}
 	return tbl, nil
@@ -130,7 +130,7 @@ func loadModule(root *lua.LState, path string) (lua.LValue, error) {
 	compileMu.Unlock()
 
 	mods := modulesTable(root)
-	if reload == false && mods != nil {
+	if !reload && mods != nil {
 		if cached := mods.RawGetString(path); cached != lua.LNil {
 			return cached, nil
 		}

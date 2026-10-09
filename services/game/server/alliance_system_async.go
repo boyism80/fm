@@ -51,7 +51,7 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		*result = int(constant.AllianceIncreaseCapacityResultNotLeader)
 		return nil
 	}
-	if ch.Inventory.RemoveMeso(constant.AllianceIncreaseCapacityMesoCost) == false {
+	if !ch.Inventory.RemoveMeso(constant.AllianceIncreaseCapacityMesoCost) {
 		*result = int(constant.AllianceIncreaseCapacityResultInsufficientMeso)
 		return nil
 	}

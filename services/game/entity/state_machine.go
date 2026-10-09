@@ -102,7 +102,7 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 		return false
 	}
 	sm.mu.Lock()
-	if sm.disposed || sm.unregisterLocked(ch) == false {
+	if sm.disposed || !sm.unregisterLocked(ch) {
 		sm.mu.Unlock()
 		return false
 	}
@@ -443,7 +443,7 @@ func ParseCreateMaps(tbl *lua.LTable) ([]StateMachineMapSpec, error) {
 			out = append(out, StateMachineMapSpec{TemplateID: uint32(v), Opts: DefaultMapInitOpts()})
 		case *lua.LTable:
 			id, ok := v.RawGetString("id").(lua.LNumber)
-			if ok == false {
+			if !ok {
 				parseErr = fmt.Errorf("on_create map entry table needs a numeric id")
 				return
 			}
@@ -635,7 +635,7 @@ func (ch *Character) StateMachine() *StateMachine {
 
 func (ch *Character) Spectating() bool {
 	sm := ch.GetMap().StateMachine()
-	return sm != nil && sm.HasPlayer(ch) == false
+	return sm != nil && !sm.HasPlayer(ch)
 }
 
 func (ch *Character) bindStateMachine(sm *StateMachine) {

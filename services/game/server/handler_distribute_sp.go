@@ -32,7 +32,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		return nil
 	}
 
-	if character.Points.DistributeSkill(req.SkillID) == false {
+	if !character.Points.DistributeSkill(req.SkillID) {
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)
 	}
 	return nil

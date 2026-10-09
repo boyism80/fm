@@ -85,7 +85,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 			controllerID := ch.GetID()
 			mob.RemoveTimer(mobSkillScriptTimerKey)
 			mob.AddTimer(mobSkillScriptTimerKey, delay, false, func() {
-				if mob.IsAlive() == false {
+				if !mob.IsAlive() {
 					return
 				}
 				h.runScript(ctx, mapInstance, mob, mapInstance.GetPlayer(controllerID), req)

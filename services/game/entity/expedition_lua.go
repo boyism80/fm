@@ -15,7 +15,7 @@ func (e *Expedition) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	check := func(L *lua.LState) *Expedition {
 		ud := L.CheckUserData(1)
 		e, ok := ud.Value.(*Expedition)
-		if ok == false || e == nil {
+		if !ok || e == nil {
 			L.ArgError(1, "Expedition expected")
 			return nil
 		}
@@ -24,7 +24,7 @@ func (e *Expedition) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	character := func(L *lua.LState, n int) *Character {
 		ud := L.CheckUserData(n)
 		ch, ok := ud.Value.(*Character)
-		if ok == false || ch == nil {
+		if !ok || ch == nil {
 			L.ArgError(n, "Character expected")
 			return nil
 		}
@@ -120,7 +120,7 @@ func (member *ExpeditionMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	check := func(L *lua.LState) *ExpeditionMember {
 		ud := L.CheckUserData(1)
 		member, ok := ud.Value.(*ExpeditionMember)
-		if ok == false || member == nil {
+		if !ok || member == nil {
 			L.ArgError(1, "ExpeditionMember expected")
 			return nil
 		}
@@ -173,7 +173,7 @@ func RegisterExpeditionLua(L *lua.LState, gw GameWorld) {
 		name := L.CheckString(1)
 		ud := L.CheckUserData(2)
 		leader, ok := ud.Value.(*Character)
-		if ok == false || leader == nil {
+		if !ok || leader == nil {
 			L.ArgError(2, "Character expected")
 			return 0
 		}
@@ -217,7 +217,7 @@ func RegisterExpeditionLua(L *lua.LState, gw GameWorld) {
 		name := L.CheckString(1)
 		ud := L.CheckUserData(2)
 		ch, ok := ud.Value.(*Character)
-		if ok == false || ch == nil {
+		if !ok || ch == nil {
 			L.ArgError(2, "Character expected")
 			return 0
 		}

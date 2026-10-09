@@ -8,7 +8,7 @@ import (
 func (gs *GameServer) BroadcastNotice(messageType constant.ServerMessageType, message string, channel int, ear bool) {
 	for _, c := range gs.Clients() {
 		gameClient, ok := c.(*client.GameClient)
-		if ok == false {
+		if !ok {
 			continue
 		}
 		ch := gameClient.GetCharacter()

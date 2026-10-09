@@ -40,11 +40,11 @@ func (ch *Character) UseShopScanner(actx actor.Context, invType constant.Invento
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
-	if item == nil || item.GetModel().GetID() != itemID || constant.IsShopScanner(itemID) == false {
+	if item == nil || item.GetModel().GetID() != itemID || !constant.IsShopScanner(itemID) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
-	if expiration := item.GetExpiration(); expiration.IsZero() == false && clock.Now().After(expiration) {
+	if expiration := item.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
@@ -52,7 +52,7 @@ func (ch *Character) UseShopScanner(actx actor.Context, invType constant.Invento
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
-	if _, ok := ch.GameWorld.GetResources().Items[searchID]; ok == false {
+	if _, ok := ch.GameWorld.GetResources().Items[searchID]; !ok {
 		ch.shopScan.retryAt = clock.Now().Add(shopScanRetryDelay)
 		ch.Listener.OnShopScannerResult(ch, searchID, nil)
 		ch.Listener.OnUpdateStats(ch, nil, true)
@@ -87,7 +87,7 @@ func (ch *Character) VisitShopBySearch(actx actor.Context, sn uint32, mapID uint
 	if m == nil || m.TemplateID() < FreeMarketEntranceMapID || m.TemplateID() > FreeMarketLastMapID {
 		return ErrMiniRoomInvalid
 	}
-	if ch.shopScan.found[remoteShop{sn: sn, mapID: mapID}] == false {
+	if !ch.shopScan.found[remoteShop{sn: sn, mapID: mapID}] {
 		return ErrMiniRoomInvalid
 	}
 	if m.TemplateID() == mapID {

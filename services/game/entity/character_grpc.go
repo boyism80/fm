@@ -127,7 +127,7 @@ func (ch *Character) LoadInventory(items []*internal.Inventory) {
 		slot := int16(pb.GetSlot())
 		if slot < 0 {
 			parts := constant.EquipmentPartsType(slot)
-			if constant.CanEquipAt(itemID, parts) == false {
+			if !constant.CanEquipAt(itemID, parts) {
 				if known := constant.EquipmentParts(itemID); len(known) > 0 && ch.Inventory.Equipped[known[0]] == nil {
 					parts = known[0]
 				}

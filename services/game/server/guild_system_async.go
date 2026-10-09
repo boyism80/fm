@@ -69,7 +69,7 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 	mesoCost := int32(0)
 	if !extendedCap {
 		mesoCost = constant.GuildCapacityIncreaseMesoCost
-		if ch.Inventory.RemoveMeso(mesoCost) == false {
+		if !ch.Inventory.RemoveMeso(mesoCost) {
 			*result = int(constant.GuildIncreaseCapacityResultInsufficientMeso)
 			return nil
 		}
@@ -125,7 +125,7 @@ func (s guildSystem) GainGPAsync(ctx actor.Context, guildID uint32, amount int32
 			Amount:  amount,
 		})
 	}, func(reply *internal.GainGuildGPReply) error {
-		if reply.GetOk() == false {
+		if !reply.GetOk() {
 			log.Printf("guild gain_gp: guild=%d amount=%d: %s", guildID, amount, reply.GetErrorCode())
 		}
 		return nil
@@ -148,7 +148,7 @@ func (s guildSystem) SendMessageAsync(ctx actor.Context, guildID uint32, message
 			Message:     message,
 		})
 	}, func(reply *internal.SendGuildMessageReply) error {
-		if reply.GetOk() == false {
+		if !reply.GetOk() {
 			log.Printf("guild message: guild=%d rejected", guildID)
 		}
 		return nil
@@ -212,7 +212,7 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 		*result = int(constant.AllianceCreateResultInvalidName)
 		return nil
 	}
-	if ch.Inventory.RemoveMeso(constant.AllianceCreateMesoCost) == false {
+	if !ch.Inventory.RemoveMeso(constant.AllianceCreateMesoCost) {
 		*result = int(constant.AllianceCreateResultInsufficientMeso)
 		return nil
 	}

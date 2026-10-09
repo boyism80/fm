@@ -294,7 +294,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		},
 		"position": func(L *lua.LState) int {
 			pos, ok := a.checkBot(L).Position(a.wz)
-			if ok == false {
+			if !ok {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -411,7 +411,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"command": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			text := L.CheckString(2)
-			if strings.HasPrefix(text, "/") == false {
+			if !strings.HasPrefix(text, "/") {
 				text = "/" + text
 			}
 			L.Push(lua.LBool(a.Command(b, text) == nil))
@@ -435,7 +435,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"request_on": func(L *lua.LState) int {
 			sender := a.checkBot(L)
 			listener, ok := L.CheckUserData(2).Value.(*bot.Bot)
-			if ok == false {
+			if !ok {
 				L.ArgError(2, "bot expected")
 			}
 			names := a.checkNames(L, 3)
@@ -558,7 +558,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				spawn, ok := p.(*response.SpawnNpc)
 				return ok && spawn.NPC.NpcId == templateID
 			}, func(p any, ok bool) {
-				if ok == false {
+				if !ok {
 					a.wake(L, lua.LNil)
 					return
 				}
@@ -598,7 +598,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				Selected:   uint32(L.OptInt(3, 0)),
 				Text:       L.OptString(4, ""),
 			}
-			if pkt.Next == false {
+			if !pkt.Next {
 				if err := b.Send(pkt); err != nil {
 					a.Fail(fmt.Sprintf("%s send: %v", b.Name, err))
 				}
@@ -607,7 +607,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			}
 			a.park(L)
 			a.Request(L, b, b, pkt, a.timeout(), a.dialogPacket, func(p any, ok bool) {
-				if ok == false {
+				if !ok {
 					a.wake(L, lua.LNil)
 					return
 				}
@@ -637,7 +637,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			if ok {
 				pkt.Skill = uint32(L.OptInt(5, 0))
 			}
-			if ok == false {
+			if !ok {
 				L.Push(lua.LFalse)
 				return 1
 			}
@@ -648,7 +648,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			b := a.checkBot(L)
 			oid := uint32(L.CheckInt(2))
 			pkt, ok := a.attackPacket(b, oid, math.MaxInt32, 1)
-			if ok == false {
+			if !ok {
 				L.Push(lua.LFalse)
 				return 1
 			}
@@ -735,7 +735,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				spawn, ok := p.(*response.SpawnItem)
 				return ok && spawn.OwnerID == b.CharID && spawn.ItemModel.GetID() == itemID
 			}, func(p any, ok bool) {
-				if ok == false {
+				if !ok {
 					a.wake(L, lua.LNil)
 					return
 				}
@@ -789,7 +789,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 
 func (a *SuiteActor) attackPacket(b *bot.Bot, oid uint32, damage uint32, hits uint8) (*request.Attack, bool) {
 	target, ok := b.Mobs[oid]
-	if ok == false {
+	if !ok {
 		return nil, false
 	}
 	if damage == 0 {
@@ -812,7 +812,7 @@ func (a *SuiteActor) attackPacket(b *bot.Bot, oid uint32, damage uint32, hits ui
 
 func (a *SuiteActor) checkBot(L *lua.LState) *bot.Bot {
 	b, ok := L.CheckUserData(1).Value.(*bot.Bot)
-	if ok == false {
+	if !ok {
 		L.ArgError(1, "bot expected")
 	}
 	return b
@@ -820,7 +820,7 @@ func (a *SuiteActor) checkBot(L *lua.LState) *bot.Bot {
 
 func (a *SuiteActor) checkRequest(L *lua.LState, n int) outbound {
 	pkt, ok := L.CheckUserData(n).Value.(outbound)
-	if ok == false {
+	if !ok {
 		L.ArgError(n, "req.* packet expected")
 	}
 	return pkt
@@ -864,7 +864,7 @@ func (a *SuiteActor) callPredicate(pred *lua.LFunction, pkt any) bool {
 }
 
 func (a *SuiteActor) park(L *lua.LState) {
-	if _, ok := a.threads[L]; ok == false {
+	if _, ok := a.threads[L]; !ok {
 		L.RaiseError("waiting builtins only run in a scenario coroutine, not in hooks or predicates")
 	}
 }
@@ -880,7 +880,7 @@ func (a *SuiteActor) wake(co *lua.LState, values ...lua.LValue) {
 	if a.finished {
 		return
 	}
-	if _, ok := a.threads[co]; ok == false {
+	if _, ok := a.threads[co]; !ok {
 		return
 	}
 	a.resume(co, nil, values...)
@@ -888,7 +888,7 @@ func (a *SuiteActor) wake(co *lua.LState, values ...lua.LValue) {
 
 func (a *SuiteActor) wakeWithPacket(co *lua.LState) func(pkt any, ok bool) {
 	return func(pkt any, ok bool) {
-		if ok == false {
+		if !ok {
 			a.wake(co, lua.LFalse)
 			return
 		}

@@ -12,7 +12,7 @@ import (
 )
 
 func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, text string, ear bool, petSN uint64) {
-	if ch.session.cashItemInUse.CompareAndSwap(false, true) == false {
+	if !ch.session.cashItemInUse.CompareAndSwap(false, true) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}

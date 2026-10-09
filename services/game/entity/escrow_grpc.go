@@ -37,7 +37,7 @@ func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
 			}
 
 			free, found := e.freeProtoSlot(taken, held.invType)
-			if found == false {
+			if !found {
 				log.Printf("Escrow.mergeProto character=%d: no slot for item %d x%d", ownerID, model.GetID(), count)
 				continue
 			}
@@ -54,7 +54,7 @@ func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
 func (e *Escrow) freeProtoSlot(taken map[escrowSlotKey]*internal.Inventory, invType constant.InventoryType) (escrowSlotKey, bool) {
 	for slot := int16(1); slot <= int16(e.owner.Inventory.Tabs[invType].SlotLimit); slot++ {
 		key := escrowSlotKey{invType: invType, slot: slot}
-		if _, ok := taken[key]; ok == false {
+		if _, ok := taken[key]; !ok {
 			return key, true
 		}
 	}

@@ -493,7 +493,7 @@ func NewResources(wzPath string) *Resources {
 	}
 	for _, item := range items {
 		card, ok := item.(*Consume)
-		if ok == false || card.MonsterBook == false {
+		if !ok || !card.MonsterBook {
 			continue
 		}
 		mob := mobs[card.MobID]
@@ -606,7 +606,7 @@ func NewResources(wzPath string) *Resources {
 			continue
 		}
 		target, ok := reactors[reactor.Info.Link]
-		if ok == false || target.Info.Link != 0 {
+		if !ok || target.Info.Link != 0 {
 			log.Printf("reactor %d links to missing or linked reactor %d", reactor.ID, reactor.Info.Link)
 			continue
 		}

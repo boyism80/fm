@@ -90,11 +90,11 @@ func (p *ActivePet) Command(index uint8, calledByName bool) {
 
 func (p *ActivePet) Feed(slot int16, itemID uint32) error {
 	consume, ok := p.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot).(*Consume)
-	if ok == false || consume.GetModel().GetID() != itemID {
+	if !ok || consume.GetModel().GetID() != itemID {
 		return ErrPetFoodInvalid
 	}
 	food := consume.GetModel().(*wz.Consume).PetFood
-	if food == nil || food.Feeds(p.Item.GetModel().GetID()) == false {
+	if food == nil || !food.Feeds(p.Item.GetModel().GetID()) {
 		return ErrPetFoodInvalid
 	}
 	if p.Item.Fullness >= constant.PetMaxFullness {
@@ -159,18 +159,18 @@ func (p *ActivePet) UsePotion(slot int16, itemID uint32) error {
 	if p.Item.Skills&skill == 0 {
 		return ErrPetPotionRefused
 	}
-	if p.owner.IsAlive() == false {
+	if !p.owner.IsAlive() {
 		return ErrPetPotionRefused
 	}
 	if m := p.owner.GetMap(); m == nil || m.Wz.Limits(constant.FieldLimitPotion) {
 		return ErrPetPotionRefused
 	}
 	consume, ok := p.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot).(*Consume)
-	if ok == false || consume.GetModel().GetID() != itemID {
+	if !ok || consume.GetModel().GetID() != itemID {
 		return ErrPetPotionRefused
 	}
 
-	if p.owner.UseConsume(consume) == false {
+	if !p.owner.UseConsume(consume) {
 		return ErrPetPotionRefused
 	}
 	p.owner.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
@@ -179,7 +179,7 @@ func (p *ActivePet) UsePotion(slot int16, itemID uint32) error {
 
 func (p *ActivePet) FeedCash(itemID uint32) error {
 	model, ok := p.owner.GameWorld.GetResources().Items[itemID].(*wz.CashItem)
-	if ok == false || model.PetFood == nil || model.PetFood.Feeds(p.Item.GetModel().GetID()) == false {
+	if !ok || model.PetFood == nil || !model.PetFood.Feeds(p.Item.GetModel().GetID()) {
 		return ErrPetFoodInvalid
 	}
 
@@ -195,7 +195,7 @@ func (p *ActivePet) Rename(name string) error {
 		return ErrPetNameInvalid
 	}
 	for _, r := range name {
-		if unicode.IsLetter(r) == false && unicode.IsDigit(r) == false {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
 			return ErrPetNameInvalid
 		}
 	}
@@ -232,7 +232,7 @@ func (p *ActivePet) stopTimers() {
 }
 
 func (p *ActivePet) hunger() {
-	if p.Item.Alive(time.Now()) == false {
+	if !p.Item.Alive(time.Now()) {
 		p.owner.Pets.Dismiss(constant.PetRemoveReasonExpired)
 		return
 	}

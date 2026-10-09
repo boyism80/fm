@@ -286,19 +286,19 @@ func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, e
 }
 
 func (g *StateMachineGroup) checkCreateLocked(id string) error {
-	if existing := g.machines[id]; existing != nil && existing.Disposed() == false {
+	if existing := g.machines[id]; existing != nil && !existing.Disposed() {
 		return fmt.Errorf("state machine %s is already running", id)
 	}
 	c := g.machineCap
 	if g.capOverride != nil {
 		c = *g.capOverride
 	}
-	if c.Limited == false {
+	if !c.Limited {
 		return nil
 	}
 	running := 0
 	for _, sm := range g.machines {
-		if sm.Disposed() == false {
+		if !sm.Disposed() {
 			running++
 		}
 	}

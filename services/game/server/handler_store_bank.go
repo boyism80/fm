@@ -21,7 +21,7 @@ func (StoreBank) New(gs *GameServer) *StoreBank {
 
 func (h *StoreBank) Handle(ctx *core.ClientContext, req *request.StoreBank) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

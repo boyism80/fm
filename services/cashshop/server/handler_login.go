@@ -41,13 +41,13 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 			ClientIp:    ctx.Client.GetRemoteIP(),
 		})
 	}, func(reply *internal.EnterCashShopReply) error {
-		if reply.GetGame().GetFound() == false || reply.GetGame().GetCharacter() == nil {
+		if !reply.GetGame().GetFound() || reply.GetGame().GetCharacter() == nil {
 			return fmt.Errorf("character %d not found", req.PlayerId)
 		}
 		entered = reply
 
 		character := entity.NewCharacter(reply)
-		if csClient.SetCharacter(character) == false {
+		if !csClient.SetCharacter(character) {
 			return fmt.Errorf("character %d: client disconnected during cash shop login", req.PlayerId)
 		}
 

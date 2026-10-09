@@ -79,7 +79,7 @@ func (s *detachScope) value(v lua.LValue) (detachedValue, error) {
 		return detachedValue{value: v}, nil
 	case *lua.LUserData:
 		luable, ok := t.Value.(Luable)
-		if ok == false {
+		if !ok {
 			return detachedValue{}, fmt.Errorf("userdata %T cannot be detached", t.Value)
 		}
 		return detachedValue{luable: luable}, nil

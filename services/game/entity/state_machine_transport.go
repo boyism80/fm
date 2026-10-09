@@ -24,7 +24,7 @@ func (sm *StateMachine) WarpAll(ctx actor.Context, fromMapID, toMapID uint32, sp
 	players := make([]*Character, 0)
 	for _, obj := range from.GetAllPlayers() {
 		ch, ok := obj.(*Character)
-		if !ok || ch == nil || sm.HasPlayer(ch) == false {
+		if !ok || ch == nil || !sm.HasPlayer(ch) {
 			continue
 		}
 		players = append(players, ch)

@@ -39,7 +39,7 @@ func (r *MapRef) Release() {
 // Reserve fails once the map is closing, so a warp either gets a ref before the map can close or never starts.
 // Shared maps never close and return a nil ref.
 func (m *Map) Reserve() (*MapRef, error) {
-	if m.IsInstance() == false {
+	if !m.IsInstance() {
 		return nil, nil
 	}
 	m.instance.mu.Lock()
@@ -80,7 +80,7 @@ func (m *Map) endLease() {
 
 // Close stops new refs; the map is removed when the last character leaves and the last ref is released.
 func (m *Map) Close() {
-	if m.IsInstance() == false {
+	if !m.IsInstance() {
 		return
 	}
 	m.instance.mu.Lock()
@@ -89,7 +89,7 @@ func (m *Map) Close() {
 }
 
 func (m *Map) Closing() bool {
-	if m.IsInstance() == false {
+	if !m.IsInstance() {
 		return false
 	}
 	m.instance.mu.Lock()
@@ -98,7 +98,7 @@ func (m *Map) Closing() bool {
 }
 
 func (m *Map) enter() error {
-	if m.IsInstance() == false {
+	if !m.IsInstance() {
 		return nil
 	}
 	m.instance.mu.Lock()
@@ -117,12 +117,12 @@ func (m *Map) enter() error {
 }
 
 func (m *Map) release() {
-	if m.IsInstance() == false {
+	if !m.IsInstance() {
 		return
 	}
 	m.instance.mu.Lock()
 	m.instance.refs--
-	closed := m.instance.refs == 0 && m.instance.closed == false
+	closed := m.instance.refs == 0 && !m.instance.closed
 	if closed {
 		m.instance.closed = true
 	}

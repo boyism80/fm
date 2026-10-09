@@ -97,7 +97,7 @@ func (e *ItemBuff) hookScript(ch *Character) (string, interface{}, bool) {
 		return "", nil, false
 	}
 	consume, ok := item.(*Consume)
-	if ok == false {
+	if !ok {
 		return "", nil, false
 	}
 	return fmt.Sprintf("script/item/%d.lua", e.Wz.ID), consume, true
@@ -143,7 +143,7 @@ func (bc *Buffs) callHook(entity Buff, hook string) {
 		return
 	}
 	path, arg, ok := entity.hookScript(bc.owner)
-	if ok == false {
+	if !ok {
 		return
 	}
 	thread, err := luax.NewThread(root, path)
@@ -272,7 +272,7 @@ func (bc *Buffs) commitBuff(entity Buff, now time.Time, notify bool) {
 
 func (bc *Buffs) scheduleExpire(entity Buff, now time.Time) {
 	end, ok := entity.expiresAt()
-	if ok == false {
+	if !ok {
 		return
 	}
 	delay := end.Sub(now)
@@ -295,7 +295,7 @@ func (bc *Buffs) scheduleExpires() {
 }
 
 func (bc *Buffs) expire(entity Buff) {
-	if _, ok := bc.entities[entity]; ok == false {
+	if _, ok := bc.entities[entity]; !ok {
 		return
 	}
 	bc.RemoveBuff(entity.GetFlags())

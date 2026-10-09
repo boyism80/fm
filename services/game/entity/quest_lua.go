@@ -277,7 +277,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			npcID, ok := LuaCheckNpcID(L, 2)
-			if ok == false {
+			if !ok {
 				return 0
 			}
 			opts := QuestPhaseOpts{NpcID: &npcID}
@@ -313,7 +313,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			npcID, ok := LuaCheckNpcID(L, 2)
-			if ok == false {
+			if !ok {
 				return 0
 			}
 			opts := QuestPhaseOpts{NpcID: &npcID}
@@ -342,7 +342,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			npcID, ok := LuaCheckNpcID(L, 2)
-			if ok == false {
+			if !ok {
 				return 0
 			}
 			if q.quests == nil || q.quests.owner == nil {

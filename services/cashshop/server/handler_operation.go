@@ -82,7 +82,7 @@ func (h *Operation) start(ctx *core.ClientContext, character *entity.Character, 
 
 func (h *Operation) findCommodity(sn uint32) (*wz.Commodity, constant.CashShopFailure) {
 	commodity := h.cs.resources.Commodities[sn]
-	if commodity == nil || commodity.OnSale == false {
+	if commodity == nil || !commodity.OnSale {
 		return nil, constant.CashShopFailureNotPurchasableNow
 	}
 	return commodity, constant.CashShopFailureUnknown
@@ -214,7 +214,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		return
 	}
 	wzItem := h.cs.resources.Items[commodity.ItemID]
-	if wzItem == nil || wzItem.IsQuest() == false {
+	if wzItem == nil || !wzItem.IsQuest() {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
@@ -224,7 +224,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 	}
 	invType := gconstant.GetInventoryTypeByItemID(commodity.ItemID)
 	slot, ok := character.FreeSlot(invType)
-	if ok == false {
+	if !ok {
 		fail(constant.CashShopFailureLockerFull)
 		return
 	}
@@ -348,7 +348,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 	}
 	invType := gconstant.GetInventoryTypeByItemID(cashItem.GetItem().GetItemId())
 	slot, ok := character.FreeSlot(invType)
-	if ok == false {
+	if !ok {
 		fail(constant.CashShopFailureNotEnoughSlots)
 		return
 	}

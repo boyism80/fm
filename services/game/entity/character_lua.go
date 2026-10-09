@@ -1844,7 +1844,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"open_storage": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1852,7 +1852,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			storeFee := int32(L.OptInt(3, 100))
 			takeOutFee := int32(L.OptInt(4, 0))
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
@@ -1862,13 +1862,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"open_store_bank": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
 			npcID := uint32(L.CheckInt(2))
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
@@ -1878,12 +1878,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"open_duey": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
@@ -1893,7 +1893,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"pet_id": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1907,7 +1907,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"pet_closeness": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1921,7 +1921,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"add_pet_closeness": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1936,7 +1936,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"rename_pet": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1950,7 +1950,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"feed_pet_cash": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1964,7 +1964,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"change_pet_skill": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1975,7 +1975,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"expired_pets": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1993,7 +1993,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"revive_pet": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -2003,7 +2003,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"open_quick_delivery": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -2013,7 +2013,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"send_parcel": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -2024,7 +2024,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			meso := int32(L.OptInt(6, 0))
 			message := L.OptString(7, "")
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
@@ -2034,14 +2034,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"add_cash": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
 			nxCash := int32(L.CheckInt(2))
 			maplePoint := int32(L.OptInt(3, 0))
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
@@ -2051,7 +2051,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"create_cash_coupons": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if ok == false {
+			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -2059,7 +2059,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			value := uint32(L.CheckInt(3))
 			count := uint32(L.OptInt(4, 1))
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil {
+			if !ok || cfg.ActorContext == nil {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
@@ -2265,7 +2265,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			if npc == nil {
 				npcID, ok := LuaCheckNpcID(L, 2)
-				if ok == false {
+				if !ok {
 					return 0
 				}
 				npc = ch.GetMap().NpcByTemplate(npcID)
@@ -2779,7 +2779,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			questID := uint32(L.CheckInt(2))
 			npcID, ok := LuaCheckNpcID(L, 3)
-			if ok == false {
+			if !ok {
 				return 0
 			}
 			if ch.GameWorld == nil {
@@ -2859,7 +2859,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			cardID := uint32(L.CheckInt(2))
 			card, ok := ch.itemModel(cardID).(*wz.Consume)
-			if ok == false || card.MonsterBook == false {
+			if !ok || !card.MonsterBook {
 				L.Push(lua.LFalse)
 				return 1
 			}
@@ -2930,7 +2930,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			cfg, ok := luax.GetConfiguration(L)
-			if ok == false || cfg.ActorContext == nil || ch.GameWorld == nil {
+			if !ok || cfg.ActorContext == nil || ch.GameWorld == nil {
 				return 0
 			}
 			ch.GameWorld.GetGuildSystem().ShowRankingAsync(cfg.ActorContext, ch, uint32(npc))
@@ -4426,7 +4426,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					log.Printf("clock: %v", err)
 				}
 			})
-			if added == false {
+			if !added {
 				L.RaiseError("clock: timer not added")
 			}
 			return 0

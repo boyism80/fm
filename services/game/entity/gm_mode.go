@@ -10,5 +10,5 @@ type GMMode struct {
 }
 
 func (ch *Character) ActsAsGM() bool {
-	return ch.HasRoleAtLeast(constant.RoleAdmin) && ch.GM.PlayerMode == false
+	return ch.HasRoleAtLeast(constant.RoleAdmin) && !ch.GM.PlayerMode
 }

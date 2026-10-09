@@ -24,7 +24,7 @@ func (Duey) New(gs *GameServer) *Duey {
 
 func (h *Duey) Handle(ctx *core.ClientContext, req *request.Duey) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

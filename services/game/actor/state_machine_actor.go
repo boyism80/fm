@@ -89,7 +89,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	case *entity.LeaveStateMachinePlayer:
 		if msg != nil && a.StateMachine != nil {
 			finished := a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver, msg.Reason)
-			if finished == false && msg.Reason == entity.StateMachineLeaveParty {
+			if !finished && msg.Reason == entity.StateMachineLeaveParty {
 				a.callHook(ctx, "on_left_party", msg.Character)
 			}
 		}
@@ -291,7 +291,7 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 		a.abortCreate(err.Error())
 		return
 	}
-	if luax.HasFunc(thread, "on_create") == false {
+	if !luax.HasFunc(thread, "on_create") {
 		luax.Close(thread)
 		a.abortCreate("on_create is required")
 		return
@@ -307,7 +307,7 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 		msg := &entity.CreateStateMachineMaps{}
 		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
 			msg.Err = "on_create must return a non-empty map id array"
-		} else if tbl, ok := vals[0].(*lua.LTable); ok == false {
+		} else if tbl, ok := vals[0].(*lua.LTable); !ok {
 			msg.Err = "on_create must return a table"
 		} else if specs, err := entity.ParseCreateMaps(tbl); err != nil {
 			msg.Err = err.Error()
@@ -391,7 +391,7 @@ func (a *StateMachineActor) beginStop() {
 }
 
 func (a *StateMachineActor) handleMapRemoved(msg *entity.StateMachineMapRemoved) {
-	if a.StateMachine.RemoveMap(msg.Map) == false {
+	if !a.StateMachine.RemoveMap(msg.Map) {
 		return
 	}
 	if a.lc.stopping {
@@ -423,7 +423,7 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	if err != nil {
 		return
 	}
-	if luax.HasFunc(thread, hook) == false {
+	if !luax.HasFunc(thread, hook) {
 		luax.Close(thread)
 		return
 	}

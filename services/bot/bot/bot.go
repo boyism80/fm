@@ -210,7 +210,7 @@ func (b *Bot) Update(pkt any) {
 				}
 			case response.INVENTORY_MODE_MOVE:
 				src, ok := tab[change.Slot]
-				if ok == false {
+				if !ok {
 					continue
 				}
 				if dest, ok := tab[change.Dest]; ok {
@@ -314,7 +314,7 @@ func (b *Bot) setItem(typ constant.InventoryType, slot int16, item dto.Item) {
 		return
 	}
 	tab, ok := b.Items[typ]
-	if ok == false {
+	if !ok {
 		tab = make(map[int16]ItemSlot)
 		b.Items[typ] = tab
 	}
@@ -346,11 +346,11 @@ func (b *Bot) Position(resources *wz.Resources) (types.Point[int16], bool) {
 		return *b.Moved, true
 	}
 	m, ok := resources.Maps[b.Map]
-	if ok == false {
+	if !ok {
 		return types.Point[int16]{}, false
 	}
 	portal, ok := m.Portals[b.Spawn]
-	if ok == false {
+	if !ok {
 		return types.Point[int16]{}, false
 	}
 	return portal.Position, true

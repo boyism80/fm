@@ -26,7 +26,7 @@ func (m *Map) RemoveEntrustedShop(es *EntrustedShop) {
 
 	es.BroadcastCall(func(obj Object) {
 		viewer, ok := obj.(*Character)
-		if ok == false {
+		if !ok {
 			return
 		}
 		es.SendDestroySyncToViewer(viewer)

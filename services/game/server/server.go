@@ -649,11 +649,11 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		return
 	}
 
-	if client.SessionLost() == false {
+	if !client.SessionLost() {
 		p.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {
 			return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}}, grpc.WaitForReady(true))
 		}, func(reply *internal.SaveCharactersReply) error {
-			if reply.GetOk() == false {
+			if !reply.GetOk() {
 				return fmt.Errorf("save character %d on disconnect failed; session kept", character.GetID())
 			}
 			return nil

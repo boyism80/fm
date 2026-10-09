@@ -47,15 +47,15 @@ func (qc *Quests) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts
 	if ch != nil && ch.Exchange(exchange) != ExchangeOK {
 		return ErrQuestExchangeFailed
 	}
-	if actions.BuffItemID != 0 && opts.Forfeited == false {
-		if ch.RunQuestHook(qp.QuestID, "on_buff_item", actions.BuffItemID) == false {
+	if actions.BuffItemID != 0 && !opts.Forfeited {
+		if !ch.RunQuestHook(qp.QuestID, "on_buff_item", actions.BuffItemID) {
 			ch.UseItemEffect(actions.BuffItemID)
 		}
 	}
-	if actions.PetTameness > 0 && ch.Pets.Active != nil && opts.Forfeited == false {
+	if actions.PetTameness > 0 && ch.Pets.Active != nil && !opts.Forfeited {
 		ch.Pets.Active.AddCloseness(actions.PetTameness)
 	}
-	if actions.PetSpeed > 0 && ch.Pets.Active != nil && opts.Forfeited == false {
+	if actions.PetSpeed > 0 && ch.Pets.Active != nil && !opts.Forfeited {
 		ch.Pets.Active.Item.Speed = uint16(actions.PetSpeed)
 		ch.Listener.OnPetUpdated(ch, ch.Pets.Active.Item)
 	}
@@ -79,7 +79,7 @@ func (qc *Quests) buildPhaseExchange(actions wz.QuestActions, opts questActionOp
 	if qc == nil {
 		return spec
 	}
-	if opts.Forfeited == false {
+	if !opts.Forfeited {
 		if actions.Money > 0 {
 			spec.Reward.Meso += int32(actions.Money)
 		} else if actions.Money < 0 {
@@ -126,7 +126,7 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	if qc == nil || questID == 0 || qc.owner == nil {
 		return nil, ErrQuestNotStartable
 	}
-	if opts.Force == false {
+	if !opts.Force {
 		if err := qc.CanStart(questID, opts); err != nil {
 			return nil, err
 		}
@@ -145,7 +145,7 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	if opts.NpcID != nil {
 		wireNPC = *opts.NpcID
 	}
-	if qp.IsStarted() && created == false {
+	if qp.IsStarted() && !created {
 		qc.notifyQuestStart(qp, wireNPC, opts)
 		return qp, nil
 	}
@@ -160,7 +160,7 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	}
 	qp.MobKills = make(map[uint32]int)
 	qp.InitMobKillCounters()
-	if opts.Force == false {
+	if !opts.Force {
 		err := qc.grant(qp, qp.Wz.Start.Actions, questActionOpts{
 			ClassID:   qc.owner.Class,
 			Forfeited: qp.Forfeited > 0,

@@ -152,7 +152,7 @@ func (b *Bot) createCharacter() error {
 			return err
 		}
 		created := createdPkt.(*response.CreateCharacter)
-		if created.Success == false || created.Character == nil || created.Character.ID == 0 {
+		if !created.Success || created.Character == nil || created.Character.ID == 0 {
 			return fmt.Errorf("create character %s failed", b.Name)
 		}
 		b.CharID = created.Character.ID
@@ -247,7 +247,7 @@ func (b *Bot) joinGame(ip string, port uint16, charID uint32) error {
 
 	var sawLogin, sawKeys bool
 	deadline := time.Now().Add(b.wait())
-	for sawLogin == false || sawKeys == false {
+	for !sawLogin || !sawKeys {
 		pkt, err := b.readUntil(time.Until(deadline), gameOpcodes, func(pkt any) bool {
 			switch pkt.(type) {
 			case *response.Login, *response.KeyMap, *response.LoginFailed:
@@ -300,7 +300,7 @@ func (b *Bot) readUntil(timeout time.Duration, allow []uint16, match func(any) b
 				break
 			}
 		}
-		if keep == false {
+		if !keep {
 			continue
 		}
 		pkt, err := conn.Decode(opcode, body)

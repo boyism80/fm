@@ -20,7 +20,7 @@ func (ShopScannerOpen) New(gs *GameServer) *ShopScannerOpen {
 
 func (h *ShopScannerOpen) Handle(ctx *core.ClientContext, req *request.ShopScannerOpen) error {
 	client, ok := ctx.Client.(*client.GameClient)
-	if ok == false {
+	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 

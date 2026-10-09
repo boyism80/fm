@@ -195,7 +195,7 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 			return false
 		}
 	}
-	if len(req.Pet) > 0 && (ch.Pets.Active == nil || slices.Contains(req.Pet, ch.Pets.Active.Item.GetModel().GetID()) == false) {
+	if len(req.Pet) > 0 && (ch.Pets.Active == nil || !slices.Contains(req.Pet, ch.Pets.Active.Item.GetModel().GetID())) {
 		return false
 	}
 	if req.PetTamenessMin > 0 && (ch.Pets.Active == nil || int(ch.Pets.Active.Item.Closeness) < req.PetTamenessMin) {
