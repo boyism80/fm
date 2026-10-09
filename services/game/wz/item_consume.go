@@ -47,6 +47,7 @@ type Consume struct {
 	MobHP           int32
 	CreateID        uint32
 	MonsterBook     bool
+	MountFatigue    int
 
 	CureDebuffs   []constant.DebuffFlag
 	AvailableMaps []MapRange

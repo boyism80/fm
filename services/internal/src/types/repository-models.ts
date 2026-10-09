@@ -246,6 +246,27 @@ export type KeyLayoutRow = {
 
 export type KeyLayoutDeleteModel = { worldId: number; characterId: number };
 
+export interface MountModel {
+    characterId: number;
+    worldId: number;
+    level: number;
+    exp: number;
+    fatigue: number;
+    updatedAt?: Date;
+}
+
+export type MountRow = {
+    character_id: number;
+    world_id: number;
+    level: number;
+    exp: number;
+    fatigue: number;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
+export type MountDeleteModel = { worldId: number; characterId: number };
+
 export interface StorageModel {
     accountId: number;
     worldId: number;

@@ -1761,6 +1761,12 @@ export interface MonsterBookCard {
   count: number;
 }
 
+export interface Mount {
+  level: number;
+  exp: number;
+  fatigue: number;
+}
+
 export interface KeyLayoutBinding {
   slot: number;
   type: number;
@@ -1787,6 +1793,7 @@ export interface EnterGameReply {
   monsterBook: MonsterBookCard[];
   records: Record[];
   accountRecords: Record[];
+  mount: Mount | undefined;
 }
 
 export interface Debuff {
@@ -1848,6 +1855,7 @@ export interface CharacterSaveEntry {
   records: Record[];
   accountRecords: Record[];
   claimedShops: number[];
+  mount: Mount | undefined;
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -11154,6 +11162,98 @@ export const MonsterBookCard: MessageFns<MonsterBookCard> = {
   },
 };
 
+function createBaseMount(): Mount {
+  return { level: 0, exp: 0, fatigue: 0 };
+}
+
+export const Mount: MessageFns<Mount> = {
+  encode(message: Mount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.level !== 0) {
+      writer.uint32(8).uint32(message.level);
+    }
+    if (message.exp !== 0) {
+      writer.uint32(16).uint32(message.exp);
+    }
+    if (message.fatigue !== 0) {
+      writer.uint32(24).uint32(message.fatigue);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Mount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.exp = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.fatigue = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Mount {
+    return {
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      exp: isSet(object.exp) ? globalThis.Number(object.exp) : 0,
+      fatigue: isSet(object.fatigue) ? globalThis.Number(object.fatigue) : 0,
+    };
+  },
+
+  toJSON(message: Mount): unknown {
+    const obj: any = {};
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.exp !== 0) {
+      obj.exp = Math.round(message.exp);
+    }
+    if (message.fatigue !== 0) {
+      obj.fatigue = Math.round(message.fatigue);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Mount>, I>>(base?: I): Mount {
+    return Mount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Mount>, I>>(object: I): Mount {
+    const message = createBaseMount();
+    message.level = object.level ?? 0;
+    message.exp = object.exp ?? 0;
+    message.fatigue = object.fatigue ?? 0;
+    return message;
+  },
+};
+
 function createBaseKeyLayoutBinding(): KeyLayoutBinding {
   return { slot: 0, type: 0, action: 0 };
 }
@@ -11267,6 +11367,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     monsterBook: [],
     records: [],
     accountRecords: [],
+    mount: undefined,
   };
 }
 
@@ -11330,6 +11431,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.accountRecords) {
       Record.encode(v!, writer.uint32(154).fork()).join();
+    }
+    if (message.mount !== undefined) {
+      Mount.encode(message.mount, writer.uint32(162).fork()).join();
     }
     return writer;
   },
@@ -11503,6 +11607,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.accountRecords.push(Record.decode(reader, reader.uint32()));
           continue;
         }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.mount = Mount.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -11575,6 +11687,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : globalThis.Array.isArray(object?.account_records)
         ? object.account_records.map((e: any) => Record.fromJSON(e))
         : [],
+      mount: isSet(object.mount) ? Mount.fromJSON(object.mount) : undefined,
     };
   },
 
@@ -11637,6 +11750,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.accountRecords?.length) {
       obj.accountRecords = message.accountRecords.map((e) => Record.toJSON(e));
     }
+    if (message.mount !== undefined) {
+      obj.mount = Mount.toJSON(message.mount);
+    }
     return obj;
   },
 
@@ -11668,6 +11784,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
     message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
     message.accountRecords = object.accountRecords?.map((e) => Record.fromPartial(e)) || [];
+    message.mount = (object.mount !== undefined && object.mount !== null) ? Mount.fromPartial(object.mount) : undefined;
     return message;
   },
 };
@@ -12480,6 +12597,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     records: [],
     accountRecords: [],
     claimedShops: [],
+    mount: undefined,
   };
 }
 
@@ -12529,6 +12647,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
       writer.uint32(v);
     }
     writer.join();
+    if (message.mount !== undefined) {
+      Mount.encode(message.mount, writer.uint32(122).fork()).join();
+    }
     return writer;
   },
 
@@ -12667,6 +12788,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
 
           break;
         }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.mount = Mount.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12740,6 +12869,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.claimed_shops)
         ? object.claimed_shops.map((e: any) => globalThis.Number(e))
         : [],
+      mount: isSet(object.mount) ? Mount.fromJSON(object.mount) : undefined,
     };
   },
 
@@ -12799,6 +12929,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.claimedShops?.length) {
       obj.claimedShops = message.claimedShops.map((e) => Math.round(e));
     }
+    if (message.mount !== undefined) {
+      obj.mount = Mount.toJSON(message.mount);
+    }
     return obj;
   },
 
@@ -12841,6 +12974,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
     message.accountRecords = object.accountRecords?.map((e) => Record.fromPartial(e)) || [];
     message.claimedShops = object.claimedShops?.map((e) => e) || [];
+    message.mount = (object.mount !== undefined && object.mount !== null) ? Mount.fromPartial(object.mount) : undefined;
     return message;
   },
 };

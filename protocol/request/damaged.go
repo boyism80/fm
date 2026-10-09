@@ -21,6 +21,23 @@ type Damaged struct {
 func (*Damaged) Opcode() byte { return 0x1F }
 
 func (p *Damaged) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.UpdateTick)
+	writer.Write8(int8(p.Type))
+	writer.WriteU8(uint8(p.Element))
+	writer.Write32(p.Damage)
+
+	switch p.Type {
+	case constant.IncomingHitMapDebuff:
+		writer.WriteU8(p.Level)
+		writer.WriteU8(p.SkillID)
+
+	case constant.IncomingHitEnv, constant.IncomingHitMist:
+	default:
+		writer.WriteU32(p.MobID)
+		writer.WriteU32(p.OID)
+		writer.WriteU8(p.Direction)
+		writer.WriteU8(p.Reflect)
+	}
 	return nil
 }
 

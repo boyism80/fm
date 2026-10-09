@@ -172,6 +172,7 @@ type Resources struct {
 	Monsters                map[uint32]*Mob
 	Reactors                map[uint32]*Reactor
 	Items                   map[uint32]Item
+	TamingMobs              map[uint32]*TamingMob
 	MobDrops                map[uint32][]Drop
 	ReactorDrops            map[uint32][]Drop
 	Skills                  map[uint32]*Skill
@@ -458,6 +459,15 @@ func NewResources(wzPath string) *Resources {
 
 	items := map[uint32]Item{}
 	err = loadEquipmentFiles(filepath.Join(wzPath, "Character.wz"), workerCount, items)
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	tamingMobs := map[uint32]*TamingMob{}
+	err = loadResourceFiles(filepath.Join(wzPath, "TamingMob.wz"), workerCount, loadTamingMob, func(percent float32, value *TamingMob) {
+		tamingMobs[value.ID] = value
+	})
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -823,6 +833,7 @@ func NewResources(wzPath string) *Resources {
 		Monsters:          mobs,
 		Reactors:          reactors,
 		Items:             items,
+		TamingMobs:        tamingMobs,
 		MobDrops:          mobDrops,
 		ReactorDrops:      reactorDrops,
 		Strings:           stringData,

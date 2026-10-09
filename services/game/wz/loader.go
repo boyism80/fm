@@ -300,6 +300,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					model.MoveTo = int32(intField.Value)
 				case "expinc":
 					model.ExpInc = int32(intField.Value)
+				case "incFatigue":
+					model.MountFatigue = intField.Value
 				default:
 					if debuffFlag, ok := consumeSpecKeyToCureDebuffFlag(intField.Name); ok && intField.Value > 0 {
 						model.CureDebuffs = append(model.CureDebuffs, debuffFlag)
@@ -660,6 +662,7 @@ func loadWeapons(path string) (Item, error) {
 		case "bloodAlliancePartyExpRate":
 		case "fs":
 		case "tamingMob":
+			model.TamingMob = uint32(intField.Value)
 		case "vehicleNaviFlyingLevel":
 		case "vehicleDoubleJumpLevel":
 		case "vehicleGlideLevel":
@@ -1860,6 +1863,29 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 	}
 
 	return &result, nil
+}
+
+func loadTamingMob(path string) (*TamingMob, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root node
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
+	if err != nil {
+		return nil, err
+	}
+	info := root.find("info")
+	if info == nil {
+		return nil, fmt.Errorf("'info' node not found: %s", path)
+	}
+	return &TamingMob{ID: uint32(id), Fatigue: info.Int("fatigue", 1)}, nil
 }
 
 func loadMob(path string) (*Mob, error) {

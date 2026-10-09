@@ -9,6 +9,7 @@ import (
 type UpdateRidding struct {
 	CharacterID int32
 	MountID     int32
+	SkillID     int32
 	Buffs       []dto.BuffEntry
 }
 
@@ -29,7 +30,7 @@ func (p *UpdateRidding) Serialize(writer *stream.StreamWriter) error {
 	WriteBuffs(writer, flags)
 	writer.WriteU16(0)
 	writer.Write32(p.MountID)
-	writer.Write32(int32(constant.SkillMonsterRider))
+	writer.Write32(p.SkillID)
 	writer.Write32(0)
 	writer.Write32(0)
 	writer.WriteU8(0)
@@ -37,4 +38,12 @@ func (p *UpdateRidding) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UpdateRidding) Deserialize(_ *stream.StreamReader) {}
+func (p *UpdateRidding) Deserialize(reader *stream.StreamReader) {
+	p.CharacterID = reader.Read32()
+	for range constant.MaxBuffFlag {
+		reader.Read32()
+	}
+	reader.ReadU16()
+	p.MountID = reader.Read32()
+	p.SkillID = reader.Read32()
+}

@@ -1,6 +1,7 @@
 package conn
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	pconst "github.com/boyism80/fm/protocol/constant"
@@ -213,6 +214,13 @@ var decoders = func() []decoder {
 		newDecoder[response.PetNameChanged](nil),
 		newDecoder[response.PetSkillChanged](nil),
 		newDecoder[response.ShowScrollEffect](nil),
+		newDecoder[response.UpdateMount](nil),
+		newDecoder[response.UpdateRidding](func(body []byte) bool {
+			flag := constant.BuffFlagMonsterRiding
+			at := 4 + 4*int(flag.Position-1)
+			return len(body) >= 4+4*constant.MaxBuffFlag+2+8 && binary.LittleEndian.Uint32(body[at:])&uint32(flag.Mask) != 0
+		}),
+		newDecoder[response.SkillCooldown](nil),
 		newDecoder[response.SetCashShop](nil),
 		newDecoder[response.CashShopBalance](nil),
 		newDecoder[response.CashShopResult](nil),

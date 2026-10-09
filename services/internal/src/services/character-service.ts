@@ -15,6 +15,8 @@ import type { CharacterModel } from "../repos/character-repository";
 import { InventoryRepository } from "../repos/inventory-repository";
 import type { InventoryModel } from "../repos/inventory-repository";
 import { KeyLayoutRepository } from "../repos/key-layout-repository";
+import { MountRepository } from "../repos/mount-repository";
+import type { MountModel } from "../repos/mount-repository";
 import { StorageRepository } from "../repos/storage-repository";
 import type { StorageModel } from "../repos/storage-repository";
 import { StorageItemRepository } from "../repos/storage-item-repository";
@@ -98,6 +100,7 @@ export type SaveCharacterEntry = {
     accountRecords?: RecordModel[];
     monsterBook?: MonsterBookCardModel[];
     keyLayout?: KeyLayoutBindingModel[];
+    mount?: Pick<MountModel, "level" | "exp" | "fatigue">;
     storage?: { storage: StorageModel; items: InventoryModel[] };
     claimedShops?: number[];
 };
@@ -116,6 +119,7 @@ export class CharacterService {
     private readonly accountRecordRepo: AccountRecordRepository;
     private readonly monsterBookRepo: MonsterBookRepository;
     private readonly keyLayoutRepo: KeyLayoutRepository;
+    private readonly mountRepo: MountRepository;
     private readonly storageRepo: StorageRepository;
     private readonly storageItemRepo: StorageItemRepository;
     private readonly buddyRepo: CharacterBuddyRepository;
@@ -142,6 +146,7 @@ export class CharacterService {
         accountRecordRepository: AccountRecordRepository,
         monsterBookRepository: MonsterBookRepository,
         keyLayoutRepository: KeyLayoutRepository,
+        mountRepository: MountRepository,
         storageRepository: StorageRepository,
         storageItemRepository: StorageItemRepository,
         characterBuddyRepository: CharacterBuddyRepository,
@@ -167,6 +172,7 @@ export class CharacterService {
         this.accountRecordRepo = accountRecordRepository;
         this.monsterBookRepo = monsterBookRepository;
         this.keyLayoutRepo = keyLayoutRepository;
+        this.mountRepo = mountRepository;
         this.storageRepo = storageRepository;
         this.storageItemRepo = storageItemRepository;
         this.buddyRepo = characterBuddyRepository;
@@ -256,7 +262,7 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage, claimedShops } of entries) {
+        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, mount, storage, claimedShops } of entries) {
             this.assertWorld(character.worldId);
             this.assertCharacterId(character.characterId);
             this.assertAccountId(character.accountId);
@@ -268,7 +274,7 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage, claimedShops });
+            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, mount, storage, claimedShops });
         }
 
         for (const [worldId, group] of byWorld) {
@@ -287,7 +293,7 @@ export class CharacterService {
             const models = latest.map(({ character }) => character);
             await this.repo.setAll(worldId, models);
 
-            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, storage, claimedShops } of latest) {
+            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, mount, storage, claimedShops } of latest) {
                 if (!character.accountId) {
                     continue;
                 }
@@ -343,6 +349,9 @@ export class CharacterService {
                         worldId: character.worldId,
                         keyLayoutJson: bindingsToJsonString(keyLayout),
                     });
+                }
+                if (mount !== undefined) {
+                    await this.mountRepo.set(character.worldId, { ...mount, characterId: character.characterId, worldId: character.worldId });
                 }
                 if (storage !== undefined) {
                     await this.storageRepo.set(character.worldId, { ...storage.storage, accountId: character.accountId, worldId: character.worldId });
@@ -465,6 +474,7 @@ export class CharacterService {
                 worldId: wid,
                 keyLayoutJson: bindingsToJsonString(getDefaultKeyLayoutBindings()),
             });
+            await this.mountRepo.set(wid, { characterId, worldId: wid, level: 1, exp: 0, fatigue: 0 });
 
             if (equips.length) {
                 const enhances = await Promise.all(equips.map((e) => this.wzService.getEnhanceChance(e.itemId)));
@@ -494,6 +504,7 @@ export class CharacterService {
             await Promise.allSettled([
                 this.repo.delete({ worldId: wid, characterId, accountId }),
                 this.keyLayoutRepo.delete({ worldId: wid, characterId }),
+                this.mountRepo.delete({ worldId: wid, characterId }),
                 this.inventoryRepo.replaceBySnapshot(wid, String(characterId), []),
                 this.overviewRepo.delete({ worldId: wid, accountId, characterId }),
                 this.unifiedRepo.releaseCharacterNameReservation(accountId),
@@ -545,6 +556,7 @@ export class CharacterService {
         await this.buddyRepo.deleteAllReferencingBuddy(worldId, characterId);
         await this.realtimeStateRepo.delete({ worldId, characterId });
         await this.keyLayoutRepo.delete({ worldId, characterId });
+        await this.mountRepo.delete({ worldId, characterId });
 
         const characterDeleteModel = { worldId, characterId, accountId };
         const ok = await this.repo.delete(characterDeleteModel);

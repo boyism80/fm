@@ -21,6 +21,7 @@ import type { SavedLocationRepository } from "../../repos/saved-location-reposit
 import type { CharacterRecordRepository } from "../../repos/character-record-repository";
 import type { AccountRecordRepository } from "../../repos/account-record-repository";
 import type { MonsterBookRepository } from "../../repos/monster-book-repository";
+import type { MountRepository } from "../../repos/mount-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type {
@@ -69,6 +70,7 @@ export class SessionGrpcController {
     private readonly characterRecordRepository: CharacterRecordRepository;
     private readonly accountRecordRepository: AccountRecordRepository;
     private readonly monsterBookRepository: MonsterBookRepository;
+    private readonly mountRepository: MountRepository;
     private readonly sessionService: SessionService;
     private readonly buddyService: BuddyService;
     private readonly internalConfig: Pick<InternalConfig, "game_servers">;
@@ -87,6 +89,7 @@ export class SessionGrpcController {
         characterRecordRepository: CharacterRecordRepository,
         accountRecordRepository: AccountRecordRepository,
         monsterBookRepository: MonsterBookRepository,
+        mountRepository: MountRepository,
         sessionService: SessionService,
         buddyService: BuddyService,
         internalConfig: Pick<InternalConfig, "game_servers">,
@@ -104,6 +107,7 @@ export class SessionGrpcController {
         this.characterRecordRepository = characterRecordRepository;
         this.accountRecordRepository = accountRecordRepository;
         this.monsterBookRepository = monsterBookRepository;
+        this.mountRepository = mountRepository;
         this.sessionService = sessionService;
         this.buddyService = buddyService;
         this.internalConfig = internalConfig;
@@ -162,7 +166,7 @@ export class SessionGrpcController {
 
     private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
         const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords] = await Promise.all([
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount] = await Promise.all([
             this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.buffService.getBuffs(worldId, characterId),
@@ -176,6 +180,7 @@ export class SessionGrpcController {
             this.monsterBookRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.characterRecordRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.accountRecordRepository.getAll(worldId, String(row.accountId)).then((map) => [...map.values()]),
+            this.mountRepository.get(worldId, characterId),
         ]);
         const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
         return {
@@ -234,6 +239,11 @@ export class SessionGrpcController {
             monsterBook: monsterBook.map((card) => ({ cardId: card.cardId >>> 0, count: card.count >>> 0 })),
             records: records.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
             accountRecords: accountRecords.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
+            mount: {
+                level: mount?.level ?? 1,
+                exp: mount?.exp ?? 0,
+                fatigue: mount?.fatigue ?? 0,
+            },
         };
     }
 
@@ -273,6 +283,7 @@ export class SessionGrpcController {
                     monsterBook: [],
                     records: [],
                     accountRecords: [],
+                    mount: undefined,
                 });
                 return;
             }

@@ -861,7 +861,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
-		"ridding": func(L *lua.LState) int {
+		"ride": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
@@ -874,20 +874,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "SkillEntry with Wz expected")
 				return 0
 			}
-			mountID := int32(L.CheckInt(3))
-			if mountID <= 0 {
-				L.ArgError(3, "mount_id must be > 0")
-				return 0
-			}
-			ch.Buffs.AddBuff(
-				skillEntry.Wz,
-				time.Duration(0),
-				uint8(skillEntry.Level()),
-				ch.GetID(),
-				map[constant.BuffFlag]int32{constant.BuffFlagMonsterRiding: mountID},
-				true,
-			)
-			return 0
+			L.Push(lua.LBool(ch.Mount.Ride(skillEntry) == nil))
+			return 1
 		},
 		"show_skill_effect": func(L *lua.LState) int {
 			argc := L.GetTop()
@@ -1977,6 +1965,51 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.Pets.Active.hunger()
 			L.Push(lua.LTrue)
 			return 1
+		},
+		"mount": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Mount.Level))
+			L.Push(lua.LNumber(ch.Mount.Exp))
+			L.Push(lua.LNumber(ch.Mount.Fatigue))
+			L.Push(lua.LNumber(ch.Mount.BattleshipHP))
+			_, vehicle, _ := ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
+			L.Push(lua.LNumber(vehicle))
+			return 5
+		},
+		"set_mount_level": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Mount.SetLevel(uint32(L.CheckInt(2)))
+			return 0
+		},
+		"set_mount_fatigue": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Mount.SetFatigue(uint32(L.CheckInt(2)))
+			return 0
+		},
+		"tire_mount": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Mount.tire()
+			return 0
 		},
 		"pet_level": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

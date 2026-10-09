@@ -245,6 +245,7 @@ type CharacterListener interface {
 	OnPetExceptions(ch *Character)
 	OnPetNameChanged(ch *Character)
 	OnPetSkillChanged(ch *Character, pet *Pet, skill constant.PetSkill, add bool)
+	OnMountUpdated(ch *Character, levelUp bool)
 	OnSummonSpawn(ch *Character, summon *Summon)
 	OnSummonRemove(ch *Character, summon *Summon, animated bool)
 	OnSummonMove(ch *Character, summon *Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment)

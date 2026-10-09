@@ -1767,6 +1767,7 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, 
 		remotePacket = &response.UpdateRidding{
 			CharacterID: int32(ch.GetID()),
 			MountID:     mountID,
+			SkillID:     buffID,
 			Buffs:       dtoBuffs,
 		}
 	} else {
@@ -1912,6 +1913,16 @@ func (l *CharacterListenerImpl) OnPetUpdated(ch *entity.Character, pet *entity.P
 		return
 	}
 	l.OnInventorySlotUpdated(ch, constant.InventoryTypeCash, slot, pet)
+}
+
+func (l *CharacterListenerImpl) OnMountUpdated(ch *entity.Character, levelUp bool) {
+	ch.Broadcast(&response.UpdateMount{
+		CharacterID: ch.GetID(),
+		Level:       ch.Mount.Level,
+		Exp:         ch.Mount.Exp,
+		Fatigue:     ch.Mount.Fatigue,
+		LevelUp:     levelUp,
+	}, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnPetExceptions(ch *entity.Character) {

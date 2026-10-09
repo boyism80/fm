@@ -275,6 +275,11 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 		character.Buffs.restoreEffects()
 	}
 	character.Buffs.scheduleExpires()
+	if m.Wz.Limits(constant.FieldLimitMount) {
+		character.Mount.dismount()
+	} else if init {
+		character.Mount.start()
+	}
 
 	for _, summon := range character.Summons.All() {
 		if summon == nil || summon.Owner != character {

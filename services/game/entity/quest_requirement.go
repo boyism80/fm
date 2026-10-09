@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -204,7 +205,10 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 	if req.MBMin > 0 || len(req.MBCard) > 0 || req.SubClassFlags != 0 {
 		return false
 	}
-	if req.EndMeso > 0 || req.EquipAllNeed > 0 || req.EquipSelectNeed > 0 || req.TamingMobLevelMin > 0 {
+	if req.TamingMobLevelMin > 0 && (ch.Inventory.Equipped[constant.EquipmentPartsTamingMob] == nil || int(ch.Mount.Level) < req.TamingMobLevelMin) {
+		return false
+	}
+	if req.EndMeso > 0 || req.EquipAllNeed > 0 || req.EquipSelectNeed > 0 {
 		return false
 	}
 	if req.Buff != "" || req.ExceptBuff != "" || req.WorldMin != "" || req.WorldMax != "" {

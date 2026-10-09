@@ -11,6 +11,7 @@ type EquipmentCore struct {
 	Hide            bool
 	AttackSpeed     int
 	Pets            []uint32
+	TamingMob       uint32
 }
 
 func (core *EquipmentCore) GetEnhanceChance() uint8 { return core.EnhanceChance }

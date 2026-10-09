@@ -116,6 +116,13 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
             count: card.count,
         })),
         keyLayout: bindingsFromProtoList(entry.keyLayout),
+        mount: entry.mount
+            ? {
+                level: entry.mount.level,
+                exp: entry.mount.exp,
+                fatigue: entry.mount.fatigue,
+            }
+            : undefined,
         storage: entry.storage
             ? {
                 storage: {

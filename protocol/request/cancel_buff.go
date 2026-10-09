@@ -11,6 +11,7 @@ type CancelBuff struct {
 func (*CancelBuff) Opcode() byte { return 0x4B }
 
 func (c *CancelBuff) Serialize(writer *stream.StreamWriter) error {
+	writer.Write32(c.SourceID)
 	return nil
 }
 

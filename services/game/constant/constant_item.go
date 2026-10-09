@@ -91,7 +91,7 @@ func GetEquipmentType(itemID uint32) EquipmentType {
 func IsEquipment(itemID uint32) bool {
 	t := GetEquipmentType(itemID)
 	return t != EquipmentTypeUnknown && t != EquipmentTypeMonsterBook && t != EquipmentTypeAndroid &&
-		t != EquipmentTypeDragon && t != EquipmentTypeTaming && t != EquipmentTypeMechanic && t != EquipmentTypeHair
+		t != EquipmentTypeDragon && t != EquipmentTypeMechanic && t != EquipmentTypeHair
 }
 
 func GetWeaponType(itemID uint32) WeaponType {

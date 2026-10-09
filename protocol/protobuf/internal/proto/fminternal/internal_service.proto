@@ -634,6 +634,12 @@ message MonsterBookCard {
   uint32 count = 2;
 }
 
+message Mount {
+  uint32 level = 1;
+  uint32 exp = 2;
+  uint32 fatigue = 3;
+}
+
 message KeyLayoutBinding {
   int32 slot = 1;
   uint32 type = 2;
@@ -660,6 +666,7 @@ message EnterGameReply {
   repeated MonsterBookCard monster_book = 17;
   repeated Record records = 18;
   repeated Record account_records = 19;
+  Mount mount = 20;
 }
 
 message Debuff {
@@ -721,6 +728,7 @@ message CharacterSaveEntry {
   repeated Record records = 12;
   repeated Record account_records = 13;
   repeated uint32 claimed_shops = 14;
+  Mount mount = 15;
 }
 
 message Storage {

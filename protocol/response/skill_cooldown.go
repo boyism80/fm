@@ -20,4 +20,6 @@ func (p *SkillCooldown) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *SkillCooldown) Deserialize(reader *stream.StreamReader) {
+	p.SkillID = reader.ReadU32()
+	p.RemainingSec = reader.ReadU32()
 }

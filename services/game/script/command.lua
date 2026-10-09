@@ -657,6 +657,55 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["탈것정보"] = {
+		privilege = ROLE.Admin,
+		usage = "- 탈것 레벨, 경험치, 피로도, 배틀쉽 HP, 탑승 중인 탈것 보기",
+		command = function(me, args)
+			local level, exp, fatigue, battleship_hp, vehicle = me:mount()
+			me:message(string.format("탈것 레벨 %d 경험치 %d 피로도 %d 배틀쉽 HP %d 탑승 %d", level, exp, fatigue, battleship_hp, vehicle))
+			return true
+		end,
+	},
+	["탈것레벨"] = {
+		privilege = ROLE.Admin,
+		usage = "<레벨> - 탈것 레벨 설정 (1~30, 경험치는 그 레벨 시작값)",
+		command = function(me, args)
+			local level = tonumber(args[1])
+			if level == nil then
+				me:message("사용법: /탈것레벨 <레벨>")
+				return true
+			end
+			me:set_mount_level(level)
+			local mount_level, exp = me:mount()
+			me:message(string.format("탈것 레벨 %d 경험치 %d", mount_level, exp))
+			return true
+		end,
+	},
+	["탈것피로도"] = {
+		privilege = ROLE.Admin,
+		usage = "<피로도> - 탈것 피로도 설정 (0~100)",
+		command = function(me, args)
+			local fatigue = tonumber(args[1])
+			if fatigue == nil then
+				me:message("사용법: /탈것피로도 <피로도>")
+				return true
+			end
+			me:set_mount_fatigue(fatigue)
+			local _, _, mount_fatigue = me:mount()
+			me:message(string.format("탈것 피로도 %d", mount_fatigue))
+			return true
+		end,
+	},
+	["탈것피로"] = {
+		privilege = ROLE.Admin,
+		usage = "- 탑승 중인 탈것의 피로도 증가를 지금 한 번 실행",
+		command = function(me, args)
+			me:tire_mount()
+			local _, _, fatigue = me:mount()
+			me:message(string.format("탈것 피로도 %d", fatigue))
+			return true
+		end,
+	},
 	["아이템드롭"] = {
 		privilege = ROLE.Admin,
 		usage = "<아이템ID> [개수] - 내 위치에 아이템 떨어뜨리기",
@@ -1349,8 +1398,8 @@ local command_funcs = {
 				return true
 			end
 			if v > 32767 then v = 32767 end
-			me:hp(v)
 			me:base_hp(v)
+			me:hp(v)
 			me:message(string.format("체력 설정: %d", v))
 			return true
 		end,
@@ -1369,8 +1418,8 @@ local command_funcs = {
 				return true
 			end
 			if v > 32767 then v = 32767 end
-			me:mp(v)
 			me:base_mp(v)
+			me:mp(v)
 			me:message(string.format("마력 설정: %d", v))
 			return true
 		end,

@@ -67,6 +67,7 @@ type Character struct {
 	Debuffs         *Debuffs
 	Summons         *Summons
 	Pets            *Pets
+	Mount           *Mount
 	Doors           *Doors
 	HomingTargetOID *uint32
 	Party           *PartyMembership
@@ -133,9 +134,9 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		WKChargeSkillId:   spawnBuffData.WKChargeSkillID,
 		MorphId:           spawnBuffData.MorphID,
 		SpiritClawSkillId: spawnBuffData.SpiritClawSkillID,
-		MountLevel:        spawnBuffData.MountLevel,
-		MountExp:          spawnBuffData.MountExp,
-		MountFatigue:      spawnBuffData.MountFatigue,
+		MountLevel:        ch.Mount.Level,
+		MountExp:          ch.Mount.Exp,
+		MountFatigue:      ch.Mount.Fatigue,
 		CrushRing:         ch.Inventory.WornRing(ch.Inventory.Rings.Left),
 		FriendshipRing:    ch.Inventory.WornRing(ch.Inventory.Rings.Mid),
 		MarriageRing:      ch.Wedding.RingToDTO(),
@@ -170,10 +171,11 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)
 
-	if mountID, active := ch.GetRiddingInfo(); active {
+	if buff, mountID, active := ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding); active {
 		viewer.Send(&response.UpdateRidding{
 			CharacterID: int32(ch.GetID()),
 			MountID:     mountID,
+			SkillID:     buff.GetBuffID(),
 			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagMonsterRiding, Value: mountID}},
 		}, types.SEND_POLICY_ENCRYPT)
 	}
@@ -1019,24 +1021,12 @@ type SpawnPlayerBuffData struct {
 	WKChargeSkillID   uint32
 	MorphID           uint16
 	SpiritClawSkillID uint32
-	MountLevel        uint32
-	MountExp          uint32
-	MountFatigue      uint32
-}
-
-func (ch *Character) GetRiddingInfo() (mountID int32, active bool) {
-	if ch == nil {
-		return 0, false
-	}
-	_, mountID, active = ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
-	return
 }
 
 func (ch *Character) GetSpawnPlayerBuffData() SpawnPlayerBuffData {
 	data := SpawnPlayerBuffData{
 		SpeedBuff:  1,
 		ComboCount: 1,
-		MountLevel: 1,
 	}
 	if ch == nil {
 		return data

@@ -105,6 +105,7 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 func (ch *Character) TakeDamage(damage int32) {
 	if damage > 0 {
 		ch.AddDojoEnergy(2)
+		ch.Mount.hitBattleship(damage)
 	}
 
 	hp := int(ch.GetHp()) - int(damage)

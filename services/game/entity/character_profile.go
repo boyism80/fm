@@ -57,11 +57,10 @@ func (ch *Character) Inspect(targetID uint32) {
 		}
 	}
 	if target.Inventory.Equipped[constant.EquipmentPartsTamingMob] != nil && target.Inventory.Equipped[constant.EquipmentPartsSaddle] != nil {
-		buffData := target.GetSpawnPlayerBuffData()
 		profile.Mount = &response.CharacterProfileMount{
-			Level:   buffData.MountLevel,
-			Exp:     buffData.MountExp,
-			Fatigue: buffData.MountFatigue,
+			Level:   target.Mount.Level,
+			Exp:     target.Mount.Exp,
+			Fatigue: target.Mount.Fatigue,
 		}
 	}
 	profile.BookLevel = target.MonsterBook.Level()

@@ -78,6 +78,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	}
 	ch.Wedding = &Wedding{owner: ch, Marriage: NewMarriageFromInternalProto(reply.GetMarriage())}
 	ch.Pets = &Pets{owner: ch, summoned: p.GetSummonedPet(), HPItem: p.GetPetHpItem(), MPItem: p.GetPetMpItem()}
+	ch.Mount = &Mount{owner: ch, Level: max(reply.GetMount().GetLevel(), 1), Exp: reply.GetMount().GetExp(), Fatigue: reply.GetMount().GetFatigue()}
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
 	ch.Escrow = &Escrow{owner: ch}
@@ -385,6 +386,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Records:        ch.Records.ToProto(),
 		AccountRecords: ch.AccountRecords.ToProto(),
 		ClaimedShops:   slices.Clone(ch.StoreBank.claimed),
+		Mount:          &internal.Mount{Level: ch.Mount.Level, Exp: ch.Mount.Exp, Fatigue: ch.Mount.Fatigue},
 	}
 }
 

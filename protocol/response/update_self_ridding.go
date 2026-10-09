@@ -25,10 +25,8 @@ func (p *UpdateSelfRidding) Serialize(writer *stream.StreamWriter) error {
 		flags = append(flags, buffs[i].Buff)
 	}
 	WriteBuffs(writer, flags)
-
-	ridingLevel := max(int32(1), p.MountID-1902000+1)
-
-	writer.WriteU16(uint16(ridingLevel))
+	writer.WriteU8(0)
+	writer.WriteU8(0)
 	writer.Write32(p.MountID)
 	writer.Write32(p.BuffID)
 	writer.WriteU16(0)

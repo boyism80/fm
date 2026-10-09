@@ -114,7 +114,8 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	if levelData.Cooldown > 0 {
+	// The battleship's cooltime starts when the ship is destroyed, not when boarding.
+	if levelData.Cooldown > 0 && constant.SkillID(req.SkillID) != constant.SkillBattleship {
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 	h.showActiveSkillEffect(ch, req)
