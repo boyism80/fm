@@ -18,3 +18,4 @@ func (core *EquipmentCore) GetRequired() RequiredStats {
 	return core.Required
 }
 func (core *EquipmentCore) GetAbility() AbilityStats { return core.Ability }
+func (core *EquipmentCore) IsEquipTradeBlock() bool  { return core.EquipTradeBlock }

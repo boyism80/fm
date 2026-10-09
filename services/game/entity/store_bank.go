@@ -29,7 +29,7 @@ type StoreBank struct {
 	owner    *Character
 	shops    []*internal.Shop
 	closedAt time.Time
-	Meso     int32
+	Meso     int64
 	Items    []*ShopItem
 	pending  bool
 }
@@ -74,7 +74,7 @@ func (sb *StoreBank) load(shops []*internal.Shop) {
 		if closedAt := time.UnixMilli(shop.GetClosedAtUnixMs()); closedAt.Before(sb.closedAt) {
 			sb.closedAt = closedAt
 		}
-		sb.Meso = int32(min(int64(sb.Meso)+int64(shop.GetMeso()), math.MaxInt32))
+		sb.Meso += int64(shop.GetMeso())
 		for _, pb := range shop.GetItems() {
 			item, err := NewItemFromInternalProto(pb.GetItem(), sb.owner.GameWorld)
 			if err != nil || pb.GetBundles() == 0 {
@@ -101,9 +101,9 @@ func (sb *StoreBank) fee() (uint32, int32) {
 	if days <= 0 {
 		return 0, 0
 	}
-	base := int64(sb.Meso)
+	base := sb.Meso
 	for _, listed := range sb.Items {
-		base += int64(listed.Price) * int64(listed.Bundles)
+		base += int64(listed.Item.GetModel().GetPrice()) * int64(listed.count())
 	}
 	fee := base * min(days, StoreBankFeePercentMax) / 100
 	return uint32(days), int32(min(fee, math.MaxInt32))
@@ -123,7 +123,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 	if sb.owner.Inventory.Meso < fee {
 		return pconst.StoreBankResultNotEnoughMeso
 	}
-	if int64(sb.owner.Inventory.Meso)-int64(fee)+int64(sb.Meso) > math.MaxInt32 {
+	if int64(sb.owner.Inventory.Meso)-int64(fee)+sb.Meso > math.MaxInt32 {
 		return pconst.StoreBankResultMesoOver
 	}
 	rewards := map[uint32]uint16{}
@@ -177,7 +177,7 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 		}
 
 		sb.owner.Inventory.removeMesoUnchecked(fee)
-		sb.owner.Inventory.addMesoUnchecked(sb.Meso)
+		sb.owner.Inventory.addMesoUnchecked(int32(sb.Meso))
 		for _, listed := range sb.Items {
 			sb.owner.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
 		}

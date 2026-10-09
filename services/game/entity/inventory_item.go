@@ -485,6 +485,12 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		}
 	}
 
+	if model, ok := newEq.GetModel().(wz.Equipment); ok && model.IsEquipTradeBlock() && newEq.GetFlags()&constant.ItemFlagUntradeable == 0 {
+		newEq.SetFlags(newEq.GetFlags() | constant.ItemFlagUntradeable)
+		ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, slot)
+		ch.Listener.OnInventorySlotAdded(ch, constant.InventoryTypeEquipment, slot, newEq)
+	}
+
 	equipments[parts] = newEq
 	if old == nil {
 		delete(inven.Items, slot)

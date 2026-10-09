@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/clock"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
@@ -32,6 +33,10 @@ func (ch *Character) UseShopScanner(actx actor.Context, invType constant.Invento
 		return
 	}
 	if item == nil || item.GetModel().GetID() != itemID || constant.IsShopScanner(itemID) == false {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return
+	}
+	if expiration := item.GetExpiration(); expiration.IsZero() == false && clock.Now().After(expiration) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}

@@ -628,6 +628,9 @@ func (ch *Character) UseRemoteEntrustedShop(actx actor.Context, slot int16) erro
 	if item == nil || item.GetModel().GetID() != RemoteEntrustedShopItemID {
 		return ErrMiniRoomInvalid
 	}
+	if expiration := item.GetExpiration(); expiration.IsZero() == false && clock.Now().After(expiration) {
+		return ErrMiniRoomInvalid
+	}
 	if ch.MiniRoom != nil || ch.miniRoomPending {
 		return ErrMiniRoomBusy
 	}

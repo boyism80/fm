@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"math"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -168,7 +169,7 @@ func (l *CharacterListenerImpl) OnMiniRoomMesoWithdrawn(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnOpenStoreBank(ch *entity.Character, npcID uint32) {
-	meso := ch.StoreBank.Meso
+	meso := int32(min(ch.StoreBank.Meso, math.MaxInt32))
 	tabs := map[constant.InventoryType][]dto.Item{}
 	for invType := constant.InventoryTypeEquipment; invType <= constant.InventoryTypeCash; invType++ {
 		tabs[invType] = []dto.Item{}
