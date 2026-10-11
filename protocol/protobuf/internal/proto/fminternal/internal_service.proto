@@ -667,6 +667,15 @@ message KeyLayoutBinding {
   int32 action = 3;
 }
 
+message SkillMacro {
+  uint32 position = 1;
+  string name = 2;
+  bool shout = 3;
+  uint32 skill1 = 4;
+  uint32 skill2 = 5;
+  uint32 skill3 = 6;
+}
+
 message EnterGameReply {
   bool found = 1;
   Character character = 2;
@@ -690,6 +699,7 @@ message EnterGameReply {
   FamilyState family = 20;
   repeated Note notes = 21;
   Account account = 22;
+  repeated SkillMacro skill_macros = 23;
 }
 
 message Debuff {
@@ -789,6 +799,7 @@ message CharacterSaveEntry {
   repeated uint32 claimed_shops = 12;
   Mount mount = 13;
   Account account = 14;
+  repeated SkillMacro skill_macros = 15;
 }
 
 message Storage {

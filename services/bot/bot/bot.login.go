@@ -329,7 +329,7 @@ func (b *Bot) joinGame(ip string, port uint16, charID uint32) error {
 			switch pkt.(type) {
 			case *response.Login, *response.KeyMap, *response.LoginFailed:
 				return true
-			case *response.SpawnNpc, *response.RemoveNpc:
+			case *response.SpawnNpc, *response.RemoveNpc, *response.SkillMacro:
 				b.Update(pkt)
 				return false
 			default:
@@ -424,6 +424,7 @@ var (
 		(&response.KeyMap{}).Opcode(),
 		(&response.SpawnNpc{}).Opcode(),
 		(&response.RemoveNpc{}).Opcode(),
+		(&response.SkillMacro{}).Opcode(),
 	}
 	cashShopOpcodes = []uint16{
 		(&response.SetCashShop{}).Opcode(),

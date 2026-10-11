@@ -111,6 +111,15 @@ func (l *CharacterListenerImpl) OnKeyMap(ch *entity.Character) {
 	ch.Send(&response.KeyMap{Slots: ch.KeyLayout.Bindings()}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnSkillMacros(ch *entity.Character) {
+	macros := ch.SkillMacros.Entries()
+	entries := make([]response.SkillMacroEntry, 0, len(macros))
+	for _, macro := range macros {
+		entries = append(entries, response.SkillMacroEntry{Name: macro.Name, Shout: macro.Shout, Skills: macro.Skills})
+	}
+	ch.Send(&response.SkillMacro{Entries: entries}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType constant.ServerMessageType, message string) {
 	l.OnNotice(ch, messageType, message, 0, false)
 }

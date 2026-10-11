@@ -2393,6 +2393,15 @@ export interface KeyLayoutBinding {
   action: number;
 }
 
+export interface SkillMacro {
+  position: number;
+  name: string;
+  shout: boolean;
+  skill1: number;
+  skill2: number;
+  skill3: number;
+}
+
 export interface EnterGameReply {
   found: boolean;
   character: Character | undefined;
@@ -2416,6 +2425,7 @@ export interface EnterGameReply {
   family: FamilyState | undefined;
   notes: Note[];
   account: Account | undefined;
+  skillMacros: SkillMacro[];
 }
 
 export interface Debuff {
@@ -2505,6 +2515,7 @@ export interface CharacterSaveEntry {
   claimedShops: number[];
   mount: Mount | undefined;
   account: Account | undefined;
+  skillMacros: SkillMacro[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -12564,6 +12575,146 @@ export const KeyLayoutBinding: MessageFns<KeyLayoutBinding> = {
   },
 };
 
+function createBaseSkillMacro(): SkillMacro {
+  return { position: 0, name: "", shout: false, skill1: 0, skill2: 0, skill3: 0 };
+}
+
+export const SkillMacro: MessageFns<SkillMacro> = {
+  encode(message: SkillMacro, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.position !== 0) {
+      writer.uint32(8).uint32(message.position);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.shout !== false) {
+      writer.uint32(24).bool(message.shout);
+    }
+    if (message.skill1 !== 0) {
+      writer.uint32(32).uint32(message.skill1);
+    }
+    if (message.skill2 !== 0) {
+      writer.uint32(40).uint32(message.skill2);
+    }
+    if (message.skill3 !== 0) {
+      writer.uint32(48).uint32(message.skill3);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SkillMacro {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSkillMacro();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.position = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.shout = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.skill1 = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.skill2 = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.skill3 = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SkillMacro {
+    return {
+      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      shout: isSet(object.shout) ? globalThis.Boolean(object.shout) : false,
+      skill1: isSet(object.skill1) ? globalThis.Number(object.skill1) : 0,
+      skill2: isSet(object.skill2) ? globalThis.Number(object.skill2) : 0,
+      skill3: isSet(object.skill3) ? globalThis.Number(object.skill3) : 0,
+    };
+  },
+
+  toJSON(message: SkillMacro): unknown {
+    const obj: any = {};
+    if (message.position !== 0) {
+      obj.position = Math.round(message.position);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.shout !== false) {
+      obj.shout = message.shout;
+    }
+    if (message.skill1 !== 0) {
+      obj.skill1 = Math.round(message.skill1);
+    }
+    if (message.skill2 !== 0) {
+      obj.skill2 = Math.round(message.skill2);
+    }
+    if (message.skill3 !== 0) {
+      obj.skill3 = Math.round(message.skill3);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SkillMacro>, I>>(base?: I): SkillMacro {
+    return SkillMacro.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SkillMacro>, I>>(object: I): SkillMacro {
+    const message = createBaseSkillMacro();
+    message.position = object.position ?? 0;
+    message.name = object.name ?? "";
+    message.shout = object.shout ?? false;
+    message.skill1 = object.skill1 ?? 0;
+    message.skill2 = object.skill2 ?? 0;
+    message.skill3 = object.skill3 ?? 0;
+    return message;
+  },
+};
+
 function createBaseEnterGameReply(): EnterGameReply {
   return {
     found: false,
@@ -12588,6 +12739,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     family: undefined,
     notes: [],
     account: undefined,
+    skillMacros: [],
   };
 }
 
@@ -12660,6 +12812,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     if (message.account !== undefined) {
       Account.encode(message.account, writer.uint32(178).fork()).join();
+    }
+    for (const v of message.skillMacros) {
+      SkillMacro.encode(v!, writer.uint32(186).fork()).join();
     }
     return writer;
   },
@@ -12857,6 +13012,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.account = Account.decode(reader, reader.uint32());
           continue;
         }
+        case 23: {
+          if (tag !== 186) {
+            break;
+          }
+
+          message.skillMacros.push(SkillMacro.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12928,6 +13091,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       family: isSet(object.family) ? FamilyState.fromJSON(object.family) : undefined,
       notes: globalThis.Array.isArray(object?.notes) ? object.notes.map((e: any) => Note.fromJSON(e)) : [],
       account: isSet(object.account) ? Account.fromJSON(object.account) : undefined,
+      skillMacros: globalThis.Array.isArray(object?.skillMacros)
+        ? object.skillMacros.map((e: any) => SkillMacro.fromJSON(e))
+        : globalThis.Array.isArray(object?.skill_macros)
+        ? object.skill_macros.map((e: any) => SkillMacro.fromJSON(e))
+        : [],
     };
   },
 
@@ -12999,6 +13167,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.account !== undefined) {
       obj.account = Account.toJSON(message.account);
     }
+    if (message.skillMacros?.length) {
+      obj.skillMacros = message.skillMacros.map((e) => SkillMacro.toJSON(e));
+    }
     return obj;
   },
 
@@ -13037,6 +13208,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.account = (object.account !== undefined && object.account !== null)
       ? Account.fromPartial(object.account)
       : undefined;
+    message.skillMacros = object.skillMacros?.map((e) => SkillMacro.fromPartial(e)) || [];
     return message;
   },
 };
@@ -14317,6 +14489,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     claimedShops: [],
     mount: undefined,
     account: undefined,
+    skillMacros: [],
   };
 }
 
@@ -14365,6 +14538,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     if (message.account !== undefined) {
       Account.encode(message.account, writer.uint32(114).fork()).join();
+    }
+    for (const v of message.skillMacros) {
+      SkillMacro.encode(v!, writer.uint32(122).fork()).join();
     }
     return writer;
   },
@@ -14504,6 +14680,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.account = Account.decode(reader, reader.uint32());
           continue;
         }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.skillMacros.push(SkillMacro.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14573,6 +14757,11 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : [],
       mount: isSet(object.mount) ? Mount.fromJSON(object.mount) : undefined,
       account: isSet(object.account) ? Account.fromJSON(object.account) : undefined,
+      skillMacros: globalThis.Array.isArray(object?.skillMacros)
+        ? object.skillMacros.map((e: any) => SkillMacro.fromJSON(e))
+        : globalThis.Array.isArray(object?.skill_macros)
+        ? object.skill_macros.map((e: any) => SkillMacro.fromJSON(e))
+        : [],
     };
   },
 
@@ -14632,6 +14821,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.account !== undefined) {
       obj.account = Account.toJSON(message.account);
     }
+    if (message.skillMacros?.length) {
+      obj.skillMacros = message.skillMacros.map((e) => SkillMacro.toJSON(e));
+    }
     return obj;
   },
 
@@ -14674,6 +14866,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.account = (object.account !== undefined && object.account !== null)
       ? Account.fromPartial(object.account)
       : undefined;
+    message.skillMacros = object.skillMacros?.map((e) => SkillMacro.fromPartial(e)) || [];
     return message;
   },
 };

@@ -72,6 +72,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, UseChair](gs)
 	core.Bind[*GameServer, CancelChair](gs)
 	core.Bind[*GameServer, ChangeKeymap](gs)
+	core.Bind[*GameServer, SkillMacro](gs)
 	core.Bind[*GameServer, Aggro](gs)
 	core.Bind[*GameServer, AllyDamage](gs)
 	core.Bind[*GameServer, MoveSummon](gs)

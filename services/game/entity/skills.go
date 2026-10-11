@@ -58,6 +58,10 @@ func (sc *Skills) Get(skillID uint32) *SkillEntry {
 	return sc.dojoSkill(skillID)
 }
 
+func (sc *Skills) Learned(skillID uint32) *SkillEntry {
+	return sc.entries[skillID]
+}
+
 func (sc *Skills) dojoSkill(skillID uint32) *SkillEntry {
 	if sc.owner.GameWorld == nil {
 		return nil

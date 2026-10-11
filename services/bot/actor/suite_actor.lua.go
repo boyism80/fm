@@ -78,6 +78,7 @@ var requests = []outbound{
 	&request.FamilyAccept{},
 	&request.FamilyRemoveSenior{},
 	&request.FamilyPedigree{},
+	&request.SkillMacro{},
 }
 
 func (a *SuiteActor) register() {
@@ -530,6 +531,10 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				a.actors.Send(a.self, &ChannelEntered{Bot: i, Err: err})
 			}()
 			return L.Yield()
+		},
+		"skill_macros": func(L *lua.LState) int {
+			L.Push(a.marshal.ToLua(L, a.checkBot(L).Macros))
+			return 1
 		},
 		"cash": func(L *lua.LState) int {
 			b := a.checkBot(L)

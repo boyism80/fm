@@ -114,6 +114,15 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
             count: card.count,
         })),
         keyLayout: bindingsFromProtoList(entry.keyLayout),
+        skillMacros: (entry.skillMacros ?? []).map((macro) => ({
+            characterId: msgChar.characterId,
+            position: macro.position,
+            name: macro.name,
+            shout: macro.shout,
+            skill1: macro.skill1,
+            skill2: macro.skill2,
+            skill3: macro.skill3,
+        })),
         mount: entry.mount
             ? {
                 level: entry.mount.level,

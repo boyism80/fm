@@ -75,6 +75,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Buffs = NewBuffs(ch)
 	ch.Debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
 	ch.Skills = NewSkills(ch)
+	ch.SkillMacros = NewSkillMacros(ch)
 	ch.Quests = NewQuests(ch)
 	ch.Summons = NewSummons(ch)
 	ch.Doors = NewDoors(ch)
@@ -111,6 +112,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.LoadInventory(reply.GetInventory())
 	ch.Inventory.LoadRings(reply.GetRings())
 	ch.LoadSkills(reply.GetSkills())
+	ch.SkillMacros.Load(NewSkillMacrosFromInternalProto(reply.GetSkillMacros()))
 	ch.LoadBuffs(reply.GetBuffs())
 	ch.Debuffs.Load(reply.GetDebuffs())
 	ch.LoadQuests(reply.GetQuests())
@@ -392,6 +394,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Overlays:       overlays,
 		Inventory:      ch.InventoryToProto(),
 		Skills:         ch.SkillsToProto(),
+		SkillMacros:    ch.SkillMacros.ToProto(),
 		Buffs:          ch.BuffsToProto(),
 		KeyLayout:      ch.KeyLayout.ToProto(),
 		Quests:         ch.QuestsToProto(),

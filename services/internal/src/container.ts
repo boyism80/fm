@@ -16,6 +16,7 @@ import { AccountRecordRepository } from "./repos/account-record-repository";
 import { MonsterBookRepository } from "./repos/monster-book-repository";
 import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
+import { SkillMacroRepository } from "./repos/skill-macro-repository";
 import { MountRepository } from "./repos/mount-repository";
 import { StorageRepository } from "./repos/storage-repository";
 import { StorageItemRepository } from "./repos/storage-item-repository";
@@ -79,6 +80,7 @@ export function createAppContainer() {
         monsterBookRepository: awilix.asClass(MonsterBookRepository).scoped(),
         sessionRepository: awilix.asClass(SessionRepository).scoped(),
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),
+        skillMacroRepository: awilix.asClass(SkillMacroRepository).scoped(),
         mountRepository: awilix.asClass(MountRepository).scoped(),
         storageRepository: awilix.asClass(StorageRepository).scoped(),
         storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),

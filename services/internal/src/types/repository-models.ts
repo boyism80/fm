@@ -264,6 +264,28 @@ export type KeyLayoutRow = {
 
 export type KeyLayoutDeleteModel = { worldId: number; characterId: number };
 
+export interface SkillMacroModel {
+    characterId: number;
+    position: number;
+    name: string;
+    shout: boolean;
+    skill1: number;
+    skill2: number;
+    skill3: number;
+}
+
+export type SkillMacroRow = {
+    character_id: number;
+    position: number;
+    name: string;
+    shout: boolean;
+    skill1: number;
+    skill2: number;
+    skill3: number;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
 export interface MountModel {
     characterId: number;
     worldId: number;

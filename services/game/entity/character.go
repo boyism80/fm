@@ -61,6 +61,7 @@ type Character struct {
 	remoteShop        remoteShop
 	shopScan          shopScan
 	Skills            *Skills
+	SkillMacros       *SkillMacros
 	KeyLayout         *KeyLayout
 	Chair             uint32
 	lastHeal          lastHeal

@@ -23,6 +23,7 @@ import type { CharacterRecordRepository } from "../../repos/character-record-rep
 import type { AccountRecordRepository } from "../../repos/account-record-repository";
 import type { MonsterBookRepository } from "../../repos/monster-book-repository";
 import type { MountRepository } from "../../repos/mount-repository";
+import type { SkillMacroRepository } from "../../repos/skill-macro-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type {
@@ -76,6 +77,7 @@ export class SessionGrpcController {
     private readonly accountRecordRepository: AccountRecordRepository;
     private readonly monsterBookRepository: MonsterBookRepository;
     private readonly mountRepository: MountRepository;
+    private readonly skillMacroRepository: SkillMacroRepository;
     private readonly sessionService: SessionService;
     private readonly accountService: AccountService;
     private readonly buddyService: BuddyService;
@@ -98,6 +100,7 @@ export class SessionGrpcController {
         accountRecordRepository: AccountRecordRepository,
         monsterBookRepository: MonsterBookRepository,
         mountRepository: MountRepository,
+        skillMacroRepository: SkillMacroRepository,
         sessionService: SessionService,
         accountService: AccountService,
         buddyService: BuddyService,
@@ -119,6 +122,7 @@ export class SessionGrpcController {
         this.accountRecordRepository = accountRecordRepository;
         this.monsterBookRepository = monsterBookRepository;
         this.mountRepository = mountRepository;
+        this.skillMacroRepository = skillMacroRepository;
         this.sessionService = sessionService;
         this.accountService = accountService;
         this.buddyService = buddyService;
@@ -233,13 +237,14 @@ export class SessionGrpcController {
 
     private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
         const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage] = await Promise.all([
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, skillMacros, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage] = await Promise.all([
             this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.buffService.getBuffs(worldId, characterId),
             this.questRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.savedLocationRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.characterService.getKeyLayoutBindings(worldId, characterId),
+            this.skillMacroRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()].sort((a, b) => a.position - b.position)),
             this.buddyService.getAll(worldId, characterId),
             this.marriageService.loadMarriage(worldId, characterId),
             this.cashShopService.getWishlist(worldId, characterId),
@@ -298,6 +303,7 @@ export class SessionGrpcController {
                 )
             ),
             keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
+            skillMacros,
             partyId: realtime?.partyId != null ? realtime.partyId : undefined,
             guildId: realtime?.guildId != null ? realtime.guildId : undefined,
             buddies: buddyPack.buddies.map((buddy) =>
@@ -362,6 +368,7 @@ export class SessionGrpcController {
                     quests: [],
                     savedLocations: [],
                     keyLayout: [],
+                    skillMacros: [],
                     partyId: undefined,
                     guildId: undefined,
                     buddies: [],

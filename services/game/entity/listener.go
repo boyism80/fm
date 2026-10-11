@@ -117,6 +117,7 @@ type CharacterListener interface {
 	SetAccountRoleAsync(ctx actor.Context, ch *Character, role constant.CharacterRole) *async.Promise[*internal.SetAccountRoleReply]
 	Disconnect(ch *Character)
 	OnKeyMap(ch *Character)
+	OnSkillMacros(ch *Character)
 	OnClock(ch *Character, seconds int32)
 	OnStopClock(ch *Character)
 	OnPartyCreated(ch *Character, partyID uint32)

@@ -36,6 +36,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Listener.OnShowGuildInfo(character)
 		character.Listener.OnShowAllianceInfo(character)
 		character.Buffs.ShowAll()
+		character.Listener.OnSkillMacros(character)
 	} else {
 		characterDTO := character.ToDTO()
 		characterDTO.SpawnPoint = spawnPoint

@@ -15,6 +15,8 @@ import type { CharacterModel } from "../repos/character-repository";
 import { InventoryRepository } from "../repos/inventory-repository";
 import type { InventoryModel } from "../repos/inventory-repository";
 import { KeyLayoutRepository } from "../repos/key-layout-repository";
+import { SkillMacroRepository } from "../repos/skill-macro-repository";
+import type { SkillMacroModel } from "../repos/skill-macro-repository";
 import { MountRepository } from "../repos/mount-repository";
 import type { MountModel } from "../repos/mount-repository";
 import { StorageRepository } from "../repos/storage-repository";
@@ -101,6 +103,7 @@ export type SaveCharacterEntry = {
     accountRecords?: RecordModel[];
     monsterBook?: MonsterBookCardModel[];
     keyLayout?: KeyLayoutBindingModel[];
+    skillMacros?: SkillMacroModel[];
     mount?: Pick<MountModel, "level" | "exp" | "fatigue">;
     storage?: { storage: StorageModel; items: InventoryModel[] };
     claimedShops?: number[];
@@ -120,6 +123,7 @@ export class CharacterService {
     private readonly accountRecordRepo: AccountRecordRepository;
     private readonly monsterBookRepo: MonsterBookRepository;
     private readonly keyLayoutRepo: KeyLayoutRepository;
+    private readonly skillMacroRepo: SkillMacroRepository;
     private readonly mountRepo: MountRepository;
     private readonly storageRepo: StorageRepository;
     private readonly storageItemRepo: StorageItemRepository;
@@ -148,6 +152,7 @@ export class CharacterService {
         accountRecordRepository: AccountRecordRepository,
         monsterBookRepository: MonsterBookRepository,
         keyLayoutRepository: KeyLayoutRepository,
+        skillMacroRepository: SkillMacroRepository,
         mountRepository: MountRepository,
         storageRepository: StorageRepository,
         storageItemRepository: StorageItemRepository,
@@ -175,6 +180,7 @@ export class CharacterService {
         this.accountRecordRepo = accountRecordRepository;
         this.monsterBookRepo = monsterBookRepository;
         this.keyLayoutRepo = keyLayoutRepository;
+        this.skillMacroRepo = skillMacroRepository;
         this.mountRepo = mountRepository;
         this.storageRepo = storageRepository;
         this.storageItemRepo = storageItemRepository;
@@ -272,7 +278,7 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, mount, storage, claimedShops } of entries) {
+        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, skillMacros, mount, storage, claimedShops } of entries) {
             this.assertWorld(character.worldId);
             this.assertCharacterId(character.characterId);
             this.assertAccountId(character.accountId);
@@ -284,7 +290,7 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, mount, storage, claimedShops });
+            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, skillMacros, mount, storage, claimedShops });
         }
 
         for (const [worldId, group] of byWorld) {
@@ -306,7 +312,7 @@ export class CharacterService {
                 await this.familyService.progress(worldId, character);
             }
 
-            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, mount, storage, claimedShops } of latest) {
+            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, skillMacros, mount, storage, claimedShops } of latest) {
                 if (!character.accountId) {
                     continue;
                 }
@@ -362,6 +368,9 @@ export class CharacterService {
                         worldId: character.worldId,
                         keyLayoutJson: bindingsToJsonString(keyLayout),
                     });
+                }
+                if (skillMacros !== undefined) {
+                    await this.skillMacroRepo.replaceBySnapshot(character.worldId, String(character.characterId), skillMacros.map((macro) => ({ ...macro, characterId: character.characterId })));
                 }
                 if (mount !== undefined) {
                     await this.mountRepo.set(character.worldId, { ...mount, characterId: character.characterId, worldId: character.worldId });
@@ -565,6 +574,7 @@ export class CharacterService {
         await this.savedLocationRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.characterRecordRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.monsterBookRepo.replaceBySnapshot(worldId, String(characterId), []);
+        await this.skillMacroRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.buddyRepo.deleteAllForOwner(worldId, characterId);
         await this.buddyRepo.deleteAllReferencingBuddy(worldId, characterId);
         await this.realtimeStateRepo.delete({ worldId, characterId });

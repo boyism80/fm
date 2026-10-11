@@ -55,6 +55,7 @@ type Bot struct {
 	Gifts          []*dto.CashShopGift
 	SlotLimits     map[constant.InventoryType]uint8
 	Stones         map[bool][]uint32
+	Macros         []response.SkillMacroEntry
 	SecondPassword bool
 	cfg            *config.Bot
 	conn           *conn.Conn
@@ -142,6 +143,8 @@ func (b *Bot) Update(pkt any) {
 		b.load(p.Character)
 	case *response.CashShopBalance:
 		b.NXCash, b.MaplePoint = p.NXCash, p.MaplePoint
+	case *response.SkillMacro:
+		b.Macros = p.Entries
 	case *response.CashShopResult:
 		switch p.Kind {
 		case pconst.CashShopResultLocker:

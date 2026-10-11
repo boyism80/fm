@@ -148,6 +148,20 @@ func (m *Marshal) fromLua(lv lua.LValue, v reflect.Value) error {
 		}
 		v.Set(s)
 		return nil
+	case reflect.Array:
+		tbl, ok := lv.(*lua.LTable)
+		if !ok {
+			return fmt.Errorf("want table, got %s", lv.Type())
+		}
+		if tbl.Len() > v.Len() {
+			return fmt.Errorf("want at most %d elements, got %d", v.Len(), tbl.Len())
+		}
+		for i := 0; i < tbl.Len(); i++ {
+			if err := m.fromLua(tbl.RawGetInt(i+1), v.Index(i)); err != nil {
+				return fmt.Errorf("[%d]: %w", i+1, err)
+			}
+		}
+		return nil
 	case reflect.Struct:
 		tbl, ok := lv.(*lua.LTable)
 		if !ok {
