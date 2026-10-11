@@ -2159,6 +2159,7 @@ message FamilyState {
   repeated FamilyMember members = 10;
   int64 buff_until = 11 [jstype = JS_STRING];
   FamilyFeature buff_feature = 12;
+  uint32 member_count = 13;
 }
 message FamilyRequest {
   uint32 world_id = 1;

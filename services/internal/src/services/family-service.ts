@@ -188,28 +188,30 @@ export class FamilyService {
             return seen.size;
         };
 
-        // Client expects the leader first, then two generations above and below the selected character.
+        // Client expects a separate leader node, then two generations above and below the selected character; the leader repeats when it is one of them.
         const visible: Relative[] = [leader];
-        const add = (row: Relative | undefined) => {
-            if (row && !visible.includes(row)) {
-                visible.push(row);
-            }
-        };
         const senior = rows.get(me.senior_id);
-        add(senior ? rows.get(senior.senior_id) : undefined);
-        add(senior);
-        add(me);
+        const grandSenior = senior ? rows.get(senior.senior_id) : undefined;
+        if (grandSenior) {
+            visible.push(grandSenior);
+        }
+        if (senior) {
+            visible.push(senior);
+        }
+        visible.push(me);
         if (senior) {
             for (const sibling of children(senior.character_id)) {
-                add(sibling);
+                if (sibling !== me) {
+                    visible.push(sibling);
+                }
             }
         }
         for (const junior of children(id)) {
-            add(junior);
+            visible.push(junior);
         }
         for (const junior of children(id)) {
             for (const grand of children(junior.character_id)) {
-                add(grand);
+                visible.push(grand);
             }
         }
 
@@ -246,6 +248,7 @@ export class FamilyService {
             members,
             buffUntil: String(me.buff_until?.getTime() ?? 0),
             buffFeature: me.buff_feature,
+            memberCount: inFamily ? descendants(root) + 1 : 0,
         };
     }
 

@@ -3762,6 +3762,7 @@ export interface FamilyState {
   members: FamilyMember[];
   buffUntil: string;
   buffFeature: FamilyFeature;
+  memberCount: number;
 }
 
 export interface FamilyRequest {
@@ -35245,6 +35246,7 @@ function createBaseFamilyState(): FamilyState {
     members: [],
     buffUntil: "0",
     buffFeature: 0,
+    memberCount: 0,
   };
 }
 
@@ -35289,6 +35291,9 @@ export const FamilyState: MessageFns<FamilyState> = {
     }
     if (message.buffFeature !== 0) {
       writer.uint32(96).int32(message.buffFeature);
+    }
+    if (message.memberCount !== 0) {
+      writer.uint32(104).uint32(message.memberCount);
     }
     return writer;
   },
@@ -35416,6 +35421,14 @@ export const FamilyState: MessageFns<FamilyState> = {
           message.buffFeature = reader.int32() as any;
           continue;
         }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.memberCount = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -35473,6 +35486,11 @@ export const FamilyState: MessageFns<FamilyState> = {
         : isSet(object.buff_feature)
         ? familyFeatureFromJSON(object.buff_feature)
         : 0,
+      memberCount: isSet(object.memberCount)
+        ? globalThis.Number(object.memberCount)
+        : isSet(object.member_count)
+        ? globalThis.Number(object.member_count)
+        : 0,
     };
   },
 
@@ -35514,6 +35532,9 @@ export const FamilyState: MessageFns<FamilyState> = {
     if (message.buffFeature !== 0) {
       obj.buffFeature = familyFeatureToJSON(message.buffFeature);
     }
+    if (message.memberCount !== 0) {
+      obj.memberCount = Math.round(message.memberCount);
+    }
     return obj;
   },
 
@@ -35534,6 +35555,7 @@ export const FamilyState: MessageFns<FamilyState> = {
     message.members = object.members?.map((e) => FamilyMember.fromPartial(e)) || [];
     message.buffUntil = object.buffUntil ?? "0";
     message.buffFeature = object.buffFeature ?? 0;
+    message.memberCount = object.memberCount ?? 0;
     return message;
   },
 };

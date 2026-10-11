@@ -428,19 +428,28 @@ local function family_flow(ctx, senior, junior, low)
 		return false
 	end
 
-	send(junior, req.family_pedigree { family = { name = junior:name() } })
-	local chart = expect(ctx, junior, "family_chart", nil, "가계도")
-	if chart == false then
-		return false
-	end
-	local linked = false
-	for _, member in ipairs(chart.state.members) do
-		if member.character_id == junior:id() and member.senior_id == senior:id() then
-			linked = true
+	local function pedigree(viewer)
+		send(viewer, req.family_pedigree { family = { name = viewer:name() } })
+		local chart = expect(ctx, viewer, "family_chart", nil, viewer:name() .. " 가계도")
+		if chart == false then
+			return nil
 		end
+		local ids = {}
+		for _, member in ipairs(chart.state.members) do
+			ids[#ids + 1] = tostring(member.character_id)
+		end
+		return table.concat(ids, ","), chart.state.member_count
 	end
-	if check(ctx, linked, "가계도에 선배 관계가 없음") == false then
-		return false
+	local tree = senior:id() .. "," .. senior:id() .. "," .. junior:id()
+	for _, viewer in ipairs({ junior, senior }) do
+		local nodes, count = pedigree(viewer)
+		if nodes == nil then
+			return false
+		end
+		if check(ctx, nodes == tree and count == 2,
+			string.format("%s 가계도가 다름: nodes=%s count=%s (기대 %s, 2)", viewer:name(), nodes, tostring(count), tree)) == false then
+			return false
+		end
 	end
 
 	send(junior, req.family_remove_senior {})
