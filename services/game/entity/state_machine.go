@@ -113,17 +113,17 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 	belowMin := minPlayers > 0 && count < minPlayers
 	sm.mu.Unlock()
 
+	if warpLeaver && exitMapID > 0 && group != nil && group.GameWorld != nil {
+		if exitMap := group.GameWorld.GetMapSystem().Get(exitMapID); exitMap != nil {
+			_ = ch.Warp(ctx, exitMap, 0)
+		}
+	}
 	if belowMin {
 		if group != nil {
 			sm.callHookNow(ctx, group.ScriptPath, "on_player_leave", ch, string(reason))
 		}
 		sm.Finish(ctx, exitMapID, 0)
 		return true
-	}
-	if warpLeaver && exitMapID > 0 && group != nil && group.GameWorld != nil {
-		if exitMap := group.GameWorld.GetMapSystem().Get(exitMapID); exitMap != nil {
-			_ = ch.Warp(ctx, exitMap, 0)
-		}
 	}
 	sm.CallHook("on_player_leave", ch, string(reason))
 	return false

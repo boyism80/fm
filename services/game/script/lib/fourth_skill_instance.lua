@@ -6,8 +6,11 @@ local function create(config)
 	return {
 		on_init = function(group)
 			group:set_property("started", "false")
-			group:min_players(1)
+			group:min_players(config.min_players or 1)
 			group:exit_map(config.exit_map)
+			if config.max_machines ~= nil then
+				group:max_machines(config.max_machines)
+			end
 		end,
 
 		on_create = function(sm)
