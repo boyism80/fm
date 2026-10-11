@@ -310,6 +310,7 @@ func (ch *Character) CreatePersonalShop(actx actor.Context, title string, slot i
 		ps.ID = v.GetShopId()
 		if ch.GetMap() != m || ch.MiniRoom != nil || m.checkShopSpot(ps.Position) != nil {
 			ps.GameWorld = ch.GameWorld
+			ps.home = m
 			ps.save(actx, true)
 			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
 			return nil

@@ -606,6 +606,7 @@ func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot 
 		current := ch.GetMap()
 		if current != m || ch.MiniRoom != nil || m.checkShopSpot(es.Position) != nil {
 			es.GameWorld = ch.GameWorld
+			es.home = m
 			es.save(actx, true)
 			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
 			return nil
