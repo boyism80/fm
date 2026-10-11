@@ -91,7 +91,7 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 		inv := ch.Inventory.Tabs[invType]
 		cost := costByInv[invType]
 		reward := rewardByInv[invType]
-		if result := inv.validateItemExchange(cost, reward, modelOf); result != ExchangeOK {
+		if result := inv.validateItemExchange(cost, reward, spec.Reward.Period, modelOf); result != ExchangeOK {
 			return result
 		}
 	}

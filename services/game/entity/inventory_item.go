@@ -306,7 +306,7 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 	var addedCount uint16
 
 	for remainingCount > 0 {
-		slot, ok := inven.FindSlot(model)
+		slot, ok := inven.FindSlot(item)
 		if !ok {
 			if allOrNothing && addedCount == 0 {
 				return nil, fmt.Errorf("no available slot found")

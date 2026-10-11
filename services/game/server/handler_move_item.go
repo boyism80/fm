@@ -154,7 +154,7 @@ func (h *MoveItem) move(ch *entity.Character, invenType constant.InventoryType, 
 
 	specSrc := src.GetModel()
 	specDst := dst.GetModel()
-	if specSrc != specDst {
+	if specSrc != specDst || !src.GetExpiration().Equal(dst.GetExpiration()) {
 		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
 		ch.Listener.OnSwapInventorySlot(ch, invenType, sourceSlot, destSlot, 0)
 		return

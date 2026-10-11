@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/wz"
 )
 
 var (
@@ -38,7 +37,8 @@ func (m *InventoryTab) NextSlot() (uint8, bool) {
 	return 0, false
 }
 
-func (m *InventoryTab) FindSlot(model wz.Item) (uint8, bool) {
+func (m *InventoryTab) FindSlot(incoming Item) (uint8, bool) {
+	model := incoming.GetModel()
 	if constant.IsRechargeable(model.GetID()) {
 		return m.NextSlot()
 	}
@@ -48,7 +48,7 @@ func (m *InventoryTab) FindSlot(model wz.Item) (uint8, bool) {
 			continue
 		}
 
-		if item.GetModel().GetID() != model.GetID() {
+		if item.GetModel().GetID() != model.GetID() || !item.GetExpiration().Equal(incoming.GetExpiration()) {
 			continue
 		}
 

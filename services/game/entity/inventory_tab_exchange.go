@@ -1,16 +1,20 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/util"
 )
 
 type itemSlotSnapshot struct {
-	itemID uint32
-	count  uint16
+	itemID  uint32
+	count   uint16
+	expires bool
 }
 
-func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map[uint32]uint16, modelOf func(uint32) wz.Item) ExchangeResult {
+func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map[uint32]uint16, period map[uint32]time.Duration, modelOf func(uint32) wz.Item) ExchangeResult {
 	if inv == nil {
 		if !exchangeItemsEmpty(cost) {
 			return ExchangeLackCost
@@ -34,7 +38,7 @@ func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map
 			continue
 		}
 		id := item.GetModel().GetID()
-		slots[slot] = itemSlotSnapshot{itemID: id, count: item.GetCount()}
+		slots[slot] = itemSlotSnapshot{itemID: id, count: item.GetCount(), expires: !item.GetExpiration().Equal(util.TimeMax)}
 		slotsByID[id] = append(slotsByID[id], slot)
 	}
 
@@ -77,10 +81,10 @@ func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map
 		}
 		capacity := max(int(model.GetCapacity()), 1)
 		need := int(count)
-		if capacity > 1 && !constant.IsRechargeable(id) {
+		if capacity > 1 && !constant.IsRechargeable(id) && period[id] == 0 {
 			for _, slot := range slotsByID[id] {
 				snap, ok := slots[slot]
-				if !ok {
+				if !ok || snap.expires {
 					continue
 				}
 				need -= min(need, max(capacity-int(snap.count), 0))

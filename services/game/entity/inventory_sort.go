@@ -10,21 +10,26 @@ func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
 	if inven == nil {
 		return
 	}
-	buckets := map[wz.Item]map[int16]Item{}
+	type stack struct {
+		model      wz.Item
+		expiration int64
+	}
+	buckets := map[stack]map[int16]Item{}
 
 	for i := range inven.SlotLimit {
 		item := inven.Items[int16(i+1)]
 		if item == nil {
 			continue
 		}
-		model := item.GetModel()
-		if buckets[model] == nil {
-			buckets[model] = map[int16]Item{}
+		key := stack{model: item.GetModel(), expiration: item.GetExpiration().UnixNano()}
+		if buckets[key] == nil {
+			buckets[key] = map[int16]Item{}
 		}
-		buckets[model][int16(i+1)] = item
+		buckets[key][int16(i+1)] = item
 	}
 
-	for model, bucket := range buckets {
+	for key, bucket := range buckets {
+		model := key.model
 		count := uint16(0)
 		for _, v := range bucket {
 			count += v.GetCount()
