@@ -35,6 +35,7 @@ var requests = []outbound{
 	&request.QuestAction{},
 	&request.Attack{},
 	&request.ActiveSkill{},
+	&request.DistributeSP{},
 	&request.ItemLoot{},
 	&request.MoveItem{},
 	&request.DamageReactor{},

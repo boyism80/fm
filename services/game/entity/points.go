@@ -107,6 +107,13 @@ func (p *Points) DistributeSkill(skillID uint32) bool {
 		skillEntry = NewSkillEntry(p.owner, wzSkill, 0, wzSkill.DefaultMasterLevel())
 	}
 
+	if skillEntry.Wz.IsBeginnerSkill() {
+		switch skillID % 10000 {
+		case 1000, 1001, 1002:
+		default:
+			return false
+		}
+	}
 	if skillEntry.Level() >= min(skillEntry.MasterLevel, skillEntry.Wz.MaxLevel) {
 		return false
 	}

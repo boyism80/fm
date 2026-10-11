@@ -12,6 +12,8 @@ type DistributeSP struct {
 func (*DistributeSP) Opcode() byte { return 0x49 }
 
 func (p *DistributeSP) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU32(p.SkillID)
 	return nil
 }
 

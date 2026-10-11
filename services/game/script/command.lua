@@ -795,7 +795,7 @@ local command_funcs = {
 			end
 			table.sort(quests)
 			me:message(string.format(
-				"봇상태 tag=%s dialog=%d level=%d class=%d meso=%d exp=%d population=%d map=%d quests=%s items=%s",
+				"봇상태 tag=%s dialog=%d level=%d class=%d meso=%d exp=%d population=%d map=%d sp=%d quests=%s items=%s",
 				args[1] or "-",
 				me:in_dialog() and 1 or 0,
 				me:level(),
@@ -804,6 +804,7 @@ local command_funcs = {
 				me:exp(),
 				me:population(),
 				me:map():template_id(),
+				me:skill_point(),
 				table.concat(quests, ","),
 				table.concat(items, ",")
 			))
@@ -1949,6 +1950,20 @@ local command_funcs = {
 
 			skill:level(level, master_level)
 			me:message(string.format("스킬레벨 설정: %d -> level %d, master %d", skill_id, level, master_level))
+			return true
+		end,
+	},
+	["스킬포인트"] = {
+		privilege = ROLE.Admin,
+		usage = "<SP> - 남은 SP 설정",
+		command = function(me, args)
+			local sp = tonumber(args[1])
+			if sp == nil or sp < 0 then
+				me:message("사용법: /스킬포인트 <SP>")
+				return true
+			end
+			me:skill_point(sp)
+			me:message(string.format("스킬포인트 설정: %d", sp))
 			return true
 		end,
 	},

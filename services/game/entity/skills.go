@@ -54,7 +54,7 @@ func (sc *Skills) Remove(skillID uint32) bool {
 }
 
 func (sc *Skills) Get(skillID uint32) *SkillEntry {
-	if entry := sc.entries[skillID]; entry != nil && entry.Level() > 0 {
+	if entry := sc.entries[skillID]; entry != nil && entry.Level() > 0 && !entry.Wz.Dojo {
 		return entry
 	}
 	return sc.dojoSkill(skillID)
