@@ -183,7 +183,9 @@ local function purify_sprites(ctx)
 		end
 		local mob = leader:mobs(SPRITE)[1]
 		if mob ~= nil then
-			leader:attack(mob.oid, SPRITE_DAMAGE)
+			if pq.command(leader, "/몹피해 " .. mob.oid .. " " .. SPRITE_DAMAGE, "몹 피해") == false then
+				return ctx:fail("정령 피해 실패: " .. mob.oid)
+			end
 			if leader:catch(mob.oid, BEAD) == false then
 				return ctx:fail("정화의 구슬로 몹을 잡지 못함: " .. mob.oid)
 			end

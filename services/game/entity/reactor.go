@@ -163,12 +163,28 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 		}
 		r.ScheduleStateRevert(newState, oldState, timeout)
 	}
-	if done || timeout > 0 || trigger == nil || !trigger.GM.InstantKill {
+	if done || timeout > 0 || trigger == nil || !trigger.GM.InstantKill || r.cycles(newState) {
 		return
 	}
 	if newEvent.Type == constant.ReactorEventTypeHit || newEvent.Type == constant.ReactorEventTypeDirectionalHit {
 		r.Hit(trigger, hitSide, stance)
 	}
+}
+
+// cycles reports whether hits from state come back around without breaking, as a lever does.
+func (r *Reactor) cycles(state byte) bool {
+	seen := map[byte]bool{}
+	for event := r.eventAt(state); event != nil && event.NextState != state; event = r.eventAt(state) {
+		if event.Type != constant.ReactorEventTypeHit && event.Type != constant.ReactorEventTypeDirectionalHit {
+			return false
+		}
+		if seen[state] {
+			return true
+		}
+		seen[state] = true
+		state = event.NextState
+	}
+	return false
 }
 
 // A blocked map keeps a broken reactor in its final state, as if WZ gave it no respawn delay.

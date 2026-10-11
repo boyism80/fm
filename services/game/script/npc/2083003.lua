@@ -33,13 +33,13 @@ return {
 			me:dialog(npc, "...")
 			return
 		end
+		pq.remove_all(step.item, me)
+		sm:set_property("stage1progress", tostring(progress + 1))
 		local map = me:map()
 		if map ~= nil then
 			map:clear_effect()
 		end
 		notice_all(sm, step.msg)
 		me:dialog(npc, step.msg)
-		pq.remove_all(step.item, me)
-		sm:set_property("stage1progress", tostring(progress + 1))
 	end
 }

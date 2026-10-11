@@ -390,12 +390,14 @@ local function balrog(ctx)
 		return false
 	end
 	local sealed = bot:mobs(BALROG_BODY)[1].oid
-	if bot:attack(sealed, BALROG_SEALED_HIT, 1) == false then
-		return ctx:fail("봉인된 발록 공격 실패")
-	end
-	local _, hit = bot:request({ resp.show_mob_hp, resp.die_mob }, nil, function(p)
+	local damaged, hit = bot:request({ resp.show_mob_hp, resp.die_mob }, req.normal_chat {
+		message = "/몹피해 " .. sealed .. " " .. BALROG_SEALED_HIT,
+	}, function(p)
 		return p.oid == sealed
 	end)
+	if damaged == false then
+		return ctx:fail("봉인된 발록 피해 실패")
+	end
 	if hit ~= resp.show_mob_hp then
 		return ctx:fail("봉인된 발록이 일반 체력 이상의 피해에 쓰러짐")
 	end

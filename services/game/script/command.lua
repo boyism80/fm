@@ -1676,6 +1676,35 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["몹피해"] = {
+		privilege = ROLE.Admin,
+		usage = "<oid> <피해량> - 맵 몬스터에게 공격 검증 없이 피해를 줌",
+		command = function(me, args)
+			local oid = tonumber(args[1])
+			local amount = tonumber(args[2])
+			if oid == nil or amount == nil or amount <= 0 then
+				me:message("사용법: /몹피해 <oid> <피해량>")
+				return true
+			end
+			local m = me:map()
+			if m == nil then
+				me:message("맵 정보 없음")
+				return true
+			end
+			local mob = m:mobs()[oid]
+			if mob == nil then
+				me:message("몬스터 없음: " .. oid)
+				return true
+			end
+			-- Instant kill turns any damage into the mob's remaining HP.
+			local instant = me:instant_kill()
+			me:instant_kill(false)
+			local killed = mob:damage(me, math.floor(amount))
+			me:instant_kill(instant)
+			me:message(string.format("몹 피해: %d (처치: %s)", math.floor(amount), tostring(killed)))
+			return true
+		end,
+	},
 	["몬스터죽이기"] = {
 		privilege = ROLE.Admin,
 		usage = "- 맵 몬스터 제거 (스펀지 본체 제외)",

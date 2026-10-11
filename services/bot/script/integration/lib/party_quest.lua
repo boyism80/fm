@@ -315,7 +315,14 @@ function M.feed(ctx, bot, reactor_id, item_id, count)
 		local p = bot:request({ resp.trigger_reactor, resp.destroy_reactor }, nil, function(p)
 			return p.reactor.oid == reactor.oid
 		end, 12000)
-		if p ~= false then
+		-- A timed state reverting also sends a trigger; only a consumed drop means the reactor took the item.
+		local taken = true
+		for _, d in ipairs(bot:drops(item_id)) do
+			if d.oid == oid then
+				taken = false
+			end
+		end
+		if p ~= false and taken then
 			return reactor
 		end
 		if bot:loot(oid) == false then

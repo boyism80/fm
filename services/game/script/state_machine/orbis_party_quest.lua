@@ -18,6 +18,7 @@ local DARK_NEPENTHES = 9300049
 local PAPA_PIXIE = 9300039
 local STAGE2_PIECE = 4001045
 local FIXED_REACTOR = 2001016
+local EAK_READY_STATE = 20
 
 local STAGE_MAPS = {
 	920010000,
@@ -112,6 +113,11 @@ return {
 		end
 		pq.shuffle_reactors(sm:map(LOBBY_MAP), 2002004, 2002010)
 		pq.shuffle_reactors(sm:map(GARDEN_MAP), nil, nil, FIXED_REACTOR)
+		-- States 0-19 of the lump of light have no event; only state 20 takes the clouds.
+		local eak = sm:map(START_MAP):find_reactor_name("eak")
+		if eak ~= nil then
+			eak:hit(EAK_READY_STATE)
+		end
 	end,
 
 	on_start = function(sm)
