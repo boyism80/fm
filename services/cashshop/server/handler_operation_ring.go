@@ -74,12 +74,10 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *entity.Character
 			PartnerItem:   partnerItem,
 		})
 	}, func(reply *internal.BuyCashRingReply) error {
-		character.Busy = false
-		character.NXCash = reply.GetNxCash()
-		character.MaplePoint = reply.GetMaplePoint()
+		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
-			character.Locker = append(character.Locker, item)
+			character.AddLocker(item)
 			_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultBought, Item: character.LockerItemDTO(item)}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.CashShopResult{
 				Kind:      constant.CashShopResultGiftSent,

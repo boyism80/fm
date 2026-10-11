@@ -49,13 +49,14 @@ func (h *Coupon) fail(ctx *core.ClientContext, failure constant.CashShopFailure)
 
 func (h *Coupon) start(ctx *core.ClientContext, character *entity.Character) *async.Task {
 	character.Busy = true
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.OnError(func(err error) {
-		character.Busy = false
-		log.Printf("cash shop coupon (async): character %d: %v", character.ID(), err)
-		h.fail(ctx, constant.CashShopFailureUnknown)
-	})
-	return promise
+	return async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).
+		OnError(func(err error) {
+			log.Printf("cash shop coupon (async): character %d: %v", character.ID(), err)
+			h.fail(ctx, constant.CashShopFailureUnknown)
+		}).
+		Finally(func() {
+			character.Busy = false
+		})
 }
 
 func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, req *request.CashShopCoupon) {
@@ -72,7 +73,6 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 	promise.ThenRPC(func(c context.Context) (*internal.FindCashCouponReply, error) {
 		return h.cs.internalClient.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: uint32(h.cs.config.WorldID), Code: req.Code})
 	}, func(reply *internal.FindCashCouponReply) error {
-		character.Busy = false
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 		case internal.CashShopResult_CASH_SHOP_RESULT_COUPON_USED:
@@ -97,13 +97,13 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 			}
 			item = created
 		}
-		h.claim(ctx, character, req.Code, reply.GetKind(), reply.GetValue(), item)
+		h.claim(ctx, promise, character, req.Code, reply.GetKind(), reply.GetValue(), item)
 		return nil
 	})
 }
 
-func (h *Coupon) claim(ctx *core.ClientContext, character *entity.Character, code string, kind internal.CashCouponKind, value uint32, item *internal.CashItem) {
-	promise := h.start(ctx, character)
+// claim continues the task redeem started, so Busy stays set until the coupon is spent.
+func (h *Coupon) claim(ctx *core.ClientContext, promise *async.Task, character *entity.Character, code string, kind internal.CashCouponKind, value uint32, item *internal.CashItem) {
 	promise.ThenRPC(func(c context.Context) (*internal.RedeemCashCouponReply, error) {
 		return h.cs.internalClient.RedeemCashCoupon(c, &internal.RedeemCashCouponRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
@@ -113,7 +113,6 @@ func (h *Coupon) claim(ctx *core.ClientContext, character *entity.Character, cod
 			Item:        item,
 		})
 	}, func(reply *internal.RedeemCashCouponReply) error {
-		character.Busy = false
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 		case internal.CashShopResult_CASH_SHOP_RESULT_COUPON_USED:
@@ -127,9 +126,8 @@ func (h *Coupon) claim(ctx *core.ClientContext, character *entity.Character, cod
 			return nil
 		}
 
-		character.NXCash = reply.GetNxCash()
-		character.MaplePoint = reply.GetMaplePoint()
-		character.Game.Character.Meso = reply.GetMeso()
+		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
+		character.SetMeso(reply.GetMeso())
 		redeemed := &response.CashShopResult{Kind: constant.CashShopResultCouponRedeemed}
 		switch kind {
 		case internal.CashCouponKind_CASH_COUPON_KIND_MAPLE_POINT:
@@ -137,7 +135,7 @@ func (h *Coupon) claim(ctx *core.ClientContext, character *entity.Character, cod
 		case internal.CashCouponKind_CASH_COUPON_KIND_MESO:
 			redeemed.Meso = value
 		case internal.CashCouponKind_CASH_COUPON_KIND_ITEM:
-			character.Locker = append(character.Locker, item)
+			character.AddLocker(item)
 			redeemed.Items = []*dto.CashShopItem{character.LockerItemDTO(item)}
 		}
 		_ = ctx.Client.Send(redeemed, types.SEND_POLICY_ENCRYPT)

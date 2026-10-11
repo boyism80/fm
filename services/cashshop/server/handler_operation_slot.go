@@ -90,9 +90,7 @@ func (h *Operation) expandSlot(ctx *core.ClientContext, character *entity.Charac
 	promise.ThenRPC(func(c context.Context) (*internal.ExpandCashSlotReply, error) {
 		return h.cs.internalClient.ExpandCashSlot(c, expansion)
 	}, func(reply *internal.ExpandCashSlotReply) error {
-		character.Busy = false
-		character.NXCash = reply.GetNxCash()
-		character.MaplePoint = reply.GetMaplePoint()
+		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 			slots := uint16(reply.GetSlots())

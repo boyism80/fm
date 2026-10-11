@@ -80,10 +80,39 @@ func (ch *Character) SetSlotLimit(invType constant.InventoryType, limit uint8) {
 	p.SlotLimits[invType-1] = uint32(limit)
 }
 
+func (ch *Character) AddLocker(items ...*internal.CashItem) {
+	ch.Locker = append(ch.Locker, items...)
+}
+
 func (ch *Character) RemoveLocker(serial uint64) {
 	ch.Locker = slices.DeleteFunc(ch.Locker, func(item *internal.CashItem) bool {
 		return item.GetItem().GetUniqueId() == serial
 	})
+}
+
+func (ch *Character) AddInventory(item *internal.Inventory) {
+	ch.Game.Inventory = append(ch.Game.Inventory, item)
+}
+
+func (ch *Character) TakeOut(serial uint64, item *internal.Inventory) {
+	ch.RemoveLocker(serial)
+	ch.AddInventory(item)
+}
+
+func (ch *Character) PutIn(serial uint64, invType constant.InventoryType, item *internal.CashItem) {
+	ch.Game.Inventory = slices.DeleteFunc(ch.Game.Inventory, func(pb *internal.Inventory) bool {
+		return pb.GetSlot() > 0 && pb.GetUniqueId() == serial && ch.inventoryType(pb) == invType
+	})
+	ch.AddLocker(item)
+}
+
+func (ch *Character) SetBalance(nxCash, maplePoint uint32) {
+	ch.NXCash = nxCash
+	ch.MaplePoint = maplePoint
+}
+
+func (ch *Character) SetMeso(meso int32) {
+	ch.Game.Character.Meso = meso
 }
 
 func (ch *Character) FindLocker(serial uint64) *internal.CashItem {
@@ -102,13 +131,13 @@ func (ch *Character) Balance(currency uint8) (internal.CashCurrency, uint32) {
 	return internal.CashCurrency_CASH_CURRENCY_NX_CASH, ch.NXCash
 }
 
-func (ch *Character) FindInventory(serial uint64, invType constant.InventoryType) (int, *internal.Inventory) {
-	for i, item := range ch.Game.Inventory {
+func (ch *Character) FindInventory(serial uint64, invType constant.InventoryType) *internal.Inventory {
+	for _, item := range ch.Game.Inventory {
 		if item.GetSlot() > 0 && item.GetUniqueId() == serial && ch.inventoryType(item) == invType {
-			return i, item
+			return item
 		}
 	}
-	return -1, nil
+	return nil
 }
 
 func (ch *Character) FreeSlot(invType constant.InventoryType) (int16, bool) {

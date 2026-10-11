@@ -71,13 +71,14 @@ func (h *Operation) Handle(ctx *core.ClientContext, req *request.CashShopOperati
 
 func (h *Operation) start(ctx *core.ClientContext, character *entity.Character, failed constant.CashShopResultKind) *async.Task {
 	character.Busy = true
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.OnError(func(err error) {
-		character.Busy = false
-		log.Printf("cash shop operation (async): character %d: %v", character.ID(), err)
-		_ = ctx.Client.Send(&response.CashShopResult{Kind: failed, Failure: constant.CashShopFailureUnknown}, types.SEND_POLICY_ENCRYPT)
-	})
-	return promise
+	return async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).
+		OnError(func(err error) {
+			log.Printf("cash shop operation (async): character %d: %v", character.ID(), err)
+			_ = ctx.Client.Send(&response.CashShopResult{Kind: failed, Failure: constant.CashShopFailureUnknown}, types.SEND_POLICY_ENCRYPT)
+		}).
+		Finally(func() {
+			character.Busy = false
+		})
 }
 
 func (h *Operation) findCommodity(sn uint32) (*wz.Commodity, constant.CashShopFailure) {
@@ -184,12 +185,10 @@ func (h *Operation) purchase(ctx *core.ClientContext, character *entity.Characte
 			Items:     items,
 		})
 	}, func(reply *internal.BuyCashItemReply) error {
-		character.Busy = false
-		character.NXCash = reply.GetNxCash()
-		character.MaplePoint = reply.GetMaplePoint()
+		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
-			character.Locker = append(character.Locker, items...)
+			character.AddLocker(items...)
 			bought()
 		case internal.CashShopResult_CASH_SHOP_RESULT_NOT_ENOUGH_CASH:
 			fail(constant.CashShopFailureNotEnoughCash)
@@ -249,11 +248,10 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 			Item:        pb,
 		})
 	}, func(reply *internal.BuyCashQuestItemReply) error {
-		character.Busy = false
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
-			character.Game.Character.Meso = reply.GetMeso()
-			character.Game.Inventory = append(character.Game.Inventory, pb)
+			character.SetMeso(reply.GetMeso())
+			character.AddInventory(pb)
 			_ = ctx.Client.Send(&response.AddInventorySlot{InventoryType: invType, Slot: int16(slot), Item: item.ToDTO()}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.UpdateStats{Stats: map[gconstant.Stat]int32{gconstant.StatMeso: reply.GetMeso()}}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.CashShopResult{
@@ -299,14 +297,12 @@ func (h *Operation) payBack(ctx *core.ClientContext, character *entity.Character
 			MaplePoint: refund,
 		})
 	}, func(reply *internal.PayBackCashItemReply) error {
-		character.Busy = false
 		if reply.GetResult() != internal.CashShopResult_CASH_SHOP_RESULT_OK {
 			fail(constant.CashShopFailureUnknown)
 			return nil
 		}
 		character.RemoveLocker(req.Serial)
-		character.NXCash = reply.GetNxCash()
-		character.MaplePoint = reply.GetMaplePoint()
+		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultPaidBack, Serial: req.Serial, MaplePoint: refund}, types.SEND_POLICY_ENCRYPT)
 		_ = ctx.Client.Send(&response.CashShopBalance{NXCash: character.NXCash, MaplePoint: character.MaplePoint}, types.SEND_POLICY_ENCRYPT)
 		return nil
@@ -329,7 +325,6 @@ func (h *Operation) setWishlist(ctx *core.ClientContext, character *entity.Chara
 			CommoditySns: wishlist,
 		})
 	}, func(reply *internal.SetCashWishlistReply) error {
-		character.Busy = false
 		character.Wishlist = wishlist
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultWishlistUpdated, Wishlist: wishlist}, types.SEND_POLICY_ENCRYPT)
 		return nil
@@ -369,13 +364,11 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 			Item:        pb,
 		})
 	}, func(reply *internal.TakeOutCashItemReply) error {
-		character.Busy = false
 		if reply.GetResult() != internal.CashShopResult_CASH_SHOP_RESULT_OK {
 			fail(constant.CashShopFailureUnknown)
 			return nil
 		}
-		character.RemoveLocker(req.Serial)
-		character.Game.Inventory = append(character.Game.Inventory, pb)
+		character.TakeOut(req.Serial, pb)
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultTakenOut, Slot: slot, TakenOut: item.ToDTO()}, types.SEND_POLICY_ENCRYPT)
 		return nil
 	})
@@ -386,7 +379,7 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *entity.Character, 
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultPutInFailed, Failure: failure}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	index, pb := character.FindInventory(req.Serial, gconstant.InventoryType(req.InventoryType))
+	pb := character.FindInventory(req.Serial, gconstant.InventoryType(req.InventoryType))
 	if pb == nil {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -404,11 +397,9 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *entity.Character, 
 			Item:        cashItem,
 		})
 	}, func(reply *internal.PutInCashItemReply) error {
-		character.Busy = false
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
-			character.Game.Inventory = append(character.Game.Inventory[:index], character.Game.Inventory[index+1:]...)
-			character.Locker = append(character.Locker, cashItem)
+			character.PutIn(req.Serial, gconstant.InventoryType(req.InventoryType), cashItem)
 			_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultPutIn, Item: character.LockerItemDTO(cashItem)}, types.SEND_POLICY_ENCRYPT)
 		case internal.CashShopResult_CASH_SHOP_RESULT_LOCKER_FULL:
 			fail(constant.CashShopFailureLockerFull)

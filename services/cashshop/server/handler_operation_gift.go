@@ -62,9 +62,7 @@ func (h *Operation) gift(ctx *core.ClientContext, character *entity.Character, r
 			Items:         items,
 		})
 	}, func(reply *internal.GiftCashItemReply) error {
-		character.Busy = false
-		character.NXCash = reply.GetNxCash()
-		character.MaplePoint = reply.GetMaplePoint()
+		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 			_ = ctx.Client.Send(&response.CashShopResult{
