@@ -40,7 +40,7 @@ type Bot struct {
 	Class      uint16
 	EXP        int32
 	Meso       int32
-	Fame       int32
+	Population int32
 	CP         uint16
 	NPCs       map[uint32]dto.Npc
 	Mobs       map[uint32]dto.Mob
@@ -188,7 +188,7 @@ func (b *Bot) Update(pkt any) {
 			case constant.StatMeso:
 				b.Meso = value
 			case constant.StatPopulation:
-				b.Fame = value
+				b.Population = value
 			}
 		}
 	case *response.UpdateQuest:
@@ -280,7 +280,7 @@ func (b *Bot) load(character *dto.Character) {
 		return
 	}
 	b.Map, b.Spawn, b.HP = character.Map, character.SpawnPoint, character.Hp
-	b.Level, b.Class, b.EXP, b.Fame = character.Level, character.Class, int32(character.Exp), int32(character.Population)
+	b.Level, b.Class, b.EXP, b.Population = character.Level, character.Class, int32(character.Exp), int32(character.Population)
 	b.Meso = character.Inventory.Meso
 	b.Stones[false], b.Stones[true] = character.TeleportStones, character.VipTeleportStones
 	for typ, tab := range character.Inventory.Tabs {

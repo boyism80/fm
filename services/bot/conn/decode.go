@@ -241,6 +241,16 @@ var decoders = func() []decoder {
 		newDecoder[response.TeleportStoneResult](nil),
 		newDecoder[response.ShowSelfEffect](nil),
 		newDecoder[response.ShowEffect](nil),
+		newDecoder[response.Whisper](nil),
+		newDecoder[response.Messenger](nil),
+		newDecoder[response.Notes](nil),
+		newDecoder[response.Population](nil),
+		newDecoder[response.FamilyResult](nil),
+		newDecoder[response.FamilyInvite](nil),
+		newDecoder[response.FamilyInviteResult](nil),
+		newDecoder[response.FamilyJoined](nil),
+		newDecoder[response.FamilyInfo](nil),
+		newDecoder[response.FamilyChart](nil),
 	}
 }()
 

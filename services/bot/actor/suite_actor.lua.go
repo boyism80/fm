@@ -70,6 +70,14 @@ var requests = []outbound{
 	&request.TeleportStoneList{},
 	&request.UseTeleportStone{},
 	&request.MoveItem{},
+	&request.Whisper{},
+	&request.Messenger{},
+	&request.Notes{},
+	&request.GivePopulation{},
+	&request.FamilyInvite{},
+	&request.FamilyAccept{},
+	&request.FamilyRemoveSenior{},
+	&request.FamilyPedigree{},
 }
 
 func (a *SuiteActor) register() {
@@ -207,7 +215,7 @@ func (a *SuiteActor) ctxFuncs() map[string]lua.LGFunction {
 			name := L.CheckString(2)
 			fn := L.CheckFunction(3)
 			a.hooks[name] = func(b *bot.Bot, pkt any) {
-				if _, err := luax.CallFunction(a.L, fn, a.ctxUD, a.botUDs[b], a.marshal.ToLua(a.L, pkt)); err != nil {
+				if _, err := luax.CallFunction(a.L, fn, a.ctxUD, a.botUDs[b], a.marshal.ToLua(a.L, pkt), lua.LString(a.packetName(pkt))); err != nil {
 					log.Printf("[%s] hook %s: %v", a.name, name, err)
 				}
 			}
@@ -258,8 +266,8 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(a.checkBot(L).CP))
 			return 1
 		},
-		"fame": func(L *lua.LState) int {
-			L.Push(lua.LNumber(a.checkBot(L).Fame))
+		"population": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).Population))
 			return 1
 		},
 		"items": func(L *lua.LState) int {

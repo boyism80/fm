@@ -222,7 +222,7 @@ local CLIENT_STATS = {
 	{ key = "class", name = "직업" },
 	{ key = "exp", name = "경험치" },
 	{ key = "meso", name = "메소" },
-	{ key = "fame", name = "인기도" },
+	{ key = "population", name = "인기도" },
 	{ key = "map", name = "맵" },
 }
 
@@ -280,8 +280,8 @@ local function diff(before, after, seen)
 		effects[#effects + 1] = string.format("메소 %+d", after.meso - before.meso)
 		seen.meso = true
 	end
-	if after.fame ~= before.fame then
-		effects[#effects + 1] = string.format("인기도 %+d", after.fame - before.fame)
+	if after.population ~= before.population then
+		effects[#effects + 1] = string.format("인기도 %+d", after.population - before.population)
 	end
 	if after.map ~= before.map then
 		effects[#effects + 1] = string.format("맵 %d", after.map)
