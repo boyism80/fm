@@ -166,18 +166,18 @@ local function feed(ctx)
 		return false
 	end
 
-	if unlocked(ctx, bot, req.use_mount_food { slot = bot:slot(FOOD) or 0, item_id = FOOD }, "탑승 전 먹이") == false then
-		return false
+	local p = bot:request(resp.update_mount, req.use_mount_food { slot = bot:slot(FOOD) or 0, item_id = FOOD }, nil, 3000)
+	if p == false then
+		return ctx:fail("탑승 전 먹이 후 탈것 정보 없음")
 	end
-	ctx:sleep(300)
-	if check(ctx, (bot:items()[FOOD] or 0) == 5, "탑승하지 않았는데 먹이가 사라짐") == false then
+	if check(ctx, p.fatigue == 0 and p.level_up == false, "피로도 0에서 탑승 전 먹이가 탈것을 바꿈") == false then
 		return false
 	end
 
 	if ride(ctx, bot, MONSTER_RIDER) == false then
 		return false
 	end
-	local p = bot:request(resp.update_mount, req.normal_chat { message = "/탈것피로도 50" }, nil, 3000)
+	p = bot:request(resp.update_mount, req.normal_chat { message = "/탈것피로도 50" }, nil, 3000)
 	if p == false then
 		return ctx:fail("피로도 설정 후 탈것 정보 없음")
 	end
@@ -213,7 +213,7 @@ local function feed(ctx)
 		return false
 	end
 	ctx:sleep(300)
-	return check(ctx, (bot:items()[FOOD] or 0) == 2, "먹이 개수가 다름: " .. tostring(bot:items()[FOOD]))
+	return check(ctx, (bot:items()[FOOD] or 0) == 1, "먹이 개수가 다름: " .. tostring(bot:items()[FOOD]))
 end
 
 local function tired(ctx)
@@ -237,7 +237,21 @@ local function tired(ctx)
 	if ride(ctx, bot, MONSTER_RIDER) == false then
 		return false
 	end
-	return riding(ctx, bot, 0, "피로도 100에서 탑승")
+	if riding(ctx, bot, 0, "피로도 100에서 탑승") == false then
+		return false
+	end
+
+	local p = bot:request(resp.update_mount, req.use_mount_food { slot = bot:slot(FOOD) or 0, item_id = FOOD }, nil, 3000)
+	if p == false then
+		return ctx:fail("피로도 100 먹이 후 탈것 정보 없음")
+	end
+	if check(ctx, p.fatigue == 70, "피로도 100 먹이 후 피로도가 다름: " .. p.fatigue) == false then
+		return false
+	end
+	if ride(ctx, bot, MONSTER_RIDER) == false then
+		return false
+	end
+	return riding(ctx, bot, TAMING_MOB, "먹이 후 다시 탑승")
 end
 
 local function persistence(ctx)

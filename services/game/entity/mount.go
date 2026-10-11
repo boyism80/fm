@@ -118,7 +118,7 @@ func (m *Mount) Feed(slot int16, itemID uint32) error {
 	if !ok || food.MountFatigue == 0 {
 		return ErrMountFoodInvalid
 	}
-	if m.owner.GetTimerEntry(mountFatigueTimer) == nil {
+	if m.owner.Inventory.Equipped[constant.EquipmentPartsTamingMob] == nil || m.owner.Inventory.Equipped[constant.EquipmentPartsSaddle] == nil {
 		return ErrMountFoodInvalid
 	}
 
