@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
@@ -50,6 +51,7 @@ type ServerCore struct {
 type ServerConfig struct {
 	Host               string
 	Port               int
+	EnterTimeout       time.Duration
 	OnClientConnect    func(Client)
 	OnClientDisconnect func(Client)
 	ClientFactory      func(net.Conn, int) (Client, error)
@@ -131,6 +133,7 @@ func (s *ServerCore) Stop() error {
 func (s *ServerCore) acceptConnections() {
 	defer s.wg.Done()
 
+	var retryDelay time.Duration
 	for {
 		select {
 		case <-s.shutdownChan:
@@ -142,9 +145,16 @@ func (s *ServerCore) acceptConnections() {
 
 					return
 				}
-				log.Printf("Failed to accept connection: %v", err)
+				retryDelay = min(max(retryDelay*2, 5*time.Millisecond), time.Second)
+				log.Printf("Failed to accept connection: %v; retrying in %v", err, retryDelay)
+				select {
+				case <-s.shutdownChan:
+					return
+				case <-time.After(retryDelay):
+				}
 				continue
 			}
+			retryDelay = 0
 
 			s.clientIDMutex.Lock()
 			clientID := s.nextClientID
@@ -213,6 +223,11 @@ func (s *ServerCore) handleClient(client Client) {
 		log.Printf("Failed to send login failed packet to %s: %v", client.GetConnection().RemoteAddr(), err)
 	} else {
 		log.Printf("Sent login failed packet to %s", client.GetConnection().RemoteAddr())
+	}
+
+	// The server clears this deadline once the connection enters; until then nothing pings it.
+	if s.config.EnterTimeout > 0 {
+		_ = client.GetConnection().SetReadDeadline(time.Now().Add(s.config.EnterTimeout))
 	}
 
 	reader := bufio.NewReader(client.GetConnection())

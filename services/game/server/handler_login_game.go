@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
@@ -183,6 +184,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		h.gs.characterRuntime.UnregisterCharacter(character.GetID())
 		return fmt.Errorf("character %d: client disconnected during login", character.GetID())
 	}
+	_ = ctx.Client.GetConnection().SetReadDeadline(time.Time{})
 
 	if reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
 		h.gs.party.Update(partyReply.GetParty())

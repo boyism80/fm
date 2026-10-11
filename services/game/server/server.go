@@ -161,8 +161,9 @@ type GameConfig struct {
 
 func NewGameServer(config *GameConfig) (*GameServer, error) {
 	serverConfig := &core.ServerConfig{
-		Host: config.Host,
-		Port: config.Port,
+		Host:         config.Host,
+		Port:         config.Port,
+		EnterTimeout: 30 * time.Second,
 		ClientFactory: func(conn net.Conn, clientID int) (core.Client, error) {
 			return client.NewGameClient(conn, clientID)
 		},
