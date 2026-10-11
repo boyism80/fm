@@ -23,6 +23,43 @@ type EquipmentBonusStats struct {
 	Jump  int16 `json:"jump,omitempty"`
 }
 
+func (s *EquipmentBonusStats) stat(key string) *int16 {
+	switch key {
+	case "str":
+		return &s.Str
+	case "dex":
+		return &s.Dex
+	case "int":
+		return &s.Int
+	case "luk":
+		return &s.Luk
+	case "hp":
+		return &s.MaxHP
+	case "mp":
+		return &s.MaxMP
+	case "watk":
+		return &s.PAD
+	case "matk":
+		return &s.MAD
+	case "wdef":
+		return &s.PDD
+	case "mdef":
+		return &s.MDD
+	case "acc":
+		return &s.ACC
+	case "avoid":
+		return &s.Avoid
+	case "hands":
+		return &s.Hands
+	case "speed":
+		return &s.Speed
+	case "jump":
+		return &s.Jump
+	default:
+		return nil
+	}
+}
+
 func (c *EquipmentCore) SetBonus(stats map[string]int16) {
 	if c == nil || len(stats) == 0 {
 		return
@@ -30,40 +67,44 @@ func (c *EquipmentCore) SetBonus(stats map[string]int16) {
 	if c.BonusStats == nil {
 		c.BonusStats = &EquipmentBonusStats{}
 	}
-	bonus := c.BonusStats
 	for key, value := range stats {
-		switch key {
-		case "str":
-			bonus.Str = value
-		case "dex":
-			bonus.Dex = value
-		case "int":
-			bonus.Int = value
-		case "luk":
-			bonus.Luk = value
-		case "hp":
-			bonus.MaxHP = value
-		case "mp":
-			bonus.MaxMP = value
-		case "watk":
-			bonus.PAD = value
-		case "matk":
-			bonus.MAD = value
-		case "wdef":
-			bonus.PDD = value
-		case "mdef":
-			bonus.MDD = value
-		case "acc":
-			bonus.ACC = value
-		case "avoid":
-			bonus.Avoid = value
-		case "hands":
-			bonus.Hands = value
-		case "speed":
-			bonus.Speed = value
-		case "jump":
-			bonus.Jump = value
+		if stat := c.BonusStats.stat(key); stat != nil {
+			*stat = value
 		}
+	}
+}
+
+func (c *EquipmentCore) AddBonus(stats map[string]int16) {
+	if c == nil || len(stats) == 0 {
+		return
+	}
+	if c.BonusStats == nil {
+		c.BonusStats = &EquipmentBonusStats{}
+	}
+	for key, value := range stats {
+		if stat := c.BonusStats.stat(key); stat != nil {
+			*stat += value
+		}
+	}
+}
+
+// Matches the client's maker grade: hands are excluded and HP/MP count a tenth.
+func (s *EquipmentBonusStats) quality() int {
+	if s == nil {
+		return 0
+	}
+	total := int(s.Str) + int(s.Dex) + int(s.Int) + int(s.Luk) + int(s.PAD) + int(s.MAD) + int(s.PDD) + int(s.MDD) + int(s.ACC) + int(s.Avoid) + int(s.Speed) + int(s.Jump) + int(s.MaxHP)/10 + int(s.MaxMP)/10
+	switch {
+	case total < 0:
+		return -1
+	case total < 6:
+		return 0
+	case total < 23:
+		return 1
+	case total < 40:
+		return 2
+	default:
+		return 3
 	}
 }
 

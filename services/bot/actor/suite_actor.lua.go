@@ -61,6 +61,7 @@ var requests = []outbound{
 	&request.UseMountFood{},
 	&request.UseSummonBag{},
 	&request.UseSkillBook{},
+	&request.ItemMaker{},
 	&request.Damaged{},
 	&request.CancelBuff{},
 	&request.CashShopOperation{},

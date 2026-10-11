@@ -798,18 +798,11 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 				case "timeLimited":
 				case "cash":
 				case "notSale":
-				case "incPAD":
-				case "incMAD":
-				case "incACC":
-				case "incEVA":
-				case "incSpeed":
-				case "incJump":
-				case "incMaxHP":
-				case "incMaxMP":
-				case "incSTR":
-				case "incINT":
-				case "incLUK":
-				case "incDEX":
+				case "incPAD", "incMAD", "incACC", "incEVA", "incSpeed", "incJump", "incMaxHP", "incMaxMP", "incSTR", "incINT", "incLUK", "incDEX":
+					if model.MakerBonus == nil {
+						model.MakerBonus = make(map[string]int16)
+					}
+					model.MakerBonus[makerBonusStats[intField.Name]] = int16(intField.Value)
 				case "incReqLevel":
 				case "randOption":
 				case "randStat":
@@ -819,6 +812,7 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 				case "grade":
 				case "questId":
 				case "lv":
+					model.MakerLevel = intField.Value
 				case "lvMin":
 				case "lvMax":
 				case "pquest":

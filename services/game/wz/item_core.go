@@ -11,6 +11,8 @@ type ItemCore struct {
 	TradeBlock      bool
 	Only            bool
 	AccountSharable bool
+	MakerLevel      int
+	MakerBonus      map[string]int16
 }
 
 func (model *ItemCore) setTradeFlags(info *node) {
@@ -58,6 +60,10 @@ func (model *ItemCore) IsOnly() bool {
 func (model *ItemCore) IsAccountSharable() bool {
 	return model.AccountSharable
 }
+
+func (model *ItemCore) GetMakerLevel() int { return model.MakerLevel }
+
+func (model *ItemCore) GetMakerBonus() map[string]int16 { return model.MakerBonus }
 
 func (model *ItemCore) IsConsumeOnPickup() bool {
 	return false

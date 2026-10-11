@@ -337,6 +337,56 @@ type Drop struct {
 	Max    uint16  `yaml:"max"`
 }
 
+type ItemsFile struct {
+	Meta       Meta                        `yaml:"_meta"`
+	SkillBooks map[uint32]SkillBook        `yaml:"skill_books,omitempty"`
+	SummonBags map[uint32][]SummonBagEntry `yaml:"summon_bags,omitempty"`
+	Maker      map[uint32]MakerItem        `yaml:"maker,omitempty"`
+	ItemMake   map[uint32]ItemMakeRecipe   `yaml:"item_make,omitempty"`
+}
+
+type SkillBook struct {
+	Success       int      `yaml:"success"`
+	RequiredLevel int      `yaml:"required_level,omitempty"`
+	MasterLevel   int      `yaml:"master_level"`
+	Skills        []uint32 `yaml:"skills"`
+}
+
+type SummonBagEntry struct {
+	MobID       uint32 `yaml:"mob_id"`
+	Probability int    `yaml:"prob"`
+}
+
+type MakerItem struct {
+	Level int              `yaml:"level,omitempty"`
+	Bonus map[string]int16 `yaml:"bonus,omitempty"`
+}
+
+type ItemMakeRecipe struct {
+	Class              int                  `yaml:"class"`
+	RequiredLevel      int                  `yaml:"required_level"`
+	RequiredSkillLevel int                  `yaml:"required_skill_level"`
+	Count              uint16               `yaml:"count"`
+	EnhancerCount      int                  `yaml:"enhancer_count,omitempty"`
+	Meso               int32                `yaml:"meso,omitempty"`
+	Catalyst           uint32               `yaml:"catalyst,omitempty"`
+	RequiredItem       uint32               `yaml:"required_item,omitempty"`
+	RequiredEquip      uint32               `yaml:"required_equip,omitempty"`
+	Ingredients        []ItemMakeIngredient `yaml:"ingredients,omitempty"`
+	RandomRewards      []ItemMakeReward     `yaml:"random_rewards,omitempty"`
+}
+
+type ItemMakeIngredient struct {
+	ItemID uint32 `yaml:"item_id"`
+	Count  uint16 `yaml:"count"`
+}
+
+type ItemMakeReward struct {
+	ItemID uint32 `yaml:"item_id"`
+	Count  uint16 `yaml:"count"`
+	Weight int    `yaml:"weight"`
+}
+
 type GlobalDrop struct {
 	Drop      `yaml:",inline"`
 	Continent int32  `yaml:"continent"`

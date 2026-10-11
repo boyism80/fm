@@ -11,6 +11,8 @@ type Item interface {
 	IsTradeBlock() bool
 	IsOnly() bool
 	IsAccountSharable() bool
+	GetMakerLevel() int
+	GetMakerBonus() map[string]int16
 
 	IsConsumeOnPickup() bool
 }

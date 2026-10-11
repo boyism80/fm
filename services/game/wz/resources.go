@@ -172,6 +172,7 @@ type Resources struct {
 	Monsters                map[uint32]*Mob
 	Reactors                map[uint32]*Reactor
 	Items                   map[uint32]Item
+	ItemMake                map[uint32]*ItemMakeRecipe
 	TamingMobs              map[uint32]*TamingMob
 	MobDrops                map[uint32][]Drop
 	ReactorDrops            map[uint32][]Drop
@@ -469,6 +470,11 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	items := map[uint32]Item{}
+	itemMake, err := loadItemMake(filepath.Join(wzPath, "Etc.wz", "ItemMake.img.xml"))
+	if err != nil {
+		log.Printf("Failed to load ItemMake.img.xml: %v", err)
+		itemMake = make(map[uint32]*ItemMakeRecipe)
+	}
 	err = loadEquipmentFiles(filepath.Join(wzPath, "Character.wz"), workerCount, items)
 	if err != nil {
 		log.Fatal(err)
@@ -854,6 +860,7 @@ func NewResources(wzPath string) *Resources {
 		Monsters:          mobs,
 		Reactors:          reactors,
 		Items:             items,
+		ItemMake:          itemMake,
 		TamingMobs:        tamingMobs,
 		MobDrops:          mobDrops,
 		ReactorDrops:      reactorDrops,

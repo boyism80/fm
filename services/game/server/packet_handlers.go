@@ -49,6 +49,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, UseCatchItem](gs)
 	core.Bind[*GameServer, UseReturnScroll](gs)
 	core.Bind[*GameServer, EnhanceEquipment](gs)
+	core.Bind[*GameServer, ItemMaker](gs)
 	core.Bind[*GameServer, UseInnerPortal](gs)
 	core.Bind[*GameServer, UseDoor](gs)
 	core.Bind[*GameServer, PartySearchStart](gs)

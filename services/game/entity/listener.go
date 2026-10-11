@@ -233,6 +233,7 @@ type CharacterListener interface {
 	OnShowRewardItemAnimation(ch *Character, itemID uint32, effect string)
 	OnShowSelfItemMakerSuccessEffect(ch *Character)
 	OnShowItemMakerSuccessEffect(ch *Character)
+	OnItemMakerDestroyed(ch *Character)
 	OnShowSelfCraftingEffect(ch *Character, effect string, time int32, mode int32)
 	OnShowCraftingEffect(ch *Character, effect string, time int32, mode int32)
 	OnShowSelfDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)

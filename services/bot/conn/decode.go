@@ -215,6 +215,8 @@ var decoders = func() []decoder {
 		newDecoder[response.PetSkillChanged](nil),
 		newDecoder[response.ShowScrollEffect](nil),
 		newDecoder[response.UseSkillBook](nil),
+		newDecoder[response.ShowSelfItemMakerSuccessEffect](sub(0x11)),
+		newDecoder[response.ShowItemMakerSuccessEffect](func(body []byte) bool { return len(body) > 4 && body[4] == 0x11 }),
 		newDecoder[response.UpdateMount](nil),
 		newDecoder[response.UpdateRidding](func(body []byte) bool {
 			flag := constant.BuffFlagMonsterRiding

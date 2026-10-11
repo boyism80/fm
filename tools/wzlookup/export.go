@@ -788,6 +788,55 @@ func exportShops(res *wz.Resources, wzPath, outDir string) error {
 	})
 }
 
+func exportItems(res *wz.Resources, wzPath, outDir string) error {
+	out := ItemsFile{
+		Meta:       meta(wzPath),
+		SkillBooks: make(map[uint32]SkillBook),
+		SummonBags: make(map[uint32][]SummonBagEntry),
+		Maker:      make(map[uint32]MakerItem),
+		ItemMake:   make(map[uint32]ItemMakeRecipe, len(res.ItemMake)),
+	}
+	for id, item := range res.Items {
+		if consume, ok := item.(*wz.Consume); ok {
+			if consume.SkillBook != nil {
+				out.SkillBooks[id] = SkillBook{
+					Success:       consume.SkillBook.Success,
+					RequiredLevel: consume.SkillBook.RequiredLevel,
+					MasterLevel:   consume.SkillBook.MasterLevel,
+					Skills:        consume.SkillBook.Skills,
+				}
+			}
+			for _, entry := range consume.SummonBag {
+				out.SummonBags[id] = append(out.SummonBags[id], SummonBagEntry{MobID: entry.MobID, Probability: entry.Probability})
+			}
+		}
+		if item.GetMakerLevel() != 0 || len(item.GetMakerBonus()) > 0 {
+			out.Maker[id] = MakerItem{Level: item.GetMakerLevel(), Bonus: item.GetMakerBonus()}
+		}
+	}
+	for id, recipe := range res.ItemMake {
+		exported := ItemMakeRecipe{
+			Class:              recipe.Class,
+			RequiredLevel:      recipe.RequiredLevel,
+			RequiredSkillLevel: recipe.RequiredSkillLevel,
+			Count:              recipe.Count,
+			EnhancerCount:      recipe.EnhancerCount,
+			Meso:               recipe.Meso,
+			Catalyst:           recipe.Catalyst,
+			RequiredItem:       recipe.RequiredItem,
+			RequiredEquip:      recipe.RequiredEquip,
+		}
+		for _, ingredient := range recipe.Ingredients {
+			exported.Ingredients = append(exported.Ingredients, ItemMakeIngredient{ItemID: ingredient.ItemID, Count: ingredient.Count})
+		}
+		for _, reward := range recipe.RandomRewards {
+			exported.RandomRewards = append(exported.RandomRewards, ItemMakeReward{ItemID: reward.ItemID, Count: reward.Count, Weight: reward.Weight})
+		}
+		out.ItemMake[id] = exported
+	}
+	return writeYAML(filepath.Join(outDir, "items.yaml"), out)
+}
+
 func exportStrings(res *wz.Resources, wzPath, outDir string) error {
 	out := StringsFile{Meta: meta(wzPath)}
 	if res.Strings == nil {
@@ -893,6 +942,7 @@ func exportAll(res *wz.Resources, wzPath, outDir, only string) error {
 		{name: "npc_spawns", fn: exportNpcSpawns},
 		{name: "strings", fn: exportStrings},
 		{name: "drops", fn: exportDropsFile},
+		{name: "items", fn: exportItems},
 	}
 	for _, j := range classes {
 		if only != "all" && only != j.name {

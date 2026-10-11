@@ -1460,6 +1460,11 @@ func (l *CharacterListenerImpl) OnShowItemMakerSuccessEffect(ch *entity.Characte
 	}, nil)
 }
 
+func (l *CharacterListenerImpl) OnItemMakerDestroyed(ch *entity.Character) {
+	ch.Send(&response.ShowSelfItemMakerSuccessEffect{}, types.SEND_POLICY_ENCRYPT)
+	l.OnMessage(ch, constant.MsgPopup, "아이템이 파괴되었습니다.")
+}
+
 func (l *CharacterListenerImpl) OnUseSkillBook(ch *entity.Character, skillID uint32, masterLevel int, canUse bool, success bool) {
 	ch.Broadcast(&response.UseSkillBook{
 		CharacterID: ch.GetID(),
