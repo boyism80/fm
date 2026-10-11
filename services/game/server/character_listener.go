@@ -1603,6 +1603,18 @@ func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackPayload dto
 	}, nil)
 }
 
+func (l *CharacterListenerImpl) OnEnergyAttack(ch *entity.Character, attackPayload dto.AttackPayload) {
+	if ch.GetMap() == nil {
+		return
+	}
+	ch.Broadcast(&response.EnergyAttack{
+		Attack: response.Attack{
+			AttackInfo:  attackPayload.ToAttackInfo(),
+			CharacterId: ch.GetID(),
+		},
+	}, nil)
+}
+
 func (l *CharacterListenerImpl) OnRangedAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return

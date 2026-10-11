@@ -27,6 +27,8 @@ type MobAttack struct {
 	MADamage     int
 	Magic        bool
 	RangeR       int
+	RangeBounds  types.Rect[int32]
+	HasRange     bool
 }
 
 type MobSkillLevelData struct {
@@ -98,7 +100,7 @@ func parseMobAttackInfo(attackIndex int, info *node) *MobAttack {
 		MpBurn:       info.Int("mpBurn", 0),
 		AttackAfter:  info.Int("attackAfter", 0),
 		PADamage:     info.Int("PADamage", 0),
-		MADamage:     info.Int("PADamage", 0),
+		MADamage:     info.Int("MADamage", 0),
 		Magic:        info.Int("magic", 0) > 0,
 	}
 	for _, ch := range info.Children {
@@ -110,6 +112,8 @@ func parseMobAttackInfo(attackIndex int, info *node) *MobAttack {
 	rangeNode := info.find("range")
 	if rangeNode != nil {
 		attack.RangeR = rangeNode.Int("r", 0)
+		attack.RangeBounds = GetRectFromWzNode(rangeNode)
+		attack.HasRange = attack.RangeR > 0 || attack.RangeBounds != (types.Rect[int32]{})
 	}
 	return attack
 }

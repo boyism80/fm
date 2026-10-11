@@ -200,6 +200,7 @@ type CharacterListener interface {
 	OnPlayerMove(ch *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
 	OnFieldRelocate(ch *Character, spawnPoint uint8)
 	OnAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnEnergyAttack(ch *Character, attackPayload dto.AttackPayload)
 	OnRangedAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnMagicAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnEndSortInventory(ch *Character, inventoryType constant.InventoryType)

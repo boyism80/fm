@@ -40,6 +40,7 @@ type Mob struct {
 	sponge        Sponge
 	lastHitAt     time.Time
 	dropItemCount int
+	deathStarted  bool
 	CarnivalTeam  constant.CarnivalTeam
 }
 
@@ -586,14 +587,16 @@ func (m *Mob) runDieScript(attacker *Character) {
 	mapInstance.runMobLuaHook(root, scriptPath, "on_mob_die", m, attackerArg, mapInstance)
 }
 
-func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) bool {
+func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, reward bool) bool {
 	mapInstance := m.GetMap()
 	if mapInstance == nil {
 		return true
 	}
 
-	m.grantKillExp()
-	if attacker != nil {
+	if reward {
+		m.grantKillExp()
+	}
+	if reward && attacker != nil {
 		if m.Wz != nil {
 			attacker.OnQuestMobKilled(m.Wz.ID)
 			if match := attacker.CarnivalMatch(); match != nil && m.Wz != nil {
@@ -647,10 +650,79 @@ func (m *Mob) Kill(attacker *Character, dieAnim constant.MobDieAnimationType) bo
 	if mapInstance.GetMob(m.OID) == nil {
 		return false
 	}
+	if m.deathStarted {
+		return false
+	}
+	m.deathStarted = true
 	if hp := m.GetHp(); hp > 0 {
 		m.LifeCore.AddHp(-int(hp))
 	}
-	return m.onDead(attacker, dieAnim)
+	return m.onDead(attacker, dieAnim, true)
+}
+
+func (m *Mob) SelfDestruct(attacker *Character) bool {
+	if !m.Wz.HasSelfDestruction {
+		return false
+	}
+	mapInstance := m.GetMap()
+	if mapInstance == nil || mapInstance.GetMob(m.OID) == nil || m.deathStarted || !m.IsAlive() {
+		return false
+	}
+	m.deathStarted = true
+	m.LifeCore.AddHp(-int(m.GetHp()))
+	return m.onDead(attacker, constant.MobDieAnimationType(m.Wz.SelfDestructionAction), false)
+}
+
+func (m *Mob) canAttack(target *Mob, damage uint32) bool {
+	if !m.IsAlive() || !target.IsAlive() {
+		return false
+	}
+	sourcePosition := m.GetPosition()
+	targetPosition := target.GetPosition()
+	dx := int64(targetPosition.X) - int64(sourcePosition.X)
+	dy := int64(targetPosition.Y) - int64(sourcePosition.Y)
+	for _, attack := range m.Wz.Attacks {
+		maxDamage := attack.PADamage
+		if attack.Magic {
+			maxDamage = attack.MADamage
+		}
+		if maxDamage <= 0 {
+			if attack.Magic {
+				maxDamage = m.Wz.MADamage
+			} else {
+				maxDamage = m.Wz.PADamage
+			}
+		}
+		if attack.Magic {
+			maxDamage += int(m.Buffs.GetValue(constant.MobBuffMatk))
+			maxDamage += int(m.Buffs.GetValue(constant.MobBuffMagicAttackUp))
+			if target.Wz.Invincible || target.Buffs.Has(constant.MobBuffMagicImmunity) || target.Buffs.Has(constant.MobBuffDamageImmunity) {
+				continue
+			}
+		} else {
+			maxDamage += int(m.Buffs.GetValue(constant.MobBuffWatk))
+			maxDamage += int(m.Buffs.GetValue(constant.MobBuffWeaponAttackUp))
+			if target.Wz.Invincible || target.Buffs.Has(constant.MobBuffWeaponImmunity) || target.Buffs.Has(constant.MobBuffDamageImmunity) {
+				continue
+			}
+		}
+		if maxDamage <= 0 || uint64(damage) > uint64(maxDamage) {
+			continue
+		}
+		if attack.RangeR > 0 && dx*dx+dy*dy <= int64(attack.RangeR)*int64(attack.RangeR) {
+			return true
+		}
+		if attack.HasRange {
+			x := int32(dx)
+			y := int32(dy)
+			left := min(attack.RangeBounds.Left, -attack.RangeBounds.Right)
+			right := max(attack.RangeBounds.Right, -attack.RangeBounds.Left)
+			if x >= left && x <= right && y >= attack.RangeBounds.Top && y <= attack.RangeBounds.Bottom {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (m *Mob) SpawnRevives(reviveIDs []uint32, pos types.Point[int16], spawnType constant.MobSpawnType, link uint32) map[uint32][]*Mob {

@@ -1997,12 +1997,15 @@ func loadMob(path string) (*Mob, error) {
 		case "ignoreMovable":
 		case "ignoreMoveImpact":
 		case "selfDestruction":
+			model.HasSelfDestruction = true
 			for _, sdf := range iv.Ints {
 				switch sdf.Name {
 				case "removeAfter":
 					model.RemoveAfter = sdf.Value
 				case "action":
 					model.SelfDestructionAction = int8(sdf.Value)
+				case "hp":
+					model.SelfDestructionHP = sdf.Value
 				}
 			}
 		case "buff":

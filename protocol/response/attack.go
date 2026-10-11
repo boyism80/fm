@@ -58,4 +58,37 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *Attack) Deserialize(reader *stream.StreamReader) {
+	a.CharacterId = reader.ReadU32()
+	tbyte := reader.ReadU8()
+	a.Targets = tbyte >> 4
+	a.Hits = tbyte & 0xF
+	a.SkillLevel = reader.ReadU8()
+	if a.SkillLevel != 0 {
+		a.Skill = reader.ReadU32()
+	}
+
+	reader.ReadBool()
+	a.Unk = reader.ReadU8()
+	a.Speed = reader.ReadU8()
+	a.Display = reader.ReadU8()
+	reader.ReadU32()
+	// Serialize skips targets without damage pairs, so Targets can count more than were written.
+	for len(a.Damages) < int(a.Targets) && reader.Remaining() >= 5 {
+		target := dto.AttackPair{OID: reader.ReadU32()}
+		reader.ReadU8()
+		hits := int(a.Hits)
+		if a.Skill == uint32(constant.SkillMesoExplosion) {
+			hits = int(reader.ReadU8())
+		}
+		for range hits {
+			damage := reader.ReadU32()
+			target.DamagePairs = append(target.DamagePairs, dto.DamagePair{Damage: damage &^ 0x80000000, Unknown: damage&0x80000000 != 0})
+		}
+		a.Damages = append(a.Damages, target)
+	}
+
+	switch constant.SkillID(a.Skill) {
+	case constant.SkillBigBang, constant.SkillBigBang2221001, constant.SkillBigBang2321001:
+		a.Charge = reader.ReadU32()
+	}
 }

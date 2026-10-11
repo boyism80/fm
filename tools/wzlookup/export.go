@@ -495,6 +495,13 @@ func exportMob(m *wz.Mob, name string) Mob {
 			MADamage:     a.MADamage,
 			Magic:        a.Magic,
 			RangeR:       a.RangeR,
+			RangeBounds: Rect{
+				Left:   a.RangeBounds.Left,
+				Top:    a.RangeBounds.Top,
+				Right:  a.RangeBounds.Right,
+				Bottom: a.RangeBounds.Bottom,
+			},
+			HasRange: a.HasRange,
 		})
 	}
 	var banish *MobBanish
@@ -535,7 +542,9 @@ func exportMob(m *wz.Mob, name string) Mob {
 		Banish:                banish,
 		Revives:               m.Revives,
 		RemoveAfter:           m.RemoveAfter,
+		HasSelfDestruction:    m.HasSelfDestruction,
 		SelfDestructionAction: m.SelfDestructionAction,
+		SelfDestructionHP:     m.SelfDestructionHP,
 		HpTagColor:            m.HpTagColor,
 		HpTagBgColor:          m.HpTagBgColor,
 	}

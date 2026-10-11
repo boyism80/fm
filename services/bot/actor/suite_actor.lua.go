@@ -83,6 +83,8 @@ var requests = []outbound{
 	&request.CloseChalkboard{},
 	&request.SkillEffect{},
 	&request.SkillMacro{},
+	&request.MonsterBomb{},
+	&request.HypnotizeDamage{},
 }
 
 func (a *SuiteActor) register() {
@@ -690,6 +692,16 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			L.Push(lua.LBool(b.Send(pkt) == nil))
+			return 1
+		},
+		"energy_attack": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pkt, ok := a.attackPacket(b, uint32(L.CheckInt(2)), uint32(L.OptInt(3, 0)), uint8(L.OptInt(4, 1)))
+			if !ok {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(b.Send(&request.PassiveEnergyAttack{CloseAttackInfo: pkt.CloseAttackInfo}) == nil))
 			return 1
 		},
 		"kill": func(L *lua.LState) int {

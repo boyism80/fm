@@ -30,7 +30,9 @@ type Mob struct {
 	Banish                *MobBanish
 	Revives               []uint32
 	RemoveAfter           int
+	HasSelfDestruction    bool
 	SelfDestructionAction int8
+	SelfDestructionHP     int
 	HpTagColor            uint8
 	HpTagBgColor          uint8
 	DropItemPeriod        int

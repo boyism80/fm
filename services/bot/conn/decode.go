@@ -256,6 +256,7 @@ var decoders = func() []decoder {
 		newDecoder[response.ItemEffect](nil),
 		newDecoder[response.Chalkboard](nil),
 		newDecoder[response.ChargeSkillEffect](nil),
+		newDecoder[response.EnergyAttack](nil),
 		newDecoder[response.SkillMacro](nil),
 	}
 }()

@@ -44,6 +44,57 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 	return true, nil
 }
 
+func (ch *Character) EnergyAttack(info dto.AttackInfo, attacking func()) (bool, error) {
+	_, energy, active := ch.Buffs.GetBuffValue(constant.BuffFlagEnergyCharge)
+	if !active || energy < 10000 || info.Skill != 0 {
+		return false, nil
+	}
+	return ch.Attack(info, false, nil, attacking)
+}
+
+func (ch *Character) SelfDestructMob(oid uint32) bool {
+	if ch.Spectating() || ch.IsHidden() || !ch.IsAlive() {
+		return false
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return false
+	}
+	mob := mapInstance.GetMob(oid)
+	if mob == nil {
+		return false
+	}
+	return mob.SelfDestruct(ch)
+}
+
+func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {
+	if ch.Spectating() || !ch.IsAlive() || damage == 0 {
+		return false
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return false
+	}
+	source := mapInstance.GetMob(sourceOID)
+	target := mapInstance.GetMob(targetOID)
+	if source == nil || target == nil || source == target {
+		return false
+	}
+	causerID, hypnotized := source.Buffs.Causer(constant.MobBuffHypnotize)
+	if !hypnotized || causerID != ch.GetID() || target.Wz.DamagedByMob {
+		return false
+	}
+	if !source.canAttack(target, damage) {
+		return false
+	}
+	if target.TakeDamage(ch, damage) {
+		ch.OnKill([]*Mob{target})
+	} else {
+		target.Listener.OnMobDamaged(target, int32(damage))
+	}
+	return true
+}
+
 func (ch *Character) damageTo(damages []dto.AttackPair) {
 	if len(damages) == 0 {
 		return

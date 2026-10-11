@@ -5,6 +5,13 @@ type Meta struct {
 	WzPath    string `yaml:"wz_path"`
 }
 
+type Rect struct {
+	Left   int32 `yaml:"left"`
+	Top    int32 `yaml:"top"`
+	Right  int32 `yaml:"right"`
+	Bottom int32 `yaml:"bottom"`
+}
+
 type QuestsFile struct {
 	Meta   Meta             `yaml:"_meta"`
 	Quests map[uint32]Quest `yaml:"quests"`
@@ -198,7 +205,9 @@ type Mob struct {
 	Banish                *MobBanish     `yaml:"banish,omitempty"`
 	Revives               []uint32       `yaml:"revives,omitempty"`
 	RemoveAfter           int            `yaml:"remove_after,omitempty"`
+	HasSelfDestruction    bool           `yaml:"has_self_destruction,omitempty"`
 	SelfDestructionAction int8           `yaml:"self_destruction_action,omitempty"`
+	SelfDestructionHP     int            `yaml:"self_destruction_hp,omitempty"`
 	HpTagColor            uint8          `yaml:"hp_tag_color,omitempty"`
 	HpTagBgColor          uint8          `yaml:"hp_tag_bg_color,omitempty"`
 }
@@ -222,6 +231,8 @@ type MobAttack struct {
 	MADamage     int    `yaml:"ma_damage,omitempty"`
 	Magic        bool   `yaml:"magic,omitempty"`
 	RangeR       int    `yaml:"range_r,omitempty"`
+	RangeBounds  Rect   `yaml:"range_bounds,omitempty"`
+	HasRange     bool   `yaml:"has_range,omitempty"`
 }
 
 type MobBanish struct {
