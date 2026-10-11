@@ -105,7 +105,7 @@ return {
 		        skill = me:add_skill(wz:id())
 		    end
 		    if skill ~= nil then
-		        skill:level(wz:max_level(), wz:master_level())
+		        skill:level(wz:max_level(), wz:max_level())
 		    end
 		end
 		me:max_hp(20000)

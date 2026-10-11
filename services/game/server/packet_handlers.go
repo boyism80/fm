@@ -43,6 +43,8 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, CancelBuff](gs)
 	core.Bind[*GameServer, CancelItemEffect](gs)
 	core.Bind[*GameServer, UseItem](gs)
+	core.Bind[*GameServer, UseSummonBag](gs)
+	core.Bind[*GameServer, UseSkillBook](gs)
 	core.Bind[*GameServer, UseCashItem](gs)
 	core.Bind[*GameServer, UseCatchItem](gs)
 	core.Bind[*GameServer, UseReturnScroll](gs)

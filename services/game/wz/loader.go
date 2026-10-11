@@ -156,6 +156,7 @@ func loadConsumes(path string) (*[]*Consume, error) {
 		nodeInfo := v.find("info")
 		model.setTradeFlags(nodeInfo)
 		if nodeInfo != nil {
+			book := SkillBook{}
 			for _, intField := range nodeInfo.Ints {
 				switch intField.Name {
 				case "price":
@@ -220,9 +221,12 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "useDelay":
 				case "delayMsg":
 				case "reqSkillLevel":
+					book.RequiredLevel = intField.Value
 				case "success":
 					model.ScrollSuccess = int32(intField.Value)
+					book.Success = intField.Value
 				case "masterLevel":
+					book.MasterLevel = intField.Value
 				case "mob":
 					model.MobID = uint32(intField.Value)
 				case "monsterBook":
@@ -236,6 +240,15 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "bridlePropChg":
 				case "noCancelMouse":
 				}
+			}
+			if skillNode := nodeInfo.find("skill"); skillNode != nil {
+				for _, field := range skillNode.Ints {
+					book.Skills = append(book.Skills, uint32(field.Value))
+				}
+				sort.Slice(book.Skills, func(i, j int) bool { return book.Skills[i] < book.Skills[j] })
+			}
+			if len(book.Skills) > 0 && book.MasterLevel > 0 {
+				model.SkillBook = &book
 			}
 
 			for _, iv := range nodeInfo.Children {
@@ -266,6 +279,20 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					log.Printf("%s is not declared in %s:info\n", iv.Name, filepath.Base(path))
 				}
 			}
+		}
+
+		if mobNode := v.find("mob"); mobNode != nil {
+			for _, child := range mobNode.Children {
+				mobID, ok := child.IntOK("id")
+				if !ok || mobID <= 0 {
+					continue
+				}
+				model.SummonBag = append(model.SummonBag, SummonBagEntry{
+					MobID:       uint32(mobID),
+					Probability: child.Int("prob", 0),
+				})
+			}
+			sort.Slice(model.SummonBag, func(i, j int) bool { return model.SummonBag[i].MobID < model.SummonBag[j].MobID })
 		}
 
 		if reqNode := v.find("req"); reqNode != nil {

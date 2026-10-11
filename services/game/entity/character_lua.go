@@ -2524,7 +2524,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			skillID := uint32(L.CheckInt(2))
-			if existing := ch.Skills.Get(skillID); existing != nil {
+			if existing := ch.Skills.Learned(skillID); existing != nil {
 				L.Push(luax.NewLuable(L, existing))
 				return 1
 			}

@@ -13,7 +13,7 @@ func NewSkills(owner *Character) *Skills {
 }
 
 func (sc *Skills) Bind(skillID uint32, entry *SkillEntry) {
-	if entry == nil || entry.Level() < 1 {
+	if entry == nil || entry.Level() < 1 && entry.MasterLevel < 1 {
 		return
 	}
 	entry.Owner = sc.owner
@@ -21,7 +21,7 @@ func (sc *Skills) Bind(skillID uint32, entry *SkillEntry) {
 }
 
 func (sc *Skills) Register(skillID uint32, entry *SkillEntry) {
-	if entry == nil || entry.Level() < 1 {
+	if entry == nil || entry.Level() < 1 && entry.MasterLevel < 1 {
 		return
 	}
 	sc.Bind(skillID, entry)
@@ -34,7 +34,9 @@ func (sc *Skills) Register(skillID uint32, entry *SkillEntry) {
 
 func (sc *Skills) RestorePassives() {
 	for _, entry := range sc.entries {
-		sc.owner.CallSkillHook(nil, entry, "on_passive")
+		if entry.Level() > 0 {
+			sc.owner.CallSkillHook(nil, entry, "on_passive")
+		}
 	}
 }
 
@@ -52,7 +54,7 @@ func (sc *Skills) Remove(skillID uint32) bool {
 }
 
 func (sc *Skills) Get(skillID uint32) *SkillEntry {
-	if entry := sc.entries[skillID]; entry != nil {
+	if entry := sc.entries[skillID]; entry != nil && entry.Level() > 0 {
 		return entry
 	}
 	return sc.dojoSkill(skillID)

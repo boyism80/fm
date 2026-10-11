@@ -53,7 +53,7 @@ func (s *SkillEntry) SetLevel(level int) {
 	if s.Owner != nil {
 		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
 	}
-	if level == 0 {
+	if level == 0 && s.MasterLevel == 0 {
 		delete(s.Owner.Skills.entries, s.Wz.ID)
 	}
 }
@@ -74,7 +74,7 @@ func (s *SkillEntry) SetLevels(level, masterLevel int) {
 	if s.Owner != nil {
 		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
 	}
-	if level == 0 {
+	if level == 0 && masterLevel == 0 {
 		delete(s.Owner.Skills.entries, s.Wz.ID)
 	}
 }

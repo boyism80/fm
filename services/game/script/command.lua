@@ -1869,7 +1869,7 @@ local command_funcs = {
 					end
 				end
 				if skill ~= nil then
-					skill:level(wz:max_level(), wz:master_level())
+					skill:level(wz:max_level(), wz:max_level())
 					updated = updated + 1
 				end
 			end
@@ -1926,7 +1926,7 @@ local command_funcs = {
 
 			if master_level == nil then
 				if skill_wz ~= nil then
-					master_level = skill_wz:master_level()
+					master_level = skill_wz:max_level()
 				else
 					master_level = level
 				end
@@ -1934,8 +1934,8 @@ local command_funcs = {
 			if master_level < level then
 				master_level = level
 			end
-			if skill_wz ~= nil and master_level > skill_wz:master_level() then
-				master_level = skill_wz:master_level()
+			if skill_wz ~= nil and master_level > skill_wz:max_level() then
+				master_level = skill_wz:max_level()
 			end
 
 			local skill = me:skill(skill_id)

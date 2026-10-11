@@ -59,6 +59,8 @@ var requests = []outbound{
 	&request.ChangeKeymap{},
 	&request.EnhanceEquipment{},
 	&request.UseMountFood{},
+	&request.UseSummonBag{},
+	&request.UseSkillBook{},
 	&request.Damaged{},
 	&request.CancelBuff{},
 	&request.CashShopOperation{},

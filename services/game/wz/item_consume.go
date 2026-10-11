@@ -48,9 +48,23 @@ type Consume struct {
 	CreateID        uint32
 	MonsterBook     bool
 	MountFatigue    int
+	SkillBook       *SkillBook
+	SummonBag       []SummonBagEntry
 
 	CureDebuffs   []constant.DebuffFlag
 	AvailableMaps []MapRange
+}
+
+type SkillBook struct {
+	Success       int
+	RequiredLevel int
+	MasterLevel   int
+	Skills        []uint32
+}
+
+type SummonBagEntry struct {
+	MobID       uint32
+	Probability int
 }
 
 type MapRange struct {

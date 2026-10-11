@@ -69,6 +69,9 @@ func (s *Skill) DefaultMasterLevel() int {
 	if s.MasterLevel > 0 {
 		return s.MasterLevel
 	}
+	if s.IsFourthClass() {
+		return 0
+	}
 	return s.MaxLevel
 }
 

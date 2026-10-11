@@ -150,7 +150,7 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 		}
 		entry := (*SkillEntry)(nil)
 		if ch.Skills != nil {
-			entry = ch.Skills.Get(skillID)
+			entry = ch.Skills.Learned(skillID)
 		}
 		skillLevel := 0
 		masterLevel := 0

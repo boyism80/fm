@@ -177,7 +177,7 @@ func (ch *Character) grantSkill(skill ExchangeSkill) {
 	if targetMaster <= 0 {
 		targetMaster = wzSkill.DefaultMasterLevel()
 	}
-	entry := ch.Skills.Get(skill.SkillID)
+	entry := ch.Skills.Learned(skill.SkillID)
 	if entry == nil {
 		entry = NewSkillEntry(ch, wzSkill, targetLevel, targetMaster)
 		entry.Expiration = time.Time{}

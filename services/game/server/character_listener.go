@@ -1460,6 +1460,16 @@ func (l *CharacterListenerImpl) OnShowItemMakerSuccessEffect(ch *entity.Characte
 	}, nil)
 }
 
+func (l *CharacterListenerImpl) OnUseSkillBook(ch *entity.Character, skillID uint32, masterLevel int, canUse bool, success bool) {
+	ch.Broadcast(&response.UseSkillBook{
+		CharacterID: ch.GetID(),
+		SkillID:     skillID,
+		MasterLevel: uint32(masterLevel),
+		CanUse:      canUse,
+		Success:     success,
+	}, &entity.ObjectBroadcastOption{WithMe: true})
+}
+
 func (l *CharacterListenerImpl) OnShowSelfCraftingEffect(ch *entity.Character, effect string, time int32, mode int32) {
 	if ch.GetMap() == nil {
 		return

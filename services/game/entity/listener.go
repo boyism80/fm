@@ -238,6 +238,7 @@ type CharacterListener interface {
 	OnShowSelfDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
 	OnShowDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
 	OnShowScrollEffect(ch *Character, success bool, destroyedByCurse bool)
+	OnUseSkillBook(ch *Character, skillID uint32, masterLevel int, canUse bool, success bool)
 	OnScrolledItem(ch *Character, scrollInventoryType constant.InventoryType, scrollSlot int16, scrollCount uint16, upgradedSlot int16, destroyed bool, potential bool, upgradedItem Item)
 	OnPetSpawn(ch *Character)
 	OnPetRemove(ch *Character, reason constant.PetRemoveReason)

@@ -45,7 +45,7 @@ func (ch *Character) ShowChargeSkillEffect(skillID uint32, level, flags, speed u
 	if ch.GetMap() == nil || !ch.IsAlive() || ch.Spectating() {
 		return
 	}
-	skill := ch.Skills.Get(skillID)
+	skill := ch.Skills.Learned(skillID)
 	if skill == nil || skill.Level() != int(level) || !skill.Wz.Charge {
 		return
 	}

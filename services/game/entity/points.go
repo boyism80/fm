@@ -91,7 +91,7 @@ func (p *Points) DistributeSkill(skillID uint32) bool {
 		return false
 	}
 
-	skillEntry := p.owner.Skills.Get(skillID)
+	skillEntry := p.owner.Skills.Learned(skillID)
 	if skillEntry == nil {
 		if p.owner.GameWorld == nil {
 			return false
