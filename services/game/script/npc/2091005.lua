@@ -30,7 +30,7 @@ local function challenge_solo(me, npc)
 	if rest > 0 then
 		floor = rest * 6
 	end
-	group:set_property("start:" .. me:id(), tostring(floor))
+	group:set_property("start:c" .. me:id(), tostring(floor))
 	if start(me, npc, group, nil) and rest > 0 then
 		me:records():remove(dojo.REST_RECORD)
 	end
@@ -47,7 +47,7 @@ local function challenge_party(me, npc)
 		return
 	end
 	local group = state_machine(dojo.GROUP)
-	group:set_property("start:" .. party:id(), "1")
+	group:set_property("start:p" .. party:id(), "1")
 	start(me, npc, group, party)
 end
 

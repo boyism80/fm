@@ -360,7 +360,7 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 		scale = opts.MaxLevel
 	}
 
-	id := strconv.FormatUint(uint64(party.GetPartyId()), 10)
+	id := "p" + strconv.FormatUint(uint64(party.GetPartyId()), 10)
 	sm, err := g.Create(id, CreateOpts{
 		Leader:     leader,
 		Party:      party,
@@ -392,7 +392,7 @@ func (g *StateMachineGroup) StartSolo(player *Character, opts StartPartyOpts) (*
 		scale = opts.MaxLevel
 	}
 
-	id := strconv.FormatUint(uint64(player.GetID()), 10)
+	id := "c" + strconv.FormatUint(uint64(player.GetID()), 10)
 	sm, err := g.Create(id, CreateOpts{
 		Leader:     player,
 		ScaleLevel: scale,
