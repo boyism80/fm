@@ -241,9 +241,12 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	}
 	skillLevel := uint8(skill.Level())
 	ld := wzSkill.GetLevelData(int(skillLevel))
+	if ld == nil {
+		return nil
+	}
 	b := bounds
 	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
-		b = MistWorldBounds(position, ld)
+		b = ch.SkillArea(ld)
 	}
 	if poisonTickMultiplier <= 0 {
 		poisonTickMultiplier = 1.0

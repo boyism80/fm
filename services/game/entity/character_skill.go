@@ -7,6 +7,8 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -30,6 +32,24 @@ func (ch *Character) canLearn(skillID uint32) bool {
 		return false
 	}
 	return skillClass%10 <= class%10
+}
+
+// WZ lt/rb describe the area while facing left; facing right mirrors it. Range widens the front.
+func (ch *Character) SkillArea(ld *wz.SkillLevelData) types.Rect[int32] {
+	px := int32(ch.Position.X)
+	py := int32(ch.Position.Y)
+	r := int32(ld.Range)
+	facingLeft := ch.Stance%2 != 0
+	if ld.LT == (types.Vector2[int32]{}) && ld.RB == (types.Vector2[int32]{}) {
+		if facingLeft {
+			return types.Rect[int32]{Left: px - 200 - r, Top: py - 100 - r, Right: px, Bottom: py}
+		}
+		return types.Rect[int32]{Left: px, Top: py - 100 - r, Right: px + 200 + r, Bottom: py}
+	}
+	if facingLeft {
+		return types.Rect[int32]{Left: px + ld.LT.X - r, Top: py + ld.LT.Y, Right: px + ld.RB.X, Bottom: py + ld.RB.Y}
+	}
+	return types.Rect[int32]{Left: px - ld.RB.X, Top: py + ld.LT.Y, Right: px - ld.LT.X + r, Bottom: py + ld.RB.Y}
 }
 
 func (ch *Character) CallSkillHook(ctx actor.Context, skill *SkillEntry, hook string, args ...interface{}) bool {

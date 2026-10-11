@@ -1,13 +1,5 @@
 -- Skill name (String.wz/Skill.img.xml): 마인드 컨트롤
 
-local function mind_control_bounds(me, effect)
-	local rng = tonumber(effect.range) or 350
-	local w = 200 + rng
-	local h = 100 + rng
-	local px, py = me:position()
-	return px - w, px + w, py - h, py
-end
-
 return {
 	on_activated = function(me, skill, params)
 		local map = me:map()
@@ -30,10 +22,7 @@ return {
 		if mob_max <= 0 then
 			mob_max = 1
 		end
-		local min_x, max_x, min_y, max_y = mind_control_bounds(me, effect)
-		local mobs = map:objects(ObjectType.Mob, {
-			area = { minX = min_x, minY = min_y, maxX = max_x, maxY = max_y },
-		})
+		local mobs = map:objects(ObjectType.Mob, { area = me:skill_area(skill) })
 		local checked = 0
 		for _, mob in ipairs(mobs) do
 			if checked >= mob_max then

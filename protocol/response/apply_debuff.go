@@ -32,4 +32,12 @@ func (p *ApplyMobBuff) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ApplyMobBuff) Deserialize(reader *stream.StreamReader) {
+	p.OID = reader.ReadU32()
+	p.Status = reader.Read32()
+	p.X = reader.Read16()
+	p.SkillID = reader.ReadU16()
+	p.SkillLevel = reader.ReadU16()
+	p.BuffTime = reader.Read16()
+	p.Delay = reader.Read16()
+	p.StatusSize = reader.ReadU8()
 }

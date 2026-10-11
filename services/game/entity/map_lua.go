@@ -133,7 +133,21 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					filter = constant.ObjectType(lua.LVAsNumber(lv))
 				}
 			}
-			objs := mapInstance.GetObjects(filter)
+			var area *lua.LTable
+			if opts, ok := L.Get(3).(*lua.LTable); ok {
+				area, _ = opts.RawGetString("area").(*lua.LTable)
+			}
+			var objs []Object
+			if area != nil {
+				objs = mapInstance.GetObjectsIn(filter, types.Rect[int32]{
+					Left:   int32(lua.LVAsNumber(area.RawGetString("left"))),
+					Top:    int32(lua.LVAsNumber(area.RawGetString("top"))),
+					Right:  int32(lua.LVAsNumber(area.RawGetString("right"))),
+					Bottom: int32(lua.LVAsNumber(area.RawGetString("bottom"))),
+				})
+			} else {
+				objs = mapInstance.GetObjects(filter)
+			}
 			result := L.NewTable()
 			idx := 0
 			for _, v := range objs {

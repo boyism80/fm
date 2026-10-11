@@ -183,17 +183,7 @@ M.for_each_mob_in_skill_area = function(me, skill, callback)
 		prop = 100
 	end
 	local mob_limit = skill_effect_mob_limit(effect)
-	local pos_x, pos_y = me:position()
-	local lt = effect.lt
-	local rb = effect.rb
-	if lt == nil or rb == nil then
-		return
-	end
-	local min_x = pos_x + math.min(lt.x, rb.x)
-	local max_x = pos_x + math.max(lt.x, rb.x)
-	local min_y = pos_y + math.min(lt.y, rb.y)
-	local max_y = pos_y + math.max(lt.y, rb.y)
-	local mobs = map:objects(ObjectType.Mob, { area = { minX = min_x, minY = min_y, maxX = max_x, maxY = max_y } })
+	local mobs = map:objects(ObjectType.Mob, { area = me:skill_area(skill) })
 	local n = 0
 	for _, mob in ipairs(mobs) do
 		if mob_limit ~= nil and n >= mob_limit then
@@ -268,22 +258,11 @@ M.for_each_character_in_skill_area = function(me, skill, callback)
 	if map == nil then
 		return
 	end
-	local effect = skill:effect()
-	local pos_x, pos_y = me:position()
-	local lt, rb
-	if effect ~= nil then
-		lt = effect.lt
-		rb = effect.rb
+	local area = me:skill_area(skill)
+	if area == nil then
+		return
 	end
-	if lt == nil or rb == nil then
-		lt = { x = -400, y = -350 }
-		rb = { x = 400, y = 250 }
-	end
-	local min_x = pos_x + math.min(lt.x, rb.x)
-	local max_x = pos_x + math.max(lt.x, rb.x)
-	local min_y = pos_y + math.min(lt.y, rb.y)
-	local max_y = pos_y + math.max(lt.y, rb.y)
-	local chars = map:objects(ObjectType.Character, { area = { minX = min_x, minY = min_y, maxX = max_x, maxY = max_y } })
+	local chars = map:objects(ObjectType.Character, { area = area })
 	for _, ch in ipairs(chars) do
 		if ch ~= nil then
 			callback(ch)

@@ -6,7 +6,9 @@ local STONE_GOLEM = 5130101
 local MAGIC_ROCK = 4006000
 local MYSTIC_DOOR = 2311002
 local GM_HOLY_SYMBOL = 9001002
+local SHADOW_WEB = 4111003
 local PRIEST = 231
+local HERMIT = 411
 local GM = 900
 
 local function check(ctx, ok, message)
@@ -133,12 +135,80 @@ local function gm_holy_symbol(ctx)
 		string.format("혼자 받은 GM 홀리 심볼 경험치가 145%%가 아님: %d -> %d", base, boosted))
 end
 
+local function spawn_golem(ctx, bot, x, y)
+	if pq.move(bot, x, y) == false then
+		ctx:fail("스톤골렘 생성 위치로 이동 실패")
+		return nil
+	end
+	local p = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. STONE_GOLEM }, function(p)
+		return p.mob.mob_id == STONE_GOLEM
+	end)
+	if p == false then
+		ctx:fail("스톤골렘 생성 응답 없음")
+		return nil
+	end
+	return p.mob.oid
+end
+
+local function shadow_web_front(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, 120, HERMIT, "-") == false then
+		return false
+	end
+	if pq.command(bot, "/스킬레벨 " .. SHADOW_WEB .. " 20", "스킬레벨 설정") == false then
+		return ctx:fail("쉐도우 웹 배우기 실패")
+	end
+	if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+		return ctx:fail("마력 설정 실패")
+	end
+	if bot:instance_move(HUNTING_GROUND) == false then
+		return ctx:fail("사냥터 이동 실패")
+	end
+
+	local x, y = bot:position()
+	local behind = spawn_golem(ctx, bot, x - 300, y)
+	if behind == nil then
+		return false
+	end
+	local front = spawn_golem(ctx, bot, x - 100, y)
+	if front == nil then
+		return false
+	end
+	if pq.move(bot, x - 200, y) == false then
+		return ctx:fail("시전 위치로 이동 실패")
+	end
+
+	local webbed_front = false
+	local webbed_behind = false
+	local function watch(p)
+		if p.oid == behind then
+			webbed_behind = true
+		end
+		if p.oid == front then
+			webbed_front = true
+		end
+		return webbed_front
+	end
+	for _ = 1, 6 do
+		if webbed_front then
+			break
+		end
+		bot:request(resp.apply_mob_buff, req.active_skill { skill_id = SHADOW_WEB, skill_level = 20 }, watch, 1500)
+	end
+	bot:request(resp.apply_mob_buff, nil, watch, 500)
+	if check(ctx, webbed_front, "오른쪽을 보고 쓴 쉐도우 웹이 앞의 몹에 걸리지 않음") == false then
+		return false
+	end
+	return check(ctx, webbed_behind == false, "오른쪽을 보고 쓴 쉐도우 웹이 등 뒤 몹에 걸림")
+end
+
 test_suite {
-	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼",
+	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·스킬 범위 방향",
 	bot_count = 2,
 
 	scenarios = {
 		mystic_door,
 		gm_holy_symbol,
+		shadow_web_front,
 	},
 }

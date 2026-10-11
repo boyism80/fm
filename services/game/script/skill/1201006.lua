@@ -14,17 +14,7 @@ return {
 			return
 		end
 		local mob_count = effect.mob_count or 6
-		local pos_x, pos_y = me:position()
-		local lt = effect.lt
-		local rb = effect.rb
-		if lt == nil or rb == nil then
-			return
-		end
-		local min_x = pos_x + math.min(lt.x, rb.x)
-		local max_x = pos_x + math.max(lt.x, rb.x)
-		local min_y = pos_y + math.min(lt.y, rb.y)
-		local max_y = pos_y + math.max(lt.y, rb.y)
-		local mobs = map:objects(ObjectType.Mob, { area = { minX = min_x, minY = min_y, maxX = max_x, maxY = max_y } })
+		local mobs = map:objects(ObjectType.Mob, { area = me:skill_area(skill) })
 		local n = 0
 		for _, mob in ipairs(mobs) do
 			if n >= mob_count then

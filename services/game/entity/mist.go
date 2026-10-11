@@ -25,24 +25,6 @@ type Mist struct {
 	PoisonTickMultiplier float64
 }
 
-func MistWorldBounds(pos types.Point[int16], ld *wz.SkillLevelData) types.Rect[int32] {
-	px := int32(pos.X)
-	py := int32(pos.Y)
-	if ld == nil {
-		return types.Rect[int32]{Left: px, Top: py, Right: px, Bottom: py}
-	}
-	x1 := px + ld.LT.X
-	x2 := px + ld.RB.X
-	y1 := py + ld.LT.Y
-	y2 := py + ld.RB.Y
-	return types.Rect[int32]{
-		Left:   min(x1, x2),
-		Top:    min(y1, y2),
-		Right:  max(x1, x2),
-		Bottom: max(y1, y2),
-	}
-}
-
 func (mist *Mist) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeMist
 }

@@ -1291,6 +1291,32 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, s))
 			return 1
 		},
+		"skill_area": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skill, ok := L.CheckUserData(2).Value.(*SkillEntry)
+			if !ok || skill == nil {
+				L.ArgError(2, "Skill expected")
+				return 0
+			}
+			ld := skill.Wz.GetLevelData(skill.Level())
+			if ld == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			area := ch.SkillArea(ld)
+			tbl := L.NewTable()
+			tbl.RawSetString("left", lua.LNumber(area.Left))
+			tbl.RawSetString("top", lua.LNumber(area.Top))
+			tbl.RawSetString("right", lua.LNumber(area.Right))
+			tbl.RawSetString("bottom", lua.LNumber(area.Bottom))
+			L.Push(tbl)
+			return 1
+		},
 		"create_mist": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
