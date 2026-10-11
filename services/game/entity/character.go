@@ -63,6 +63,8 @@ type Character struct {
 	Skills            *Skills
 	SkillMacros       *SkillMacros
 	KeyLayout         *KeyLayout
+	ItemEffectID      uint32
+	Chalkboard        string
 	Chair             uint32
 	lastHeal          lastHeal
 	Buffs             *Buffs
@@ -138,6 +140,8 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		WKChargeSkillId:   spawnBuffData.WKChargeSkillID,
 		MorphId:           spawnBuffData.MorphID,
 		SpiritClawSkillId: spawnBuffData.SpiritClawSkillID,
+		ItemEffectId:      ch.ItemEffectID,
+		Chalkboard:        ch.Chalkboard,
 		MountLevel:        ch.Mount.Level,
 		MountExp:          ch.Mount.Exp,
 		MountFatigue:      ch.Mount.Fatigue,

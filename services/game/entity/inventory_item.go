@@ -94,10 +94,14 @@ func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, cou
 		return false
 	}
 	if item.GetCount() == count {
+		itemID := item.GetModel().GetID()
 		if err := inven.Remove(uint8(slot)); err != nil {
 			return false
 		}
 		ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
+		if invType == constant.InventoryTypeCash && ch.ItemEffectID == itemID && inven.Find(itemID) == nil {
+			ch.clearItemEffect()
+		}
 	} else {
 		item.Reduce(count)
 		ch.Listener.OnInventorySlotUpdated(ch, invType, slot, item)
@@ -232,6 +236,7 @@ func (inv *Inventory) ClearInventory() int {
 			cleared++
 		}
 	}
+	ch.clearItemEffect()
 	return cleared
 }
 

@@ -2277,6 +2277,7 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 		skill := &Skill{
 			ID:        uint32(skillID),
 			LevelData: make(map[int]*SkillLevelData),
+			Charge:    skillChild.find("keydown") != nil,
 		}
 
 		for _, strField := range skillChild.Strings {

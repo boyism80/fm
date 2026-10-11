@@ -120,6 +120,28 @@ func (l *CharacterListenerImpl) OnSkillMacros(ch *entity.Character) {
 	ch.Send(&response.SkillMacro{Entries: entries}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnChalkboard(ch *entity.Character) {
+	ch.Broadcast(&response.Chalkboard{CharacterID: ch.GetID(), Text: ch.Chalkboard}, nil)
+}
+
+func (l *CharacterListenerImpl) OnFaceExpression(ch *entity.Character, expression uint32) {
+	ch.Broadcast(&response.FaceExpression{CharacterID: ch.GetID(), Expression: expression}, nil)
+}
+
+func (l *CharacterListenerImpl) OnItemEffect(ch *entity.Character) {
+	ch.Broadcast(&response.ItemEffect{CharacterID: ch.GetID(), ItemID: ch.ItemEffectID}, nil)
+}
+
+func (l *CharacterListenerImpl) OnChargeSkillEffect(ch *entity.Character, skillID uint32, level, flags, speed uint8) {
+	ch.Broadcast(&response.ChargeSkillEffect{
+		CharacterID: ch.GetID(),
+		SkillID:     skillID,
+		Level:       level,
+		Flags:       flags,
+		Speed:       speed,
+	}, nil)
+}
+
 func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType constant.ServerMessageType, message string) {
 	l.OnNotice(ch, messageType, message, 0, false)
 }

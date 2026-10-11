@@ -1,0 +1,53 @@
+package entity
+
+import "github.com/boyism80/fm/services/game/constant"
+
+func (ch *Character) CloseChalkboard() {
+	if ch.Chalkboard == "" || ch.GetMap() == nil {
+		return
+	}
+	ch.Chalkboard = ""
+	ch.Listener.OnChalkboard(ch)
+}
+
+func (ch *Character) Express(expression uint32) {
+	if ch.GetMap() == nil || !ch.IsAlive() || ch.Spectating() || expression == 0 || expression > 22 {
+		return
+	}
+	if expression > 7 && ch.Inventory.Tabs[constant.InventoryTypeCash].Find(5159992+expression) == nil {
+		return
+	}
+	ch.Listener.OnFaceExpression(ch, expression)
+}
+
+func (ch *Character) SetItemEffect(itemID uint32) {
+	if ch.GetMap() == nil || !ch.IsAlive() || ch.Spectating() || ch.ItemEffectID == itemID {
+		return
+	}
+	if itemID != 0 && (itemID/10000 != 501 || ch.Inventory.Tabs[constant.InventoryTypeCash].Find(itemID) == nil) {
+		return
+	}
+	ch.ItemEffectID = itemID
+	ch.Listener.OnItemEffect(ch)
+}
+
+func (ch *Character) clearItemEffect() {
+	if ch.ItemEffectID == 0 {
+		return
+	}
+	ch.ItemEffectID = 0
+	if ch.GetMap() != nil {
+		ch.Listener.OnItemEffect(ch)
+	}
+}
+
+func (ch *Character) ShowChargeSkillEffect(skillID uint32, level, flags, speed uint8) {
+	if ch.GetMap() == nil || !ch.IsAlive() || ch.Spectating() {
+		return
+	}
+	skill := ch.Skills.Get(skillID)
+	if skill == nil || skill.Level() != int(level) || !skill.Wz.Charge {
+		return
+	}
+	ch.Listener.OnChargeSkillEffect(ch, skillID, level, flags, speed)
+}

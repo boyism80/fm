@@ -78,6 +78,10 @@ var requests = []outbound{
 	&request.FamilyAccept{},
 	&request.FamilyRemoveSenior{},
 	&request.FamilyPedigree{},
+	&request.FaceExpression{},
+	&request.ItemEffect{},
+	&request.CloseChalkboard{},
+	&request.SkillEffect{},
 	&request.SkillMacro{},
 }
 
