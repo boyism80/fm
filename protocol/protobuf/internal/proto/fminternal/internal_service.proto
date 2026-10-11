@@ -1200,6 +1200,7 @@ message DeleteCharacterRequest {
 
 message DeleteCharacterReply {
   bool success = 1;
+  bool second_password_set = 2;
 }
 
 message RefreshSessionRequest {

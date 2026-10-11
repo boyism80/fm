@@ -84,6 +84,7 @@ var decoders = func() []decoder {
 		newDecoder[response.Transfer](nil),
 		newDecoder[response.CheckName](nil),
 		newDecoder[response.CreateCharacter](nil),
+		newDecoder[response.DeleteCharacter](nil),
 		newDecoder[response.Ping](nil),
 		newDecoder[response.Warp](func(body []byte) bool { return len(body) > 4 && body[4] == 2 }),
 		newDecoder[response.FieldRelocate](nil),

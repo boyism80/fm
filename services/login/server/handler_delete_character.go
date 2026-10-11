@@ -9,6 +9,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/login/client"
 	"github.com/boyism80/fm/types"
 )
@@ -37,6 +38,12 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 		func(c context.Context) (*internal.DeleteCharacterReply, error) {
 			return h.ls.internalClient.DeleteCharacter(c, &internal.DeleteCharacterRequest{AccountId: accountId, CharacterId: req.ID})
 		}, func(reply *internal.DeleteCharacterReply) error {
+			if reply.GetSecondPasswordSet() {
+				_ = ctx.Client.Send(&response.Notice{
+					Type:    constant.MsgPopup,
+					Message: "2차 비밀번호가 설정된 상태에서는 캐릭터를 삭제할 수 없습니다. 먼저 2차 비밀번호를 해제해주세요.",
+				}, types.SEND_POLICY_ENCRYPT)
+			}
 			deleteResp := &response.DeleteCharacter{
 				ID:      req.ID,
 				Success: reply.Success,

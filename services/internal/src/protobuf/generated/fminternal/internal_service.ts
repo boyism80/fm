@@ -2975,6 +2975,7 @@ export interface DeleteCharacterRequest {
 
 export interface DeleteCharacterReply {
   success: boolean;
+  secondPasswordSet: boolean;
 }
 
 export interface RefreshSessionRequest {
@@ -21887,13 +21888,16 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
 };
 
 function createBaseDeleteCharacterReply(): DeleteCharacterReply {
-  return { success: false };
+  return { success: false, secondPasswordSet: false };
 }
 
 export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
   encode(message: DeleteCharacterReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.success !== false) {
       writer.uint32(8).bool(message.success);
+    }
+    if (message.secondPasswordSet !== false) {
+      writer.uint32(16).bool(message.secondPasswordSet);
     }
     return writer;
   },
@@ -21913,6 +21917,14 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
           message.success = reader.bool();
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.secondPasswordSet = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -21923,13 +21935,23 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
   },
 
   fromJSON(object: any): DeleteCharacterReply {
-    return { success: isSet(object.success) ? globalThis.Boolean(object.success) : false };
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      secondPasswordSet: isSet(object.secondPasswordSet)
+        ? globalThis.Boolean(object.secondPasswordSet)
+        : isSet(object.second_password_set)
+        ? globalThis.Boolean(object.second_password_set)
+        : false,
+    };
   },
 
   toJSON(message: DeleteCharacterReply): unknown {
     const obj: any = {};
     if (message.success !== false) {
       obj.success = message.success;
+    }
+    if (message.secondPasswordSet !== false) {
+      obj.secondPasswordSet = message.secondPasswordSet;
     }
     return obj;
   },
@@ -21940,6 +21962,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
   fromPartial<I extends Exact<DeepPartial<DeleteCharacterReply>, I>>(object: I): DeleteCharacterReply {
     const message = createBaseDeleteCharacterReply();
     message.success = object.success ?? false;
+    message.secondPasswordSet = object.secondPasswordSet ?? false;
     return message;
   },
 };

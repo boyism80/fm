@@ -29,12 +29,16 @@ local function set_select_remove(ctx)
 		return false
 	end
 
-	r = relog(ctx, bot, { set = "1234", passwords = { "", "9999", "1234" } }, "비밀번호 설정")
+	r = relog(ctx, bot, { set = "1234", delete_spare = true, passwords = { "", "9999", "1234" } }, "비밀번호 설정")
 	if r == nil then
 		return false
 	end
 	if expect(ctx, r.set == SUCCESS and r.rejected == 2,
 		string.format("2차 비밀번호 설정 후 선택 결과가 다름: set=%s rejected=%d", tostring(r.set), r.rejected)) == false then
+		return false
+	end
+	if expect(ctx, r.deleted == false and r.delete_notice ~= "",
+		string.format("2차 비밀번호가 있는데 캐릭터가 삭제됨: deleted=%s notice=%q", tostring(r.deleted), r.delete_notice)) == false then
 		return false
 	end
 
@@ -65,12 +69,12 @@ local function set_select_remove(ctx)
 		return false
 	end
 
-	r = relog(ctx, bot, { passwords = { "1234", "" } }, "해제 후 재접속")
+	r = relog(ctx, bot, { delete_spare = true, passwords = { "1234", "" } }, "해제 후 재접속")
 	if r == nil then
 		return false
 	end
-	return expect(ctx, r.has_second_password == false and r.rejected == 1,
-		string.format("해제 후 상태가 다름: has=%s rejected=%d", tostring(r.has_second_password), r.rejected))
+	return expect(ctx, r.has_second_password == false and r.rejected == 1 and r.deleted == true,
+		string.format("해제 후 상태가 다름: has=%s rejected=%d deleted=%s", tostring(r.has_second_password), r.rejected, tostring(r.deleted)))
 end
 
 test_suite {

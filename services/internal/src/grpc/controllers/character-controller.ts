@@ -264,7 +264,7 @@ export class CharacterGrpcController {
     async deleteCharacter(call: GrpcCall<DeleteCharacterRequest>, callback: GrpcCallback<DeleteCharacterReply>) {
         try {
             const result = await this.characterService.deleteCharacter(call.request.accountId, call.request.characterId);
-            callback(null, { success: result.success });
+            callback(null, { success: result.success, secondPasswordSet: result.secondPasswordSet ?? false });
         } catch (err) {
             this.grpcError(err, callback);
         }

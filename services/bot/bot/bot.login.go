@@ -104,63 +104,108 @@ func (b *Bot) login() error {
 		break
 	}
 	b.SecondPassword = list.HasSecondPassword
+	b.spareCharID = 0
+	if len(list.Characters) > 1 {
+		b.spareCharID = list.Characters[1].ID
+	}
 	if len(list.Characters) == 0 {
-		return b.createCharacter()
+		id, name, err := b.createCharacter(b.Name)
+		if err != nil {
+			return err
+		}
+		b.CharID = id
+		b.Name = name
+		return nil
 	}
 	b.CharID = list.Characters[0].ID
 	b.Name = list.Characters[0].Name
 	return nil
 }
 
-func (b *Bot) createCharacter() error {
-	base := b.Name
+func (b *Bot) createCharacter(base string) (uint32, string, error) {
 	for i := 0; i < 3; i++ {
 		name := base
 		if i > 0 {
 			name = fmt.Sprintf("%s%d", base, i)
 		}
 		if len(name) > 12 {
-			return fmt.Errorf("character name %q is longer than 12 bytes", name)
+			return 0, "", fmt.Errorf("character name %q is longer than 12 bytes", name)
 		}
 		if err := b.conn.Send(&request.CheckName{Name: name}); err != nil {
-			return err
+			return 0, "", err
 		}
 		pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
 			_, ok := pkt.(*response.CheckName)
 			return ok
 		})
 		if err != nil {
-			return err
+			return 0, "", err
 		}
 		if pkt.(*response.CheckName).Exists {
 			continue
 		}
-		b.Name = name
 		look := maleLooks
 		if b.Gender == 1 {
 			look = femaleLooks
 		}
 		if err := b.conn.Send(&request.CreateCharacter{
-			Name: b.Name, Face: look.face, Hair: look.hair,
+			Name: name, Face: look.face, Hair: look.hair,
 			Top: look.top, Bottom: look.bottom, Shoes: look.shoes, Weapon: look.weapon,
 		}); err != nil {
-			return err
+			return 0, "", err
 		}
 		createdPkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
 			_, ok := pkt.(*response.CreateCharacter)
 			return ok
 		})
 		if err != nil {
-			return err
+			return 0, "", err
 		}
 		created := createdPkt.(*response.CreateCharacter)
 		if !created.Success || created.Character == nil || created.Character.ID == 0 {
-			return fmt.Errorf("create character %s failed", b.Name)
+			return 0, "", fmt.Errorf("create character %s failed", name)
 		}
-		b.CharID = created.Character.ID
-		return nil
+		return created.Character.ID, name, nil
 	}
-	return fmt.Errorf("character name %s is taken", base)
+	return 0, "", fmt.Errorf("character name %s is taken", base)
+}
+
+func (b *Bot) deleteSpareCharacter() (bool, string, error) {
+	if b.spareCharID == 0 {
+		base := b.Name
+		if len(base) > 9 {
+			base = base[:9]
+		}
+		id, _, err := b.createCharacter(base + "d")
+		if err != nil {
+			return false, "", err
+		}
+		b.spareCharID = id
+	}
+
+	if err := b.conn.Send(&request.DeleteCharacter{ID: b.spareCharID}); err != nil {
+		return false, "", err
+	}
+	var notice string
+	pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+		switch p := pkt.(type) {
+		case *response.Notice:
+			notice = p.Message
+			return false
+		case *response.DeleteCharacter:
+			return true
+		default:
+			return false
+		}
+	})
+	if err != nil {
+		return false, "", err
+	}
+	deleted := pkt.(*response.DeleteCharacter).Success
+	if deleted {
+		b.spareCharID = 0
+	}
+	return deleted, notice, nil
 }
 
 func (b *Bot) openGame() error {
@@ -224,6 +269,15 @@ func (b *Bot) Relog(opts Relog) (RelogResult, error) {
 			return result, err
 		}
 		result.Remove = &code
+	}
+	if opts.DeleteSpare {
+		deleted, notice, err := b.deleteSpareCharacter()
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		result.Deleted = &deleted
+		result.DeleteNotice = notice
 	}
 
 	for _, password := range opts.Passwords {
@@ -417,6 +471,8 @@ var (
 		(&response.Transfer{}).Opcode(),
 		(&response.CheckName{}).Opcode(),
 		(&response.CreateCharacter{}).Opcode(),
+		(&response.DeleteCharacter{}).Opcode(),
+		(&response.Notice{}).Opcode(),
 		(&response.SecondPasswordResult{}).Opcode(),
 	}
 	gameOpcodes = []uint16{

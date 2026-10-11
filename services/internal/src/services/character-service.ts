@@ -537,7 +537,7 @@ export class CharacterService {
         return { success: true, errorMsg: "", character: overview };
     }
 
-    async deleteCharacter(accountId: number, characterId: number) {
+    async deleteCharacter(accountId: number, characterId: number): Promise<{ success: boolean; secondPasswordSet?: boolean }> {
         const worldId = this.worldId();
         this.assertWorld(worldId);
         this.assertAccountId(accountId);
@@ -546,6 +546,14 @@ export class CharacterService {
         const session = await this.sessionRepo.getAccountSession(worldId, accountId);
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
             return { success: false };
+        }
+
+        const account = await this.accountRepo.get(worldId, accountId);
+        if (!account) {
+            return { success: false };
+        }
+        if (account.secondPasswordHash) {
+            return { success: false, secondPasswordSet: true };
         }
 
         await using _characterLock = await this.distributedLockService.acquireWorldDataLock(

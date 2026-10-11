@@ -57,20 +57,24 @@ type Bot struct {
 	Stones         map[bool][]uint32
 	Macros         []response.SkillMacroEntry
 	SecondPassword bool
+	spareCharID    uint32
 	cfg            *config.Bot
 	conn           *conn.Conn
 }
 
 type Relog struct {
-	Set       string
-	Remove    string
-	Passwords []string
+	Set         string
+	Remove      string
+	DeleteSpare bool
+	Passwords   []string
 }
 
 type RelogResult struct {
 	HasSecondPassword bool
 	Set               *uint8
 	Remove            *uint8
+	Deleted           *bool
+	DeleteNotice      string
 	Rejected          int
 }
 

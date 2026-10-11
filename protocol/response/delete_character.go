@@ -21,4 +21,6 @@ func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *DeleteCharacter) Deserialize(reader *stream.StreamReader) {
+	a.ID = reader.ReadU32()
+	a.Success = !reader.ReadBool()
 }
