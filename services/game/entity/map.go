@@ -49,6 +49,8 @@ type MapListener interface {
 	OnMagicAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnMistSpawned(mapInstance *Map, mist *Mist)
 	OnMistRemoved(mapInstance *Map, mist *Mist)
+	OnMessageBoxSpawned(mapInstance *Map, box *MessageBox)
+	OnMessageBoxRemoved(mapInstance *Map, box *MessageBox)
 	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
 }
 

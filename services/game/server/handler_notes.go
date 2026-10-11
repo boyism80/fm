@@ -42,10 +42,10 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		if req.Kind != pconst.NoteKindNormal && req.Kind != pconst.NoteKindPopulation {
 			return nil
 		}
-		if !socialText(req.Message).valid(200) {
+		if !entity.ClientText(req.Message).Valid(200) {
 			return nil
 		}
-		if !socialText(req.Target).valid(13) {
+		if !entity.ClientText(req.Target).Valid(13) {
 			ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
 			return nil
 		}

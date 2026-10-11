@@ -10,6 +10,32 @@ func (ch *Character) CloseChalkboard() {
 	ch.Listener.OnChalkboard(ch)
 }
 
+func (ch *Character) SetChalkboard(text string) bool {
+	if ch.GetMap() == nil || !ch.IsAlive() || ch.MiniRoom != nil || !ClientText(text).Valid(40) {
+		return false
+	}
+	if ch.Chalkboard == text {
+		return false
+	}
+	ch.Chalkboard = text
+	ch.Listener.OnChalkboard(ch)
+	return true
+}
+
+func (ch *Character) PlaceMessageBox(itemID uint32, text string) bool {
+	m := ch.GetMap()
+	if m == nil || !ch.IsAlive() || m.TemplateID()/10000000 == 91 || !ClientText(text).ValidLines(messageBoxLines, messageBoxLineLimit) {
+		return false
+	}
+	box := &MessageBox{ItemID: itemID, Owner: ch.GetName(), Text: text}
+	box.Position = ch.Position
+	if err := m.AddMessageBox(box); err != nil {
+		ch.Listener.OnMessageBoxFailed(ch)
+		return false
+	}
+	return true
+}
+
 func (ch *Character) Express(expression uint32) {
 	if ch.GetMap() == nil || !ch.IsAlive() || ch.Spectating() || expression == 0 || expression > 22 {
 		return

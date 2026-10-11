@@ -35,10 +35,10 @@ func (h *familyHandler) handle(ctx *core.ClientContext, req *request.Family) err
 	}
 
 	if req.Action == internal.FamilyAction_FAMILY_ACTION_PRECEPT {
-		if req.Name != "" && !socialText(req.Name).valid(200) {
+		if req.Name != "" && !entity.ClientText(req.Name).Valid(200) {
 			return nil
 		}
-	} else if req.Name != "" && !socialText(req.Name).valid(13) {
+	} else if req.Name != "" && !entity.ClientText(req.Name).Valid(13) {
 		return nil
 	}
 

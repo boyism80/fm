@@ -89,6 +89,9 @@ var decoders = func() []decoder {
 		newDecoder[response.FieldRelocate](nil),
 		newDecoder[response.Login](nil),
 		newDecoder[response.KeyMap](nil),
+		newDecoder[response.Megaphone](func(body []byte) bool {
+			return len(body) > 0 && (body[0] == uint8(constant.MsgItemMegaphone) || body[0] == uint8(constant.MsgThreeMegaphoneLines))
+		}),
 		newDecoder[response.Notice](nil),
 		newDecoder[response.SpawnNpc](nil),
 		newDecoder[response.RemoveNpc](nil),
@@ -258,6 +261,9 @@ var decoders = func() []decoder {
 		newDecoder[response.FaceExpression](nil),
 		newDecoder[response.ItemEffect](nil),
 		newDecoder[response.Chalkboard](nil),
+		newDecoder[response.SpawnMessageBox](nil),
+		newDecoder[response.RemoveMessageBox](nil),
+		newDecoder[response.MessageBoxFailed](nil),
 		newDecoder[response.ChargeSkillEffect](nil),
 		newDecoder[response.EnergyAttack](nil),
 		newDecoder[response.SkillMacro](nil),

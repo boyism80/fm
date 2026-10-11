@@ -693,6 +693,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		return 1
 	})
 
+	luax.RegisterFunc(luaState, "valid_text", func(L *lua.LState) int {
+		L.Push(lua.LBool(entity.ClientText(L.CheckString(1)).Valid(L.CheckInt(2))))
+		return 1
+	})
+
 	luax.RegisterFunc(luaState, "name2skill", func(L *lua.LState) int {
 		name := L.CheckString(1)
 		if gs.resources == nil {

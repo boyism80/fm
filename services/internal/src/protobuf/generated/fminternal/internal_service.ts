@@ -3715,6 +3715,8 @@ export interface BroadcastNoticeRequest {
   messageType: number;
   message: string;
   megaEar: boolean;
+  nextLines: string[];
+  item: Buffer;
 }
 
 export interface BroadcastNoticeReply {
@@ -34537,7 +34539,15 @@ export const SetServerDateTimeReply: MessageFns<SetServerDateTimeReply> = {
 };
 
 function createBaseBroadcastNoticeRequest(): BroadcastNoticeRequest {
-  return { worldId: 0, sourceChannelId: 0, messageType: 0, message: "", megaEar: false };
+  return {
+    worldId: 0,
+    sourceChannelId: 0,
+    messageType: 0,
+    message: "",
+    megaEar: false,
+    nextLines: [],
+    item: Buffer.alloc(0),
+  };
 }
 
 export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
@@ -34556,6 +34566,12 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
     }
     if (message.megaEar !== false) {
       writer.uint32(40).bool(message.megaEar);
+    }
+    for (const v of message.nextLines) {
+      writer.uint32(50).string(v!);
+    }
+    if (message.item.length !== 0) {
+      writer.uint32(58).bytes(message.item);
     }
     return writer;
   },
@@ -34607,6 +34623,22 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
           message.megaEar = reader.bool();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.nextLines.push(reader.string());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.item = Buffer.from(reader.bytes());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -34639,6 +34671,12 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
         : isSet(object.mega_ear)
         ? globalThis.Boolean(object.mega_ear)
         : false,
+      nextLines: globalThis.Array.isArray(object?.nextLines)
+        ? object.nextLines.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.next_lines)
+        ? object.next_lines.map((e: any) => globalThis.String(e))
+        : [],
+      item: isSet(object.item) ? Buffer.from(bytesFromBase64(object.item)) : Buffer.alloc(0),
     };
   },
 
@@ -34659,6 +34697,12 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
     if (message.megaEar !== false) {
       obj.megaEar = message.megaEar;
     }
+    if (message.nextLines?.length) {
+      obj.nextLines = message.nextLines;
+    }
+    if (message.item.length !== 0) {
+      obj.item = base64FromBytes(message.item);
+    }
     return obj;
   },
 
@@ -34672,6 +34716,8 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
     message.messageType = object.messageType ?? 0;
     message.message = object.message ?? "";
     message.megaEar = object.megaEar ?? false;
+    message.nextLines = object.nextLines?.map((e) => e) || [];
+    message.item = object.item ?? Buffer.alloc(0);
     return message;
   },
 };

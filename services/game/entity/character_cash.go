@@ -17,7 +17,18 @@ func (ch *Character) UsingCashItem() bool {
 	return ch.session.cashItemInUse.Load()
 }
 
-func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, text string, ear bool, petSN uint64) {
+type CashItemInput struct {
+	Text         string
+	Ear          bool
+	PetSN        uint64
+	Recipient    string
+	Lines        []string
+	Attached     bool
+	AttachedType uint32
+	AttachedSlot uint32
+}
+
+func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, input CashItemInput) {
 	if !ch.session.cashItemInUse.CompareAndSwap(false, true) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
@@ -50,11 +61,24 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, t
 	scriptPath := fmt.Sprintf("script/item/%d.lua", itemID)
 	thread, err := luax.NewThread(m.GetLuaRoot(), scriptPath)
 	if err != nil {
+		ch.Listener.OnMessage(ch, constant.MsgPinkText, "지금은 사용할 수 없는 아이템입니다.")
 		finish()
 		return
 	}
 	luax.SetConfiguration(thread, luax.Configuration{ActorContext: ctx})
-	luax.CallAsync(ctx, m.GetLuaRoot(), thread, "on_cash", ch, itemID, text, ear, petSN).Do(func(vals []lua.LValue) error {
+
+	extra := thread.NewTable()
+	extra.RawSetString("recipient", lua.LString(input.Recipient))
+	lines := thread.NewTable()
+	for _, line := range input.Lines {
+		lines.Append(lua.LString(line))
+	}
+	extra.RawSetString("lines", lines)
+	if input.Attached {
+		extra.RawSetString("inventory", lua.LNumber(input.AttachedType))
+		extra.RawSetString("slot", lua.LNumber(input.AttachedSlot))
+	}
+	luax.CallAsync(ctx, m.GetLuaRoot(), thread, "on_cash", ch, itemID, input.Text, input.Ear, input.PetSN, extra).Do(func(vals []lua.LValue) error {
 		if len(vals) == 0 || vals[0] != lua.LTrue {
 			finish()
 			return nil

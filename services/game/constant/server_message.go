@@ -12,9 +12,8 @@ const (
 	MsgLightBlueText       ServerMessageType = 6
 	MsgItemMegaphone       ServerMessageType = 8
 	MsgHeartMegaphone      ServerMessageType = 9
-	MsgSkullSuperMegaphone ServerMessageType = 10
+	MsgThreeMegaphoneLines ServerMessageType = 10
 	MsgGreenMegaphone      ServerMessageType = 11
-	MsgThreeMegaphoneLines ServerMessageType = 12
 	MsgEOF                 ServerMessageType = 13
 	MsgANI                 ServerMessageType = 14
 	MsgRedGachaponBox      ServerMessageType = 15
@@ -32,7 +31,6 @@ func AllServerMessageTypes() map[string]ServerMessageType {
 		"LightBlueText":       MsgLightBlueText,
 		"ItemMegaphone":       MsgItemMegaphone,
 		"HeartMegaphone":      MsgHeartMegaphone,
-		"SkullSuperMegaphone": MsgSkullSuperMegaphone,
 		"GreenMegaphone":      MsgGreenMegaphone,
 		"ThreeMegaphoneLines": MsgThreeMegaphoneLines,
 		"EOF":                 MsgEOF,

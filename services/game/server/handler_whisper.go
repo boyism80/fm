@@ -8,6 +8,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type Whisper struct {
@@ -43,7 +44,7 @@ func (h *Whisper) Handle(ctx *core.ClientContext, req *request.Whisper) error {
 		fail()
 		return nil
 	}
-	if !socialText(req.Target).valid(13) || (req.Mode == internal.WhisperMode_WHISPER_MODE_SEND && !socialText(req.Message).valid(200)) {
+	if !entity.ClientText(req.Target).Valid(13) || (req.Mode == internal.WhisperMode_WHISPER_MODE_SEND && !entity.ClientText(req.Message).Valid(200)) {
 		fail()
 		return nil
 	}

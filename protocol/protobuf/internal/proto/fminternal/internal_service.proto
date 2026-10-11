@@ -2062,6 +2062,8 @@ message BroadcastNoticeRequest {
   uint32 message_type = 3;
   string message = 4;
   bool mega_ear = 5;
+  repeated string next_lines = 6;
+  bytes item = 7;
 }
 
 message BroadcastNoticeReply {

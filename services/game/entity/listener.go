@@ -114,11 +114,14 @@ type CharacterListener interface {
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
 	OnNotice(ch *Character, messageType constant.ServerMessageType, message string, channel int, ear bool)
 	BroadcastNoticeAsync(ctx actor.Context, ch *Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise[*internal.BroadcastNoticeReply]
+	OnMegaphone(ch *Character, megaphone *response.Megaphone)
+	BroadcastMegaphoneAsync(ctx actor.Context, ch *Character, megaphone *response.Megaphone) *async.Promise[*internal.BroadcastNoticeReply]
 	SetAccountRoleAsync(ctx actor.Context, ch *Character, role constant.CharacterRole) *async.Promise[*internal.SetAccountRoleReply]
 	Disconnect(ch *Character)
 	OnKeyMap(ch *Character)
 	OnSkillMacros(ch *Character)
 	OnChalkboard(ch *Character)
+	OnMessageBoxFailed(ch *Character)
 	OnFaceExpression(ch *Character, expression uint32)
 	OnItemEffect(ch *Character)
 	OnChargeSkillEffect(ch *Character, skillID uint32, level, flags, speed uint8)
@@ -281,6 +284,7 @@ type CharacterListener interface {
 	OnNotes(ch *Character, notes []*internal.Note)
 	OnNoteSent(ch *Character)
 	OnNoteFailed(ch *Character, result internal.NoteResult)
+	SendNoteAsync(ctx actor.Context, ch *Character, recipient string, message string) *async.Promise[*internal.NotesReply]
 	OnNoteArrived(ch *Character)
 	OnFamilyPrivileges(ch *Character)
 	OnFamilyChanged(ch *Character)

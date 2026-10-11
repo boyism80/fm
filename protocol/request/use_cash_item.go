@@ -3,14 +3,21 @@ package request
 import "github.com/boyism80/fm/stream"
 
 type UseCashItem struct {
-	Slot      uint16
-	ItemID    uint32
-	Text      string
-	Ear       bool
-	PetSN     uint64
-	Target    TeleportStoneTarget
-	SearchID  uint32
-	HighFirst bool
+	Slot         uint16
+	ItemID       uint32
+	Text         string
+	Ear          bool
+	PetSN        uint64
+	Target       TeleportStoneTarget
+	SearchID     uint32
+	HighFirst    bool
+	Recipient    string
+	Lines        []string
+	Attached     bool
+	AttachedType uint32
+	AttachedSlot uint32
+	Tick         uint32
+	Malformed    bool
 }
 
 func (*UseCashItem) Opcode() byte { return 0x3E }
@@ -35,16 +42,38 @@ func (p *UseCashItem) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU32(0)
 		return nil
 	case 507:
+		switch p.ItemID % 10000 / 1000 {
+		case 1:
+			writer.WriteStr16(p.Text)
+		case 2:
+			writer.WriteStr16(p.Text)
+			writer.WriteBoolean(p.Ear)
+		case 6:
+			writer.WriteStr16(p.Text)
+			writer.WriteBoolean(p.Ear)
+			writer.WriteBoolean(p.Attached)
+			if p.Attached {
+				writer.WriteU32(p.AttachedType)
+				writer.WriteU32(p.AttachedSlot)
+			}
+		case 7:
+			writer.WriteU8(uint8(len(p.Lines)))
+			for _, line := range p.Lines {
+				writer.WriteStr16(line)
+			}
+			writer.WriteBoolean(p.Ear)
+		default:
+			return nil
+		}
+	case 508, 537:
+		writer.WriteStr16(p.Text)
+	case 509:
+		writer.WriteStr16(p.Recipient)
+		writer.WriteStr16(p.Text)
 	default:
 		return nil
 	}
-	switch p.ItemID % 10000 / 1000 {
-	case 1, 8:
-		writer.WriteStr16(p.Text)
-	case 2:
-		writer.WriteStr16(p.Text)
-		writer.WriteBoolean(p.Ear)
-	}
+	writer.WriteU32(p.Tick)
 	return nil
 }
 
@@ -67,14 +96,41 @@ func (p *UseCashItem) Deserialize(reader *stream.StreamReader) {
 		p.HighFirst = reader.ReadU8() != 0
 		return
 	case 507:
+		switch p.ItemID % 10000 / 1000 {
+		case 1:
+			p.Text = reader.ReadStr16()
+		case 2:
+			p.Text = reader.ReadStr16()
+			p.Ear = reader.ReadU8() != 0
+		case 6:
+			p.Text = reader.ReadStr16()
+			p.Ear = reader.ReadU8() != 0
+			p.Attached = reader.ReadU8() != 0
+			if p.Attached {
+				p.AttachedType = reader.ReadU32()
+				p.AttachedSlot = reader.ReadU32()
+			}
+		case 7:
+			count := reader.ReadU8()
+			if count < 1 || count > 3 {
+				p.Malformed = true
+				return
+			}
+			p.Lines = make([]string, count)
+			for i := range p.Lines {
+				p.Lines[i] = reader.ReadStr16()
+			}
+			p.Ear = reader.ReadU8() != 0
+		default:
+			return
+		}
+	case 508, 537:
+		p.Text = reader.ReadStr16()
+	case 509:
+		p.Recipient = reader.ReadStr16()
+		p.Text = reader.ReadStr16()
 	default:
 		return
 	}
-	switch p.ItemID % 10000 / 1000 {
-	case 1, 8:
-		p.Text = reader.ReadStr16()
-	case 2:
-		p.Text = reader.ReadStr16()
-		p.Ear = reader.ReadU8() != 0
-	}
+	p.Tick = reader.ReadU32()
 }

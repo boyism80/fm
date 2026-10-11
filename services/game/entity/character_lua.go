@@ -1685,6 +1685,126 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LTrue)
 			return 1
 		},
+		"megaphone_lines": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			tbl := L.CheckTable(2)
+			ear := L.ToBool(3)
+			lines := make([]string, 0, 3)
+			for i := 1; i <= tbl.Len(); i++ {
+				lines = append(lines, lua.LVAsString(tbl.RawGetInt(i)))
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil || len(lines) < 1 || len(lines) > 3 {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			promise := ch.Listener.BroadcastMegaphoneAsync(cfg.ActorContext, ch, &response.Megaphone{
+				Type:  constant.MsgThreeMegaphoneLines,
+				Lines: lines,
+				Ear:   ear,
+			})
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
+				return []lua.LValue{lua.LBool(err == nil)}
+			})
+		},
+		"item_megaphone": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			megaphone := &response.Megaphone{
+				Type:  constant.MsgItemMegaphone,
+				Lines: []string{L.CheckString(2)},
+				Ear:   L.ToBool(3),
+			}
+			if L.Get(4) != lua.LNil {
+				invType := constant.InventoryType(L.CheckInt(4))
+				slot := L.CheckInt(5)
+				if invType < constant.InventoryTypeEquipment || invType > constant.InventoryTypeCash || slot < 1 || slot > 255 {
+					L.Push(lua.LFalse)
+					return 1
+				}
+				item := ch.Inventory.Tabs[invType].Get(uint8(slot))
+				if item == nil {
+					L.Push(lua.LFalse)
+					return 1
+				}
+				megaphone.Item = item.ToDTO()
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			promise := ch.Listener.BroadcastMegaphoneAsync(cfg.ActorContext, ch, megaphone)
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
+				return []lua.LValue{lua.LBool(err == nil)}
+			})
+		},
+		"set_chalkboard": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.SetChalkboard(L.CheckString(2))))
+			return 1
+		},
+		"place_message_box": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.PlaceMessageBox(uint32(L.CheckInt(2)), L.CheckString(3))))
+			return 1
+		},
+		"send_note": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			recipient := L.CheckString(2)
+			message := L.CheckString(3)
+			if !ClientText(message).Valid(200) {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			if !ClientText(recipient).Valid(13) {
+				ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
+				L.Push(lua.LFalse)
+				return 1
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			promise := ch.Listener.SendNoteAsync(cfg.ActorContext, ch, recipient, message)
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(reply *internal.NotesReply, err error) []lua.LValue {
+				if err != nil {
+					ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_INBOX_FULL)
+					return []lua.LValue{lua.LFalse}
+				}
+				if reply.Status != internal.NoteResult_NOTE_RESULT_OK {
+					ch.Listener.OnNoteFailed(ch, reply.Status)
+					return []lua.LValue{lua.LFalse}
+				}
+				ch.Listener.OnNoteSent(ch)
+				return []lua.LValue{lua.LTrue}
+			})
+		},
 		"marriage": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

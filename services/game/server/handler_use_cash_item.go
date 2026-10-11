@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type UseCashItem struct{}
@@ -36,6 +37,19 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 		ch.UseShopScanner(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.SearchID, req.HighFirst)
 		return nil
 	}
-	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, req.Text, req.Ear, req.PetSN)
+	if req.Malformed {
+		ch.Listener.OnUnlockAction(ch)
+		return nil
+	}
+	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, entity.CashItemInput{
+		Text:         req.Text,
+		Ear:          req.Ear,
+		PetSN:        req.PetSN,
+		Recipient:    req.Recipient,
+		Lines:        req.Lines,
+		Attached:     req.Attached,
+		AttachedType: req.AttachedType,
+		AttachedSlot: req.AttachedSlot,
+	})
 	return nil
 }

@@ -186,6 +186,49 @@ func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *enti
 	)
 }
 
+func (l *CharacterListenerImpl) OnMegaphone(ch *entity.Character, megaphone *response.Megaphone) {
+	ch.Send(megaphone, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) BroadcastMegaphoneAsync(ctx actor.Context, ch *entity.Character, megaphone *response.Megaphone) *async.Promise[*internal.BroadcastNoticeReply] {
+	if l.gs == nil || l.gs.internalClient == nil || ctx == nil {
+		p := async.NewDeferred[*internal.BroadcastNoticeReply](ctx)
+		p.SetError(fmt.Errorf("broadcast megaphone unavailable"))
+		return p
+	}
+	channelID := l.gs.config.ChannelId
+	rpc := &internal.BroadcastNoticeRequest{
+		WorldId:         l.gs.config.WorldId,
+		SourceChannelId: channelID,
+		MessageType:     uint32(megaphone.Type),
+		Message:         megaphone.Lines[0],
+		MegaEar:         megaphone.Ear,
+		NextLines:       megaphone.Lines[1:],
+	}
+	if megaphone.Item != nil {
+		w := stream.NewStreamWriter(stream.LittleEndian)
+		megaphone.Item.Serialize(w, dto.ItemSerializeOption{SlotMode: dto.SlotEncodeOmit})
+		rpc.Item = w.Bytes()
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.BroadcastNoticeReply, error) {
+			return l.gs.internalClient.BroadcastNotice(c, rpc)
+		},
+		func(reply *internal.BroadcastNoticeReply) error {
+			if reply == nil || !reply.GetOk() {
+				return fmt.Errorf("broadcast megaphone failed")
+			}
+			megaphone.Channel = int(channelID) + 1
+			l.gs.BroadcastMegaphone(megaphone)
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) OnMessageBoxFailed(ch *entity.Character) {
+	ch.Send(&response.MessageBoxFailed{}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) SetAccountRoleAsync(ctx actor.Context, ch *entity.Character, role constant.CharacterRole) *async.Promise[*internal.SetAccountRoleReply] {
 	if l.gs.internalClient == nil || ctx == nil {
 		p := async.NewDeferred[*internal.SetAccountRoleReply](ctx)

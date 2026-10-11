@@ -178,6 +178,24 @@ func (l *CharacterListenerImpl) OnNoteFailed(ch *entity.Character, result intern
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) SendNoteAsync(ctx actor.Context, ch *entity.Character, recipient string, message string) *async.Promise[*internal.NotesReply] {
+	worldID := l.gs.config.WorldId
+	characterID := ch.GetID()
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.NotesReply, error) {
+			return l.gs.internalClient.Notes(c, &internal.NotesRequest{
+				WorldId:     worldID,
+				CharacterId: characterID,
+				Action:      internal.NotesAction_NOTES_ACTION_SEND,
+				TargetName:  recipient,
+				Message:     message,
+				Gift:        uint32(pconst.NoteKindNormal),
+			})
+		},
+		nil,
+	)
+}
+
 func (l *CharacterListenerImpl) OnNoteArrived(ch *entity.Character) {
 	ch.Send(&response.Notes{
 		Action: pconst.NotesPacketRefresh,

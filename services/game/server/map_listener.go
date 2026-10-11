@@ -497,6 +497,21 @@ func (l *MapListenerImpl) OnMistRemoved(mapInstance *entity.Map, mist *entity.Mi
 	mist.Broadcast(pkt, nil)
 }
 
+func (l *MapListenerImpl) OnMessageBoxSpawned(mapInstance *entity.Map, box *entity.MessageBox) {
+	box.Broadcast(&response.SpawnMessageBox{
+		OID:    box.OID,
+		ItemID: box.ItemID,
+		Text:   box.Text,
+		Owner:  box.Owner,
+		X:      box.Position.X,
+		Y:      box.Position.Y,
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnMessageBoxRemoved(mapInstance *entity.Map, box *entity.MessageBox) {
+	box.Broadcast(&response.RemoveMessageBox{OID: box.OID, Animated: true}, nil)
+}
+
 func (l *MapListenerImpl) OnDoorRemoved(mapInstance *entity.Map, door *entity.Door, animated bool) {
 	if mapInstance == nil || door == nil {
 		return

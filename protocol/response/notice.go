@@ -26,7 +26,7 @@ func (p *Notice) Serialize(sw *stream.StreamWriter) error {
 	sw.WriteStr16(p.Message)
 
 	switch p.Type {
-	case constant.MsgSuperMegaphone, constant.MsgHeartMegaphone, constant.MsgSkullSuperMegaphone:
+	case constant.MsgSuperMegaphone, constant.MsgHeartMegaphone:
 		channel := int(math.Max(1, float64(p.Channel))) - 1
 		sw.WriteU8(uint8(channel))
 		sw.WriteBoolean(p.MegaEar)
@@ -49,7 +49,7 @@ func (p *Notice) Deserialize(sr *stream.StreamReader) {
 	}
 	p.Message = sr.ReadStr16()
 	switch p.Type {
-	case constant.MsgSuperMegaphone, constant.MsgHeartMegaphone, constant.MsgSkullSuperMegaphone:
+	case constant.MsgSuperMegaphone, constant.MsgHeartMegaphone:
 		p.Channel = int(sr.ReadU8()) + 1
 		p.MegaEar = sr.ReadBool()
 	case constant.MsgLightBlueText, constant.MsgBlueNotice:

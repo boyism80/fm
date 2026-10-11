@@ -27,7 +27,15 @@ export class ServerTimeService {
         return true;
     }
 
-    async broadcastNotice(worldId: number, sourceChannelId: number, messageType: number, message: string, megaEar: boolean): Promise<boolean> {
+    async broadcastNotice(
+        worldId: number,
+        sourceChannelId: number,
+        messageType: number,
+        message: string,
+        megaEar: boolean,
+        nextLines: string[],
+        item: Buffer,
+    ): Promise<boolean> {
         if (!Number.isFinite(worldId) || worldId < 0) {
             return false;
         }
@@ -41,6 +49,9 @@ export class ServerTimeService {
         if (text.length <= 0 || text.length > 200) {
             return false;
         }
+        if (nextLines.length > 2 || nextLines.some((line) => line.length <= 0 || line.length > 200)) {
+            return false;
+        }
         await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.global`;
         await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, NOTICE_EVENT, {
@@ -50,6 +61,8 @@ export class ServerTimeService {
             message_type: messageType,
             message: text,
             mega_ear: megaEar,
+            next_lines: nextLines,
+            item: item.toString("base64"),
             occurred_at: new Date().toISOString(),
         });
         return true;

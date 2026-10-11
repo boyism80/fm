@@ -49,6 +49,8 @@ export class ServerTimeGrpcController {
                 req.messageType >>> 0,
                 req.message ?? "",
                 req.megaEar === true,
+                req.nextLines ?? [],
+                req.item ?? Buffer.alloc(0),
             );
             callback(null, { ok });
         } catch (err) {
