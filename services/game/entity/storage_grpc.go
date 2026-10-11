@@ -33,9 +33,6 @@ func NewStorageFromInternalProto(pb *internal.Storage, owner *Character) *Storag
 }
 
 func (s *Storage) ToProto(worldID uint32) *internal.Storage {
-	if s == nil {
-		return nil
-	}
 	pb := &internal.Storage{
 		AccountId: s.owner.AccountID,
 		WorldId:   worldID,

@@ -2,13 +2,10 @@ package entity
 
 import (
 	"errors"
-	"log"
 	"math"
 	"sort"
 
-	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
 )
 
@@ -28,24 +25,6 @@ type Storage struct {
 	opened     bool
 	storeFee   int32
 	takeOutFee int32
-}
-
-func (ch *Character) OpenStorage(actx actor.Context, npcID uint32, storeFee int32, takeOutFee int32) {
-	if ch.Storage != nil {
-		ch.Storage.Open(npcID, storeFee, takeOutFee)
-		return
-	}
-
-	ch.Listener.LoadStorageAsync(actx, ch).Do(func(v *internal.LoadStorageReply) error {
-		if ch.Storage != nil {
-			return nil
-		}
-		ch.Storage = NewStorageFromInternalProto(v.GetStorage(), ch)
-		ch.Storage.Open(npcID, storeFee, takeOutFee)
-		return nil
-	}).OnError(func(err error) {
-		log.Printf("OpenStorage character=%d: %v", ch.GetID(), err)
-	})
 }
 
 func (s *Storage) Open(npcID uint32, storeFee int32, takeOutFee int32) {

@@ -52,6 +52,8 @@ import type { SkillModel } from "../../repos/skill-repository";
 import type { BuffModel } from "../../repos/buff-repository";
 import type { QuestModel } from "../../repos/quest-repository";
 import type { SavedLocationModel } from "../../repos/saved-location-repository";
+import type { SocialService } from "../../services/social-service";
+import type { FamilyService } from "../../services/family-service";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type OwnedCharacterResult =
@@ -77,6 +79,8 @@ export class SessionGrpcController {
     private readonly characterRealtimeStateRepository: CharacterRealtimeStateRepository;
     private readonly cashShopService: CashShopService;
     private readonly marriageService: MarriageService;
+    private readonly socialService: SocialService;
+    private readonly familyService: FamilyService;
     private readonly grpcError: GrpcErrorHandler;
 
     constructor(
@@ -96,6 +100,8 @@ export class SessionGrpcController {
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         cashShopService: CashShopService,
         marriageService: MarriageService,
+        socialService: SocialService,
+        familyService: FamilyService,
         grpcError: GrpcErrorHandler
     ) {
         this.characterService = characterService;
@@ -114,6 +120,8 @@ export class SessionGrpcController {
         this.characterRealtimeStateRepository = characterRealtimeStateRepository;
         this.cashShopService = cashShopService;
         this.marriageService = marriageService;
+        this.socialService = socialService;
+        this.familyService = familyService;
         this.grpcError = grpcError;
     }
 
@@ -166,7 +174,7 @@ export class SessionGrpcController {
 
     private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
         const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount] = await Promise.all([
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage] = await Promise.all([
             this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.buffService.getBuffs(worldId, characterId),
@@ -181,9 +189,14 @@ export class SessionGrpcController {
             this.characterRecordRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.accountRecordRepository.getAll(worldId, String(row.accountId)).then((map) => [...map.values()]),
             this.mountRepository.get(worldId, characterId),
+            this.characterService.loadStorage(worldId, row.accountId),
         ]);
         const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
+        const family = await this.familyService.load(worldId, row);
+        const notes = await this.socialService.listNotes(worldId, characterId);
         return {
+            family,
+            notes,
             found: true,
             character: grpcMapper.map<CharacterModel, Character>(
                 row,
@@ -238,7 +251,22 @@ export class SessionGrpcController {
             rings,
             monsterBook: monsterBook.map((card) => ({ cardId: card.cardId >>> 0, count: card.count >>> 0 })),
             records: records.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
-            accountRecords: accountRecords.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
+            account: {
+                storage: {
+                    accountId: storage.storage.accountId,
+                    worldId: storage.storage.worldId,
+                    slots: storage.storage.slots,
+                    meso: storage.storage.meso,
+                    items: storage.items.map((item) =>
+                        grpcMapper.map<InventoryModel, Inventory>(
+                            item,
+                            INVENTORY_MODEL,
+                            INVENTORY_PROTO
+                        )
+                    ),
+                },
+                records: accountRecords.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
+            },
             mount: {
                 level: mount?.level ?? 1,
                 exp: mount?.exp ?? 0,
@@ -265,6 +293,8 @@ export class SessionGrpcController {
             const row = await this.characterService.getCharacter(worldId, characterId);
             if (!row) {
                 callback(null, {
+                    family: undefined,
+                    notes: [],
                     found: false,
                     character: undefined,
                     inventory: [],
@@ -282,8 +312,8 @@ export class SessionGrpcController {
                     rings: [],
                     monsterBook: [],
                     records: [],
-                    accountRecords: [],
                     mount: undefined,
+                    account: undefined,
                 });
                 return;
             }

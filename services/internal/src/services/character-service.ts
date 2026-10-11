@@ -41,6 +41,7 @@ import { UnifiedRepository } from "../repos/unified-repository";
 import { WzService } from "./wz-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { GuildService } from "./guild-service";
+import type { FamilyService } from "./family-service";
 import { PartyService } from "./party-service";
 
 type CharacterInput = {
@@ -131,6 +132,7 @@ export class CharacterService {
     private readonly guildService: GuildService;
     private readonly partyService: PartyService;
     private readonly shopRepo: ShopRepository;
+    private readonly familyService: FamilyService;
 
     constructor(
         characterRepository: CharacterRepository,
@@ -157,7 +159,8 @@ export class CharacterService {
         distributedLockService: DistributedLockService,
         guildService: GuildService,
         partyService: PartyService,
-        shopRepository: ShopRepository
+        shopRepository: ShopRepository,
+        familyService: FamilyService
     ) {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -184,6 +187,7 @@ export class CharacterService {
         this.guildService = guildService;
         this.partyService = partyService;
         this.shopRepo = shopRepository;
+        this.familyService = familyService;
     }
 
     private worldId() {
@@ -227,7 +231,13 @@ export class CharacterService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
         const row = await this.repo.get(worldId, characterId);
-        return row as CharacterRowModel | null;
+        if (!row) {
+            return null;
+        }
+
+        const character = { ...row };
+        await this.familyService.progress(worldId, character);
+        return character as CharacterRowModel;
     }
 
     async getKeyLayoutBindings(worldId: number, characterId: number) {
@@ -292,6 +302,9 @@ export class CharacterService {
 
             const models = latest.map(({ character }) => character);
             await this.repo.setAll(worldId, models);
+            for (const { character } of latest) {
+                await this.familyService.progress(worldId, character);
+            }
 
             for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, mount, storage, claimedShops } of latest) {
                 if (!character.accountId) {

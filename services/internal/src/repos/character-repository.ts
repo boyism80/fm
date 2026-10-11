@@ -2,11 +2,12 @@ import { redisCacheKey } from "../redis-cache-key";
 import { toPgInt } from "./pg-int";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
-import type { CharacterDeleteModel, CharacterModel, CharacterRow } from "../types/repository-models";
+import type { CharacterDeleteModel, CharacterModel, CharacterRow, PopulationHistoryRow } from "../types/repository-models";
+import type { PopulationHistory } from "../protobuf/generated/fminternal/internal_service";
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, saved_at, deleted, created_at, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, family_progress, family_reputation, population_history, saved_at, deleted, created_at, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id, name = EXCLUDED.name, gender = EXCLUDED.gender,
@@ -20,18 +21,40 @@ const ON_CONFLICT_SET = `
   hp_ap_used = EXCLUDED.hp_ap_used, pet_hp_item = EXCLUDED.pet_hp_item, pet_mp_item = EXCLUDED.pet_mp_item,
   summoned_pet = EXCLUDED.summoned_pet, slot_limits = EXCLUDED.slot_limits, monster_book_cover = EXCLUDED.monster_book_cover,
   teleport_stones = EXCLUDED.teleport_stones, vip_teleport_stones = EXCLUDED.vip_teleport_stones, hidden = EXCLUDED.hidden,
-  saved_at = EXCLUDED.saved_at,
+  family_progress = EXCLUDED.family_progress, family_reputation = EXCLUDED.family_reputation, population_history = EXCLUDED.population_history, saved_at = EXCLUDED.saved_at,
   deleted = FALSE, updated_at = NOW()`;
 
 const INSERT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, saved_at, deleted, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, family_progress, family_reputation, population_history, saved_at, deleted, updated_at`;
 
-const PER_ROW_PARAMS = 39;
+const PER_ROW_PARAMS = 42;
 
 const DEFAULT_SLOT_LIMITS = [32, 32, 32, 32, 32];
 
 export type { CharacterModel };
+
+function populationHistoryFromRow(row: PopulationHistoryRow | null): PopulationHistory {
+    const givenUnixMs: { [key: number]: number } = {};
+    for (const [id, at] of Object.entries(row?.given ?? {})) {
+        givenUnixMs[Number(id)] = new Date(at).getTime();
+    }
+    return {
+        lastGivenUnixMs: row?.last_given_at ? new Date(row.last_given_at).getTime() : 0,
+        givenUnixMs,
+    };
+}
+
+function populationHistoryToRow(history: PopulationHistory | undefined): PopulationHistoryRow {
+    const given: { [id: string]: string } = {};
+    for (const [id, unixMs] of Object.entries(history?.givenUnixMs ?? {})) {
+        given[id] = new Date(unixMs).toISOString();
+    }
+    return {
+        last_given_at: history?.lastGivenUnixMs ? new Date(history.lastGivenUnixMs).toISOString() : null,
+        given,
+    };
+}
 
 function rowValues(row: CharacterRow) {
     return [
@@ -44,7 +67,9 @@ function rowValues(row: CharacterRow) {
         row.pos_y, row.stance, row.meso, row.skill_point,
         row.population, row.hp_ap_used, row.pet_hp_item, row.pet_mp_item,
         row.summoned_pet, row.slot_limits ?? DEFAULT_SLOT_LIMITS, row.monster_book_cover,
-        row.teleport_stones ?? [], row.vip_teleport_stones ?? [], row.hidden, row.saved_at,
+        row.teleport_stones ?? [], row.vip_teleport_stones ?? [], row.hidden, row.family_progress ?? "0",
+        JSON.stringify(row.family_reputation ?? {}),
+        JSON.stringify(row.population_history ?? { last_given_at: null, given: {} }), row.saved_at,
     ];
 }
 
@@ -77,7 +102,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
 
     override onUpsert(row: CharacterRow): RepositoryQuery {
         return {
-            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rowValues(row),
         };
     }
@@ -133,6 +158,9 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             meso: row.meso,
             skillPoint: row.skill_point,
             population: row.population,
+            familyProgress: String(row.family_progress ?? "0"),
+            familyReputation: row.family_reputation ?? {},
+            populationHistory: populationHistoryFromRow(row.population_history),
             hpApUsed: row.hp_ap_used,
             petHpItem: row.pet_hp_item,
             petMpItem: row.pet_mp_item,
@@ -178,6 +206,9 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             meso: model.meso ?? 0,
             skill_point: model.skillPoint ?? 0,
             population: model.population ?? 0,
+            family_progress: model.familyProgress ?? "0",
+            family_reputation: model.familyReputation ?? {},
+            population_history: populationHistoryToRow(model.populationHistory),
             hp_ap_used: model.hpApUsed ?? 0,
             pet_hp_item: model.petHpItem ?? 0,
             pet_mp_item: model.petMpItem ?? 0,

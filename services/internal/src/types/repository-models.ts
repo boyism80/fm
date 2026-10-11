@@ -1,7 +1,13 @@
-import type { PartyMemberRole, PartyState, GuildMemberRank, Pet } from "../protobuf/generated/fminternal/internal_service";
+import type { PopulationHistory, PartyMemberRole, PartyState, GuildMemberRank, Pet } from "../protobuf/generated/fminternal/internal_service";
 import type { EquipmentBonusStatsJson } from "./equipment-bonus-stats";
 import type { KeyLayoutJsonRecord } from "./key-layout-json";
 import type { GuildLogo as GuildLogoModel, GuildRankTitles as GuildRankTitlesModel } from "./guild-json";
+
+// characters.population_history: ISO datetimes; `given` is keyed by target character id.
+export type PopulationHistoryRow = {
+    last_given_at: string | null;
+    given: { [characterId: string]: string };
+};
 
 export interface AccountModel {
     accountId: number;
@@ -65,6 +71,9 @@ export interface CharacterModel {
     meso?: number;
     skillPoint?: number;
     population?: number;
+    familyProgress?: string;
+    familyReputation?: { [key: number]: string };
+    populationHistory?: PopulationHistory;
     hpApUsed?: number;
     petHpItem?: number;
     petMpItem?: number;
@@ -108,6 +117,9 @@ export type CharacterRow = {
     meso: number;
     skill_point: number;
     population: number;
+    family_progress: string;
+    family_reputation: { [key: number]: string };
+    population_history: PopulationHistoryRow | null;
     hp_ap_used: number;
     pet_hp_item: number;
     pet_mp_item: number;

@@ -19,6 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Internal_Whisper_FullMethodName                        = "/fm.internal.Internal/Whisper"
+	Internal_CompleteWhisper_FullMethodName                = "/fm.internal.Internal/CompleteWhisper"
+	Internal_Messenger_FullMethodName                      = "/fm.internal.Internal/Messenger"
+	Internal_Notes_FullMethodName                          = "/fm.internal.Internal/Notes"
+	Internal_Family_FullMethodName                         = "/fm.internal.Internal/Family"
 	Internal_Ping_FullMethodName                           = "/fm.internal.Internal/Ping"
 	Internal_GetGameChannelStatus_FullMethodName           = "/fm.internal.Internal/GetGameChannelStatus"
 	Internal_GetServerCatalog_FullMethodName               = "/fm.internal.Internal/GetServerCatalog"
@@ -26,7 +31,6 @@ const (
 	Internal_BeginGameTransition_FullMethodName            = "/fm.internal.Internal/BeginGameTransition"
 	Internal_SaveCharacter_FullMethodName                  = "/fm.internal.Internal/SaveCharacter"
 	Internal_SaveCharacters_FullMethodName                 = "/fm.internal.Internal/SaveCharacters"
-	Internal_LoadStorage_FullMethodName                    = "/fm.internal.Internal/LoadStorage"
 	Internal_LoadParcels_FullMethodName                    = "/fm.internal.Internal/LoadParcels"
 	Internal_SendParcel_FullMethodName                     = "/fm.internal.Internal/SendParcel"
 	Internal_ClaimParcel_FullMethodName                    = "/fm.internal.Internal/ClaimParcel"
@@ -129,6 +133,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InternalClient interface {
+	Whisper(ctx context.Context, in *WhisperRequest, opts ...grpc.CallOption) (*WhisperReply, error)
+	CompleteWhisper(ctx context.Context, in *CompleteWhisperRequest, opts ...grpc.CallOption) (*CompleteWhisperReply, error)
+	Messenger(ctx context.Context, in *MessengerRequest, opts ...grpc.CallOption) (*MessengerReply, error)
+	Notes(ctx context.Context, in *NotesRequest, opts ...grpc.CallOption) (*NotesReply, error)
+	Family(ctx context.Context, in *FamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error)
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error)
 	GetGameChannelStatus(ctx context.Context, in *GetGameChannelStatusRequest, opts ...grpc.CallOption) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(ctx context.Context, in *GetServerCatalogRequest, opts ...grpc.CallOption) (*GetServerCatalogReply, error)
@@ -136,7 +145,6 @@ type InternalClient interface {
 	BeginGameTransition(ctx context.Context, in *BeginGameTransitionRequest, opts ...grpc.CallOption) (*BeginGameTransitionReply, error)
 	SaveCharacter(ctx context.Context, in *SaveCharacterRequest, opts ...grpc.CallOption) (*SaveCharacterReply, error)
 	SaveCharacters(ctx context.Context, in *SaveCharactersRequest, opts ...grpc.CallOption) (*SaveCharactersReply, error)
-	LoadStorage(ctx context.Context, in *LoadStorageRequest, opts ...grpc.CallOption) (*LoadStorageReply, error)
 	LoadParcels(ctx context.Context, in *LoadParcelsRequest, opts ...grpc.CallOption) (*LoadParcelsReply, error)
 	SendParcel(ctx context.Context, in *SendParcelRequest, opts ...grpc.CallOption) (*SendParcelReply, error)
 	ClaimParcel(ctx context.Context, in *ClaimParcelRequest, opts ...grpc.CallOption) (*ClaimParcelReply, error)
@@ -243,6 +251,56 @@ func NewInternalClient(cc grpc.ClientConnInterface) InternalClient {
 	return &internalClient{cc}
 }
 
+func (c *internalClient) Whisper(ctx context.Context, in *WhisperRequest, opts ...grpc.CallOption) (*WhisperReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WhisperReply)
+	err := c.cc.Invoke(ctx, Internal_Whisper_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CompleteWhisper(ctx context.Context, in *CompleteWhisperRequest, opts ...grpc.CallOption) (*CompleteWhisperReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteWhisperReply)
+	err := c.cc.Invoke(ctx, Internal_CompleteWhisper_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) Messenger(ctx context.Context, in *MessengerRequest, opts ...grpc.CallOption) (*MessengerReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MessengerReply)
+	err := c.cc.Invoke(ctx, Internal_Messenger_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) Notes(ctx context.Context, in *NotesRequest, opts ...grpc.CallOption) (*NotesReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NotesReply)
+	err := c.cc.Invoke(ctx, Internal_Notes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) Family(ctx context.Context, in *FamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FamilyReply)
+	err := c.cc.Invoke(ctx, Internal_Family_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PingReply)
@@ -307,16 +365,6 @@ func (c *internalClient) SaveCharacters(ctx context.Context, in *SaveCharactersR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SaveCharactersReply)
 	err := c.cc.Invoke(ctx, Internal_SaveCharacters_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *internalClient) LoadStorage(ctx context.Context, in *LoadStorageRequest, opts ...grpc.CallOption) (*LoadStorageReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LoadStorageReply)
-	err := c.cc.Invoke(ctx, Internal_LoadStorage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1287,6 +1335,11 @@ func (c *internalClient) NotifySpouseMap(ctx context.Context, in *NotifySpouseMa
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
 type InternalServer interface {
+	Whisper(context.Context, *WhisperRequest) (*WhisperReply, error)
+	CompleteWhisper(context.Context, *CompleteWhisperRequest) (*CompleteWhisperReply, error)
+	Messenger(context.Context, *MessengerRequest) (*MessengerReply, error)
+	Notes(context.Context, *NotesRequest) (*NotesReply, error)
+	Family(context.Context, *FamilyRequest) (*FamilyReply, error)
 	Ping(context.Context, *PingRequest) (*PingReply, error)
 	GetGameChannelStatus(context.Context, *GetGameChannelStatusRequest) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(context.Context, *GetServerCatalogRequest) (*GetServerCatalogReply, error)
@@ -1294,7 +1347,6 @@ type InternalServer interface {
 	BeginGameTransition(context.Context, *BeginGameTransitionRequest) (*BeginGameTransitionReply, error)
 	SaveCharacter(context.Context, *SaveCharacterRequest) (*SaveCharacterReply, error)
 	SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error)
-	LoadStorage(context.Context, *LoadStorageRequest) (*LoadStorageReply, error)
 	LoadParcels(context.Context, *LoadParcelsRequest) (*LoadParcelsReply, error)
 	SendParcel(context.Context, *SendParcelRequest) (*SendParcelReply, error)
 	ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error)
@@ -1401,6 +1453,21 @@ type InternalServer interface {
 // pointer dereference when methods are called.
 type UnimplementedInternalServer struct{}
 
+func (UnimplementedInternalServer) Whisper(context.Context, *WhisperRequest) (*WhisperReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Whisper not implemented")
+}
+func (UnimplementedInternalServer) CompleteWhisper(context.Context, *CompleteWhisperRequest) (*CompleteWhisperReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CompleteWhisper not implemented")
+}
+func (UnimplementedInternalServer) Messenger(context.Context, *MessengerRequest) (*MessengerReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Messenger not implemented")
+}
+func (UnimplementedInternalServer) Notes(context.Context, *NotesRequest) (*NotesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Notes not implemented")
+}
+func (UnimplementedInternalServer) Family(context.Context, *FamilyRequest) (*FamilyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Family not implemented")
+}
 func (UnimplementedInternalServer) Ping(context.Context, *PingRequest) (*PingReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
@@ -1421,9 +1488,6 @@ func (UnimplementedInternalServer) SaveCharacter(context.Context, *SaveCharacter
 }
 func (UnimplementedInternalServer) SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveCharacters not implemented")
-}
-func (UnimplementedInternalServer) LoadStorage(context.Context, *LoadStorageRequest) (*LoadStorageReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LoadStorage not implemented")
 }
 func (UnimplementedInternalServer) LoadParcels(context.Context, *LoadParcelsRequest) (*LoadParcelsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoadParcels not implemented")
@@ -1734,6 +1798,96 @@ func RegisterInternalServer(s grpc.ServiceRegistrar, srv InternalServer) {
 	s.RegisterService(&Internal_ServiceDesc, srv)
 }
 
+func _Internal_Whisper_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WhisperRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).Whisper(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_Whisper_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).Whisper(ctx, req.(*WhisperRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CompleteWhisper_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteWhisperRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CompleteWhisper(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CompleteWhisper_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CompleteWhisper(ctx, req.(*CompleteWhisperRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_Messenger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MessengerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).Messenger(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_Messenger_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).Messenger(ctx, req.(*MessengerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_Notes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NotesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).Notes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_Notes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).Notes(ctx, req.(*NotesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_Family_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FamilyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).Family(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_Family_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).Family(ctx, req.(*FamilyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PingRequest)
 	if err := dec(in); err != nil {
@@ -1856,24 +2010,6 @@ func _Internal_SaveCharacters_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).SaveCharacters(ctx, req.(*SaveCharactersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Internal_LoadStorage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LoadStorageRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InternalServer).LoadStorage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Internal_LoadStorage_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).LoadStorage(ctx, req.(*LoadStorageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3614,6 +3750,26 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*InternalServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "Whisper",
+			Handler:    _Internal_Whisper_Handler,
+		},
+		{
+			MethodName: "CompleteWhisper",
+			Handler:    _Internal_CompleteWhisper_Handler,
+		},
+		{
+			MethodName: "Messenger",
+			Handler:    _Internal_Messenger_Handler,
+		},
+		{
+			MethodName: "Notes",
+			Handler:    _Internal_Notes_Handler,
+		},
+		{
+			MethodName: "Family",
+			Handler:    _Internal_Family_Handler,
+		},
+		{
 			MethodName: "Ping",
 			Handler:    _Internal_Ping_Handler,
 		},
@@ -3640,10 +3796,6 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveCharacters",
 			Handler:    _Internal_SaveCharacters_Handler,
-		},
-		{
-			MethodName: "LoadStorage",
-			Handler:    _Internal_LoadStorage_Handler,
 		},
 		{
 			MethodName: "LoadParcels",

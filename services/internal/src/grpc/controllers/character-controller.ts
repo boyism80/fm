@@ -29,8 +29,6 @@ import type {
     DeleteCharacterRequest,
     GetCharacterListReply,
     GetCharacterListRequest,
-    LoadStorageReply,
-    LoadStorageRequest,
     SaveCharacterReply,
     SaveCharacterRequest,
     SaveCharactersReply,
@@ -106,7 +104,7 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
             ...record,
             ownerId: msgChar.characterId,
         })),
-        accountRecords: (entry.accountRecords ?? []).map((record) => ({
+        accountRecords: (entry.account?.records ?? []).map((record) => ({
             ...record,
             ownerId: msgChar.accountId,
         })),
@@ -123,15 +121,15 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
                 fatigue: entry.mount.fatigue,
             }
             : undefined,
-        storage: entry.storage
+        storage: entry.account?.storage
             ? {
                 storage: {
-                    accountId: entry.storage.accountId,
-                    worldId: entry.storage.worldId,
-                    slots: entry.storage.slots,
-                    meso: entry.storage.meso,
+                    accountId: entry.account.storage.accountId,
+                    worldId: entry.account.storage.worldId,
+                    slots: entry.account.storage.slots,
+                    meso: entry.account.storage.meso,
                 },
-                items: entry.storage.items.map((item) =>
+                items: entry.account.storage.items.map((item) =>
                     grpcMapper.map<Inventory, InventoryModel>(
                         item,
                         INVENTORY_PROTO,
@@ -210,30 +208,6 @@ export class CharacterGrpcController {
             const entries = call.request.entries.map(makeSaveCharacterEntry);
             await this.characterService.saveCharacters(entries);
             callback(null, { ok: true });
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
-    }
-
-    @Method("loadStorage")
-    async loadStorage(call: GrpcCall<LoadStorageRequest>, callback: GrpcCallback<LoadStorageReply>) {
-        try {
-            const result = await this.characterService.loadStorage(call.request.worldId, call.request.accountId);
-            callback(null, {
-                storage: {
-                    accountId: result.storage.accountId,
-                    worldId: result.storage.worldId,
-                    slots: result.storage.slots,
-                    meso: result.storage.meso,
-                    items: result.items.map((item) =>
-                        grpcMapper.map<InventoryModel, Inventory>(
-                            item,
-                            INVENTORY_MODEL,
-                            INVENTORY_PROTO
-                        )
-                    ),
-                },
-            });
         } catch (err) {
             this.grpcError(err, callback);
         }

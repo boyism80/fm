@@ -22,7 +22,6 @@ type CharacterListener interface {
 	OnDialogInput(ch *Character, npc uint32, message string)
 	OnDialogStyle(ch *Character, npc uint32, message string, styles []uint32)
 	OnOpenNpcShop(ch *Character, shopID uint32, shop *wz.Shop)
-	LoadStorageAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.LoadStorageReply]
 	OnOpenStorage(ch *Character, npcID uint32)
 	OnStorageTabChanged(ch *Character, result pconst.StorageResult, invType constant.InventoryType)
 	OnStorageArranged(ch *Character)
@@ -259,6 +258,31 @@ type CharacterListener interface {
 	OnCarnivalDied(ch *Character, team constant.CarnivalTeam, name string, lostCP uint8)
 	OnCarnivalResult(ch *Character, winner bool)
 	OnConfirmShopTransaction(ch *Character, code uint8)
+	OnWhisperFailed(ch *Character, name string)
+	OnWhisperSent(ch *Character, name string)
+	OnWhisperFound(ch *Character, reply *internal.WhisperReply, buddy bool)
+	OnWhisperReceived(ch *Character, sender string, channel int32, message string) error
+	ClaimWhisperAsync(ctx actor.Context, ch *Character, requestID string) *async.Promise[*internal.CompleteWhisperReply]
+	CompleteWhisperAsync(ctx actor.Context, ch *Character, requestID string, delivered bool) *async.Promise[*internal.CompleteWhisperReply]
+	OnMessengerJoined(ch *Character, position uint8, members []*internal.MessengerMember, queued []MessengerEvent)
+	OnMessengerInviteResult(ch *Character, name string, success bool)
+	OnMessengerEvent(ch *Character, event MessengerEvent)
+	OnPopulationFailed(ch *Character, result pconst.PopulationResult)
+	OnPopulationGiven(ch *Character, mode pconst.PopulationMode, targetName string, value int32)
+	OnPopulationReceived(ch *Character, mode pconst.PopulationMode, giverName string)
+	OnNotes(ch *Character, notes []*internal.Note)
+	OnNoteSent(ch *Character)
+	OnNoteFailed(ch *Character, result internal.NoteResult)
+	OnNoteArrived(ch *Character)
+	OnFamilyPrivileges(ch *Character)
+	OnFamilyChanged(ch *Character)
+	LoadFamilyAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FamilyReply]
+	OnFamilyChart(ch *Character, state *internal.FamilyState)
+	OnFamilyResult(ch *Character, result internal.FamilyResult)
+	OnFamilyInvite(ch *Character, inviterID uint32, name string)
+	OnFamilyInviteResult(ch *Character, accepted bool, name string)
+	OnFamilyJoined(ch *Character, name string)
+	OnFamilySummon(ch *Character, name string, mapName string)
 }
 
 type MobListener interface {

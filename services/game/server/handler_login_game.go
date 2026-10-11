@@ -201,6 +201,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		TargetMap:  mapInstance,
 		SpawnPoint: spawnPoint,
 		Init:       true,
+		Notes:      reply.GetNotes(),
 	})
 
 	return nil

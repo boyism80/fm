@@ -29,6 +29,7 @@ import type { InventoryRepository, InventoryModel } from "../repos/inventory-rep
 import type { SessionRepository } from "../repos/session-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 import type { RabbitMQService } from "./rabbitmq-service";
+import type { SocialService } from "./social-service";
 
 const LOCKER_CAPACITY = 100;
 const DEFAULT_STORAGE_SLOTS = 4;
@@ -45,6 +46,7 @@ export class CashShopService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
+    private readonly socialService: SocialService;
 
     constructor(
         cashShopRepository: CashShopRepository,
@@ -54,7 +56,8 @@ export class CashShopService {
         characterRepository: CharacterRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
-        rabbitmqService: RabbitMQService
+        rabbitmqService: RabbitMQService,
+        socialService: SocialService
     ) {
         this.cashShopRepo = cashShopRepository;
         this.accountRepo = accountRepository;
@@ -64,6 +67,7 @@ export class CashShopService {
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
+        this.socialService = socialService;
     }
 
     private toProto(row: CashItemRow): CashItem {
@@ -96,6 +100,9 @@ export class CashShopService {
             .filter((item) => (item.item?.expirationUnixMs ?? 0) > 0 && (item.item?.expirationUnixMs ?? 0) <= now)
             .map((item) => item.item?.uniqueId ?? "0");
         await this.cashShopRepo.deleteItems(worldId, accountId, expired);
+        for (const gift of gifts) {
+            await this.socialService.gift(worldId, characterId, gift.sender_name, gift.serial);
+        }
         return {
             nxCash: balance.nxCash,
             maplePoint: balance.maplePoint,

@@ -744,6 +744,7 @@ local command_funcs = {
 			me:skill_point(0)
 			me:meso(meso)
 			me:population(0)
+			me:clear_population_history()
 			for item_id, count in string.gmatch(args[4] or "", "(%d+):(%d+)") do
 				me:mkitem(tonumber(item_id), tonumber(count))
 			end
@@ -794,7 +795,7 @@ local command_funcs = {
 			end
 			table.sort(quests)
 			me:message(string.format(
-				"봇상태 tag=%s dialog=%d level=%d class=%d meso=%d exp=%d fame=%d map=%d quests=%s items=%s",
+				"봇상태 tag=%s dialog=%d level=%d class=%d meso=%d exp=%d population=%d map=%d quests=%s items=%s",
 				args[1] or "-",
 				me:in_dialog() and 1 or 0,
 				me:level(),
@@ -864,14 +865,12 @@ local command_funcs = {
 				return true
 			end
 			local v = tonumber(args[1])
-			if not v or v < 0 then
-				v = 0
-			end
-			if v > 65535 then
-				v = 65535
+			if not v then
+				me:message("사용법: /인기도 <값>")
+				return true
 			end
 			me:population(v)
-			me:message(string.format("인기도 설정: %d", v))
+			me:message(string.format("인기도 설정: %d", me:population()))
 			return true
 		end,
 	},

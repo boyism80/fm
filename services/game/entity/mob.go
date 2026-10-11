@@ -371,11 +371,8 @@ func (m *Mob) dropItems(attacker *Character) {
 
 	dropRate := float32(m.GameWorld.GetDropRate())
 	mesoRate := float32(m.GameWorld.GetMesoRate())
-	dropRateMul := int16(100)
+	dropRateMul := max(int16(attacker.Family.DropRate()), attacker.Stats.Bonus.DropRate)
 	mesoAmountMul := int16(100)
-	if attacker.Stats.Bonus.DropRate > 0 {
-		dropRateMul = attacker.Stats.Bonus.DropRate
-	}
 	if attacker.Stats.Bonus.MesoMultiplier > 0 {
 		mesoAmountMul = attacker.Stats.Bonus.MesoMultiplier
 	}

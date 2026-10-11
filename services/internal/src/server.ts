@@ -16,6 +16,7 @@ import { OperationLogGrpcController } from "./grpc/controllers/operation-log-con
 import { ParcelGrpcController } from "./grpc/controllers/parcel-controller";
 import { ShopGrpcController } from "./grpc/controllers/shop-controller";
 import { CashShopGrpcController } from "./grpc/controllers/cash-shop-controller";
+import { SocialGrpcController } from "./grpc/controllers/social-controller";
 import { MarriageGrpcController } from "./grpc/controllers/marriage-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
 import { DailyLogFile } from "./log-file";
@@ -26,6 +27,7 @@ import type { WzService } from "./services/wz-service";
 import type { GuildService } from "./services/guild-service";
 import type { GuildBulletinBoardService } from "./services/guild-bulletin-board-service";
 import type { AllianceService } from "./services/alliance-service";
+import type { FamilyService } from "./services/family-service";
 type ServerContainerCradle = {
     catalogController: CatalogGrpcController;
     authController: AuthGrpcController;
@@ -42,6 +44,7 @@ type ServerContainerCradle = {
     guildService: GuildService;
     guildBulletinBoardService: GuildBulletinBoardService;
     allianceService: AllianceService;
+    familyService: FamilyService;
     grpcError: typeof grpcError;
 };
 
@@ -129,6 +132,7 @@ async function main() {
         shopController: awilix.asClass(ShopGrpcController).scoped(),
         cashShopController: awilix.asClass(CashShopGrpcController).scoped(),
         marriageController: awilix.asClass(MarriageGrpcController).scoped(),
+        socialController: awilix.asClass(SocialGrpcController).scoped(),
     });
 
     const serviceImplementation: Record<string, handleUnaryCall<unknown, unknown>> = {};
@@ -163,7 +167,15 @@ async function main() {
         console.log(`fm internal gRPC listening on ${addr} (bound port ${boundPort})`);
     });
 
+    const familyService = container.resolve("familyService");
+    const familyMoveSweep = setInterval(() => {
+        familyService.expireMoves(internalConfig.app.world_id).catch((err) => {
+            console.error("[social] family move recovery failed", err);
+        });
+    }, 10_000);
+
     async function shutdown() {
+        clearInterval(familyMoveSweep);
         server.tryShutdown(async () => {
             await rabbitmqService.close().catch(() => {});
             await internalContext.close().catch(() => {});

@@ -49,12 +49,11 @@ func (ch *Character) validatePopulationExchange(costPopulation, rewardPopulation
 	if costPopulation == 0 && rewardPopulation == 0 {
 		return ExchangeOK
 	}
-	current := uint32(ch.Stats.Population)
-	if uint32(costPopulation) > current {
+	current := int32(ch.Stats.Population)
+	if costPopulation > current {
 		return ExchangeLackCost
 	}
-	after := current - uint32(costPopulation)
-	if uint32(rewardPopulation) > 65535-after {
+	if rewardPopulation > populationLimit-(current-costPopulation) {
 		return ExchangeLackCapacity
 	}
 	return ExchangeOK
@@ -94,7 +93,7 @@ func (ch *Character) payExchangeCost(side ExchangeSide) {
 		ch.Inventory.removeMesoUnchecked(side.Meso)
 	}
 	if side.Population > 0 {
-		ch.Stats.losePopulation(side.Population)
+		ch.Stats.AddPopulation(-side.Population)
 	}
 	for id, count := range side.Items {
 		if count == 0 {
@@ -145,7 +144,7 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 		ch.addExpUnchecked(side.Exp)
 	}
 	if side.Population > 0 {
-		ch.Stats.gainPopulation(side.Population)
+		ch.Stats.AddPopulation(side.Population)
 	}
 	if side.SkillPoint > 0 {
 		ch.Points.SetSP(ch.Points.SP+side.SkillPoint, true)

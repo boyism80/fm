@@ -35,7 +35,7 @@ type Stats struct {
 	owner      *Character
 	Base       BaseStats
 	Bonus      BonusStats
-	Population uint16
+	Population int16
 }
 
 func (s *Stats) canAdd(stat constant.StatType, amount uint16) bool {
@@ -147,42 +147,18 @@ func (s *Stats) PotionDurationMultiplierPercent() int {
 }
 
 func (s *Stats) setPopulation(value int32) {
-	if value < 0 {
-		value = 0
+	value = max(-populationLimit, min(populationLimit, value))
+	if int16(value) == s.Population {
+		return
 	}
-	if value > 65535 {
-		value = 65535
-	}
-	s.Population = uint16(value)
+
+	s.Population = int16(value)
 	s.owner.Listener.OnUpdateStats(s.owner, map[constant.Stat]int32{
-		constant.StatPopulation: int32(s.Population),
+		constant.StatPopulation: value,
 	}, false)
 }
 
-func (s *Stats) gainPopulation(amount int32) {
-	if amount <= 0 {
-		return
-	}
-	sum := uint32(s.Population) + uint32(amount)
-	if sum > 65535 {
-		sum = 65535
-	}
-	s.Population = uint16(sum)
-	s.owner.Listener.OnUpdateStats(s.owner, map[constant.Stat]int32{
-		constant.StatPopulation: int32(s.Population),
-	}, false)
-}
-
-func (s *Stats) losePopulation(amount int32) {
-	if amount <= 0 {
-		return
-	}
-	if uint32(amount) >= uint32(s.Population) {
-		s.Population = 0
-	} else {
-		s.Population -= uint16(amount)
-	}
-	s.owner.Listener.OnUpdateStats(s.owner, map[constant.Stat]int32{
-		constant.StatPopulation: int32(s.Population),
-	}, false)
+func (s *Stats) AddPopulation(delta int32) int32 {
+	s.setPopulation(int32(s.Population) + delta)
+	return int32(s.Population)
 }

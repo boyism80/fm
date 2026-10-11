@@ -5,6 +5,8 @@ import type { SessionRepository } from "../repos/session-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 import type { PartyService } from "./party-service";
 import type { BuddyService } from "./buddy-service";
+import type { FamilyService } from "./family-service";
+import type { SocialService } from "./social-service";
 import type { GuildService } from "./guild-service";
 
 export function formatDateTime(date = new Date()) {
@@ -24,19 +26,25 @@ export class SessionService {
     private readonly partyService: PartyService | null;
     private readonly buddyService: BuddyService | null;
     private readonly guildService: GuildService | null;
+    private readonly socialService: SocialService;
+    private readonly familyService: FamilyService;
 
     constructor(
         sessionRepository: SessionRepository,
         unifiedRepository: UnifiedRepository,
         partyService: PartyService | null,
         buddyService: BuddyService | null,
-        guildService: GuildService | null
+        guildService: GuildService | null,
+        socialService: SocialService,
+        familyService: FamilyService
     ) {
         this.repo = sessionRepository;
         this.unifiedRepo = unifiedRepository;
         this.partyService = partyService;
         this.buddyService = buddyService;
         this.guildService = guildService;
+        this.socialService = socialService;
+        this.familyService = familyService;
     }
 
     private now() {
@@ -119,6 +127,12 @@ export class SessionService {
             console.log(`[session] begin_transition failed account=${accountId} character=${characterId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
+        await this.socialService
+            .leaveMessenger(worldId, characterId)
+            .catch(err => console.error("[social] messenger cleanup failed", err));
+        await this.familyService
+            .presence(worldId, characterId)
+            .catch(err => console.error("[social] family presence failed", err));
         console.log(`[session] begin_transition ok account=${accountId} character=${characterId} source_channel=${sourceChannelId ?? ""} source_cash_shop=${sourceCashShopId ?? ""}`);
         await this.releaseCharacterNameReservation(accountId);
         return { ok: true };
@@ -142,6 +156,9 @@ export class SessionService {
             console.log(`[session] enter_game failed account=${accountId} character=${characterId} channel=${channelId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
+        await this.familyService
+            .presence(worldId, characterId)
+            .catch(err => console.error("[social] family presence failed", err));
         console.log(`[session] enter_game ok account=${accountId} character=${characterId} channel=${channelId}`);
         try {
             if (this.partyService) {
@@ -183,6 +200,12 @@ export class SessionService {
             console.log(`[session] enter_cash_shop failed account=${accountId} character=${characterId} cash_shop=${cashShopId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
+        await this.socialService
+            .leaveMessenger(worldId, characterId)
+            .catch(err => console.error("[social] messenger cleanup failed", err));
+        await this.familyService
+            .presence(worldId, characterId)
+            .catch(err => console.error("[social] family presence failed", err));
         console.log(`[session] enter_cash_shop ok account=${accountId} character=${characterId} cash_shop=${cashShopId}`);
         if (this.partyService) {
             await this.partyService.publishMemberLogOnOff(worldId, characterId);
@@ -259,6 +282,14 @@ export class SessionService {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };
         }
         await this.releaseCharacterNameReservation(accountId);
+        if (options.characterId != null && serverDisconnect) {
+            await this.socialService
+                .leaveMessenger(worldId, options.characterId)
+                .catch(err => console.error("[social] messenger cleanup failed", err));
+            await this.familyService
+                .presence(worldId, options.characterId)
+                .catch(err => console.error("[social] family presence failed", err));
+        }
         const gameNormalDisconnect = serverDisconnect && !transferDisconnect;
         const cid = options.characterId ?? null;
         if (cid != null && gameNormalDisconnect) {

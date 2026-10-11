@@ -17,6 +17,7 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
 
@@ -761,20 +762,6 @@ func (l *CharacterListenerImpl) OnOpenNpcShop(ch *entity.Character, shopID uint3
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) LoadStorageAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.LoadStorageReply] {
-	accountID := ch.AccountID
-	worldID := l.gs.config.WorldId
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.LoadStorageReply, error) {
-			return l.gs.internalClient.LoadStorage(c, &internal.LoadStorageRequest{
-				AccountId: accountID,
-				WorldId:   worldID,
-			})
-		},
-		nil,
-	)
-}
-
 func (l *CharacterListenerImpl) storageTabs(storage *entity.Storage, invTypes ...constant.InventoryType) map[constant.InventoryType][]dto.Item {
 	tabs := make(map[constant.InventoryType][]dto.Item, len(invTypes))
 	for _, invType := range invTypes {
@@ -788,13 +775,13 @@ func (l *CharacterListenerImpl) storageTabs(storage *entity.Storage, invTypes ..
 }
 
 func (l *CharacterListenerImpl) OnOpenStorage(ch *entity.Character, npcID uint32) {
-	meso := ch.Storage.Meso
+	meso := ch.Account.Storage.Meso
 	ch.Send(&response.Storage{
 		Result: pconst.StorageResultOpen,
 		NpcID:  npcID,
-		Slots:  ch.Storage.Slots,
+		Slots:  ch.Account.Storage.Slots,
 		Meso:   &meso,
-		Tabs: l.storageTabs(ch.Storage,
+		Tabs: l.storageTabs(ch.Account.Storage,
 			constant.InventoryTypeEquipment,
 			constant.InventoryTypeConsume,
 			constant.InventoryTypeInstallation,
@@ -807,16 +794,16 @@ func (l *CharacterListenerImpl) OnOpenStorage(ch *entity.Character, npcID uint32
 func (l *CharacterListenerImpl) OnStorageTabChanged(ch *entity.Character, result pconst.StorageResult, invType constant.InventoryType) {
 	ch.Send(&response.Storage{
 		Result: result,
-		Slots:  ch.Storage.Slots,
-		Tabs:   l.storageTabs(ch.Storage, invType),
+		Slots:  ch.Account.Storage.Slots,
+		Tabs:   l.storageTabs(ch.Account.Storage, invType),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnStorageArranged(ch *entity.Character) {
 	ch.Send(&response.Storage{
 		Result: pconst.StorageResultArrange,
-		Slots:  ch.Storage.Slots,
-		Tabs: l.storageTabs(ch.Storage,
+		Slots:  ch.Account.Storage.Slots,
+		Tabs: l.storageTabs(ch.Account.Storage,
 			constant.InventoryTypeEquipment,
 			constant.InventoryTypeConsume,
 			constant.InventoryTypeInstallation,
@@ -827,10 +814,10 @@ func (l *CharacterListenerImpl) OnStorageArranged(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnStorageMesoChanged(ch *entity.Character) {
-	meso := ch.Storage.Meso
+	meso := ch.Account.Storage.Meso
 	ch.Send(&response.Storage{
 		Result: pconst.StorageResultMeso,
-		Slots:  ch.Storage.Slots,
+		Slots:  ch.Account.Storage.Slots,
 		Meso:   &meso,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -1678,6 +1665,28 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
 	}
 
 	ch.Broadcast(lookPacket, nil)
+	if ch.Messenger.RoomID != 0 && l.gs.internalClient != nil {
+		l.gs.GetDispatchSystem().CallCharacter(ch.GetID(), func(ctx actor.Context, current *entity.Character) {
+			if current.Messenger.RoomID == 0 {
+				return
+			}
+			w := stream.NewStreamWriter(stream.LittleEndian)
+			current.ToDTO().SerializeLook(w)
+			req := &internal.MessengerRequest{
+				WorldId:     l.gs.config.WorldId,
+				CharacterId: current.GetID(),
+				ChannelId:   l.gs.config.ChannelId,
+				Action:      internal.MessengerAction_MESSENGER_ACTION_AVATAR,
+				Look:        w.Bytes(),
+			}
+			async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+				func(c context.Context) (*internal.MessengerReply, error) {
+					return l.gs.internalClient.Messenger(c, req)
+				},
+				nil,
+			).OnError(func(error) {})
+		})
+	}
 }
 
 func (l *CharacterListenerImpl) OnNpcAction(ch *entity.Character, bytes []byte) {

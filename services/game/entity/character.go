@@ -30,57 +30,60 @@ type Character struct {
 	LifeCore
 	Sendable
 
-	id              uint32
-	name            string
-	look            Look
-	level           uint8
-	Rank            Ranking
-	exp             uint32
-	Stats           *Stats
-	Points          *Points
-	mega            bool
-	random          [3]stream.RandomStream
-	Quests          *Quests
-	Wedding         *Wedding
-	CashWishlist    []uint32
-	TeleportStones  *TeleportStones
-	MonsterBook     *MonsterBook
-	Dialog          *Dialog
-	Listener        CharacterListener
-	Class           uint16
-	Role            constant.CharacterRole
-	AccountID       uint32
-	Inventory       *Inventory
-	Escrow          *Escrow
-	Storage         *Storage
-	Duey            *Duey
-	StoreBank       *StoreBank
-	MiniRoom        MiniRoom
-	miniRoomPending bool
-	remoteShop      remoteShop
-	shopScan        shopScan
-	Skills          *Skills
-	KeyLayout       *KeyLayout
-	Chair           uint32
-	lastHeal        lastHeal
-	Buffs           *Buffs
-	Debuffs         *Debuffs
-	Summons         *Summons
-	Pets            *Pets
-	Mount           *Mount
-	Doors           *Doors
-	HomingTargetOID *uint32
-	Party           *PartyMembership
-	Guild           *GuildMembership
-	Buddies         *BuddyList
-	GM              GMMode
-	stateMachine    *StateMachine
-	carnivalTeam    *CarnivalTeam
-	dojoEnergy      int
-	SavedLocations  *SavedLocations
-	Records         *Records
-	AccountRecords  *Records
-	session         session
+	id                uint32
+	name              string
+	look              Look
+	level             uint8
+	Rank              Ranking
+	exp               uint32
+	Stats             *Stats
+	PopulationHistory PopulationHistory
+	Points            *Points
+	mega              bool
+	random            [3]stream.RandomStream
+	Quests            *Quests
+	Wedding           *Wedding
+	CashWishlist      []uint32
+	TeleportStones    *TeleportStones
+	MonsterBook       *MonsterBook
+	Dialog            *Dialog
+	Listener          CharacterListener
+	Class             uint16
+	Role              constant.CharacterRole
+	AccountID         uint32
+	Account           *Account
+	Inventory         *Inventory
+	Escrow            *Escrow
+	Duey              *Duey
+	StoreBank         *StoreBank
+	MiniRoom          MiniRoom
+	miniRoomPending   bool
+	remoteShop        remoteShop
+	shopScan          shopScan
+	Skills            *Skills
+	KeyLayout         *KeyLayout
+	Chair             uint32
+	lastHeal          lastHeal
+	Buffs             *Buffs
+	Debuffs           *Debuffs
+	Summons           *Summons
+	Pets              *Pets
+	Mount             *Mount
+	Doors             *Doors
+	HomingTargetOID   *uint32
+	Party             *PartyMembership
+	Guild             *GuildMembership
+	Buddies           *BuddyList
+	Family            *Family
+	Messenger         *Messenger
+	Notes             []*internal.Note
+	GM                GMMode
+	stateMachine      *StateMachine
+	carnivalTeam      *CarnivalTeam
+	dojoEnergy        int
+	SavedLocations    *SavedLocations
+	Records           *Records
+	session           session
 }
 
 type session struct {
@@ -825,6 +828,7 @@ func (ch *Character) addExpUnchecked(exp uint32) {
 	if exp == 0 {
 		return
 	}
+	ch.Family.gainProgress(exp)
 	ch.exp += exp
 	ch.Listener.OnExpGain(ch, exp)
 
@@ -850,8 +854,8 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 	}
 
 	exp := raw
-	if ch.Stats.Bonus.ExpRate > 0 {
-		exp = mulClamp(exp, uint32(ch.Stats.Bonus.ExpRate)) / 100
+	if rate := max(ch.Stats.Bonus.ExpRate, int16(ch.Family.ExpRate())); rate > 0 {
+		exp = mulClamp(exp, uint32(rate)) / 100
 	}
 	exp = mulClamp(exp, uint32(ch.GetHolySymbolExpRate())) / 100
 	if ch.Debuffs.Has(constant.DebuffFlagCurse) {

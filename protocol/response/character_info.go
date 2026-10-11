@@ -63,7 +63,7 @@ func (p *CharacterInfo) serializeStats(writer *stream.StreamWriter) {
 	writer.WriteU16(p.Character.AbilityPoint)
 	writer.WriteU16(p.Character.SkillPoint)
 	writer.WriteU32(p.Character.Exp)
-	writer.WriteU16(p.Character.Population)
+	writer.Write16(p.Character.Population)
 	writer.WriteU32(p.Character.Map)
 	writer.WriteU8(p.Character.SpawnPoint)
 }
@@ -288,7 +288,7 @@ func (a *CharacterInfo) deserializeStats(reader *stream.StreamReader) {
 	a.Character.AbilityPoint = reader.ReadU16()
 	a.Character.SkillPoint = reader.ReadU16()
 	a.Character.Exp = reader.ReadU32()
-	a.Character.Population = reader.ReadU16()
+	a.Character.Population = reader.Read16()
 	a.Character.Map = reader.ReadU32()
 	a.Character.SpawnPoint = reader.ReadU8()
 }

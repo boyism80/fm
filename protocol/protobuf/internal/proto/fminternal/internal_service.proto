@@ -6,6 +6,11 @@ package fm.internal;
 option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpb";
 
 service Internal {
+  rpc Whisper (WhisperRequest) returns (WhisperReply);
+  rpc CompleteWhisper (CompleteWhisperRequest) returns (CompleteWhisperReply);
+  rpc Messenger (MessengerRequest) returns (MessengerReply);
+  rpc Notes (NotesRequest) returns (NotesReply);
+  rpc Family (FamilyRequest) returns (FamilyReply);
   rpc Ping (PingRequest) returns (PingReply);
   rpc GetGameChannelStatus (GetGameChannelStatusRequest) returns (GetGameChannelStatusReply);
   rpc GetServerCatalog (GetServerCatalogRequest) returns (GetServerCatalogReply);
@@ -13,7 +18,6 @@ service Internal {
   rpc BeginGameTransition (BeginGameTransitionRequest) returns (BeginGameTransitionReply);
   rpc SaveCharacter (SaveCharacterRequest) returns (SaveCharacterReply);
   rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
-  rpc LoadStorage (LoadStorageRequest) returns (LoadStorageReply);
   rpc LoadParcels (LoadParcelsRequest) returns (LoadParcelsReply);
   rpc SendParcel (SendParcelRequest) returns (SendParcelReply);
   rpc ClaimParcel (ClaimParcelRequest) returns (ClaimParcelReply);
@@ -617,7 +621,7 @@ message Character {
   uint32 account_id = 27;
   uint32 role = 28;
   bool hidden = 29;
-  uint32 population = 30;
+  int32 population = 30;
   uint32 hp_ap_used = 31;
   uint32 pet_hp_item = 32;
   uint32 pet_mp_item = 33;
@@ -627,6 +631,20 @@ message Character {
   repeated uint32 teleport_stones = 37;
   repeated uint32 vip_teleport_stones = 38;
   int64 saved_at_unix_ms = 39;
+  uint64 family_progress = 40 [jstype = JS_STRING];
+  PopulationHistory population_history = 41;
+  map<uint32, string> family_reputation = 42;
+}
+
+message PopulationHistory {
+  int64 last_given_unix_ms = 1;
+  // Keyed by target character id; entries older than 30 days are dropped.
+  map<uint32, int64> given_unix_ms = 2;
+}
+
+message Account {
+  Storage storage = 1;
+  repeated Record records = 2;
 }
 
 message MonsterBookCard {
@@ -665,8 +683,10 @@ message EnterGameReply {
   repeated CashRing rings = 16;
   repeated MonsterBookCard monster_book = 17;
   repeated Record records = 18;
-  repeated Record account_records = 19;
-  Mount mount = 20;
+  Mount mount = 19;
+  FamilyState family = 20;
+  repeated Note notes = 21;
+  Account account = 22;
 }
 
 message Debuff {
@@ -723,12 +743,11 @@ message CharacterSaveEntry {
   repeated Buff buffs = 7;
   repeated Quest quests = 8;
   repeated SavedLocation saved_locations = 9;
-  Storage storage = 10;
-  repeated MonsterBookCard monster_book = 11;
-  repeated Record records = 12;
-  repeated Record account_records = 13;
-  repeated uint32 claimed_shops = 14;
-  Mount mount = 15;
+  repeated MonsterBookCard monster_book = 10;
+  repeated Record records = 11;
+  repeated uint32 claimed_shops = 12;
+  Mount mount = 13;
+  Account account = 14;
 }
 
 message Storage {
@@ -737,15 +756,6 @@ message Storage {
   uint32 slots = 3;
   int32 meso = 4;
   repeated Inventory items = 5;
-}
-
-message LoadStorageRequest {
-  uint32 account_id = 1;
-  uint32 world_id = 2;
-}
-
-message LoadStorageReply {
-  Storage storage = 1;
 }
 
 enum ParcelResult {
@@ -2016,4 +2026,214 @@ message WriteOperationLogRequest {
 
 message WriteOperationLogReply {
   bool ok = 1;
+}
+
+enum FamilyAction {
+  FAMILY_ACTION_NONE = 0;
+  FAMILY_ACTION_PEDIGREE = 1;
+  FAMILY_ACTION_OPEN = 2;
+  FAMILY_ACTION_INVITE = 3;
+  FAMILY_ACTION_REMOVE_JUNIOR = 4;
+  FAMILY_ACTION_REMOVE_SENIOR = 5;
+  FAMILY_ACTION_ACCEPT = 6;
+  FAMILY_ACTION_USE = 7;
+  FAMILY_ACTION_PRECEPT = 8;
+  FAMILY_ACTION_SUMMON = 9;
+  FAMILY_ACTION_REFUND = 10;
+  FAMILY_ACTION_MOVE_COMPLETE = 11;
+}
+
+enum FamilyFeature {
+  FAMILY_FEATURE_TELEPORT = 0;
+  FAMILY_FEATURE_SUMMON = 1;
+  FAMILY_FEATURE_DROP_15_MINUTES = 2;
+  FAMILY_FEATURE_EXP_15_MINUTES = 3;
+  FAMILY_FEATURE_DROP_30_MINUTES = 4;
+  FAMILY_FEATURE_EXP_30_MINUTES = 5;
+  FAMILY_FEATURE_UNITY = 6;
+}
+
+// Values are the client's family result codes.
+enum FamilyResult {
+  FAMILY_RESULT_OK = 0;
+  FAMILY_RESULT_CANNOT_BE_JUNIOR = 1;
+  FAMILY_RESULT_WRONG_NAME = 2;
+  FAMILY_RESULT_SAME_FAMILY = 3;
+  FAMILY_RESULT_NOT_SAME_FAMILY = 4;
+  // The client shows no message for this code.
+  FAMILY_RESULT_FAILED = 5;
+  FAMILY_RESULT_NOT_SAME_MAP = 6;
+  FAMILY_RESULT_ALREADY_JUNIOR = 7;
+  FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH = 8;
+  FAMILY_RESULT_LEVEL_GAP_TOO_LARGE = 9;
+  FAMILY_RESULT_INVITE_PENDING = 10;
+  FAMILY_RESULT_SUMMON_PENDING = 11;
+  FAMILY_RESULT_SUMMON_FAILED = 12;
+}
+
+enum FamilyEvent {
+  FAMILY_EVENT_REFRESH = 0;
+  FAMILY_EVENT_INVITE = 1;
+  FAMILY_EVENT_INVITE_RESULT = 2;
+  FAMILY_EVENT_SUMMON = 3;
+  FAMILY_EVENT_JOINED = 4;
+}
+
+message FamilyMember {
+  uint32 character_id = 1;
+  uint32 senior_id = 2;
+  string name = 3;
+  uint32 level = 4;
+  uint32 class_id = 5;
+  uint32 reputation = 6;
+  uint32 total_reputation = 7;
+  int32 channel_id = 8;
+  uint32 descendants = 9;
+}
+message FamilyState {
+  uint32 character_id = 1;
+  uint32 senior_id = 2;
+  repeated uint32 juniors = 3;
+  uint32 leader_id = 4;
+  string leader_name = 5;
+  string notice = 6;
+  uint32 reputation = 7;
+  uint32 total_reputation = 8;
+  repeated FamilyFeature used_features = 9;
+  repeated FamilyMember members = 10;
+  int64 buff_until = 11 [jstype = JS_STRING];
+  FamilyFeature buff_feature = 12;
+}
+message FamilyRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 channel_id = 3;
+  FamilyAction action = 4;
+  uint32 target_id = 5;
+  string name = 6;
+  FamilyFeature feature = 7;
+  bool accepted = 8;
+  uint32 level = 9;
+  uint32 class_id = 10;
+  uint32 target_level = 11;
+  string map_name = 12;
+  string operation_id = 13;
+}
+message FamilyReply {
+  FamilyResult status = 1;
+  FamilyState family = 2;
+  uint32 target_id = 3;
+  string target_name = 4;
+  bool accepted = 5;
+}
+
+// Values are the client's whisper packet modes.
+enum WhisperMode {
+  WHISPER_MODE_NONE = 0;
+  WHISPER_MODE_FIND = 5;
+  WHISPER_MODE_SEND = 6;
+  WHISPER_MODE_FIND_RESULT = 9;
+  WHISPER_MODE_SEND_RESULT = 10;
+  WHISPER_MODE_RECEIVE = 18;
+  WHISPER_MODE_FIND_BUDDY = 68;
+  WHISPER_MODE_FIND_BUDDY_RESULT = 72;
+}
+
+message WhisperRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 channel_id = 3;
+  WhisperMode mode = 4;
+  string target_name = 5;
+  string message = 6;
+  string request_id = 7;
+}
+message WhisperReply {
+  bool found = 1;
+  uint32 character_id = 2;
+  string name = 3;
+  int32 channel_id = 4;
+  bool cash_shop = 5;
+  uint32 map_id = 6;
+}
+message CompleteWhisperRequest {
+  uint32 world_id = 1;
+  string request_id = 2;
+  uint32 character_id = 3;
+  uint32 map_id = 4;
+  bool complete = 5;
+  bool delivered = 6;
+}
+message CompleteWhisperReply { bool ok = 1; }
+
+// Values are the client's messenger packet actions.
+enum MessengerAction {
+  MESSENGER_ACTION_ENTER = 0;
+  MESSENGER_ACTION_SELF_ENTER = 1;
+  MESSENGER_ACTION_LEAVE = 2;
+  MESSENGER_ACTION_INVITE = 3;
+  MESSENGER_ACTION_INVITE_RESULT = 4;
+  MESSENGER_ACTION_DECLINE = 5;
+  MESSENGER_ACTION_CHAT = 6;
+  MESSENGER_ACTION_AVATAR = 7;
+}
+
+message MessengerRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 channel_id = 3;
+  MessengerAction action = 4;
+  uint32 room_id = 5;
+  string text = 6;
+  bytes look = 7;
+}
+message MessengerMember {
+  uint32 character_id = 1;
+  string name = 2;
+  uint32 channel_id = 3;
+  uint32 position = 4;
+  bytes look = 5;
+}
+message MessengerReply {
+  bool ok = 1;
+  uint32 room_id = 2;
+  uint32 position = 3;
+  repeated MessengerMember members = 4;
+}
+message Note {
+  uint32 id = 1;
+  string sender_name = 2;
+  string message = 3;
+  int64 sent_at_unix_ms = 4 [jstype = JS_STRING];
+  uint32 gift = 5;
+}
+enum NotesAction {
+  NOTES_ACTION_SEND = 0;
+  NOTES_ACTION_REMOVE = 1;
+  NOTES_ACTION_LIST = 2;
+  NOTES_ACTION_REMOVE_GIFTS = 3;
+}
+
+// Values other than OK are the client's note failure codes.
+enum NoteResult {
+  NOTE_RESULT_OK = 0;
+  NOTE_RESULT_WRONG_NAME = 1;
+  NOTE_RESULT_INBOX_FULL = 2;
+}
+
+message NotesRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  NotesAction action = 3;
+  string target_name = 4;
+  string message = 5;
+  uint32 gift = 6;
+  repeated uint32 note_ids = 7;
+}
+message NotesReply {
+  NoteResult status = 1;
+  // REMOVE, REMOVE_GIFTS, and LIST return every note the character still has.
+  repeated Note notes = 2;
+  // Thank-you notes this call removed; each grants one population.
+  uint32 population = 3;
 }

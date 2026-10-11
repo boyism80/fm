@@ -2,6 +2,7 @@ package entity
 
 import (
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -51,19 +52,25 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 			Face:      p.GetFace(),
 			Hair:      p.GetHair(),
 		},
-		level: uint8(p.GetLevel()),
-		Class: uint16(p.GetClassId()),
-		Role:  constant.CharacterRole(p.GetRole()),
-		GM:    GMMode{Hidden: p.GetHidden()},
-		exp:   p.GetExp(),
+		level:             uint8(p.GetLevel()),
+		Class:             uint16(p.GetClassId()),
+		Role:              constant.CharacterRole(p.GetRole()),
+		GM:                GMMode{Hidden: p.GetHidden()},
+		exp:               p.GetExp(),
+		PopulationHistory: NewPopulationHistoryFromInternalProto(p.GetPopulationHistory()),
 
 		random: [3]stream.RandomStream{stream.NewRandomStream(), stream.NewRandomStream(), stream.NewRandomStream()},
 	}
-	ch.Stats = &Stats{owner: ch, Base: BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())}, Population: uint16(p.GetPopulation())}
+	ch.Stats = &Stats{owner: ch, Base: BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())}, Population: int16(p.GetPopulation())}
 	ch.Points = &Points{owner: ch, AP: uint16(p.GetAbilityPoint()), SP: uint16(p.GetSkillPoint()), HPMPUsed: uint16(p.GetHpApUsed())}
 	ch.Party = &PartyMembership{owner: ch, id: partyID}
 	ch.Guild = &GuildMembership{owner: ch, id: guildID, invites: make(map[uint32]time.Time)}
 	ch.Buddies = NewBuddyList(ch)
+	ch.Family = &Family{owner: ch, State: reply.GetFamily(), Progress: p.GetFamilyProgress(), Reputation: make(map[uint32]uint64)}
+	for id, amount := range p.GetFamilyReputation() {
+		ch.Family.Reputation[id], _ = strconv.ParseUint(amount, 10, 64)
+	}
+	ch.Messenger = &Messenger{owner: ch}
 	ch.Dialog = NewDialog(ch)
 	ch.Buffs = NewBuffs(ch)
 	ch.Debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
@@ -91,7 +98,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.StoreBank = &StoreBank{owner: ch}
 	ch.SavedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
 	ch.Records = NewRecordsFromInternalProto(reply.GetRecords())
-	ch.AccountRecords = NewRecordsFromInternalProto(reply.GetAccountRecords())
+	ch.Account = NewAccountFromInternalProto(reply.GetAccount(), ch)
 	ch.KeyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	ch.LifeCore.ObjectCore.initTimers()
@@ -330,6 +337,11 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 	for typ := constant.InventoryTypeEquipment; typ <= constant.InventoryTypeCash; typ++ {
 		slotLimits = append(slotLimits, uint32(ch.Inventory.Tabs[typ].SlotLimit))
 	}
+	reputation := make(map[uint32]string, len(ch.Family.Reputation))
+	for id, amount := range ch.Family.Reputation {
+		reputation[id] = strconv.FormatUint(amount, 10)
+	}
+
 	pb := &internal.Character{
 		CharacterId:       ch.GetID(),
 		AccountId:         ch.AccountID,
@@ -360,7 +372,10 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Stance:            uint32(ch.Stance),
 		Meso:              ch.Escrow.mergeMeso(ch.Inventory.Meso),
 		SkillPoint:        uint32(ch.Points.SP),
-		Population:        uint32(ch.Stats.Population),
+		Population:        int32(ch.Stats.Population),
+		FamilyProgress:    ch.Family.Progress,
+		FamilyReputation:  reputation,
+		PopulationHistory: ch.PopulationHistory.ToProto(),
 		HpApUsed:          uint32(ch.Points.HPMPUsed),
 		PetHpItem:         ch.Pets.HPItem,
 		PetMpItem:         ch.Pets.MPItem,
@@ -381,10 +396,9 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		KeyLayout:      ch.KeyLayout.ToProto(),
 		Quests:         ch.QuestsToProto(),
 		SavedLocations: ch.SavedLocations.ToProto(),
-		Storage:        ch.Storage.ToProto(worldID),
 		MonsterBook:    ch.MonsterBook.ToProto(),
 		Records:        ch.Records.ToProto(),
-		AccountRecords: ch.AccountRecords.ToProto(),
+		Account:        ch.Account.ToProto(worldID),
 		ClaimedShops:   slices.Clone(ch.StoreBank.claimed),
 		Mount:          &internal.Mount{Level: ch.Mount.Level, Exp: ch.Mount.Exp, Fatigue: ch.Mount.Fatigue},
 	}

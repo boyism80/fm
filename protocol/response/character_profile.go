@@ -24,7 +24,7 @@ type CharacterProfile struct {
 	CharacterID      uint32
 	Level            uint8
 	Job              uint16
-	Fame             uint16
+	Population       int16
 	Married          bool
 	GuildName        string
 	AllianceName     string
@@ -46,7 +46,7 @@ func (p *CharacterProfile) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.CharacterID)
 	writer.WriteU8(p.Level)
 	writer.WriteU16(p.Job)
-	writer.WriteU16(p.Fame)
+	writer.Write16(p.Population)
 	writer.WriteBoolean(p.Married)
 	writer.WriteStr16(p.GuildName)
 	writer.WriteStr16(p.AllianceName)
@@ -83,7 +83,7 @@ func (p *CharacterProfile) Deserialize(reader *stream.StreamReader) {
 	p.CharacterID = reader.ReadU32()
 	p.Level = reader.ReadU8()
 	p.Job = reader.ReadU16()
-	p.Fame = reader.ReadU16()
+	p.Population = reader.Read16()
 	p.Married = reader.ReadBool()
 	p.GuildName = reader.ReadStr16()
 	p.AllianceName = reader.ReadStr16()

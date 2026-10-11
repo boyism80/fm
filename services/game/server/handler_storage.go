@@ -32,26 +32,23 @@ func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
 	if ch == nil {
 		return nil
 	}
-	if ch.Storage == nil {
-		return nil
-	}
 
 	var err error
 	switch req.Mode {
 	case pconst.StorageTakeOut:
-		err = ch.Storage.TakeOut(constant.InventoryType(req.InventoryType), req.Index)
+		err = ch.Account.Storage.TakeOut(constant.InventoryType(req.InventoryType), req.Index)
 	case pconst.StorageStore:
-		err = ch.Storage.Store(req.Slot, req.ItemID, req.Count)
+		err = ch.Account.Storage.Store(req.Slot, req.ItemID, req.Count)
 	case pconst.StorageArrange:
-		err = ch.Storage.Arrange()
+		err = ch.Account.Storage.Arrange()
 	case pconst.StorageMeso:
 		if req.Meso > 0 {
-			err = ch.Storage.WithdrawMeso(req.Meso)
+			err = ch.Account.Storage.WithdrawMeso(req.Meso)
 		} else {
-			err = ch.Storage.DepositMeso(-req.Meso)
+			err = ch.Account.Storage.DepositMeso(-req.Meso)
 		}
 	case pconst.StorageClose:
-		ch.Storage.Close()
+		ch.Account.Storage.Close()
 	}
 
 	switch {

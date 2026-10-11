@@ -50,6 +50,8 @@ import { OperationLogService } from "./services/operation-log-service";
 import { ParcelService } from "./services/parcel-service";
 import { ShopSearchRanking, ShopService } from "./services/shop-service";
 import { CashShopService } from "./services/cash-shop-service";
+import { FamilyService } from "./services/family-service";
+import { SocialService } from "./services/social-service";
 import { MarriageService } from "./services/marriage-service";
 
 export function createAppContainer() {
@@ -111,6 +113,8 @@ export function createAppContainer() {
         shopSearchRanking: awilix.asClass(ShopSearchRanking).singleton(),
         cashShopService: awilix.asClass(CashShopService).transient(),
         marriageService: awilix.asClass(MarriageService).transient(),
+        socialService: awilix.asClass(SocialService).transient(),
+        familyService: awilix.asClass(FamilyService).transient(),
     });
     return container;
 }

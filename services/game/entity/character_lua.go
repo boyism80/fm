@@ -588,6 +588,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"clear_population_history": func(L *lua.LState) int {
+			ch, ok := L.CheckUserData(1).Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.PopulationHistory = PopulationHistory{Given: map[uint32]time.Time{}}
+			return 0
+		},
 		"exchange": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1849,12 +1858,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			npcID := uint32(L.CheckInt(2))
 			storeFee := int32(L.OptInt(3, 100))
 			takeOutFee := int32(L.OptInt(4, 0))
-			cfg, ok := luax.GetConfiguration(L)
-			if !ok || cfg.ActorContext == nil {
-				L.ArgError(1, "actor context not available")
-				return 0
-			}
-			ch.OpenStorage(cfg.ActorContext, npcID, storeFee, takeOutFee)
+			ch.Account.Storage.Open(npcID, storeFee, takeOutFee)
 			return 0
 		},
 		"open_store_bank": func(L *lua.LState) int {
@@ -2822,7 +2826,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(luax.NewLuable(L, ch.AccountRecords))
+			L.Push(luax.NewLuable(L, ch.Account.Records))
 			return 1
 		},
 		"max_hp": func(L *lua.LState) int {
@@ -3150,6 +3154,24 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "hidden() requires 0 or 1 arguments")
 				return 0
 			}
+		},
+		"family": func(L *lua.LState) int {
+			ch, ok := L.CheckUserData(1).Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			state := ch.Family.State
+			table := L.NewTable()
+			if state != nil {
+				table.RawSetString("leader", lua.LNumber(state.LeaderId))
+				table.RawSetString("senior", lua.LNumber(state.SeniorId))
+				table.RawSetString("juniors", lua.LNumber(len(state.Juniors)))
+				table.RawSetString("reputation", lua.LNumber(state.Reputation))
+				table.RawSetString("total_reputation", lua.LNumber(state.TotalReputation))
+			}
+			L.Push(table)
+			return 1
 		},
 		"in_dialog": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

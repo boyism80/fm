@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -79,6 +80,7 @@ type AddCharacter struct {
 	TargetMap  *entity.Map
 	SpawnPoint uint8
 	Init       bool
+	Notes      []*internal.Note
 }
 
 type WarpCharacter struct {
@@ -131,6 +133,29 @@ type DeliverParcelArrived struct {
 	CharacterID uint32
 	SenderName  string
 	Quick       bool
+}
+
+type DeliverWhisper struct {
+	CharacterID uint32
+	Whisper     entity.Whisper
+}
+
+type DeliverMessenger struct {
+	CharacterID uint32
+	Event       entity.MessengerEvent
+}
+
+type DeliverFamily struct {
+	CharacterID uint32
+	Event       internal.FamilyEvent
+	SenderID    uint32
+	Name        string
+	MapName     string
+	Accepted    bool
+}
+
+type DeliverNoteArrived struct {
+	CharacterID uint32
 }
 
 type DeliverMarriageChanged struct {

@@ -380,6 +380,10 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 		parcelDisp := mq.NewDispatcher()
 		parcelDisp.Bind[parcelMqArrived](gs)
+		parcelDisp.Bind[whisperMq](gs)
+		parcelDisp.Bind[messengerMq](gs)
+		parcelDisp.Bind[familyMq](gs)
+		parcelDisp.Bind[noteMqArrived](gs)
 		parcelDisp.Bind[cashGiftMqArrived](gs)
 		parcelDisp.Bind[marriageMqChanged](gs)
 		parcelDisp.Bind[marriageMqSpouseMoved](gs)

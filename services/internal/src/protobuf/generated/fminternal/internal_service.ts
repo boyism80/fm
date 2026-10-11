@@ -1293,6 +1293,539 @@ export function buddyErrorCodeToJSON(object: BuddyErrorCode): string {
   }
 }
 
+export enum FamilyAction {
+  FAMILY_ACTION_NONE = 0,
+  FAMILY_ACTION_PEDIGREE = 1,
+  FAMILY_ACTION_OPEN = 2,
+  FAMILY_ACTION_INVITE = 3,
+  FAMILY_ACTION_REMOVE_JUNIOR = 4,
+  FAMILY_ACTION_REMOVE_SENIOR = 5,
+  FAMILY_ACTION_ACCEPT = 6,
+  FAMILY_ACTION_USE = 7,
+  FAMILY_ACTION_PRECEPT = 8,
+  FAMILY_ACTION_SUMMON = 9,
+  FAMILY_ACTION_REFUND = 10,
+  FAMILY_ACTION_MOVE_COMPLETE = 11,
+  UNRECOGNIZED = -1,
+}
+
+export function familyActionFromJSON(object: any): FamilyAction {
+  switch (object) {
+    case 0:
+    case "FAMILY_ACTION_NONE":
+      return FamilyAction.FAMILY_ACTION_NONE;
+    case 1:
+    case "FAMILY_ACTION_PEDIGREE":
+      return FamilyAction.FAMILY_ACTION_PEDIGREE;
+    case 2:
+    case "FAMILY_ACTION_OPEN":
+      return FamilyAction.FAMILY_ACTION_OPEN;
+    case 3:
+    case "FAMILY_ACTION_INVITE":
+      return FamilyAction.FAMILY_ACTION_INVITE;
+    case 4:
+    case "FAMILY_ACTION_REMOVE_JUNIOR":
+      return FamilyAction.FAMILY_ACTION_REMOVE_JUNIOR;
+    case 5:
+    case "FAMILY_ACTION_REMOVE_SENIOR":
+      return FamilyAction.FAMILY_ACTION_REMOVE_SENIOR;
+    case 6:
+    case "FAMILY_ACTION_ACCEPT":
+      return FamilyAction.FAMILY_ACTION_ACCEPT;
+    case 7:
+    case "FAMILY_ACTION_USE":
+      return FamilyAction.FAMILY_ACTION_USE;
+    case 8:
+    case "FAMILY_ACTION_PRECEPT":
+      return FamilyAction.FAMILY_ACTION_PRECEPT;
+    case 9:
+    case "FAMILY_ACTION_SUMMON":
+      return FamilyAction.FAMILY_ACTION_SUMMON;
+    case 10:
+    case "FAMILY_ACTION_REFUND":
+      return FamilyAction.FAMILY_ACTION_REFUND;
+    case 11:
+    case "FAMILY_ACTION_MOVE_COMPLETE":
+      return FamilyAction.FAMILY_ACTION_MOVE_COMPLETE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return FamilyAction.UNRECOGNIZED;
+  }
+}
+
+export function familyActionToJSON(object: FamilyAction): string {
+  switch (object) {
+    case FamilyAction.FAMILY_ACTION_NONE:
+      return "FAMILY_ACTION_NONE";
+    case FamilyAction.FAMILY_ACTION_PEDIGREE:
+      return "FAMILY_ACTION_PEDIGREE";
+    case FamilyAction.FAMILY_ACTION_OPEN:
+      return "FAMILY_ACTION_OPEN";
+    case FamilyAction.FAMILY_ACTION_INVITE:
+      return "FAMILY_ACTION_INVITE";
+    case FamilyAction.FAMILY_ACTION_REMOVE_JUNIOR:
+      return "FAMILY_ACTION_REMOVE_JUNIOR";
+    case FamilyAction.FAMILY_ACTION_REMOVE_SENIOR:
+      return "FAMILY_ACTION_REMOVE_SENIOR";
+    case FamilyAction.FAMILY_ACTION_ACCEPT:
+      return "FAMILY_ACTION_ACCEPT";
+    case FamilyAction.FAMILY_ACTION_USE:
+      return "FAMILY_ACTION_USE";
+    case FamilyAction.FAMILY_ACTION_PRECEPT:
+      return "FAMILY_ACTION_PRECEPT";
+    case FamilyAction.FAMILY_ACTION_SUMMON:
+      return "FAMILY_ACTION_SUMMON";
+    case FamilyAction.FAMILY_ACTION_REFUND:
+      return "FAMILY_ACTION_REFUND";
+    case FamilyAction.FAMILY_ACTION_MOVE_COMPLETE:
+      return "FAMILY_ACTION_MOVE_COMPLETE";
+    case FamilyAction.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum FamilyFeature {
+  FAMILY_FEATURE_TELEPORT = 0,
+  FAMILY_FEATURE_SUMMON = 1,
+  FAMILY_FEATURE_DROP_15_MINUTES = 2,
+  FAMILY_FEATURE_EXP_15_MINUTES = 3,
+  FAMILY_FEATURE_DROP_30_MINUTES = 4,
+  FAMILY_FEATURE_EXP_30_MINUTES = 5,
+  FAMILY_FEATURE_UNITY = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function familyFeatureFromJSON(object: any): FamilyFeature {
+  switch (object) {
+    case 0:
+    case "FAMILY_FEATURE_TELEPORT":
+      return FamilyFeature.FAMILY_FEATURE_TELEPORT;
+    case 1:
+    case "FAMILY_FEATURE_SUMMON":
+      return FamilyFeature.FAMILY_FEATURE_SUMMON;
+    case 2:
+    case "FAMILY_FEATURE_DROP_15_MINUTES":
+      return FamilyFeature.FAMILY_FEATURE_DROP_15_MINUTES;
+    case 3:
+    case "FAMILY_FEATURE_EXP_15_MINUTES":
+      return FamilyFeature.FAMILY_FEATURE_EXP_15_MINUTES;
+    case 4:
+    case "FAMILY_FEATURE_DROP_30_MINUTES":
+      return FamilyFeature.FAMILY_FEATURE_DROP_30_MINUTES;
+    case 5:
+    case "FAMILY_FEATURE_EXP_30_MINUTES":
+      return FamilyFeature.FAMILY_FEATURE_EXP_30_MINUTES;
+    case 6:
+    case "FAMILY_FEATURE_UNITY":
+      return FamilyFeature.FAMILY_FEATURE_UNITY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return FamilyFeature.UNRECOGNIZED;
+  }
+}
+
+export function familyFeatureToJSON(object: FamilyFeature): string {
+  switch (object) {
+    case FamilyFeature.FAMILY_FEATURE_TELEPORT:
+      return "FAMILY_FEATURE_TELEPORT";
+    case FamilyFeature.FAMILY_FEATURE_SUMMON:
+      return "FAMILY_FEATURE_SUMMON";
+    case FamilyFeature.FAMILY_FEATURE_DROP_15_MINUTES:
+      return "FAMILY_FEATURE_DROP_15_MINUTES";
+    case FamilyFeature.FAMILY_FEATURE_EXP_15_MINUTES:
+      return "FAMILY_FEATURE_EXP_15_MINUTES";
+    case FamilyFeature.FAMILY_FEATURE_DROP_30_MINUTES:
+      return "FAMILY_FEATURE_DROP_30_MINUTES";
+    case FamilyFeature.FAMILY_FEATURE_EXP_30_MINUTES:
+      return "FAMILY_FEATURE_EXP_30_MINUTES";
+    case FamilyFeature.FAMILY_FEATURE_UNITY:
+      return "FAMILY_FEATURE_UNITY";
+    case FamilyFeature.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** Values are the client's family result codes. */
+export enum FamilyResult {
+  FAMILY_RESULT_OK = 0,
+  FAMILY_RESULT_CANNOT_BE_JUNIOR = 1,
+  FAMILY_RESULT_WRONG_NAME = 2,
+  FAMILY_RESULT_SAME_FAMILY = 3,
+  FAMILY_RESULT_NOT_SAME_FAMILY = 4,
+  /** FAMILY_RESULT_FAILED - The client shows no message for this code. */
+  FAMILY_RESULT_FAILED = 5,
+  FAMILY_RESULT_NOT_SAME_MAP = 6,
+  FAMILY_RESULT_ALREADY_JUNIOR = 7,
+  FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH = 8,
+  FAMILY_RESULT_LEVEL_GAP_TOO_LARGE = 9,
+  FAMILY_RESULT_INVITE_PENDING = 10,
+  FAMILY_RESULT_SUMMON_PENDING = 11,
+  FAMILY_RESULT_SUMMON_FAILED = 12,
+  UNRECOGNIZED = -1,
+}
+
+export function familyResultFromJSON(object: any): FamilyResult {
+  switch (object) {
+    case 0:
+    case "FAMILY_RESULT_OK":
+      return FamilyResult.FAMILY_RESULT_OK;
+    case 1:
+    case "FAMILY_RESULT_CANNOT_BE_JUNIOR":
+      return FamilyResult.FAMILY_RESULT_CANNOT_BE_JUNIOR;
+    case 2:
+    case "FAMILY_RESULT_WRONG_NAME":
+      return FamilyResult.FAMILY_RESULT_WRONG_NAME;
+    case 3:
+    case "FAMILY_RESULT_SAME_FAMILY":
+      return FamilyResult.FAMILY_RESULT_SAME_FAMILY;
+    case 4:
+    case "FAMILY_RESULT_NOT_SAME_FAMILY":
+      return FamilyResult.FAMILY_RESULT_NOT_SAME_FAMILY;
+    case 5:
+    case "FAMILY_RESULT_FAILED":
+      return FamilyResult.FAMILY_RESULT_FAILED;
+    case 6:
+    case "FAMILY_RESULT_NOT_SAME_MAP":
+      return FamilyResult.FAMILY_RESULT_NOT_SAME_MAP;
+    case 7:
+    case "FAMILY_RESULT_ALREADY_JUNIOR":
+      return FamilyResult.FAMILY_RESULT_ALREADY_JUNIOR;
+    case 8:
+    case "FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH":
+      return FamilyResult.FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH;
+    case 9:
+    case "FAMILY_RESULT_LEVEL_GAP_TOO_LARGE":
+      return FamilyResult.FAMILY_RESULT_LEVEL_GAP_TOO_LARGE;
+    case 10:
+    case "FAMILY_RESULT_INVITE_PENDING":
+      return FamilyResult.FAMILY_RESULT_INVITE_PENDING;
+    case 11:
+    case "FAMILY_RESULT_SUMMON_PENDING":
+      return FamilyResult.FAMILY_RESULT_SUMMON_PENDING;
+    case 12:
+    case "FAMILY_RESULT_SUMMON_FAILED":
+      return FamilyResult.FAMILY_RESULT_SUMMON_FAILED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return FamilyResult.UNRECOGNIZED;
+  }
+}
+
+export function familyResultToJSON(object: FamilyResult): string {
+  switch (object) {
+    case FamilyResult.FAMILY_RESULT_OK:
+      return "FAMILY_RESULT_OK";
+    case FamilyResult.FAMILY_RESULT_CANNOT_BE_JUNIOR:
+      return "FAMILY_RESULT_CANNOT_BE_JUNIOR";
+    case FamilyResult.FAMILY_RESULT_WRONG_NAME:
+      return "FAMILY_RESULT_WRONG_NAME";
+    case FamilyResult.FAMILY_RESULT_SAME_FAMILY:
+      return "FAMILY_RESULT_SAME_FAMILY";
+    case FamilyResult.FAMILY_RESULT_NOT_SAME_FAMILY:
+      return "FAMILY_RESULT_NOT_SAME_FAMILY";
+    case FamilyResult.FAMILY_RESULT_FAILED:
+      return "FAMILY_RESULT_FAILED";
+    case FamilyResult.FAMILY_RESULT_NOT_SAME_MAP:
+      return "FAMILY_RESULT_NOT_SAME_MAP";
+    case FamilyResult.FAMILY_RESULT_ALREADY_JUNIOR:
+      return "FAMILY_RESULT_ALREADY_JUNIOR";
+    case FamilyResult.FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH:
+      return "FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH";
+    case FamilyResult.FAMILY_RESULT_LEVEL_GAP_TOO_LARGE:
+      return "FAMILY_RESULT_LEVEL_GAP_TOO_LARGE";
+    case FamilyResult.FAMILY_RESULT_INVITE_PENDING:
+      return "FAMILY_RESULT_INVITE_PENDING";
+    case FamilyResult.FAMILY_RESULT_SUMMON_PENDING:
+      return "FAMILY_RESULT_SUMMON_PENDING";
+    case FamilyResult.FAMILY_RESULT_SUMMON_FAILED:
+      return "FAMILY_RESULT_SUMMON_FAILED";
+    case FamilyResult.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum FamilyEvent {
+  FAMILY_EVENT_REFRESH = 0,
+  FAMILY_EVENT_INVITE = 1,
+  FAMILY_EVENT_INVITE_RESULT = 2,
+  FAMILY_EVENT_SUMMON = 3,
+  FAMILY_EVENT_JOINED = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function familyEventFromJSON(object: any): FamilyEvent {
+  switch (object) {
+    case 0:
+    case "FAMILY_EVENT_REFRESH":
+      return FamilyEvent.FAMILY_EVENT_REFRESH;
+    case 1:
+    case "FAMILY_EVENT_INVITE":
+      return FamilyEvent.FAMILY_EVENT_INVITE;
+    case 2:
+    case "FAMILY_EVENT_INVITE_RESULT":
+      return FamilyEvent.FAMILY_EVENT_INVITE_RESULT;
+    case 3:
+    case "FAMILY_EVENT_SUMMON":
+      return FamilyEvent.FAMILY_EVENT_SUMMON;
+    case 4:
+    case "FAMILY_EVENT_JOINED":
+      return FamilyEvent.FAMILY_EVENT_JOINED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return FamilyEvent.UNRECOGNIZED;
+  }
+}
+
+export function familyEventToJSON(object: FamilyEvent): string {
+  switch (object) {
+    case FamilyEvent.FAMILY_EVENT_REFRESH:
+      return "FAMILY_EVENT_REFRESH";
+    case FamilyEvent.FAMILY_EVENT_INVITE:
+      return "FAMILY_EVENT_INVITE";
+    case FamilyEvent.FAMILY_EVENT_INVITE_RESULT:
+      return "FAMILY_EVENT_INVITE_RESULT";
+    case FamilyEvent.FAMILY_EVENT_SUMMON:
+      return "FAMILY_EVENT_SUMMON";
+    case FamilyEvent.FAMILY_EVENT_JOINED:
+      return "FAMILY_EVENT_JOINED";
+    case FamilyEvent.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** Values are the client's whisper packet modes. */
+export enum WhisperMode {
+  WHISPER_MODE_NONE = 0,
+  WHISPER_MODE_FIND = 5,
+  WHISPER_MODE_SEND = 6,
+  WHISPER_MODE_FIND_RESULT = 9,
+  WHISPER_MODE_SEND_RESULT = 10,
+  WHISPER_MODE_RECEIVE = 18,
+  WHISPER_MODE_FIND_BUDDY = 68,
+  WHISPER_MODE_FIND_BUDDY_RESULT = 72,
+  UNRECOGNIZED = -1,
+}
+
+export function whisperModeFromJSON(object: any): WhisperMode {
+  switch (object) {
+    case 0:
+    case "WHISPER_MODE_NONE":
+      return WhisperMode.WHISPER_MODE_NONE;
+    case 5:
+    case "WHISPER_MODE_FIND":
+      return WhisperMode.WHISPER_MODE_FIND;
+    case 6:
+    case "WHISPER_MODE_SEND":
+      return WhisperMode.WHISPER_MODE_SEND;
+    case 9:
+    case "WHISPER_MODE_FIND_RESULT":
+      return WhisperMode.WHISPER_MODE_FIND_RESULT;
+    case 10:
+    case "WHISPER_MODE_SEND_RESULT":
+      return WhisperMode.WHISPER_MODE_SEND_RESULT;
+    case 18:
+    case "WHISPER_MODE_RECEIVE":
+      return WhisperMode.WHISPER_MODE_RECEIVE;
+    case 68:
+    case "WHISPER_MODE_FIND_BUDDY":
+      return WhisperMode.WHISPER_MODE_FIND_BUDDY;
+    case 72:
+    case "WHISPER_MODE_FIND_BUDDY_RESULT":
+      return WhisperMode.WHISPER_MODE_FIND_BUDDY_RESULT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return WhisperMode.UNRECOGNIZED;
+  }
+}
+
+export function whisperModeToJSON(object: WhisperMode): string {
+  switch (object) {
+    case WhisperMode.WHISPER_MODE_NONE:
+      return "WHISPER_MODE_NONE";
+    case WhisperMode.WHISPER_MODE_FIND:
+      return "WHISPER_MODE_FIND";
+    case WhisperMode.WHISPER_MODE_SEND:
+      return "WHISPER_MODE_SEND";
+    case WhisperMode.WHISPER_MODE_FIND_RESULT:
+      return "WHISPER_MODE_FIND_RESULT";
+    case WhisperMode.WHISPER_MODE_SEND_RESULT:
+      return "WHISPER_MODE_SEND_RESULT";
+    case WhisperMode.WHISPER_MODE_RECEIVE:
+      return "WHISPER_MODE_RECEIVE";
+    case WhisperMode.WHISPER_MODE_FIND_BUDDY:
+      return "WHISPER_MODE_FIND_BUDDY";
+    case WhisperMode.WHISPER_MODE_FIND_BUDDY_RESULT:
+      return "WHISPER_MODE_FIND_BUDDY_RESULT";
+    case WhisperMode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** Values are the client's messenger packet actions. */
+export enum MessengerAction {
+  MESSENGER_ACTION_ENTER = 0,
+  MESSENGER_ACTION_SELF_ENTER = 1,
+  MESSENGER_ACTION_LEAVE = 2,
+  MESSENGER_ACTION_INVITE = 3,
+  MESSENGER_ACTION_INVITE_RESULT = 4,
+  MESSENGER_ACTION_DECLINE = 5,
+  MESSENGER_ACTION_CHAT = 6,
+  MESSENGER_ACTION_AVATAR = 7,
+  UNRECOGNIZED = -1,
+}
+
+export function messengerActionFromJSON(object: any): MessengerAction {
+  switch (object) {
+    case 0:
+    case "MESSENGER_ACTION_ENTER":
+      return MessengerAction.MESSENGER_ACTION_ENTER;
+    case 1:
+    case "MESSENGER_ACTION_SELF_ENTER":
+      return MessengerAction.MESSENGER_ACTION_SELF_ENTER;
+    case 2:
+    case "MESSENGER_ACTION_LEAVE":
+      return MessengerAction.MESSENGER_ACTION_LEAVE;
+    case 3:
+    case "MESSENGER_ACTION_INVITE":
+      return MessengerAction.MESSENGER_ACTION_INVITE;
+    case 4:
+    case "MESSENGER_ACTION_INVITE_RESULT":
+      return MessengerAction.MESSENGER_ACTION_INVITE_RESULT;
+    case 5:
+    case "MESSENGER_ACTION_DECLINE":
+      return MessengerAction.MESSENGER_ACTION_DECLINE;
+    case 6:
+    case "MESSENGER_ACTION_CHAT":
+      return MessengerAction.MESSENGER_ACTION_CHAT;
+    case 7:
+    case "MESSENGER_ACTION_AVATAR":
+      return MessengerAction.MESSENGER_ACTION_AVATAR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MessengerAction.UNRECOGNIZED;
+  }
+}
+
+export function messengerActionToJSON(object: MessengerAction): string {
+  switch (object) {
+    case MessengerAction.MESSENGER_ACTION_ENTER:
+      return "MESSENGER_ACTION_ENTER";
+    case MessengerAction.MESSENGER_ACTION_SELF_ENTER:
+      return "MESSENGER_ACTION_SELF_ENTER";
+    case MessengerAction.MESSENGER_ACTION_LEAVE:
+      return "MESSENGER_ACTION_LEAVE";
+    case MessengerAction.MESSENGER_ACTION_INVITE:
+      return "MESSENGER_ACTION_INVITE";
+    case MessengerAction.MESSENGER_ACTION_INVITE_RESULT:
+      return "MESSENGER_ACTION_INVITE_RESULT";
+    case MessengerAction.MESSENGER_ACTION_DECLINE:
+      return "MESSENGER_ACTION_DECLINE";
+    case MessengerAction.MESSENGER_ACTION_CHAT:
+      return "MESSENGER_ACTION_CHAT";
+    case MessengerAction.MESSENGER_ACTION_AVATAR:
+      return "MESSENGER_ACTION_AVATAR";
+    case MessengerAction.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum NotesAction {
+  NOTES_ACTION_SEND = 0,
+  NOTES_ACTION_REMOVE = 1,
+  NOTES_ACTION_LIST = 2,
+  NOTES_ACTION_REMOVE_GIFTS = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function notesActionFromJSON(object: any): NotesAction {
+  switch (object) {
+    case 0:
+    case "NOTES_ACTION_SEND":
+      return NotesAction.NOTES_ACTION_SEND;
+    case 1:
+    case "NOTES_ACTION_REMOVE":
+      return NotesAction.NOTES_ACTION_REMOVE;
+    case 2:
+    case "NOTES_ACTION_LIST":
+      return NotesAction.NOTES_ACTION_LIST;
+    case 3:
+    case "NOTES_ACTION_REMOVE_GIFTS":
+      return NotesAction.NOTES_ACTION_REMOVE_GIFTS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return NotesAction.UNRECOGNIZED;
+  }
+}
+
+export function notesActionToJSON(object: NotesAction): string {
+  switch (object) {
+    case NotesAction.NOTES_ACTION_SEND:
+      return "NOTES_ACTION_SEND";
+    case NotesAction.NOTES_ACTION_REMOVE:
+      return "NOTES_ACTION_REMOVE";
+    case NotesAction.NOTES_ACTION_LIST:
+      return "NOTES_ACTION_LIST";
+    case NotesAction.NOTES_ACTION_REMOVE_GIFTS:
+      return "NOTES_ACTION_REMOVE_GIFTS";
+    case NotesAction.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** Values other than OK are the client's note failure codes. */
+export enum NoteResult {
+  NOTE_RESULT_OK = 0,
+  NOTE_RESULT_WRONG_NAME = 1,
+  NOTE_RESULT_INBOX_FULL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function noteResultFromJSON(object: any): NoteResult {
+  switch (object) {
+    case 0:
+    case "NOTE_RESULT_OK":
+      return NoteResult.NOTE_RESULT_OK;
+    case 1:
+    case "NOTE_RESULT_WRONG_NAME":
+      return NoteResult.NOTE_RESULT_WRONG_NAME;
+    case 2:
+    case "NOTE_RESULT_INBOX_FULL":
+      return NoteResult.NOTE_RESULT_INBOX_FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return NoteResult.UNRECOGNIZED;
+  }
+}
+
+export function noteResultToJSON(object: NoteResult): string {
+  switch (object) {
+    case NoteResult.NOTE_RESULT_OK:
+      return "NOTE_RESULT_OK";
+    case NoteResult.NOTE_RESULT_WRONG_NAME:
+      return "NOTE_RESULT_WRONG_NAME";
+    case NoteResult.NOTE_RESULT_INBOX_FULL:
+      return "NOTE_RESULT_INBOX_FULL";
+    case NoteResult.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface PingRequest {
   role: ServerRole;
   worldId: number;
@@ -1754,6 +2287,30 @@ export interface Character {
   teleportStones: number[];
   vipTeleportStones: number[];
   savedAtUnixMs: number;
+  familyProgress: string;
+  populationHistory: PopulationHistory | undefined;
+  familyReputation: { [key: number]: string };
+}
+
+export interface Character_FamilyReputationEntry {
+  key: number;
+  value: string;
+}
+
+export interface PopulationHistory {
+  lastGivenUnixMs: number;
+  /** Keyed by target character id; entries older than 30 days are dropped. */
+  givenUnixMs: { [key: number]: number };
+}
+
+export interface PopulationHistory_GivenUnixMsEntry {
+  key: number;
+  value: number;
+}
+
+export interface Account {
+  storage: Storage | undefined;
+  records: Record[];
 }
 
 export interface MonsterBookCard {
@@ -1792,8 +2349,10 @@ export interface EnterGameReply {
   rings: CashRing[];
   monsterBook: MonsterBookCard[];
   records: Record[];
-  accountRecords: Record[];
   mount: Mount | undefined;
+  family: FamilyState | undefined;
+  notes: Note[];
+  account: Account | undefined;
 }
 
 export interface Debuff {
@@ -1850,12 +2409,11 @@ export interface CharacterSaveEntry {
   buffs: Buff[];
   quests: Quest[];
   savedLocations: SavedLocation[];
-  storage: Storage | undefined;
   monsterBook: MonsterBookCard[];
   records: Record[];
-  accountRecords: Record[];
   claimedShops: number[];
   mount: Mount | undefined;
+  account: Account | undefined;
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -1874,15 +2432,6 @@ export interface Storage {
   slots: number;
   meso: number;
   items: Inventory[];
-}
-
-export interface LoadStorageRequest {
-  accountId: number;
-  worldId: number;
-}
-
-export interface LoadStorageReply {
-  storage: Storage | undefined;
 }
 
 export interface Parcel {
@@ -3080,6 +3629,140 @@ export interface WriteOperationLogRequest {
 
 export interface WriteOperationLogReply {
   ok: boolean;
+}
+
+export interface FamilyMember {
+  characterId: number;
+  seniorId: number;
+  name: string;
+  level: number;
+  classId: number;
+  reputation: number;
+  totalReputation: number;
+  channelId: number;
+  descendants: number;
+}
+
+export interface FamilyState {
+  characterId: number;
+  seniorId: number;
+  juniors: number[];
+  leaderId: number;
+  leaderName: string;
+  notice: string;
+  reputation: number;
+  totalReputation: number;
+  usedFeatures: FamilyFeature[];
+  members: FamilyMember[];
+  buffUntil: string;
+  buffFeature: FamilyFeature;
+}
+
+export interface FamilyRequest {
+  worldId: number;
+  characterId: number;
+  channelId: number;
+  action: FamilyAction;
+  targetId: number;
+  name: string;
+  feature: FamilyFeature;
+  accepted: boolean;
+  level: number;
+  classId: number;
+  targetLevel: number;
+  mapName: string;
+  operationId: string;
+}
+
+export interface FamilyReply {
+  status: FamilyResult;
+  family: FamilyState | undefined;
+  targetId: number;
+  targetName: string;
+  accepted: boolean;
+}
+
+export interface WhisperRequest {
+  worldId: number;
+  characterId: number;
+  channelId: number;
+  mode: WhisperMode;
+  targetName: string;
+  message: string;
+  requestId: string;
+}
+
+export interface WhisperReply {
+  found: boolean;
+  characterId: number;
+  name: string;
+  channelId: number;
+  cashShop: boolean;
+  mapId: number;
+}
+
+export interface CompleteWhisperRequest {
+  worldId: number;
+  requestId: string;
+  characterId: number;
+  mapId: number;
+  complete: boolean;
+  delivered: boolean;
+}
+
+export interface CompleteWhisperReply {
+  ok: boolean;
+}
+
+export interface MessengerRequest {
+  worldId: number;
+  characterId: number;
+  channelId: number;
+  action: MessengerAction;
+  roomId: number;
+  text: string;
+  look: Buffer;
+}
+
+export interface MessengerMember {
+  characterId: number;
+  name: string;
+  channelId: number;
+  position: number;
+  look: Buffer;
+}
+
+export interface MessengerReply {
+  ok: boolean;
+  roomId: number;
+  position: number;
+  members: MessengerMember[];
+}
+
+export interface Note {
+  id: number;
+  senderName: string;
+  message: string;
+  sentAtUnixMs: string;
+  gift: number;
+}
+
+export interface NotesRequest {
+  worldId: number;
+  characterId: number;
+  action: NotesAction;
+  targetName: string;
+  message: string;
+  gift: number;
+  noteIds: number[];
+}
+
+export interface NotesReply {
+  status: NoteResult;
+  /** REMOVE, REMOVE_GIFTS, and LIST return every note the character still has. */
+  notes: Note[];
+  /** Thank-you notes this call removed; each grants one population. */
+  population: number;
 }
 
 function createBasePingRequest(): PingRequest {
@@ -10287,6 +10970,9 @@ function createBaseCharacter(): Character {
     teleportStones: [],
     vipTeleportStones: [],
     savedAtUnixMs: 0,
+    familyProgress: "0",
+    populationHistory: undefined,
+    familyReputation: {},
   };
 }
 
@@ -10380,7 +11066,7 @@ export const Character: MessageFns<Character> = {
       writer.uint32(232).bool(message.hidden);
     }
     if (message.population !== 0) {
-      writer.uint32(240).uint32(message.population);
+      writer.uint32(240).int32(message.population);
     }
     if (message.hpApUsed !== 0) {
       writer.uint32(248).uint32(message.hpApUsed);
@@ -10415,6 +11101,15 @@ export const Character: MessageFns<Character> = {
     if (message.savedAtUnixMs !== 0) {
       writer.uint32(312).int64(message.savedAtUnixMs);
     }
+    if (message.familyProgress !== "0") {
+      writer.uint32(320).uint64(message.familyProgress);
+    }
+    if (message.populationHistory !== undefined) {
+      PopulationHistory.encode(message.populationHistory, writer.uint32(330).fork()).join();
+    }
+    globalThis.Object.entries(message.familyReputation).forEach(([key, value]: [string, string]) => {
+      Character_FamilyReputationEntry.encode({ key: key as any, value }, writer.uint32(338).fork()).join();
+    });
     return writer;
   },
 
@@ -10662,7 +11357,7 @@ export const Character: MessageFns<Character> = {
             break;
           }
 
-          message.population = reader.uint32();
+          message.population = reader.int32();
           continue;
         }
         case 31: {
@@ -10765,6 +11460,33 @@ export const Character: MessageFns<Character> = {
           }
 
           message.savedAtUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 40: {
+          if (tag !== 320) {
+            break;
+          }
+
+          message.familyProgress = reader.uint64().toString();
+          continue;
+        }
+        case 41: {
+          if (tag !== 330) {
+            break;
+          }
+
+          message.populationHistory = PopulationHistory.decode(reader, reader.uint32());
+          continue;
+        }
+        case 42: {
+          if (tag !== 338) {
+            break;
+          }
+
+          const entry42 = Character_FamilyReputationEntry.decode(reader, reader.uint32());
+          if (entry42.value !== undefined) {
+            message.familyReputation[entry42.key] = entry42.value;
+          }
           continue;
         }
       }
@@ -10909,6 +11631,33 @@ export const Character: MessageFns<Character> = {
         : isSet(object.saved_at_unix_ms)
         ? globalThis.Number(object.saved_at_unix_ms)
         : 0,
+      familyProgress: isSet(object.familyProgress)
+        ? globalThis.String(object.familyProgress)
+        : isSet(object.family_progress)
+        ? globalThis.String(object.family_progress)
+        : "0",
+      populationHistory: isSet(object.populationHistory)
+        ? PopulationHistory.fromJSON(object.populationHistory)
+        : isSet(object.population_history)
+        ? PopulationHistory.fromJSON(object.population_history)
+        : undefined,
+      familyReputation: isObject(object.familyReputation)
+        ? (globalThis.Object.entries(object.familyReputation) as [string, any][]).reduce(
+          (acc: { [key: number]: string }, [key, value]: [string, any]) => {
+            acc[globalThis.Number(key)] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.family_reputation)
+        ? (globalThis.Object.entries(object.family_reputation) as [string, any][]).reduce(
+          (acc: { [key: number]: string }, [key, value]: [string, any]) => {
+            acc[globalThis.Number(key)] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
     };
   },
 
@@ -11031,6 +11780,21 @@ export const Character: MessageFns<Character> = {
     if (message.savedAtUnixMs !== 0) {
       obj.savedAtUnixMs = Math.round(message.savedAtUnixMs);
     }
+    if (message.familyProgress !== "0") {
+      obj.familyProgress = globalThis.String(message.familyProgress);
+    }
+    if (message.populationHistory !== undefined) {
+      obj.populationHistory = PopulationHistory.toJSON(message.populationHistory);
+    }
+    if (message.familyReputation) {
+      const entries = globalThis.Object.entries(message.familyReputation) as [string, string][];
+      if (entries.length > 0) {
+        obj.familyReputation = {};
+        entries.forEach(([k, v]) => {
+          obj.familyReputation[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
@@ -11078,6 +11842,368 @@ export const Character: MessageFns<Character> = {
     message.teleportStones = object.teleportStones?.map((e) => e) || [];
     message.vipTeleportStones = object.vipTeleportStones?.map((e) => e) || [];
     message.savedAtUnixMs = object.savedAtUnixMs ?? 0;
+    message.familyProgress = object.familyProgress ?? "0";
+    message.populationHistory = (object.populationHistory !== undefined && object.populationHistory !== null)
+      ? PopulationHistory.fromPartial(object.populationHistory)
+      : undefined;
+    message.familyReputation = (globalThis.Object.entries(object.familyReputation ?? {}) as [string, string][]).reduce(
+      (acc: { [key: number]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[globalThis.Number(key)] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseCharacter_FamilyReputationEntry(): Character_FamilyReputationEntry {
+  return { key: 0, value: "" };
+}
+
+export const Character_FamilyReputationEntry: MessageFns<Character_FamilyReputationEntry> = {
+  encode(message: Character_FamilyReputationEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== 0) {
+      writer.uint32(8).uint32(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Character_FamilyReputationEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCharacter_FamilyReputationEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.key = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Character_FamilyReputationEntry {
+    return {
+      key: isSet(object.key) ? globalThis.Number(object.key) : 0,
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: Character_FamilyReputationEntry): unknown {
+    const obj: any = {};
+    if (message.key !== 0) {
+      obj.key = Math.round(message.key);
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Character_FamilyReputationEntry>, I>>(base?: I): Character_FamilyReputationEntry {
+    return Character_FamilyReputationEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Character_FamilyReputationEntry>, I>>(
+    object: I,
+  ): Character_FamilyReputationEntry {
+    const message = createBaseCharacter_FamilyReputationEntry();
+    message.key = object.key ?? 0;
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePopulationHistory(): PopulationHistory {
+  return { lastGivenUnixMs: 0, givenUnixMs: {} };
+}
+
+export const PopulationHistory: MessageFns<PopulationHistory> = {
+  encode(message: PopulationHistory, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lastGivenUnixMs !== 0) {
+      writer.uint32(8).int64(message.lastGivenUnixMs);
+    }
+    globalThis.Object.entries(message.givenUnixMs).forEach(([key, value]: [string, number]) => {
+      PopulationHistory_GivenUnixMsEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
+    });
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PopulationHistory {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePopulationHistory();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.lastGivenUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = PopulationHistory_GivenUnixMsEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.givenUnixMs[entry2.key] = entry2.value;
+          }
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PopulationHistory {
+    return {
+      lastGivenUnixMs: isSet(object.lastGivenUnixMs)
+        ? globalThis.Number(object.lastGivenUnixMs)
+        : isSet(object.last_given_unix_ms)
+        ? globalThis.Number(object.last_given_unix_ms)
+        : 0,
+      givenUnixMs: isObject(object.givenUnixMs)
+        ? (globalThis.Object.entries(object.givenUnixMs) as [string, any][]).reduce(
+          (acc: { [key: number]: number }, [key, value]: [string, any]) => {
+            acc[globalThis.Number(key)] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.given_unix_ms)
+        ? (globalThis.Object.entries(object.given_unix_ms) as [string, any][]).reduce(
+          (acc: { [key: number]: number }, [key, value]: [string, any]) => {
+            acc[globalThis.Number(key)] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+    };
+  },
+
+  toJSON(message: PopulationHistory): unknown {
+    const obj: any = {};
+    if (message.lastGivenUnixMs !== 0) {
+      obj.lastGivenUnixMs = Math.round(message.lastGivenUnixMs);
+    }
+    if (message.givenUnixMs) {
+      const entries = globalThis.Object.entries(message.givenUnixMs) as [string, number][];
+      if (entries.length > 0) {
+        obj.givenUnixMs = {};
+        entries.forEach(([k, v]) => {
+          obj.givenUnixMs[k] = Math.round(v);
+        });
+      }
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PopulationHistory>, I>>(base?: I): PopulationHistory {
+    return PopulationHistory.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PopulationHistory>, I>>(object: I): PopulationHistory {
+    const message = createBasePopulationHistory();
+    message.lastGivenUnixMs = object.lastGivenUnixMs ?? 0;
+    message.givenUnixMs = (globalThis.Object.entries(object.givenUnixMs ?? {}) as [string, number][]).reduce(
+      (acc: { [key: number]: number }, [key, value]: [string, number]) => {
+        if (value !== undefined) {
+          acc[globalThis.Number(key)] = globalThis.Number(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBasePopulationHistory_GivenUnixMsEntry(): PopulationHistory_GivenUnixMsEntry {
+  return { key: 0, value: 0 };
+}
+
+export const PopulationHistory_GivenUnixMsEntry: MessageFns<PopulationHistory_GivenUnixMsEntry> = {
+  encode(message: PopulationHistory_GivenUnixMsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== 0) {
+      writer.uint32(8).uint32(message.key);
+    }
+    if (message.value !== 0) {
+      writer.uint32(16).int64(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PopulationHistory_GivenUnixMsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePopulationHistory_GivenUnixMsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.key = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PopulationHistory_GivenUnixMsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.Number(object.key) : 0,
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: PopulationHistory_GivenUnixMsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== 0) {
+      obj.key = Math.round(message.key);
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PopulationHistory_GivenUnixMsEntry>, I>>(
+    base?: I,
+  ): PopulationHistory_GivenUnixMsEntry {
+    return PopulationHistory_GivenUnixMsEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PopulationHistory_GivenUnixMsEntry>, I>>(
+    object: I,
+  ): PopulationHistory_GivenUnixMsEntry {
+    const message = createBasePopulationHistory_GivenUnixMsEntry();
+    message.key = object.key ?? 0;
+    message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+function createBaseAccount(): Account {
+  return { storage: undefined, records: [] };
+}
+
+export const Account: MessageFns<Account> = {
+  encode(message: Account, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.storage !== undefined) {
+      Storage.encode(message.storage, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.records) {
+      Record.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Account {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.storage = Storage.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.records.push(Record.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Account {
+    return {
+      storage: isSet(object.storage) ? Storage.fromJSON(object.storage) : undefined,
+      records: globalThis.Array.isArray(object?.records) ? object.records.map((e: any) => Record.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: Account): unknown {
+    const obj: any = {};
+    if (message.storage !== undefined) {
+      obj.storage = Storage.toJSON(message.storage);
+    }
+    if (message.records?.length) {
+      obj.records = message.records.map((e) => Record.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Account>, I>>(base?: I): Account {
+    return Account.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Account>, I>>(object: I): Account {
+    const message = createBaseAccount();
+    message.storage = (object.storage !== undefined && object.storage !== null)
+      ? Storage.fromPartial(object.storage)
+      : undefined;
+    message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
     return message;
   },
 };
@@ -11366,8 +12492,10 @@ function createBaseEnterGameReply(): EnterGameReply {
     rings: [],
     monsterBook: [],
     records: [],
-    accountRecords: [],
     mount: undefined,
+    family: undefined,
+    notes: [],
+    account: undefined,
   };
 }
 
@@ -11429,11 +12557,17 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     for (const v of message.records) {
       Record.encode(v!, writer.uint32(146).fork()).join();
     }
-    for (const v of message.accountRecords) {
-      Record.encode(v!, writer.uint32(154).fork()).join();
-    }
     if (message.mount !== undefined) {
-      Mount.encode(message.mount, writer.uint32(162).fork()).join();
+      Mount.encode(message.mount, writer.uint32(154).fork()).join();
+    }
+    if (message.family !== undefined) {
+      FamilyState.encode(message.family, writer.uint32(162).fork()).join();
+    }
+    for (const v of message.notes) {
+      Note.encode(v!, writer.uint32(170).fork()).join();
+    }
+    if (message.account !== undefined) {
+      Account.encode(message.account, writer.uint32(178).fork()).join();
     }
     return writer;
   },
@@ -11604,7 +12738,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.accountRecords.push(Record.decode(reader, reader.uint32()));
+          message.mount = Mount.decode(reader, reader.uint32());
           continue;
         }
         case 20: {
@@ -11612,7 +12746,23 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.mount = Mount.decode(reader, reader.uint32());
+          message.family = FamilyState.decode(reader, reader.uint32());
+          continue;
+        }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.notes.push(Note.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.account = Account.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -11682,12 +12832,10 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       records: globalThis.Array.isArray(object?.records)
         ? object.records.map((e: any) => Record.fromJSON(e))
         : [],
-      accountRecords: globalThis.Array.isArray(object?.accountRecords)
-        ? object.accountRecords.map((e: any) => Record.fromJSON(e))
-        : globalThis.Array.isArray(object?.account_records)
-        ? object.account_records.map((e: any) => Record.fromJSON(e))
-        : [],
       mount: isSet(object.mount) ? Mount.fromJSON(object.mount) : undefined,
+      family: isSet(object.family) ? FamilyState.fromJSON(object.family) : undefined,
+      notes: globalThis.Array.isArray(object?.notes) ? object.notes.map((e: any) => Note.fromJSON(e)) : [],
+      account: isSet(object.account) ? Account.fromJSON(object.account) : undefined,
     };
   },
 
@@ -11747,11 +12895,17 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.records?.length) {
       obj.records = message.records.map((e) => Record.toJSON(e));
     }
-    if (message.accountRecords?.length) {
-      obj.accountRecords = message.accountRecords.map((e) => Record.toJSON(e));
-    }
     if (message.mount !== undefined) {
       obj.mount = Mount.toJSON(message.mount);
+    }
+    if (message.family !== undefined) {
+      obj.family = FamilyState.toJSON(message.family);
+    }
+    if (message.notes?.length) {
+      obj.notes = message.notes.map((e) => Note.toJSON(e));
+    }
+    if (message.account !== undefined) {
+      obj.account = Account.toJSON(message.account);
     }
     return obj;
   },
@@ -11783,8 +12937,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.rings = object.rings?.map((e) => CashRing.fromPartial(e)) || [];
     message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
     message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
-    message.accountRecords = object.accountRecords?.map((e) => Record.fromPartial(e)) || [];
     message.mount = (object.mount !== undefined && object.mount !== null) ? Mount.fromPartial(object.mount) : undefined;
+    message.family = (object.family !== undefined && object.family !== null)
+      ? FamilyState.fromPartial(object.family)
+      : undefined;
+    message.notes = object.notes?.map((e) => Note.fromPartial(e)) || [];
+    message.account = (object.account !== undefined && object.account !== null)
+      ? Account.fromPartial(object.account)
+      : undefined;
     return message;
   },
 };
@@ -12592,12 +13752,11 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     buffs: [],
     quests: [],
     savedLocations: [],
-    storage: undefined,
     monsterBook: [],
     records: [],
-    accountRecords: [],
     claimedShops: [],
     mount: undefined,
+    account: undefined,
   };
 }
 
@@ -12630,25 +13789,22 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     for (const v of message.savedLocations) {
       SavedLocation.encode(v!, writer.uint32(74).fork()).join();
     }
-    if (message.storage !== undefined) {
-      Storage.encode(message.storage, writer.uint32(82).fork()).join();
-    }
     for (const v of message.monsterBook) {
-      MonsterBookCard.encode(v!, writer.uint32(90).fork()).join();
+      MonsterBookCard.encode(v!, writer.uint32(82).fork()).join();
     }
     for (const v of message.records) {
-      Record.encode(v!, writer.uint32(98).fork()).join();
+      Record.encode(v!, writer.uint32(90).fork()).join();
     }
-    for (const v of message.accountRecords) {
-      Record.encode(v!, writer.uint32(106).fork()).join();
-    }
-    writer.uint32(114).fork();
+    writer.uint32(98).fork();
     for (const v of message.claimedShops) {
       writer.uint32(v);
     }
     writer.join();
     if (message.mount !== undefined) {
-      Mount.encode(message.mount, writer.uint32(122).fork()).join();
+      Mount.encode(message.mount, writer.uint32(106).fork()).join();
+    }
+    if (message.account !== undefined) {
+      Account.encode(message.account, writer.uint32(114).fork()).join();
     }
     return writer;
   },
@@ -12743,7 +13899,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.storage = Storage.decode(reader, reader.uint32());
+          message.monsterBook.push(MonsterBookCard.decode(reader, reader.uint32()));
           continue;
         }
         case 11: {
@@ -12751,33 +13907,17 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.monsterBook.push(MonsterBookCard.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 12: {
-          if (tag !== 98) {
-            break;
-          }
-
           message.records.push(Record.decode(reader, reader.uint32()));
           continue;
         }
-        case 13: {
-          if (tag !== 106) {
-            break;
-          }
-
-          message.accountRecords.push(Record.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 14: {
-          if (tag === 112) {
+        case 12: {
+          if (tag === 96) {
             message.claimedShops.push(reader.uint32());
 
             continue;
           }
 
-          if (tag === 114) {
+          if (tag === 98) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.claimedShops.push(reader.uint32());
@@ -12788,12 +13928,20 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
 
           break;
         }
-        case 15: {
-          if (tag !== 122) {
+        case 13: {
+          if (tag !== 106) {
             break;
           }
 
           message.mount = Mount.decode(reader, reader.uint32());
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.account = Account.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -12852,24 +14000,19 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.saved_locations)
         ? object.saved_locations.map((e: any) => SavedLocation.fromJSON(e))
         : [],
-      storage: isSet(object.storage) ? Storage.fromJSON(object.storage) : undefined,
       monsterBook: globalThis.Array.isArray(object?.monsterBook)
         ? object.monsterBook.map((e: any) => MonsterBookCard.fromJSON(e))
         : globalThis.Array.isArray(object?.monster_book)
         ? object.monster_book.map((e: any) => MonsterBookCard.fromJSON(e))
         : [],
       records: globalThis.Array.isArray(object?.records) ? object.records.map((e: any) => Record.fromJSON(e)) : [],
-      accountRecords: globalThis.Array.isArray(object?.accountRecords)
-        ? object.accountRecords.map((e: any) => Record.fromJSON(e))
-        : globalThis.Array.isArray(object?.account_records)
-        ? object.account_records.map((e: any) => Record.fromJSON(e))
-        : [],
       claimedShops: globalThis.Array.isArray(object?.claimedShops)
         ? object.claimedShops.map((e: any) => globalThis.Number(e))
         : globalThis.Array.isArray(object?.claimed_shops)
         ? object.claimed_shops.map((e: any) => globalThis.Number(e))
         : [],
       mount: isSet(object.mount) ? Mount.fromJSON(object.mount) : undefined,
+      account: isSet(object.account) ? Account.fromJSON(object.account) : undefined,
     };
   },
 
@@ -12914,23 +14057,20 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.savedLocations?.length) {
       obj.savedLocations = message.savedLocations.map((e) => SavedLocation.toJSON(e));
     }
-    if (message.storage !== undefined) {
-      obj.storage = Storage.toJSON(message.storage);
-    }
     if (message.monsterBook?.length) {
       obj.monsterBook = message.monsterBook.map((e) => MonsterBookCard.toJSON(e));
     }
     if (message.records?.length) {
       obj.records = message.records.map((e) => Record.toJSON(e));
     }
-    if (message.accountRecords?.length) {
-      obj.accountRecords = message.accountRecords.map((e) => Record.toJSON(e));
-    }
     if (message.claimedShops?.length) {
       obj.claimedShops = message.claimedShops.map((e) => Math.round(e));
     }
     if (message.mount !== undefined) {
       obj.mount = Mount.toJSON(message.mount);
+    }
+    if (message.account !== undefined) {
+      obj.account = Account.toJSON(message.account);
     }
     return obj;
   },
@@ -12967,14 +14107,13 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.buffs = object.buffs?.map((e) => Buff.fromPartial(e)) || [];
     message.quests = object.quests?.map((e) => Quest.fromPartial(e)) || [];
     message.savedLocations = object.savedLocations?.map((e) => SavedLocation.fromPartial(e)) || [];
-    message.storage = (object.storage !== undefined && object.storage !== null)
-      ? Storage.fromPartial(object.storage)
-      : undefined;
     message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
     message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
-    message.accountRecords = object.accountRecords?.map((e) => Record.fromPartial(e)) || [];
     message.claimedShops = object.claimedShops?.map((e) => e) || [];
     message.mount = (object.mount !== undefined && object.mount !== null) ? Mount.fromPartial(object.mount) : undefined;
+    message.account = (object.account !== undefined && object.account !== null)
+      ? Account.fromPartial(object.account)
+      : undefined;
     return message;
   },
 };
@@ -13267,150 +14406,6 @@ export const Storage: MessageFns<Storage> = {
     message.slots = object.slots ?? 0;
     message.meso = object.meso ?? 0;
     message.items = object.items?.map((e) => Inventory.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseLoadStorageRequest(): LoadStorageRequest {
-  return { accountId: 0, worldId: 0 };
-}
-
-export const LoadStorageRequest: MessageFns<LoadStorageRequest> = {
-  encode(message: LoadStorageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.accountId !== 0) {
-      writer.uint32(8).uint32(message.accountId);
-    }
-    if (message.worldId !== 0) {
-      writer.uint32(16).uint32(message.worldId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): LoadStorageRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLoadStorageRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.accountId = reader.uint32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.worldId = reader.uint32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LoadStorageRequest {
-    return {
-      accountId: isSet(object.accountId)
-        ? globalThis.Number(object.accountId)
-        : isSet(object.account_id)
-        ? globalThis.Number(object.account_id)
-        : 0,
-      worldId: isSet(object.worldId)
-        ? globalThis.Number(object.worldId)
-        : isSet(object.world_id)
-        ? globalThis.Number(object.world_id)
-        : 0,
-    };
-  },
-
-  toJSON(message: LoadStorageRequest): unknown {
-    const obj: any = {};
-    if (message.accountId !== 0) {
-      obj.accountId = Math.round(message.accountId);
-    }
-    if (message.worldId !== 0) {
-      obj.worldId = Math.round(message.worldId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<LoadStorageRequest>, I>>(base?: I): LoadStorageRequest {
-    return LoadStorageRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<LoadStorageRequest>, I>>(object: I): LoadStorageRequest {
-    const message = createBaseLoadStorageRequest();
-    message.accountId = object.accountId ?? 0;
-    message.worldId = object.worldId ?? 0;
-    return message;
-  },
-};
-
-function createBaseLoadStorageReply(): LoadStorageReply {
-  return { storage: undefined };
-}
-
-export const LoadStorageReply: MessageFns<LoadStorageReply> = {
-  encode(message: LoadStorageReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.storage !== undefined) {
-      Storage.encode(message.storage, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): LoadStorageReply {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLoadStorageReply();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.storage = Storage.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LoadStorageReply {
-    return { storage: isSet(object.storage) ? Storage.fromJSON(object.storage) : undefined };
-  },
-
-  toJSON(message: LoadStorageReply): unknown {
-    const obj: any = {};
-    if (message.storage !== undefined) {
-      obj.storage = Storage.toJSON(message.storage);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<LoadStorageReply>, I>>(base?: I): LoadStorageReply {
-    return LoadStorageReply.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<LoadStorageReply>, I>>(object: I): LoadStorageReply {
-    const message = createBaseLoadStorageReply();
-    message.storage = (object.storage !== undefined && object.storage !== null)
-      ? Storage.fromPartial(object.storage)
-      : undefined;
     return message;
   },
 };
@@ -33176,8 +34171,2384 @@ export const WriteOperationLogReply: MessageFns<WriteOperationLogReply> = {
   },
 };
 
+function createBaseFamilyMember(): FamilyMember {
+  return {
+    characterId: 0,
+    seniorId: 0,
+    name: "",
+    level: 0,
+    classId: 0,
+    reputation: 0,
+    totalReputation: 0,
+    channelId: 0,
+    descendants: 0,
+  };
+}
+
+export const FamilyMember: MessageFns<FamilyMember> = {
+  encode(message: FamilyMember, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.seniorId !== 0) {
+      writer.uint32(16).uint32(message.seniorId);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.level !== 0) {
+      writer.uint32(32).uint32(message.level);
+    }
+    if (message.classId !== 0) {
+      writer.uint32(40).uint32(message.classId);
+    }
+    if (message.reputation !== 0) {
+      writer.uint32(48).uint32(message.reputation);
+    }
+    if (message.totalReputation !== 0) {
+      writer.uint32(56).uint32(message.totalReputation);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(64).int32(message.channelId);
+    }
+    if (message.descendants !== 0) {
+      writer.uint32(72).uint32(message.descendants);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FamilyMember {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFamilyMember();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.seniorId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.classId = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.reputation = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.totalReputation = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.channelId = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.descendants = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FamilyMember {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      seniorId: isSet(object.seniorId)
+        ? globalThis.Number(object.seniorId)
+        : isSet(object.senior_id)
+        ? globalThis.Number(object.senior_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      classId: isSet(object.classId)
+        ? globalThis.Number(object.classId)
+        : isSet(object.class_id)
+        ? globalThis.Number(object.class_id)
+        : 0,
+      reputation: isSet(object.reputation) ? globalThis.Number(object.reputation) : 0,
+      totalReputation: isSet(object.totalReputation)
+        ? globalThis.Number(object.totalReputation)
+        : isSet(object.total_reputation)
+        ? globalThis.Number(object.total_reputation)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      descendants: isSet(object.descendants) ? globalThis.Number(object.descendants) : 0,
+    };
+  },
+
+  toJSON(message: FamilyMember): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.seniorId !== 0) {
+      obj.seniorId = Math.round(message.seniorId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.classId !== 0) {
+      obj.classId = Math.round(message.classId);
+    }
+    if (message.reputation !== 0) {
+      obj.reputation = Math.round(message.reputation);
+    }
+    if (message.totalReputation !== 0) {
+      obj.totalReputation = Math.round(message.totalReputation);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.descendants !== 0) {
+      obj.descendants = Math.round(message.descendants);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FamilyMember>, I>>(base?: I): FamilyMember {
+    return FamilyMember.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FamilyMember>, I>>(object: I): FamilyMember {
+    const message = createBaseFamilyMember();
+    message.characterId = object.characterId ?? 0;
+    message.seniorId = object.seniorId ?? 0;
+    message.name = object.name ?? "";
+    message.level = object.level ?? 0;
+    message.classId = object.classId ?? 0;
+    message.reputation = object.reputation ?? 0;
+    message.totalReputation = object.totalReputation ?? 0;
+    message.channelId = object.channelId ?? 0;
+    message.descendants = object.descendants ?? 0;
+    return message;
+  },
+};
+
+function createBaseFamilyState(): FamilyState {
+  return {
+    characterId: 0,
+    seniorId: 0,
+    juniors: [],
+    leaderId: 0,
+    leaderName: "",
+    notice: "",
+    reputation: 0,
+    totalReputation: 0,
+    usedFeatures: [],
+    members: [],
+    buffUntil: "0",
+    buffFeature: 0,
+  };
+}
+
+export const FamilyState: MessageFns<FamilyState> = {
+  encode(message: FamilyState, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.seniorId !== 0) {
+      writer.uint32(16).uint32(message.seniorId);
+    }
+    writer.uint32(26).fork();
+    for (const v of message.juniors) {
+      writer.uint32(v);
+    }
+    writer.join();
+    if (message.leaderId !== 0) {
+      writer.uint32(32).uint32(message.leaderId);
+    }
+    if (message.leaderName !== "") {
+      writer.uint32(42).string(message.leaderName);
+    }
+    if (message.notice !== "") {
+      writer.uint32(50).string(message.notice);
+    }
+    if (message.reputation !== 0) {
+      writer.uint32(56).uint32(message.reputation);
+    }
+    if (message.totalReputation !== 0) {
+      writer.uint32(64).uint32(message.totalReputation);
+    }
+    writer.uint32(74).fork();
+    for (const v of message.usedFeatures) {
+      writer.int32(v);
+    }
+    writer.join();
+    for (const v of message.members) {
+      FamilyMember.encode(v!, writer.uint32(82).fork()).join();
+    }
+    if (message.buffUntil !== "0") {
+      writer.uint32(88).int64(message.buffUntil);
+    }
+    if (message.buffFeature !== 0) {
+      writer.uint32(96).int32(message.buffFeature);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FamilyState {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFamilyState();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.seniorId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag === 24) {
+            message.juniors.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 26) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.juniors.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.leaderId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.leaderName = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.notice = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.reputation = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.totalReputation = reader.uint32();
+          continue;
+        }
+        case 9: {
+          if (tag === 72) {
+            message.usedFeatures.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 74) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.usedFeatures.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.members.push(FamilyMember.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.buffUntil = reader.int64().toString();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.buffFeature = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FamilyState {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      seniorId: isSet(object.seniorId)
+        ? globalThis.Number(object.seniorId)
+        : isSet(object.senior_id)
+        ? globalThis.Number(object.senior_id)
+        : 0,
+      juniors: globalThis.Array.isArray(object?.juniors) ? object.juniors.map((e: any) => globalThis.Number(e)) : [],
+      leaderId: isSet(object.leaderId)
+        ? globalThis.Number(object.leaderId)
+        : isSet(object.leader_id)
+        ? globalThis.Number(object.leader_id)
+        : 0,
+      leaderName: isSet(object.leaderName)
+        ? globalThis.String(object.leaderName)
+        : isSet(object.leader_name)
+        ? globalThis.String(object.leader_name)
+        : "",
+      notice: isSet(object.notice) ? globalThis.String(object.notice) : "",
+      reputation: isSet(object.reputation) ? globalThis.Number(object.reputation) : 0,
+      totalReputation: isSet(object.totalReputation)
+        ? globalThis.Number(object.totalReputation)
+        : isSet(object.total_reputation)
+        ? globalThis.Number(object.total_reputation)
+        : 0,
+      usedFeatures: globalThis.Array.isArray(object?.usedFeatures)
+        ? object.usedFeatures.map((e: any) => familyFeatureFromJSON(e))
+        : globalThis.Array.isArray(object?.used_features)
+        ? object.used_features.map((e: any) => familyFeatureFromJSON(e))
+        : [],
+      members: globalThis.Array.isArray(object?.members)
+        ? object.members.map((e: any) => FamilyMember.fromJSON(e))
+        : [],
+      buffUntil: isSet(object.buffUntil)
+        ? globalThis.String(object.buffUntil)
+        : isSet(object.buff_until)
+        ? globalThis.String(object.buff_until)
+        : "0",
+      buffFeature: isSet(object.buffFeature)
+        ? familyFeatureFromJSON(object.buffFeature)
+        : isSet(object.buff_feature)
+        ? familyFeatureFromJSON(object.buff_feature)
+        : 0,
+    };
+  },
+
+  toJSON(message: FamilyState): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.seniorId !== 0) {
+      obj.seniorId = Math.round(message.seniorId);
+    }
+    if (message.juniors?.length) {
+      obj.juniors = message.juniors.map((e) => Math.round(e));
+    }
+    if (message.leaderId !== 0) {
+      obj.leaderId = Math.round(message.leaderId);
+    }
+    if (message.leaderName !== "") {
+      obj.leaderName = message.leaderName;
+    }
+    if (message.notice !== "") {
+      obj.notice = message.notice;
+    }
+    if (message.reputation !== 0) {
+      obj.reputation = Math.round(message.reputation);
+    }
+    if (message.totalReputation !== 0) {
+      obj.totalReputation = Math.round(message.totalReputation);
+    }
+    if (message.usedFeatures?.length) {
+      obj.usedFeatures = message.usedFeatures.map((e) => familyFeatureToJSON(e));
+    }
+    if (message.members?.length) {
+      obj.members = message.members.map((e) => FamilyMember.toJSON(e));
+    }
+    if (message.buffUntil !== "0") {
+      obj.buffUntil = globalThis.String(message.buffUntil);
+    }
+    if (message.buffFeature !== 0) {
+      obj.buffFeature = familyFeatureToJSON(message.buffFeature);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FamilyState>, I>>(base?: I): FamilyState {
+    return FamilyState.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FamilyState>, I>>(object: I): FamilyState {
+    const message = createBaseFamilyState();
+    message.characterId = object.characterId ?? 0;
+    message.seniorId = object.seniorId ?? 0;
+    message.juniors = object.juniors?.map((e) => e) || [];
+    message.leaderId = object.leaderId ?? 0;
+    message.leaderName = object.leaderName ?? "";
+    message.notice = object.notice ?? "";
+    message.reputation = object.reputation ?? 0;
+    message.totalReputation = object.totalReputation ?? 0;
+    message.usedFeatures = object.usedFeatures?.map((e) => e) || [];
+    message.members = object.members?.map((e) => FamilyMember.fromPartial(e)) || [];
+    message.buffUntil = object.buffUntil ?? "0";
+    message.buffFeature = object.buffFeature ?? 0;
+    return message;
+  },
+};
+
+function createBaseFamilyRequest(): FamilyRequest {
+  return {
+    worldId: 0,
+    characterId: 0,
+    channelId: 0,
+    action: 0,
+    targetId: 0,
+    name: "",
+    feature: 0,
+    accepted: false,
+    level: 0,
+    classId: 0,
+    targetLevel: 0,
+    mapName: "",
+    operationId: "",
+  };
+}
+
+export const FamilyRequest: MessageFns<FamilyRequest> = {
+  encode(message: FamilyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(24).uint32(message.channelId);
+    }
+    if (message.action !== 0) {
+      writer.uint32(32).int32(message.action);
+    }
+    if (message.targetId !== 0) {
+      writer.uint32(40).uint32(message.targetId);
+    }
+    if (message.name !== "") {
+      writer.uint32(50).string(message.name);
+    }
+    if (message.feature !== 0) {
+      writer.uint32(56).int32(message.feature);
+    }
+    if (message.accepted !== false) {
+      writer.uint32(64).bool(message.accepted);
+    }
+    if (message.level !== 0) {
+      writer.uint32(72).uint32(message.level);
+    }
+    if (message.classId !== 0) {
+      writer.uint32(80).uint32(message.classId);
+    }
+    if (message.targetLevel !== 0) {
+      writer.uint32(88).uint32(message.targetLevel);
+    }
+    if (message.mapName !== "") {
+      writer.uint32(98).string(message.mapName);
+    }
+    if (message.operationId !== "") {
+      writer.uint32(106).string(message.operationId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FamilyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFamilyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.targetId = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.feature = reader.int32() as any;
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.accepted = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.classId = reader.uint32();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.targetLevel = reader.uint32();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.mapName = reader.string();
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.operationId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FamilyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      action: isSet(object.action) ? familyActionFromJSON(object.action) : 0,
+      targetId: isSet(object.targetId)
+        ? globalThis.Number(object.targetId)
+        : isSet(object.target_id)
+        ? globalThis.Number(object.target_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      feature: isSet(object.feature) ? familyFeatureFromJSON(object.feature) : 0,
+      accepted: isSet(object.accepted) ? globalThis.Boolean(object.accepted) : false,
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      classId: isSet(object.classId)
+        ? globalThis.Number(object.classId)
+        : isSet(object.class_id)
+        ? globalThis.Number(object.class_id)
+        : 0,
+      targetLevel: isSet(object.targetLevel)
+        ? globalThis.Number(object.targetLevel)
+        : isSet(object.target_level)
+        ? globalThis.Number(object.target_level)
+        : 0,
+      mapName: isSet(object.mapName)
+        ? globalThis.String(object.mapName)
+        : isSet(object.map_name)
+        ? globalThis.String(object.map_name)
+        : "",
+      operationId: isSet(object.operationId)
+        ? globalThis.String(object.operationId)
+        : isSet(object.operation_id)
+        ? globalThis.String(object.operation_id)
+        : "",
+    };
+  },
+
+  toJSON(message: FamilyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.action !== 0) {
+      obj.action = familyActionToJSON(message.action);
+    }
+    if (message.targetId !== 0) {
+      obj.targetId = Math.round(message.targetId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.feature !== 0) {
+      obj.feature = familyFeatureToJSON(message.feature);
+    }
+    if (message.accepted !== false) {
+      obj.accepted = message.accepted;
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.classId !== 0) {
+      obj.classId = Math.round(message.classId);
+    }
+    if (message.targetLevel !== 0) {
+      obj.targetLevel = Math.round(message.targetLevel);
+    }
+    if (message.mapName !== "") {
+      obj.mapName = message.mapName;
+    }
+    if (message.operationId !== "") {
+      obj.operationId = message.operationId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FamilyRequest>, I>>(base?: I): FamilyRequest {
+    return FamilyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FamilyRequest>, I>>(object: I): FamilyRequest {
+    const message = createBaseFamilyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.channelId = object.channelId ?? 0;
+    message.action = object.action ?? 0;
+    message.targetId = object.targetId ?? 0;
+    message.name = object.name ?? "";
+    message.feature = object.feature ?? 0;
+    message.accepted = object.accepted ?? false;
+    message.level = object.level ?? 0;
+    message.classId = object.classId ?? 0;
+    message.targetLevel = object.targetLevel ?? 0;
+    message.mapName = object.mapName ?? "";
+    message.operationId = object.operationId ?? "";
+    return message;
+  },
+};
+
+function createBaseFamilyReply(): FamilyReply {
+  return { status: 0, family: undefined, targetId: 0, targetName: "", accepted: false };
+}
+
+export const FamilyReply: MessageFns<FamilyReply> = {
+  encode(message: FamilyReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
+    }
+    if (message.family !== undefined) {
+      FamilyState.encode(message.family, writer.uint32(18).fork()).join();
+    }
+    if (message.targetId !== 0) {
+      writer.uint32(24).uint32(message.targetId);
+    }
+    if (message.targetName !== "") {
+      writer.uint32(34).string(message.targetName);
+    }
+    if (message.accepted !== false) {
+      writer.uint32(40).bool(message.accepted);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FamilyReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFamilyReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.family = FamilyState.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.targetId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.targetName = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.accepted = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FamilyReply {
+    return {
+      status: isSet(object.status) ? familyResultFromJSON(object.status) : 0,
+      family: isSet(object.family) ? FamilyState.fromJSON(object.family) : undefined,
+      targetId: isSet(object.targetId)
+        ? globalThis.Number(object.targetId)
+        : isSet(object.target_id)
+        ? globalThis.Number(object.target_id)
+        : 0,
+      targetName: isSet(object.targetName)
+        ? globalThis.String(object.targetName)
+        : isSet(object.target_name)
+        ? globalThis.String(object.target_name)
+        : "",
+      accepted: isSet(object.accepted) ? globalThis.Boolean(object.accepted) : false,
+    };
+  },
+
+  toJSON(message: FamilyReply): unknown {
+    const obj: any = {};
+    if (message.status !== 0) {
+      obj.status = familyResultToJSON(message.status);
+    }
+    if (message.family !== undefined) {
+      obj.family = FamilyState.toJSON(message.family);
+    }
+    if (message.targetId !== 0) {
+      obj.targetId = Math.round(message.targetId);
+    }
+    if (message.targetName !== "") {
+      obj.targetName = message.targetName;
+    }
+    if (message.accepted !== false) {
+      obj.accepted = message.accepted;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FamilyReply>, I>>(base?: I): FamilyReply {
+    return FamilyReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FamilyReply>, I>>(object: I): FamilyReply {
+    const message = createBaseFamilyReply();
+    message.status = object.status ?? 0;
+    message.family = (object.family !== undefined && object.family !== null)
+      ? FamilyState.fromPartial(object.family)
+      : undefined;
+    message.targetId = object.targetId ?? 0;
+    message.targetName = object.targetName ?? "";
+    message.accepted = object.accepted ?? false;
+    return message;
+  },
+};
+
+function createBaseWhisperRequest(): WhisperRequest {
+  return { worldId: 0, characterId: 0, channelId: 0, mode: 0, targetName: "", message: "", requestId: "" };
+}
+
+export const WhisperRequest: MessageFns<WhisperRequest> = {
+  encode(message: WhisperRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(24).uint32(message.channelId);
+    }
+    if (message.mode !== 0) {
+      writer.uint32(32).int32(message.mode);
+    }
+    if (message.targetName !== "") {
+      writer.uint32(42).string(message.targetName);
+    }
+    if (message.message !== "") {
+      writer.uint32(50).string(message.message);
+    }
+    if (message.requestId !== "") {
+      writer.uint32(58).string(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WhisperRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWhisperRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.mode = reader.int32() as any;
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.targetName = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.requestId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WhisperRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      mode: isSet(object.mode) ? whisperModeFromJSON(object.mode) : 0,
+      targetName: isSet(object.targetName)
+        ? globalThis.String(object.targetName)
+        : isSet(object.target_name)
+        ? globalThis.String(object.target_name)
+        : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "",
+    };
+  },
+
+  toJSON(message: WhisperRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.mode !== 0) {
+      obj.mode = whisperModeToJSON(message.mode);
+    }
+    if (message.targetName !== "") {
+      obj.targetName = message.targetName;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.requestId !== "") {
+      obj.requestId = message.requestId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WhisperRequest>, I>>(base?: I): WhisperRequest {
+    return WhisperRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<WhisperRequest>, I>>(object: I): WhisperRequest {
+    const message = createBaseWhisperRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.channelId = object.channelId ?? 0;
+    message.mode = object.mode ?? 0;
+    message.targetName = object.targetName ?? "";
+    message.message = object.message ?? "";
+    message.requestId = object.requestId ?? "";
+    return message;
+  },
+};
+
+function createBaseWhisperReply(): WhisperReply {
+  return { found: false, characterId: 0, name: "", channelId: 0, cashShop: false, mapId: 0 };
+}
+
+export const WhisperReply: MessageFns<WhisperReply> = {
+  encode(message: WhisperReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.found !== false) {
+      writer.uint32(8).bool(message.found);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(32).int32(message.channelId);
+    }
+    if (message.cashShop !== false) {
+      writer.uint32(40).bool(message.cashShop);
+    }
+    if (message.mapId !== 0) {
+      writer.uint32(48).uint32(message.mapId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WhisperReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWhisperReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.found = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.channelId = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.cashShop = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.mapId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WhisperReply {
+    return {
+      found: isSet(object.found) ? globalThis.Boolean(object.found) : false,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      cashShop: isSet(object.cashShop)
+        ? globalThis.Boolean(object.cashShop)
+        : isSet(object.cash_shop)
+        ? globalThis.Boolean(object.cash_shop)
+        : false,
+      mapId: isSet(object.mapId)
+        ? globalThis.Number(object.mapId)
+        : isSet(object.map_id)
+        ? globalThis.Number(object.map_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: WhisperReply): unknown {
+    const obj: any = {};
+    if (message.found !== false) {
+      obj.found = message.found;
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.cashShop !== false) {
+      obj.cashShop = message.cashShop;
+    }
+    if (message.mapId !== 0) {
+      obj.mapId = Math.round(message.mapId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WhisperReply>, I>>(base?: I): WhisperReply {
+    return WhisperReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<WhisperReply>, I>>(object: I): WhisperReply {
+    const message = createBaseWhisperReply();
+    message.found = object.found ?? false;
+    message.characterId = object.characterId ?? 0;
+    message.name = object.name ?? "";
+    message.channelId = object.channelId ?? 0;
+    message.cashShop = object.cashShop ?? false;
+    message.mapId = object.mapId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCompleteWhisperRequest(): CompleteWhisperRequest {
+  return { worldId: 0, requestId: "", characterId: 0, mapId: 0, complete: false, delivered: false };
+}
+
+export const CompleteWhisperRequest: MessageFns<CompleteWhisperRequest> = {
+  encode(message: CompleteWhisperRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.requestId !== "") {
+      writer.uint32(18).string(message.requestId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.mapId !== 0) {
+      writer.uint32(32).uint32(message.mapId);
+    }
+    if (message.complete !== false) {
+      writer.uint32(40).bool(message.complete);
+    }
+    if (message.delivered !== false) {
+      writer.uint32(48).bool(message.delivered);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CompleteWhisperRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCompleteWhisperRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.requestId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.mapId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.complete = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.delivered = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CompleteWhisperRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "",
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      mapId: isSet(object.mapId)
+        ? globalThis.Number(object.mapId)
+        : isSet(object.map_id)
+        ? globalThis.Number(object.map_id)
+        : 0,
+      complete: isSet(object.complete) ? globalThis.Boolean(object.complete) : false,
+      delivered: isSet(object.delivered) ? globalThis.Boolean(object.delivered) : false,
+    };
+  },
+
+  toJSON(message: CompleteWhisperRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.requestId !== "") {
+      obj.requestId = message.requestId;
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.mapId !== 0) {
+      obj.mapId = Math.round(message.mapId);
+    }
+    if (message.complete !== false) {
+      obj.complete = message.complete;
+    }
+    if (message.delivered !== false) {
+      obj.delivered = message.delivered;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CompleteWhisperRequest>, I>>(base?: I): CompleteWhisperRequest {
+    return CompleteWhisperRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CompleteWhisperRequest>, I>>(object: I): CompleteWhisperRequest {
+    const message = createBaseCompleteWhisperRequest();
+    message.worldId = object.worldId ?? 0;
+    message.requestId = object.requestId ?? "";
+    message.characterId = object.characterId ?? 0;
+    message.mapId = object.mapId ?? 0;
+    message.complete = object.complete ?? false;
+    message.delivered = object.delivered ?? false;
+    return message;
+  },
+};
+
+function createBaseCompleteWhisperReply(): CompleteWhisperReply {
+  return { ok: false };
+}
+
+export const CompleteWhisperReply: MessageFns<CompleteWhisperReply> = {
+  encode(message: CompleteWhisperReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CompleteWhisperReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCompleteWhisperReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CompleteWhisperReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: CompleteWhisperReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CompleteWhisperReply>, I>>(base?: I): CompleteWhisperReply {
+    return CompleteWhisperReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CompleteWhisperReply>, I>>(object: I): CompleteWhisperReply {
+    const message = createBaseCompleteWhisperReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
+function createBaseMessengerRequest(): MessengerRequest {
+  return { worldId: 0, characterId: 0, channelId: 0, action: 0, roomId: 0, text: "", look: Buffer.alloc(0) };
+}
+
+export const MessengerRequest: MessageFns<MessengerRequest> = {
+  encode(message: MessengerRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(24).uint32(message.channelId);
+    }
+    if (message.action !== 0) {
+      writer.uint32(32).int32(message.action);
+    }
+    if (message.roomId !== 0) {
+      writer.uint32(40).uint32(message.roomId);
+    }
+    if (message.text !== "") {
+      writer.uint32(50).string(message.text);
+    }
+    if (message.look.length !== 0) {
+      writer.uint32(58).bytes(message.look);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MessengerRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMessengerRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.roomId = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.text = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.look = Buffer.from(reader.bytes());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MessengerRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      action: isSet(object.action) ? messengerActionFromJSON(object.action) : 0,
+      roomId: isSet(object.roomId)
+        ? globalThis.Number(object.roomId)
+        : isSet(object.room_id)
+        ? globalThis.Number(object.room_id)
+        : 0,
+      text: isSet(object.text) ? globalThis.String(object.text) : "",
+      look: isSet(object.look) ? Buffer.from(bytesFromBase64(object.look)) : Buffer.alloc(0),
+    };
+  },
+
+  toJSON(message: MessengerRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.action !== 0) {
+      obj.action = messengerActionToJSON(message.action);
+    }
+    if (message.roomId !== 0) {
+      obj.roomId = Math.round(message.roomId);
+    }
+    if (message.text !== "") {
+      obj.text = message.text;
+    }
+    if (message.look.length !== 0) {
+      obj.look = base64FromBytes(message.look);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MessengerRequest>, I>>(base?: I): MessengerRequest {
+    return MessengerRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MessengerRequest>, I>>(object: I): MessengerRequest {
+    const message = createBaseMessengerRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.channelId = object.channelId ?? 0;
+    message.action = object.action ?? 0;
+    message.roomId = object.roomId ?? 0;
+    message.text = object.text ?? "";
+    message.look = object.look ?? Buffer.alloc(0);
+    return message;
+  },
+};
+
+function createBaseMessengerMember(): MessengerMember {
+  return { characterId: 0, name: "", channelId: 0, position: 0, look: Buffer.alloc(0) };
+}
+
+export const MessengerMember: MessageFns<MessengerMember> = {
+  encode(message: MessengerMember, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(24).uint32(message.channelId);
+    }
+    if (message.position !== 0) {
+      writer.uint32(32).uint32(message.position);
+    }
+    if (message.look.length !== 0) {
+      writer.uint32(42).bytes(message.look);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MessengerMember {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMessengerMember();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.position = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.look = Buffer.from(reader.bytes());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MessengerMember {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
+      look: isSet(object.look) ? Buffer.from(bytesFromBase64(object.look)) : Buffer.alloc(0),
+    };
+  },
+
+  toJSON(message: MessengerMember): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.position !== 0) {
+      obj.position = Math.round(message.position);
+    }
+    if (message.look.length !== 0) {
+      obj.look = base64FromBytes(message.look);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MessengerMember>, I>>(base?: I): MessengerMember {
+    return MessengerMember.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MessengerMember>, I>>(object: I): MessengerMember {
+    const message = createBaseMessengerMember();
+    message.characterId = object.characterId ?? 0;
+    message.name = object.name ?? "";
+    message.channelId = object.channelId ?? 0;
+    message.position = object.position ?? 0;
+    message.look = object.look ?? Buffer.alloc(0);
+    return message;
+  },
+};
+
+function createBaseMessengerReply(): MessengerReply {
+  return { ok: false, roomId: 0, position: 0, members: [] };
+}
+
+export const MessengerReply: MessageFns<MessengerReply> = {
+  encode(message: MessengerReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.roomId !== 0) {
+      writer.uint32(16).uint32(message.roomId);
+    }
+    if (message.position !== 0) {
+      writer.uint32(24).uint32(message.position);
+    }
+    for (const v of message.members) {
+      MessengerMember.encode(v!, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MessengerReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMessengerReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.roomId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.position = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.members.push(MessengerMember.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MessengerReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      roomId: isSet(object.roomId)
+        ? globalThis.Number(object.roomId)
+        : isSet(object.room_id)
+        ? globalThis.Number(object.room_id)
+        : 0,
+      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
+      members: globalThis.Array.isArray(object?.members)
+        ? object.members.map((e: any) => MessengerMember.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MessengerReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.roomId !== 0) {
+      obj.roomId = Math.round(message.roomId);
+    }
+    if (message.position !== 0) {
+      obj.position = Math.round(message.position);
+    }
+    if (message.members?.length) {
+      obj.members = message.members.map((e) => MessengerMember.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MessengerReply>, I>>(base?: I): MessengerReply {
+    return MessengerReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MessengerReply>, I>>(object: I): MessengerReply {
+    const message = createBaseMessengerReply();
+    message.ok = object.ok ?? false;
+    message.roomId = object.roomId ?? 0;
+    message.position = object.position ?? 0;
+    message.members = object.members?.map((e) => MessengerMember.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseNote(): Note {
+  return { id: 0, senderName: "", message: "", sentAtUnixMs: "0", gift: 0 };
+}
+
+export const Note: MessageFns<Note> = {
+  encode(message: Note, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.senderName !== "") {
+      writer.uint32(18).string(message.senderName);
+    }
+    if (message.message !== "") {
+      writer.uint32(26).string(message.message);
+    }
+    if (message.sentAtUnixMs !== "0") {
+      writer.uint32(32).int64(message.sentAtUnixMs);
+    }
+    if (message.gift !== 0) {
+      writer.uint32(40).uint32(message.gift);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Note {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNote();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.senderName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.sentAtUnixMs = reader.int64().toString();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.gift = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Note {
+    return {
+      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
+      senderName: isSet(object.senderName)
+        ? globalThis.String(object.senderName)
+        : isSet(object.sender_name)
+        ? globalThis.String(object.sender_name)
+        : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      sentAtUnixMs: isSet(object.sentAtUnixMs)
+        ? globalThis.String(object.sentAtUnixMs)
+        : isSet(object.sent_at_unix_ms)
+        ? globalThis.String(object.sent_at_unix_ms)
+        : "0",
+      gift: isSet(object.gift) ? globalThis.Number(object.gift) : 0,
+    };
+  },
+
+  toJSON(message: Note): unknown {
+    const obj: any = {};
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    if (message.senderName !== "") {
+      obj.senderName = message.senderName;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.sentAtUnixMs !== "0") {
+      obj.sentAtUnixMs = globalThis.String(message.sentAtUnixMs);
+    }
+    if (message.gift !== 0) {
+      obj.gift = Math.round(message.gift);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Note>, I>>(base?: I): Note {
+    return Note.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Note>, I>>(object: I): Note {
+    const message = createBaseNote();
+    message.id = object.id ?? 0;
+    message.senderName = object.senderName ?? "";
+    message.message = object.message ?? "";
+    message.sentAtUnixMs = object.sentAtUnixMs ?? "0";
+    message.gift = object.gift ?? 0;
+    return message;
+  },
+};
+
+function createBaseNotesRequest(): NotesRequest {
+  return { worldId: 0, characterId: 0, action: 0, targetName: "", message: "", gift: 0, noteIds: [] };
+}
+
+export const NotesRequest: MessageFns<NotesRequest> = {
+  encode(message: NotesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.action !== 0) {
+      writer.uint32(24).int32(message.action);
+    }
+    if (message.targetName !== "") {
+      writer.uint32(34).string(message.targetName);
+    }
+    if (message.message !== "") {
+      writer.uint32(42).string(message.message);
+    }
+    if (message.gift !== 0) {
+      writer.uint32(48).uint32(message.gift);
+    }
+    writer.uint32(58).fork();
+    for (const v of message.noteIds) {
+      writer.uint32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): NotesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNotesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.targetName = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.gift = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag === 56) {
+            message.noteIds.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 58) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.noteIds.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): NotesRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      action: isSet(object.action) ? notesActionFromJSON(object.action) : 0,
+      targetName: isSet(object.targetName)
+        ? globalThis.String(object.targetName)
+        : isSet(object.target_name)
+        ? globalThis.String(object.target_name)
+        : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      gift: isSet(object.gift) ? globalThis.Number(object.gift) : 0,
+      noteIds: globalThis.Array.isArray(object?.noteIds)
+        ? object.noteIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.note_ids)
+        ? object.note_ids.map((e: any) => globalThis.Number(e))
+        : [],
+    };
+  },
+
+  toJSON(message: NotesRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.action !== 0) {
+      obj.action = notesActionToJSON(message.action);
+    }
+    if (message.targetName !== "") {
+      obj.targetName = message.targetName;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.gift !== 0) {
+      obj.gift = Math.round(message.gift);
+    }
+    if (message.noteIds?.length) {
+      obj.noteIds = message.noteIds.map((e) => Math.round(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NotesRequest>, I>>(base?: I): NotesRequest {
+    return NotesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<NotesRequest>, I>>(object: I): NotesRequest {
+    const message = createBaseNotesRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.action = object.action ?? 0;
+    message.targetName = object.targetName ?? "";
+    message.message = object.message ?? "";
+    message.gift = object.gift ?? 0;
+    message.noteIds = object.noteIds?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseNotesReply(): NotesReply {
+  return { status: 0, notes: [], population: 0 };
+}
+
+export const NotesReply: MessageFns<NotesReply> = {
+  encode(message: NotesReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
+    }
+    for (const v of message.notes) {
+      Note.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.population !== 0) {
+      writer.uint32(24).uint32(message.population);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): NotesReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNotesReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.notes.push(Note.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.population = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): NotesReply {
+    return {
+      status: isSet(object.status) ? noteResultFromJSON(object.status) : 0,
+      notes: globalThis.Array.isArray(object?.notes) ? object.notes.map((e: any) => Note.fromJSON(e)) : [],
+      population: isSet(object.population) ? globalThis.Number(object.population) : 0,
+    };
+  },
+
+  toJSON(message: NotesReply): unknown {
+    const obj: any = {};
+    if (message.status !== 0) {
+      obj.status = noteResultToJSON(message.status);
+    }
+    if (message.notes?.length) {
+      obj.notes = message.notes.map((e) => Note.toJSON(e));
+    }
+    if (message.population !== 0) {
+      obj.population = Math.round(message.population);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NotesReply>, I>>(base?: I): NotesReply {
+    return NotesReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<NotesReply>, I>>(object: I): NotesReply {
+    const message = createBaseNotesReply();
+    message.status = object.status ?? 0;
+    message.notes = object.notes?.map((e) => Note.fromPartial(e)) || [];
+    message.population = object.population ?? 0;
+    return message;
+  },
+};
+
 export type InternalService = typeof InternalService;
 export const InternalService = {
+  whisper: {
+    path: "/fm.internal.Internal/Whisper" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: WhisperRequest): Buffer => Buffer.from(WhisperRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): WhisperRequest => WhisperRequest.decode(value),
+    responseSerialize: (value: WhisperReply): Buffer => Buffer.from(WhisperReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): WhisperReply => WhisperReply.decode(value),
+  },
+  completeWhisper: {
+    path: "/fm.internal.Internal/CompleteWhisper" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CompleteWhisperRequest): Buffer =>
+      Buffer.from(CompleteWhisperRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CompleteWhisperRequest => CompleteWhisperRequest.decode(value),
+    responseSerialize: (value: CompleteWhisperReply): Buffer =>
+      Buffer.from(CompleteWhisperReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CompleteWhisperReply => CompleteWhisperReply.decode(value),
+  },
+  messenger: {
+    path: "/fm.internal.Internal/Messenger" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: MessengerRequest): Buffer => Buffer.from(MessengerRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): MessengerRequest => MessengerRequest.decode(value),
+    responseSerialize: (value: MessengerReply): Buffer => Buffer.from(MessengerReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MessengerReply => MessengerReply.decode(value),
+  },
+  notes: {
+    path: "/fm.internal.Internal/Notes" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: NotesRequest): Buffer => Buffer.from(NotesRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): NotesRequest => NotesRequest.decode(value),
+    responseSerialize: (value: NotesReply): Buffer => Buffer.from(NotesReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): NotesReply => NotesReply.decode(value),
+  },
+  family: {
+    path: "/fm.internal.Internal/Family" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FamilyRequest): Buffer => Buffer.from(FamilyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FamilyRequest => FamilyRequest.decode(value),
+    responseSerialize: (value: FamilyReply): Buffer => Buffer.from(FamilyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FamilyReply => FamilyReply.decode(value),
+  },
   ping: {
     path: "/fm.internal.Internal/Ping" as const,
     requestStream: false as const,
@@ -33247,15 +36618,6 @@ export const InternalService = {
     requestDeserialize: (value: Buffer): SaveCharactersRequest => SaveCharactersRequest.decode(value),
     responseSerialize: (value: SaveCharactersReply): Buffer => Buffer.from(SaveCharactersReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SaveCharactersReply => SaveCharactersReply.decode(value),
-  },
-  loadStorage: {
-    path: "/fm.internal.Internal/LoadStorage" as const,
-    requestStream: false as const,
-    responseStream: false as const,
-    requestSerialize: (value: LoadStorageRequest): Buffer => Buffer.from(LoadStorageRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): LoadStorageRequest => LoadStorageRequest.decode(value),
-    responseSerialize: (value: LoadStorageReply): Buffer => Buffer.from(LoadStorageReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): LoadStorageReply => LoadStorageReply.decode(value),
   },
   loadParcels: {
     path: "/fm.internal.Internal/LoadParcels" as const,
@@ -34247,6 +37609,11 @@ export const InternalService = {
 } as const;
 
 export interface InternalServer extends UntypedServiceImplementation {
+  whisper: handleUnaryCall<WhisperRequest, WhisperReply>;
+  completeWhisper: handleUnaryCall<CompleteWhisperRequest, CompleteWhisperReply>;
+  messenger: handleUnaryCall<MessengerRequest, MessengerReply>;
+  notes: handleUnaryCall<NotesRequest, NotesReply>;
+  family: handleUnaryCall<FamilyRequest, FamilyReply>;
   ping: handleUnaryCall<PingRequest, PingReply>;
   getGameChannelStatus: handleUnaryCall<GetGameChannelStatusRequest, GetGameChannelStatusReply>;
   getServerCatalog: handleUnaryCall<GetServerCatalogRequest, GetServerCatalogReply>;
@@ -34254,7 +37621,6 @@ export interface InternalServer extends UntypedServiceImplementation {
   beginGameTransition: handleUnaryCall<BeginGameTransitionRequest, BeginGameTransitionReply>;
   saveCharacter: handleUnaryCall<SaveCharacterRequest, SaveCharacterReply>;
   saveCharacters: handleUnaryCall<SaveCharactersRequest, SaveCharactersReply>;
-  loadStorage: handleUnaryCall<LoadStorageRequest, LoadStorageReply>;
   loadParcels: handleUnaryCall<LoadParcelsRequest, LoadParcelsReply>;
   sendParcel: handleUnaryCall<SendParcelRequest, SendParcelReply>;
   claimParcel: handleUnaryCall<ClaimParcelRequest, ClaimParcelReply>;
@@ -34372,6 +37738,78 @@ export interface InternalServer extends UntypedServiceImplementation {
 }
 
 export interface InternalClient extends Client {
+  whisper(
+    request: WhisperRequest,
+    callback: (error: ServiceError | null, response: WhisperReply) => void,
+  ): ClientUnaryCall;
+  whisper(
+    request: WhisperRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: WhisperReply) => void,
+  ): ClientUnaryCall;
+  whisper(
+    request: WhisperRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: WhisperReply) => void,
+  ): ClientUnaryCall;
+  completeWhisper(
+    request: CompleteWhisperRequest,
+    callback: (error: ServiceError | null, response: CompleteWhisperReply) => void,
+  ): ClientUnaryCall;
+  completeWhisper(
+    request: CompleteWhisperRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CompleteWhisperReply) => void,
+  ): ClientUnaryCall;
+  completeWhisper(
+    request: CompleteWhisperRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CompleteWhisperReply) => void,
+  ): ClientUnaryCall;
+  messenger(
+    request: MessengerRequest,
+    callback: (error: ServiceError | null, response: MessengerReply) => void,
+  ): ClientUnaryCall;
+  messenger(
+    request: MessengerRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessengerReply) => void,
+  ): ClientUnaryCall;
+  messenger(
+    request: MessengerRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessengerReply) => void,
+  ): ClientUnaryCall;
+  notes(request: NotesRequest, callback: (error: ServiceError | null, response: NotesReply) => void): ClientUnaryCall;
+  notes(
+    request: NotesRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: NotesReply) => void,
+  ): ClientUnaryCall;
+  notes(
+    request: NotesRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: NotesReply) => void,
+  ): ClientUnaryCall;
+  family(
+    request: FamilyRequest,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  family(
+    request: FamilyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  family(
+    request: FamilyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
   ping(request: PingRequest, callback: (error: ServiceError | null, response: PingReply) => void): ClientUnaryCall;
   ping(
     request: PingRequest,
@@ -34473,21 +37911,6 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SaveCharactersReply) => void,
-  ): ClientUnaryCall;
-  loadStorage(
-    request: LoadStorageRequest,
-    callback: (error: ServiceError | null, response: LoadStorageReply) => void,
-  ): ClientUnaryCall;
-  loadStorage(
-    request: LoadStorageRequest,
-    metadata: Metadata,
-    callback: (error: ServiceError | null, response: LoadStorageReply) => void,
-  ): ClientUnaryCall;
-  loadStorage(
-    request: LoadStorageRequest,
-    metadata: Metadata,
-    options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: LoadStorageReply) => void,
   ): ClientUnaryCall;
   loadParcels(
     request: LoadParcelsRequest,
@@ -35936,6 +39359,14 @@ export const InternalClient = makeGenericClientConstructor(InternalService, "fm.
   service: typeof InternalService;
   serviceName: string;
 };
+
+function bytesFromBase64(b64: string): Uint8Array {
+  return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  return globalThis.Buffer.from(arr).toString("base64");
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

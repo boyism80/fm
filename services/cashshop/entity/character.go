@@ -197,7 +197,7 @@ func (ch *Character) ToDTO(world gentity.ItemWorld) *dto.Character {
 		AbilityPoint:      uint16(p.GetAbilityPoint()),
 		SkillPoint:        uint16(p.GetSkillPoint()),
 		Exp:               p.GetExp(),
-		Population:        uint16(p.GetPopulation()),
+		Population:        int16(p.GetPopulation()),
 		Map:               p.GetMapId(),
 		SpawnPoint:        uint8(p.GetSpawnPoint()),
 		BuddyCapacity:     uint8(min(ch.Game.GetBuddyCapacity(), 255)),

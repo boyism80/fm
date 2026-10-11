@@ -24,9 +24,9 @@ return {
 		end
 
 		local pop_start = tonumber(q:record_ex("popS")) or 0
-		local add_fame = me:population() - pop_start
-		if add_fame < 1000 then
-			if me:dialog_accept(npc, "그대의 인기도는 그동안 " .. add_fame .. "만큼 올랐소. 목표인 1000을 달성하지 못했으니 이 칭호를 받기에는 무리라고 생각하오만... 그만 포기하시겠소?") then
+		local add_population = me:population() - pop_start
+		if add_population < 1000 then
+			if me:dialog_accept(npc, "그대의 인기도는 그동안 " .. add_population .. "만큼 올랐소. 목표인 1000을 달성하지 못했으니 이 칭호를 받기에는 무리라고 생각하오만... 그만 포기하시겠소?") then
 				q:forfeit()
 				me:dialog(npc, "다음에 도전하려면 언제든지 또 오시오.", false, false)
 			else
