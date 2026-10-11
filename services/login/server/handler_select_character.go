@@ -27,7 +27,10 @@ func (SelectCharacter) New(ls *LoginServer) *SelectCharacter {
 func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCharacter) error {
 	log.Printf("Select character packet received from %s - Character ID: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.CharacterId)
+	return h.selectCharacter(ctx, req.CharacterId, nil)
+}
 
+func (h *SelectCharacter) selectCharacter(ctx *core.ClientContext, characterID uint32, secondPassword *string) error {
 	failed := &response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}
 	loginClient := ctx.Client.(*client.LoginClient)
 	accountId := loginClient.GetAccountId()
@@ -50,19 +53,23 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 	transferResp := &response.Transfer{
 		IP:          route.GetHost(),
 		Port:        uint16(route.GetPort()),
-		CharacterId: req.CharacterId,
+		CharacterId: characterID,
 	}
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.BeginGameTransitionReply, error) {
-			return h.ls.internalClient.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
-				WorldId:     worldId,
-				AccountId:   accountId,
-				CharacterId: req.CharacterId,
-				ClientIp:    ctx.Client.GetRemoteIP(),
+		func(c context.Context) (*internal.AuthorizeCharacterSelectionReply, error) {
+			return h.ls.internalClient.AuthorizeCharacterSelection(c, &internal.AuthorizeCharacterSelectionRequest{
+				WorldId:        worldId,
+				AccountId:      accountId,
+				CharacterId:    characterID,
+				ClientIp:       ctx.Client.GetRemoteIP(),
+				SecondPassword: secondPassword,
 			})
-		}, func(reply *internal.BeginGameTransitionReply) error {
-			if !reply.GetOk() {
-				return fmt.Errorf("begin game transition failed: %v", reply.GetErrorCode())
+		}, func(reply *internal.AuthorizeCharacterSelectionReply) error {
+			if reply.GetStatus() != internal.SecondPasswordStatus_SECOND_PASSWORD_SUCCESS {
+				return ctx.Client.Send(&response.SecondPasswordResult{
+					Mode:   request.SecondPasswordModeSet,
+					Result: response.SecondPasswordResultInvalid,
+				}, types.SEND_POLICY_ENCRYPT)
 			}
 			loginClient.SetTransferDisconnect(true)
 			if err := ctx.Client.Send(transferResp, types.SEND_POLICY_ENCRYPT); err != nil {

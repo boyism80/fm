@@ -7,7 +7,8 @@ import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
 import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
 import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
 import { grpcMapper } from "../mappers";
-import { SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import { SecondPasswordStatus, SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import type { AccountService } from "../../services/account-service";
 import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
 import type { CharacterService } from "../../services/character-service";
 import type { BuffService } from "../../services/buff-service";
@@ -27,6 +28,8 @@ import type { InternalConfig } from "../../types/internal-config";
 import type {
     BeginGameTransitionReply,
     BeginGameTransitionRequest,
+    AuthorizeCharacterSelectionReply,
+    AuthorizeCharacterSelectionRequest,
     EnterCashShopReply,
     EnterCashShopRequest,
     EnterGameReply,
@@ -74,6 +77,7 @@ export class SessionGrpcController {
     private readonly monsterBookRepository: MonsterBookRepository;
     private readonly mountRepository: MountRepository;
     private readonly sessionService: SessionService;
+    private readonly accountService: AccountService;
     private readonly buddyService: BuddyService;
     private readonly internalConfig: Pick<InternalConfig, "game_servers">;
     private readonly characterRealtimeStateRepository: CharacterRealtimeStateRepository;
@@ -95,6 +99,7 @@ export class SessionGrpcController {
         monsterBookRepository: MonsterBookRepository,
         mountRepository: MountRepository,
         sessionService: SessionService,
+        accountService: AccountService,
         buddyService: BuddyService,
         internalConfig: Pick<InternalConfig, "game_servers">,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
@@ -115,6 +120,7 @@ export class SessionGrpcController {
         this.monsterBookRepository = monsterBookRepository;
         this.mountRepository = mountRepository;
         this.sessionService = sessionService;
+        this.accountService = accountService;
         this.buddyService = buddyService;
         this.internalConfig = internalConfig;
         this.characterRealtimeStateRepository = characterRealtimeStateRepository;
@@ -166,6 +172,59 @@ export class SessionGrpcController {
             callback(null, {
                 ok: transition.ok,
                 errorCode: transition.code ?? SessionErrorCode.SESSION_UNKNOWN,
+            });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("authorizeCharacterSelection")
+    async authorizeCharacterSelection(call: GrpcCall<AuthorizeCharacterSelectionRequest>, callback: GrpcCallback<AuthorizeCharacterSelectionReply>) {
+        try {
+            const worldId = call.request.worldId;
+            const accountId = call.request.accountId;
+            const characterId = call.request.characterId;
+            const row = await this.characterService.getCharacter(worldId, characterId);
+            if (!row || row.accountId !== accountId) {
+                callback(null, { status: SecondPasswordStatus.SECOND_PASSWORD_CHARACTER_NOT_OWNED });
+                return;
+            }
+
+            const result = await this.accountService.authorizeCharacterSelection(worldId, accountId, call.request.secondPassword);
+            let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
+            switch (result) {
+                case "success":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_SUCCESS;
+                    break;
+                case "already_set":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_ALREADY_SET;
+                    break;
+                case "not_set":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_NOT_SET;
+                    break;
+                case "locked":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_LOCKED;
+                    break;
+            }
+            if (status !== SecondPasswordStatus.SECOND_PASSWORD_SUCCESS) {
+                callback(null, { status });
+                return;
+            }
+
+            const transition = await this.sessionService.beginTransition(
+                worldId,
+                accountId,
+                characterId,
+                row.name,
+                call.request.clientIp,
+                [],
+                null,
+                null,
+            );
+            callback(null, {
+                status: transition.ok
+                    ? SecondPasswordStatus.SECOND_PASSWORD_SUCCESS
+                    : SecondPasswordStatus.SECOND_PASSWORD_SESSION_ERROR,
             });
         } catch (err) {
             this.grpcError(err, callback);

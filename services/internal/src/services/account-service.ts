@@ -2,23 +2,37 @@ import bcrypt from "bcrypt";
 import { LoginAccountReply_Status } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AccountRepository } from "../repos/account-repository";
+import type { AccountModel } from "../types/repository-models";
 import type { UnifiedRepository } from "../repos/unified-repository";
+import type { DistributedLockService } from "./distributed-lock-service";
 
 const BCRYPT_ROUNDS = 10;
+const SECOND_PASSWORD_MAX_FAILURES = 5;
+const SECOND_PASSWORD_LOCK_MS = 15 * 60 * 1000;
+
+export type SecondPasswordResult =
+    | "success"
+    | "invalid"
+    | "already_set"
+    | "not_set"
+    | "locked";
 
 export class AccountService {
     private readonly ctx: InternalContext;
     private readonly accountRepo: AccountRepository;
     private readonly unifiedRepo: UnifiedRepository;
+    private readonly distributedLockService: DistributedLockService;
 
     constructor(
         internalContext: InternalContext,
         accountRepository: AccountRepository,
-        unifiedRepository: UnifiedRepository
+        unifiedRepository: UnifiedRepository,
+        distributedLockService: DistributedLockService
     ) {
         this.ctx = internalContext;
         this.accountRepo = accountRepository;
         this.unifiedRepo = unifiedRepository;
+        this.distributedLockService = distributedLockService;
     }
 
     private worldId() {
@@ -46,6 +60,9 @@ export class AccountService {
                 characterSlotCount: 6,
                 lastLoginIp: ipAddress ?? null,
                 macAddress: macAddress ?? null,
+                secondPasswordHash: null,
+                secondPasswordFailures: 0,
+                secondPasswordLockedUntil: null,
             };
             let saved: Awaited<ReturnType<AccountRepository["set"]>>;
             try {
@@ -101,5 +118,98 @@ export class AccountService {
         }
         await this.accountRepo.set(this.worldId(), { ...account, role });
         return true;
+    }
+
+    async setSecondPassword(worldId: number, accountId: number, password: string): Promise<SecondPasswordResult> {
+        if (password.length < 4 || password.length > 16) {
+            return "invalid";
+        }
+
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(worldId, `second_password:a${accountId}`);
+        const account = await this.accountRepo.get(worldId, accountId);
+        if (!account) {
+            return "invalid";
+        }
+        if (account.secondPasswordHash) {
+            return "already_set";
+        }
+
+        const secondPasswordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+        await this.accountRepo.set(worldId, {
+            ...account,
+            secondPasswordHash,
+            secondPasswordFailures: 0,
+            secondPasswordLockedUntil: null,
+        });
+        return "success";
+    }
+
+    async removeSecondPassword(worldId: number, accountId: number, password: string): Promise<SecondPasswordResult> {
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(worldId, `second_password:a${accountId}`);
+        const account = await this.accountRepo.get(worldId, accountId);
+        if (!account) {
+            return "invalid";
+        }
+        if (!account.secondPasswordHash) {
+            return "not_set";
+        }
+
+        const verified = await this.checkSecondPassword(worldId, account, password);
+        if (verified !== "success") {
+            return verified;
+        }
+
+        await this.accountRepo.set(worldId, {
+            ...account,
+            secondPasswordHash: null,
+            secondPasswordFailures: 0,
+            secondPasswordLockedUntil: null,
+        });
+        return "success";
+    }
+
+    async authorizeCharacterSelection(worldId: number, accountId: number, password?: string): Promise<SecondPasswordResult> {
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(worldId, `second_password:a${accountId}`);
+        const account = await this.accountRepo.get(worldId, accountId);
+        if (!account) {
+            return "invalid";
+        }
+        if (!account.secondPasswordHash) {
+            return password == null ? "success" : "not_set";
+        }
+        if (password == null) {
+            return "invalid";
+        }
+        return this.checkSecondPassword(worldId, account, password);
+    }
+
+    private async checkSecondPassword(worldId: number, account: AccountModel, password: string): Promise<SecondPasswordResult> {
+        const now = Date.now();
+        const lockedUntil = account.secondPasswordLockedUntil ? new Date(account.secondPasswordLockedUntil).getTime() : 0;
+        if (lockedUntil > now) {
+            return "locked";
+        }
+
+        const match = await bcrypt.compare(password, account.secondPasswordHash!);
+        if (match) {
+            if (account.secondPasswordFailures !== 0 || account.secondPasswordLockedUntil) {
+                await this.accountRepo.set(worldId, {
+                    ...account,
+                    secondPasswordFailures: 0,
+                    secondPasswordLockedUntil: null,
+                });
+            }
+            return "success";
+        }
+
+        const failures = lockedUntil > 0 && lockedUntil <= now ? 1 : account.secondPasswordFailures + 1;
+        await this.accountRepo.set(worldId, {
+            ...account,
+            secondPasswordFailures: failures,
+            secondPasswordLockedUntil: failures >= SECOND_PASSWORD_MAX_FAILURES
+                ? new Date(now + SECOND_PASSWORD_LOCK_MS).toISOString()
+                : null,
+        });
+        return failures >= SECOND_PASSWORD_MAX_FAILURES ? "locked" : "invalid";
     }
 }

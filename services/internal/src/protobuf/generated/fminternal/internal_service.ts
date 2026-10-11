@@ -435,6 +435,69 @@ export function sessionErrorCodeToJSON(object: SessionErrorCode): string {
   }
 }
 
+export enum SecondPasswordStatus {
+  SECOND_PASSWORD_SUCCESS = 0,
+  SECOND_PASSWORD_INVALID = 1,
+  SECOND_PASSWORD_ALREADY_SET = 2,
+  SECOND_PASSWORD_NOT_SET = 3,
+  SECOND_PASSWORD_LOCKED = 4,
+  SECOND_PASSWORD_CHARACTER_NOT_OWNED = 5,
+  SECOND_PASSWORD_SESSION_ERROR = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function secondPasswordStatusFromJSON(object: any): SecondPasswordStatus {
+  switch (object) {
+    case 0:
+    case "SECOND_PASSWORD_SUCCESS":
+      return SecondPasswordStatus.SECOND_PASSWORD_SUCCESS;
+    case 1:
+    case "SECOND_PASSWORD_INVALID":
+      return SecondPasswordStatus.SECOND_PASSWORD_INVALID;
+    case 2:
+    case "SECOND_PASSWORD_ALREADY_SET":
+      return SecondPasswordStatus.SECOND_PASSWORD_ALREADY_SET;
+    case 3:
+    case "SECOND_PASSWORD_NOT_SET":
+      return SecondPasswordStatus.SECOND_PASSWORD_NOT_SET;
+    case 4:
+    case "SECOND_PASSWORD_LOCKED":
+      return SecondPasswordStatus.SECOND_PASSWORD_LOCKED;
+    case 5:
+    case "SECOND_PASSWORD_CHARACTER_NOT_OWNED":
+      return SecondPasswordStatus.SECOND_PASSWORD_CHARACTER_NOT_OWNED;
+    case 6:
+    case "SECOND_PASSWORD_SESSION_ERROR":
+      return SecondPasswordStatus.SECOND_PASSWORD_SESSION_ERROR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SecondPasswordStatus.UNRECOGNIZED;
+  }
+}
+
+export function secondPasswordStatusToJSON(object: SecondPasswordStatus): string {
+  switch (object) {
+    case SecondPasswordStatus.SECOND_PASSWORD_SUCCESS:
+      return "SECOND_PASSWORD_SUCCESS";
+    case SecondPasswordStatus.SECOND_PASSWORD_INVALID:
+      return "SECOND_PASSWORD_INVALID";
+    case SecondPasswordStatus.SECOND_PASSWORD_ALREADY_SET:
+      return "SECOND_PASSWORD_ALREADY_SET";
+    case SecondPasswordStatus.SECOND_PASSWORD_NOT_SET:
+      return "SECOND_PASSWORD_NOT_SET";
+    case SecondPasswordStatus.SECOND_PASSWORD_LOCKED:
+      return "SECOND_PASSWORD_LOCKED";
+    case SecondPasswordStatus.SECOND_PASSWORD_CHARACTER_NOT_OWNED:
+      return "SECOND_PASSWORD_CHARACTER_NOT_OWNED";
+    case SecondPasswordStatus.SECOND_PASSWORD_SESSION_ERROR:
+      return "SECOND_PASSWORD_SESSION_ERROR";
+    case SecondPasswordStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum ParcelResult {
   PARCEL_RESULT_OK = 0,
   PARCEL_RESULT_RECIPIENT_NOT_FOUND = 1,
@@ -2379,6 +2442,34 @@ export interface BeginGameTransitionReply {
   errorCode: SessionErrorCode;
 }
 
+export interface SetSecondPasswordRequest {
+  worldId: number;
+  accountId: number;
+  password: string;
+}
+
+export interface RemoveSecondPasswordRequest {
+  worldId: number;
+  accountId: number;
+  password: string;
+}
+
+export interface SecondPasswordReply {
+  status: SecondPasswordStatus;
+}
+
+export interface AuthorizeCharacterSelectionRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+  clientIp: string;
+  secondPassword?: string | undefined;
+}
+
+export interface AuthorizeCharacterSelectionReply {
+  status: SecondPasswordStatus;
+}
+
 export interface SaveCharacterRequest {
   character: Character | undefined;
   baseLooks: { [key: number]: number };
@@ -2835,6 +2926,7 @@ export interface GetCharacterListRequest {
 export interface GetCharacterListReply {
   characters: CharacterOverview[];
   slotCount: number;
+  hasSecondPassword: boolean;
 }
 
 export interface CheckCharacterNameRequest {
@@ -13371,6 +13463,474 @@ export const BeginGameTransitionReply: MessageFns<BeginGameTransitionReply> = {
   },
 };
 
+function createBaseSetSecondPasswordRequest(): SetSecondPasswordRequest {
+  return { worldId: 0, accountId: 0, password: "" };
+}
+
+export const SetSecondPasswordRequest: MessageFns<SetSecondPasswordRequest> = {
+  encode(message: SetSecondPasswordRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.password !== "") {
+      writer.uint32(26).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetSecondPasswordRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetSecondPasswordRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetSecondPasswordRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+    };
+  },
+
+  toJSON(message: SetSecondPasswordRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetSecondPasswordRequest>, I>>(base?: I): SetSecondPasswordRequest {
+    return SetSecondPasswordRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetSecondPasswordRequest>, I>>(object: I): SetSecondPasswordRequest {
+    const message = createBaseSetSecondPasswordRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseRemoveSecondPasswordRequest(): RemoveSecondPasswordRequest {
+  return { worldId: 0, accountId: 0, password: "" };
+}
+
+export const RemoveSecondPasswordRequest: MessageFns<RemoveSecondPasswordRequest> = {
+  encode(message: RemoveSecondPasswordRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.password !== "") {
+      writer.uint32(26).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveSecondPasswordRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveSecondPasswordRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveSecondPasswordRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+    };
+  },
+
+  toJSON(message: RemoveSecondPasswordRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RemoveSecondPasswordRequest>, I>>(base?: I): RemoveSecondPasswordRequest {
+    return RemoveSecondPasswordRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RemoveSecondPasswordRequest>, I>>(object: I): RemoveSecondPasswordRequest {
+    const message = createBaseRemoveSecondPasswordRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseSecondPasswordReply(): SecondPasswordReply {
+  return { status: 0 };
+}
+
+export const SecondPasswordReply: MessageFns<SecondPasswordReply> = {
+  encode(message: SecondPasswordReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SecondPasswordReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSecondPasswordReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SecondPasswordReply {
+    return { status: isSet(object.status) ? secondPasswordStatusFromJSON(object.status) : 0 };
+  },
+
+  toJSON(message: SecondPasswordReply): unknown {
+    const obj: any = {};
+    if (message.status !== 0) {
+      obj.status = secondPasswordStatusToJSON(message.status);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SecondPasswordReply>, I>>(base?: I): SecondPasswordReply {
+    return SecondPasswordReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SecondPasswordReply>, I>>(object: I): SecondPasswordReply {
+    const message = createBaseSecondPasswordReply();
+    message.status = object.status ?? 0;
+    return message;
+  },
+};
+
+function createBaseAuthorizeCharacterSelectionRequest(): AuthorizeCharacterSelectionRequest {
+  return { worldId: 0, accountId: 0, characterId: 0, clientIp: "", secondPassword: undefined };
+}
+
+export const AuthorizeCharacterSelectionRequest: MessageFns<AuthorizeCharacterSelectionRequest> = {
+  encode(message: AuthorizeCharacterSelectionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.clientIp !== "") {
+      writer.uint32(34).string(message.clientIp);
+    }
+    if (message.secondPassword !== undefined) {
+      writer.uint32(42).string(message.secondPassword);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AuthorizeCharacterSelectionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAuthorizeCharacterSelectionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.clientIp = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.secondPassword = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AuthorizeCharacterSelectionRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      clientIp: isSet(object.clientIp)
+        ? globalThis.String(object.clientIp)
+        : isSet(object.client_ip)
+        ? globalThis.String(object.client_ip)
+        : "",
+      secondPassword: isSet(object.secondPassword)
+        ? globalThis.String(object.secondPassword)
+        : isSet(object.second_password)
+        ? globalThis.String(object.second_password)
+        : undefined,
+    };
+  },
+
+  toJSON(message: AuthorizeCharacterSelectionRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.clientIp !== "") {
+      obj.clientIp = message.clientIp;
+    }
+    if (message.secondPassword !== undefined) {
+      obj.secondPassword = message.secondPassword;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AuthorizeCharacterSelectionRequest>, I>>(
+    base?: I,
+  ): AuthorizeCharacterSelectionRequest {
+    return AuthorizeCharacterSelectionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AuthorizeCharacterSelectionRequest>, I>>(
+    object: I,
+  ): AuthorizeCharacterSelectionRequest {
+    const message = createBaseAuthorizeCharacterSelectionRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.clientIp = object.clientIp ?? "";
+    message.secondPassword = object.secondPassword ?? undefined;
+    return message;
+  },
+};
+
+function createBaseAuthorizeCharacterSelectionReply(): AuthorizeCharacterSelectionReply {
+  return { status: 0 };
+}
+
+export const AuthorizeCharacterSelectionReply: MessageFns<AuthorizeCharacterSelectionReply> = {
+  encode(message: AuthorizeCharacterSelectionReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AuthorizeCharacterSelectionReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAuthorizeCharacterSelectionReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AuthorizeCharacterSelectionReply {
+    return { status: isSet(object.status) ? secondPasswordStatusFromJSON(object.status) : 0 };
+  },
+
+  toJSON(message: AuthorizeCharacterSelectionReply): unknown {
+    const obj: any = {};
+    if (message.status !== 0) {
+      obj.status = secondPasswordStatusToJSON(message.status);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AuthorizeCharacterSelectionReply>, I>>(
+    base?: I,
+  ): AuthorizeCharacterSelectionReply {
+    return AuthorizeCharacterSelectionReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AuthorizeCharacterSelectionReply>, I>>(
+    object: I,
+  ): AuthorizeCharacterSelectionReply {
+    const message = createBaseAuthorizeCharacterSelectionReply();
+    message.status = object.status ?? 0;
+    return message;
+  },
+};
+
 function createBaseSaveCharacterRequest(): SaveCharacterRequest {
   return { character: undefined, baseLooks: {}, overlays: {} };
 }
@@ -20467,7 +21027,7 @@ export const GetCharacterListRequest: MessageFns<GetCharacterListRequest> = {
 };
 
 function createBaseGetCharacterListReply(): GetCharacterListReply {
-  return { characters: [], slotCount: 0 };
+  return { characters: [], slotCount: 0, hasSecondPassword: false };
 }
 
 export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
@@ -20477,6 +21037,9 @@ export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
     }
     if (message.slotCount !== 0) {
       writer.uint32(16).uint32(message.slotCount);
+    }
+    if (message.hasSecondPassword !== false) {
+      writer.uint32(24).bool(message.hasSecondPassword);
     }
     return writer;
   },
@@ -20504,6 +21067,14 @@ export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
           message.slotCount = reader.uint32();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.hasSecondPassword = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -20523,6 +21094,11 @@ export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
         : isSet(object.slot_count)
         ? globalThis.Number(object.slot_count)
         : 0,
+      hasSecondPassword: isSet(object.hasSecondPassword)
+        ? globalThis.Boolean(object.hasSecondPassword)
+        : isSet(object.has_second_password)
+        ? globalThis.Boolean(object.has_second_password)
+        : false,
     };
   },
 
@@ -20534,6 +21110,9 @@ export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
     if (message.slotCount !== 0) {
       obj.slotCount = Math.round(message.slotCount);
     }
+    if (message.hasSecondPassword !== false) {
+      obj.hasSecondPassword = message.hasSecondPassword;
+    }
     return obj;
   },
 
@@ -20544,6 +21123,7 @@ export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
     const message = createBaseGetCharacterListReply();
     message.characters = object.characters?.map((e) => CharacterOverview.fromPartial(e)) || [];
     message.slotCount = object.slotCount ?? 0;
+    message.hasSecondPassword = object.hasSecondPassword ?? false;
     return message;
   },
 };
@@ -36745,6 +37325,39 @@ export const InternalService = {
     responseSerialize: (value: SetAccountRoleReply): Buffer => Buffer.from(SetAccountRoleReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SetAccountRoleReply => SetAccountRoleReply.decode(value),
   },
+  setSecondPassword: {
+    path: "/fm.internal.Internal/SetSecondPassword" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetSecondPasswordRequest): Buffer =>
+      Buffer.from(SetSecondPasswordRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetSecondPasswordRequest => SetSecondPasswordRequest.decode(value),
+    responseSerialize: (value: SecondPasswordReply): Buffer => Buffer.from(SecondPasswordReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SecondPasswordReply => SecondPasswordReply.decode(value),
+  },
+  removeSecondPassword: {
+    path: "/fm.internal.Internal/RemoveSecondPassword" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: RemoveSecondPasswordRequest): Buffer =>
+      Buffer.from(RemoveSecondPasswordRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): RemoveSecondPasswordRequest => RemoveSecondPasswordRequest.decode(value),
+    responseSerialize: (value: SecondPasswordReply): Buffer => Buffer.from(SecondPasswordReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SecondPasswordReply => SecondPasswordReply.decode(value),
+  },
+  authorizeCharacterSelection: {
+    path: "/fm.internal.Internal/AuthorizeCharacterSelection" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: AuthorizeCharacterSelectionRequest): Buffer =>
+      Buffer.from(AuthorizeCharacterSelectionRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): AuthorizeCharacterSelectionRequest =>
+      AuthorizeCharacterSelectionRequest.decode(value),
+    responseSerialize: (value: AuthorizeCharacterSelectionReply): Buffer =>
+      Buffer.from(AuthorizeCharacterSelectionReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): AuthorizeCharacterSelectionReply =>
+      AuthorizeCharacterSelectionReply.decode(value),
+  },
   getCharacterList: {
     path: "/fm.internal.Internal/GetCharacterList" as const,
     requestStream: false as const,
@@ -37634,6 +38247,9 @@ export interface InternalServer extends UntypedServiceImplementation {
   findPopularShopSearches: handleUnaryCall<FindPopularShopSearchesRequest, FindPopularShopSearchesReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
   setAccountRole: handleUnaryCall<SetAccountRoleRequest, SetAccountRoleReply>;
+  setSecondPassword: handleUnaryCall<SetSecondPasswordRequest, SecondPasswordReply>;
+  removeSecondPassword: handleUnaryCall<RemoveSecondPasswordRequest, SecondPasswordReply>;
+  authorizeCharacterSelection: handleUnaryCall<AuthorizeCharacterSelectionRequest, AuthorizeCharacterSelectionReply>;
   getCharacterList: handleUnaryCall<GetCharacterListRequest, GetCharacterListReply>;
   checkCharacterName: handleUnaryCall<CheckCharacterNameRequest, CheckCharacterNameReply>;
   createCharacter: handleUnaryCall<CreateCharacterRequest, CreateCharacterReply>;
@@ -38106,6 +38722,51 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SetAccountRoleReply) => void,
+  ): ClientUnaryCall;
+  setSecondPassword(
+    request: SetSecondPasswordRequest,
+    callback: (error: ServiceError | null, response: SecondPasswordReply) => void,
+  ): ClientUnaryCall;
+  setSecondPassword(
+    request: SetSecondPasswordRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SecondPasswordReply) => void,
+  ): ClientUnaryCall;
+  setSecondPassword(
+    request: SetSecondPasswordRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SecondPasswordReply) => void,
+  ): ClientUnaryCall;
+  removeSecondPassword(
+    request: RemoveSecondPasswordRequest,
+    callback: (error: ServiceError | null, response: SecondPasswordReply) => void,
+  ): ClientUnaryCall;
+  removeSecondPassword(
+    request: RemoveSecondPasswordRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SecondPasswordReply) => void,
+  ): ClientUnaryCall;
+  removeSecondPassword(
+    request: RemoveSecondPasswordRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SecondPasswordReply) => void,
+  ): ClientUnaryCall;
+  authorizeCharacterSelection(
+    request: AuthorizeCharacterSelectionRequest,
+    callback: (error: ServiceError | null, response: AuthorizeCharacterSelectionReply) => void,
+  ): ClientUnaryCall;
+  authorizeCharacterSelection(
+    request: AuthorizeCharacterSelectionRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: AuthorizeCharacterSelectionReply) => void,
+  ): ClientUnaryCall;
+  authorizeCharacterSelection(
+    request: AuthorizeCharacterSelectionRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: AuthorizeCharacterSelectionReply) => void,
   ): ClientUnaryCall;
   getCharacterList(
     request: GetCharacterListRequest,

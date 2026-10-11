@@ -31,6 +31,9 @@ service Internal {
   rpc FindPopularShopSearches (FindPopularShopSearchesRequest) returns (FindPopularShopSearchesReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc SetAccountRole (SetAccountRoleRequest) returns (SetAccountRoleReply);
+  rpc SetSecondPassword (SetSecondPasswordRequest) returns (SecondPasswordReply);
+  rpc RemoveSecondPassword (RemoveSecondPasswordRequest) returns (SecondPasswordReply);
+  rpc AuthorizeCharacterSelection (AuthorizeCharacterSelectionRequest) returns (AuthorizeCharacterSelectionReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
   rpc CreateCharacter (CreateCharacterRequest) returns (CreateCharacterReply);
@@ -723,6 +726,44 @@ message BeginGameTransitionReply {
   SessionErrorCode error_code = 2;
 }
 
+enum SecondPasswordStatus {
+  SECOND_PASSWORD_SUCCESS = 0;
+  SECOND_PASSWORD_INVALID = 1;
+  SECOND_PASSWORD_ALREADY_SET = 2;
+  SECOND_PASSWORD_NOT_SET = 3;
+  SECOND_PASSWORD_LOCKED = 4;
+  SECOND_PASSWORD_CHARACTER_NOT_OWNED = 5;
+  SECOND_PASSWORD_SESSION_ERROR = 6;
+}
+
+message SetSecondPasswordRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  string password = 3;
+}
+
+message RemoveSecondPasswordRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  string password = 3;
+}
+
+message SecondPasswordReply {
+  SecondPasswordStatus status = 1;
+}
+
+message AuthorizeCharacterSelectionRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+  string client_ip = 4;
+  optional string second_password = 5;
+}
+
+message AuthorizeCharacterSelectionReply {
+  SecondPasswordStatus status = 1;
+}
+
 message SaveCharacterRequest {
   Character character = 1;
   map<int32, uint32> base_looks = 2;
@@ -1110,6 +1151,7 @@ message GetCharacterListRequest {
 message GetCharacterListReply {
   repeated CharacterOverview characters = 1;
   uint32 slot_count = 2;
+  bool has_second_password = 3;
 }
 
 message CheckCharacterNameRequest {

@@ -251,6 +251,7 @@ var decoders = func() []decoder {
 		newDecoder[response.FamilyJoined](nil),
 		newDecoder[response.FamilyInfo](nil),
 		newDecoder[response.FamilyChart](nil),
+		newDecoder[response.SecondPasswordResult](nil),
 	}
 }()
 

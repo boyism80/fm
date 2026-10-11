@@ -12,4 +12,6 @@ func (ls *LoginServer) registerPacketHandlers() {
 	core.Bind[*LoginServer, CreateCharacter](ls)
 	core.Bind[*LoginServer, DeleteCharacter](ls)
 	core.Bind[*LoginServer, SelectCharacter](ls)
+	core.Bind[*LoginServer, AuthSecondPassword](ls)
+	core.Bind[*LoginServer, SelectCharacterWithSecondPassword](ls)
 }

@@ -87,8 +87,9 @@ func (h *CharacterList) sendCharacterList(ctx *core.ClientContext, reply *intern
 	}
 
 	charListResp := &response.CharacterList{
-		Characters: characters,
-		SlotCount:  reply.SlotCount,
+		Characters:        characters,
+		SlotCount:         reply.SlotCount,
+		HasSecondPassword: reply.HasSecondPassword,
 	}
 	return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
 }

@@ -1,4 +1,4 @@
-import { LoginAccountReply_Status } from "../../protobuf/generated/fminternal/internal_service";
+import { LoginAccountReply_Status, SecondPasswordStatus } from "../../protobuf/generated/fminternal/internal_service";
 import type { AccountService } from "../../services/account-service";
 import type { SessionService } from "../../services/session-service";
 import type {
@@ -6,6 +6,9 @@ import type {
     LoginAccountRequest,
     SetAccountRoleReply,
     SetAccountRoleRequest,
+    SecondPasswordReply,
+    SetSecondPasswordRequest,
+    RemoveSecondPasswordRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
@@ -82,6 +85,64 @@ export class AuthGrpcController {
         try {
             const ok = await this.accountService.setAccountRole(call.request.accountId >>> 0, call.request.role >>> 0);
             callback(null, { ok });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("setSecondPassword")
+    async setSecondPassword(call: GrpcCall<SetSecondPasswordRequest>, callback: GrpcCallback<SecondPasswordReply>) {
+        try {
+            const result = await this.accountService.setSecondPassword(
+                call.request.worldId >>> 0,
+                call.request.accountId >>> 0,
+                call.request.password
+            );
+            let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
+            switch (result) {
+                case "success":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_SUCCESS;
+                    break;
+                case "already_set":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_ALREADY_SET;
+                    break;
+                case "not_set":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_NOT_SET;
+                    break;
+                case "locked":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_LOCKED;
+                    break;
+            }
+            callback(null, { status });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("removeSecondPassword")
+    async removeSecondPassword(call: GrpcCall<RemoveSecondPasswordRequest>, callback: GrpcCallback<SecondPasswordReply>) {
+        try {
+            const result = await this.accountService.removeSecondPassword(
+                call.request.worldId >>> 0,
+                call.request.accountId >>> 0,
+                call.request.password
+            );
+            let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
+            switch (result) {
+                case "success":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_SUCCESS;
+                    break;
+                case "already_set":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_ALREADY_SET;
+                    break;
+                case "not_set":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_NOT_SET;
+                    break;
+                case "locked":
+                    status = SecondPasswordStatus.SECOND_PASSWORD_LOCKED;
+                    break;
+            }
+            callback(null, { status });
         } catch (err) {
             this.grpcError(err, callback);
         }

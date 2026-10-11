@@ -217,7 +217,11 @@ export class CharacterGrpcController {
     async getCharacterList(call: GrpcCall<GetCharacterListRequest>, callback: GrpcCallback<GetCharacterListReply>) {
         try {
             const result = await this.characterOverviewService.getCharacterList(call.request.accountId, call.request.worldId);
-            callback(null, { characters: result.characters.map(makeCharacterOverview), slotCount: result.slotCount });
+            callback(null, {
+                characters: result.characters.map(makeCharacterOverview),
+                slotCount: result.slotCount,
+                hasSecondPassword: result.hasSecondPassword,
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }

@@ -26,37 +26,51 @@ type outbound interface {
 }
 
 type Bot struct {
-	Index      int
-	ID         string
-	Name       string
-	Gender     uint8
-	CharID     uint32
-	Gen        int
-	Map        uint32
-	Spawn      uint8
-	Moved      *types.Point[int16]
-	HP         uint16
-	Level      uint8
-	Class      uint16
-	EXP        int32
-	Meso       int32
-	Population int32
-	CP         uint16
-	NPCs       map[uint32]dto.Npc
-	Mobs       map[uint32]dto.Mob
-	Drops      map[uint32]Drop
-	Reactors   map[uint32]dto.Reactor
-	Quests     map[uint16]uint8
-	Items      map[constant.InventoryType]map[int16]ItemSlot
-	Dialog     constant.DialogType
-	NXCash     uint32
-	MaplePoint uint32
-	Locker     []*dto.CashShopItem
-	Gifts      []*dto.CashShopGift
-	SlotLimits map[constant.InventoryType]uint8
-	Stones     map[bool][]uint32
-	cfg        *config.Bot
-	conn       *conn.Conn
+	Index          int
+	ID             string
+	Name           string
+	Gender         uint8
+	CharID         uint32
+	Gen            int
+	Map            uint32
+	Spawn          uint8
+	Moved          *types.Point[int16]
+	HP             uint16
+	Level          uint8
+	Class          uint16
+	EXP            int32
+	Meso           int32
+	Population     int32
+	CP             uint16
+	NPCs           map[uint32]dto.Npc
+	Mobs           map[uint32]dto.Mob
+	Drops          map[uint32]Drop
+	Reactors       map[uint32]dto.Reactor
+	Quests         map[uint16]uint8
+	Items          map[constant.InventoryType]map[int16]ItemSlot
+	Dialog         constant.DialogType
+	NXCash         uint32
+	MaplePoint     uint32
+	Locker         []*dto.CashShopItem
+	Gifts          []*dto.CashShopGift
+	SlotLimits     map[constant.InventoryType]uint8
+	Stones         map[bool][]uint32
+	SecondPassword bool
+	cfg            *config.Bot
+	conn           *conn.Conn
+}
+
+type Relog struct {
+	Set       string
+	Remove    string
+	Passwords []string
+}
+
+type RelogResult struct {
+	HasSecondPassword bool
+	Set               *uint8
+	Remove            *uint8
+	Rejected          int
 }
 
 type ItemSlot struct {

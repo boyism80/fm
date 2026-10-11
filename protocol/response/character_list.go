@@ -6,9 +6,9 @@ import (
 )
 
 type CharacterList struct {
-	SecondPw   string
-	Characters []dto.Character
-	SlotCount  uint32
+	HasSecondPassword bool
+	Characters        []dto.Character
+	SlotCount         uint32
 }
 
 func (e *CharacterList) Opcode() uint16 {
@@ -24,7 +24,7 @@ func (e *CharacterList) Serialize(writer *stream.StreamWriter) error {
 		ch.SerializeOverview(writer)
 	}
 
-	if e.SecondPw != "" {
+	if e.HasSecondPassword {
 		writer.WriteU8(1)
 	} else {
 		writer.WriteU8(2)
@@ -46,7 +46,7 @@ func (e *CharacterList) Deserialize(reader *stream.StreamReader) {
 		e.Characters[i].DeserializeOverview(reader)
 	}
 	// 1 means a second password is set. The text itself is not in the packet.
-	_ = reader.ReadU8()
+	e.HasSecondPassword = reader.ReadU8() == 1
 	reader.ReadU8()
 	e.SlotCount = reader.ReadU32()
 }

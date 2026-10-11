@@ -22,6 +22,9 @@ export interface AccountModel {
     characterSlotCount: number;
     lastLoginIp?: string | null;
     macAddress?: string | null;
+    secondPasswordHash?: string | null;
+    secondPasswordFailures: number;
+    secondPasswordLockedUntil?: string | null;
 }
 
 export type AccountRow = {
@@ -37,6 +40,9 @@ export type AccountRow = {
     character_slot_count: number;
     last_login_ip?: string | null;
     mac_address?: string | null;
+    second_password_hash?: string | null;
+    second_password_failures: number;
+    second_password_locked_until?: string | null;
 };
 
 export type AccountDeleteModel = { accountId: number };

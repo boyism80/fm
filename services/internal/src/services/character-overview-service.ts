@@ -35,13 +35,13 @@ export class CharacterOverviewService {
         return this.ctx.appConfiguration.app.world_id;
     }
 
-    async getCharacterList(accountId: number, worldId?: number): Promise<{ characters: CharacterOverviewListItem[]; slotCount: number }> {
+    async getCharacterList(accountId: number, worldId?: number): Promise<{ characters: CharacterOverviewListItem[]; slotCount: number; hasSecondPassword: boolean }> {
         const wid = worldId ?? this.worldId();
         const overviewMap = await this.overviewRepo.getAll(wid, String(accountId));
         const characters = [...overviewMap.values()] as CharacterOverviewListItem[];
         const account = await this.accountRepo.get(wid, accountId);
         const slotCount = account?.characterSlotCount ?? 6;
-        return { characters, slotCount };
+        return { characters, slotCount, hasSecondPassword: account?.secondPasswordHash != null };
     }
 
     /** A free name is reserved for the account until it creates the character or its login session ends. */

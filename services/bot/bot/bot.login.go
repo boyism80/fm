@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -102,6 +103,7 @@ func (b *Bot) login() error {
 		list = pkt.(*response.CharacterList)
 		break
 	}
+	b.SecondPassword = list.HasSecondPassword
 	if len(list.Characters) == 0 {
 		return b.createCharacter()
 	}
@@ -162,26 +164,101 @@ func (b *Bot) createCharacter() error {
 }
 
 func (b *Bot) openGame() error {
-	if err := b.conn.Send(&request.SelectCharacter{CharacterId: b.CharID}); err != nil {
+	transfer, err := b.selectCharacter("")
+	if err != nil {
 		return err
 	}
-	pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+	b.Close()
+	return b.joinGame(transfer.IP, transfer.Port, transfer.CharacterId)
+}
+
+func (b *Bot) selectCharacter(password string) (*response.Transfer, error) {
+	var pkt outbound = &request.SelectCharacter{CharacterId: b.CharID}
+	if password != "" {
+		pkt = &request.SelectCharacterWithSecondPassword{Password: password, CharacterID: b.CharID}
+	}
+	if err := b.conn.Send(pkt); err != nil {
+		return nil, err
+	}
+	reply, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
 		switch pkt.(type) {
-		case *response.Transfer, *response.LoginFailed:
+		case *response.Transfer, *response.LoginFailed, *response.SecondPasswordResult:
 			return true
 		default:
 			return false
 		}
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if failed, ok := pkt.(*response.LoginFailed); ok {
-		return fmt.Errorf("select character failed reason %d", failed.Reason)
+	switch p := reply.(type) {
+	case *response.LoginFailed:
+		return nil, fmt.Errorf("select character failed reason %d", p.Reason)
+	case *response.SecondPasswordResult:
+		return nil, errSecondPasswordRejected
 	}
-	transfer := pkt.(*response.Transfer)
+	return reply.(*response.Transfer), nil
+}
+
+func (b *Bot) Relog(opts Relog) (RelogResult, error) {
+	var result RelogResult
 	b.Close()
-	return b.joinGame(transfer.IP, transfer.Port, transfer.CharacterId)
+	if err := b.login(); err != nil {
+		b.Close()
+		return result, err
+	}
+	result.HasSecondPassword = b.SecondPassword
+
+	if opts.Set != "" {
+		code, err := b.authSecondPassword(request.SecondPasswordModeSet, opts.Set)
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		result.Set = &code
+	}
+	if opts.Remove != "" {
+		code, err := b.authSecondPassword(request.SecondPasswordModeRemove, opts.Remove)
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		result.Remove = &code
+	}
+
+	for _, password := range opts.Passwords {
+		transfer, err := b.selectCharacter(password)
+		if errors.Is(err, errSecondPasswordRejected) {
+			result.Rejected++
+			continue
+		}
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		b.Close()
+		if err := b.joinGame(transfer.IP, transfer.Port, transfer.CharacterId); err != nil {
+			b.Close()
+			return result, err
+		}
+		return result, b.conn.SetDeadline(time.Time{})
+	}
+	b.Close()
+	return result, fmt.Errorf("no password entered the game (%d rejected)", result.Rejected)
+}
+
+func (b *Bot) authSecondPassword(mode uint8, password string) (uint8, error) {
+	if err := b.conn.Send(&request.AuthSecondPassword{Mode: mode, Password: password}); err != nil {
+		return 0, err
+	}
+	pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+		_, ok := pkt.(*response.SecondPasswordResult)
+		return ok
+	})
+	if err != nil {
+		return 0, err
+	}
+	return pkt.(*response.SecondPasswordResult).Result, nil
 }
 
 func (b *Bot) EnterChannel(ip string, port uint16) error {
@@ -328,6 +405,8 @@ func (b *Bot) dial(addr string) (*conn.Conn, error) {
 	return nil, fmt.Errorf("%v: %w", last, ErrConnect)
 }
 
+var errSecondPasswordRejected = errors.New("second password rejected")
+
 var (
 	maleLooks    = looks{face: 20100, hair: 30030, top: 1040002, bottom: 1060002, shoes: 1072001, weapon: 1302000}
 	femaleLooks  = looks{face: 21700, hair: 31002, top: 1041002, bottom: 1061002, shoes: 1072001, weapon: 1302000}
@@ -338,6 +417,7 @@ var (
 		(&response.Transfer{}).Opcode(),
 		(&response.CheckName{}).Opcode(),
 		(&response.CreateCharacter{}).Opcode(),
+		(&response.SecondPasswordResult{}).Opcode(),
 	}
 	gameOpcodes = []uint16{
 		(&response.Login{}).Opcode(),

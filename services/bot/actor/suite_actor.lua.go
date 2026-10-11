@@ -507,6 +507,30 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			})
 			return L.Yield()
 		},
+		"relog": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			var opts bot.Relog
+			if err := a.marshal.FromLua(L.OptTable(2, L.NewTable()), &opts); err != nil {
+				L.ArgError(2, err.Error())
+			}
+			i := slices.Index(a.bots, b)
+			a.park(L)
+			var result bot.RelogResult
+			a.moving[b] = func(err error) {
+				if err != nil {
+					a.Fail(fmt.Sprintf("%s 재접속: %v", b.Name, err))
+					a.wake(L, lua.LFalse)
+					return
+				}
+				a.wake(L, a.marshal.ToLua(L, result))
+			}
+			go func() {
+				var err error
+				result, err = b.Relog(opts)
+				a.actors.Send(a.self, &ChannelEntered{Bot: i, Err: err})
+			}()
+			return L.Yield()
+		},
 		"cash": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			L.Push(lua.LNumber(b.NXCash))

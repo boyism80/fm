@@ -30,8 +30,9 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
             text: `INSERT INTO accounts
                      (id, login_id, password_hash, gender, role, is_banned, ban_reason,
                       is_chat_blocked, chat_blocked_until, character_slot_count, last_login_ip,
-                      mac_address, created_at, updated_at)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW())
+                      mac_address, second_password_hash, second_password_failures,
+                      second_password_locked_until, created_at, updated_at)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),NOW())
                    ON CONFLICT (id) DO UPDATE SET
                      password_hash        = EXCLUDED.password_hash,
                      gender               = EXCLUDED.gender,
@@ -43,6 +44,9 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
                      character_slot_count = EXCLUDED.character_slot_count,
                      last_login_ip        = EXCLUDED.last_login_ip,
                      mac_address          = EXCLUDED.mac_address,
+                     second_password_hash = EXCLUDED.second_password_hash,
+                     second_password_failures = EXCLUDED.second_password_failures,
+                     second_password_locked_until = EXCLUDED.second_password_locked_until,
                      updated_at           = NOW()
                    RETURNING *`,
             values: [
@@ -58,6 +62,9 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
                 row.character_slot_count,
                 row.last_login_ip ?? null,
                 row.mac_address ?? null,
+                row.second_password_hash ?? null,
+                row.second_password_failures,
+                row.second_password_locked_until ?? null,
             ],
         };
     }
@@ -83,6 +90,9 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
             characterSlotCount: row.character_slot_count,
             lastLoginIp: row.last_login_ip ?? null,
             macAddress: row.mac_address ?? null,
+            secondPasswordHash: row.second_password_hash ?? null,
+            secondPasswordFailures: row.second_password_failures,
+            secondPasswordLockedUntil: row.second_password_locked_until ?? null,
         };
     }
 
@@ -100,6 +110,9 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
             character_slot_count: model.characterSlotCount,
             last_login_ip: model.lastLoginIp ?? null,
             mac_address: model.macAddress ?? null,
+            second_password_hash: model.secondPasswordHash ?? null,
+            second_password_failures: model.secondPasswordFailures,
+            second_password_locked_until: model.secondPasswordLockedUntil ?? null,
         };
     }
 }

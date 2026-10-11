@@ -44,6 +44,9 @@ const (
 	Internal_FindPopularShopSearches_FullMethodName        = "/fm.internal.Internal/FindPopularShopSearches"
 	Internal_LoginAccount_FullMethodName                   = "/fm.internal.Internal/LoginAccount"
 	Internal_SetAccountRole_FullMethodName                 = "/fm.internal.Internal/SetAccountRole"
+	Internal_SetSecondPassword_FullMethodName              = "/fm.internal.Internal/SetSecondPassword"
+	Internal_RemoveSecondPassword_FullMethodName           = "/fm.internal.Internal/RemoveSecondPassword"
+	Internal_AuthorizeCharacterSelection_FullMethodName    = "/fm.internal.Internal/AuthorizeCharacterSelection"
 	Internal_GetCharacterList_FullMethodName               = "/fm.internal.Internal/GetCharacterList"
 	Internal_CheckCharacterName_FullMethodName             = "/fm.internal.Internal/CheckCharacterName"
 	Internal_CreateCharacter_FullMethodName                = "/fm.internal.Internal/CreateCharacter"
@@ -158,6 +161,9 @@ type InternalClient interface {
 	FindPopularShopSearches(ctx context.Context, in *FindPopularShopSearchesRequest, opts ...grpc.CallOption) (*FindPopularShopSearchesReply, error)
 	LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error)
 	SetAccountRole(ctx context.Context, in *SetAccountRoleRequest, opts ...grpc.CallOption) (*SetAccountRoleReply, error)
+	SetSecondPassword(ctx context.Context, in *SetSecondPasswordRequest, opts ...grpc.CallOption) (*SecondPasswordReply, error)
+	RemoveSecondPassword(ctx context.Context, in *RemoveSecondPasswordRequest, opts ...grpc.CallOption) (*SecondPasswordReply, error)
+	AuthorizeCharacterSelection(ctx context.Context, in *AuthorizeCharacterSelectionRequest, opts ...grpc.CallOption) (*AuthorizeCharacterSelectionReply, error)
 	GetCharacterList(ctx context.Context, in *GetCharacterListRequest, opts ...grpc.CallOption) (*GetCharacterListReply, error)
 	CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error)
 	CreateCharacter(ctx context.Context, in *CreateCharacterRequest, opts ...grpc.CallOption) (*CreateCharacterReply, error)
@@ -495,6 +501,36 @@ func (c *internalClient) SetAccountRole(ctx context.Context, in *SetAccountRoleR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetAccountRoleReply)
 	err := c.cc.Invoke(ctx, Internal_SetAccountRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SetSecondPassword(ctx context.Context, in *SetSecondPasswordRequest, opts ...grpc.CallOption) (*SecondPasswordReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecondPasswordReply)
+	err := c.cc.Invoke(ctx, Internal_SetSecondPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) RemoveSecondPassword(ctx context.Context, in *RemoveSecondPasswordRequest, opts ...grpc.CallOption) (*SecondPasswordReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecondPasswordReply)
+	err := c.cc.Invoke(ctx, Internal_RemoveSecondPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) AuthorizeCharacterSelection(ctx context.Context, in *AuthorizeCharacterSelectionRequest, opts ...grpc.CallOption) (*AuthorizeCharacterSelectionReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthorizeCharacterSelectionReply)
+	err := c.cc.Invoke(ctx, Internal_AuthorizeCharacterSelection_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1360,6 +1396,9 @@ type InternalServer interface {
 	FindPopularShopSearches(context.Context, *FindPopularShopSearchesRequest) (*FindPopularShopSearchesReply, error)
 	LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error)
 	SetAccountRole(context.Context, *SetAccountRoleRequest) (*SetAccountRoleReply, error)
+	SetSecondPassword(context.Context, *SetSecondPasswordRequest) (*SecondPasswordReply, error)
+	RemoveSecondPassword(context.Context, *RemoveSecondPasswordRequest) (*SecondPasswordReply, error)
+	AuthorizeCharacterSelection(context.Context, *AuthorizeCharacterSelectionRequest) (*AuthorizeCharacterSelectionReply, error)
 	GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error)
 	CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error)
 	CreateCharacter(context.Context, *CreateCharacterRequest) (*CreateCharacterReply, error)
@@ -1527,6 +1566,15 @@ func (UnimplementedInternalServer) LoginAccount(context.Context, *LoginAccountRe
 }
 func (UnimplementedInternalServer) SetAccountRole(context.Context, *SetAccountRoleRequest) (*SetAccountRoleReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetAccountRole not implemented")
+}
+func (UnimplementedInternalServer) SetSecondPassword(context.Context, *SetSecondPasswordRequest) (*SecondPasswordReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetSecondPassword not implemented")
+}
+func (UnimplementedInternalServer) RemoveSecondPassword(context.Context, *RemoveSecondPasswordRequest) (*SecondPasswordReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveSecondPassword not implemented")
+}
+func (UnimplementedInternalServer) AuthorizeCharacterSelection(context.Context, *AuthorizeCharacterSelectionRequest) (*AuthorizeCharacterSelectionReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AuthorizeCharacterSelection not implemented")
 }
 func (UnimplementedInternalServer) GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCharacterList not implemented")
@@ -2244,6 +2292,60 @@ func _Internal_SetAccountRole_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).SetAccountRole(ctx, req.(*SetAccountRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SetSecondPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetSecondPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetSecondPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetSecondPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetSecondPassword(ctx, req.(*SetSecondPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_RemoveSecondPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveSecondPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).RemoveSecondPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_RemoveSecondPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).RemoveSecondPassword(ctx, req.(*RemoveSecondPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_AuthorizeCharacterSelection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthorizeCharacterSelectionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AuthorizeCharacterSelection(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AuthorizeCharacterSelection_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AuthorizeCharacterSelection(ctx, req.(*AuthorizeCharacterSelectionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3848,6 +3950,18 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetAccountRole",
 			Handler:    _Internal_SetAccountRole_Handler,
+		},
+		{
+			MethodName: "SetSecondPassword",
+			Handler:    _Internal_SetSecondPassword_Handler,
+		},
+		{
+			MethodName: "RemoveSecondPassword",
+			Handler:    _Internal_RemoveSecondPassword_Handler,
+		},
+		{
+			MethodName: "AuthorizeCharacterSelection",
+			Handler:    _Internal_AuthorizeCharacterSelection_Handler,
 		},
 		{
 			MethodName: "GetCharacterList",
