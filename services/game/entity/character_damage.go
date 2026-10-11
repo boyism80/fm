@@ -108,8 +108,7 @@ func (ch *Character) damageTo(damages []dto.AttackPair) {
 	seen := make(map[uint32]struct{})
 	for _, damage := range damages {
 		mob := mapInstance.GetMob(damage.OID)
-		if mob == nil {
-			log.Printf("Mob not found for OID: %d", damage.OID)
+		if mob == nil || !mob.IsAlive() {
 			continue
 		}
 		total := uint64(0)
@@ -187,8 +186,7 @@ func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
 }
 
 func (ch *Character) canExplode(meso *Meso, area types.Rect[int32]) bool {
-	fp := meso.GetFieldPlacement()
-	if fp == nil || fp.Owner != ch.GetID() {
+	if meso.GetFieldPlacement() == nil {
 		return false
 	}
 	pos := meso.GetPosition()

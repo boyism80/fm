@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/boyism80/fm/protocol/dto"
@@ -78,16 +79,21 @@ func (v attackValidator) maximums(damages []dto.AttackPair, maxHits int, a attac
 			return nil, fmt.Errorf("invalid hit count for %d", ap.OID)
 		}
 
+		bounds[ti] = dto.AttackPair{OID: ap.OID, DamagePairs: make([]dto.DamagePair, len(ap.DamagePairs))}
+		// The client can still target a mob that died before this packet
+		// arrived. damageTo skips it, so any reported damage passes.
 		mob := v.ch.GetMap().GetMob(ap.OID)
 		if mob == nil || !mob.IsAlive() {
-			return nil, fmt.Errorf("invalid target %d", ap.OID)
+			for hi := range bounds[ti].DamagePairs {
+				bounds[ti].DamagePairs[hi].Damage = math.MaxUint32
+			}
+			continue
 		}
 
 		a.mob = mob
 		a.modifiers = v.targetModifiers(modifiers, mob)
 		a.target = ti
 		a.hits = len(ap.DamagePairs)
-		bounds[ti] = dto.AttackPair{OID: ap.OID, DamagePairs: make([]dto.DamagePair, len(ap.DamagePairs))}
 		for hi := range ap.DamagePairs {
 			a.hit = hi
 			upper, err := maximum(a)
