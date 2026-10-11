@@ -97,7 +97,7 @@ test_suite {
 		if pq.command(bot, "/무적", "무적 상태: enabled") == false then
 			return ctx:fail("무적 설정 실패")
 		end
-		if pq.command(bot, "/즉사", "즉사 상태: enabled") == false then
+		if pq.command(bot, "/즉사 on", "즉사 상태: enabled") == false then
 			return ctx:fail("즉사 설정 실패")
 		end
 		return true

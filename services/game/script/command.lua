@@ -1531,9 +1531,15 @@ local command_funcs = {
 	},
 	["즉사"] = {
 		privilege = ROLE.Admin,
-		usage = "- 즉사 상태 토글 (몬스터·리액터를 한 번에 처치, 아이템 리액터 즉시 반응)",
+		usage = "[on|off] - 즉사 상태 설정, 생략하면 토글 (몬스터·리액터를 한 번에 처치, 아이템 리액터 즉시 반응)",
 		command = function(me, args)
-			me:instant_kill(not me:instant_kill())
+			if args[1] == "on" then
+				me:instant_kill(true)
+			elseif args[1] == "off" then
+				me:instant_kill(false)
+			else
+				me:instant_kill(not me:instant_kill())
+			end
 			local status = me:instant_kill() and "enabled" or "disabled"
 			me:message("즉사 상태: " .. status)
 			return true

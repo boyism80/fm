@@ -46,22 +46,27 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 		return fmt.Errorf("character is not in a map")
 	}
 
-	var skillLevel uint8 = 0
 	var skill *entity.SkillEntry
 	if req.Skill != 0 {
 		skill = character.Skills.Get(req.Skill)
-		activated := character.UseAttackSkill(req.Skill, func() bool {
-			return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
-		})
-		if !activated {
-			character.Listener.OnUpdateStats(character, nil, true)
-			return nil
+	}
+	var skillLevel uint8
+	attacked, err := character.Attack(req.ToAttackInfo(), false, func() bool {
+		return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
+	}, func() {
+		if req.Skill != 0 {
+			skillLevel = uint8(character.GetTotalSkillLevel(req.Skill))
 		}
-		skillLevel = uint8(character.GetTotalSkillLevel(req.Skill))
+		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, true, req.Slot)
+	})
+	if err != nil {
+		return err
+	}
+	if !attacked {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
 	}
 
-	CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, true, req.Slot)
-	character.DamageTo(req.Damages)
 	character.Listener.OnRangedAttack(character, req, skillLevel)
 	if skill != nil {
 		character.CallSkillHook(ctx.ActorContext, skill, "on_activated")

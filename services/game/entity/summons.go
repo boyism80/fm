@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
@@ -67,6 +68,31 @@ func (sc *Summons) Remove(s *Summon, animated bool) {
 		m.RemoveSummon(s.OID, animated)
 	}
 	delete(sc.entries, s.SkillID)
+}
+
+func (sc *Summons) Attack(oid uint32, damages []dto.AttackPair) (*Summon, error) {
+	if sc.owner.GetMap() == nil {
+		return nil, nil
+	}
+	if sc.owner.Spectating() || !sc.owner.IsAlive() {
+		return nil, nil
+	}
+	var summon *Summon
+	for _, s := range sc.entries {
+		if s.OID == oid {
+			summon = s
+			break
+		}
+	}
+	if summon == nil {
+		return nil, nil
+	}
+	if err := NewSummonValidator(sc.owner, summon).Validate(damages); err != nil {
+		return nil, err
+	}
+
+	sc.owner.damageTo(damages)
+	return summon, nil
 }
 
 func (sc *Summons) Get(skillID constant.SkillID) *Summon {

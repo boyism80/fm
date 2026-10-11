@@ -1936,6 +1936,9 @@ func loadMob(path string) (*Mob, error) {
 	model.HpTagBgColor = uint8(info.Int("hpTagBgcolor", 0))
 	model.DropItemPeriod = info.Int("dropItemPeriod", 0)
 	model.DamagedByMob = info.Int("damagedByMob", 0) > 0
+	model.Invincible = info.Int("invincible", 0) != 0
+	model.FixedDamage = info.Int("fixedDamage", 0)
+	model.OnlyNormalAttack = info.Int("onlyNormalAttack", 0) != 0
 	model.CP = info.Int("getCP", 0)
 	model.Point = info.Int("point", 0)
 	model.Link = info.Text("link", "")
@@ -2026,6 +2029,9 @@ func loadMob(path string) (*Mob, error) {
 		case "notAttack":
 		case "underObject":
 		case "damagedBySelectedSkill":
+			for _, skill := range iv.Ints {
+				model.DamagedBySkills = append(model.DamagedBySkills, uint32(skill.Value))
+			}
 		case "atom":
 		case "getCP":
 		case "damagedBySelectedMob":
@@ -2431,6 +2437,11 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 
 						if val, err := strconv.Atoi(strField.Value); err == nil {
 							levelData.AttackCount = val
+						}
+					case "mobCount":
+
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.MobCount = val
 						}
 					case "acc":
 

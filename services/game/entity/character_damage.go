@@ -10,8 +10,42 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-func (ch *Character) DamageTo(damages []dto.AttackPair) {
-	if ch == nil || len(damages) == 0 {
+// Attack validates the reported hits before skill costs and server attack hooks.
+func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() bool, attacking func()) (bool, error) {
+	if ch.GetMap() == nil {
+		return false, fmt.Errorf("attacker has no map")
+	}
+	if ch.Spectating() || !ch.IsAlive() {
+		return false, nil
+	}
+
+	var err error
+	switch {
+	case magic:
+		err = NewMagicValidator(ch).Validate(info)
+	case constant.SkillID(info.Skill) == constant.SkillMesoExplosion:
+		err = NewMesoExplosionValidator(ch).Validate(info)
+	default:
+		err = NewPhysicalValidator(ch).Validate(info)
+	}
+	if err != nil {
+		return false, err
+	}
+
+	if info.Skill != 0 && !ch.UseAttackSkill(info.Skill, activating) {
+		return false, nil
+	}
+
+	attacking()
+	ch.damageTo(info.Damages)
+	if constant.SkillID(info.Skill) == constant.SkillMesoExplosion {
+		ch.ExplodeMesos(info.MesoOIDs)
+	}
+	return true, nil
+}
+
+func (ch *Character) damageTo(damages []dto.AttackPair) {
+	if len(damages) == 0 {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -63,43 +97,51 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 	if mapInstance == nil {
 		return
 	}
-	skillID := uint32(constant.SkillMesoExplosion)
-	skill := ch.GameWorld.GetResources().GetSkill(skillID)
-	if skill == nil {
+	area, ok := ch.mesoExplosionArea()
+	if !ok {
 		return
 	}
-	levelData := skill.GetLevelData(ch.GetTotalSkillLevel(skillID))
-	if levelData == nil {
-		return
-	}
-
-	reach := max(levelData.LT.X, -levelData.LT.X, levelData.RB.X, -levelData.RB.X) + mesoExplosionMargin
-	origin := types.Point[int32]{X: int32(ch.Position.X), Y: int32(ch.Position.Y)}
-	area := types.Rect[int32]{
-		Left:   -reach,
-		Top:    min(levelData.LT.Y, levelData.RB.Y) - mesoExplosionMargin,
-		Right:  reach,
-		Bottom: max(levelData.LT.Y, levelData.RB.Y) + mesoExplosionMargin,
-	}.AtOrigin(origin)
 
 	items := mapInstance.GetItems()
 	for _, oid := range oids {
 		meso, ok := items[oid].(*Meso)
-		if !ok {
-			continue
-		}
-		fp := meso.GetFieldPlacement()
-		if fp == nil || fp.Owner != ch.GetID() {
-			continue
-		}
-		pos := meso.GetPosition()
-		if !area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) {
+		if !ok || !ch.canExplode(meso, area) {
 			continue
 		}
 		if err := mapInstance.RemoveItem(oid, constant.RemoveItemTypeExplosion, ch.GetID()); err != nil {
 			log.Printf("failed to remove meso oid %d for explosion: %v", oid, err)
 		}
 	}
+}
+
+func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
+	skillID := uint32(constant.SkillMesoExplosion)
+	skill := ch.GameWorld.GetResources().GetSkill(skillID)
+	if skill == nil {
+		return types.Rect[int32]{}, false
+	}
+	levelData := skill.GetLevelData(ch.GetTotalSkillLevel(skillID))
+	if levelData == nil {
+		return types.Rect[int32]{}, false
+	}
+
+	reach := max(levelData.LT.X, -levelData.LT.X, levelData.RB.X, -levelData.RB.X) + mesoExplosionMargin
+	origin := types.Point[int32]{X: int32(ch.Position.X), Y: int32(ch.Position.Y)}
+	return types.Rect[int32]{
+		Left:   -reach,
+		Top:    min(levelData.LT.Y, levelData.RB.Y) - mesoExplosionMargin,
+		Right:  reach,
+		Bottom: max(levelData.LT.Y, levelData.RB.Y) + mesoExplosionMargin,
+	}.AtOrigin(origin), true
+}
+
+func (ch *Character) canExplode(meso *Meso, area types.Rect[int32]) bool {
+	fp := meso.GetFieldPlacement()
+	if fp == nil || fp.Owner != ch.GetID() {
+		return false
+	}
+	pos := meso.GetPosition()
+	return area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
 }
 
 func (ch *Character) TakeDamage(damage int32) {

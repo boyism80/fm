@@ -26,27 +26,15 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 	if character == nil {
 		return nil
 	}
-	if character.Spectating() {
-		return nil
-	}
-	if !character.IsAlive() {
-		return nil
-	}
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return nil
-	}
 
-	summon := mapInstance.GetSummon(req.SummonOID)
+	summon, err := character.Summons.Attack(req.SummonOID, req.Damages)
+	if err != nil {
+		return err
+	}
 	if summon == nil {
 		return nil
 	}
-	if summon.OwnerID != character.GetID() {
-		return nil
-	}
-
-	character.DamageTo(req.Damages)
-	CallSummonOnAttackHooks(character, mapInstance, req.Damages, uint32(summon.SkillID))
+	CallSummonOnAttackHooks(character, character.GetMap(), req.Damages, uint32(summon.SkillID))
 
 	var targets []entity.SummonAttackTarget
 	for _, ap := range req.Damages {

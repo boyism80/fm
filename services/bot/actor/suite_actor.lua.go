@@ -659,6 +659,12 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
+			// The server rejects MaxInt32 damage unless instant kill is on, and a
+			// channel change reloads the character without it.
+			if err := a.Command(b, "/즉사 on"); err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
 			a.park(L)
 			a.Request(L, b, b, pkt, a.timeout(), func(p any) bool {
 				die, ok := p.(*response.DieMob)
