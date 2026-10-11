@@ -133,17 +133,22 @@ export class ParcelService {
             return result;
         }
 
-        const channelId = await this.sessionRepo.findChannel(input.worldId, receiverId);
-        if (channelId == null || channelId < 0) {
-            return result;
+        // The parcel is already committed; a failed notice must not report the send as failed.
+        try {
+            const channelId = await this.sessionRepo.findChannel(input.worldId, receiverId);
+            if (channelId == null || channelId < 0) {
+                return result;
+            }
+            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
+            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${input.worldId}.${channelId}.parcel`, "parcel_arrived", {
+                occurred_at: new Date().toISOString(),
+                character_id: receiverId,
+                sender_name: input.parcel.senderName,
+                quick: true,
+            });
+        } catch (err) {
+            console.error("[parcel] arrival notice failed", err);
         }
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${input.worldId}.${channelId}.parcel`, "parcel_arrived", {
-            occurred_at: new Date().toISOString(),
-            character_id: receiverId,
-            sender_name: input.parcel.senderName,
-            quick: true,
-        });
         return result;
     }
 

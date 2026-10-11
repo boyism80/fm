@@ -275,17 +275,22 @@ export class CashShopService {
         });
     }
 
+    // The gift is already committed; a failed notice must not report the purchase as failed.
     private async notifyGift(worldId: number, recipientId: number, senderName: string): Promise<void> {
-        const channelId = await this.sessionRepo.findChannel(worldId, recipientId);
-        if (channelId == null || channelId < 0) {
-            return;
+        try {
+            const channelId = await this.sessionRepo.findChannel(worldId, recipientId);
+            if (channelId == null || channelId < 0) {
+                return;
+            }
+            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
+            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "cash_gift_arrived", {
+                occurred_at: new Date().toISOString(),
+                character_id: recipientId,
+                sender_name: senderName,
+            });
+        } catch (err) {
+            console.error("[cash-shop] gift notice failed", err);
         }
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "cash_gift_arrived", {
-            occurred_at: new Date().toISOString(),
-            character_id: recipientId,
-            sender_name: senderName,
-        });
     }
 
     async gift(req: GiftCashItemRequest): Promise<GiftCashItemReply> {
