@@ -841,8 +841,24 @@ func exportDropsFile(res *wz.Resources, wzPath, outDir string) error {
 	for id, drops := range res.ReactorDrops {
 		reactorDrops[id] = convertDrops(drops)
 	}
+	globalDrops := make([]GlobalDrop, 0, len(res.GlobalDrops))
+	for _, drop := range res.GlobalDrops {
+		globalDrops = append(globalDrops, GlobalDrop{
+			Drop: Drop{
+				ItemID: drop.Item,
+				Money:  drop.Money,
+				Prob:   drop.Prob,
+				Min:    drop.Min,
+				Max:    drop.Max,
+			},
+			Continent: drop.Continent,
+			Type:      uint8(drop.Type),
+			Quest:     drop.Quest,
+		})
+	}
 	return writeYAML(filepath.Join(outDir, "drops.yaml"), DropsFile{
 		Meta:         meta(wzPath),
+		GlobalDrops:  globalDrops,
 		MobDrops:     mobDrops,
 		ReactorDrops: reactorDrops,
 	})

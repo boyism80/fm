@@ -359,15 +359,36 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 
 	resources := m.GameWorld.GetResources()
-	mobDrops, ok := resources.MobDrops[m.Wz.ID]
-	if !ok {
+	mobDrops := resources.MobDrops[m.Wz.ID]
+	if len(mobDrops) == 0 && len(resources.GlobalDrops) == 0 {
 		return
 	}
 
-	var drops []struct {
-		isMeso bool
-		count  int32
-		item   Item
+	type rolledDrop struct {
+		isMeso      bool
+		count       int32
+		item        Item
+		quest       uint32
+		questTagged bool
+	}
+	type dropRule struct {
+		wz.Drop
+		quest  uint32
+		global bool
+	}
+	var drops []rolledDrop
+	var entries []dropRule
+	for _, entry := range mobDrops {
+		entries = append(entries, dropRule{Drop: entry})
+	}
+	for _, entry := range resources.GlobalDrops {
+		if !entry.IsAvailableAt(mapInstance.TemplateID()) || !entry.IsAvailableFor(m.Wz) {
+			continue
+		}
+		if entry.Quest != 0 && !attacker.NeedsQuestItem(entry.Quest, entry.Item) {
+			continue
+		}
+		entries = append(entries, dropRule{Drop: entry.Drop, quest: entry.Quest, global: true})
 	}
 
 	dropRate := float32(m.GameWorld.GetDropRate())
@@ -390,8 +411,8 @@ func (m *Mob) dropItems(attacker *Character) {
 	mobDrop += m.Buffs.GetValue(constant.MobBuffShowdown)
 	mobDropF := float32(mobDrop) / 100.0
 
-	for _, entry := range mobDrops {
-		if m.stealOutcome != nil && entry.Item != 0 && *m.stealOutcome == entry.Item {
+	for _, entry := range entries {
+		if !entry.global && m.stealOutcome != nil && entry.Item != 0 && *m.stealOutcome == entry.Item {
 			continue
 		}
 		adjustedProb := entry.Prob * dropRate * dropRateMulF * mobDropF
@@ -418,11 +439,7 @@ func (m *Mob) dropItems(attacker *Character) {
 			if count == 0 {
 				continue
 			}
-			drops = append(drops, struct {
-				isMeso bool
-				count  int32
-				item   Item
-			}{isMeso: true, count: count, item: nil})
+			drops = append(drops, rolledDrop{isMeso: true, count: count})
 		} else {
 
 			count := uint16(1)
@@ -439,11 +456,7 @@ func (m *Mob) dropItems(attacker *Character) {
 					eq.GetEquipmentCore().RandomizeStats(em)
 				}
 			}
-			drops = append(drops, struct {
-				isMeso bool
-				count  int32
-				item   Item
-			}{isMeso: false, count: int32(count), item: item})
+			drops = append(drops, rolledDrop{count: int32(count), item: item, quest: entry.quest, questTagged: !entry.global})
 		}
 	}
 
@@ -482,7 +495,8 @@ func (m *Mob) dropItems(attacker *Character) {
 				From:        spawnPoint,
 				Owner:       ownerID,
 				DropType:    dropType,
-				QuestTagged: true,
+				QuestTagged: spawn.questTagged,
+				Quest:       spawn.quest,
 			}); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}

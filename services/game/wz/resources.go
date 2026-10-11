@@ -175,6 +175,7 @@ type Resources struct {
 	TamingMobs              map[uint32]*TamingMob
 	MobDrops                map[uint32][]Drop
 	ReactorDrops            map[uint32][]Drop
+	GlobalDrops             []GlobalDrop
 	Skills                  map[uint32]*Skill
 	MobSkills               map[uint32]map[uint8]*MobSkillLevelData
 	Strings                 *StringData
@@ -429,6 +430,7 @@ func NewResources(wzPath string) *Resources {
 
 	mobDrops := map[uint32][]Drop{}
 	reactorDrops := map[uint32][]Drop{}
+	globalDrops := []GlobalDrop{}
 
 	rewardPath := filepath.Join(wzPath, "Reward.img.xml")
 	if loadedMob, loadedReactor, err := loadRewardDrops(rewardPath); err == nil {
@@ -437,6 +439,15 @@ func NewResources(wzPath string) *Resources {
 		fmt.Println("Drop files loaded.")
 	} else if err != nil {
 		log.Printf("Failed to load Reward.img.xml: %v", err)
+	}
+
+	globalRewardPath := filepath.Join(wzPath, "GlobalReward.img.xml")
+	if loaded, err := loadGlobalDrops(globalRewardPath); err == nil {
+		globalDrops = loaded
+		fmt.Println("Global drop file loaded.")
+	} else if !os.IsNotExist(err) {
+		log.Fatal(err)
+		return nil
 	}
 
 	shops := map[uint32]*Shop{}
@@ -630,6 +641,16 @@ func NewResources(wzPath string) *Resources {
 		return nil
 	}
 	fmt.Printf("Loaded %d quests\n", len(quests))
+	for i, drop := range globalDrops {
+		if _, ok := items[drop.Item]; drop.Item != 0 && !ok {
+			log.Fatalf("global drop %d references missing item %d", i, drop.Item)
+			return nil
+		}
+		if _, ok := quests[drop.Quest]; drop.Quest != 0 && !ok {
+			log.Fatalf("global drop %d references missing quest %d", i, drop.Quest)
+			return nil
+		}
+	}
 
 	pquestPath := filepath.Join(wzPath, "Quest.wz", "PQuest.img.xml")
 	if err := attachPartyQuestRules(quests, pquestPath); err != nil {
@@ -836,6 +857,7 @@ func NewResources(wzPath string) *Resources {
 		TamingMobs:        tamingMobs,
 		MobDrops:          mobDrops,
 		ReactorDrops:      reactorDrops,
+		GlobalDrops:       globalDrops,
 		Strings:           stringData,
 		ExpTable:          expTable,
 		Skills:            skills,

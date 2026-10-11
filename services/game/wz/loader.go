@@ -2090,6 +2090,12 @@ type rewardRoot struct {
 	Mobs    []mobDropNode `xml:"imgdir"`
 }
 
+type globalRewardRoot struct {
+	XMLName xml.Name    `xml:"imgdir"`
+	Name    string      `xml:"name,attr"`
+	Drops   []dropEntry `xml:"imgdir"`
+}
+
 type shopItemNode struct {
 	XMLName xml.Name      `xml:"imgdir"`
 	Name    string        `xml:"name,attr"`
@@ -2175,6 +2181,93 @@ func loadRewardDrops(path string) (map[uint32][]Drop, map[uint32][]Drop, error) 
 	}
 
 	return mobDrops, reactorDrops, nil
+}
+
+func loadGlobalDrops(path string) ([]GlobalDrop, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root globalRewardRoot
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	drops := make([]GlobalDrop, 0, len(root.Drops))
+	for i, entry := range root.Drops {
+		drop := GlobalDrop{Continent: -1}
+		itemSet := false
+		moneySet := false
+		for _, field := range entry.Ints {
+			switch field.Name {
+			case "item":
+				if field.Value <= 0 {
+					return nil, fmt.Errorf("global drop %d has invalid item %d", i, field.Value)
+				}
+				itemSet = true
+				drop.Item = uint32(field.Value)
+			case "money":
+				if field.Value <= 0 || field.Value > 1<<31-1 {
+					return nil, fmt.Errorf("global drop %d has invalid money %d", i, field.Value)
+				}
+				moneySet = true
+				drop.Money = uint32(field.Value)
+			case "min":
+				if field.Value < 0 || field.Value > 1<<16-1 {
+					return nil, fmt.Errorf("global drop %d has invalid minimum quantity %d", i, field.Value)
+				}
+				drop.Min = uint16(field.Value)
+			case "max":
+				if field.Value < 0 || field.Value > 1<<16-1 {
+					return nil, fmt.Errorf("global drop %d has invalid maximum quantity %d", i, field.Value)
+				}
+				drop.Max = uint16(field.Value)
+			case "continent":
+				drop.Continent = int32(field.Value)
+			case "type":
+				if field.Value < 0 || field.Value > int(GlobalDropTypeRegular) {
+					return nil, fmt.Errorf("global drop %d has invalid type %d", i, field.Value)
+				}
+				drop.Type = GlobalDropType(field.Value)
+			case "quest":
+				if field.Value < 0 {
+					return nil, fmt.Errorf("global drop %d has invalid quest %d", i, field.Value)
+				}
+				drop.Quest = uint32(field.Value)
+			}
+		}
+		for _, field := range entry.Strings {
+			if field.Name != "prob" {
+				continue
+			}
+			value, err := strconv.ParseFloat(strings.TrimPrefix(field.Value, "[R8]"), 32)
+			if err != nil {
+				return nil, fmt.Errorf("global drop %d has invalid probability %q", i, field.Value)
+			}
+			drop.Prob = float32(value)
+		}
+
+		if itemSet == moneySet {
+			return nil, fmt.Errorf("global drop %d must have exactly one of item or money", i)
+		}
+		if drop.Prob <= 0 || drop.Prob > 1 {
+			return nil, fmt.Errorf("global drop %d has invalid probability %v", i, drop.Prob)
+		}
+		if drop.Min > drop.Max {
+			return nil, fmt.Errorf("global drop %d has invalid quantity range %d..%d", i, drop.Min, drop.Max)
+		}
+		if itemSet && (drop.Min == 0 || drop.Max == 0) {
+			return nil, fmt.Errorf("global drop %d has zero item quantity", i)
+		}
+		if drop.Continent < -1 || drop.Continent > 999 {
+			return nil, fmt.Errorf("global drop %d has invalid continent %d", i, drop.Continent)
+		}
+		drops = append(drops, drop)
+	}
+
+	return drops, nil
 }
 
 func loadExpTable(path string) ([]uint32, error) {

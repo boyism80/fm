@@ -324,6 +324,7 @@ type MapName struct {
 
 type DropsFile struct {
 	Meta         Meta              `yaml:"_meta"`
+	GlobalDrops  []GlobalDrop      `yaml:"global_drops,omitempty"`
 	MobDrops     map[uint32][]Drop `yaml:"mob_drops,omitempty"`
 	ReactorDrops map[uint32][]Drop `yaml:"reactor_drops,omitempty"`
 }
@@ -334,4 +335,11 @@ type Drop struct {
 	Prob   float32 `yaml:"prob"`
 	Min    uint16  `yaml:"min"`
 	Max    uint16  `yaml:"max"`
+}
+
+type GlobalDrop struct {
+	Drop      `yaml:",inline"`
+	Continent int32  `yaml:"continent"`
+	Type      uint8  `yaml:"type"`
+	Quest     uint32 `yaml:"quest,omitempty"`
 }

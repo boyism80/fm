@@ -1241,6 +1241,7 @@ type ItemSpawn struct {
 	DropType    constant.DropType
 	PlayerDrop  bool
 	QuestTagged bool
+	Quest       uint32
 }
 
 func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
@@ -1267,7 +1268,9 @@ func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
 		DropType:     spawn.DropType,
 		PlayerDrop:   spawn.PlayerDrop,
 	}
-	if spawn.QuestTagged {
+	if spawn.Quest != 0 {
+		fp.Quest = spawn.Quest
+	} else if spawn.QuestTagged {
 		fp.Quest = m.GameWorld.GetResources().QuestItems[item.GetModel().GetID()]
 	}
 	fp.initTimers()
