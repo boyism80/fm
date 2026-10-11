@@ -28,6 +28,10 @@ func (h *UseEntrustedShop) Handle(ctx *core.ClientContext, req *request.UseEntru
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 	ch.UseEntrustedShop(ctx.ActorContext)
 	return nil
 }

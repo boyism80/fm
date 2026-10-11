@@ -34,6 +34,10 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 	if character == nil {
 		return nil
 	}
+	if character.UsingCashItem() {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
 
 	resources := h.gs.GetResources()
 	if resources == nil {

@@ -32,6 +32,10 @@ func (h *Duey) Handle(ctx *core.ClientContext, req *request.Duey) error {
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	var err error
 	switch req.Mode {

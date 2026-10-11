@@ -28,6 +28,10 @@ func (h *RemoteEntrustedShop) Handle(ctx *core.ClientContext, req *request.Remot
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 	ch.RejectMiniRoom(ch.UseRemoteEntrustedShop(ctx.ActorContext, req.Slot))
 	return nil
 }

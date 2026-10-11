@@ -25,6 +25,10 @@ func (h *PetAutoPotion) Handle(ctx *core.ClientContext, req *request.PetAutoPoti
 	if character == nil || character.Pets.Active == nil {
 		return nil
 	}
+	if character.UsingCashItem() {
+		character.Listener.OnUnlockAction(character)
+		return nil
+	}
 
 	err := character.Pets.Active.UsePotion(req.Slot, req.ItemID)
 	if err != nil {

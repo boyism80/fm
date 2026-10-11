@@ -11,6 +11,12 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+// UsingCashItem reports a cash item or teleport stone whose cost is taken
+// after an asynchronous step, so its slot must not move in the meantime.
+func (ch *Character) UsingCashItem() bool {
+	return ch.session.cashItemInUse.Load()
+}
+
 func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, text string, ear bool, petSN uint64) {
 	if !ch.session.cashItemInUse.CompareAndSwap(false, true) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
@@ -21,7 +27,7 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, t
 		ch.Listener.OnUpdateStats(ch, nil, true)
 	}
 
-	if ch.GetHp() <= 0 {
+	if ch.GetHp() <= 0 || ch.Dialog.ShopID != 0 || ch.Dialog.Thread() != nil {
 		finish()
 		return
 	}

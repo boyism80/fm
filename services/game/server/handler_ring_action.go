@@ -29,6 +29,10 @@ func (h *RingAction) Handle(ctx *core.ClientContext, req *request.RingAction) er
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	switch req.Mode {
 	case pconst.RingActionPropose:

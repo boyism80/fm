@@ -25,6 +25,10 @@ func (h *UseMountFood) Handle(ctx *core.ClientContext, req *request.UseMountFood
 	if character == nil {
 		return nil
 	}
+	if character.UsingCashItem() {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
 
 	// The client locks its actions on use and waits for an unlock even on success.
 	character.Mount.Feed(req.Slot, req.ItemID)

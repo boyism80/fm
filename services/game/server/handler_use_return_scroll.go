@@ -26,6 +26,10 @@ func (*UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnSc
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	return ch.UseReturnScroll(ctx.ActorContext, int16(req.Slot), req.ItemID)
 }

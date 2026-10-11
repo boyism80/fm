@@ -28,6 +28,10 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	mapInstance := ch.GetMap()
 	if mapInstance != nil && mapInstance.Wz.Limits(constant.FieldLimitPotion) {

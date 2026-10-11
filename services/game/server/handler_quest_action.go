@@ -34,6 +34,10 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		log.Printf("Character is nil for client")
 		return fmt.Errorf("character is nil")
 	}
+	if character.UsingCashItem() {
+		character.Listener.OnUnlockAction(character)
+		return nil
+	}
 
 	resources := character.GameWorld.GetResources()
 	if resources == nil {

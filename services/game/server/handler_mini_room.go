@@ -32,6 +32,10 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	var err error
 	switch req.Mode {

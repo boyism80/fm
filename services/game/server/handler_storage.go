@@ -32,6 +32,10 @@ func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	var err error
 	switch req.Mode {

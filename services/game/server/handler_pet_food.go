@@ -25,6 +25,10 @@ func (h *PetFood) Handle(ctx *core.ClientContext, req *request.PetFood) error {
 	if character == nil || character.Pets.Active == nil {
 		return nil
 	}
+	if character.UsingCashItem() {
+		character.Listener.OnUnlockAction(character)
+		return nil
+	}
 
 	err := character.Pets.Active.Feed(req.Slot, req.ItemID)
 	if err != nil {

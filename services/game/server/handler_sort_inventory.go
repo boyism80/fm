@@ -31,7 +31,7 @@ func (h *SortInventory) Handle(ctx *core.ClientContext, req *request.SortInvento
 		log.Printf("Character is nil for client")
 		return fmt.Errorf("character is nil")
 	}
-	if character.Trading() {
+	if character.Trading() || character.UsingCashItem() {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}

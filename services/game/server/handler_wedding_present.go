@@ -30,6 +30,10 @@ func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPre
 	if ch == nil {
 		return nil
 	}
+	if ch.UsingCashItem() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
 
 	var err error
 	switch req.Mode {
