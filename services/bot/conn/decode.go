@@ -170,7 +170,12 @@ var decoders = func() []decoder {
 		newDecoder[response.GuildInvite](func(body []byte) bool {
 			return len(body) > 0 && pconst.GuildSubOpcode(body[0]) == pconst.GuildS2CInvite
 		}),
+		newDecoder[response.GuildCapacityChange](sub(uint8(pconst.GuildS2CCapacityChange))),
+		newDecoder[response.GuildUpdateGP](sub(uint8(pconst.GuildS2CUpdateGP))),
 		newDecoder[response.GuildMessage](nil),
+		newDecoder[response.AllianceCreate](sub(uint8(pconst.AllianceS2CCreate))),
+		newDecoder[response.AllianceUpdateInfo](sub(uint8(pconst.AllianceS2CUpdateInfo))),
+		newDecoder[response.AllianceDisband](sub(uint8(pconst.AllianceS2CDisband))),
 		newDecoder[response.SwitchChannel](nil),
 		newDecoder[response.ServerBlocked](nil),
 		newDecoder[response.PartyCreated](party(pconst.PartyS2CPartyCreated)),

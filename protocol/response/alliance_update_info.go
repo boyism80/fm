@@ -22,4 +22,7 @@ func (p *AllianceUpdateInfo) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *AllianceUpdateInfo) Deserialize(*stream.StreamReader) {}
+func (p *AllianceUpdateInfo) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.Info = readAllianceInfo(r)
+}

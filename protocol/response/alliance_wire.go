@@ -21,6 +21,20 @@ func writeAllianceInfo(w *stream.StreamWriter, info *dto.AllianceInfo) {
 	w.WriteStr16(info.Notice)
 }
 
+func readAllianceInfo(r *stream.StreamReader) *dto.AllianceInfo {
+	info := &dto.AllianceInfo{AllianceID: r.ReadU32(), Name: r.ReadStr16()}
+	for i := 0; i < 5; i++ {
+		info.RankTitles[i] = r.ReadStr16()
+	}
+	info.GuildIDs = make([]uint32, r.ReadU8())
+	for i := range info.GuildIDs {
+		info.GuildIDs[i] = r.ReadU32()
+	}
+	info.Capacity = r.ReadU32()
+	info.Notice = r.ReadStr16()
+	return info
+}
+
 func writeAllianceMembershipChangeGuilds(w *stream.StreamWriter, inAlliance bool, guilds []dto.AllianceMembershipChangeGuild) {
 	w.WriteU8(uint8(len(guilds)))
 	for _, g := range guilds {

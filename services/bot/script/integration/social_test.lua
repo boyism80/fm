@@ -1,6 +1,8 @@
 local pq = require("script/integration/lib/party_quest")
+local fault = require("script/integration/lib/fault")
 
 local HENESYS = 100000000
+local ELLINIA = 101000000
 local MEGAPHONE = { sn = 10000804 }
 
 local WHISPER = { find = 5, send = 6, find_result = 9, send_result = 10, receive = 18 }
@@ -14,6 +16,10 @@ local POPULATION = { down = 0, up = 1 }
 local POPULATION_RESULT = { given = 0, wrong_name = 1, level_too_low = 2, already_today = 3, received = 5 }
 local FAMILY_RESULT = { failed = 5, junior_level_too_high = 8 }
 local CASH_SHOP = { gift = 4, gift_sent = 59 }
+local FAMILY_FEATURE = { teleport = 0, summon = 1 }
+local TELEPORT_COST = 300
+local SUMMON_COST = 500
+local SETTLE_WAIT_MS = 40000
 
 local SOCIAL = {
 	whisper = true,
@@ -26,6 +32,7 @@ local SOCIAL = {
 	family_joined = true,
 	family_info = true,
 	family_chart = true,
+	family_summon = true,
 }
 
 local inbox = {}
@@ -282,7 +289,7 @@ local function notes_flow(ctx, a, b)
 	return clear_notes(ctx, b)
 end
 
-local function thanks_flow(ctx, buyer, receiver)
+local function thank(ctx, buyer, receiver)
 	if setup(ctx, buyer, 30) == false or setup(ctx, receiver, 30) == false then
 		return false
 	end
@@ -322,13 +329,6 @@ local function thanks_flow(ctx, buyer, receiver)
 	end, "감사 쪽지 전송") == false then
 		return false
 	end
-	send(receiver, req.notes { action = NOTES.send, target = buyer:name(), message = "또 감사", kind = NOTE_KIND.population })
-	local again = expect(ctx, receiver, "notes", function(p)
-		return p.action == NOTES_PACKET.failed
-	end, "두 번째 감사 쪽지")
-	if again == false or check(ctx, again.status == NOTE_RESULT.inbox_full, "두 번째 감사 쪽지 결과 " .. again.status) == false then
-		return false
-	end
 
 	local list = list_notes(ctx, buyer)
 	if list == false then
@@ -336,6 +336,21 @@ local function thanks_flow(ctx, buyer, receiver)
 	end
 	local note = list.notes[1]
 	if check(ctx, #list.notes == 1 and note.sender == receiver:name() and note.kind == NOTE_KIND.population, "감사 쪽지 목록이 다름: " .. #list.notes) == false then
+		return false
+	end
+	return note
+end
+
+local function thanks_flow(ctx, buyer, receiver)
+	local note = thank(ctx, buyer, receiver)
+	if note == false then
+		return false
+	end
+	send(receiver, req.notes { action = NOTES.send, target = buyer:name(), message = "또 감사", kind = NOTE_KIND.population })
+	local again = expect(ctx, receiver, "notes", function(p)
+		return p.action == NOTES_PACKET.failed
+	end, "두 번째 감사 쪽지")
+	if again == false or check(ctx, again.status == NOTE_RESULT.inbox_full, "두 번째 감사 쪽지 결과 " .. again.status) == false then
 		return false
 	end
 
@@ -468,8 +483,338 @@ local function family_flow(ctx, senior, junior, low)
 	return check(ctx, again.code == FAMILY_RESULT.failed, "선배 없는 탈퇴 결과 " .. again.code)
 end
 
+-- The fault is server wide, so it is turned off right after the one request it targets.
+local function remove_unknown(ctx, buyer, note, mode)
+	if fault.rpc(buyer, "Notes", mode) == false then
+		return ctx:fail("Notes 장애 주입 실패")
+	end
+	send(buyer, req.notes { action = NOTES.remove, removals = { { id = note.id, kind = note.kind } } })
+	ctx:sleep(1000)
+	fault.rpc(buyer, "Notes", "off")
+	return true
+end
+
+local function wait_population(ctx, bot, population, what)
+	for _ = 1, SETTLE_WAIT_MS / 1000 do
+		if bot:population() == population then
+			return true
+		end
+		ctx:sleep(1000)
+	end
+	return check(ctx, false, string.format("%s %s: 인기도 %d (기대 %d)", bot:name(), what, bot:population(), population))
+end
+
+local function settled(ctx, buyer, population)
+	ctx:sleep(3000)
+	if check(ctx, buyer:population() == population, string.format("정리 뒤 인기도 %d (기대 %d, 중복 지급 없음)", buyer:population(), population)) == false then
+		return false
+	end
+	local list = list_notes(ctx, buyer)
+	if list == false then
+		return false
+	end
+	return check(ctx, #list.notes == 0, "정리 뒤 감사 쪽지가 남음: " .. #list.notes)
+end
+
+local function note_lost_timer(ctx, buyer, receiver)
+	local note = thank(ctx, buyer, receiver)
+	if note == false then
+		return false
+	end
+	local before = buyer:population()
+	if remove_unknown(ctx, buyer, note, "lost") == false then
+		return false
+	end
+	if check(ctx, buyer:population() == before, "장애 직후 인기도가 오름") == false then
+		return false
+	end
+	if wait_population(ctx, buyer, before + 1, "주기 정리로 인기도 지급") == false then
+		return false
+	end
+	return settled(ctx, buyer, before + 1)
+end
+
+local function note_lost_relogin(ctx, buyer, receiver)
+	local note = thank(ctx, buyer, receiver)
+	if note == false then
+		return false
+	end
+	local before = buyer:population()
+	if remove_unknown(ctx, buyer, note, "lost") == false then
+		return false
+	end
+	if buyer:transfer(1) == false then
+		return ctx:fail("채널 이동 실패")
+	end
+	if wait_population(ctx, buyer, before + 1, "재접속 정리로 인기도 지급") == false then
+		return false
+	end
+	if buyer:transfer(0) == false then
+		return ctx:fail("원래 채널 복귀 실패")
+	end
+	return settled(ctx, buyer, before + 1)
+end
+
+local function note_not_sent(ctx, buyer, receiver)
+	local note = thank(ctx, buyer, receiver)
+	if note == false then
+		return false
+	end
+	local before = buyer:population()
+	if remove_unknown(ctx, buyer, note, "on") == false then
+		return false
+	end
+	if wait_population(ctx, buyer, before + 1, "주기 정리로 다시 삭제") == false then
+		return false
+	end
+	return settled(ctx, buyer, before + 1)
+end
+
+-- Internal's own record, read through the pedigree, so a stale family window cannot hide a held cost.
+local function reputation(ctx, bot)
+	send(bot, req.family_pedigree { name = bot:name() })
+	local chart = expect(ctx, bot, "family_chart", nil, "가계도")
+	if chart == false then
+		return nil
+	end
+	for _, member in ipairs(chart.members) do
+		if member.character_id == bot:id() then
+			return member.reputation
+		end
+	end
+	ctx:fail(bot:name() .. " 가계도에 자신이 없음")
+	return nil
+end
+
+local function reputation_is(ctx, bot, expected, what)
+	local have = reputation(ctx, bot)
+	if have == nil then
+		return false
+	end
+	return check(ctx, have == expected, string.format("%s %s: 명성 %d (기대 %d)", bot:name(), what, have, expected))
+end
+
+local function wait_reputation(ctx, bot, expected, what)
+	for _ = 1, SETTLE_WAIT_MS / 2000 do
+		if reputation(ctx, bot) == expected then
+			return true
+		end
+		ctx:sleep(2000)
+	end
+	return reputation_is(ctx, bot, expected, what)
+end
+
+local function join(ctx, senior, junior)
+	send(senior, req.family_remove_senior {})
+	send(junior, req.family_remove_senior {})
+	ctx:sleep(1000)
+	if junior:map_move(ELLINIA) == false then
+		return ctx:fail("주니어 맵 이동 실패")
+	end
+	if senior:map_move(ELLINIA) == false then
+		return ctx:fail("시니어 맵 이동 실패")
+	end
+
+	send(senior, req.family_invite { name = junior:name() })
+	if expect(ctx, junior, "family_invite", nil, "패밀리 초대 수신") == false then
+		return false
+	end
+	send(junior, req.family_accept { senior_id = senior:id(), name = senior:name(), accepted = true })
+	if expect(ctx, junior, "family_joined", nil, "패밀리 가입 알림") == false then
+		return false
+	end
+	if junior:map_move(HENESYS) == false then
+		return ctx:fail("주니어 헤네시스 이동 실패")
+	end
+	return true
+end
+
+-- The junior's progress is credited to the senior on save.
+local function earn(ctx, senior, junior, need)
+	for _ = 1, 5 do
+		if pq.command(junior, "/경험치얻기 200000", "경험치 200000 획득") == false then
+			return ctx:fail("경험치 획득 실패")
+		end
+		if pq.command(junior, "/서버저장", "서버 저장이 완료되었습니다") == false then
+			return ctx:fail("서버 저장 실패")
+		end
+		for _ = 1, 10 do
+			local have = reputation(ctx, senior)
+			if have ~= nil and have >= need then
+				return have
+			end
+			ctx:sleep(1000)
+		end
+	end
+	ctx:fail("시니어 명성이 쌓이지 않음")
+	return nil
+end
+
+local function prepare_family(ctx, senior, junior, need)
+	if setup(ctx, senior, 50) == false or setup(ctx, junior, 40) == false then
+		return nil
+	end
+	if join(ctx, senior, junior) == false then
+		return nil
+	end
+	return earn(ctx, senior, junior, need)
+end
+
+local function arrives(ctx, bot, map, what)
+	for _ = 1, 50 do
+		if bot:map() == map then
+			return true
+		end
+		ctx:sleep(100)
+	end
+	return ctx:fail(string.format("%s %s: 맵 %s (기대 %d)", bot:name(), what, tostring(bot:map()), map))
+end
+
+local function teleport(junior)
+	return req.family_use { feature = FAMILY_FEATURE.teleport, name = junior:name() }
+end
+
+-- The fault is server wide, so it is turned off right after the one request it targets.
+local function move_unknown(ctx, senior, junior, mode)
+	local before = prepare_family(ctx, senior, junior, TELEPORT_COST)
+	if before == nil then
+		return nil
+	end
+	if fault.rpc(senior, "UseFamilyFeature", mode) == false then
+		ctx:fail("UseFamilyFeature 장애 주입 실패")
+		return nil
+	end
+	send(senior, teleport(junior))
+	ctx:sleep(1000)
+	fault.rpc(senior, "UseFamilyFeature", "off")
+	if check(ctx, senior:map() == ELLINIA, "장애 중 이동함: " .. tostring(senior:map())) == false then
+		return nil
+	end
+	return before
+end
+
+local function move_lost_timer(ctx, senior, junior)
+	local before = move_unknown(ctx, senior, junior, "lost")
+	if before == nil then
+		return false
+	end
+	if reputation_is(ctx, senior, before - TELEPORT_COST, "장애 직후 (이동 예약됨)") == false then
+		return false
+	end
+	if wait_reputation(ctx, senior, before, "주기 정리로 명성 환불") == false then
+		return false
+	end
+	return check(ctx, senior:map() == ELLINIA, "환불 뒤 이동함: " .. tostring(senior:map()))
+end
+
+local function move_lost_relogin(ctx, senior, junior)
+	local before = move_unknown(ctx, senior, junior, "lost")
+	if before == nil then
+		return false
+	end
+	if senior:transfer(1) == false then
+		return ctx:fail("채널 이동 실패")
+	end
+	if wait_reputation(ctx, senior, before, "재접속 정리로 명성 환불") == false then
+		return false
+	end
+	if senior:transfer(0) == false then
+		return ctx:fail("원래 채널 복귀 실패")
+	end
+	ctx:sleep(1000)
+	return reputation_is(ctx, senior, before, "복귀 뒤 (중복 환불 없음)")
+end
+
+local function move_not_sent(ctx, senior, junior)
+	local before = move_unknown(ctx, senior, junior, "on")
+	if before == nil then
+		return false
+	end
+	if reputation_is(ctx, senior, before, "장애 직후 (전송 안 됨)") == false then
+		return false
+	end
+	ctx:sleep(SETTLE_WAIT_MS)
+	return reputation_is(ctx, senior, before, "주기 정리 뒤")
+end
+
+local function late_move_after_refund(ctx, senior, junior)
+	local before = prepare_family(ctx, senior, junior, TELEPORT_COST)
+	if before == nil then
+		return false
+	end
+	if fault.rpc_delay(senior, "UseFamilyFeature", 12000) == false then
+		return ctx:fail("UseFamilyFeature 지연 주입 실패")
+	end
+	send(senior, teleport(junior))
+	ctx:sleep(300)
+	fault.rpc_delay(junior, "UseFamilyFeature", 0)
+
+	if senior:transfer(1) == false then
+		return ctx:fail("채널 이동 실패")
+	end
+	ctx:sleep(2000)
+	if senior:transfer(0) == false then
+		return ctx:fail("원래 채널 복귀 실패")
+	end
+	ctx:sleep(14000)
+	if check(ctx, senior:map() == ELLINIA, "중단한 뒤 늦은 이동이 반영됨: " .. tostring(senior:map())) == false then
+		return false
+	end
+	return reputation_is(ctx, senior, before, "늦은 요청 뒤")
+end
+
+-- Arrival completes the reservation, so neither the timer nor a relogin refunds it.
+local function teleport_succeeds(ctx, senior, junior)
+	local before = prepare_family(ctx, senior, junior, TELEPORT_COST)
+	if before == nil then
+		return false
+	end
+	send(senior, teleport(junior))
+	if arrives(ctx, senior, HENESYS, "순간이동") == false then
+		return false
+	end
+	if reputation_is(ctx, senior, before - TELEPORT_COST, "순간이동 직후") == false then
+		return false
+	end
+	ctx:sleep(SETTLE_WAIT_MS)
+	if reputation_is(ctx, senior, before - TELEPORT_COST, "주기 정리 뒤 (환불 없음)") == false then
+		return false
+	end
+	if senior:transfer(1) == false or senior:transfer(0) == false then
+		return ctx:fail("채널 이동 실패")
+	end
+	return reputation_is(ctx, senior, before - TELEPORT_COST, "재접속 뒤 (환불 없음)")
+end
+
+-- The summoner pays only after the summoned member accepts and arrives on the summoner's map.
+local function summon_succeeds(ctx, senior, junior)
+	local before = prepare_family(ctx, senior, junior, SUMMON_COST)
+	if before == nil then
+		return false
+	end
+	inbox[junior:id()] = {}
+	send(senior, req.family_use { feature = FAMILY_FEATURE.summon, name = junior:name() })
+	local call = expect(ctx, junior, "family_summon", nil, "소환 요청 수신")
+	if call == false or check(ctx, call.name == senior:name(), "소환 요청자 이름이 다름: " .. tostring(call.name)) == false then
+		return false
+	end
+	if reputation_is(ctx, senior, before, "소환 수락 전 (비용 없음)") == false then
+		return false
+	end
+
+	send(junior, req.family_summon { name = senior:name(), accepted = true })
+	if arrives(ctx, junior, ELLINIA, "소환") == false then
+		return false
+	end
+	if reputation_is(ctx, senior, before - SUMMON_COST, "소환 직후") == false then
+		return false
+	end
+	ctx:sleep(SETTLE_WAIT_MS)
+	return reputation_is(ctx, senior, before - SUMMON_COST, "주기 정리 뒤 (환불 없음)")
+end
+
 test_suite {
-	name = "Social: 귓속말·메신저·쪽지·감사 쪽지·인기도·패밀리",
+	name = "Social: 귓속말·메신저·쪽지·감사 쪽지·인기도·패밀리·응답 유실 복구",
 	bot_count = 14,
 
 	scenarios = {
@@ -483,5 +828,14 @@ test_suite {
 				flow(family_flow, 11, 12, 13),
 			},
 		},
+		flow(note_lost_timer, 0, 1),
+		flow(note_lost_relogin, 2, 3),
+		flow(note_not_sent, 0, 1),
+		flow(move_lost_timer, 4, 5),
+		flow(move_lost_relogin, 4, 5),
+		flow(move_not_sent, 4, 5),
+		flow(late_move_after_refund, 4, 5),
+		flow(teleport_succeeds, 4, 5),
+		flow(summon_succeeds, 4, 5),
 	},
 }

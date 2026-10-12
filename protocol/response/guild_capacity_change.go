@@ -21,4 +21,8 @@ func (p *GuildCapacityChange) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *GuildCapacityChange) Deserialize(*stream.StreamReader) {}
+func (p *GuildCapacityChange) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.GuildID = r.ReadU32()
+	p.Capacity = r.ReadU8()
+}

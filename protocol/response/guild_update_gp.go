@@ -23,4 +23,9 @@ func (p *GuildUpdateGP) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *GuildUpdateGP) Deserialize(*stream.StreamReader) {}
+func (p *GuildUpdateGP) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.GuildID = r.ReadU32()
+	p.GP = r.ReadU32()
+	p.GuildLevel = r.ReadU32()
+}

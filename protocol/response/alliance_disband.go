@@ -19,4 +19,7 @@ func (p *AllianceDisband) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *AllianceDisband) Deserialize(*stream.StreamReader) {}
+func (p *AllianceDisband) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.AllianceID = r.ReadU32()
+}

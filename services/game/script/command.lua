@@ -1085,6 +1085,24 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["길드GP얻기"] = {
+		privilege = ROLE.Admin,
+		usage = "<양> - 소속 길드 GP 획득",
+		command = function(me, args)
+			local amount = tonumber(args[1] or "")
+			if not amount or amount <= 0 then
+				me:message("사용법: /길드GP얻기 <양>")
+				return true
+			end
+			if not me:guild() then
+				me:message("길드에 가입되어 있지 않습니다.")
+				return true
+			end
+			me:gain_guild_gp(amount)
+			me:message(string.format("길드 GP %d 획득 요청.", amount))
+			return true
+		end,
+	},
 	["캐시얻기"] = {
 		privilege = ROLE.Admin,
 		usage = "<NX캐시> [메이플포인트] - 계정 캐시 증감",
