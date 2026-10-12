@@ -27,7 +27,7 @@ func (h *noteMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.EnsureSend(nil, payload.CharacterID, &g_actor.DeliverNoteArrived{
+	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverNoteArrived{
 		CharacterID: payload.CharacterID,
 	})
 	return nil

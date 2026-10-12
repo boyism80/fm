@@ -199,7 +199,7 @@ func (g *StateMachineGroup) CallGroupHook(hook string, args ...interface{}) {
 	if m == nil {
 		return
 	}
-	root := m.EnsureLuaRoot(nil)
+	root := m.LuaRoot(nil)
 	if root == nil {
 		return
 	}

@@ -33,7 +33,7 @@ func (h *partyMqPartyInvite) Handle(_ actor.Context, raw json.RawMessage) error 
 	if payload.TargetCharacterID == 0 {
 		return nil
 	}
-	h.gs.EnsureSend(nil, payload.TargetCharacterID, &g_actor.DeliverPartyInvite{
+	h.gs.Deliver(nil, payload.TargetCharacterID, &g_actor.DeliverPartyInvite{
 		CharacterID: payload.TargetCharacterID,
 		PartyID:     payload.PartyID,
 		InviterName: payload.InviterName,

@@ -30,7 +30,7 @@ func (h *cashGiftMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.EnsureSend(nil, payload.CharacterID, &g_actor.DeliverMessage{
+	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverMessage{
 		CharacterID: payload.CharacterID,
 		MessageType: gameconst.MsgNotice,
 		Message:     fmt.Sprintf("%s님이 캐시샵 선물을 보냈습니다. 캐시샵 보관함을 확인하세요.", payload.SenderName),

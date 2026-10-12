@@ -157,7 +157,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				return nil
 			}
 		}
-		h.gs.EnsureSend(nil, targetID, &g_actor.DeliverGuildInvite{
+		h.gs.Deliver(nil, targetID, &g_actor.DeliverGuildInvite{
 			CharacterID:        targetID,
 			InviterCharacterID: charID,
 			GuildID:            guildID,

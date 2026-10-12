@@ -54,7 +54,7 @@ func (h *buddyMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
 			continue
 		}
-		gs.EnsureSend(nil, recipientID, &g_actor.DeliverMultiChat{
+		gs.Deliver(nil, recipientID, &g_actor.DeliverMultiChat{
 			CharacterID: recipientID,
 			Mode:        mode,
 			SenderName:  payload.SenderName,

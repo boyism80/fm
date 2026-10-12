@@ -167,7 +167,7 @@ func (ac *AllianceCache) deliverToOnlineMember(memberID uint32, msg interface{})
 	if ac.gs.characterRuntime == nil || !ac.gs.characterRuntime.Exists(memberID) {
 		return
 	}
-	ac.gs.EnsureSend(nil, memberID, msg)
+	ac.gs.Deliver(nil, memberID, msg)
 }
 
 func (ac *AllianceCache) BroadcastNoticeChanged(alliancePb *internal.Alliance, notice string) {
@@ -189,7 +189,7 @@ func (ac *AllianceCache) BroadcastNoticeChanged(alliancePb *internal.Alliance, n
 	}
 	msg := gameconst.AllianceNoticeChangedMessagePrefix + notice
 	ac.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
-		ac.gs.EnsureSend(nil, memberID, &g_actor.DeliverMessage{
+		ac.gs.Deliver(nil, memberID, &g_actor.DeliverMessage{
 			CharacterID: memberID,
 			MessageType: gameconst.MsgPopup,
 			Message:     msg,
@@ -221,7 +221,7 @@ func (ac *AllianceCache) BroadcastLeaderChanged(alliancePb *internal.Alliance, o
 			Guilds:      guilds,
 		})
 		if leaderNotice != "" {
-			ac.gs.EnsureSend(nil, memberID, &g_actor.DeliverMessage{
+			ac.gs.Deliver(nil, memberID, &g_actor.DeliverMessage{
 				CharacterID: memberID,
 				MessageType: gameconst.MsgPinkText,
 				Message:     leaderNotice,

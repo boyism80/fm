@@ -51,7 +51,7 @@ func (gc *GuildCache) BroadcastNoticeChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	notice := g.Notice
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildNoticeChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildNoticeChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			Notice:      notice,
@@ -82,7 +82,7 @@ func (gc *GuildCache) BroadcastMemberRankChanged(guildID uint32, targetCharacter
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildMemberRankChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberRankChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			TargetID:    targetCharacterID,
@@ -123,7 +123,7 @@ func (gc *GuildCache) BroadcastMemberFieldsChanged(guildID uint32, subjectID uin
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildMemberFieldsChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberFieldsChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			SubjectID:   subjectID,
@@ -143,7 +143,7 @@ func (gc *GuildCache) BroadcastMemberOnlineChanged(guildID uint32, subjectID uin
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, subjectID, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildMemberOnlineChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberOnlineChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			SubjectID:   subjectID,
@@ -164,7 +164,7 @@ func (gc *GuildCache) BroadcastEmblemChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	logo := g.Logo
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildEmblemChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildEmblemChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			LogoBG:      uint16(logo.LogoBG),
@@ -183,7 +183,7 @@ func (gc *GuildCache) BroadcastCapacityChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	capacity := uint8(g.Capacity)
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildCapacityChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildCapacityChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			Capacity:    capacity,
@@ -200,7 +200,7 @@ func (gc *GuildCache) BroadcastGPChanged(guildID uint32, amount int32) {
 	gp := g.GP
 	level := g.Level()
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildGPChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildGPChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			GP:          gp,
@@ -218,7 +218,7 @@ func (gc *GuildCache) BroadcastRankTitlesChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	rankTitles := g.RankTitles
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildRankTitleChange{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildRankTitleChange{
 			CharacterID: memberID,
 			GuildID:     gid,
 			RankTitles:  rankTitles,
@@ -249,7 +249,7 @@ func (gc *GuildCache) BroadcastMemberJoined(guildID uint32, joinerCharacterID ui
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, joinerCharacterID, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildNewMember{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildNewMember{
 			CharacterID: memberID,
 			GuildID:     gid,
 			Member:      joinerStatus,
@@ -283,12 +283,12 @@ func (gc *GuildCache) BroadcastMemberLeft(prevGuild *entity.Guild, leftCharacter
 		}
 		if memberID == leftCharacterID {
 			if expelled {
-				gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildExpelSelf{
+				gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildExpelSelf{
 					CharacterID: memberID,
 					GuildID:     guildID,
 				})
 			} else {
-				gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildLeaveSelf{
+				gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildLeaveSelf{
 					CharacterID: memberID,
 				})
 			}
@@ -297,7 +297,7 @@ func (gc *GuildCache) BroadcastMemberLeft(prevGuild *entity.Guild, leftCharacter
 		if gc.gs == nil || gc.gs.characterRuntime == nil || !gc.gs.characterRuntime.Exists(memberID) {
 			continue
 		}
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildMemberLeft{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberLeft{
 			CharacterID: memberID,
 			GuildID:     guildID,
 			TargetID:    leftCharacterID,
@@ -323,7 +323,7 @@ func (gc *GuildCache) BroadcastDisbanded(prevGuild *entity.Guild, memberCharacte
 		if gc.gs == nil || gc.gs.characterRuntime == nil || !gc.gs.characterRuntime.Exists(memberID) {
 			continue
 		}
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildDisbandSelf{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildDisbandSelf{
 			CharacterID: memberID,
 			GuildID:     guildID,
 		})
@@ -336,7 +336,7 @@ func (gc *GuildCache) BroadcastMessage(guildID uint32, messageType constant.Serv
 		return
 	}
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverMessage{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverMessage{
 			CharacterID: memberID,
 			MessageType: messageType,
 			Message:     message,
@@ -354,7 +354,7 @@ func (gc *GuildCache) BroadcastMultiChat(guildID uint32, senderCharacterID uint3
 	}
 	mode := pconst.MultiChatModeGuild
 	gc.forEachOnlineGuildMember(g, senderCharacterID, func(memberID uint32) {
-		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverMultiChat{
+		gc.gs.Deliver(nil, memberID, &g_actor.DeliverMultiChat{
 			CharacterID: memberID,
 			Mode:        mode,
 			SenderName:  senderName,

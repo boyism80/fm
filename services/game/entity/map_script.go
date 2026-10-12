@@ -38,7 +38,7 @@ func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, a
 		promise.SetError(fmt.Errorf("empty function name"))
 		return promise
 	}
-	root := m.EnsureLuaRoot(ctx)
+	root := m.LuaRoot(ctx)
 	if root == nil {
 		promise.SetError(fmt.Errorf("lua root not found"))
 		return promise

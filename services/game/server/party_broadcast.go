@@ -28,7 +28,7 @@ func (pc *PartyCache) BroadcastMemberJoined(party *entity.Party, joinedCharacter
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateJoin{
+		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateJoin{
 			CharacterID:     m.GetCharacterId(),
 			ForChannel:      int32(pc.gs.config.ChannelId),
 			PartyID:         party.GetPartyId(),
@@ -90,7 +90,7 @@ func (pc *PartyCache) BroadcastMemberLeft(prev, current *entity.Party, targetCha
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeave{
+		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeave{
 			CharacterID: m.GetCharacterId(),
 			ForChannel:  int32(pc.gs.config.ChannelId),
 			PartyID:     partyID,
@@ -135,7 +135,7 @@ func (pc *PartyCache) BroadcastDisbanded(prev *entity.Party, leaderCharacterID u
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateDisband{
+		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateDisband{
 			CharacterID: m.GetCharacterId(),
 			PartyID:     prev.GetPartyId(),
 			LeaderID:    leaderCharacterID,
@@ -151,7 +151,7 @@ func (pc *PartyCache) BroadcastLeaderChanged(party *entity.Party, newLeaderChara
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeaderChange{
+		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeaderChange{
 			CharacterID:          m.GetCharacterId(),
 			NewLeaderCharacterID: newLeaderCharacterID,
 			ByDisconnect:         disconnected,
@@ -168,7 +168,7 @@ func (pc *PartyCache) BroadcastLogOnOff(party *entity.Party) {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLogOnOff{
+		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLogOnOff{
 			CharacterID: m.GetCharacterId(),
 			ForChannel:  int32(pc.gs.config.ChannelId),
 			PartyID:     party.GetPartyId(),

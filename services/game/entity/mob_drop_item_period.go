@@ -51,7 +51,7 @@ func (m *Mob) dropTimedItem() {
 		return
 	}
 	nextCount := m.dropItemCount + 1
-	root := mapInstance.EnsureLuaRoot(nil)
+	root := mapInstance.LuaRoot(nil)
 	if root == nil {
 		return
 	}

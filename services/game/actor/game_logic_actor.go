@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
-	"github.com/boyism80/fm/core/ensure"
+	"github.com/boyism80/fm/core/delivery"
 	"github.com/boyism80/fm/services/game/actor/timers"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -19,8 +19,8 @@ type GameLogicActor struct {
 
 func (a *GameLogicActor) Receive(ctx actor.Context) {
 	msg := ctx.Message()
-	if env, ok := msg.(*ensure.EnsureDeliver); ok {
-		a.handleEnsureDeliver(ctx, env)
+	if env, ok := msg.(*delivery.Envelope); ok {
+		a.handleDelivery(ctx, env)
 		return
 	}
 	mapMessageRegistry.Dispatch(ctx, a, msg)
@@ -51,23 +51,23 @@ func (a *GameLogicActor) GetObject(objectType constant.ObjectType, oid uint32) *
 	return nil
 }
 
-func (a *GameLogicActor) handleEnsureDeliver(ctx actor.Context, env *ensure.EnsureDeliver) {
+func (a *GameLogicActor) handleDelivery(ctx actor.Context, env *delivery.Envelope) {
 	if env == nil {
 		return
 	}
 	inner := env.Inner
 	if inner == nil {
-		a.ensureFinish(ctx, env, false, "nil_inner")
+		a.finishDelivery(ctx, env, false, "nil_inner")
 		return
 	}
 	if !a.hasCharacterOnMap(env.CharacterID) {
 		if a.GameWorld != nil {
-			a.GameWorld.EnsureRedispatch(env)
+			a.GameWorld.Redeliver(env)
 		}
 		return
 	}
 	mapMessageRegistry.Dispatch(ctx, a, inner)
-	a.ensureFinish(ctx, env, true, "")
+	a.finishDelivery(ctx, env, true, "")
 }
 
 func (a *GameLogicActor) hasCharacterOnMap(characterID uint32) bool {
@@ -100,17 +100,17 @@ func (a *GameLogicActor) StopTimers() {
 	a.timerCancels = nil
 }
 
-func (a *GameLogicActor) ensureFinish(ctx actor.Context, msg *ensure.EnsureDeliver, ok bool, reason string) {
+func (a *GameLogicActor) finishDelivery(ctx actor.Context, msg *delivery.Envelope, ok bool, reason string) {
 	if msg == nil {
 		return
 	}
 	if a.GameWorld != nil {
-		a.GameWorld.EnsureComplete(msg.CorrelationID)
+		a.GameWorld.CompleteDelivery(msg.CorrelationID)
 	}
 	if msg.Caller == nil {
 		return
 	}
-	ctx.Send(msg.Caller, &ensure.EnsureResult{
+	ctx.Send(msg.Caller, &delivery.Result{
 		CorrelationID: msg.CorrelationID,
 		OK:            ok,
 		Reason:        reason,

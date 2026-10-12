@@ -17,7 +17,7 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/ensure"
+	"github.com/boyism80/fm/core/delivery"
 	"github.com/boyism80/fm/core/fault"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
@@ -34,7 +34,7 @@ import (
 
 const (
 	mapActorCallTimeout = 30 * time.Second
-	logoutWaitTimeout   = ensureWallTimeout + time.Second
+	logoutWaitTimeout   = deliveryTimeout + time.Second
 )
 
 type GameServer struct {
@@ -78,9 +78,9 @@ type GameServer struct {
 	guildSystem       guildSystem
 	allianceSystem    allianceSystem
 	dispatchSystem    dispatchSystem
-	ensureMu          sync.Mutex
-	ensurePending     map[uint64]*ensure.EnsureDeliver
-	ensureNext        atomic.Uint64
+	deliveryMu        sync.Mutex
+	pendingDeliveries map[uint64]*delivery.Envelope
+	nextDelivery      atomic.Uint64
 	internalHBCancel  context.CancelFunc
 	megaphoneMuted    atomic.Bool
 	uniqueIDs         *uniqueid.Generator
@@ -702,7 +702,7 @@ func (gs *GameServer) removeCharacter(character *entity.Character, logout <-chan
 		character.ClearTimers()
 	}
 
-	gs.ensureAbandonCharacter(charID)
+	gs.abandonDeliveries(charID)
 	gs.characterRuntime.UnregisterCharacter(charID)
 	return entry
 }

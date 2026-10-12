@@ -69,7 +69,7 @@ func (h *allianceMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 			if gs.characterRuntime == nil || !gs.characterRuntime.Exists(memberID) {
 				continue
 			}
-			gs.EnsureSend(nil, memberID, &g_actor.DeliverMultiChat{
+			gs.Deliver(nil, memberID, &g_actor.DeliverMultiChat{
 				CharacterID: memberID,
 				Mode:        mode,
 				SenderName:  payload.SenderName,

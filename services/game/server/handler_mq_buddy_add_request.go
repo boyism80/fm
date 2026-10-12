@@ -48,7 +48,7 @@ func (h *buddyMqAddRequest) Handle(_ actor.Context, raw json.RawMessage) error {
 		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
 			continue
 		}
-		gs.EnsureSend(nil, recipientID, &g_actor.DeliverBuddyAddRequest{
+		gs.Deliver(nil, recipientID, &g_actor.DeliverBuddyAddRequest{
 			RecipientCharacterID: recipientID,
 			FromCharacterID:      payload.FromCharacterID,
 			FromName:             payload.FromName,

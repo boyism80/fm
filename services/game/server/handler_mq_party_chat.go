@@ -61,7 +61,7 @@ func (h *partyMqChat) handlePartyMultiChat(gs *GameServer, memberID uint32, send
 		if cid == 0 || cid == senderCharacterID {
 			continue
 		}
-		gs.EnsureSend(nil, cid, &g_actor.DeliverMultiChat{
+		gs.Deliver(nil, cid, &g_actor.DeliverMultiChat{
 			CharacterID: cid,
 			Mode:        mode,
 			SenderName:  senderName,

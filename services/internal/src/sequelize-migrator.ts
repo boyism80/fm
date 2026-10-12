@@ -45,7 +45,7 @@ function readMigrationEntries(): MigrationEntry[] {
     return Array.from(byCanonical.values()).sort((a, b) => a.canonicalName.localeCompare(b.canonicalName));
 }
 
-async function ensureSequelizeMeta(sequelize: Sequelize): Promise<void> {
+async function createSequelizeMeta(sequelize: Sequelize): Promise<void> {
     await sequelize.query(`
         CREATE TABLE IF NOT EXISTS "SequelizeMeta" (
             name VARCHAR(255) PRIMARY KEY
@@ -74,7 +74,7 @@ export function connectMigrationDatabase(databaseUrl: string, ssl: boolean): Seq
 async function withMigrationLock(sequelize: Sequelize, work: () => Promise<void>): Promise<void> {
     await sequelize.query("SELECT pg_advisory_lock($1)", { bind: [migrationLockKey] });
     try {
-        await ensureSequelizeMeta(sequelize);
+        await createSequelizeMeta(sequelize);
         await work();
     } finally {
         await sequelize.query("SELECT pg_advisory_unlock($1)", { bind: [migrationLockKey] });

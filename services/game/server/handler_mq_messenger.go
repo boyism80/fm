@@ -60,7 +60,7 @@ func (h *messengerMq) Handle(_ actor.Context, raw json.RawMessage) error {
 		event.Channel = payload.Member.ChannelID
 	}
 
-	h.gs.EnsureSend(nil, payload.CharacterID, &g_actor.DeliverMessenger{
+	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverMessenger{
 		CharacterID: payload.CharacterID,
 		Event:       event,
 	})

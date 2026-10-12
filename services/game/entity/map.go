@@ -193,7 +193,7 @@ func (m *Map) GetLuaRoot() *lua.LState {
 	return m.luaRoot
 }
 
-func (m *Map) EnsureLuaRoot(ctx actor.Context) *lua.LState {
+func (m *Map) LuaRoot(ctx actor.Context) *lua.LState {
 	if m == nil {
 		return nil
 	}
@@ -267,7 +267,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 
 	m.objects[constant.ObjectTypeCharacter][playerID] = character
 	m.sections.add(character)
-	m.EnsureLuaRoot(ctx)
+	m.LuaRoot(ctx)
 
 	m.listener.OnPlayerAdded(ctx, m, character, spawnPoint, init)
 	m.controllerTable.EnterPlayer(character)

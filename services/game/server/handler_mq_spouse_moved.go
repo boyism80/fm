@@ -30,7 +30,7 @@ func (h *marriageMqSpouseMoved) Handle(_ actor.Context, raw json.RawMessage) err
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.EnsureSend(nil, payload.CharacterID, &g_actor.DeliverSpouseMoved{
+	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverSpouseMoved{
 		CharacterID: payload.CharacterID,
 		SpouseID:    payload.SpouseID,
 		MapID:       payload.MapID,

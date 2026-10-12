@@ -3927,7 +3927,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						if m != targetMap {
 							return
 						}
-						root := m.EnsureLuaRoot(ctx)
+						root := m.LuaRoot(ctx)
 						fn, err := detached.Attach(root)
 						if err == nil {
 							err = luax.Spawn(root, fn, luax.Configuration{ActorContext: ctx, ActorPID: m.LogicActorPID()}, ch)

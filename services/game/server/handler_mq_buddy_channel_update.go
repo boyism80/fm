@@ -44,7 +44,7 @@ func (h *buddyMqChannelUpdate) Handle(_ actor.Context, raw json.RawMessage) erro
 		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
 			continue
 		}
-		gs.EnsureSend(nil, recipientID, &g_actor.DeliverBuddyChannelUpdate{
+		gs.Deliver(nil, recipientID, &g_actor.DeliverBuddyChannelUpdate{
 			RecipientCharacterID: recipientID,
 			BuddyCharacterID:     payload.CharacterID,
 			Channel:              payload.ChannelIndex,

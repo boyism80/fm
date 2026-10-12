@@ -1,8 +1,8 @@
 package core
 
-import "github.com/boyism80/fm/core/ensure"
+import "github.com/boyism80/fm/core/delivery"
 
 type Server interface {
-	ensure.EnsureCoordinator
+	delivery.Coordinator
 	GetPacketHandler() *PacketHandler
 }

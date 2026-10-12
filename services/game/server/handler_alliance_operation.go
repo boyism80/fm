@@ -371,7 +371,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteTargetNotOnlineMessage)
 		return nil
 	}
-	h.gs.EnsureSend(nil, targetLeaderID, &g_actor.DeliverAllianceInvite{
+	h.gs.Deliver(nil, targetLeaderID, &g_actor.DeliverAllianceInvite{
 		CharacterID:        targetLeaderID,
 		TargetGuildID:      targetGuildID,
 		AllianceID:         allianceID,
@@ -480,7 +480,7 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 	if h.gs.characterRuntime == nil || !h.gs.characterRuntime.Exists(leaderID) {
 		return
 	}
-	h.gs.EnsureSend(nil, leaderID, &g_actor.DeliverMessage{
+	h.gs.Deliver(nil, leaderID, &g_actor.DeliverMessage{
 		CharacterID: leaderID,
 		MessageType: gameconst.MsgPinkText,
 		Message:     guildName + gameconst.AllianceInviteDeniedMessageSuffix,

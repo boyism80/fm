@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core/ensure"
+	"github.com/boyism80/fm/core/delivery"
 )
 
 type ServerCharacterRuntime struct {
@@ -17,9 +17,9 @@ type ServerCharacterRuntime struct {
 }
 
 type characterRuntimeEntry struct {
-	name      string
-	mapPID    *actor.PID
-	ensureBuf []*ensure.EnsureDeliver
+	name       string
+	mapPID     *actor.PID
+	deliveries []*delivery.Envelope
 }
 
 func nameKey(name string) string {
@@ -89,7 +89,7 @@ func (r *ServerCharacterRuntime) SetMapPID(characterID uint32, pid *actor.PID) e
 	r.mu.Unlock()
 
 	if pid != nil && r.gs != nil {
-		r.gs.flushEnsureBuffer(characterID, pid)
+		r.gs.flushDeliveries(characterID, pid)
 	}
 	return nil
 }
@@ -131,7 +131,7 @@ func (r *ServerCharacterRuntime) NameToCharacterID(name string) (uint32, bool) {
 	return id, ok
 }
 
-func (r *ServerCharacterRuntime) enqueueEnsure(characterID uint32, d *ensure.EnsureDeliver) error {
+func (r *ServerCharacterRuntime) queueDelivery(characterID uint32, d *delivery.Envelope) error {
 	if r == nil || d == nil {
 		return fmt.Errorf("runtime: nil receiver or deliver")
 	}
@@ -144,40 +144,40 @@ func (r *ServerCharacterRuntime) enqueueEnsure(characterID uint32, d *ensure.Ens
 	if !ok {
 		return fmt.Errorf("runtime: character %d not registered", characterID)
 	}
-	ent.ensureBuf = append(ent.ensureBuf, d)
+	ent.deliveries = append(ent.deliveries, d)
 	return nil
 }
 
-func (r *ServerCharacterRuntime) takeEnsureBuffer(characterID uint32) []*ensure.EnsureDeliver {
+func (r *ServerCharacterRuntime) takeDeliveries(characterID uint32) []*delivery.Envelope {
 	if r == nil || characterID == 0 {
 		return nil
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	ent, ok := r.byCID[characterID]
-	if !ok || len(ent.ensureBuf) == 0 {
+	if !ok || len(ent.deliveries) == 0 {
 		return nil
 	}
-	buf := ent.ensureBuf
-	ent.ensureBuf = nil
+	buf := ent.deliveries
+	ent.deliveries = nil
 	return buf
 }
 
-func (r *ServerCharacterRuntime) removeEnsureFromBuffer(characterID uint32, correlationID uint64) {
+func (r *ServerCharacterRuntime) removeDelivery(characterID uint32, correlationID uint64) {
 	if r == nil || characterID == 0 || correlationID == 0 {
 		return
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	ent, ok := r.byCID[characterID]
-	if !ok || len(ent.ensureBuf) == 0 {
+	if !ok || len(ent.deliveries) == 0 {
 		return
 	}
-	out := ent.ensureBuf[:0]
-	for _, d := range ent.ensureBuf {
+	out := ent.deliveries[:0]
+	for _, d := range ent.deliveries {
 		if d == nil || d.CorrelationID != correlationID {
 			out = append(out, d)
 		}
 	}
-	ent.ensureBuf = out
+	ent.deliveries = out
 }

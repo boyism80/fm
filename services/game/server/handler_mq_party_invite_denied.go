@@ -33,7 +33,7 @@ func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, raw json.RawMessage) 
 	if payload.InviterCharacterID == 0 {
 		return nil
 	}
-	h.gs.EnsureSend(nil, payload.InviterCharacterID, &g_actor.DeliverPartyStatusMessage{
+	h.gs.Deliver(nil, payload.InviterCharacterID, &g_actor.DeliverPartyStatusMessage{
 		CharacterID: payload.InviterCharacterID,
 		Code:        pconst.PartyStatusCode(payload.Action),
 		Name:        payload.DeniedCharacterName,

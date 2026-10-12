@@ -343,7 +343,7 @@ func (s guildSystem) ShowRankingAsync(ctx actor.Context, ch *entity.Character, n
 			})
 		}
 		// The character may have changed maps (and actors) while the RPC was in flight.
-		s.gs.EnsureSend(nil, charID, &g_actor.DeliverGuildRanking{
+		s.gs.Deliver(nil, charID, &g_actor.DeliverGuildRanking{
 			CharacterID: charID,
 			NPCID:       npcID,
 			Entries:     entries,

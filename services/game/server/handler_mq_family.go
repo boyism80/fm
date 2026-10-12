@@ -33,7 +33,7 @@ func (h *familyMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.EnsureSend(nil, payload.CharacterID, &g_actor.DeliverFamily{
+	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverFamily{
 		CharacterID: payload.CharacterID,
 		Event:       payload.Event,
 		SenderID:    payload.SenderID,

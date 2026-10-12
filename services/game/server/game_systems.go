@@ -640,7 +640,7 @@ func (s dispatchSystem) SendTo(characterID uint32, msg interface{}) {
 	if s.gs == nil || characterID == 0 || msg == nil {
 		return
 	}
-	s.gs.EnsureSend(nil, characterID, msg)
+	s.gs.Deliver(nil, characterID, msg)
 }
 
 func (s dispatchSystem) Call(characterID uint32, run func(ctx actor.Context)) {

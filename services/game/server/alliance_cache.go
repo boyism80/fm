@@ -218,7 +218,7 @@ func (ac *AllianceCache) deliverMemberFieldsChange(allianceID uint32, subjectGui
 			if ac.gs.characterRuntime == nil || !ac.gs.characterRuntime.Exists(memberID) {
 				continue
 			}
-			ac.gs.EnsureSend(nil, memberID, &g_actor.DeliverAllianceMemberFieldsChange{
+			ac.gs.Deliver(nil, memberID, &g_actor.DeliverAllianceMemberFieldsChange{
 				CharacterID: memberID,
 				AllianceID:  allianceID,
 				GuildID:     subjectGuildID,
@@ -257,7 +257,7 @@ func (ac *AllianceCache) DeliverMemberOnlineChange(allianceID uint32, subjectGui
 			if ac.gs.characterRuntime == nil || !ac.gs.characterRuntime.Exists(memberID) {
 				continue
 			}
-			ac.gs.EnsureSend(nil, memberID, &g_actor.DeliverAllianceMemberOnlineChange{
+			ac.gs.Deliver(nil, memberID, &g_actor.DeliverAllianceMemberOnlineChange{
 				CharacterID: memberID,
 				AllianceID:  allianceID,
 				GuildID:     subjectGuildID,
