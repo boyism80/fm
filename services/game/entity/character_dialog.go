@@ -62,6 +62,7 @@ func (d *Dialog) Reset() {
 }
 
 func (d *Dialog) Close() {
+	d.ShopID = 0
 	thread := d.Thread()
 	if thread == nil {
 		return
