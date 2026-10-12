@@ -33,10 +33,14 @@ func (s *MobSkill) IsOnCooldown(now time.Time) bool {
 	return now.Sub(s.LastUsedAt) < cooldown
 }
 
+const mobSkillCastWindow = 5 * time.Second
+
 type MobSkills struct {
-	owner   *Mob
-	ordered []*MobSkill
-	byID    map[uint32]*MobSkill
+	owner     *Mob
+	ordered   []*MobSkill
+	byID      map[uint32]*MobSkill
+	pending   *MobSkill
+	pendingAt time.Time
 }
 
 func NewMobSkills(owner *Mob) *MobSkills {
@@ -147,9 +151,32 @@ func (sc *MobSkills) Choice(controller *Character) *MobSkill {
 			continue
 		}
 		sc.MarkUsed(skill.Slot.SkillID, now)
+		sc.pending = skill
+		sc.pendingAt = now
 		return skill
 	}
 	return nil
+}
+
+// TakePending returns the skill Choice gave the controller to cast, once. The client names the skill in its cast
+// packet, so anything else (another skill, a second cast, a cast long after the choice) is ignored.
+func (sc *MobSkills) TakePending(skillID uint32, level uint8, now time.Time) *MobSkill {
+	if sc == nil {
+		return nil
+	}
+	skill := sc.pending
+	if skill == nil || skill.Slot.SkillID != skillID || skill.Slot.Level != level || now.Sub(sc.pendingAt) > mobSkillCastWindow {
+		return nil
+	}
+	sc.pending = nil
+
+	if skill.LevelData.Limit > 0 {
+		mapInstance := sc.owner.GetMap()
+		if mapInstance == nil || len(mapInstance.GetMobs()) >= int(skill.LevelData.Limit) {
+			return nil
+		}
+	}
+	return skill
 }
 
 func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool {

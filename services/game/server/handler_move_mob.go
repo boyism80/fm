@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
@@ -74,13 +75,13 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	selectedSkillID := uint32(0)
 	selectedSkillLevel := uint8(0)
 	needChoice := !constant.MobSkillCastActionInRange(req.Action)
-	if req.ActiveSkill || !needChoice {
-		if needChoice {
-			if skill := mob.Skills.Choice(ch); skill != nil {
-				selectedSkillID = skill.Slot.SkillID
-				selectedSkillLevel = skill.Slot.Level
-			}
-		} else {
+	if req.ActiveSkill && needChoice {
+		if skill := mob.Skills.Choice(ch); skill != nil {
+			selectedSkillID = skill.Slot.SkillID
+			selectedSkillLevel = skill.Slot.Level
+		}
+	} else if !needChoice {
+		if skill := mob.Skills.TakePending(uint32(req.SkillId), req.SkillLevel, clock.Now()); skill != nil {
 			delay := time.Duration(int(req.SkillDelay)*100+450) * time.Millisecond
 			controllerID := ch.GetID()
 			mob.RemoveTimer(mobSkillScriptTimerKey)
@@ -88,7 +89,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 				if !mob.IsAlive() {
 					return
 				}
-				h.runScript(ctx, mapInstance, mob, mapInstance.GetPlayer(controllerID), req)
+				h.runScript(ctx, mapInstance, mob, mapInstance.GetPlayer(controllerID), skill)
 			})
 		}
 	}
@@ -111,22 +112,12 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	return nil
 }
 
-func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mob *entity.Mob, controller *entity.Character, req *request.MoveMob) {
-	if req.SkillId == 0 || req.SkillLevel == 0 {
-		return
-	}
-	if mob.Skills == nil {
-		return
-	}
-	skill := mob.Skills.Get(uint32(req.SkillId), req.SkillLevel)
-	if skill == nil {
-		return
-	}
+func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mob *entity.Mob, controller *entity.Character, skill *entity.MobSkill) {
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}
-	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", req.SkillId)
+	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.Slot.SkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("mob skill script %s: %v", scriptPath, err)
