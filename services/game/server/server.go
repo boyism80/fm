@@ -656,6 +656,9 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 
 	if !client.SessionLost() {
 		p.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {
+			if entry == nil {
+				return &internal.SaveCharactersReply{Ok: true}, nil
+			}
 			return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}}, grpc.WaitForReady(true))
 		}, func(reply *internal.SaveCharactersReply) error {
 			if !reply.GetOk() {
@@ -690,7 +693,9 @@ func (gs *GameServer) removeCharacter(character *entity.Character, logout <-chan
 		sm.RequestLeave(character, false, entity.StateMachineLeaveDisconnect)
 	}
 	gs.GetDispatchSystem().Call(charID, func(ctx actor.Context) {
-		_ = character.GetMap().LogoutPlayer(ctx, charID)
+		if m := character.GetMap(); m != nil {
+			_ = m.LogoutPlayer(ctx, charID)
+		}
 	})
 
 	var entry *internal.CharacterSaveEntry
