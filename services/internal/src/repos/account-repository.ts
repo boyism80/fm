@@ -1,6 +1,6 @@
 import { redisCacheKey } from "../redis-cache-key";
 import { ValueRepository } from "./value-repository";
-import type { RepositoryQuery } from "../types/repository-contracts";
+import type { RepositoryQuery, RepositoryQueryValue } from "../types/repository-contracts";
 import type { AccountDeleteModel, AccountModel, AccountRow } from "../types/repository-models";
 
 export type { AccountModel };
@@ -67,6 +67,43 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
                 row.second_password_locked_until ?? null,
             ],
         };
+    }
+
+    // An existing account is written column by column, never with set(). The second password state is
+    // written under the `second_password:a{id}` lock and the other columns are not, so writing back a
+    // whole stale row would undo failures and lockouts (or a login) recorded in the meantime.
+    async setSecondPassword(worldId: number, accountId: number, hash: string | null, failures: number, lockedUntil: string | null): Promise<void> {
+        await this.update(
+            worldId,
+            accountId,
+            "second_password_hash = $2, second_password_failures = $3, second_password_locked_until = $4",
+            [hash, failures, lockedUntil]
+        );
+    }
+
+    async setSecondPasswordFailures(worldId: number, accountId: number, failures: number, lockedUntil: string | null): Promise<void> {
+        await this.update(worldId, accountId, "second_password_failures = $2, second_password_locked_until = $3", [failures, lockedUntil]);
+    }
+
+    async setLogin(worldId: number, accountId: number, lastLoginIp: string | null, macAddress: string | null): Promise<void> {
+        await this.update(worldId, accountId, "last_login_ip = $2, mac_address = $3", [lastLoginIp, macAddress]);
+    }
+
+    async setRole(worldId: number, accountId: number, role: number): Promise<void> {
+        await this.update(worldId, accountId, "role = $2", [role]);
+    }
+
+    async setCharacterSlotCount(worldId: number, accountId: number, count: number): Promise<void> {
+        await this.update(worldId, accountId, "character_slot_count = $2", [count]);
+    }
+
+    private async update(worldId: number, accountId: number, columns: string, values: RepositoryQueryValue[]): Promise<void> {
+        await this.query(
+            this.pool(worldId, accountId),
+            `UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`,
+            [accountId, ...values]
+        );
+        await this.invalidateCache(worldId, accountId);
     }
 
     override onDelete(row: AccountDeleteModel): RepositoryQuery {

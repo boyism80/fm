@@ -243,7 +243,7 @@ export class CashShopService {
                     if (slots > req.max) {
                         return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
                     }
-                    await this.accountRepo.set(req.worldId, { ...account, characterSlotCount: slots });
+                    await this.accountRepo.setCharacterSlotCount(req.worldId, req.accountId, slots);
                     break;
                 }
                 default:

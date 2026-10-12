@@ -96,8 +96,7 @@ export class AccountService {
             return { status: LoginAccountReply_Status.WRONG_PASSWORD, role: account.role ?? 0 };
         }
         if (macAddress || ipAddress) {
-            const updated = { ...account, macAddress: macAddress ?? account.macAddress, lastLoginIp: ipAddress ?? account.lastLoginIp };
-            await this.accountRepo.set(worldId, updated);
+            await this.accountRepo.setLogin(worldId, account.accountId, ipAddress ?? account.lastLoginIp ?? null, macAddress ?? account.macAddress ?? null);
         }
 
         return {
@@ -116,7 +115,7 @@ export class AccountService {
         if (!account) {
             return false;
         }
-        await this.accountRepo.set(this.worldId(), { ...account, role });
+        await this.accountRepo.setRole(this.worldId(), accountId, role);
         return true;
     }
 
@@ -135,12 +134,7 @@ export class AccountService {
         }
 
         const secondPasswordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-        await this.accountRepo.set(worldId, {
-            ...account,
-            secondPasswordHash,
-            secondPasswordFailures: 0,
-            secondPasswordLockedUntil: null,
-        });
+        await this.accountRepo.setSecondPassword(worldId, accountId, secondPasswordHash, 0, null);
         return "success";
     }
 
@@ -159,12 +153,7 @@ export class AccountService {
             return verified;
         }
 
-        await this.accountRepo.set(worldId, {
-            ...account,
-            secondPasswordHash: null,
-            secondPasswordFailures: 0,
-            secondPasswordLockedUntil: null,
-        });
+        await this.accountRepo.setSecondPassword(worldId, accountId, null, 0, null);
         return "success";
     }
 
@@ -193,23 +182,18 @@ export class AccountService {
         const match = await bcrypt.compare(password, account.secondPasswordHash!);
         if (match) {
             if (account.secondPasswordFailures !== 0 || account.secondPasswordLockedUntil) {
-                await this.accountRepo.set(worldId, {
-                    ...account,
-                    secondPasswordFailures: 0,
-                    secondPasswordLockedUntil: null,
-                });
+                await this.accountRepo.setSecondPasswordFailures(worldId, account.accountId, 0, null);
             }
             return "success";
         }
 
         const failures = lockedUntil > 0 && lockedUntil <= now ? 1 : account.secondPasswordFailures + 1;
-        await this.accountRepo.set(worldId, {
-            ...account,
-            secondPasswordFailures: failures,
-            secondPasswordLockedUntil: failures >= SECOND_PASSWORD_MAX_FAILURES
-                ? new Date(now + SECOND_PASSWORD_LOCK_MS).toISOString()
-                : null,
-        });
+        await this.accountRepo.setSecondPasswordFailures(
+            worldId,
+            account.accountId,
+            failures,
+            failures >= SECOND_PASSWORD_MAX_FAILURES ? new Date(now + SECOND_PASSWORD_LOCK_MS).toISOString() : null
+        );
         return failures >= SECOND_PASSWORD_MAX_FAILURES ? "locked" : "invalid";
     }
 }
