@@ -1,11 +1,17 @@
 package entity
 
 import (
+	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
+
+type familyMoveDetail struct {
+	Complete bool `json:"complete,omitempty"`
+}
 
 type Family struct {
 	owner      *Character
@@ -33,6 +39,39 @@ func (f *Family) Refresh(ctx actor.Context) {
 		f.Set(reply.Family)
 		return nil
 	}).OnError(func(error) {})
+}
+
+// A paid move ends by refund until the character has arrived; after that it ends by completion.
+func (f *Family) FinishMove(actx actor.Context, id uint64, complete bool) {
+	request := f.owner.Unsettled.Find(id)
+	if request == nil {
+		return
+	}
+	if complete {
+		data, _ := json.Marshal(familyMoveDetail{Complete: true})
+		request.Detail = string(data)
+	}
+	f.finishMove(actx, request, complete)
+}
+
+func (f *Family) settleMove(actx actor.Context, request *UnsettledRequest) {
+	var detail familyMoveDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("Family.settleMove character=%d id=%d: %v", f.owner.GetID(), request.ID, err)
+		return
+	}
+	f.finishMove(actx, request, detail.Complete)
+}
+
+func (f *Family) finishMove(actx actor.Context, request *UnsettledRequest, complete bool) {
+	f.owner.Listener.FinishFamilyMoveAsync(actx, f.owner, request.ID, complete).Do(func(reply *internal.FamilyReply) error {
+		f.owner.Unsettled.Erase(request.ID)
+		f.Set(reply.Family)
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("Family.finishMove character=%d id=%d: %v", f.owner.GetID(), request.ID, err)
+	})
 }
 
 func (f *Family) BuffRemaining() time.Duration {

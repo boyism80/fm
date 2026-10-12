@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"strings"
@@ -35,6 +36,19 @@ type Wedding struct {
 	Marriage *Marriage
 	proposal proposal
 	gift     weddingGiftWindow
+}
+
+type weddingGiftDetail struct {
+	Item *internal.Inventory `json:"item"`
+}
+
+type weddingProposalDetail struct {
+	Box  uint32 `json:"box,omitempty"`
+	Ring uint32 `json:"ring"`
+}
+
+type weddingReservationDetail struct {
+	Ticket uint32 `json:"ticket"`
 }
 
 type weddingGiftWindow struct {
@@ -147,35 +161,85 @@ func (w *Wedding) AnswerProposal(actx actor.Context, accepted bool, name string,
 	if w.owner.GetGender() == 0 {
 		groom, bride = w.owner, proposer
 	}
-	w.owner.Listener.CreateMarriageAsync(actx, groom, bride, ring).Do(func(v *internal.MarriageReply) error {
-		reply := v
-		switch reply.GetResult() {
-		case internal.MarriageResult_MARRIAGE_RESULT_OK:
-		case internal.MarriageResult_MARRIAGE_RESULT_ALREADY_ENGAGED:
-			w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultAlreadyEngaged)
-			return nil
-		default:
-			w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultPartnerEngaged)
-			return nil
-		}
 
-		for _, member := range []*Character{w.owner, proposer} {
-			if member.GetMap() != w.owner.GetMap() {
-				log.Printf("AnswerProposal character=%d left the map before the engagement was stored", member.GetID())
-				continue
-			}
-			if member == proposer {
-				member.Inventory.RemoveByItemIDCount(boxItemID, 1)
-			}
-			if item, err := NewItem(ring, 1, member.GameWorld); err == nil {
-				member.Inventory.addItemUnchecked(item, true)
-			}
-			member.Wedding.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
-			member.Listener.OnEngageResult(member, pconst.EngageResultEngaged)
+	proposer.Inventory.RemoveByItemIDCount(boxItemID, 1)
+	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_PROPOSAL, 0, weddingProposalDetail{Ring: ring})
+	proposer.Unsettled.add(id, internal.UnsettledType_UNSETTLED_TYPE_WEDDING_PROPOSAL, 0, weddingProposalDetail{Box: boxItemID, Ring: ring})
+
+	// Either partner may have left this map, and so this actor, before the reply.
+	members := []uint32{w.owner.GetID(), proposer.GetID()}
+	dispatch := w.owner.GameWorld.GetDispatchSystem()
+	w.owner.Listener.CreateMarriageAsync(actx, groom, bride, id, ring).Do(func(v *internal.MarriageReply) error {
+		engaged := v.GetResult() == internal.MarriageResult_MARRIAGE_RESULT_OK
+		failure := pconst.EngageResultPartnerEngaged
+		if v.GetResult() == internal.MarriageResult_MARRIAGE_RESULT_ALREADY_ENGAGED {
+			failure = pconst.EngageResultAlreadyEngaged
+		}
+		for i, memberID := range members {
+			dispatch.CallCharacter(memberID, func(_ actor.Context, member *Character) {
+				if member == nil {
+					return
+				}
+				member.Wedding.closeProposal(id, engaged)
+				if engaged {
+					member.Wedding.Marriage = NewMarriageFromInternalProto(v.GetMarriage())
+					member.Listener.OnEngageResult(member, pconst.EngageResultEngaged)
+				} else if i == 0 {
+					member.Listener.OnEngageResult(member, failure)
+				}
+			})
 		}
 		return nil
 	}).OnError(func(err error) {
-		log.Printf("AnswerProposal character=%d: %v", w.owner.GetID(), err)
+		for _, memberID := range members {
+			dispatch.CallCharacter(memberID, func(_ actor.Context, member *Character) {
+				if member == nil {
+					return
+				}
+				if request := member.Unsettled.Find(id); request != nil {
+					request.InFlight = false
+				}
+			})
+		}
+		log.Printf("AnswerProposal character=%d: %v", members[0], err)
+	})
+}
+
+// Both partners hold the proposal under the same id, and internal answers both with the same outcome.
+func (w *Wedding) closeProposal(id uint64, engaged bool) {
+	request := w.owner.Unsettled.Find(id)
+	if request == nil {
+		return
+	}
+	w.owner.Unsettled.Erase(id)
+
+	var detail weddingProposalDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("Wedding.closeProposal character=%d id=%d: %v", w.owner.GetID(), id, err)
+		return
+	}
+	itemID := detail.Ring
+	if !engaged {
+		itemID = detail.Box
+	}
+	if itemID == 0 {
+		return
+	}
+	if item, err := NewItem(itemID, 1, w.owner.GameWorld); err == nil {
+		w.owner.Inventory.addItemUnchecked(item, true)
+	}
+}
+
+func (w *Wedding) settleProposal(actx actor.Context, request *UnsettledRequest) {
+	w.owner.Listener.AbortMarriageChangeAsync(actx, w.owner, request.ID).Do(func(v *internal.AbortMarriageChangeReply) error {
+		w.closeProposal(request.ID, v.GetChanged())
+		if v.GetChanged() {
+			w.Refresh(actx, "")
+		}
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("Wedding.settleProposal character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
 	})
 }
 
@@ -275,21 +339,60 @@ func (w *Wedding) Reserve(actx actor.Context, ticketItemID uint32) (*async.Promi
 		return nil, ErrMarriageInvalid
 	}
 
-	return w.owner.Listener.ReserveWeddingAsync(actx, w.owner, w.Marriage.ID, ticketItemID).Then(func(v *internal.MarriageReply) (bool, error) {
-		reply := v
-		if reply.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+	w.owner.Inventory.RemoveByItemIDCount(ticketItemID, 1)
+	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_RESERVE, uint64(w.Marriage.ID), weddingReservationDetail{Ticket: ticketItemID})
+
+	return w.owner.Listener.ReserveWeddingAsync(actx, w.owner, id, w.Marriage.ID, ticketItemID).Then(func(v *internal.MarriageReply) (bool, error) {
+		reserved := v.GetResult() == internal.MarriageResult_MARRIAGE_RESULT_OK
+		w.closeReservation(id, reserved)
+		if !reserved {
 			return false, nil
 		}
-		w.owner.Inventory.RemoveByItemIDCount(ticketItemID, 1)
 		for _, member := range []*Character{w.owner, partner} {
 			if member != w.owner && member.GetMap() != w.owner.GetMap() {
 				continue
 			}
-			member.Wedding.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
+			member.Wedding.Marriage = NewMarriageFromInternalProto(v.GetMarriage())
 			member.Listener.OnWeddingWishlistInput(member)
 		}
 		return true, nil
+	}).OnError(func(err error) {
+		w.owner.Unsettled.Find(id).InFlight = false
+		log.Printf("ReserveWedding character=%d: %v", w.owner.GetID(), err)
 	}), nil
+}
+
+func (w *Wedding) closeReservation(id uint64, reserved bool) {
+	request := w.owner.Unsettled.Find(id)
+	if request == nil {
+		return
+	}
+	w.owner.Unsettled.Erase(id)
+	if reserved {
+		return
+	}
+
+	var detail weddingReservationDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("Wedding.closeReservation character=%d id=%d: %v", w.owner.GetID(), id, err)
+		return
+	}
+	if item, err := NewItem(detail.Ticket, 1, w.owner.GameWorld); err == nil {
+		w.owner.Inventory.addItemUnchecked(item, true)
+	}
+}
+
+func (w *Wedding) settleReservation(actx actor.Context, request *UnsettledRequest) {
+	w.owner.Listener.AbortMarriageChangeAsync(actx, w.owner, request.ID).Do(func(v *internal.AbortMarriageChangeReply) error {
+		w.closeReservation(request.ID, v.GetChanged())
+		if v.GetChanged() {
+			w.Refresh(actx, "")
+		}
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("Wedding.settleReservation character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
+	})
 }
 
 func (w *Wedding) SubmitWishlist(actx actor.Context, wishes []string) {
@@ -359,7 +462,7 @@ func (w *Wedding) InviteGuest(actx actor.Context, guestName string, marriageID u
 			Message:    "결혼식에 초대되었습니다. 청첩장을 확인해주세요.",
 			Item:       invited.ToProto(0, 0),
 		}
-		w.owner.Listener.SendParcelAsync(actx, w.owner, reply.GetGuestName(), parcel, false, nil).OnError(func(err error) {
+		w.owner.Listener.SendParcelAsync(actx, w.owner, 0, 0, reply.GetGuestName(), parcel, false).OnError(func(err error) {
 			log.Printf("InviteWeddingGuest parcel character=%d guest=%s: %v", w.owner.GetID(), reply.GetGuestName(), err)
 		})
 		w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "청첩장을 보냈습니다.")
@@ -488,19 +591,48 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 
 	gift := item.Clone(count)
 	w.owner.Inventory.RemoveItem(invType, slot, count)
-	w.gift.pending = true
 	pb := &internal.WeddingGift{SenderName: w.owner.GetName(), Item: gift.ToProto(0, 0)}
-	w.owner.Listener.GiveWeddingGiftAsync(actx, w.owner, w.gift.receiverID, pb, w.owner.ToProto(w.owner.GameWorld.GetWorldID())).Do(func(*internal.GiveWeddingGiftReply) error {
+	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_SEND, uint64(w.gift.receiverID), weddingGiftDetail{Item: pb.Item})
+
+	w.gift.pending = true
+	w.owner.Listener.GiveWeddingGiftAsync(actx, w.owner, id, w.gift.receiverID, pb).Do(func(v *internal.GiveWeddingGiftReply) error {
 		w.gift.pending = false
+		w.owner.Unsettled.Erase(id)
+		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+			w.owner.Inventory.addItemUnchecked(gift, true)
+			w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
+			return nil
+		}
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiven, w.gift.wishes, map[constant.InventoryType][]Item{invType: {gift}})
 		return nil
 	}).OnError(func(err error) {
 		w.gift.pending = false
-		w.owner.Inventory.addItemUnchecked(gift, true)
+		w.owner.Unsettled.Find(id).InFlight = false
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
 		log.Printf("GiveWeddingGift character=%d: %v", w.owner.GetID(), err)
 	})
 	return nil
+}
+
+func (w *Wedding) settleGiftSend(actx actor.Context, request *UnsettledRequest) {
+	var detail weddingGiftDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
+		return
+	}
+
+	w.owner.Listener.AbortWeddingGiftAsync(actx, w.owner, request.ID, uint32(request.Target)).Do(func(v *internal.AbortWeddingGiftReply) error {
+		if !v.GetGiven() {
+			if item, err := NewItemFromInternalProto(detail.Item, w.owner.GameWorld); err == nil {
+				w.owner.Inventory.addItemUnchecked(item, true)
+			}
+		}
+		w.owner.Unsettled.Erase(request.ID)
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
+	})
 }
 
 func (w *Wedding) giftTab(invType constant.InventoryType) []Item {
@@ -565,8 +697,9 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 		return nil
 	}
 
+	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_CLAIM, uint64(gift.ID), nil)
 	w.gift.pending = true
-	w.owner.Listener.ClaimWeddingGiftAsync(actx, w.owner, gift.ID).Do(func(v *internal.ClaimWeddingGiftReply) error {
+	w.owner.Listener.ClaimWeddingGiftAsync(actx, w.owner, id, gift.ID).Do(func(v *internal.ClaimWeddingGiftReply) error {
 		w.gift.pending = false
 		for i, candidate := range w.gift.gifts {
 			if candidate == gift {
@@ -575,21 +708,56 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 			}
 		}
 		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+			w.owner.Unsettled.Erase(id)
 			w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 			return nil
 		}
-		w.owner.Inventory.addItemUnchecked(gift.Item, true)
+		if !w.receiveClaimed(id, v.GetGift()) {
+			w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
+			return nil
+		}
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceived, nil, map[constant.InventoryType][]Item{invType: w.giftTab(invType)})
-		w.owner.GameWorld.SaveAsync(actx, []*internal.CharacterSaveEntry{w.owner.ToProto(w.owner.GameWorld.GetWorldID())}).OnError(func(err error) {
-			log.Printf("ReceiveWeddingGift save character=%d: %v", w.owner.GetID(), err)
-		})
 		return nil
 	}).OnError(func(err error) {
 		w.gift.pending = false
+		w.owner.Unsettled.Find(id).InFlight = false
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 		log.Printf("ReceiveWeddingGift character=%d: %v", w.owner.GetID(), err)
 	})
 	return nil
+}
+
+// A claimed gift that does not fit stays unsettled; internal returns it again on the next settle.
+func (w *Wedding) receiveClaimed(id uint64, pb *internal.WeddingGift) bool {
+	item, err := NewItemFromInternalProto(pb.GetItem(), w.owner.GameWorld)
+	if err != nil {
+		log.Printf("Wedding.receiveClaimed character=%d id=%d: %v", w.owner.GetID(), id, err)
+		w.owner.Unsettled.Erase(id)
+		return false
+	}
+	model := item.GetModel()
+	if (model.IsOnly() && w.owner.Inventory.HasItem(model.GetID())) || !w.owner.canReceive(model.GetID(), item.GetCount()) {
+		w.owner.Unsettled.Find(id).InFlight = false
+		return false
+	}
+
+	w.owner.Inventory.addItemUnchecked(item, true)
+	w.owner.Unsettled.Erase(id)
+	return true
+}
+
+func (w *Wedding) settleGiftClaim(actx actor.Context, request *UnsettledRequest) {
+	w.owner.Listener.ClaimWeddingGiftAsync(actx, w.owner, request.ID, uint32(request.Target)).Do(func(v *internal.ClaimWeddingGiftReply) error {
+		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+			w.owner.Unsettled.Erase(request.ID)
+			return nil
+		}
+		w.receiveClaimed(request.ID, v.GetGift())
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("Wedding.settleGiftClaim character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
+	})
 }
 
 func (w *Wedding) CloseGift() {

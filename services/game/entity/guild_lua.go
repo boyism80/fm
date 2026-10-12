@@ -84,19 +84,6 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(guild.Level()))
 			return 1
 		},
-		"gain_gp": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
-			amount := L.CheckInt(2)
-			cfg, ok := luax.GetConfiguration(L)
-			if !ok || cfg.ActorContext == nil {
-				return 0
-			}
-			guild.GameWorld.GetGuildSystem().GainGPAsync(cfg.ActorContext, guild.GuildID, int32(amount))
-			return 0
-		},
 		"message": func(L *lua.LState) int {
 			guild, ok := LuaCheckGuild(L, 1)
 			if !ok {

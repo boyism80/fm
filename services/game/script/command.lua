@@ -1071,6 +1071,20 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["경험치얻기"] = {
+		privilege = ROLE.Admin,
+		usage = "<양> - 경험치 획득 (레벨업·패밀리 명성 포함)",
+		command = function(me, args)
+			local amount = tonumber(args[1] or "")
+			if not amount or amount < 0 then
+				me:message("사용법: /경험치얻기 <양>")
+				return true
+			end
+			me:exp(me:exp() + amount)
+			me:message(string.format("경험치 %d 획득.", amount))
+			return true
+		end,
+	},
 	["캐시얻기"] = {
 		privilege = ROLE.Admin,
 		usage = "<NX캐시> [메이플포인트] - 계정 캐시 증감",

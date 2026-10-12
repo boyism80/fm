@@ -49,51 +49,17 @@ func (h *GuildOperation) resumeGuildCreate(ch *entity.Character, result gamecons
 	}
 }
 
-func (h *GuildOperation) applyGuildFromProto(ch *entity.Character, guildPb *internal.Guild) {
-	if h == nil || h.gs == nil || ch == nil || guildPb == nil {
-		return
-	}
-	guildID := guildPb.GetGuildId()
-	id := guildID
-	ch.Guild.SetID(&id)
-	h.gs.guild.Update(guildPb)
-	ch.Listener.OnShowGuildInfo(ch)
-	ch.Listener.OnBroadcastGuildAppearance(ch)
-}
-
-type guildEmblemChangePayment struct {
-	usedCashItem bool
-	mesoSpent    int32
-}
-
-func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guildEmblemChangePayment, bool) {
+func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guildEmblemDetail, bool) {
 	if ch.Inventory.HasItem(gameconst.GuildEmblemChangeCashItemID) {
 		if !ch.Inventory.RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
-			return guildEmblemChangePayment{}, false
+			return guildEmblemDetail{}, false
 		}
-		return guildEmblemChangePayment{usedCashItem: true}, true
+		return guildEmblemDetail{CashItem: true}, true
 	}
 	if !ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost) {
-		return guildEmblemChangePayment{}, false
+		return guildEmblemDetail{}, false
 	}
-	return guildEmblemChangePayment{mesoSpent: gameconst.GuildEmblemChangeMesoCost}, true
-}
-
-func (h *GuildOperation) refundGuildEmblemChangeCost(ch *entity.Character, payment guildEmblemChangePayment) {
-	if payment.usedCashItem {
-		item, err := entity.NewItem(gameconst.GuildEmblemChangeCashItemID, 1, h.gs)
-		if err != nil {
-			log.Printf("GuildOperation(emblem): refund cash item failed character=%d: %v", ch.GetID(), err)
-			return
-		}
-		if _, err := ch.Inventory.AddItem(item, false); err != nil {
-			log.Printf("GuildOperation(emblem): refund cash item failed character=%d: %v", ch.GetID(), err)
-		}
-		return
-	}
-	if payment.mesoSpent > 0 {
-		ch.Inventory.AddMeso(payment.mesoSpent)
-	}
+	return guildEmblemDetail{Meso: gameconst.GuildEmblemChangeMesoCost}, true
 }
 
 func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOperation) error {
@@ -133,39 +99,32 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 
-		leader := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER)
-		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise.ThenRPC(func(c context.Context) (*internal.CreateGuildReply, error) {
-			return h.gs.internalClient.CreateGuild(c, &internal.CreateGuildRequest{
-				WorldId:   worldID,
-				GuildName: req.GuildName,
-				Leader:    leader,
-			})
-		}, func(reply *internal.CreateGuildReply) error {
+		detail := guildCreateDetail{Name: req.GuildName, Meso: gameconst.GuildCreateMesoCost}
+		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE, 0, detail)
+		h.gs.guildSystem.createAsync(ctx.ActorContext, ch, id, detail.Name).Do(func(reply *internal.CreateGuildReply) error {
+			ch.Unsettled.Erase(id)
 			if !reply.GetOk() {
 				if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
 					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 				} else {
 					log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
 				}
-				ch.Inventory.AddMeso(gameconst.GuildCreateMesoCost)
+				ch.Inventory.AddMeso(detail.Meso)
 				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 				return nil
 			}
 			guildPb := reply.GetGuild()
 			if guildPb == nil {
 				log.Printf("GuildOperation(create): ok but missing guild character=%d", charID)
-				ch.Inventory.AddMeso(gameconst.GuildCreateMesoCost)
 				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 				return nil
 			}
-			h.applyGuildFromProto(ch, guildPb)
+			h.gs.guildSystem.applyGuildFromProto(ch, guildPb)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultOK)
 			return nil
-		})
-		promise.OnError(func(err error) {
-			log.Printf("GuildOperation(create) async error: %v", err)
-			h.gs.WriteOperationLogAsync(ctx.ActorContext, charID, gameconst.OperationLogGuildCreateUnsettled, gameconst.GuildCreateMesoCost, err.Error())
+		}).OnError(func(err error) {
+			ch.Unsettled.Find(id).InFlight = false
+			log.Printf("GuildOperation(create) character=%d id=%d: %v", charID, id, err)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 		})
 		return nil
@@ -235,7 +194,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				log.Printf("GuildOperation(accept invite): ok but missing guild character=%d", charID)
 				return nil
 			}
-			h.applyGuildFromProto(ch, guildPb)
+			h.gs.guildSystem.applyGuildFromProto(ch, guildPb)
 			return nil
 		})
 		promise.OnError(func(err error) {
@@ -389,37 +348,31 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			mapInstance == nil || mapInstance.Wz == nil || uint32(mapInstance.Wz.ID) != gameconst.GuildEmblemMapID {
 			return nil
 		}
-		payment, paid := h.chargeGuildEmblemChangeCost(ch)
+		detail, paid := h.chargeGuildEmblemChangeCost(ch)
 		if !paid {
 			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildEmblemChangeInsufficientCostMessage)
 			return nil
 		}
-		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildEmblemReply, error) {
-			return h.gs.internalClient.ChangeGuildEmblem(c, &internal.ChangeGuildEmblemRequest{
-				WorldId:     worldID,
-				CharacterId: charID,
-				Logo: &internal.GuildLogo{
-					Logo:        uint32(req.Logo),
-					LogoColor:   uint32(req.LogoColor),
-					LogoBg:      uint32(req.LogoBG),
-					LogoBgColor: uint32(req.LogoBGColor),
-				},
-			})
-		}, func(reply *internal.ChangeGuildEmblemReply) error {
+		detail.Logo = &internal.GuildLogo{
+			Logo:        uint32(req.Logo),
+			LogoColor:   uint32(req.LogoColor),
+			LogoBg:      uint32(req.LogoBG),
+			LogoBgColor: uint32(req.LogoBGColor),
+		}
+		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM, uint64(guildID), detail)
+		h.gs.guildSystem.changeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo).Do(func(reply *internal.ChangeGuildEmblemReply) error {
+			ch.Unsettled.Erase(id)
 			if !reply.GetOk() {
-				h.refundGuildEmblemChangeCost(ch, payment)
+				h.gs.guildSystem.refundEmblem(ch, detail)
 				if reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD &&
 					reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_AUTHORIZED {
 					log.Printf("GuildOperation(change emblem): failed character=%d code=%v", charID, reply.GetErrorCode())
 				}
-				return nil
 			}
 			return nil
-		})
-		promise.OnError(func(err error) {
-			h.refundGuildEmblemChangeCost(ch, payment)
-			log.Printf("GuildOperation(change emblem) async error: %v", err)
+		}).OnError(func(err error) {
+			ch.Unsettled.Find(id).InFlight = false
+			log.Printf("GuildOperation(change emblem) character=%d id=%d: %v", charID, id, err)
 		})
 		return nil
 	case pconst.GuildC2SChangeNotice:

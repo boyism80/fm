@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -55,16 +56,13 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		*result = int(constant.AllianceIncreaseCapacityResultInsufficientMeso)
 		return nil
 	}
-	worldID := s.gs.config.WorldId
-	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
-	return promise.ThenRPC(func(c context.Context) (*internal.IncreaseAllianceCapacityReply, error) {
-		return s.gs.internalClient.IncreaseAllianceCapacity(c, &internal.IncreaseAllianceCapacityRequest{
-			WorldId:     worldID,
-			CharacterId: charID,
-		})
-	}, func(reply *internal.IncreaseAllianceCapacityReply) error {
-		if !reply.GetOk() || reply.GetAlliance() == nil {
-			ch.Inventory.AddMeso(constant.AllianceIncreaseCapacityMesoCost)
+	allianceID, _ := g.GetAllianceID()
+	detail := allianceCapacityDetail{Meso: constant.AllianceIncreaseCapacityMesoCost}
+	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CAPACITY, uint64(allianceID), detail)
+	return s.incCapacityAsync(ctx, ch, id).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
+		ch.Unsettled.Erase(id)
+		if !reply.GetOk() {
+			ch.Inventory.AddMeso(detail.Meso)
 			switch reply.GetErrorCode() {
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_IN_ALLIANCE,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NOT_FOUND,
@@ -80,14 +78,53 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 			}
 			return nil
 		}
-		alliancePb := reply.GetAlliance()
-		s.gs.alliance.Update(alliancePb)
-		s.gs.alliance.BroadcastInfoUpdate(alliancePb)
 		*result = int(constant.AllianceIncreaseCapacityResultOK)
+		if alliancePb := reply.GetAlliance(); alliancePb != nil {
+			s.gs.alliance.Update(alliancePb)
+			s.gs.alliance.BroadcastInfoUpdate(alliancePb)
+		}
 		return nil
 	}).OnError(func(err error) {
-		log.Printf("alliance inc_capacity: character=%d: %v", charID, err)
-		s.gs.WriteOperationLogAsync(ctx, charID, constant.OperationLogAllianceIncCapacityUnsettled, constant.AllianceIncreaseCapacityMesoCost, err.Error())
+		ch.Unsettled.Find(id).InFlight = false
+		log.Printf("alliance inc_capacity: character=%d id=%d: %v", charID, id, err)
 		*result = int(constant.AllianceIncreaseCapacityResultFailed)
+	})
+}
+
+type allianceCapacityDetail struct {
+	Meso int32
+}
+
+func (s allianceSystem) incCapacityAsync(ctx actor.Context, ch *entity.Character, requestID uint64) *async.Promise[*internal.IncreaseAllianceCapacityReply] {
+	req := &internal.IncreaseAllianceCapacityRequest{
+		WorldId:     s.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+		RequestId:   requestID,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.IncreaseAllianceCapacityReply, error) {
+		return s.gs.internalClient.IncreaseAllianceCapacity(c, req)
+	}, nil)
+}
+
+func (s allianceSystem) SettleCapacity(ctx actor.Context, ch *entity.Character, request *entity.UnsettledRequest) {
+	var detail allianceCapacityDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.ID, err)
+		return
+	}
+	s.incCapacityAsync(ctx, ch, request.ID).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
+		ch.Unsettled.Erase(request.ID)
+		if !reply.GetOk() {
+			ch.Inventory.AddMeso(detail.Meso)
+			return nil
+		}
+		if alliancePb := reply.GetAlliance(); alliancePb != nil {
+			s.gs.alliance.Update(alliancePb)
+			s.gs.alliance.BroadcastInfoUpdate(alliancePb)
+		}
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 	})
 }

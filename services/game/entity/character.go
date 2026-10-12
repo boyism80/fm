@@ -55,6 +55,7 @@ type Character struct {
 	Inventory         *Inventory
 	Escrow            *Escrow
 	Duey              *Duey
+	Unsettled         *UnsettledRequests
 	StoreBank         *StoreBank
 	MiniRoom          MiniRoom
 	miniRoomPending   bool

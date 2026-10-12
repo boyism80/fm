@@ -286,6 +286,24 @@ export type SkillMacroRow = {
     deleted?: boolean;
 };
 
+export interface UnsettledRequestModel {
+    characterId: number;
+    id: string;
+    type: number;
+    target: string;
+    detail: string;
+}
+
+export type UnsettledRequestRow = {
+    character_id: number;
+    id: string;
+    type: number;
+    target: string;
+    detail: string;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
 export interface MountModel {
     characterId: number;
     worldId: number;

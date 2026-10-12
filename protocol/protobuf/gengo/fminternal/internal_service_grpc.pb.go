@@ -33,6 +33,7 @@ const (
 	Internal_SaveCharacters_FullMethodName                 = "/fm.internal.Internal/SaveCharacters"
 	Internal_LoadParcels_FullMethodName                    = "/fm.internal.Internal/LoadParcels"
 	Internal_SendParcel_FullMethodName                     = "/fm.internal.Internal/SendParcel"
+	Internal_AbortParcelSend_FullMethodName                = "/fm.internal.Internal/AbortParcelSend"
 	Internal_ClaimParcel_FullMethodName                    = "/fm.internal.Internal/ClaimParcel"
 	Internal_DeleteParcel_FullMethodName                   = "/fm.internal.Internal/DeleteParcel"
 	Internal_CheckParcelArrivals_FullMethodName            = "/fm.internal.Internal/CheckParcelArrivals"
@@ -121,12 +122,14 @@ const (
 	Internal_GetMarriage_FullMethodName                    = "/fm.internal.Internal/GetMarriage"
 	Internal_BreakEngagement_FullMethodName                = "/fm.internal.Internal/BreakEngagement"
 	Internal_ReserveWedding_FullMethodName                 = "/fm.internal.Internal/ReserveWedding"
+	Internal_AbortMarriageChange_FullMethodName            = "/fm.internal.Internal/AbortMarriageChange"
 	Internal_SetWeddingWishlist_FullMethodName             = "/fm.internal.Internal/SetWeddingWishlist"
 	Internal_InviteWeddingGuest_FullMethodName             = "/fm.internal.Internal/InviteWeddingGuest"
 	Internal_FinishWedding_FullMethodName                  = "/fm.internal.Internal/FinishWedding"
 	Internal_RequestDivorce_FullMethodName                 = "/fm.internal.Internal/RequestDivorce"
 	Internal_CancelDivorce_FullMethodName                  = "/fm.internal.Internal/CancelDivorce"
 	Internal_GiveWeddingGift_FullMethodName                = "/fm.internal.Internal/GiveWeddingGift"
+	Internal_AbortWeddingGift_FullMethodName               = "/fm.internal.Internal/AbortWeddingGift"
 	Internal_LoadWeddingGifts_FullMethodName               = "/fm.internal.Internal/LoadWeddingGifts"
 	Internal_ClaimWeddingGift_FullMethodName               = "/fm.internal.Internal/ClaimWeddingGift"
 	Internal_NotifySpouseMap_FullMethodName                = "/fm.internal.Internal/NotifySpouseMap"
@@ -150,6 +153,7 @@ type InternalClient interface {
 	SaveCharacters(ctx context.Context, in *SaveCharactersRequest, opts ...grpc.CallOption) (*SaveCharactersReply, error)
 	LoadParcels(ctx context.Context, in *LoadParcelsRequest, opts ...grpc.CallOption) (*LoadParcelsReply, error)
 	SendParcel(ctx context.Context, in *SendParcelRequest, opts ...grpc.CallOption) (*SendParcelReply, error)
+	AbortParcelSend(ctx context.Context, in *AbortParcelSendRequest, opts ...grpc.CallOption) (*AbortParcelSendReply, error)
 	ClaimParcel(ctx context.Context, in *ClaimParcelRequest, opts ...grpc.CallOption) (*ClaimParcelReply, error)
 	DeleteParcel(ctx context.Context, in *DeleteParcelRequest, opts ...grpc.CallOption) (*DeleteParcelReply, error)
 	CheckParcelArrivals(ctx context.Context, in *CheckParcelArrivalsRequest, opts ...grpc.CallOption) (*CheckParcelArrivalsReply, error)
@@ -238,12 +242,14 @@ type InternalClient interface {
 	GetMarriage(ctx context.Context, in *GetMarriageRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	BreakEngagement(ctx context.Context, in *BreakEngagementRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	ReserveWedding(ctx context.Context, in *ReserveWeddingRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	AbortMarriageChange(ctx context.Context, in *AbortMarriageChangeRequest, opts ...grpc.CallOption) (*AbortMarriageChangeReply, error)
 	SetWeddingWishlist(ctx context.Context, in *SetWeddingWishlistRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	InviteWeddingGuest(ctx context.Context, in *InviteWeddingGuestRequest, opts ...grpc.CallOption) (*InviteWeddingGuestReply, error)
 	FinishWedding(ctx context.Context, in *FinishWeddingRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	RequestDivorce(ctx context.Context, in *RequestDivorceRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	CancelDivorce(ctx context.Context, in *CancelDivorceRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	GiveWeddingGift(ctx context.Context, in *GiveWeddingGiftRequest, opts ...grpc.CallOption) (*GiveWeddingGiftReply, error)
+	AbortWeddingGift(ctx context.Context, in *AbortWeddingGiftRequest, opts ...grpc.CallOption) (*AbortWeddingGiftReply, error)
 	LoadWeddingGifts(ctx context.Context, in *LoadWeddingGiftsRequest, opts ...grpc.CallOption) (*LoadWeddingGiftsReply, error)
 	ClaimWeddingGift(ctx context.Context, in *ClaimWeddingGiftRequest, opts ...grpc.CallOption) (*ClaimWeddingGiftReply, error)
 	NotifySpouseMap(ctx context.Context, in *NotifySpouseMapRequest, opts ...grpc.CallOption) (*NotifySpouseMapReply, error)
@@ -391,6 +397,16 @@ func (c *internalClient) SendParcel(ctx context.Context, in *SendParcelRequest, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SendParcelReply)
 	err := c.cc.Invoke(ctx, Internal_SendParcel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) AbortParcelSend(ctx context.Context, in *AbortParcelSendRequest, opts ...grpc.CallOption) (*AbortParcelSendReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AbortParcelSendReply)
+	err := c.cc.Invoke(ctx, Internal_AbortParcelSend_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1277,6 +1293,16 @@ func (c *internalClient) ReserveWedding(ctx context.Context, in *ReserveWeddingR
 	return out, nil
 }
 
+func (c *internalClient) AbortMarriageChange(ctx context.Context, in *AbortMarriageChangeRequest, opts ...grpc.CallOption) (*AbortMarriageChangeReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AbortMarriageChangeReply)
+	err := c.cc.Invoke(ctx, Internal_AbortMarriageChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) SetWeddingWishlist(ctx context.Context, in *SetWeddingWishlistRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MarriageReply)
@@ -1337,6 +1363,16 @@ func (c *internalClient) GiveWeddingGift(ctx context.Context, in *GiveWeddingGif
 	return out, nil
 }
 
+func (c *internalClient) AbortWeddingGift(ctx context.Context, in *AbortWeddingGiftRequest, opts ...grpc.CallOption) (*AbortWeddingGiftReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AbortWeddingGiftReply)
+	err := c.cc.Invoke(ctx, Internal_AbortWeddingGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) LoadWeddingGifts(ctx context.Context, in *LoadWeddingGiftsRequest, opts ...grpc.CallOption) (*LoadWeddingGiftsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoadWeddingGiftsReply)
@@ -1385,6 +1421,7 @@ type InternalServer interface {
 	SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error)
 	LoadParcels(context.Context, *LoadParcelsRequest) (*LoadParcelsReply, error)
 	SendParcel(context.Context, *SendParcelRequest) (*SendParcelReply, error)
+	AbortParcelSend(context.Context, *AbortParcelSendRequest) (*AbortParcelSendReply, error)
 	ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error)
 	DeleteParcel(context.Context, *DeleteParcelRequest) (*DeleteParcelReply, error)
 	CheckParcelArrivals(context.Context, *CheckParcelArrivalsRequest) (*CheckParcelArrivalsReply, error)
@@ -1473,12 +1510,14 @@ type InternalServer interface {
 	GetMarriage(context.Context, *GetMarriageRequest) (*MarriageReply, error)
 	BreakEngagement(context.Context, *BreakEngagementRequest) (*MarriageReply, error)
 	ReserveWedding(context.Context, *ReserveWeddingRequest) (*MarriageReply, error)
+	AbortMarriageChange(context.Context, *AbortMarriageChangeRequest) (*AbortMarriageChangeReply, error)
 	SetWeddingWishlist(context.Context, *SetWeddingWishlistRequest) (*MarriageReply, error)
 	InviteWeddingGuest(context.Context, *InviteWeddingGuestRequest) (*InviteWeddingGuestReply, error)
 	FinishWedding(context.Context, *FinishWeddingRequest) (*MarriageReply, error)
 	RequestDivorce(context.Context, *RequestDivorceRequest) (*MarriageReply, error)
 	CancelDivorce(context.Context, *CancelDivorceRequest) (*MarriageReply, error)
 	GiveWeddingGift(context.Context, *GiveWeddingGiftRequest) (*GiveWeddingGiftReply, error)
+	AbortWeddingGift(context.Context, *AbortWeddingGiftRequest) (*AbortWeddingGiftReply, error)
 	LoadWeddingGifts(context.Context, *LoadWeddingGiftsRequest) (*LoadWeddingGiftsReply, error)
 	ClaimWeddingGift(context.Context, *ClaimWeddingGiftRequest) (*ClaimWeddingGiftReply, error)
 	NotifySpouseMap(context.Context, *NotifySpouseMapRequest) (*NotifySpouseMapReply, error)
@@ -1533,6 +1572,9 @@ func (UnimplementedInternalServer) LoadParcels(context.Context, *LoadParcelsRequ
 }
 func (UnimplementedInternalServer) SendParcel(context.Context, *SendParcelRequest) (*SendParcelReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendParcel not implemented")
+}
+func (UnimplementedInternalServer) AbortParcelSend(context.Context, *AbortParcelSendRequest) (*AbortParcelSendReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AbortParcelSend not implemented")
 }
 func (UnimplementedInternalServer) ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ClaimParcel not implemented")
@@ -1798,6 +1840,9 @@ func (UnimplementedInternalServer) BreakEngagement(context.Context, *BreakEngage
 func (UnimplementedInternalServer) ReserveWedding(context.Context, *ReserveWeddingRequest) (*MarriageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReserveWedding not implemented")
 }
+func (UnimplementedInternalServer) AbortMarriageChange(context.Context, *AbortMarriageChangeRequest) (*AbortMarriageChangeReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AbortMarriageChange not implemented")
+}
 func (UnimplementedInternalServer) SetWeddingWishlist(context.Context, *SetWeddingWishlistRequest) (*MarriageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetWeddingWishlist not implemented")
 }
@@ -1815,6 +1860,9 @@ func (UnimplementedInternalServer) CancelDivorce(context.Context, *CancelDivorce
 }
 func (UnimplementedInternalServer) GiveWeddingGift(context.Context, *GiveWeddingGiftRequest) (*GiveWeddingGiftReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GiveWeddingGift not implemented")
+}
+func (UnimplementedInternalServer) AbortWeddingGift(context.Context, *AbortWeddingGiftRequest) (*AbortWeddingGiftReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AbortWeddingGift not implemented")
 }
 func (UnimplementedInternalServer) LoadWeddingGifts(context.Context, *LoadWeddingGiftsRequest) (*LoadWeddingGiftsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoadWeddingGifts not implemented")
@@ -2094,6 +2142,24 @@ func _Internal_SendParcel_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).SendParcel(ctx, req.(*SendParcelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_AbortParcelSend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AbortParcelSendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AbortParcelSend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AbortParcelSend_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AbortParcelSend(ctx, req.(*AbortParcelSendRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3682,6 +3748,24 @@ func _Internal_ReserveWedding_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_AbortMarriageChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AbortMarriageChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AbortMarriageChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AbortMarriageChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AbortMarriageChange(ctx, req.(*AbortMarriageChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_SetWeddingWishlist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetWeddingWishlistRequest)
 	if err := dec(in); err != nil {
@@ -3786,6 +3870,24 @@ func _Internal_GiveWeddingGift_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).GiveWeddingGift(ctx, req.(*GiveWeddingGiftRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_AbortWeddingGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AbortWeddingGiftRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AbortWeddingGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AbortWeddingGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AbortWeddingGift(ctx, req.(*AbortWeddingGiftRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3906,6 +4008,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendParcel",
 			Handler:    _Internal_SendParcel_Handler,
+		},
+		{
+			MethodName: "AbortParcelSend",
+			Handler:    _Internal_AbortParcelSend_Handler,
 		},
 		{
 			MethodName: "ClaimParcel",
@@ -4260,6 +4366,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Internal_ReserveWedding_Handler,
 		},
 		{
+			MethodName: "AbortMarriageChange",
+			Handler:    _Internal_AbortMarriageChange_Handler,
+		},
+		{
 			MethodName: "SetWeddingWishlist",
 			Handler:    _Internal_SetWeddingWishlist_Handler,
 		},
@@ -4282,6 +4392,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GiveWeddingGift",
 			Handler:    _Internal_GiveWeddingGift_Handler,
+		},
+		{
+			MethodName: "AbortWeddingGift",
+			Handler:    _Internal_AbortWeddingGift_Handler,
 		},
 		{
 			MethodName: "LoadWeddingGifts",

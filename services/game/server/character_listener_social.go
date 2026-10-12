@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -228,6 +229,25 @@ func (l *CharacterListenerImpl) LoadFamilyAsync(ctx actor.Context, ch *entity.Ch
 		CharacterId: ch.GetID(),
 		ChannelId:   l.gs.config.ChannelId,
 		Action:      internal.FamilyAction_FAMILY_ACTION_OPEN,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.FamilyReply, error) {
+			return l.gs.internalClient.Family(c, req)
+		},
+		nil,
+	)
+}
+
+func (l *CharacterListenerImpl) FinishFamilyMoveAsync(ctx actor.Context, ch *entity.Character, requestID uint64, complete bool) *async.Promise[*internal.FamilyReply] {
+	req := &internal.FamilyRequest{
+		OperationId: strconv.FormatUint(requestID, 10),
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+		ChannelId:   l.gs.config.ChannelId,
+		Action:      internal.FamilyAction_FAMILY_ACTION_REFUND,
+	}
+	if complete {
+		req.Action = internal.FamilyAction_FAMILY_ACTION_MOVE_COMPLETE
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.FamilyReply, error) {

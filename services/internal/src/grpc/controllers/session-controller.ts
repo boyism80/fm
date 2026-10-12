@@ -24,6 +24,7 @@ import type { AccountRecordRepository } from "../../repos/account-record-reposit
 import type { MonsterBookRepository } from "../../repos/monster-book-repository";
 import type { MountRepository } from "../../repos/mount-repository";
 import type { SkillMacroRepository } from "../../repos/skill-macro-repository";
+import type { UnsettledRequestRepository } from "../../repos/unsettled-request-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type {
@@ -78,6 +79,7 @@ export class SessionGrpcController {
     private readonly monsterBookRepository: MonsterBookRepository;
     private readonly mountRepository: MountRepository;
     private readonly skillMacroRepository: SkillMacroRepository;
+    private readonly unsettledRequestRepository: UnsettledRequestRepository;
     private readonly sessionService: SessionService;
     private readonly accountService: AccountService;
     private readonly buddyService: BuddyService;
@@ -101,6 +103,7 @@ export class SessionGrpcController {
         monsterBookRepository: MonsterBookRepository,
         mountRepository: MountRepository,
         skillMacroRepository: SkillMacroRepository,
+        unsettledRequestRepository: UnsettledRequestRepository,
         sessionService: SessionService,
         accountService: AccountService,
         buddyService: BuddyService,
@@ -123,6 +126,7 @@ export class SessionGrpcController {
         this.monsterBookRepository = monsterBookRepository;
         this.mountRepository = mountRepository;
         this.skillMacroRepository = skillMacroRepository;
+        this.unsettledRequestRepository = unsettledRequestRepository;
         this.sessionService = sessionService;
         this.accountService = accountService;
         this.buddyService = buddyService;
@@ -237,7 +241,7 @@ export class SessionGrpcController {
 
     private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
         const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, skillMacros, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage] = await Promise.all([
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, skillMacros, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage, unsettledRequests] = await Promise.all([
             this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.buffService.getBuffs(worldId, characterId),
@@ -254,6 +258,7 @@ export class SessionGrpcController {
             this.accountRecordRepository.getAll(worldId, String(row.accountId)).then((map) => [...map.values()]),
             this.mountRepository.get(worldId, characterId),
             this.characterService.loadStorage(worldId, row.accountId),
+            this.unsettledRequestRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
         ]);
         const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
         const family = await this.familyService.load(worldId, row);
@@ -337,6 +342,7 @@ export class SessionGrpcController {
                 exp: mount?.exp ?? 0,
                 fatigue: mount?.fatigue ?? 0,
             },
+            unsettledRequests: unsettledRequests.map(({ id, type, target, detail }) => ({ id, type, target, detail })),
         };
     }
 
@@ -380,6 +386,7 @@ export class SessionGrpcController {
                     records: [],
                     mount: undefined,
                     account: undefined,
+                    unsettledRequests: [],
                 });
                 return;
             }

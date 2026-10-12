@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local fault = require("script/integration/lib/fault")
 
 local VILLAGE = 680000000
 local LOBBY = 680000200
@@ -24,7 +25,8 @@ local GIFT = 4000000
 local DIALOG = { normal = 0, yes_no = 1, list = 4 }
 local RING = { propose = 0, answer = 2, invite = 5, wishlist = 9 }
 local ENGAGE = { engaged = 11, married = 12, divorced = 14, reserved = 16 }
-local GIFT_MODE = { give = 6, receive = 7, close = 8, open_give = 9, open_receive = 10, given = 11, received = 15 }
+local GIFT_MODE = { give = 6, receive = 7, close = 8, open_give = 9, open_receive = 10, given = 11, give_failed = 13, received = 15, receive_fail = 16 }
+local SETTLE_WAIT_MS = 40000
 local DUEY = { send = 3, receive = 5, delete = 6, close = 8 }
 local ETC = 4
 
@@ -354,9 +356,21 @@ local function ceremony(ctx)
 	if given == false then
 		return ctx:fail("결혼 선물 전달 결과가 오지 않음")
 	end
+	for _, mode in ipairs({ "on", "lost" }) do
+		if fault.rpc(guest, "GiveWeddingGift", mode) == false then
+			return ctx:fail("GiveWeddingGift 장애 주입 실패")
+		end
+		local failed = guest:request(resp.wedding_gift, req.wedding_present { mode = GIFT_MODE.give, slot = guest:slot(GIFT), item_id = GIFT, count = 1 }, function(p)
+			return p.mode == GIFT_MODE.give_failed
+		end, 5000)
+		fault.rpc(guest, "GiveWeddingGift", "off")
+		if failed == false then
+			return ctx:fail("장애 중 결혼 선물 실패 결과가 오지 않음 (" .. mode .. ")")
+		end
+	end
 	guest:send(req.wedding_present { mode = GIFT_MODE.close })
 	ctx:sleep(500)
-	if has(ctx, guest, GIFT, 3) == false then
+	if has(ctx, guest, GIFT, 1) == false then
 		return false
 	end
 
@@ -432,8 +446,22 @@ local function ceremony(ctx)
 	return true
 end
 
+local function wait_count(ctx, bot, item_id, count, what)
+	for _ = 1, SETTLE_WAIT_MS / 1000 do
+		if (bot:items()[item_id] or 0) == count then
+			return true
+		end
+		ctx:sleep(1000)
+	end
+	return ctx:fail(string.format("%s %s: %d 개수 %d (기대 %d)", bot:name(), what, item_id, bot:items()[item_id] or 0, count))
+end
+
+-- The guest's unsent gift is refunded and the lost one stays given; the groom's lost claim is granted on settle.
 local function gifts(ctx)
-	local groom, bride = ctx:bot(0), ctx:bot(1)
+	local groom, bride, guest = ctx:bot(0), ctx:bot(1), ctx:bot(2)
+	if wait_count(ctx, guest, GIFT, 2, "보내지 않은 선물 환불") == false then
+		return false
+	end
 	if talk(ctx, bride, ANGELIQUE, "받으실 수 있는 선물이 없군요", "선물 없는 신부") == false then
 		return false
 	end
@@ -453,9 +481,33 @@ local function gifts(ctx)
 	if received == false then
 		return ctx:fail("결혼 선물 수령 결과가 오지 않음")
 	end
-	groom:send(req.wedding_present { mode = GIFT_MODE.close })
 	ctx:sleep(500)
-	return has(ctx, groom, GIFT, 2)
+	if has(ctx, groom, GIFT, 2) == false then
+		return false
+	end
+
+	if fault.rpc(groom, "ClaimWeddingGift", "lost") == false then
+		return ctx:fail("ClaimWeddingGift 장애 주입 실패")
+	end
+	local failed = groom:request(resp.wedding_gift, req.wedding_present { mode = GIFT_MODE.receive, inventory_type = ETC, index = 0 }, function(p)
+		return p.mode == GIFT_MODE.receive_fail
+	end, 5000)
+	fault.rpc(groom, "ClaimWeddingGift", "off")
+	if failed == false then
+		return ctx:fail("장애 중 결혼 선물 수령 실패 결과가 오지 않음")
+	end
+	groom:send(req.wedding_present { mode = GIFT_MODE.close })
+	if wait_count(ctx, groom, GIFT, 3, "유실된 선물 수령 정리") == false then
+		return false
+	end
+	if groom:transfer(1) == false or groom:transfer(0) == false then
+		return ctx:fail("신랑 채널 이동 실패")
+	end
+	ctx:sleep(1000)
+	if has(ctx, groom, GIFT, 3) == false then
+		return false
+	end
+	return talk(ctx, groom, ANGELIQUE, "받으실 수 있는 선물이 없군요", "선물을 모두 받은 신랑")
 end
 
 local function request_divorce(ctx, bot)

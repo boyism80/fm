@@ -167,15 +167,7 @@ async function main() {
         console.log(`fm internal gRPC listening on ${addr} (bound port ${boundPort})`);
     });
 
-    const familyService = container.resolve("familyService");
-    const familyMoveSweep = setInterval(() => {
-        familyService.expireMoves(internalConfig.app.world_id).catch((err) => {
-            console.error("[social] family move recovery failed", err);
-        });
-    }, 10_000);
-
     async function shutdown() {
-        clearInterval(familyMoveSweep);
         server.tryShutdown(async () => {
             await rabbitmqService.close().catch(() => {});
             await internalContext.close().catch(() => {});

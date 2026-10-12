@@ -22,10 +22,7 @@ function M.gain_gp_once(me, sm, key, amount)
 		return
 	end
 	sm:set_property(key, "true")
-	local guild = me:guild()
-	if guild ~= nil then
-		guild:gain_gp(amount)
-	end
+	me:gain_guild_gp(amount)
 end
 
 function M.pass_gate(me, name, clear_key, map_id, spawn, closed)

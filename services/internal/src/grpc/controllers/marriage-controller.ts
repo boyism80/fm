@@ -1,5 +1,9 @@
 import type { MarriageService } from "../../services/marriage-service";
 import type {
+    AbortMarriageChangeReply,
+    AbortMarriageChangeRequest,
+    AbortWeddingGiftReply,
+    AbortWeddingGiftRequest,
     BreakEngagementRequest,
     CancelDivorceRequest,
     ClaimWeddingGiftReply,
@@ -23,7 +27,6 @@ import type {
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
-import { makeSaveCharacterEntry } from "./character-controller";
 
 @Controller("marriageController")
 export class MarriageGrpcController {
@@ -41,7 +44,15 @@ export class MarriageGrpcController {
             const req = call.request;
             callback(
                 null,
-                await this.marriageService.createMarriage(req.worldId, req.groomId, req.groomName, req.brideId, req.brideName, req.ringItemId)
+                await this.marriageService.createMarriage(
+                    req.worldId,
+                    req.groomId,
+                    req.groomName,
+                    req.brideId,
+                    req.brideName,
+                    req.ringItemId,
+                    req.requestId
+                )
             );
         } catch (err) {
             this.grpcError(err, callback);
@@ -80,7 +91,17 @@ export class MarriageGrpcController {
     async reserveWedding(call: GrpcCall<ReserveWeddingRequest>, callback: GrpcCallback<MarriageReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.reserveWedding(req.worldId, req.marriageId, req.ticketItemId));
+            callback(null, await this.marriageService.reserveWedding(req.worldId, req.marriageId, req.ticketItemId, req.requestId));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("abortMarriageChange")
+    async abortMarriageChange(call: GrpcCall<AbortMarriageChangeRequest>, callback: GrpcCallback<AbortMarriageChangeReply>) {
+        try {
+            const req = call.request;
+            callback(null, { changed: await this.marriageService.abortMarriageChange(req.worldId, req.requestId) });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -146,9 +167,19 @@ export class MarriageGrpcController {
                 worldId: req.worldId,
                 receiverId: req.receiverId,
                 gift: req.gift,
-                sender: req.sender ? makeSaveCharacterEntry(req.sender) : undefined,
+                requestId: req.requestId,
             });
             callback(null, { result });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("abortWeddingGift")
+    async abortWeddingGift(call: GrpcCall<AbortWeddingGiftRequest>, callback: GrpcCallback<AbortWeddingGiftReply>) {
+        try {
+            const req = call.request;
+            callback(null, { given: await this.marriageService.abortWeddingGift(req.worldId, req.receiverId, req.requestId) });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -167,7 +198,7 @@ export class MarriageGrpcController {
     async claimWeddingGift(call: GrpcCall<ClaimWeddingGiftRequest>, callback: GrpcCallback<ClaimWeddingGiftReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.claimWeddingGift(req.worldId, req.characterId, req.giftId));
+            callback(null, await this.marriageService.claimWeddingGift(req.worldId, req.characterId, req.giftId, req.requestId));
         } catch (err) {
             this.grpcError(err, callback);
         }

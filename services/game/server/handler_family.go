@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -162,6 +163,11 @@ func (h *familyHandler) call(
 ) {
 	teleport := (req.Action == internal.FamilyAction_FAMILY_ACTION_USE && req.Feature == internal.FamilyFeature_FAMILY_FEATURE_TELEPORT) ||
 		(req.Action == internal.FamilyAction_FAMILY_ACTION_SUMMON && req.Accepted)
+	var moveID uint64
+	if teleport {
+		moveID = ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_FAMILY_MOVE, 0, nil)
+		rpc.OperationId = strconv.FormatUint(moveID, 10)
+	}
 	deadline := clock.Now().Add(20 * time.Second)
 	async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.FamilyReply, error) {
@@ -169,8 +175,15 @@ func (h *familyHandler) call(
 		},
 		func(reply *internal.FamilyReply) error {
 			h.gs.GetDispatchSystem().CallCharacter(ch.GetID(), func(currentCtx actor.Context, current *entity.Character) {
+				if current == nil {
+					return
+				}
+
 				current.Family.Pending = false
 				if reply.Status != internal.FamilyResult_FAMILY_RESULT_OK {
+					if teleport {
+						current.Unsettled.Erase(moveID)
+					}
 					current.Listener.OnFamilyResult(current, reply.Status)
 					current.Listener.OnUnlockAction(current)
 					return
@@ -186,14 +199,14 @@ func (h *familyHandler) call(
 					m := current.GetMap()
 					if clock.Now().After(deadline) || m != origin || m.BlocksTeleportStone() || targetMap.BlocksTeleportStone() ||
 						current.GetHp() == 0 || current.Dialog.Thread() != nil || current.Dialog.ShopID != 0 {
-						h.refund(currentCtx, current, rpc)
+						h.refund(currentCtx, current, moveID)
 						return
 					}
 
 					if err := h.gs.GetMapSystem().Warp(currentCtx, current, targetMap, 0, func(entered actor.Context) {
-						h.settleMove(entered, rpc, true, 0)
+						current.Family.FinishMove(entered, moveID, true)
 					}); err != nil {
-						h.refund(currentCtx, current, rpc)
+						h.refund(currentCtx, current, moveID)
 					}
 				}
 				current.Listener.OnUnlockAction(current)
@@ -201,10 +214,14 @@ func (h *familyHandler) call(
 			return nil
 		},
 	).OnError(func(error) {
-		if teleport {
-			h.settleMove(ctx, rpc, false, 0)
-		}
 		h.gs.GetDispatchSystem().CallCharacter(ch.GetID(), func(_ actor.Context, current *entity.Character) {
+			if current == nil {
+				return
+			}
+
+			if teleport {
+				current.Unsettled.Find(moveID).InFlight = false
+			}
 			current.Family.Pending = false
 			current.Listener.OnFamilyResult(current, internal.FamilyResult_FAMILY_RESULT_FAILED)
 			current.Listener.OnUnlockAction(current)
@@ -212,41 +229,8 @@ func (h *familyHandler) call(
 	})
 }
 
-func (h *familyHandler) refund(ctx actor.Context, ch *entity.Character, original *internal.FamilyRequest) {
-	h.settleMove(ctx, original, false, 0)
+func (h *familyHandler) refund(ctx actor.Context, ch *entity.Character, moveID uint64) {
+	ch.Family.FinishMove(ctx, moveID, false)
 	ch.Listener.OnFamilyResult(ch, internal.FamilyResult_FAMILY_RESULT_FAILED)
 	ch.Listener.OnUnlockAction(ch)
-}
-
-func (h *familyHandler) settleMove(ctx actor.Context, original *internal.FamilyRequest, complete bool, attempt int) {
-	req := &internal.FamilyRequest{
-		OperationId: original.OperationId,
-		WorldId:     original.WorldId,
-		CharacterId: original.CharacterId,
-		ChannelId:   original.ChannelId,
-		Action:      internal.FamilyAction_FAMILY_ACTION_REFUND,
-	}
-	if complete {
-		req.Action = internal.FamilyAction_FAMILY_ACTION_MOVE_COMPLETE
-	}
-
-	async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.FamilyReply, error) {
-			return h.gs.internalClient.Family(c, req)
-		},
-		func(reply *internal.FamilyReply) error {
-			h.gs.GetDispatchSystem().CallCharacter(original.CharacterId, func(_ actor.Context, current *entity.Character) {
-				current.Family.Set(reply.Family)
-			})
-			return nil
-		},
-	).OnError(func(error) {
-		if attempt >= 2 {
-			return
-		}
-
-		h.gs.GetDispatchSystem().CallCharacter(original.CharacterId, func(currentCtx actor.Context, _ *entity.Character) {
-			h.settleMove(currentCtx, original, complete, attempt+1)
-		})
-	})
 }

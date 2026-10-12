@@ -20,6 +20,7 @@ service Internal {
   rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
   rpc LoadParcels (LoadParcelsRequest) returns (LoadParcelsReply);
   rpc SendParcel (SendParcelRequest) returns (SendParcelReply);
+  rpc AbortParcelSend (AbortParcelSendRequest) returns (AbortParcelSendReply);
   rpc ClaimParcel (ClaimParcelRequest) returns (ClaimParcelReply);
   rpc DeleteParcel (DeleteParcelRequest) returns (DeleteParcelReply);
   rpc CheckParcelArrivals (CheckParcelArrivalsRequest) returns (CheckParcelArrivalsReply);
@@ -108,12 +109,14 @@ service Internal {
   rpc GetMarriage (GetMarriageRequest) returns (MarriageReply);
   rpc BreakEngagement (BreakEngagementRequest) returns (MarriageReply);
   rpc ReserveWedding (ReserveWeddingRequest) returns (MarriageReply);
+  rpc AbortMarriageChange (AbortMarriageChangeRequest) returns (AbortMarriageChangeReply);
   rpc SetWeddingWishlist (SetWeddingWishlistRequest) returns (MarriageReply);
   rpc InviteWeddingGuest (InviteWeddingGuestRequest) returns (InviteWeddingGuestReply);
   rpc FinishWedding (FinishWeddingRequest) returns (MarriageReply);
   rpc RequestDivorce (RequestDivorceRequest) returns (MarriageReply);
   rpc CancelDivorce (CancelDivorceRequest) returns (MarriageReply);
   rpc GiveWeddingGift (GiveWeddingGiftRequest) returns (GiveWeddingGiftReply);
+  rpc AbortWeddingGift (AbortWeddingGiftRequest) returns (AbortWeddingGiftReply);
   rpc LoadWeddingGifts (LoadWeddingGiftsRequest) returns (LoadWeddingGiftsReply);
   rpc ClaimWeddingGift (ClaimWeddingGiftRequest) returns (ClaimWeddingGiftReply);
   rpc NotifySpouseMap (NotifySpouseMapRequest) returns (NotifySpouseMapReply);
@@ -357,6 +360,7 @@ enum MarriageResult {
   MARRIAGE_RESULT_GUEST_NOT_FOUND = 5;
   MARRIAGE_RESULT_GUEST_ALREADY_INVITED = 6;
   MARRIAGE_RESULT_GIFT_NOT_FOUND = 7;
+  MARRIAGE_RESULT_ABORTED = 8;
 }
 
 message Marriage {
@@ -390,6 +394,7 @@ message CreateMarriageRequest {
   uint32 bride_id = 4;
   string bride_name = 5;
   uint32 ring_item_id = 6;
+  uint64 request_id = 7 [jstype = JS_STRING];
 }
 
 message LoadMarriageRequest {
@@ -412,6 +417,16 @@ message ReserveWeddingRequest {
   uint32 world_id = 1;
   uint32 marriage_id = 2;
   uint32 ticket_item_id = 3;
+  uint64 request_id = 4 [jstype = JS_STRING];
+}
+
+message AbortMarriageChangeRequest {
+  uint32 world_id = 1;
+  uint64 request_id = 2 [jstype = JS_STRING];
+}
+
+message AbortMarriageChangeReply {
+  bool changed = 1;
 }
 
 message SetWeddingWishlistRequest {
@@ -461,7 +476,18 @@ message GiveWeddingGiftRequest {
   uint32 world_id = 1;
   uint32 receiver_id = 2;
   WeddingGift gift = 3;
-  CharacterSaveEntry sender = 4;
+  reserved 4;
+  uint64 request_id = 5 [jstype = JS_STRING];
+}
+
+message AbortWeddingGiftRequest {
+  uint32 world_id = 1;
+  uint32 receiver_id = 2;
+  uint64 request_id = 3 [jstype = JS_STRING];
+}
+
+message AbortWeddingGiftReply {
+  bool given = 1;
 }
 
 message GiveWeddingGiftReply {
@@ -481,6 +507,7 @@ message ClaimWeddingGiftRequest {
   uint32 world_id = 1;
   uint32 character_id = 2;
   uint32 gift_id = 3;
+  uint64 request_id = 4 [jstype = JS_STRING];
 }
 
 message ClaimWeddingGiftReply {
@@ -700,6 +727,32 @@ message EnterGameReply {
   repeated Note notes = 21;
   Account account = 22;
   repeated SkillMacro skill_macros = 23;
+  repeated UnsettledRequest unsettled_requests = 24;
+}
+
+enum UnsettledType {
+  UNSETTLED_TYPE_NONE = 0;
+  UNSETTLED_TYPE_PARCEL_SEND = 1;
+  UNSETTLED_TYPE_PARCEL_CLAIM = 2;
+  UNSETTLED_TYPE_NOTE_REMOVE = 3;
+  UNSETTLED_TYPE_WEDDING_GIFT_SEND = 4;
+  UNSETTLED_TYPE_WEDDING_GIFT_CLAIM = 5;
+  UNSETTLED_TYPE_GUILD_CREATE = 6;
+  UNSETTLED_TYPE_GUILD_CAPACITY = 7;
+  UNSETTLED_TYPE_GUILD_EMBLEM = 8;
+  UNSETTLED_TYPE_GUILD_GP = 9;
+  UNSETTLED_TYPE_ALLIANCE_CREATE = 10;
+  UNSETTLED_TYPE_ALLIANCE_CAPACITY = 11;
+  UNSETTLED_TYPE_WEDDING_PROPOSAL = 12;
+  UNSETTLED_TYPE_WEDDING_RESERVE = 13;
+  UNSETTLED_TYPE_FAMILY_MOVE = 14;
+}
+
+message UnsettledRequest {
+  uint64 id = 1 [jstype = JS_STRING];
+  UnsettledType type = 2;
+  uint64 target = 3 [jstype = JS_STRING];
+  string detail = 4;
 }
 
 message Debuff {
@@ -800,6 +853,7 @@ message CharacterSaveEntry {
   Mount mount = 13;
   Account account = 14;
   repeated SkillMacro skill_macros = 15;
+  repeated UnsettledRequest unsettled_requests = 16;
 }
 
 message Storage {
@@ -818,6 +872,7 @@ enum ParcelResult {
   PARCEL_RESULT_ONE_OF_A_KIND = 4;
   PARCEL_RESULT_NOT_FOUND = 5;
   PARCEL_RESULT_NOT_ARRIVED = 6;
+  PARCEL_RESULT_ABORTED = 7;
 }
 
 message Parcel {
@@ -846,18 +901,30 @@ message SendParcelRequest {
   string recipient_name = 2;
   Parcel parcel = 3;
   uint32 sender_account_id = 4;
-  CharacterSaveEntry sender = 5;
+  reserved 5;
   bool one_of_a_kind = 6;
+  uint64 request_id = 7 [jstype = JS_STRING];
 }
 
 message SendParcelReply {
   ParcelResult result = 1;
 }
 
+message AbortParcelSendRequest {
+  uint32 world_id = 1;
+  string recipient_name = 2;
+  uint64 request_id = 3 [jstype = JS_STRING];
+}
+
+message AbortParcelSendReply {
+  bool sent = 1;
+}
+
 message ClaimParcelRequest {
   uint32 world_id = 1;
   uint32 character_id = 2;
   uint32 parcel_id = 3;
+  uint64 request_id = 4 [jstype = JS_STRING];
 }
 
 message ClaimParcelReply {
@@ -1201,6 +1268,7 @@ message DeleteCharacterRequest {
 message DeleteCharacterReply {
   bool success = 1;
   bool second_password_set = 2;
+  bool unsettled = 3;
 }
 
 message RefreshSessionRequest {
@@ -1442,6 +1510,7 @@ message CreateGuildRequest {
   uint32 world_id = 1;
   string guild_name = 2;
   GuildMember leader = 3;
+  uint64 request_id = 4 [jstype = JS_STRING];
 }
 
 enum GuildErrorCode {
@@ -1665,6 +1734,7 @@ message ChangeGuildEmblemRequest {
   uint32 world_id = 1;
   uint32 character_id = 2;
   GuildLogo logo = 3;
+  uint64 request_id = 4 [jstype = JS_STRING];
 }
 
 message ChangeGuildEmblemReply {
@@ -1689,6 +1759,7 @@ message IncreaseGuildCapacityRequest {
   uint32 world_id = 1;
   uint32 character_id = 2;
   bool extended_cap = 3;
+  uint64 request_id = 4 [jstype = JS_STRING];
 }
 
 message IncreaseGuildCapacityReply {
@@ -1703,6 +1774,7 @@ message GainGuildGPRequest {
   uint32 world_id = 1;
   uint32 guild_id = 2;
   int32 amount = 3;
+  uint64 request_id = 4 [jstype = JS_STRING];
 }
 
 message GainGuildGPReply {
@@ -1813,6 +1885,7 @@ message CreateAllianceRequest {
   string alliance_name = 2;
   uint32 leader_character_id = 3;
   uint32 partner_character_id = 4;
+  uint64 request_id = 5 [jstype = JS_STRING];
 }
 
 message CreateAllianceReply {
@@ -1890,6 +1963,7 @@ message AcceptAllianceInviteReply {
 message IncreaseAllianceCapacityRequest {
   uint32 world_id = 1;
   uint32 character_id = 2;
+  uint64 request_id = 3 [jstype = JS_STRING];
 }
 
 message IncreaseAllianceCapacityReply {
@@ -2286,6 +2360,7 @@ message NotesRequest {
   string message = 5;
   uint32 gift = 6;
   repeated uint32 note_ids = 7;
+  uint64 request_id = 8 [jstype = JS_STRING];
 }
 message NotesReply {
   NoteResult status = 1;

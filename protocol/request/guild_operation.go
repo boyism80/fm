@@ -37,6 +37,11 @@ func (p *GuildOperation) Serialize(writer *stream.StreamWriter) error {
 	case constant.GuildC2SAcceptInvite:
 		writer.WriteU32(p.GuildID)
 		writer.WriteU32(p.CharacterID)
+	case constant.GuildC2SChangeEmblem:
+		writer.WriteU16(p.LogoBG)
+		writer.WriteU8(p.LogoBGColor)
+		writer.WriteU16(p.Logo)
+		writer.WriteU8(p.LogoColor)
 	}
 	return nil
 }

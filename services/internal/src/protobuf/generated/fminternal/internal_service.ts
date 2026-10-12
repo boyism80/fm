@@ -312,6 +312,7 @@ export enum MarriageResult {
   MARRIAGE_RESULT_GUEST_NOT_FOUND = 5,
   MARRIAGE_RESULT_GUEST_ALREADY_INVITED = 6,
   MARRIAGE_RESULT_GIFT_NOT_FOUND = 7,
+  MARRIAGE_RESULT_ABORTED = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -341,6 +342,9 @@ export function marriageResultFromJSON(object: any): MarriageResult {
     case 7:
     case "MARRIAGE_RESULT_GIFT_NOT_FOUND":
       return MarriageResult.MARRIAGE_RESULT_GIFT_NOT_FOUND;
+    case 8:
+    case "MARRIAGE_RESULT_ABORTED":
+      return MarriageResult.MARRIAGE_RESULT_ABORTED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -366,7 +370,120 @@ export function marriageResultToJSON(object: MarriageResult): string {
       return "MARRIAGE_RESULT_GUEST_ALREADY_INVITED";
     case MarriageResult.MARRIAGE_RESULT_GIFT_NOT_FOUND:
       return "MARRIAGE_RESULT_GIFT_NOT_FOUND";
+    case MarriageResult.MARRIAGE_RESULT_ABORTED:
+      return "MARRIAGE_RESULT_ABORTED";
     case MarriageResult.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum UnsettledType {
+  UNSETTLED_TYPE_NONE = 0,
+  UNSETTLED_TYPE_PARCEL_SEND = 1,
+  UNSETTLED_TYPE_PARCEL_CLAIM = 2,
+  UNSETTLED_TYPE_NOTE_REMOVE = 3,
+  UNSETTLED_TYPE_WEDDING_GIFT_SEND = 4,
+  UNSETTLED_TYPE_WEDDING_GIFT_CLAIM = 5,
+  UNSETTLED_TYPE_GUILD_CREATE = 6,
+  UNSETTLED_TYPE_GUILD_CAPACITY = 7,
+  UNSETTLED_TYPE_GUILD_EMBLEM = 8,
+  UNSETTLED_TYPE_GUILD_GP = 9,
+  UNSETTLED_TYPE_ALLIANCE_CREATE = 10,
+  UNSETTLED_TYPE_ALLIANCE_CAPACITY = 11,
+  UNSETTLED_TYPE_WEDDING_PROPOSAL = 12,
+  UNSETTLED_TYPE_WEDDING_RESERVE = 13,
+  UNSETTLED_TYPE_FAMILY_MOVE = 14,
+  UNRECOGNIZED = -1,
+}
+
+export function unsettledTypeFromJSON(object: any): UnsettledType {
+  switch (object) {
+    case 0:
+    case "UNSETTLED_TYPE_NONE":
+      return UnsettledType.UNSETTLED_TYPE_NONE;
+    case 1:
+    case "UNSETTLED_TYPE_PARCEL_SEND":
+      return UnsettledType.UNSETTLED_TYPE_PARCEL_SEND;
+    case 2:
+    case "UNSETTLED_TYPE_PARCEL_CLAIM":
+      return UnsettledType.UNSETTLED_TYPE_PARCEL_CLAIM;
+    case 3:
+    case "UNSETTLED_TYPE_NOTE_REMOVE":
+      return UnsettledType.UNSETTLED_TYPE_NOTE_REMOVE;
+    case 4:
+    case "UNSETTLED_TYPE_WEDDING_GIFT_SEND":
+      return UnsettledType.UNSETTLED_TYPE_WEDDING_GIFT_SEND;
+    case 5:
+    case "UNSETTLED_TYPE_WEDDING_GIFT_CLAIM":
+      return UnsettledType.UNSETTLED_TYPE_WEDDING_GIFT_CLAIM;
+    case 6:
+    case "UNSETTLED_TYPE_GUILD_CREATE":
+      return UnsettledType.UNSETTLED_TYPE_GUILD_CREATE;
+    case 7:
+    case "UNSETTLED_TYPE_GUILD_CAPACITY":
+      return UnsettledType.UNSETTLED_TYPE_GUILD_CAPACITY;
+    case 8:
+    case "UNSETTLED_TYPE_GUILD_EMBLEM":
+      return UnsettledType.UNSETTLED_TYPE_GUILD_EMBLEM;
+    case 9:
+    case "UNSETTLED_TYPE_GUILD_GP":
+      return UnsettledType.UNSETTLED_TYPE_GUILD_GP;
+    case 10:
+    case "UNSETTLED_TYPE_ALLIANCE_CREATE":
+      return UnsettledType.UNSETTLED_TYPE_ALLIANCE_CREATE;
+    case 11:
+    case "UNSETTLED_TYPE_ALLIANCE_CAPACITY":
+      return UnsettledType.UNSETTLED_TYPE_ALLIANCE_CAPACITY;
+    case 12:
+    case "UNSETTLED_TYPE_WEDDING_PROPOSAL":
+      return UnsettledType.UNSETTLED_TYPE_WEDDING_PROPOSAL;
+    case 13:
+    case "UNSETTLED_TYPE_WEDDING_RESERVE":
+      return UnsettledType.UNSETTLED_TYPE_WEDDING_RESERVE;
+    case 14:
+    case "UNSETTLED_TYPE_FAMILY_MOVE":
+      return UnsettledType.UNSETTLED_TYPE_FAMILY_MOVE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return UnsettledType.UNRECOGNIZED;
+  }
+}
+
+export function unsettledTypeToJSON(object: UnsettledType): string {
+  switch (object) {
+    case UnsettledType.UNSETTLED_TYPE_NONE:
+      return "UNSETTLED_TYPE_NONE";
+    case UnsettledType.UNSETTLED_TYPE_PARCEL_SEND:
+      return "UNSETTLED_TYPE_PARCEL_SEND";
+    case UnsettledType.UNSETTLED_TYPE_PARCEL_CLAIM:
+      return "UNSETTLED_TYPE_PARCEL_CLAIM";
+    case UnsettledType.UNSETTLED_TYPE_NOTE_REMOVE:
+      return "UNSETTLED_TYPE_NOTE_REMOVE";
+    case UnsettledType.UNSETTLED_TYPE_WEDDING_GIFT_SEND:
+      return "UNSETTLED_TYPE_WEDDING_GIFT_SEND";
+    case UnsettledType.UNSETTLED_TYPE_WEDDING_GIFT_CLAIM:
+      return "UNSETTLED_TYPE_WEDDING_GIFT_CLAIM";
+    case UnsettledType.UNSETTLED_TYPE_GUILD_CREATE:
+      return "UNSETTLED_TYPE_GUILD_CREATE";
+    case UnsettledType.UNSETTLED_TYPE_GUILD_CAPACITY:
+      return "UNSETTLED_TYPE_GUILD_CAPACITY";
+    case UnsettledType.UNSETTLED_TYPE_GUILD_EMBLEM:
+      return "UNSETTLED_TYPE_GUILD_EMBLEM";
+    case UnsettledType.UNSETTLED_TYPE_GUILD_GP:
+      return "UNSETTLED_TYPE_GUILD_GP";
+    case UnsettledType.UNSETTLED_TYPE_ALLIANCE_CREATE:
+      return "UNSETTLED_TYPE_ALLIANCE_CREATE";
+    case UnsettledType.UNSETTLED_TYPE_ALLIANCE_CAPACITY:
+      return "UNSETTLED_TYPE_ALLIANCE_CAPACITY";
+    case UnsettledType.UNSETTLED_TYPE_WEDDING_PROPOSAL:
+      return "UNSETTLED_TYPE_WEDDING_PROPOSAL";
+    case UnsettledType.UNSETTLED_TYPE_WEDDING_RESERVE:
+      return "UNSETTLED_TYPE_WEDDING_RESERVE";
+    case UnsettledType.UNSETTLED_TYPE_FAMILY_MOVE:
+      return "UNSETTLED_TYPE_FAMILY_MOVE";
+    case UnsettledType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -506,6 +623,7 @@ export enum ParcelResult {
   PARCEL_RESULT_ONE_OF_A_KIND = 4,
   PARCEL_RESULT_NOT_FOUND = 5,
   PARCEL_RESULT_NOT_ARRIVED = 6,
+  PARCEL_RESULT_ABORTED = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -532,6 +650,9 @@ export function parcelResultFromJSON(object: any): ParcelResult {
     case 6:
     case "PARCEL_RESULT_NOT_ARRIVED":
       return ParcelResult.PARCEL_RESULT_NOT_ARRIVED;
+    case 7:
+    case "PARCEL_RESULT_ABORTED":
+      return ParcelResult.PARCEL_RESULT_ABORTED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -555,6 +676,8 @@ export function parcelResultToJSON(object: ParcelResult): string {
       return "PARCEL_RESULT_NOT_FOUND";
     case ParcelResult.PARCEL_RESULT_NOT_ARRIVED:
       return "PARCEL_RESULT_NOT_ARRIVED";
+    case ParcelResult.PARCEL_RESULT_ABORTED:
+      return "PARCEL_RESULT_ABORTED";
     case ParcelResult.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -2105,6 +2228,7 @@ export interface CreateMarriageRequest {
   brideId: number;
   brideName: string;
   ringItemId: number;
+  requestId: string;
 }
 
 export interface LoadMarriageRequest {
@@ -2127,6 +2251,16 @@ export interface ReserveWeddingRequest {
   worldId: number;
   marriageId: number;
   ticketItemId: number;
+  requestId: string;
+}
+
+export interface AbortMarriageChangeRequest {
+  worldId: number;
+  requestId: string;
+}
+
+export interface AbortMarriageChangeReply {
+  changed: boolean;
 }
 
 export interface SetWeddingWishlistRequest {
@@ -2176,7 +2310,17 @@ export interface GiveWeddingGiftRequest {
   worldId: number;
   receiverId: number;
   gift: WeddingGift | undefined;
-  sender: CharacterSaveEntry | undefined;
+  requestId: string;
+}
+
+export interface AbortWeddingGiftRequest {
+  worldId: number;
+  receiverId: number;
+  requestId: string;
+}
+
+export interface AbortWeddingGiftReply {
+  given: boolean;
 }
 
 export interface GiveWeddingGiftReply {
@@ -2196,6 +2340,7 @@ export interface ClaimWeddingGiftRequest {
   worldId: number;
   characterId: number;
   giftId: number;
+  requestId: string;
 }
 
 export interface ClaimWeddingGiftReply {
@@ -2426,6 +2571,14 @@ export interface EnterGameReply {
   notes: Note[];
   account: Account | undefined;
   skillMacros: SkillMacro[];
+  unsettledRequests: UnsettledRequest[];
+}
+
+export interface UnsettledRequest {
+  id: string;
+  type: UnsettledType;
+  target: string;
+  detail: string;
 }
 
 export interface Debuff {
@@ -2516,6 +2669,7 @@ export interface CharacterSaveEntry {
   mount: Mount | undefined;
   account: Account | undefined;
   skillMacros: SkillMacro[];
+  unsettledRequests: UnsettledRequest[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -2562,18 +2716,29 @@ export interface SendParcelRequest {
   recipientName: string;
   parcel: Parcel | undefined;
   senderAccountId: number;
-  sender: CharacterSaveEntry | undefined;
   oneOfAKind: boolean;
+  requestId: string;
 }
 
 export interface SendParcelReply {
   result: ParcelResult;
 }
 
+export interface AbortParcelSendRequest {
+  worldId: number;
+  recipientName: string;
+  requestId: string;
+}
+
+export interface AbortParcelSendReply {
+  sent: boolean;
+}
+
 export interface ClaimParcelRequest {
   worldId: number;
   characterId: number;
   parcelId: number;
+  requestId: string;
 }
 
 export interface ClaimParcelReply {
@@ -2976,6 +3141,7 @@ export interface DeleteCharacterRequest {
 export interface DeleteCharacterReply {
   success: boolean;
   secondPasswordSet: boolean;
+  unsettled: boolean;
 }
 
 export interface RefreshSessionRequest {
@@ -3157,6 +3323,7 @@ export interface CreateGuildRequest {
   worldId: number;
   guildName: string;
   leader: GuildMember | undefined;
+  requestId: string;
 }
 
 export interface GuildBulletinBoardThreadEntry {
@@ -3354,6 +3521,7 @@ export interface ChangeGuildEmblemRequest {
   worldId: number;
   characterId: number;
   logo: GuildLogo | undefined;
+  requestId: string;
 }
 
 export interface ChangeGuildEmblemReply {
@@ -3378,6 +3546,7 @@ export interface IncreaseGuildCapacityRequest {
   worldId: number;
   characterId: number;
   extendedCap: boolean;
+  requestId: string;
 }
 
 export interface IncreaseGuildCapacityReply {
@@ -3392,6 +3561,7 @@ export interface GainGuildGPRequest {
   worldId: number;
   guildId: number;
   amount: number;
+  requestId: string;
 }
 
 export interface GainGuildGPReply {
@@ -3478,6 +3648,7 @@ export interface CreateAllianceRequest {
   allianceName: string;
   leaderCharacterId: number;
   partnerCharacterId: number;
+  requestId: string;
 }
 
 export interface CreateAllianceReply {
@@ -3555,6 +3726,7 @@ export interface AcceptAllianceInviteReply {
 export interface IncreaseAllianceCapacityRequest {
   worldId: number;
   characterId: number;
+  requestId: string;
 }
 
 export interface IncreaseAllianceCapacityReply {
@@ -3862,6 +4034,7 @@ export interface NotesRequest {
   message: string;
   gift: number;
   noteIds: number[];
+  requestId: string;
 }
 
 export interface NotesReply {
@@ -7489,7 +7662,7 @@ export const MarriageReply: MessageFns<MarriageReply> = {
 };
 
 function createBaseCreateMarriageRequest(): CreateMarriageRequest {
-  return { worldId: 0, groomId: 0, groomName: "", brideId: 0, brideName: "", ringItemId: 0 };
+  return { worldId: 0, groomId: 0, groomName: "", brideId: 0, brideName: "", ringItemId: 0, requestId: "0" };
 }
 
 export const CreateMarriageRequest: MessageFns<CreateMarriageRequest> = {
@@ -7511,6 +7684,9 @@ export const CreateMarriageRequest: MessageFns<CreateMarriageRequest> = {
     }
     if (message.ringItemId !== 0) {
       writer.uint32(48).uint32(message.ringItemId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(56).uint64(message.requestId);
     }
     return writer;
   },
@@ -7570,6 +7746,14 @@ export const CreateMarriageRequest: MessageFns<CreateMarriageRequest> = {
           message.ringItemId = reader.uint32();
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -7611,6 +7795,11 @@ export const CreateMarriageRequest: MessageFns<CreateMarriageRequest> = {
         : isSet(object.ring_item_id)
         ? globalThis.Number(object.ring_item_id)
         : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -7634,6 +7823,9 @@ export const CreateMarriageRequest: MessageFns<CreateMarriageRequest> = {
     if (message.ringItemId !== 0) {
       obj.ringItemId = Math.round(message.ringItemId);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -7648,6 +7840,7 @@ export const CreateMarriageRequest: MessageFns<CreateMarriageRequest> = {
     message.brideId = object.brideId ?? 0;
     message.brideName = object.brideName ?? "";
     message.ringItemId = object.ringItemId ?? 0;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -7925,7 +8118,7 @@ export const BreakEngagementRequest: MessageFns<BreakEngagementRequest> = {
 };
 
 function createBaseReserveWeddingRequest(): ReserveWeddingRequest {
-  return { worldId: 0, marriageId: 0, ticketItemId: 0 };
+  return { worldId: 0, marriageId: 0, ticketItemId: 0, requestId: "0" };
 }
 
 export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
@@ -7938,6 +8131,9 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
     }
     if (message.ticketItemId !== 0) {
       writer.uint32(24).uint32(message.ticketItemId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(32).uint64(message.requestId);
     }
     return writer;
   },
@@ -7973,6 +8169,14 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
           message.ticketItemId = reader.uint32();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -7999,6 +8203,11 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
         : isSet(object.ticket_item_id)
         ? globalThis.Number(object.ticket_item_id)
         : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -8013,6 +8222,9 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
     if (message.ticketItemId !== 0) {
       obj.ticketItemId = Math.round(message.ticketItemId);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -8024,6 +8236,149 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
     message.worldId = object.worldId ?? 0;
     message.marriageId = object.marriageId ?? 0;
     message.ticketItemId = object.ticketItemId ?? 0;
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseAbortMarriageChangeRequest(): AbortMarriageChangeRequest {
+  return { worldId: 0, requestId: "0" };
+}
+
+export const AbortMarriageChangeRequest: MessageFns<AbortMarriageChangeRequest> = {
+  encode(message: AbortMarriageChangeRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(16).uint64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortMarriageChangeRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortMarriageChangeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortMarriageChangeRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+    };
+  },
+
+  toJSON(message: AbortMarriageChangeRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortMarriageChangeRequest>, I>>(base?: I): AbortMarriageChangeRequest {
+    return AbortMarriageChangeRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortMarriageChangeRequest>, I>>(object: I): AbortMarriageChangeRequest {
+    const message = createBaseAbortMarriageChangeRequest();
+    message.worldId = object.worldId ?? 0;
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseAbortMarriageChangeReply(): AbortMarriageChangeReply {
+  return { changed: false };
+}
+
+export const AbortMarriageChangeReply: MessageFns<AbortMarriageChangeReply> = {
+  encode(message: AbortMarriageChangeReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.changed !== false) {
+      writer.uint32(8).bool(message.changed);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortMarriageChangeReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortMarriageChangeReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.changed = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortMarriageChangeReply {
+    return { changed: isSet(object.changed) ? globalThis.Boolean(object.changed) : false };
+  },
+
+  toJSON(message: AbortMarriageChangeReply): unknown {
+    const obj: any = {};
+    if (message.changed !== false) {
+      obj.changed = message.changed;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortMarriageChangeReply>, I>>(base?: I): AbortMarriageChangeReply {
+    return AbortMarriageChangeReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortMarriageChangeReply>, I>>(object: I): AbortMarriageChangeReply {
+    const message = createBaseAbortMarriageChangeReply();
+    message.changed = object.changed ?? false;
     return message;
   },
 };
@@ -8765,7 +9120,7 @@ export const WeddingGift: MessageFns<WeddingGift> = {
 };
 
 function createBaseGiveWeddingGiftRequest(): GiveWeddingGiftRequest {
-  return { worldId: 0, receiverId: 0, gift: undefined, sender: undefined };
+  return { worldId: 0, receiverId: 0, gift: undefined, requestId: "0" };
 }
 
 export const GiveWeddingGiftRequest: MessageFns<GiveWeddingGiftRequest> = {
@@ -8779,8 +9134,8 @@ export const GiveWeddingGiftRequest: MessageFns<GiveWeddingGiftRequest> = {
     if (message.gift !== undefined) {
       WeddingGift.encode(message.gift, writer.uint32(26).fork()).join();
     }
-    if (message.sender !== undefined) {
-      CharacterSaveEntry.encode(message.sender, writer.uint32(34).fork()).join();
+    if (message.requestId !== "0") {
+      writer.uint32(40).uint64(message.requestId);
     }
     return writer;
   },
@@ -8816,12 +9171,12 @@ export const GiveWeddingGiftRequest: MessageFns<GiveWeddingGiftRequest> = {
           message.gift = WeddingGift.decode(reader, reader.uint32());
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
+        case 5: {
+          if (tag !== 40) {
             break;
           }
 
-          message.sender = CharacterSaveEntry.decode(reader, reader.uint32());
+          message.requestId = reader.uint64().toString();
           continue;
         }
       }
@@ -8846,7 +9201,11 @@ export const GiveWeddingGiftRequest: MessageFns<GiveWeddingGiftRequest> = {
         ? globalThis.Number(object.receiver_id)
         : 0,
       gift: isSet(object.gift) ? WeddingGift.fromJSON(object.gift) : undefined,
-      sender: isSet(object.sender) ? CharacterSaveEntry.fromJSON(object.sender) : undefined,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -8861,8 +9220,8 @@ export const GiveWeddingGiftRequest: MessageFns<GiveWeddingGiftRequest> = {
     if (message.gift !== undefined) {
       obj.gift = WeddingGift.toJSON(message.gift);
     }
-    if (message.sender !== undefined) {
-      obj.sender = CharacterSaveEntry.toJSON(message.sender);
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
     }
     return obj;
   },
@@ -8877,9 +9236,169 @@ export const GiveWeddingGiftRequest: MessageFns<GiveWeddingGiftRequest> = {
     message.gift = (object.gift !== undefined && object.gift !== null)
       ? WeddingGift.fromPartial(object.gift)
       : undefined;
-    message.sender = (object.sender !== undefined && object.sender !== null)
-      ? CharacterSaveEntry.fromPartial(object.sender)
-      : undefined;
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseAbortWeddingGiftRequest(): AbortWeddingGiftRequest {
+  return { worldId: 0, receiverId: 0, requestId: "0" };
+}
+
+export const AbortWeddingGiftRequest: MessageFns<AbortWeddingGiftRequest> = {
+  encode(message: AbortWeddingGiftRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.receiverId !== 0) {
+      writer.uint32(16).uint32(message.receiverId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(24).uint64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortWeddingGiftRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortWeddingGiftRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.receiverId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortWeddingGiftRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      receiverId: isSet(object.receiverId)
+        ? globalThis.Number(object.receiverId)
+        : isSet(object.receiver_id)
+        ? globalThis.Number(object.receiver_id)
+        : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+    };
+  },
+
+  toJSON(message: AbortWeddingGiftRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.receiverId !== 0) {
+      obj.receiverId = Math.round(message.receiverId);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortWeddingGiftRequest>, I>>(base?: I): AbortWeddingGiftRequest {
+    return AbortWeddingGiftRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortWeddingGiftRequest>, I>>(object: I): AbortWeddingGiftRequest {
+    const message = createBaseAbortWeddingGiftRequest();
+    message.worldId = object.worldId ?? 0;
+    message.receiverId = object.receiverId ?? 0;
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseAbortWeddingGiftReply(): AbortWeddingGiftReply {
+  return { given: false };
+}
+
+export const AbortWeddingGiftReply: MessageFns<AbortWeddingGiftReply> = {
+  encode(message: AbortWeddingGiftReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.given !== false) {
+      writer.uint32(8).bool(message.given);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortWeddingGiftReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortWeddingGiftReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.given = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortWeddingGiftReply {
+    return { given: isSet(object.given) ? globalThis.Boolean(object.given) : false };
+  },
+
+  toJSON(message: AbortWeddingGiftReply): unknown {
+    const obj: any = {};
+    if (message.given !== false) {
+      obj.given = message.given;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortWeddingGiftReply>, I>>(base?: I): AbortWeddingGiftReply {
+    return AbortWeddingGiftReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortWeddingGiftReply>, I>>(object: I): AbortWeddingGiftReply {
+    const message = createBaseAbortWeddingGiftReply();
+    message.given = object.given ?? false;
     return message;
   },
 };
@@ -9087,7 +9606,7 @@ export const LoadWeddingGiftsReply: MessageFns<LoadWeddingGiftsReply> = {
 };
 
 function createBaseClaimWeddingGiftRequest(): ClaimWeddingGiftRequest {
-  return { worldId: 0, characterId: 0, giftId: 0 };
+  return { worldId: 0, characterId: 0, giftId: 0, requestId: "0" };
 }
 
 export const ClaimWeddingGiftRequest: MessageFns<ClaimWeddingGiftRequest> = {
@@ -9100,6 +9619,9 @@ export const ClaimWeddingGiftRequest: MessageFns<ClaimWeddingGiftRequest> = {
     }
     if (message.giftId !== 0) {
       writer.uint32(24).uint32(message.giftId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(32).uint64(message.requestId);
     }
     return writer;
   },
@@ -9135,6 +9657,14 @@ export const ClaimWeddingGiftRequest: MessageFns<ClaimWeddingGiftRequest> = {
           message.giftId = reader.uint32();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -9161,6 +9691,11 @@ export const ClaimWeddingGiftRequest: MessageFns<ClaimWeddingGiftRequest> = {
         : isSet(object.gift_id)
         ? globalThis.Number(object.gift_id)
         : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -9175,6 +9710,9 @@ export const ClaimWeddingGiftRequest: MessageFns<ClaimWeddingGiftRequest> = {
     if (message.giftId !== 0) {
       obj.giftId = Math.round(message.giftId);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -9186,6 +9724,7 @@ export const ClaimWeddingGiftRequest: MessageFns<ClaimWeddingGiftRequest> = {
     message.worldId = object.worldId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.giftId = object.giftId ?? 0;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -12744,6 +13283,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     notes: [],
     account: undefined,
     skillMacros: [],
+    unsettledRequests: [],
   };
 }
 
@@ -12819,6 +13359,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.skillMacros) {
       SkillMacro.encode(v!, writer.uint32(186).fork()).join();
+    }
+    for (const v of message.unsettledRequests) {
+      UnsettledRequest.encode(v!, writer.uint32(194).fork()).join();
     }
     return writer;
   },
@@ -13024,6 +13567,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.skillMacros.push(SkillMacro.decode(reader, reader.uint32()));
           continue;
         }
+        case 24: {
+          if (tag !== 194) {
+            break;
+          }
+
+          message.unsettledRequests.push(UnsettledRequest.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -13100,6 +13651,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : globalThis.Array.isArray(object?.skill_macros)
         ? object.skill_macros.map((e: any) => SkillMacro.fromJSON(e))
         : [],
+      unsettledRequests: globalThis.Array.isArray(object?.unsettledRequests)
+        ? object.unsettledRequests.map((e: any) => UnsettledRequest.fromJSON(e))
+        : globalThis.Array.isArray(object?.unsettled_requests)
+        ? object.unsettled_requests.map((e: any) => UnsettledRequest.fromJSON(e))
+        : [],
     };
   },
 
@@ -13174,6 +13730,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.skillMacros?.length) {
       obj.skillMacros = message.skillMacros.map((e) => SkillMacro.toJSON(e));
     }
+    if (message.unsettledRequests?.length) {
+      obj.unsettledRequests = message.unsettledRequests.map((e) => UnsettledRequest.toJSON(e));
+    }
     return obj;
   },
 
@@ -13213,6 +13772,115 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       ? Account.fromPartial(object.account)
       : undefined;
     message.skillMacros = object.skillMacros?.map((e) => SkillMacro.fromPartial(e)) || [];
+    message.unsettledRequests = object.unsettledRequests?.map((e) => UnsettledRequest.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseUnsettledRequest(): UnsettledRequest {
+  return { id: "0", type: 0, target: "0", detail: "" };
+}
+
+export const UnsettledRequest: MessageFns<UnsettledRequest> = {
+  encode(message: UnsettledRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "0") {
+      writer.uint32(8).uint64(message.id);
+    }
+    if (message.type !== 0) {
+      writer.uint32(16).int32(message.type);
+    }
+    if (message.target !== "0") {
+      writer.uint32(24).uint64(message.target);
+    }
+    if (message.detail !== "") {
+      writer.uint32(34).string(message.detail);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnsettledRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnsettledRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint64().toString();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.target = reader.uint64().toString();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.detail = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnsettledRequest {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "0",
+      type: isSet(object.type) ? unsettledTypeFromJSON(object.type) : 0,
+      target: isSet(object.target) ? globalThis.String(object.target) : "0",
+      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
+    };
+  },
+
+  toJSON(message: UnsettledRequest): unknown {
+    const obj: any = {};
+    if (message.id !== "0") {
+      obj.id = globalThis.String(message.id);
+    }
+    if (message.type !== 0) {
+      obj.type = unsettledTypeToJSON(message.type);
+    }
+    if (message.target !== "0") {
+      obj.target = globalThis.String(message.target);
+    }
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UnsettledRequest>, I>>(base?: I): UnsettledRequest {
+    return UnsettledRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UnsettledRequest>, I>>(object: I): UnsettledRequest {
+    const message = createBaseUnsettledRequest();
+    message.id = object.id ?? "0";
+    message.type = object.type ?? 0;
+    message.target = object.target ?? "0";
+    message.detail = object.detail ?? "";
     return message;
   },
 };
@@ -14494,6 +15162,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     mount: undefined,
     account: undefined,
     skillMacros: [],
+    unsettledRequests: [],
   };
 }
 
@@ -14545,6 +15214,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     for (const v of message.skillMacros) {
       SkillMacro.encode(v!, writer.uint32(122).fork()).join();
+    }
+    for (const v of message.unsettledRequests) {
+      UnsettledRequest.encode(v!, writer.uint32(130).fork()).join();
     }
     return writer;
   },
@@ -14692,6 +15364,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.skillMacros.push(SkillMacro.decode(reader, reader.uint32()));
           continue;
         }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.unsettledRequests.push(UnsettledRequest.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14766,6 +15446,11 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.skill_macros)
         ? object.skill_macros.map((e: any) => SkillMacro.fromJSON(e))
         : [],
+      unsettledRequests: globalThis.Array.isArray(object?.unsettledRequests)
+        ? object.unsettledRequests.map((e: any) => UnsettledRequest.fromJSON(e))
+        : globalThis.Array.isArray(object?.unsettled_requests)
+        ? object.unsettled_requests.map((e: any) => UnsettledRequest.fromJSON(e))
+        : [],
     };
   },
 
@@ -14828,6 +15513,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.skillMacros?.length) {
       obj.skillMacros = message.skillMacros.map((e) => SkillMacro.toJSON(e));
     }
+    if (message.unsettledRequests?.length) {
+      obj.unsettledRequests = message.unsettledRequests.map((e) => UnsettledRequest.toJSON(e));
+    }
     return obj;
   },
 
@@ -14871,6 +15559,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
       ? Account.fromPartial(object.account)
       : undefined;
     message.skillMacros = object.skillMacros?.map((e) => SkillMacro.fromPartial(e)) || [];
+    message.unsettledRequests = object.unsettledRequests?.map((e) => UnsettledRequest.fromPartial(e)) || [];
     return message;
   },
 };
@@ -15525,7 +16214,7 @@ export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
 };
 
 function createBaseSendParcelRequest(): SendParcelRequest {
-  return { worldId: 0, recipientName: "", parcel: undefined, senderAccountId: 0, sender: undefined, oneOfAKind: false };
+  return { worldId: 0, recipientName: "", parcel: undefined, senderAccountId: 0, oneOfAKind: false, requestId: "0" };
 }
 
 export const SendParcelRequest: MessageFns<SendParcelRequest> = {
@@ -15542,11 +16231,11 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
     if (message.senderAccountId !== 0) {
       writer.uint32(32).uint32(message.senderAccountId);
     }
-    if (message.sender !== undefined) {
-      CharacterSaveEntry.encode(message.sender, writer.uint32(42).fork()).join();
-    }
     if (message.oneOfAKind !== false) {
       writer.uint32(48).bool(message.oneOfAKind);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(56).uint64(message.requestId);
     }
     return writer;
   },
@@ -15590,20 +16279,20 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
           message.senderAccountId = reader.uint32();
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.sender = CharacterSaveEntry.decode(reader, reader.uint32());
-          continue;
-        }
         case 6: {
           if (tag !== 48) {
             break;
           }
 
           message.oneOfAKind = reader.bool();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
           continue;
         }
       }
@@ -15633,12 +16322,16 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
         : isSet(object.sender_account_id)
         ? globalThis.Number(object.sender_account_id)
         : 0,
-      sender: isSet(object.sender) ? CharacterSaveEntry.fromJSON(object.sender) : undefined,
       oneOfAKind: isSet(object.oneOfAKind)
         ? globalThis.Boolean(object.oneOfAKind)
         : isSet(object.one_of_a_kind)
         ? globalThis.Boolean(object.one_of_a_kind)
         : false,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -15656,11 +16349,11 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
     if (message.senderAccountId !== 0) {
       obj.senderAccountId = Math.round(message.senderAccountId);
     }
-    if (message.sender !== undefined) {
-      obj.sender = CharacterSaveEntry.toJSON(message.sender);
-    }
     if (message.oneOfAKind !== false) {
       obj.oneOfAKind = message.oneOfAKind;
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
     }
     return obj;
   },
@@ -15676,10 +16369,8 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
       ? Parcel.fromPartial(object.parcel)
       : undefined;
     message.senderAccountId = object.senderAccountId ?? 0;
-    message.sender = (object.sender !== undefined && object.sender !== null)
-      ? CharacterSaveEntry.fromPartial(object.sender)
-      : undefined;
     message.oneOfAKind = object.oneOfAKind ?? false;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -15742,8 +16433,170 @@ export const SendParcelReply: MessageFns<SendParcelReply> = {
   },
 };
 
+function createBaseAbortParcelSendRequest(): AbortParcelSendRequest {
+  return { worldId: 0, recipientName: "", requestId: "0" };
+}
+
+export const AbortParcelSendRequest: MessageFns<AbortParcelSendRequest> = {
+  encode(message: AbortParcelSendRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.recipientName !== "") {
+      writer.uint32(18).string(message.recipientName);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(24).uint64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortParcelSendRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortParcelSendRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.recipientName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortParcelSendRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      recipientName: isSet(object.recipientName)
+        ? globalThis.String(object.recipientName)
+        : isSet(object.recipient_name)
+        ? globalThis.String(object.recipient_name)
+        : "",
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+    };
+  },
+
+  toJSON(message: AbortParcelSendRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.recipientName !== "") {
+      obj.recipientName = message.recipientName;
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortParcelSendRequest>, I>>(base?: I): AbortParcelSendRequest {
+    return AbortParcelSendRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortParcelSendRequest>, I>>(object: I): AbortParcelSendRequest {
+    const message = createBaseAbortParcelSendRequest();
+    message.worldId = object.worldId ?? 0;
+    message.recipientName = object.recipientName ?? "";
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseAbortParcelSendReply(): AbortParcelSendReply {
+  return { sent: false };
+}
+
+export const AbortParcelSendReply: MessageFns<AbortParcelSendReply> = {
+  encode(message: AbortParcelSendReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.sent !== false) {
+      writer.uint32(8).bool(message.sent);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortParcelSendReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortParcelSendReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.sent = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortParcelSendReply {
+    return { sent: isSet(object.sent) ? globalThis.Boolean(object.sent) : false };
+  },
+
+  toJSON(message: AbortParcelSendReply): unknown {
+    const obj: any = {};
+    if (message.sent !== false) {
+      obj.sent = message.sent;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortParcelSendReply>, I>>(base?: I): AbortParcelSendReply {
+    return AbortParcelSendReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortParcelSendReply>, I>>(object: I): AbortParcelSendReply {
+    const message = createBaseAbortParcelSendReply();
+    message.sent = object.sent ?? false;
+    return message;
+  },
+};
+
 function createBaseClaimParcelRequest(): ClaimParcelRequest {
-  return { worldId: 0, characterId: 0, parcelId: 0 };
+  return { worldId: 0, characterId: 0, parcelId: 0, requestId: "0" };
 }
 
 export const ClaimParcelRequest: MessageFns<ClaimParcelRequest> = {
@@ -15756,6 +16609,9 @@ export const ClaimParcelRequest: MessageFns<ClaimParcelRequest> = {
     }
     if (message.parcelId !== 0) {
       writer.uint32(24).uint32(message.parcelId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(32).uint64(message.requestId);
     }
     return writer;
   },
@@ -15791,6 +16647,14 @@ export const ClaimParcelRequest: MessageFns<ClaimParcelRequest> = {
           message.parcelId = reader.uint32();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -15817,6 +16681,11 @@ export const ClaimParcelRequest: MessageFns<ClaimParcelRequest> = {
         : isSet(object.parcel_id)
         ? globalThis.Number(object.parcel_id)
         : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -15831,6 +16700,9 @@ export const ClaimParcelRequest: MessageFns<ClaimParcelRequest> = {
     if (message.parcelId !== 0) {
       obj.parcelId = Math.round(message.parcelId);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -15842,6 +16714,7 @@ export const ClaimParcelRequest: MessageFns<ClaimParcelRequest> = {
     message.worldId = object.worldId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.parcelId = object.parcelId ?? 0;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -21889,7 +22762,7 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
 };
 
 function createBaseDeleteCharacterReply(): DeleteCharacterReply {
-  return { success: false, secondPasswordSet: false };
+  return { success: false, secondPasswordSet: false, unsettled: false };
 }
 
 export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
@@ -21899,6 +22772,9 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
     }
     if (message.secondPasswordSet !== false) {
       writer.uint32(16).bool(message.secondPasswordSet);
+    }
+    if (message.unsettled !== false) {
+      writer.uint32(24).bool(message.unsettled);
     }
     return writer;
   },
@@ -21926,6 +22802,14 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
           message.secondPasswordSet = reader.bool();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.unsettled = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -21943,6 +22827,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
         : isSet(object.second_password_set)
         ? globalThis.Boolean(object.second_password_set)
         : false,
+      unsettled: isSet(object.unsettled) ? globalThis.Boolean(object.unsettled) : false,
     };
   },
 
@@ -21954,6 +22839,9 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
     if (message.secondPasswordSet !== false) {
       obj.secondPasswordSet = message.secondPasswordSet;
     }
+    if (message.unsettled !== false) {
+      obj.unsettled = message.unsettled;
+    }
     return obj;
   },
 
@@ -21964,6 +22852,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
     const message = createBaseDeleteCharacterReply();
     message.success = object.success ?? false;
     message.secondPasswordSet = object.secondPasswordSet ?? false;
+    message.unsettled = object.unsettled ?? false;
     return message;
   },
 };
@@ -24964,7 +25853,7 @@ export const GuildMember: MessageFns<GuildMember> = {
 };
 
 function createBaseCreateGuildRequest(): CreateGuildRequest {
-  return { worldId: 0, guildName: "", leader: undefined };
+  return { worldId: 0, guildName: "", leader: undefined, requestId: "0" };
 }
 
 export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
@@ -24977,6 +25866,9 @@ export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
     }
     if (message.leader !== undefined) {
       GuildMember.encode(message.leader, writer.uint32(26).fork()).join();
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(32).uint64(message.requestId);
     }
     return writer;
   },
@@ -25012,6 +25904,14 @@ export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
           message.leader = GuildMember.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -25034,6 +25934,11 @@ export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
         ? globalThis.String(object.guild_name)
         : "",
       leader: isSet(object.leader) ? GuildMember.fromJSON(object.leader) : undefined,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -25048,6 +25953,9 @@ export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
     if (message.leader !== undefined) {
       obj.leader = GuildMember.toJSON(message.leader);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -25061,6 +25969,7 @@ export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
     message.leader = (object.leader !== undefined && object.leader !== null)
       ? GuildMember.fromPartial(object.leader)
       : undefined;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -28356,7 +29265,7 @@ export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> 
 };
 
 function createBaseChangeGuildEmblemRequest(): ChangeGuildEmblemRequest {
-  return { worldId: 0, characterId: 0, logo: undefined };
+  return { worldId: 0, characterId: 0, logo: undefined, requestId: "0" };
 }
 
 export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
@@ -28369,6 +29278,9 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
     }
     if (message.logo !== undefined) {
       GuildLogo.encode(message.logo, writer.uint32(26).fork()).join();
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(32).uint64(message.requestId);
     }
     return writer;
   },
@@ -28404,6 +29316,14 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
           message.logo = GuildLogo.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -28426,6 +29346,11 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
         ? globalThis.Number(object.character_id)
         : 0,
       logo: isSet(object.logo) ? GuildLogo.fromJSON(object.logo) : undefined,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -28440,6 +29365,9 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
     if (message.logo !== undefined) {
       obj.logo = GuildLogo.toJSON(message.logo);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -28451,6 +29379,7 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
     message.worldId = object.worldId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.logo = (object.logo !== undefined && object.logo !== null) ? GuildLogo.fromPartial(object.logo) : undefined;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -28756,7 +29685,7 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
 };
 
 function createBaseIncreaseGuildCapacityRequest(): IncreaseGuildCapacityRequest {
-  return { worldId: 0, characterId: 0, extendedCap: false };
+  return { worldId: 0, characterId: 0, extendedCap: false, requestId: "0" };
 }
 
 export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityRequest> = {
@@ -28769,6 +29698,9 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
     }
     if (message.extendedCap !== false) {
       writer.uint32(24).bool(message.extendedCap);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(32).uint64(message.requestId);
     }
     return writer;
   },
@@ -28804,6 +29736,14 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
           message.extendedCap = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -28830,6 +29770,11 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
         : isSet(object.extended_cap)
         ? globalThis.Boolean(object.extended_cap)
         : false,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -28844,6 +29789,9 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
     if (message.extendedCap !== false) {
       obj.extendedCap = message.extendedCap;
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -28855,6 +29803,7 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
     message.worldId = object.worldId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.extendedCap = object.extendedCap ?? false;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -28992,7 +29941,7 @@ export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> 
 };
 
 function createBaseGainGuildGPRequest(): GainGuildGPRequest {
-  return { worldId: 0, guildId: 0, amount: 0 };
+  return { worldId: 0, guildId: 0, amount: 0, requestId: "0" };
 }
 
 export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
@@ -29005,6 +29954,9 @@ export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
     }
     if (message.amount !== 0) {
       writer.uint32(24).int32(message.amount);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(32).uint64(message.requestId);
     }
     return writer;
   },
@@ -29040,6 +29992,14 @@ export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
           message.amount = reader.int32();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -29062,6 +30022,11 @@ export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
         ? globalThis.Number(object.guild_id)
         : 0,
       amount: isSet(object.amount) ? globalThis.Number(object.amount) : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -29076,6 +30041,9 @@ export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
     if (message.amount !== 0) {
       obj.amount = Math.round(message.amount);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -29087,6 +30055,7 @@ export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
     message.worldId = object.worldId ?? 0;
     message.guildId = object.guildId ?? 0;
     message.amount = object.amount ?? 0;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -30454,7 +31423,7 @@ export const Alliance: MessageFns<Alliance> = {
 };
 
 function createBaseCreateAllianceRequest(): CreateAllianceRequest {
-  return { worldId: 0, allianceName: "", leaderCharacterId: 0, partnerCharacterId: 0 };
+  return { worldId: 0, allianceName: "", leaderCharacterId: 0, partnerCharacterId: 0, requestId: "0" };
 }
 
 export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
@@ -30470,6 +31439,9 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
     }
     if (message.partnerCharacterId !== 0) {
       writer.uint32(32).uint32(message.partnerCharacterId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(40).uint64(message.requestId);
     }
     return writer;
   },
@@ -30513,6 +31485,14 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
           message.partnerCharacterId = reader.uint32();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -30544,6 +31524,11 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
         : isSet(object.partner_character_id)
         ? globalThis.Number(object.partner_character_id)
         : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -30561,6 +31546,9 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
     if (message.partnerCharacterId !== 0) {
       obj.partnerCharacterId = Math.round(message.partnerCharacterId);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -30573,6 +31561,7 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
     message.allianceName = object.allianceName ?? "";
     message.leaderCharacterId = object.leaderCharacterId ?? 0;
     message.partnerCharacterId = object.partnerCharacterId ?? 0;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -31800,7 +32789,7 @@ export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = 
 };
 
 function createBaseIncreaseAllianceCapacityRequest(): IncreaseAllianceCapacityRequest {
-  return { worldId: 0, characterId: 0 };
+  return { worldId: 0, characterId: 0, requestId: "0" };
 }
 
 export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacityRequest> = {
@@ -31810,6 +32799,9 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
     }
     if (message.characterId !== 0) {
       writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(24).uint64(message.requestId);
     }
     return writer;
   },
@@ -31837,6 +32829,14 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
           message.characterId = reader.uint32();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -31858,6 +32858,11 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
         : isSet(object.character_id)
         ? globalThis.Number(object.character_id)
         : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -31868,6 +32873,9 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
     }
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
     }
     return obj;
   },
@@ -31881,6 +32889,7 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
     const message = createBaseIncreaseAllianceCapacityRequest();
     message.worldId = object.worldId ?? 0;
     message.characterId = object.characterId ?? 0;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -37089,7 +38098,7 @@ export const Note: MessageFns<Note> = {
 };
 
 function createBaseNotesRequest(): NotesRequest {
-  return { worldId: 0, characterId: 0, action: 0, targetName: "", message: "", gift: 0, noteIds: [] };
+  return { worldId: 0, characterId: 0, action: 0, targetName: "", message: "", gift: 0, noteIds: [], requestId: "0" };
 }
 
 export const NotesRequest: MessageFns<NotesRequest> = {
@@ -37117,6 +38126,9 @@ export const NotesRequest: MessageFns<NotesRequest> = {
       writer.uint32(v);
     }
     writer.join();
+    if (message.requestId !== "0") {
+      writer.uint32(64).uint64(message.requestId);
+    }
     return writer;
   },
 
@@ -37193,6 +38205,14 @@ export const NotesRequest: MessageFns<NotesRequest> = {
 
           break;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -37227,6 +38247,11 @@ export const NotesRequest: MessageFns<NotesRequest> = {
         : globalThis.Array.isArray(object?.note_ids)
         ? object.note_ids.map((e: any) => globalThis.Number(e))
         : [],
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -37253,6 +38278,9 @@ export const NotesRequest: MessageFns<NotesRequest> = {
     if (message.noteIds?.length) {
       obj.noteIds = message.noteIds.map((e) => Math.round(e));
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -37268,6 +38296,7 @@ export const NotesRequest: MessageFns<NotesRequest> = {
     message.message = object.message ?? "";
     message.gift = object.gift ?? 0;
     message.noteIds = object.noteIds?.map((e) => e) || [];
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -37500,6 +38529,17 @@ export const InternalService = {
     requestDeserialize: (value: Buffer): SendParcelRequest => SendParcelRequest.decode(value),
     responseSerialize: (value: SendParcelReply): Buffer => Buffer.from(SendParcelReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SendParcelReply => SendParcelReply.decode(value),
+  },
+  abortParcelSend: {
+    path: "/fm.internal.Internal/AbortParcelSend" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: AbortParcelSendRequest): Buffer =>
+      Buffer.from(AbortParcelSendRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): AbortParcelSendRequest => AbortParcelSendRequest.decode(value),
+    responseSerialize: (value: AbortParcelSendReply): Buffer =>
+      Buffer.from(AbortParcelSendReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): AbortParcelSendReply => AbortParcelSendReply.decode(value),
   },
   claimParcel: {
     path: "/fm.internal.Internal/ClaimParcel" as const,
@@ -38410,6 +39450,17 @@ export const InternalService = {
     responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
   },
+  abortMarriageChange: {
+    path: "/fm.internal.Internal/AbortMarriageChange" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: AbortMarriageChangeRequest): Buffer =>
+      Buffer.from(AbortMarriageChangeRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): AbortMarriageChangeRequest => AbortMarriageChangeRequest.decode(value),
+    responseSerialize: (value: AbortMarriageChangeReply): Buffer =>
+      Buffer.from(AbortMarriageChangeReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): AbortMarriageChangeReply => AbortMarriageChangeReply.decode(value),
+  },
   setWeddingWishlist: {
     path: "/fm.internal.Internal/SetWeddingWishlist" as const,
     requestStream: false as const,
@@ -38470,6 +39521,17 @@ export const InternalService = {
       Buffer.from(GiveWeddingGiftReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): GiveWeddingGiftReply => GiveWeddingGiftReply.decode(value),
   },
+  abortWeddingGift: {
+    path: "/fm.internal.Internal/AbortWeddingGift" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: AbortWeddingGiftRequest): Buffer =>
+      Buffer.from(AbortWeddingGiftRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): AbortWeddingGiftRequest => AbortWeddingGiftRequest.decode(value),
+    responseSerialize: (value: AbortWeddingGiftReply): Buffer =>
+      Buffer.from(AbortWeddingGiftReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): AbortWeddingGiftReply => AbortWeddingGiftReply.decode(value),
+  },
   loadWeddingGifts: {
     path: "/fm.internal.Internal/LoadWeddingGifts" as const,
     requestStream: false as const,
@@ -38520,6 +39582,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   saveCharacters: handleUnaryCall<SaveCharactersRequest, SaveCharactersReply>;
   loadParcels: handleUnaryCall<LoadParcelsRequest, LoadParcelsReply>;
   sendParcel: handleUnaryCall<SendParcelRequest, SendParcelReply>;
+  abortParcelSend: handleUnaryCall<AbortParcelSendRequest, AbortParcelSendReply>;
   claimParcel: handleUnaryCall<ClaimParcelRequest, ClaimParcelReply>;
   deleteParcel: handleUnaryCall<DeleteParcelRequest, DeleteParcelReply>;
   checkParcelArrivals: handleUnaryCall<CheckParcelArrivalsRequest, CheckParcelArrivalsReply>;
@@ -38626,12 +39689,14 @@ export interface InternalServer extends UntypedServiceImplementation {
   getMarriage: handleUnaryCall<GetMarriageRequest, MarriageReply>;
   breakEngagement: handleUnaryCall<BreakEngagementRequest, MarriageReply>;
   reserveWedding: handleUnaryCall<ReserveWeddingRequest, MarriageReply>;
+  abortMarriageChange: handleUnaryCall<AbortMarriageChangeRequest, AbortMarriageChangeReply>;
   setWeddingWishlist: handleUnaryCall<SetWeddingWishlistRequest, MarriageReply>;
   inviteWeddingGuest: handleUnaryCall<InviteWeddingGuestRequest, InviteWeddingGuestReply>;
   finishWedding: handleUnaryCall<FinishWeddingRequest, MarriageReply>;
   requestDivorce: handleUnaryCall<RequestDivorceRequest, MarriageReply>;
   cancelDivorce: handleUnaryCall<CancelDivorceRequest, MarriageReply>;
   giveWeddingGift: handleUnaryCall<GiveWeddingGiftRequest, GiveWeddingGiftReply>;
+  abortWeddingGift: handleUnaryCall<AbortWeddingGiftRequest, AbortWeddingGiftReply>;
   loadWeddingGifts: handleUnaryCall<LoadWeddingGiftsRequest, LoadWeddingGiftsReply>;
   claimWeddingGift: handleUnaryCall<ClaimWeddingGiftRequest, ClaimWeddingGiftReply>;
   notifySpouseMap: handleUnaryCall<NotifySpouseMapRequest, NotifySpouseMapReply>;
@@ -38842,6 +39907,21 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SendParcelReply) => void,
   ): ClientUnaryCall;
+  abortParcelSend(
+    request: AbortParcelSendRequest,
+    callback: (error: ServiceError | null, response: AbortParcelSendReply) => void,
+  ): ClientUnaryCall;
+  abortParcelSend(
+    request: AbortParcelSendRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: AbortParcelSendReply) => void,
+  ): ClientUnaryCall;
+  abortParcelSend(
+    request: AbortParcelSendRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: AbortParcelSendReply) => void,
+  ): ClientUnaryCall;
   claimParcel(
     request: ClaimParcelRequest,
     callback: (error: ServiceError | null, response: ClaimParcelReply) => void,
@@ -40162,6 +41242,21 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MarriageReply) => void,
   ): ClientUnaryCall;
+  abortMarriageChange(
+    request: AbortMarriageChangeRequest,
+    callback: (error: ServiceError | null, response: AbortMarriageChangeReply) => void,
+  ): ClientUnaryCall;
+  abortMarriageChange(
+    request: AbortMarriageChangeRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: AbortMarriageChangeReply) => void,
+  ): ClientUnaryCall;
+  abortMarriageChange(
+    request: AbortMarriageChangeRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: AbortMarriageChangeReply) => void,
+  ): ClientUnaryCall;
   setWeddingWishlist(
     request: SetWeddingWishlistRequest,
     callback: (error: ServiceError | null, response: MarriageReply) => void,
@@ -40251,6 +41346,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GiveWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  abortWeddingGift(
+    request: AbortWeddingGiftRequest,
+    callback: (error: ServiceError | null, response: AbortWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  abortWeddingGift(
+    request: AbortWeddingGiftRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: AbortWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  abortWeddingGift(
+    request: AbortWeddingGiftRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: AbortWeddingGiftReply) => void,
   ): ClientUnaryCall;
   loadWeddingGifts(
     request: LoadWeddingGiftsRequest,

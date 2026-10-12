@@ -114,6 +114,20 @@ export class MarriageRepository {
         await client.query("UPDATE marriages SET ended = TRUE WHERE marriage_id = $1", [marriageId]);
     }
 
+    async findRequest(client: PoolClient, requestId: string): Promise<{ aborted: boolean } | null> {
+        const res = await client.query("SELECT aborted FROM marriage_requests WHERE request_id = $1", [requestId]);
+        return (res.rows[0] as { aborted: boolean } | undefined) ?? null;
+    }
+
+    // A plain insert: a concurrent abort makes it fail, so the change rolls back with it.
+    async insertRequest(client: PoolClient, requestId: string): Promise<void> {
+        await client.query("INSERT INTO marriage_requests (request_id) VALUES ($1)", [requestId]);
+    }
+
+    async abortRequest(client: PoolClient, requestId: string): Promise<void> {
+        await client.query("INSERT INTO marriage_requests (request_id, aborted) VALUES ($1, TRUE) ON CONFLICT DO NOTHING", [requestId]);
+    }
+
     async findGifts(worldId: number, receiverId: number): Promise<WeddingGiftRow[]> {
         const res = await this.ctx
             .getPgDataPool(worldId, receiverId)
@@ -130,10 +144,39 @@ export class MarriageRepository {
         ]);
     }
 
-    async deleteGift(worldId: number, receiverId: number, giftId: number): Promise<WeddingGiftRow | null> {
-        const res = await this.ctx
-            .getPgDataPool(worldId, receiverId)
-            .query(`DELETE FROM wedding_gifts WHERE receiver_id = $1 AND gift_id = $2 RETURNING ${GIFT_COLS}`, [receiverId, giftId]);
+    async withReceiverLock<T>(worldId: number, receiverId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+        return this.ctx.withPgDataTransaction(worldId, receiverId, async (client) => {
+            await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x67696674, receiverId]);
+            return fn(client);
+        });
+    }
+
+    async deleteGift(client: PoolClient, receiverId: number, giftId: number): Promise<WeddingGiftRow | null> {
+        const res = await client.query(`DELETE FROM wedding_gifts WHERE receiver_id = $1 AND gift_id = $2 RETURNING ${GIFT_COLS}`, [receiverId, giftId]);
         return (res.rows[0] as WeddingGiftRow | undefined) ?? null;
+    }
+
+    async findGiftSendRequest(client: PoolClient, requestId: string): Promise<{ aborted: boolean } | null> {
+        const res = await client.query("SELECT aborted FROM wedding_gift_send_requests WHERE request_id = $1", [requestId]);
+        return (res.rows[0] as { aborted: boolean } | undefined) ?? null;
+    }
+
+    async insertGiftSendRequest(client: PoolClient, receiverId: number, requestId: string, aborted: boolean): Promise<void> {
+        await client.query(
+            "INSERT INTO wedding_gift_send_requests (request_id, receiver_id, aborted) VALUES ($1, $2, $3)",
+            [requestId, receiverId, aborted]
+        );
+    }
+
+    async findGiftClaimRequest(client: PoolClient, requestId: string): Promise<unknown | null> {
+        const res = await client.query("SELECT gift FROM wedding_gift_claim_requests WHERE request_id = $1", [requestId]);
+        return (res.rows[0] as { gift: unknown } | undefined)?.gift ?? null;
+    }
+
+    async insertGiftClaimRequest(client: PoolClient, receiverId: number, requestId: string, gift: unknown): Promise<void> {
+        await client.query(
+            "INSERT INTO wedding_gift_claim_requests (request_id, receiver_id, gift) VALUES ($1, $2, $3)",
+            [requestId, receiverId, JSON.stringify(gift)]
+        );
     }
 }

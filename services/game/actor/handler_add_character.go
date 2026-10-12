@@ -27,5 +27,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		msg.Character.SocialLogin(msg.Notes)
 		msg.Character.Buddies.SyncLogin()
 		msg.Character.Duey.CheckArrivals(ctx)
+		msg.Character.Unsettled.Settle(ctx)
+		msg.Character.Unsettled.ScheduleSettle()
 	}
 }

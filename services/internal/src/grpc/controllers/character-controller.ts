@@ -148,6 +148,12 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
             }
             : undefined,
         claimedShops: entry.claimedShops ?? [],
+        unsettledRequests: (entry.unsettledRequests ?? []).map((request) => ({
+            id: request.id,
+            type: request.type,
+            target: request.target,
+            detail: request.detail,
+        })),
     };
 }
 
@@ -264,7 +270,11 @@ export class CharacterGrpcController {
     async deleteCharacter(call: GrpcCall<DeleteCharacterRequest>, callback: GrpcCallback<DeleteCharacterReply>) {
         try {
             const result = await this.characterService.deleteCharacter(call.request.accountId, call.request.characterId);
-            callback(null, { success: result.success, secondPasswordSet: result.secondPasswordSet ?? false });
+            callback(null, {
+                success: result.success,
+                secondPasswordSet: result.secondPasswordSet ?? false,
+                unsettled: result.unsettled ?? false,
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }

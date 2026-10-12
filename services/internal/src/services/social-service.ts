@@ -577,23 +577,40 @@ export class SocialService {
             return notesReply(NoteResult.NOTE_RESULT_WRONG_NAME);
         }
 
-        const removed = await this.internalContext.withPgGlobalTransaction(req.worldId, async tx => {
+        const population = await this.internalContext.withPgGlobalTransaction(req.worldId, async tx => {
             await tx.query("SELECT pg_advisory_xact_lock(280, $1)", [id]);
-            if (req.action === NotesAction.NOTES_ACTION_REMOVE_GIFTS) {
-                return tx.query<{ gift: number }>(
+            if (req.requestId !== "0") {
+                const recorded = await tx.query<{ population: number }>(
+                    "SELECT population FROM note_remove_requests WHERE request_id=$1",
+                    [req.requestId],
+                );
+                if (recorded.rows[0] !== undefined) {
+                    return recorded.rows[0].population;
+                }
+            }
+
+            const removed = req.action === NotesAction.NOTES_ACTION_REMOVE_GIFTS
+                ? await tx.query<{ gift: number }>(
                     "DELETE FROM social_notes WHERE receiver_id=$1 AND gift=$2 RETURNING gift",
                     [id, NoteKind.POPULATION],
+                )
+                : await tx.query<{ gift: number }>(
+                    "DELETE FROM social_notes WHERE receiver_id=$1 AND id=ANY($2::int[]) RETURNING gift",
+                    [id, req.noteIds],
+                );
+            const count = removed.rows.filter(n => n.gift === NoteKind.POPULATION).length;
+            if (req.requestId !== "0") {
+                await tx.query(
+                    "INSERT INTO note_remove_requests (request_id, character_id, population) VALUES ($1, $2, $3)",
+                    [req.requestId, id, count],
                 );
             }
-            return tx.query<{ gift: number }>(
-                "DELETE FROM social_notes WHERE receiver_id=$1 AND id=ANY($2::int[]) RETURNING gift",
-                [id, req.noteIds],
-            );
+            return count;
         });
         return {
             ...notesReply(NoteResult.NOTE_RESULT_OK),
             notes: await this.listNotes(req.worldId, id),
-            population: removed.rows.filter(n => n.gift === NoteKind.POPULATION).length,
+            population,
         };
     }
 

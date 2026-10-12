@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"math"
@@ -58,6 +59,13 @@ func (p *Parcel) ArrivedAt() time.Time {
 
 func (p *Parcel) ExpiresAt() time.Time {
 	return p.ArrivedAt().Add(ParcelKeepDuration)
+}
+
+type parcelSendDetail struct {
+	Recipient string              `json:"recipient"`
+	Meso      int32               `json:"meso"`
+	Quick     bool                `json:"quick"`
+	Item      *internal.Inventory `json:"item,omitempty"`
 }
 
 type Duey struct {
@@ -211,40 +219,28 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		Quick:      quick,
 		Message:    message,
 	}
-	var sent Item
+	detail := parcelSendDetail{Recipient: recipient, Meso: int32(cost), Quick: quick}
 	oneOfAKind := false
 	if item != nil {
-		sent = item.Clone(uint16(count))
-		parcel.Item = sent.ToProto(0, 0)
-		oneOfAKind = sent.GetModel().IsOnly()
+		parcel.Item = item.Clone(uint16(count)).ToProto(0, 0)
+		oneOfAKind = item.GetModel().IsOnly()
+		detail.Item = parcel.Item
 		d.owner.Inventory.RemoveItem(invType, slot, uint16(count))
 	}
 	d.owner.Inventory.removeMesoUnchecked(int32(cost))
 	if quick {
 		d.owner.Inventory.RemoveByItemIDCount(QuickDeliveryCoupon, 1)
 	}
-
-	sender := d.owner.ToProto(d.owner.GameWorld.GetWorldID())
-	refund := func() {
-		d.owner.Inventory.addMesoUnchecked(int32(cost))
-		if sent != nil {
-			d.owner.Inventory.addItemUnchecked(sent, true)
-		}
-		if !quick {
-			return
-		}
-		if restored, err := NewItem(QuickDeliveryCoupon, 1, d.owner.GameWorld); err == nil {
-			d.owner.Inventory.addItemUnchecked(restored, true)
-		}
-	}
+	id := d.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_PARCEL_SEND, 0, detail)
 
 	d.pending = true
-	d.owner.Listener.SendParcelAsync(actx, d.owner, recipient, parcel, oneOfAKind, sender).Do(func(v *internal.SendParcelReply) error {
+	d.owner.Listener.SendParcelAsync(actx, d.owner, id, d.owner.AccountID, recipient, parcel, oneOfAKind).Do(func(v *internal.SendParcelReply) error {
 		d.pending = false
 		result := v.GetResult()
 		if result != internal.ParcelResult_PARCEL_RESULT_OK {
-			refund()
+			d.refundSend(detail)
 		}
+		d.owner.Unsettled.Erase(id)
 		switch result {
 		case internal.ParcelResult_PARCEL_RESULT_OK:
 			d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultSent)
@@ -262,11 +258,45 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		return nil
 	}).OnError(func(err error) {
 		d.pending = false
-		refund()
+		d.owner.Unsettled.Find(id).InFlight = false
 		d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultUnknown)
 		log.Printf("Duey.Send character=%d: %v", d.owner.GetID(), err)
 	})
 	return nil
+}
+
+func (d *Duey) refundSend(detail parcelSendDetail) {
+	d.owner.Inventory.addMesoUnchecked(detail.Meso)
+	if detail.Item != nil {
+		if item, err := NewItemFromInternalProto(detail.Item, d.owner.GameWorld); err == nil {
+			d.owner.Inventory.addItemUnchecked(item, true)
+		}
+	}
+	if !detail.Quick {
+		return
+	}
+	if coupon, err := NewItem(QuickDeliveryCoupon, 1, d.owner.GameWorld); err == nil {
+		d.owner.Inventory.addItemUnchecked(coupon, true)
+	}
+}
+
+func (d *Duey) settleSend(actx actor.Context, request *UnsettledRequest) {
+	var detail parcelSendDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("Duey.settleSend character=%d id=%d: %v", d.owner.GetID(), request.ID, err)
+		return
+	}
+
+	d.owner.Listener.AbortParcelSendAsync(actx, d.owner, request.ID, detail.Recipient).Do(func(v *internal.AbortParcelSendReply) error {
+		if !v.GetSent() {
+			d.refundSend(detail)
+		}
+		d.owner.Unsettled.Erase(request.ID)
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("Duey.settleSend character=%d id=%d: %v", d.owner.GetID(), request.ID, err)
+	})
 }
 
 func (d *Duey) find(parcelID uint32) (int, *Parcel) {
@@ -296,11 +326,12 @@ func (d *Duey) Receive(actx actor.Context, parcelID uint32) error {
 		return err
 	}
 
+	id := d.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_PARCEL_CLAIM, uint64(parcelID), nil)
 	d.pending = true
-	d.owner.Listener.ClaimParcelAsync(actx, d.owner, parcelID).Do(func(v *internal.ClaimParcelReply) error {
+	d.owner.Listener.ClaimParcelAsync(actx, d.owner, id, parcelID).Do(func(v *internal.ClaimParcelReply) error {
 		d.pending = false
-		reply := v
-		if reply.GetResult() != internal.ParcelResult_PARCEL_RESULT_OK {
+		if v.GetResult() != internal.ParcelResult_PARCEL_RESULT_OK {
+			d.owner.Unsettled.Erase(id)
 			d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultCannotReceive)
 			return nil
 		}
@@ -308,27 +339,49 @@ func (d *Duey) Receive(actx actor.Context, parcelID uint32) error {
 		if index, _ := d.find(parcelID); index >= 0 {
 			d.Parcels = append(d.Parcels[:index:index], d.Parcels[index+1:]...)
 		}
-		claimed := NewParcelFromInternalProto(reply.GetParcel(), d.owner.GameWorld)
-		if d.checkReceive(claimed) != nil {
-			d.returnToBox(actx, reply.GetParcel())
+		if err := d.receiveClaimed(id, v.GetParcel()); err != nil {
 			d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultInventoryFull)
 			return nil
 		}
-		d.owner.Inventory.addMesoUnchecked(claimed.Meso)
-		if claimed.Item != nil {
-			d.owner.Inventory.addItemUnchecked(claimed.Item, true)
-		}
 		d.owner.Listener.OnDueyRemoved(d.owner, parcelID, pconst.DueyRemovedReceived)
-		d.owner.GameWorld.SaveAsync(actx, []*internal.CharacterSaveEntry{d.owner.ToProto(d.owner.GameWorld.GetWorldID())}).OnError(func(err error) {
-			log.Printf("Duey.Receive save character=%d: %v", d.owner.GetID(), err)
-		})
 		return nil
 	}).OnError(func(err error) {
 		d.pending = false
+		d.owner.Unsettled.Find(id).InFlight = false
 		d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultUnknown)
 		log.Printf("Duey.Receive character=%d: %v", d.owner.GetID(), err)
 	})
 	return nil
+}
+
+// A claimed parcel that does not fit stays unsettled; internal returns it again on the next settle.
+func (d *Duey) receiveClaimed(id uint64, pb *internal.Parcel) error {
+	claimed := NewParcelFromInternalProto(pb, d.owner.GameWorld)
+	if err := d.checkReceive(claimed); err != nil {
+		d.owner.Unsettled.Find(id).InFlight = false
+		return err
+	}
+
+	d.owner.Inventory.addMesoUnchecked(claimed.Meso)
+	if claimed.Item != nil {
+		d.owner.Inventory.addItemUnchecked(claimed.Item, true)
+	}
+	d.owner.Unsettled.Erase(id)
+	return nil
+}
+
+func (d *Duey) settleClaim(actx actor.Context, request *UnsettledRequest) {
+	d.owner.Listener.ClaimParcelAsync(actx, d.owner, request.ID, uint32(request.Target)).Do(func(v *internal.ClaimParcelReply) error {
+		if v.GetResult() != internal.ParcelResult_PARCEL_RESULT_OK {
+			d.owner.Unsettled.Erase(request.ID)
+			return nil
+		}
+		d.receiveClaimed(request.ID, v.GetParcel())
+		return nil
+	}).OnError(func(err error) {
+		request.InFlight = false
+		log.Printf("Duey.settleClaim character=%d id=%d: %v", d.owner.GetID(), request.ID, err)
+	})
 }
 
 func (d *Duey) checkReceive(parcel *Parcel) error {
@@ -350,13 +403,6 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 		return ErrInventoryFull
 	}
 	return nil
-}
-
-func (d *Duey) returnToBox(actx actor.Context, pb *internal.Parcel) {
-	pb.Quick = true
-	d.owner.Listener.SendParcelAsync(actx, d.owner, d.owner.GetName(), pb, false, nil).OnError(func(err error) {
-		log.Printf("Duey.returnToBox character=%d parcel=%d: %v", d.owner.GetID(), pb.GetParcelId(), err)
-	})
 }
 
 func (d *Duey) Delete(actx actor.Context, parcelID uint32) error {
@@ -412,7 +458,7 @@ func (d *Duey) SendFromSystem(actx actor.Context, recipient string, senderName s
 		return ErrDueyInvalid
 	}
 
-	d.owner.Listener.SendParcelAsync(actx, d.owner, recipient, parcel, false, nil).Do(func(v *internal.SendParcelReply) error {
+	d.owner.Listener.SendParcelAsync(actx, d.owner, 0, 0, recipient, parcel, false).Do(func(v *internal.SendParcelReply) error {
 		result := v.GetResult()
 		if result != internal.ParcelResult_PARCEL_RESULT_OK {
 			log.Printf("Duey.SendFromSystem character=%d recipient=%s: %s", d.owner.GetID(), recipient, result)

@@ -26,7 +26,7 @@ type chain struct {
 	ctx            actor.Context
 	perStepTimeout time.Duration
 	steps          []promiseStep
-	onError        func(error)
+	onErrors       []func(error)
 	finally        func()
 
 	mu       sync.Mutex
@@ -251,7 +251,7 @@ func (p *chain) onErrorSet(fn func(error)) {
 		fn(err)
 		return
 	}
-	p.onError = fn
+	p.onErrors = append(p.onErrors, fn)
 	p.mu.Unlock()
 }
 
@@ -298,11 +298,11 @@ func (p *chain) setError(err error) {
 	}
 	p.rejected = true
 	p.err = err
-	onError := p.onError
+	onErrors := p.onErrors
 	finally := p.finally
 	p.done = true
 	p.mu.Unlock()
-	if onError != nil {
+	for _, onError := range onErrors {
 		onError(err)
 	}
 	if finally != nil {
@@ -405,10 +405,10 @@ func (p *chain) completeError(err error) {
 	p.rejected = true
 	p.done = true
 	p.err = err
-	onError := p.onError
+	onErrors := p.onErrors
 	finally := p.finally
 	p.mu.Unlock()
-	if onError != nil {
+	for _, onError := range onErrors {
 		onError(err)
 	}
 	if finally != nil {

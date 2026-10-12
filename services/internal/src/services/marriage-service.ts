@@ -8,13 +8,12 @@ import {
     type LoadWeddingGiftsReply,
     type Marriage,
     type MarriageReply,
-    type WeddingGift,
+    WeddingGift,
 } from "../protobuf/generated/fminternal/internal_service";
 import { MarriageRepository, type MarriageRow, type WeddingGiftRow } from "../repos/marriage-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
-import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
 const DIVORCE_DELAY_MS = 72 * 60 * 60 * 1000;
 const ENGAGEMENT_RING_BASE = 4210000;
@@ -25,7 +24,7 @@ export type GiveWeddingGiftInput = {
     worldId: number;
     receiverId: number;
     gift: WeddingGift;
-    sender?: SaveCharacterEntry;
+    requestId: string;
 };
 
 export class MarriageService {
@@ -33,20 +32,17 @@ export class MarriageService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
-    private readonly characterService: CharacterService;
 
     constructor(
         marriageRepository: MarriageRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
-        rabbitmqService: RabbitMQService,
-        characterService: CharacterService
+        rabbitmqService: RabbitMQService
     ) {
         this.marriageRepo = marriageRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
-        this.characterService = characterService;
     }
 
     private toProto(row: MarriageRow): Marriage {
@@ -140,10 +136,14 @@ export class MarriageService {
         groomName: string,
         brideId: number,
         brideName: string,
-        ringItemId: number
+        ringItemId: number,
+        requestId: string
     ): Promise<MarriageReply> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             await client.query("SELECT pg_advisory_xact_lock($1)", [0x6d617272]);
+            if (requestId !== "0" && (await this.marriageRepo.findRequest(client, requestId)) != null) {
+                return { result: MarriageResult.MARRIAGE_RESULT_ABORTED, marriage: undefined };
+            }
             if ((await this.marriageRepo.findByCharacter(client, groomId)) != null) {
                 return { result: MarriageResult.MARRIAGE_RESULT_ALREADY_ENGAGED, marriage: undefined };
             }
@@ -159,6 +159,9 @@ export class MarriageService {
                 brideItemId: ringItemId,
                 status: MarriageStatus.MARRIAGE_STATUS_ENGAGED,
             });
+            if (requestId !== "0") {
+                await this.marriageRepo.insertRequest(client, requestId);
+            }
             return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
         });
     }
@@ -184,15 +187,29 @@ export class MarriageService {
         return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: undefined };
     }
 
-    async reserveWedding(worldId: number, marriageId: number, ticketItemId: number): Promise<MarriageReply> {
+    async reserveWedding(worldId: number, marriageId: number, ticketItemId: number, requestId: string): Promise<MarriageReply> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
+            if (requestId !== "0" && (await this.marriageRepo.findRequest(client, requestId)) != null) {
+                return { result: MarriageResult.MARRIAGE_RESULT_ABORTED, marriage: undefined };
+            }
             const row = await this.marriageRepo.find(client, marriageId);
             if (row == null || row.status !== MarriageStatus.MARRIAGE_STATUS_ENGAGED || row.ticket_item_id !== 0) {
                 return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, marriage: undefined };
             }
             row.ticket_item_id = ticketItemId;
             await this.marriageRepo.update(client, row);
+            if (requestId !== "0") {
+                await this.marriageRepo.insertRequest(client, requestId);
+            }
             return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
+        });
+    }
+
+    async abortMarriageChange(worldId: number, requestId: string): Promise<boolean> {
+        return this.marriageRepo.withTransaction(worldId, async (client) => {
+            await this.marriageRepo.abortRequest(client, requestId);
+            const request = await this.marriageRepo.findRequest(client, requestId);
+            return request?.aborted === false;
         });
     }
 
@@ -329,16 +346,41 @@ export class MarriageService {
     }
 
     async giveWeddingGift(input: GiveWeddingGiftInput): Promise<MarriageResult> {
-        if (input.sender) {
-            await this.characterService.saveCharacters([input.sender]);
-        }
-        await this.marriageRepo.insertGift(
-            input.worldId,
-            input.receiverId,
-            input.gift.senderName,
-            Inventory.toJSON(input.gift.item ?? Inventory.fromPartial({}))
-        );
-        return MarriageResult.MARRIAGE_RESULT_OK;
+        return this.marriageRepo.withReceiverLock(input.worldId, input.receiverId, async (client) => {
+            if (input.requestId !== "0") {
+                const request = await this.marriageRepo.findGiftSendRequest(client, input.requestId);
+                if (request?.aborted) {
+                    return MarriageResult.MARRIAGE_RESULT_ABORTED;
+                }
+                if (request != null) {
+                    return MarriageResult.MARRIAGE_RESULT_OK;
+                }
+            }
+
+            await this.marriageRepo.insertGift(
+                input.worldId,
+                input.receiverId,
+                input.gift.senderName,
+                Inventory.toJSON(input.gift.item ?? Inventory.fromPartial({})),
+                { txClient: client }
+            );
+            if (input.requestId !== "0") {
+                await this.marriageRepo.insertGiftSendRequest(client, input.receiverId, input.requestId, false);
+            }
+            return MarriageResult.MARRIAGE_RESULT_OK;
+        });
+    }
+
+    async abortWeddingGift(worldId: number, receiverId: number, requestId: string): Promise<boolean> {
+        return this.marriageRepo.withReceiverLock(worldId, receiverId, async (client) => {
+            const request = await this.marriageRepo.findGiftSendRequest(client, requestId);
+            if (request != null) {
+                return request.aborted === false;
+            }
+
+            await this.marriageRepo.insertGiftSendRequest(client, receiverId, requestId, true);
+            return false;
+        });
     }
 
     async loadWeddingGifts(worldId: number, characterId: number): Promise<LoadWeddingGiftsReply> {
@@ -346,12 +388,25 @@ export class MarriageService {
         return { gifts: rows.map((row) => this.giftToProto(row)) };
     }
 
-    async claimWeddingGift(worldId: number, characterId: number, giftId: number): Promise<ClaimWeddingGiftReply> {
-        const row = await this.marriageRepo.deleteGift(worldId, characterId, giftId);
-        if (row == null) {
-            return { result: MarriageResult.MARRIAGE_RESULT_GIFT_NOT_FOUND, gift: undefined };
-        }
-        return { result: MarriageResult.MARRIAGE_RESULT_OK, gift: this.giftToProto(row) };
+    async claimWeddingGift(worldId: number, characterId: number, giftId: number, requestId: string): Promise<ClaimWeddingGiftReply> {
+        return this.marriageRepo.withReceiverLock(worldId, characterId, async (client) => {
+            if (requestId !== "0") {
+                const claimed = await this.marriageRepo.findGiftClaimRequest(client, requestId);
+                if (claimed != null) {
+                    return { result: MarriageResult.MARRIAGE_RESULT_OK, gift: WeddingGift.fromJSON(claimed) };
+                }
+            }
+
+            const row = await this.marriageRepo.deleteGift(client, characterId, giftId);
+            if (row == null) {
+                return { result: MarriageResult.MARRIAGE_RESULT_GIFT_NOT_FOUND, gift: undefined };
+            }
+            const gift = this.giftToProto(row);
+            if (requestId !== "0") {
+                await this.marriageRepo.insertGiftClaimRequest(client, characterId, requestId, WeddingGift.toJSON(gift));
+            }
+            return { result: MarriageResult.MARRIAGE_RESULT_OK, gift };
+        });
     }
 
     async notifySpouseMap(worldId: number, characterId: number, spouseId: number, mapId: number, reply: boolean): Promise<void> {

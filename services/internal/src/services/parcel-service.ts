@@ -4,14 +4,13 @@ import {
     type CheckParcelArrivalsReply,
     type ClaimParcelReply,
     type LoadParcelsReply,
-    type Parcel,
+    Parcel,
 } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
 import { ParcelRepository, type ParcelRow } from "../repos/parcel-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
-import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
 const DELIVERY_DELAY_MS = 12 * 60 * 60 * 1000;
 const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
@@ -22,8 +21,8 @@ export type SendParcelInput = {
     recipientName: string;
     parcel: Parcel;
     senderAccountId: number;
-    sender?: SaveCharacterEntry;
     oneOfAKind: boolean;
+    requestId: string;
 };
 
 export class ParcelService {
@@ -32,22 +31,19 @@ export class ParcelService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
-    private readonly characterService: CharacterService;
 
     constructor(
         appConfiguration: AppConfiguration,
         parcelRepository: ParcelRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
-        rabbitmqService: RabbitMQService,
-        characterService: CharacterService
+        rabbitmqService: RabbitMQService
     ) {
         this.app = appConfiguration;
         this.parcelRepo = parcelRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
-        this.characterService = characterService;
     }
 
     private arrivedAt(row: ParcelRow): number {
@@ -101,6 +97,16 @@ export class ParcelService {
 
         const itemId = input.parcel.item?.itemId ?? 0;
         const result = await this.parcelRepo.withReceiverLock(input.worldId, receiverId, async (txClient) => {
+            if (input.requestId !== "0") {
+                const request = await this.parcelRepo.findSendRequest(input.worldId, receiverId, input.requestId, { txClient });
+                if (request?.aborted) {
+                    return ParcelResult.PARCEL_RESULT_ABORTED;
+                }
+                if (request != null) {
+                    return ParcelResult.PARCEL_RESULT_OK;
+                }
+            }
+
             const now = Date.now();
             const rows = (await this.parcelRepo.findByReceiver(input.worldId, receiverId, { txClient })).filter(
                 (row) => this.expired(row, now) === false
@@ -112,9 +118,6 @@ export class ParcelService {
                 return ParcelResult.PARCEL_RESULT_ONE_OF_A_KIND;
             }
 
-            if (input.sender) {
-                await this.characterService.saveCharacters([input.sender]);
-            }
             await this.parcelRepo.insert(
                 input.worldId,
                 {
@@ -127,6 +130,9 @@ export class ParcelService {
                 },
                 { txClient }
             );
+            if (input.requestId !== "0") {
+                await this.parcelRepo.insertSendRequest(input.worldId, receiverId, input.requestId, false, { txClient });
+            }
             return ParcelResult.PARCEL_RESULT_OK;
         });
         if (result !== ParcelResult.PARCEL_RESULT_OK || input.parcel.quick === false) {
@@ -152,8 +158,32 @@ export class ParcelService {
         return result;
     }
 
-    async claimParcel(worldId: number, characterId: number, parcelId: number): Promise<ClaimParcelReply> {
+    async abortParcelSend(worldId: number, recipientName: string, requestId: string): Promise<boolean> {
+        const entry = await this.unifiedRepo.findCharacterNameEntry(recipientName);
+        if (entry == null || entry.world_id !== worldId) {
+            return false;
+        }
+
+        return this.parcelRepo.withReceiverLock(worldId, entry.character_id, async (txClient) => {
+            const request = await this.parcelRepo.findSendRequest(worldId, entry.character_id, requestId, { txClient });
+            if (request != null) {
+                return request.aborted === false;
+            }
+
+            await this.parcelRepo.insertSendRequest(worldId, entry.character_id, requestId, true, { txClient });
+            return false;
+        });
+    }
+
+    async claimParcel(worldId: number, characterId: number, parcelId: number, requestId: string): Promise<ClaimParcelReply> {
         return this.parcelRepo.withReceiverLock(worldId, characterId, async (txClient) => {
+            if (requestId !== "0") {
+                const claimed = await this.parcelRepo.findClaimRequest(worldId, characterId, requestId, { txClient });
+                if (claimed != null) {
+                    return { result: ParcelResult.PARCEL_RESULT_OK, parcel: Parcel.fromJSON(claimed) };
+                }
+            }
+
             const now = Date.now();
             const row = (await this.parcelRepo.findByReceiver(worldId, characterId, { txClient })).find(
                 (x) => x.parcel_id === parcelId
@@ -165,7 +195,11 @@ export class ParcelService {
                 return { result: ParcelResult.PARCEL_RESULT_NOT_ARRIVED, parcel: undefined };
             }
             await this.parcelRepo.delete(worldId, characterId, parcelId, { txClient });
-            return { result: ParcelResult.PARCEL_RESULT_OK, parcel: this.toProto(row) };
+            const parcel = this.toProto(row);
+            if (requestId !== "0") {
+                await this.parcelRepo.insertClaimRequest(worldId, characterId, requestId, Parcel.toJSON(parcel), { txClient });
+            }
+            return { result: ParcelResult.PARCEL_RESULT_OK, parcel };
         });
     }
 

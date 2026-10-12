@@ -3232,6 +3232,21 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.GameWorld.GetGuildSystem().ShowRankingAsync(cfg.ActorContext, ch, uint32(npc))
 			return 0
 		},
+		"gain_guild_gp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			amount := L.CheckInt(2)
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				return 0
+			}
+			ch.GameWorld.GetGuildSystem().GainGPAsync(cfg.ActorContext, ch, int32(amount))
+			return 0
+		},
 		"create_alliance": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

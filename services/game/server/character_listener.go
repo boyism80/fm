@@ -915,18 +915,32 @@ func (l *CharacterListenerImpl) LoadParcelsAsync(ctx actor.Context, ch *entity.C
 	)
 }
 
-func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Character, recipient string, parcel *internal.Parcel, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise[*internal.SendParcelReply] {
+func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Character, requestID uint64, senderAccountID uint32, recipient string, parcel *internal.Parcel, oneOfAKind bool) *async.Promise[*internal.SendParcelReply] {
 	req := &internal.SendParcelRequest{
 		WorldId:         l.gs.config.WorldId,
 		RecipientName:   recipient,
 		Parcel:          parcel,
-		SenderAccountId: sender.GetCharacter().GetAccountId(),
-		Sender:          sender,
+		SenderAccountId: senderAccountID,
 		OneOfAKind:      oneOfAKind,
+		RequestId:       requestID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SendParcelReply, error) {
 			return l.gs.internalClient.SendParcel(c, req)
+		},
+		nil,
+	)
+}
+
+func (l *CharacterListenerImpl) AbortParcelSendAsync(ctx actor.Context, ch *entity.Character, requestID uint64, recipient string) *async.Promise[*internal.AbortParcelSendReply] {
+	req := &internal.AbortParcelSendRequest{
+		WorldId:       l.gs.config.WorldId,
+		RecipientName: recipient,
+		RequestId:     requestID,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.AbortParcelSendReply, error) {
+			return l.gs.internalClient.AbortParcelSend(c, req)
 		},
 		nil,
 	)
@@ -962,11 +976,12 @@ func (l *CharacterListenerImpl) CreateCashCouponsAsync(ctx actor.Context, ch *en
 	)
 }
 
-func (l *CharacterListenerImpl) ClaimParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise[*internal.ClaimParcelReply] {
+func (l *CharacterListenerImpl) ClaimParcelAsync(ctx actor.Context, ch *entity.Character, requestID uint64, parcelID uint32) *async.Promise[*internal.ClaimParcelReply] {
 	req := &internal.ClaimParcelRequest{
 		WorldId:     l.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 		ParcelId:    parcelID,
+		RequestId:   requestID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.ClaimParcelReply, error) {

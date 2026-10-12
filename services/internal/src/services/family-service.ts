@@ -252,26 +252,6 @@ export class FamilyService {
         };
     }
 
-    async expireMoves(world: number) {
-        const payers = await this.internalContext.withPgGlobalTransaction(world, async tx => {
-            const moves = await tx.query<{ operation_id: string; payer_id: number; feature: number }>(
-                "UPDATE social_family_moves SET status='refunded' WHERE status='pending' AND expires_at<=NOW() RETURNING *",
-            );
-            for (const move of moves.rows) {
-                await tx.query("DELETE FROM social_family_uses WHERE operation_id=$1", [move.operation_id]);
-                await tx.query(
-                    "UPDATE social_family SET reputation=LEAST(2147483647, reputation::bigint+$2) WHERE character_id=$1",
-                    [move.payer_id, COSTS[move.feature]],
-                );
-            }
-            return moves.rows.map(move => move.payer_id);
-        });
-
-        for (const id of payers) {
-            await this.notify(world, id, { event: FamilyEvent.FAMILY_EVENT_REFRESH }).catch(() => {});
-        }
-    }
-
     async load(world: number, character: CharacterModel) {
         return this.internalContext.withPgGlobalTransaction(world, async tx => {
             await this.ensure(tx, character);

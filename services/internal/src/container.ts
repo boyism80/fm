@@ -18,6 +18,7 @@ import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
 import { SkillMacroRepository } from "./repos/skill-macro-repository";
 import { MountRepository } from "./repos/mount-repository";
+import { UnsettledRequestRepository } from "./repos/unsettled-request-repository";
 import { StorageRepository } from "./repos/storage-repository";
 import { StorageItemRepository } from "./repos/storage-item-repository";
 import { ParcelRepository } from "./repos/parcel-repository";
@@ -82,6 +83,7 @@ export function createAppContainer() {
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),
         skillMacroRepository: awilix.asClass(SkillMacroRepository).scoped(),
         mountRepository: awilix.asClass(MountRepository).scoped(),
+        unsettledRequestRepository: awilix.asClass(UnsettledRequestRepository).scoped(),
         storageRepository: awilix.asClass(StorageRepository).scoped(),
         storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),
         parcelRepository: awilix.asClass(ParcelRepository).scoped(),

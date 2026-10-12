@@ -47,16 +47,22 @@ type GuildSystem interface {
 	TrySetAllianceInvite(guildID, allianceID uint32, expiresAt time.Time) bool
 	DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandGuildReply]
 	IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise[*internal.IncreaseGuildCapacityReply]
-	GainGPAsync(ctx actor.Context, guildID uint32, amount int32) *async.Promise[*internal.GainGuildGPReply]
+	GainGPAsync(ctx actor.Context, ch *Character, amount int32) *async.Promise[*internal.GainGuildGPReply]
 	SendMessageAsync(ctx actor.Context, guildID uint32, messageType constant.ServerMessageType, message string) *async.Promise[*internal.SendGuildMessageReply]
 	ShowRankingAsync(ctx actor.Context, ch *Character, npcID uint32) *async.Promise[*internal.GetGuildRankingReply]
 	CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise[*internal.CreateAllianceReply]
 	DisbandAllianceAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandAllianceReply]
+	SettleCreate(ctx actor.Context, ch *Character, request *UnsettledRequest)
+	SettleCapacity(ctx actor.Context, ch *Character, request *UnsettledRequest)
+	SettleEmblem(ctx actor.Context, ch *Character, request *UnsettledRequest)
+	SettleGP(ctx actor.Context, ch *Character, request *UnsettledRequest)
+	SettleAllianceCreate(ctx actor.Context, ch *Character, request *UnsettledRequest)
 }
 
 type AllianceSystem interface {
 	Get(allianceID uint32) *Alliance
 	IncCapacityAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.IncreaseAllianceCapacityReply]
+	SettleCapacity(ctx actor.Context, ch *Character, request *UnsettledRequest)
 }
 
 type DispatchSystem interface {

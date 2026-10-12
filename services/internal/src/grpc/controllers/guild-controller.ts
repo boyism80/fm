@@ -130,7 +130,7 @@ export class GuildGrpcController {
     async createGuild(call: GrpcCall<CreateGuildRequest>, callback: GrpcCallback<CreateGuildReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.createGuild(req.worldId, req.guildName, req.leader) as CreateGuildResult;
+            const result = await this.guildService.createGuild(req.worldId, req.guildName, req.leader, req.requestId) as CreateGuildResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -306,7 +306,8 @@ export class GuildGrpcController {
             const result = await this.guildService.changeGuildEmblem(
                 req.worldId,
                 req.characterId,
-                req.logo
+                req.logo,
+                req.requestId
             ) as ChangeGuildEmblemResult;
             if (result.ok) {
                 callback(null, {
@@ -363,7 +364,8 @@ export class GuildGrpcController {
             const result = await this.guildService.increaseGuildCapacity(
                 req.worldId,
                 req.characterId,
-                req.extendedCap
+                req.extendedCap,
+                req.requestId
             ) as IncreaseGuildCapacityResult;
             if (result.ok) {
                 callback(null, {
@@ -391,7 +393,7 @@ export class GuildGrpcController {
     async gainGuildGP(call: GrpcCall<GainGuildGPRequest>, callback: GrpcCallback<GainGuildGPReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.gainGuildGP(req.worldId, req.guildId, req.amount) as GainGuildGPResult;
+            const result = await this.guildService.gainGuildGP(req.worldId, req.guildId, req.amount, req.requestId) as GainGuildGPResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -685,7 +687,8 @@ export class GuildGrpcController {
                 req.worldId,
                 req.allianceName,
                 req.leaderCharacterId,
-                req.partnerCharacterId
+                req.partnerCharacterId,
+                req.requestId
             ) as CreateAllianceResult;
             if (result.ok) {
                 callback(null, {
@@ -841,7 +844,8 @@ export class GuildGrpcController {
         try {
             const result = await this.allianceService.increaseAllianceCapacity(
                 call.request.worldId,
-                call.request.characterId
+                call.request.characterId,
+                call.request.requestId
             ) as IncreaseAllianceCapacityResult;
             if (result.ok) {
                 callback(null, {

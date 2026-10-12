@@ -96,6 +96,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		}
 	}
 	ch.Duey = &Duey{owner: ch}
+	ch.Unsettled = NewUnsettledRequestsFromInternalProto(ch, reply.GetUnsettledRequests())
 	ch.StoreBank = &StoreBank{owner: ch}
 	ch.SavedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
 	ch.Records = NewRecordsFromInternalProto(reply.GetRecords())
@@ -389,21 +390,22 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		SavedAtUnixMs:     clock.Now().UnixMilli(),
 	}
 	return &internal.CharacterSaveEntry{
-		Character:      pb,
-		BaseLooks:      baseLooks,
-		Overlays:       overlays,
-		Inventory:      ch.InventoryToProto(),
-		Skills:         ch.SkillsToProto(),
-		SkillMacros:    ch.SkillMacros.ToProto(),
-		Buffs:          ch.BuffsToProto(),
-		KeyLayout:      ch.KeyLayout.ToProto(),
-		Quests:         ch.QuestsToProto(),
-		SavedLocations: ch.SavedLocations.ToProto(),
-		MonsterBook:    ch.MonsterBook.ToProto(),
-		Records:        ch.Records.ToProto(),
-		Account:        ch.Account.ToProto(worldID),
-		ClaimedShops:   slices.Clone(ch.StoreBank.claimed),
-		Mount:          &internal.Mount{Level: ch.Mount.Level, Exp: ch.Mount.Exp, Fatigue: ch.Mount.Fatigue},
+		Character:         pb,
+		BaseLooks:         baseLooks,
+		Overlays:          overlays,
+		Inventory:         ch.InventoryToProto(),
+		Skills:            ch.SkillsToProto(),
+		SkillMacros:       ch.SkillMacros.ToProto(),
+		Buffs:             ch.BuffsToProto(),
+		KeyLayout:         ch.KeyLayout.ToProto(),
+		Quests:            ch.QuestsToProto(),
+		SavedLocations:    ch.SavedLocations.ToProto(),
+		MonsterBook:       ch.MonsterBook.ToProto(),
+		Records:           ch.Records.ToProto(),
+		Account:           ch.Account.ToProto(worldID),
+		ClaimedShops:      slices.Clone(ch.StoreBank.claimed),
+		Mount:             &internal.Mount{Level: ch.Mount.Level, Exp: ch.Mount.Exp, Fatigue: ch.Mount.Fatigue},
+		UnsettledRequests: ch.Unsettled.ToProto(),
 	}
 }
 

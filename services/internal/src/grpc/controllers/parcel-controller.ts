@@ -1,5 +1,7 @@
 import type { ParcelService } from "../../services/parcel-service";
 import type {
+    AbortParcelSendReply,
+    AbortParcelSendRequest,
     CheckParcelArrivalsReply,
     CheckParcelArrivalsRequest,
     ClaimParcelReply,
@@ -13,7 +15,6 @@ import type {
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
-import { makeSaveCharacterEntry } from "./character-controller";
 
 @Controller("parcelController")
 export class ParcelGrpcController {
@@ -46,10 +47,20 @@ export class ParcelGrpcController {
                 recipientName: req.recipientName ?? "",
                 parcel: req.parcel,
                 senderAccountId: req.senderAccountId,
-                sender: req.sender ? makeSaveCharacterEntry(req.sender) : undefined,
                 oneOfAKind: req.oneOfAKind === true,
+                requestId: req.requestId,
             });
             callback(null, { result });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("abortParcelSend")
+    async abortParcelSend(call: GrpcCall<AbortParcelSendRequest>, callback: GrpcCallback<AbortParcelSendReply>) {
+        try {
+            const req = call.request;
+            callback(null, { sent: await this.parcelService.abortParcelSend(req.worldId, req.recipientName, req.requestId) });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -59,7 +70,7 @@ export class ParcelGrpcController {
     async claimParcel(call: GrpcCall<ClaimParcelRequest>, callback: GrpcCallback<ClaimParcelReply>) {
         try {
             const req = call.request;
-            callback(null, await this.parcelService.claimParcel(req.worldId, req.characterId, req.parcelId));
+            callback(null, await this.parcelService.claimParcel(req.worldId, req.characterId, req.parcelId, req.requestId));
         } catch (err) {
             this.grpcError(err, callback);
         }

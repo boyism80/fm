@@ -49,7 +49,14 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 			ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
 			return nil
 		}
-	case internal.NotesAction_NOTES_ACTION_REMOVE, internal.NotesAction_NOTES_ACTION_LIST:
+	case internal.NotesAction_NOTES_ACTION_REMOVE:
+		noteIDs := make([]uint32, 0, len(req.Removals))
+		for _, n := range req.Removals {
+			noteIDs = append(noteIDs, n.ID)
+		}
+		ch.RemoveNotes(ctx.ActorContext, req.Action, noteIDs)
+		return nil
+	case internal.NotesAction_NOTES_ACTION_LIST:
 	default:
 		return nil
 	}
@@ -62,11 +69,6 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		Message:     req.Message,
 		Gift:        uint32(req.Kind),
 	}
-	for _, n := range req.Removals {
-		rpc.NoteIds = append(rpc.NoteIds, n.ID)
-	}
-	// TODO(#298): internal deletes the notes before replying, so a lost reply
-	// drops their thank-you population.
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.NotesReply, error) {
 			return h.gs.internalClient.Notes(c, rpc)
@@ -80,8 +82,6 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 					} else {
 						current.Listener.OnNoteFailed(current, reply.Status)
 					}
-				case internal.NotesAction_NOTES_ACTION_REMOVE:
-					current.ReceiveNotes(reply.Notes, reply.Population)
 				case internal.NotesAction_NOTES_ACTION_LIST:
 					current.ReceiveNotes(reply.Notes, 0)
 					current.Listener.OnNotes(current, current.Notes)
