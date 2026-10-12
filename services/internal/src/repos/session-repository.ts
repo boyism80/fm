@@ -25,57 +25,6 @@ export class SessionRepository {
         return redisSessionKey(`account:${accountId}`);
     }
 
-    private channelOnlineUsersKey(worldId: number, channelId: number) {
-        return redisSessionKey(`w${worldId}:ch${channelId}:online_users`);
-    }
-
-    private cashShopOnlineUsersKey(worldId: number, cashShopId: number) {
-        return redisSessionKey(`w${worldId}:cs${cashShopId}:online_users`);
-    }
-
-    private channelOnlineUsersNoopKey(worldId: number) {
-        return redisSessionKey(`w${worldId}:ch_:online_users_noop`);
-    }
-
-    async touchChannelOnlineUsersTtl(worldId: number, channelId: number) {
-        if (!Number.isInteger(channelId) || channelId < 0) {
-            return;
-        }
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        const ttl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
-        await client.expire(this.channelOnlineUsersKey(worldId, channelId), ttl);
-    }
-
-    async touchCashShopOnlineUsersTtl(worldId: number, cashShopId: number) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        const ttl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
-        await client.expire(this.cashShopOnlineUsersKey(worldId, cashShopId), ttl);
-    }
-
-    async getCashShopOnlineUserCount(worldId: number, cashShopId: number): Promise<number> {
-        return this.readOnlineUserCount(worldId, this.cashShopOnlineUsersKey(worldId, cashShopId));
-    }
-
-    async getChannelOnlineUserCount(worldId: number, channelId: number): Promise<number> {
-        if (!Number.isInteger(channelId) || channelId < 0) {
-            return 0;
-        }
-        return this.readOnlineUserCount(worldId, this.channelOnlineUsersKey(worldId, channelId));
-    }
-
-    private async readOnlineUserCount(worldId: number, key: string): Promise<number> {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        const raw = await client.get(key);
-        if (raw == null || raw === "") {
-            return 0;
-        }
-        const n = Number(raw);
-        if (!Number.isFinite(n) || n < 0) {
-            return 0;
-        }
-        return Math.floor(n);
-    }
-
     private accountHashToSession(hash: SessionHash): AccountSession | null {
         if (!hash || Object.keys(hash).length === 0) {
             return null;
@@ -152,26 +101,17 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         const accountKey = this.accountKey(accountId);
         const sourceCh = sourceChannelId != null && Number.isInteger(sourceChannelId) && sourceChannelId >= 0 ? sourceChannelId : -1;
         const sourceCs = sourceCashShopId != null && Number.isInteger(sourceCashShopId) && sourceCashShopId >= 0 ? sourceCashShopId : -1;
-        let sourceUsersKey = this.channelOnlineUsersNoopKey(worldId);
-        if (sourceCs >= 0) {
-            sourceUsersKey = this.cashShopOnlineUsersKey(worldId, sourceCs);
-        } else if (sourceCh >= 0) {
-            sourceUsersKey = this.channelOnlineUsersKey(worldId, sourceCh);
-        }
-        const usersTtl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
         const script = `
 local account_key = KEYS[1]
-local source_channel_users_key = KEYS[2]
 local world_id = ARGV[1]
 local character_id = ARGV[2]
 local character_name = ARGV[3]
 local now = ARGV[4]
 local ttl = tonumber(ARGV[5])
 local source_channel_id = ARGV[6]
-local users_ttl = tonumber(ARGV[7])
-local client_ip = ARGV[8]
-local debuffs = ARGV[9]
-local source_cash_shop_id = ARGV[10]
+local client_ip = ARGV[7]
+local debuffs = ARGV[8]
+local source_cash_shop_id = ARGV[9]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
@@ -185,13 +125,6 @@ if source_cash_shop_id ~= "-1" then
     return {0, ${SessionErrorCode.SESSION_NOT_OWNER}}
   end
   game_to_game_transfer = "1"
-  local v = redis.call("GET", source_channel_users_key)
-  if v and tonumber(v) > 0 then
-    redis.call("DECR", source_channel_users_key)
-  end
-  if redis.call("EXISTS", source_channel_users_key) == 1 then
-    redis.call("EXPIRE", source_channel_users_key, users_ttl)
-  end
 elseif source_channel_id == "-1" then
   local from_game = redis.call("HGET", account_key, "game_to_game_transfer") or "0"
   if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_LOGIN} and (prev_state ~= ${AS.ACCOUNT_SESSION_STATE_TRANSITION} or from_game == "1") then
@@ -205,13 +138,6 @@ else
   end
   game_to_game_transfer = "1"
   return_channel_id = source_channel_id
-  local v = redis.call("GET", source_channel_users_key)
-  if v and tonumber(v) > 0 then
-    redis.call("DECR", source_channel_users_key)
-  end
-  if redis.call("EXISTS", source_channel_users_key) == 1 then
-    redis.call("EXPIRE", source_channel_users_key, users_ttl)
-  end
 end
 redis.call("HSET", account_key,
   "world_id", world_id,
@@ -233,16 +159,14 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
 `;
         return (await client.eval(
             script,
-            2,
+            1,
             accountKey,
-            sourceUsersKey,
             String(worldId),
             String(characterId),
             String(characterName),
             String(now),
             String(ttlSeconds),
             String(sourceCh),
-            String(usersTtl),
             clientIp,
             (sourceCh >= 0 || sourceCs >= 0) && debuffs.length > 0 ? JSON.stringify(debuffs) : "",
             String(sourceCs)
@@ -260,19 +184,15 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
     ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
-        const usersKey = this.cashShopOnlineUsersKey(worldId, cashShopId);
-        const usersTtl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
         const script = `
 local account_key = KEYS[1]
-local users_key = KEYS[2]
 local expected_account_id = tonumber(ARGV[1])
 local expected_world_id = tonumber(ARGV[2])
 local expected_character_id = tonumber(ARGV[3])
 local cash_shop_id = ARGV[4]
 local now = ARGV[5]
 local ttl = tonumber(ARGV[6])
-local users_ttl = tonumber(ARGV[7])
-local client_ip = ARGV[8]
+local client_ip = ARGV[7]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
@@ -299,22 +219,18 @@ redis.call("HSET", account_key,
   "state_changed_at", now
 )
 redis.call("EXPIRE", account_key, ttl)
-redis.call("INCR", users_key)
-redis.call("EXPIRE", users_key, users_ttl)
 return {1, ${SessionErrorCode.SESSION_NONE}, return_channel_id}
 `;
         return (await client.eval(
             script,
-            2,
+            1,
             accountKey,
-            usersKey,
             String(accountId),
             String(worldId),
             String(characterId),
             String(cashShopId),
             String(now),
             String(ttlSeconds),
-            String(usersTtl),
             clientIp
         )) as Array<number | string>;
     }
@@ -330,19 +246,15 @@ return {1, ${SessionErrorCode.SESSION_NONE}, return_channel_id}
     ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
-        const channelUsersKey = this.channelOnlineUsersKey(worldId, channelId);
-        const channelUsersTtl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
         const script = `
 local account_key = KEYS[1]
-local channel_users_key = KEYS[2]
 local expected_account_id = tonumber(ARGV[1])
 local expected_world_id = tonumber(ARGV[2])
 local expected_character_id = tonumber(ARGV[3])
 local channel_id = ARGV[4]
 local now = ARGV[5]
 local ttl = tonumber(ARGV[6])
-local users_ttl = tonumber(ARGV[7])
-local client_ip = ARGV[8]
+local client_ip = ARGV[7]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
@@ -371,22 +283,18 @@ redis.call("HSET", account_key,
 )
 redis.call("HDEL", account_key, "debuffs")
 redis.call("EXPIRE", account_key, ttl)
-redis.call("INCR", channel_users_key)
-redis.call("EXPIRE", channel_users_key, users_ttl)
 return {1, ${SessionErrorCode.SESSION_NONE}}
 `;
         return (await client.eval(
             script,
-            2,
+            1,
             accountKey,
-            channelUsersKey,
             String(accountId),
             String(worldId),
             String(characterId),
             String(channelId),
             String(now),
             String(ttlSeconds),
-            String(channelUsersTtl),
             clientIp
         )) as Array<number | string>;
     }
@@ -459,7 +367,6 @@ return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
     ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
-        const usersTtl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
         const ch =
             requestChannelId != null && Number.isInteger(requestChannelId) && requestChannelId >= 0
                 ? requestChannelId
@@ -468,19 +375,11 @@ return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
             requestCashShopId != null && Number.isInteger(requestCashShopId) && requestCashShopId >= 0
                 ? requestCashShopId
                 : -1;
-        const channelUsersKey =
-            ch >= 0 ? this.channelOnlineUsersKey(worldId, ch) : this.channelOnlineUsersNoopKey(worldId);
-        const cashShopUsersKey =
-            cs >= 0 ? this.cashShopOnlineUsersKey(worldId, cs) : this.channelOnlineUsersNoopKey(worldId);
         const script = `
 local account_key = KEYS[1]
-local channel_users_key = KEYS[2]
 local keep = ARGV[1]
-local channel_id = tonumber(ARGV[2])
-local users_ttl = tonumber(ARGV[3])
-local owner_character_id = ARGV[4]
-local cash_shop_users_key = KEYS[3]
-local request_cash_shop_id = ARGV[5]
+local owner_character_id = ARGV[3]
+local request_cash_shop_id = ARGV[4]
 local prev_state = 0
 if redis.call("EXISTS", account_key) == 1 then
   prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
@@ -503,35 +402,14 @@ if owner_character_id ~= "" then
   end
 end
 redis.call("DEL", account_key)
-if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and channel_id >= 0 then
-  local v = redis.call("GET", channel_users_key)
-  if v and tonumber(v) > 0 then
-    redis.call("DECR", channel_users_key)
-  end
-  if redis.call("EXISTS", channel_users_key) == 1 then
-    redis.call("EXPIRE", channel_users_key, users_ttl)
-  end
-end
-if prev_state == ${AS.ACCOUNT_SESSION_STATE_CASH_SHOP} and request_cash_shop_id ~= "-1" then
-  local v = redis.call("GET", cash_shop_users_key)
-  if v and tonumber(v) > 0 then
-    redis.call("DECR", cash_shop_users_key)
-  end
-  if redis.call("EXISTS", cash_shop_users_key) == 1 then
-    redis.call("EXPIRE", cash_shop_users_key, users_ttl)
-  end
-end
 return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
 `;
         return (await client.eval(
             script,
-            3,
+            1,
             accountKey,
-            channelUsersKey,
-            cashShopUsersKey,
             keep ? "1" : "0",
             String(ch),
-            String(usersTtl),
             ownerCharacterId != null ? String(ownerCharacterId) : "",
             String(cs)
         )) as Array<number | string>;

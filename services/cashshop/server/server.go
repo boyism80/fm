@@ -128,11 +128,18 @@ func (cs *CashShopServer) pingInternal(ctx context.Context, interval time.Durati
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
+		online := uint32(0)
+		for _, c := range cs.Clients() {
+			if csClient, ok := c.(*client.CashShopClient); ok && csClient.GetCharacter() != nil {
+				online++
+			}
+		}
 		pingCtx, cancel := context.WithTimeout(ctx, core.InternalRPCPerStepTimeout)
 		_, err := cs.internalClient.Ping(pingCtx, &internal.PingRequest{
-			Role:       internal.ServerRole_SERVER_ROLE_CASH_SHOP,
-			WorldId:    uint32(cs.config.WorldID),
-			CashShopId: uint32(cs.config.CashShopID),
+			Role:        internal.ServerRole_SERVER_ROLE_CASH_SHOP,
+			WorldId:     uint32(cs.config.WorldID),
+			CashShopId:  uint32(cs.config.CashShopID),
+			OnlineUsers: online,
 		})
 		cancel()
 		if err != nil {

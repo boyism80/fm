@@ -603,11 +603,18 @@ func (gs *GameServer) pingInternal(ctx context.Context, interval time.Duration) 
 			return
 		case <-ticker.C:
 		}
+		online := uint32(0)
+		for _, c := range gs.Clients() {
+			if gc, ok := c.(*client.GameClient); ok && gc.GetCharacter() != nil {
+				online++
+			}
+		}
 		pingCtx, cancel := context.WithTimeout(ctx, core.InternalRPCPerStepTimeout)
 		_, err := gs.internalClient.Ping(pingCtx, &internal.PingRequest{
-			Role:      internal.ServerRole_SERVER_ROLE_GAME,
-			WorldId:   gs.config.WorldId,
-			ChannelId: gs.config.ChannelId,
+			Role:        internal.ServerRole_SERVER_ROLE_GAME,
+			WorldId:     gs.config.WorldId,
+			ChannelId:   gs.config.ChannelId,
+			OnlineUsers: online,
 		})
 		cancel()
 		if err != nil {

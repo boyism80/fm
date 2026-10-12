@@ -135,6 +135,7 @@ message PingRequest {
   uint32 channel_id = 3;
   string login_instance_id = 4;
   uint32 cash_shop_id = 5;
+  uint32 online_users = 6;
 }
 
 message FindCashShopRequest {

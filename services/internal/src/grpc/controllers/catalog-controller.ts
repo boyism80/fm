@@ -12,7 +12,6 @@ import type {
 } from "../../protobuf/generated/fminternal/internal_service";
 import { ServerRole } from "../../protobuf/generated/fminternal/internal_service";
 import { redisAliveKey } from "../../redis-alive-key";
-import type { SessionRepository } from "../../repos/session-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
@@ -31,20 +30,17 @@ export class CatalogGrpcController {
     private readonly internalContext: InternalContext;
     private readonly appConfiguration: AppConfiguration;
     private readonly internalConfig: InternalConfig;
-    private readonly sessionRepository: SessionRepository;
     private readonly grpcError: GrpcErrorHandler;
 
     constructor(
         internalConfig: InternalConfig,
         internalContext: InternalContext,
         appConfiguration: AppConfiguration,
-        sessionRepository: SessionRepository,
         grpcError: GrpcErrorHandler,
     ) {
         this.internalContext = internalContext;
         this.appConfiguration = appConfiguration;
         this.internalConfig = internalConfig;
-        this.sessionRepository = sessionRepository;
         this.grpcError = grpcError;
     }
 
@@ -54,31 +50,56 @@ export class CatalogGrpcController {
         return list.find((c) => c.channel_id === channelId);
     }
 
+    private heartbeatIndex(worldId: number) {
+        return redisAliveKey(`w${worldId}:index`);
+    }
+
+    private heartbeatKey(worldId: number, member: string) {
+        return redisAliveKey(`w${worldId}:${member}`);
+    }
+
+    private async heartbeat(worldId: number, member: string, online: number) {
+        const { client } = this.internalContext.getRedisGlobalAccess(worldId);
+        await client
+            .multi()
+            .set(this.heartbeatKey(worldId, member), String(online), "EX", this.appConfiguration.getServerAliveTtlSeconds())
+            .zadd(this.heartbeatIndex(worldId), Date.now(), member)
+            .exec();
+    }
+
+    private async liveServers(worldId: number, prefix: string): Promise<string[]> {
+        const { client } = this.internalContext.getRedisGlobalAccess(worldId);
+        const index = this.heartbeatIndex(worldId);
+        const expired = Date.now() - this.appConfiguration.getServerAliveTtlSeconds() * 1000;
+        await client.zremrangebyscore(index, "-inf", expired);
+        const members = await client.zrangebyscore(index, expired, "+inf");
+        return members.filter((member) => member.startsWith(prefix));
+    }
+
+    private async onlineUsers(worldId: number, member: string): Promise<number | null> {
+        const { client } = this.internalContext.getRedisGlobalAccess(worldId);
+        const raw = await client.get(this.heartbeatKey(worldId, member));
+        if (raw == null) {
+            return null;
+        }
+        return Number(raw);
+    }
+
     @Method("ping")
     async ping(call: GrpcCall<PingRequest>, callback: GrpcCallback<PingReply>) {
         const req = call.request;
-        const ttl = this.appConfiguration.getServerAliveTtlSeconds();
         try {
             if (req.role === ServerRole.SERVER_ROLE_GAME) {
-                const { client } = this.internalContext.getRedisGlobalAccess(req.worldId);
-                const key = redisAliveKey(`game:w${req.worldId}:c${req.channelId}`);
-                await client.set(key, String(Date.now()), "EX", ttl);
-                await this.sessionRepository.touchChannelOnlineUsersTtl(req.worldId, req.channelId);
+                await this.heartbeat(req.worldId, `game:c${req.channelId}`, req.onlineUsers);
             } else if (req.role === ServerRole.SERVER_ROLE_CASH_SHOP) {
-                const { client } = this.internalContext.getRedisGlobalAccess(req.worldId);
-                const key = redisAliveKey(`cashshop:w${req.worldId}:cs${req.cashShopId}`);
-                await client.set(key, String(Date.now()), "EX", ttl);
-                await this.sessionRepository.touchCashShopOnlineUsersTtl(req.worldId, req.cashShopId);
+                await this.heartbeat(req.worldId, `cashshop:cs${req.cashShopId}`, req.onlineUsers);
             } else if (req.role === ServerRole.SERVER_ROLE_LOGIN) {
                 const id = (req.loginInstanceId ?? "").trim();
                 if (!id) {
                     this.grpcError({ code: "INVALID_PAYLOAD", message: "login ping requires login_instance_id" }, callback);
                     return;
                 }
-                const redisWorld = this.appConfiguration.raw.app.world_id;
-                const { client } = this.internalContext.getRedisGlobalAccess(redisWorld);
-                const key = redisAliveKey(`login:${id}`);
-                await client.set(key, String(Date.now()), "EX", ttl);
+                await this.heartbeat(this.appConfiguration.raw.app.world_id, `login:${id}`, 0);
             } else {
                 this.grpcError({ code: "INVALID_PAYLOAD", message: "ping requires role LOGIN, GAME or CASH_SHOP" }, callback);
                 return;
@@ -107,15 +128,11 @@ export class CatalogGrpcController {
                 });
                 return;
             }
-            const { client } = this.internalContext.getRedisGlobalAccess(req.worldId);
-            const key = redisAliveKey(`game:w${req.worldId}:c${req.channelId}`);
-            const v = await client.get(key);
-            const alive = v != null && v !== "";
-            const onlineUserCount = await this.sessionRepository.getChannelOnlineUserCount(req.worldId, req.channelId);
-            const maxConcurrentUsers = row?.max_concurrent_users ?? 0;
-            const channelFull = maxConcurrentUsers > 0 && onlineUserCount >= maxConcurrentUsers;
+            const online = await this.onlineUsers(req.worldId, `game:c${req.channelId}`);
+            const maxConcurrentUsers = row.max_concurrent_users ?? 0;
+            const channelFull = online != null && maxConcurrentUsers > 0 && online >= maxConcurrentUsers;
             callback(null, {
-                alive,
+                alive: online != null,
                 channelFull,
                 found: true,
                 host: row.host,
@@ -131,14 +148,13 @@ export class CatalogGrpcController {
         const worldId = call.request.worldId;
         try {
             const cashShops = this.internalConfig.game_servers?.worlds?.[String(worldId)]?.cash_shops ?? [];
-            const { client } = this.internalContext.getRedisGlobalAccess(worldId);
             let best: { cashShopId: number; host: string; port: number; users: number } | null = null;
-            for (const cs of cashShops) {
-                const alive = await client.get(redisAliveKey(`cashshop:w${worldId}:cs${cs.cash_shop_id}`));
-                if (alive == null || alive === "") {
+            for (const member of await this.liveServers(worldId, "cashshop:cs")) {
+                const cs = cashShops.find((c) => member === `cashshop:cs${c.cash_shop_id}`);
+                const users = await this.onlineUsers(worldId, member);
+                if (cs == null || users == null) {
                     continue;
                 }
-                const users = await this.sessionRepository.getCashShopOnlineUserCount(worldId, cs.cash_shop_id);
                 if (best == null || users < best.users) {
                     best = { cashShopId: cs.cash_shop_id, host: cs.host, port: cs.port, users };
                 }

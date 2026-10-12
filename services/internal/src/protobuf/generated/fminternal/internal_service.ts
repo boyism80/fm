@@ -2018,6 +2018,7 @@ export interface PingRequest {
   channelId: number;
   loginInstanceId: string;
   cashShopId: number;
+  onlineUsers: number;
 }
 
 export interface FindCashShopRequest {
@@ -4046,7 +4047,7 @@ export interface NotesReply {
 }
 
 function createBasePingRequest(): PingRequest {
-  return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "", cashShopId: 0 };
+  return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "", cashShopId: 0, onlineUsers: 0 };
 }
 
 export const PingRequest: MessageFns<PingRequest> = {
@@ -4065,6 +4066,9 @@ export const PingRequest: MessageFns<PingRequest> = {
     }
     if (message.cashShopId !== 0) {
       writer.uint32(40).uint32(message.cashShopId);
+    }
+    if (message.onlineUsers !== 0) {
+      writer.uint32(48).uint32(message.onlineUsers);
     }
     return writer;
   },
@@ -4116,6 +4120,14 @@ export const PingRequest: MessageFns<PingRequest> = {
           message.cashShopId = reader.uint32();
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.onlineUsers = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4148,6 +4160,11 @@ export const PingRequest: MessageFns<PingRequest> = {
         : isSet(object.cash_shop_id)
         ? globalThis.Number(object.cash_shop_id)
         : 0,
+      onlineUsers: isSet(object.onlineUsers)
+        ? globalThis.Number(object.onlineUsers)
+        : isSet(object.online_users)
+        ? globalThis.Number(object.online_users)
+        : 0,
     };
   },
 
@@ -4168,6 +4185,9 @@ export const PingRequest: MessageFns<PingRequest> = {
     if (message.cashShopId !== 0) {
       obj.cashShopId = Math.round(message.cashShopId);
     }
+    if (message.onlineUsers !== 0) {
+      obj.onlineUsers = Math.round(message.onlineUsers);
+    }
     return obj;
   },
 
@@ -4181,6 +4201,7 @@ export const PingRequest: MessageFns<PingRequest> = {
     message.channelId = object.channelId ?? 0;
     message.loginInstanceId = object.loginInstanceId ?? "";
     message.cashShopId = object.cashShopId ?? 0;
+    message.onlineUsers = object.onlineUsers ?? 0;
     return message;
   },
 };
