@@ -7,9 +7,16 @@ local MAGIC_ROCK = 4006000
 local MYSTIC_DOOR = 2311002
 local GM_HOLY_SYMBOL = 9001002
 local SHADOW_WEB = 4111003
+local SNAIL = 100100
+local CLAW = 1472000
+local STAR = 2070000
+local LUCKY_SEVEN = 4001344
 local PRIEST = 231
+local ROGUE = 400
 local HERMIT = 411
 local GM = 900
+local EQUIP = 1
+local WEAPON_SLOT = -11
 
 local function check(ctx, ok, message)
 	if ok == false then
@@ -202,13 +209,77 @@ local function shadow_web_front(ctx)
 	return check(ctx, webbed_behind == false, "오른쪽을 보고 쓴 쉐도우 웹이 등 뒤 몹에 걸림")
 end
 
+local function spawn_snail(ctx, bot)
+	local p = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. SNAIL }, function(p)
+		return p.mob.mob_id == SNAIL
+	end)
+	if p == false then
+		ctx:fail("달팽이 생성 응답 없음")
+		return nil
+	end
+	return p.mob.oid
+end
+
+local function stars(bot)
+	return bot:items()[STAR]
+end
+
+local function ranged_ammo(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, 30, ROGUE, CLAW .. ":1," .. STAR .. ":3") == false then
+		return false
+	end
+	if learn(ctx, bot, LUCKY_SEVEN) == false then
+		return false
+	end
+	if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+		return ctx:fail("마력 설정 실패")
+	end
+	local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(CLAW) or 0, dest = WEAPON_SLOT, count = 1 }
+	if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+		return ctx:fail("아대 장착 실패")
+	end
+	if bot:instance_move(HUNTING_GROUND) == false then
+		return ctx:fail("사냥터 이동 실패")
+	end
+
+	local slot = bot:slot(STAR)
+	local oid = spawn_snail(ctx, bot)
+	if oid == nil then
+		return false
+	end
+	if check(ctx, bot:shoot(oid, slot, LUCKY_SEVEN, 2), "표창 3개로 쓴 럭키 세븐이 맞지 않음") == false then
+		return false
+	end
+	if check(ctx, stars(bot) == 1, "럭키 세븐 뒤 표창 개수가 다름: " .. tostring(stars(bot))) == false then
+		return false
+	end
+
+	oid = spawn_snail(ctx, bot)
+	if oid == nil then
+		return false
+	end
+	if check(ctx, bot:shoot(oid, slot, LUCKY_SEVEN, 2) == false, "표창 1개로 쓴 럭키 세븐이 맞음") == false then
+		return false
+	end
+	if check(ctx, stars(bot) == 1, "거부된 럭키 세븐이 표창을 소모함: " .. tostring(stars(bot))) == false then
+		return false
+	end
+
+	if check(ctx, bot:shoot(oid, slot), "남은 표창 1개로 던진 공격이 맞지 않음") == false then
+		return false
+	end
+	return check(ctx, bot:slot(STAR) == slot and stars(bot) == 0, "다 쓴 표창 칸이 0개로 남지 않음: " .. tostring(stars(bot)))
+end
+
 test_suite {
-	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·스킬 범위 방향",
+	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·스킬 범위 방향·원거리 탄 소모",
 	bot_count = 2,
 
 	scenarios = {
 		mystic_door,
 		gm_holy_symbol,
 		shadow_web_front,
+		ranged_ammo,
 	},
 }

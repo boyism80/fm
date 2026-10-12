@@ -29,7 +29,7 @@ func (h *PassiveEnergyAttack) Handle(ctx *core.ClientContext, req *request.Passi
 	}
 
 	attacked, err := character.EnergyAttack(req.ToAttackInfo(), func() {
-		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, nil, false, false, 0)
+		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, nil, false, false)
 	})
 	if err != nil {
 		return err

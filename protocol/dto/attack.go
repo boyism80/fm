@@ -33,6 +33,7 @@ type AttackPayload interface {
 
 type AttackInfo struct {
 	AttackHeader
+	Ranged   bool
 	Slot     uint16
 	CsStar   uint16
 	AOE      uint8
@@ -86,12 +87,12 @@ func (header *AttackHeader) parseNormalDamages(sr *stream.StreamReader, skipByte
 	return damages
 }
 
-func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
+func (header *AttackHeader) serialize(sw *stream.StreamWriter) {
 	sw.WriteU8(0)
-	sw.WriteU8((a.Targets << 4) | a.Hits)
-	sw.WriteU32(a.Skill)
+	sw.WriteU8((header.Targets << 4) | header.Hits)
+	sw.WriteU32(header.Skill)
 
-	switch constant.SkillID(a.Skill) {
+	switch constant.SkillID(header.Skill) {
 	case constant.SkillBigBang,
 		constant.SkillBigBang2221001,
 		constant.SkillBigBang2321001,
@@ -103,14 +104,28 @@ func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
 		constant.SkillRapidFire,
 		constant.SkillGrenade,
 		constant.SkillPoisonBomb:
-		sw.WriteU32(a.Charge)
+		sw.WriteU32(header.Charge)
 	}
 
 	sw.WriteU8(0)
-	sw.WriteU8(a.Unk)
-	sw.WriteU8(a.Speed)
-	sw.WriteU8(a.Display)
-	sw.WriteU32(a.LastTick)
+	sw.WriteU8(header.Unk)
+	sw.WriteU8(header.Speed)
+	sw.WriteU8(header.Display)
+	sw.WriteU32(header.LastTick)
+}
+
+func (header *AttackHeader) serializeNormalDamages(sw *stream.StreamWriter, damages []AttackPair) {
+	for _, damage := range damages {
+		sw.WriteU32(damage.OID)
+		sw.Write(make([]byte, 14))
+		for _, pair := range damage.DamagePairs {
+			sw.WriteU32(pair.Damage)
+		}
+	}
+}
+
+func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
+	a.AttackHeader.serialize(sw)
 
 	if a.Slot != 0 || a.CsStar != 0 || a.AOE != 0 {
 		sw.WriteU16(a.Slot)
@@ -118,13 +133,7 @@ func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
 		sw.WriteU8(a.AOE)
 	}
 
-	for _, damage := range a.Damages {
-		sw.WriteU32(damage.OID)
-		sw.Write(make([]byte, 14))
-		for _, pair := range damage.DamagePairs {
-			sw.WriteU32(pair.Damage)
-		}
-	}
+	a.AttackHeader.serializeNormalDamages(sw, a.Damages)
 
 	if a.Position.X != 0 || a.Position.Y != 0 {
 		sw.Write16(a.Position.X)

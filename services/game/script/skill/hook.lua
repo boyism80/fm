@@ -22,90 +22,6 @@ local function roll_percent(prob)
 	return math.random(1, 100) <= prob
 end
 
-local function on_attack_consume_item(me, skill, attack_info)
-	if attack_info == nil or not attack_info.ranged then
-		return
-	end
-
-	if attack_info.consume_slot == nil or attack_info.consume_slot <= 0 then
-		return
-	end
-
-	local weapon = me:equipped(EquipmentPart.Weapon)
-	if weapon == nil then
-		return
-	end
-
-	local wz_weapon = weapon:wz()
-	if wz_weapon == nil then
-		return
-	end
-
-	local weapon_type = wz_weapon:weapon_type()
-	if weapon_type == nil then
-		return
-	end
-
-	local consume_item = me:item(InventoryType.Use, attack_info.consume_slot)
-	if consume_item == nil then
-		return
-	end
-
-	local wz_consume = consume_item:wz()
-	if wz_consume == nil then
-		return
-	end
-
-	local consume_type = wz_consume:consume_type()
-	if consume_type == nil then
-		return
-	end
-
-	local valid_ammo = (weapon_type == WeaponType.Bow and consume_type == ConsumeType.ArrowBow)
-		or (weapon_type == WeaponType.Crossbow and consume_type == ConsumeType.ArrowCrossBow)
-		or (weapon_type == WeaponType.Claw and consume_type == ConsumeType.Shuriken)
-		or (weapon_type == WeaponType.Gun and consume_type == ConsumeType.Bullet)
-
-	if not valid_ammo then
-		return
-	end
-
-	local skip_consume = false
-	if weapon_type == WeaponType.Bow or weapon_type == WeaponType.Crossbow then
-		if me:buff_value(BuffFlag.SoulArrow) ~= nil then
-			skip_consume = true
-		end
-	elseif weapon_type == WeaponType.Claw then
-		if me:buff_value(BuffFlag.SpiritClaw) ~= nil then
-			skip_consume = true
-		end
-	end
-
-	if skip_consume then
-		return
-	end
-
-	local bullet_count = 1
-	if skill ~= nil then
-		local effect = skill:effect()
-		if effect ~= nil then
-			if effect.bullet_consume ~= nil and effect.bullet_consume > 0 then
-				bullet_count = effect.bullet_consume
-			else
-				local bc = effect.bullet_count or 1
-				local ac = effect.attack_count or 1
-				bullet_count = math.max(bc, ac)
-			end
-		end
-	end
-
-	if me:buff_value(BuffFlag.ShadowPartner) ~= nil then
-		bullet_count = bullet_count * 2
-	end
-
-	me:rmitem(InventoryType.Use, attack_info.consume_slot, bullet_count)
-end
-
 local function get_mp_eater_skill(me)
 	if me:class_of(Class.FpWizard) then
 		return me:skill(Skill.MpEater)
@@ -419,7 +335,6 @@ return {
 		combat.increment_combo_orbs(me, targets, skill)
 		combat.spawn_pickpocket_meso(me, skill, damages)
 		combat.freeze_from_ice_charge(me, damages)
-		on_attack_consume_item(me, skill, attack_info)
 		on_mp_eater(me, damages)
 		on_hamstring_slow(me, damages)
 		on_blind_acc_debuff(me, damages)

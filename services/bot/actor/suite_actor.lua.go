@@ -734,6 +734,41 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			})
 			return L.Yield()
 		},
+		"shoot": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			oid := uint32(L.CheckInt(2))
+			attack, ok := a.attackPacket(b, oid, math.MaxInt32, uint8(L.OptInt(5, 1)))
+			if !ok {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			attack.Skill = uint32(L.OptInt(4, 0))
+			pkt := &request.RangedAttack{RangedAttackInfo: dto.RangedAttackInfo{
+				AttackHeader: attack.AttackHeader,
+				Slot:         uint16(L.CheckInt(3)),
+				Damages:      attack.Damages,
+				Position:     attack.Position,
+			}}
+			if err := a.Command(b, "/즉사 on"); err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			// A rejected attack only unlocks the client; a skill's MP update also unlocks but carries stats.
+			a.park(L)
+			a.Request(L, b, b, pkt, a.timeout(), func(p any) bool {
+				switch p := p.(type) {
+				case *response.DieMob:
+					return p.OID == oid
+				case *response.UpdateStats:
+					return p.UnlockAction && len(p.Stats) == 0
+				}
+				return false
+			}, func(p any, ok bool) {
+				_, killed := p.(*response.DieMob)
+				a.wake(L, lua.LBool(ok && killed))
+			})
+			return L.Yield()
+		},
 		"catch": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			oid := uint32(L.CheckInt(2))

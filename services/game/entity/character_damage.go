@@ -35,6 +35,9 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 	if info.Skill != 0 && !ch.UseAttackSkill(info.Skill, activating) {
 		return false, nil
 	}
+	if info.Ranged && !ch.shoot(info) {
+		return false, nil
+	}
 
 	attacking()
 	ch.damageTo(info.Damages)
@@ -42,6 +45,53 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 		ch.ExplodeMesos(info.MesoOIDs)
 	}
 	return true, nil
+}
+
+func (ch *Character) shoot(info dto.AttackInfo) bool {
+	switch constant.SkillID(info.Skill) {
+	case constant.SkillShadowMeso, constant.SkillBarrage, constant.SkillSoulBlade, constant.SkillSpark, constant.SkillSharkWave, constant.SkillShowdown4221003:
+		return true
+	}
+	weapon := ch.Inventory.Equipped[constant.EquipmentPartsWeapon]
+	if weapon == nil {
+		return true
+	}
+
+	var ammo constant.ConsumeType
+	switch constant.GetWeaponType(weapon.GetModel().GetID()) {
+	case constant.WeaponTypeBow:
+		ammo = constant.ConsumeTypeArrowBow
+	case constant.WeaponTypeCrossbow:
+		ammo = constant.ConsumeTypeArrowCrossBow
+	case constant.WeaponTypeClaw:
+		ammo = constant.ConsumeTypeShuriken
+	case constant.WeaponTypeGun:
+		ammo = constant.ConsumeTypeBullet
+	default:
+		return true
+	}
+	if ch.Buffs.Has(constant.BuffFlagSoulArrow) && (ammo == constant.ConsumeTypeArrowBow || ammo == constant.ConsumeTypeArrowCrossBow) {
+		return true
+	}
+	item := ch.Inventory.GetItem(constant.InventoryTypeConsume, int16(info.Slot))
+	if item == nil || constant.GetConsumeType(item.GetModel().GetID()) != ammo {
+		return false
+	}
+	if ch.Buffs.Has(constant.BuffFlagSpiritClaw) && ammo == constant.ConsumeTypeShuriken {
+		return true
+	}
+
+	count := 1
+	if p := ch.skillLevelData(constant.SkillID(info.Skill)); p != nil {
+		count = max(1, p.BulletCount, p.AttackCount)
+		if p.BulletConsume > 0 {
+			count = p.BulletConsume
+		}
+	}
+	if ch.Buffs.Has(constant.BuffFlagShadowPartner) {
+		count *= 2
+	}
+	return ch.Inventory.useAmmo(int16(info.Slot), uint16(count))
 }
 
 func (ch *Character) EnergyAttack(info dto.AttackInfo, attacking func()) (bool, error) {

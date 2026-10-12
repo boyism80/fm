@@ -60,7 +60,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		if req.Skill != 0 {
 			skillLevel = uint8(character.GetTotalSkillLevel(req.Skill))
 		}
-		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, false, 0)
+		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, false)
 	})
 	if err != nil {
 		return err

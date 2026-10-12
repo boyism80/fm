@@ -109,6 +109,21 @@ func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, cou
 	return true
 }
 
+// useAmmo keeps a used-up rechargeable in its slot so it can be recharged at a shop.
+func (inv *Inventory) useAmmo(slot int16, count uint16) bool {
+	item := inv.GetItem(constant.InventoryTypeConsume, slot)
+	if item == nil || item.GetCount() < count {
+		return false
+	}
+	if !constant.IsRechargeable(item.GetModel().GetID()) {
+		return inv.RemoveItem(constant.InventoryTypeConsume, slot, count)
+	}
+
+	item.Reduce(count)
+	inv.owner.Listener.OnInventorySlotUpdated(inv.owner, constant.InventoryTypeConsume, slot, item)
+	return true
+}
+
 func (inv *Inventory) FindSlots(itemID uint32) (invType constant.InventoryType, slots []int16) {
 	invType = constant.GetInventoryTypeByItemID(itemID)
 	inven := inv.Tabs[invType]

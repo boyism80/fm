@@ -57,7 +57,7 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 		if req.Skill != 0 {
 			skillLevel = uint8(character.GetTotalSkillLevel(req.Skill))
 		}
-		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, true, req.Slot)
+		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, true)
 	})
 	if err != nil {
 		return err

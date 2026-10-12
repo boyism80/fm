@@ -11,7 +11,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func CallOnAttackHooks(ctx actor.Context, character *entity.Character, damages []dto.AttackPair, skill *entity.SkillEntry, magicAttack bool, ranged bool, consumeSlot uint16) {
+func CallOnAttackHooks(ctx actor.Context, character *entity.Character, damages []dto.AttackPair, skill *entity.SkillEntry, magicAttack bool, ranged bool) {
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return
@@ -25,7 +25,6 @@ func CallOnAttackHooks(ctx actor.Context, character *entity.Character, damages [
 	attackInfoTable := root.NewTable()
 	attackInfoTable.RawSetString("magic", lua.LBool(magicAttack))
 	attackInfoTable.RawSetString("ranged", lua.LBool(ranged))
-	attackInfoTable.RawSetString("consume_slot", lua.LNumber(consumeSlot))
 	character.CallSkillHook(ctx, skill, "on_attack", damagesTable, attackInfoTable)
 	readDamagesFromLuaTableInto(damagesTable, damages)
 }

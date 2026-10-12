@@ -56,7 +56,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
 	}, func() {
 		skillLevel = uint8(character.GetTotalSkillLevel(req.Skill))
-		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, true, false, 0)
+		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, true, false)
 	})
 	if err != nil {
 		return err
