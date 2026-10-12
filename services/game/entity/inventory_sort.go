@@ -18,7 +18,7 @@ func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
 
 	for i := range inven.SlotLimit {
 		item := inven.Items[int16(i+1)]
-		if item == nil {
+		if item == nil || !inven.Stackable(item, item) {
 			continue
 		}
 		key := stack{model: item.GetModel(), expiration: item.GetExpiration().UnixNano()}

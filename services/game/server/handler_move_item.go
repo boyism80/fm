@@ -135,7 +135,7 @@ func (h *MoveItem) move(ch *entity.Character, invenType constant.InventoryType, 
 	if inven == nil {
 		return
 	}
-	if destSlot < 1 || destSlot > int16(inven.SlotLimit) {
+	if destSlot < 1 || destSlot > int16(inven.SlotLimit) || sourceSlot == destSlot {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
@@ -152,15 +152,13 @@ func (h *MoveItem) move(ch *entity.Character, invenType constant.InventoryType, 
 		return
 	}
 
-	specSrc := src.GetModel()
-	specDst := dst.GetModel()
-	if specSrc != specDst || !src.GetExpiration().Equal(dst.GetExpiration()) {
+	if !inven.Stackable(src, dst) {
 		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
 		ch.Listener.OnSwapInventorySlot(ch, invenType, sourceSlot, destSlot, 0)
 		return
 	}
 
-	limit := min(src.GetCount(), specSrc.GetCapacity()-dst.GetCount())
+	limit := min(src.GetCount(), src.GetModel().GetCapacity()-dst.GetCount())
 	dst.Increase(limit)
 	if src.Reduce(limit) == 0 {
 		ch.Listener.OnFullMergeInventorySlot(ch, invenType, sourceSlot, destSlot, dst.GetCount())

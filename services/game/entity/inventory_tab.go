@@ -37,23 +37,22 @@ func (m *InventoryTab) NextSlot() (uint8, bool) {
 	return 0, false
 }
 
+// Stackable reports whether a and b may share one slot. Rechargeables keep their own slot even when partly used.
+func (m *InventoryTab) Stackable(a, b Item) bool {
+	model := a.GetModel()
+	return model.GetID() == b.GetModel().GetID() &&
+		model.GetCapacity() > 1 &&
+		!constant.IsRechargeable(model.GetID()) &&
+		a.GetExpiration().Equal(b.GetExpiration())
+}
+
 func (m *InventoryTab) FindSlot(incoming Item) (uint8, bool) {
-	model := incoming.GetModel()
-	if constant.IsRechargeable(model.GetID()) {
-		return m.NextSlot()
-	}
 	for i := 1; i <= int(m.SlotLimit); i++ {
 		item := m.Items[int16(i)]
-		if item == nil {
+		if item == nil || !m.Stackable(item, incoming) {
 			continue
 		}
-
-		if item.GetModel().GetID() != model.GetID() || !item.GetExpiration().Equal(incoming.GetExpiration()) {
-			continue
-		}
-
-		cap := model.GetCapacity() - item.GetCount()
-		if cap == 0 {
+		if item.GetCount() >= item.GetModel().GetCapacity() {
 			continue
 		}
 
