@@ -35,6 +35,7 @@ import (
 const (
 	mapActorCallTimeout = 30 * time.Second
 	logoutWaitTimeout   = deliveryTimeout + time.Second
+	shutdownWaitTimeout = time.Minute
 )
 
 type GameServer struct {
@@ -82,6 +83,7 @@ type GameServer struct {
 	pendingDeliveries map[uint64]*delivery.Envelope
 	nextDelivery      atomic.Uint64
 	internalHBCancel  context.CancelFunc
+	disconnects       sync.WaitGroup
 	megaphoneMuted    atomic.Bool
 	uniqueIDs         *uniqueid.Generator
 }
@@ -564,46 +566,32 @@ func (gs *GameServer) Stop() error {
 		gs.internalHBCancel()
 		gs.internalHBCancel = nil
 	}
-	if gs.rabbitPartyPID != nil {
-		root := gs.GetRootContext()
-		if root != nil {
-			root.Poison(gs.rabbitPartyPID)
-		}
+
+	// Closing the clients saves and logs out every character through internal, so the internal connection
+	// and the MQ actors stay up until those disconnects finish.
+	err := gs.ServerCore.Stop()
+	done := make(chan struct{})
+	go func() {
+		gs.disconnects.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownWaitTimeout):
+		log.Printf("shutdown: disconnect saves did not finish within %v", shutdownWaitTimeout)
 	}
-	if gs.rabbitBuddyPID != nil {
-		root := gs.GetRootContext()
-		if root != nil {
-			root.Poison(gs.rabbitBuddyPID)
-		}
-	}
-	if gs.rabbitGuildPID != nil {
-		root := gs.GetRootContext()
-		if root != nil {
-			root.Poison(gs.rabbitGuildPID)
-		}
-	}
-	if gs.rabbitAlliancePID != nil {
-		root := gs.GetRootContext()
-		if root != nil {
-			root.Poison(gs.rabbitAlliancePID)
-		}
-	}
-	if gs.rabbitGlobalPID != nil {
-		root := gs.GetRootContext()
-		if root != nil {
-			root.Poison(gs.rabbitGlobalPID)
-		}
-	}
-	if gs.rabbitParcelPID != nil {
-		root := gs.GetRootContext()
-		if root != nil {
-			root.Poison(gs.rabbitParcelPID)
+
+	if root := gs.GetRootContext(); root != nil {
+		for _, pid := range []*actor.PID{gs.rabbitPartyPID, gs.rabbitBuddyPID, gs.rabbitGuildPID, gs.rabbitAlliancePID, gs.rabbitGlobalPID, gs.rabbitParcelPID} {
+			if pid != nil {
+				root.Poison(pid)
+			}
 		}
 	}
 	if gs.internalConn != nil {
 		_ = gs.internalConn.Close()
 	}
-	return gs.ServerCore.Stop()
+	return err
 }
 
 func (gs *GameServer) pingInternal(ctx context.Context, interval time.Duration) {
@@ -639,10 +627,11 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	}
 	logout := character.MarkLoggedOut()
 
+	gs.disconnects.Add(1)
 	p := async.NewTask(nil, saveCharactersPromiseTimeout)
 	p.OnError(func(err error) {
 		log.Printf("disconnect async: %v", err)
-	})
+	}).Finally(gs.disconnects.Done)
 
 	var entry *internal.CharacterSaveEntry
 	p.DoAsync(func() error {
