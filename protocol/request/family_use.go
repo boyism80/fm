@@ -6,7 +6,8 @@ import (
 )
 
 type FamilyUse struct {
-	Family
+	Feature internal.FamilyFeature
+	Name    string
 }
 
 func (*FamilyUse) Opcode() byte { return 0x80 }
@@ -20,7 +21,6 @@ func (p *FamilyUse) Serialize(w *stream.StreamWriter) error {
 }
 
 func (p *FamilyUse) Deserialize(r *stream.StreamReader) {
-	p.Action = internal.FamilyAction_FAMILY_ACTION_USE
 	p.Feature = internal.FamilyFeature(r.ReadU32())
 	if p.Feature == internal.FamilyFeature_FAMILY_FEATURE_TELEPORT || p.Feature == internal.FamilyFeature_FAMILY_FEATURE_SUMMON {
 		p.Name = r.ReadStr16()

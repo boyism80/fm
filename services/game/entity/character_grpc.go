@@ -66,7 +66,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Party = &PartyMembership{owner: ch, id: partyID}
 	ch.Guild = &GuildMembership{owner: ch, id: guildID, invites: make(map[uint32]time.Time)}
 	ch.Buddies = NewBuddyList(ch)
-	ch.Family = &Family{owner: ch, State: reply.GetFamily(), Progress: p.GetFamilyProgress(), Reputation: make(map[uint32]uint64)}
+	ch.Family = &Family{owner: ch, Tree: FamilyTree{family: reply.GetFamily()}, Progress: p.GetFamilyProgress(), Reputation: make(map[uint32]uint64)}
 	for id, amount := range p.GetFamilyReputation() {
 		ch.Family.Reputation[id], _ = strconv.ParseUint(amount, 10, 64)
 	}

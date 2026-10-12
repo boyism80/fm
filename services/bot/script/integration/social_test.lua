@@ -406,19 +406,19 @@ local function family_flow(ctx, senior, junior, low)
 	send(junior, req.family_remove_senior {})
 	ctx:sleep(1000)
 
-	send(low, req.family_invite { family = { name = junior:name() } })
+	send(low, req.family_invite { name = junior:name() })
 	local rejected = expect(ctx, low, "family_result", nil, "레벨 높은 주니어 초대")
 	if rejected == false or check(ctx, rejected.code == FAMILY_RESULT.junior_level_too_high, "레벨 높은 주니어 초대 결과 " .. rejected.code) == false then
 		return false
 	end
 
-	send(senior, req.family_invite { family = { name = junior:name() } })
+	send(senior, req.family_invite { name = junior:name() })
 	local invite = expect(ctx, junior, "family_invite", nil, "패밀리 초대 수신")
 	if invite == false or check(ctx, invite.inviter_id == senior:id() and invite.name == senior:name(), "받은 패밀리 초대가 다름") == false then
 		return false
 	end
 
-	send(junior, req.family_accept { family = { target_id = senior:id(), name = senior:name(), accepted = true } })
+	send(junior, req.family_accept { senior_id = senior:id(), name = senior:name(), accepted = true })
 	local result = expect(ctx, senior, "family_invite_result", nil, "패밀리 초대 결과")
 	if result == false or check(ctx, result.accepted and result.name == junior:name(), "패밀리 초대 결과가 다름") == false then
 		return false
@@ -429,16 +429,16 @@ local function family_flow(ctx, senior, junior, low)
 	end
 
 	local function pedigree(viewer)
-		send(viewer, req.family_pedigree { family = { name = viewer:name() } })
+		send(viewer, req.family_pedigree { name = viewer:name() })
 		local chart = expect(ctx, viewer, "family_chart", nil, viewer:name() .. " 가계도")
 		if chart == false then
 			return nil
 		end
 		local ids = {}
-		for _, member in ipairs(chart.state.members) do
+		for _, member in ipairs(chart.members) do
 			ids[#ids + 1] = tostring(member.character_id)
 		end
-		return table.concat(ids, ","), chart.state.member_count
+		return table.concat(ids, ","), chart.member_count
 	end
 	local tree = senior:id() .. "," .. senior:id() .. "," .. junior:id()
 	for _, viewer in ipairs({ junior, senior }) do
@@ -454,7 +454,7 @@ local function family_flow(ctx, senior, junior, low)
 
 	send(junior, req.family_remove_senior {})
 	local info = expect(ctx, junior, "family_info", function(p)
-		return p.state.leader_id == 0
+		return p.leader_id == 0
 	end, "패밀리 탈퇴 후 정보")
 	if info == false then
 		return false

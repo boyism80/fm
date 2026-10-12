@@ -1479,99 +1479,6 @@ export function buddyErrorCodeToJSON(object: BuddyErrorCode): string {
   }
 }
 
-export enum FamilyAction {
-  FAMILY_ACTION_NONE = 0,
-  FAMILY_ACTION_PEDIGREE = 1,
-  FAMILY_ACTION_OPEN = 2,
-  FAMILY_ACTION_INVITE = 3,
-  FAMILY_ACTION_REMOVE_JUNIOR = 4,
-  FAMILY_ACTION_REMOVE_SENIOR = 5,
-  FAMILY_ACTION_ACCEPT = 6,
-  FAMILY_ACTION_USE = 7,
-  FAMILY_ACTION_PRECEPT = 8,
-  FAMILY_ACTION_SUMMON = 9,
-  FAMILY_ACTION_REFUND = 10,
-  FAMILY_ACTION_MOVE_COMPLETE = 11,
-  UNRECOGNIZED = -1,
-}
-
-export function familyActionFromJSON(object: any): FamilyAction {
-  switch (object) {
-    case 0:
-    case "FAMILY_ACTION_NONE":
-      return FamilyAction.FAMILY_ACTION_NONE;
-    case 1:
-    case "FAMILY_ACTION_PEDIGREE":
-      return FamilyAction.FAMILY_ACTION_PEDIGREE;
-    case 2:
-    case "FAMILY_ACTION_OPEN":
-      return FamilyAction.FAMILY_ACTION_OPEN;
-    case 3:
-    case "FAMILY_ACTION_INVITE":
-      return FamilyAction.FAMILY_ACTION_INVITE;
-    case 4:
-    case "FAMILY_ACTION_REMOVE_JUNIOR":
-      return FamilyAction.FAMILY_ACTION_REMOVE_JUNIOR;
-    case 5:
-    case "FAMILY_ACTION_REMOVE_SENIOR":
-      return FamilyAction.FAMILY_ACTION_REMOVE_SENIOR;
-    case 6:
-    case "FAMILY_ACTION_ACCEPT":
-      return FamilyAction.FAMILY_ACTION_ACCEPT;
-    case 7:
-    case "FAMILY_ACTION_USE":
-      return FamilyAction.FAMILY_ACTION_USE;
-    case 8:
-    case "FAMILY_ACTION_PRECEPT":
-      return FamilyAction.FAMILY_ACTION_PRECEPT;
-    case 9:
-    case "FAMILY_ACTION_SUMMON":
-      return FamilyAction.FAMILY_ACTION_SUMMON;
-    case 10:
-    case "FAMILY_ACTION_REFUND":
-      return FamilyAction.FAMILY_ACTION_REFUND;
-    case 11:
-    case "FAMILY_ACTION_MOVE_COMPLETE":
-      return FamilyAction.FAMILY_ACTION_MOVE_COMPLETE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return FamilyAction.UNRECOGNIZED;
-  }
-}
-
-export function familyActionToJSON(object: FamilyAction): string {
-  switch (object) {
-    case FamilyAction.FAMILY_ACTION_NONE:
-      return "FAMILY_ACTION_NONE";
-    case FamilyAction.FAMILY_ACTION_PEDIGREE:
-      return "FAMILY_ACTION_PEDIGREE";
-    case FamilyAction.FAMILY_ACTION_OPEN:
-      return "FAMILY_ACTION_OPEN";
-    case FamilyAction.FAMILY_ACTION_INVITE:
-      return "FAMILY_ACTION_INVITE";
-    case FamilyAction.FAMILY_ACTION_REMOVE_JUNIOR:
-      return "FAMILY_ACTION_REMOVE_JUNIOR";
-    case FamilyAction.FAMILY_ACTION_REMOVE_SENIOR:
-      return "FAMILY_ACTION_REMOVE_SENIOR";
-    case FamilyAction.FAMILY_ACTION_ACCEPT:
-      return "FAMILY_ACTION_ACCEPT";
-    case FamilyAction.FAMILY_ACTION_USE:
-      return "FAMILY_ACTION_USE";
-    case FamilyAction.FAMILY_ACTION_PRECEPT:
-      return "FAMILY_ACTION_PRECEPT";
-    case FamilyAction.FAMILY_ACTION_SUMMON:
-      return "FAMILY_ACTION_SUMMON";
-    case FamilyAction.FAMILY_ACTION_REFUND:
-      return "FAMILY_ACTION_REFUND";
-    case FamilyAction.FAMILY_ACTION_MOVE_COMPLETE:
-      return "FAMILY_ACTION_MOVE_COMPLETE";
-    case FamilyAction.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum FamilyFeature {
   FAMILY_FEATURE_TELEPORT = 0,
   FAMILY_FEATURE_SUMMON = 1,
@@ -1731,57 +1638,6 @@ export function familyResultToJSON(object: FamilyResult): string {
     case FamilyResult.FAMILY_RESULT_SUMMON_FAILED:
       return "FAMILY_RESULT_SUMMON_FAILED";
     case FamilyResult.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum FamilyEvent {
-  FAMILY_EVENT_REFRESH = 0,
-  FAMILY_EVENT_INVITE = 1,
-  FAMILY_EVENT_INVITE_RESULT = 2,
-  FAMILY_EVENT_SUMMON = 3,
-  FAMILY_EVENT_JOINED = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function familyEventFromJSON(object: any): FamilyEvent {
-  switch (object) {
-    case 0:
-    case "FAMILY_EVENT_REFRESH":
-      return FamilyEvent.FAMILY_EVENT_REFRESH;
-    case 1:
-    case "FAMILY_EVENT_INVITE":
-      return FamilyEvent.FAMILY_EVENT_INVITE;
-    case 2:
-    case "FAMILY_EVENT_INVITE_RESULT":
-      return FamilyEvent.FAMILY_EVENT_INVITE_RESULT;
-    case 3:
-    case "FAMILY_EVENT_SUMMON":
-      return FamilyEvent.FAMILY_EVENT_SUMMON;
-    case 4:
-    case "FAMILY_EVENT_JOINED":
-      return FamilyEvent.FAMILY_EVENT_JOINED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return FamilyEvent.UNRECOGNIZED;
-  }
-}
-
-export function familyEventToJSON(object: FamilyEvent): string {
-  switch (object) {
-    case FamilyEvent.FAMILY_EVENT_REFRESH:
-      return "FAMILY_EVENT_REFRESH";
-    case FamilyEvent.FAMILY_EVENT_INVITE:
-      return "FAMILY_EVENT_INVITE";
-    case FamilyEvent.FAMILY_EVENT_INVITE_RESULT:
-      return "FAMILY_EVENT_INVITE_RESULT";
-    case FamilyEvent.FAMILY_EVENT_SUMMON:
-      return "FAMILY_EVENT_SUMMON";
-    case FamilyEvent.FAMILY_EVENT_JOINED:
-      return "FAMILY_EVENT_JOINED";
-    case FamilyEvent.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -2568,7 +2424,7 @@ export interface EnterGameReply {
   monsterBook: MonsterBookCard[];
   records: Record[];
   mount: Mount | undefined;
-  family: FamilyState | undefined;
+  family: Family | undefined;
   notes: Note[];
   account: Account | undefined;
   skillMacros: SkillMacro[];
@@ -3918,48 +3774,75 @@ export interface FamilyMember {
   classId: number;
   reputation: number;
   totalReputation: number;
+  /** -1 while offline. */
   channelId: number;
-  descendants: number;
-}
-
-export interface FamilyState {
-  characterId: number;
-  seniorId: number;
-  juniors: number[];
-  leaderId: number;
-  leaderName: string;
-  notice: string;
-  reputation: number;
-  totalReputation: number;
-  usedFeatures: FamilyFeature[];
-  members: FamilyMember[];
   buffUntil: string;
   buffFeature: FamilyFeature;
-  memberCount: number;
+  /** Uses of the current day in Korea time. */
+  usedFeatures: FamilyFeature[];
 }
 
-export interface FamilyRequest {
-  worldId: number;
-  characterId: number;
-  channelId: number;
-  action: FamilyAction;
-  targetId: number;
-  name: string;
-  feature: FamilyFeature;
-  accepted: boolean;
-  level: number;
-  classId: number;
-  targetLevel: number;
-  mapName: string;
-  operationId: string;
+/** The whole family. A character outside any family is its only member, with no leader_id. */
+export interface Family {
+  leaderId?: number | undefined;
+  precept: string;
+  members: FamilyMember[];
 }
 
 export interface FamilyReply {
   status: FamilyResult;
-  family: FamilyState | undefined;
+  /** The requester's family after the change. */
+  family: Family | undefined;
+}
+
+export interface GetFamilyRequest {
+  worldId: number;
+  name: string;
+}
+
+export interface GetFamilyReply {
+  found: boolean;
+  characterId: number;
+  family: Family | undefined;
+}
+
+/** Levels are the live ones; only the identity fields are read. */
+export interface JoinFamilyRequest {
+  worldId: number;
+  senior: FamilyMember | undefined;
+  junior: FamilyMember | undefined;
+}
+
+/** character_id is either the junior's senior or the junior itself. */
+export interface SeparateFamilyRequest {
+  worldId: number;
+  characterId: number;
+  juniorId: number;
+}
+
+export interface SetFamilyPreceptRequest {
+  worldId: number;
+  characterId: number;
+  precept: string;
+}
+
+/**
+ * Teleport and summon move character_id to or from target_id. The summoner,
+ * target_id, pays for a summon; character_id pays for everything else.
+ */
+export interface UseFamilyFeatureRequest {
+  worldId: number;
+  characterId: number;
+  feature: FamilyFeature;
   targetId: number;
-  targetName: string;
-  accepted: boolean;
+  requestId: string;
+}
+
+export interface FinishFamilyMoveRequest {
+  worldId: number;
+  characterId: number;
+  requestId: string;
+  complete: boolean;
 }
 
 export interface WhisperRequest {
@@ -13370,7 +13253,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       Mount.encode(message.mount, writer.uint32(154).fork()).join();
     }
     if (message.family !== undefined) {
-      FamilyState.encode(message.family, writer.uint32(162).fork()).join();
+      Family.encode(message.family, writer.uint32(162).fork()).join();
     }
     for (const v of message.notes) {
       Note.encode(v!, writer.uint32(170).fork()).join();
@@ -13561,7 +13444,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.family = FamilyState.decode(reader, reader.uint32());
+          message.family = Family.decode(reader, reader.uint32());
           continue;
         }
         case 21: {
@@ -13664,7 +13547,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         ? object.records.map((e: any) => Record.fromJSON(e))
         : [],
       mount: isSet(object.mount) ? Mount.fromJSON(object.mount) : undefined,
-      family: isSet(object.family) ? FamilyState.fromJSON(object.family) : undefined,
+      family: isSet(object.family) ? Family.fromJSON(object.family) : undefined,
       notes: globalThis.Array.isArray(object?.notes) ? object.notes.map((e: any) => Note.fromJSON(e)) : [],
       account: isSet(object.account) ? Account.fromJSON(object.account) : undefined,
       skillMacros: globalThis.Array.isArray(object?.skillMacros)
@@ -13740,7 +13623,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       obj.mount = Mount.toJSON(message.mount);
     }
     if (message.family !== undefined) {
-      obj.family = FamilyState.toJSON(message.family);
+      obj.family = Family.toJSON(message.family);
     }
     if (message.notes?.length) {
       obj.notes = message.notes.map((e) => Note.toJSON(e));
@@ -13786,7 +13669,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.records = object.records?.map((e) => Record.fromPartial(e)) || [];
     message.mount = (object.mount !== undefined && object.mount !== null) ? Mount.fromPartial(object.mount) : undefined;
     message.family = (object.family !== undefined && object.family !== null)
-      ? FamilyState.fromPartial(object.family)
+      ? Family.fromPartial(object.family)
       : undefined;
     message.notes = object.notes?.map((e) => Note.fromPartial(e)) || [];
     message.account = (object.account !== undefined && object.account !== null)
@@ -36054,7 +35937,9 @@ function createBaseFamilyMember(): FamilyMember {
     reputation: 0,
     totalReputation: 0,
     channelId: 0,
-    descendants: 0,
+    buffUntil: "0",
+    buffFeature: 0,
+    usedFeatures: [],
   };
 }
 
@@ -36084,9 +35969,17 @@ export const FamilyMember: MessageFns<FamilyMember> = {
     if (message.channelId !== 0) {
       writer.uint32(64).int32(message.channelId);
     }
-    if (message.descendants !== 0) {
-      writer.uint32(72).uint32(message.descendants);
+    if (message.buffUntil !== "0") {
+      writer.uint32(72).int64(message.buffUntil);
     }
+    if (message.buffFeature !== 0) {
+      writer.uint32(80).int32(message.buffFeature);
+    }
+    writer.uint32(90).fork();
+    for (const v of message.usedFeatures) {
+      writer.int32(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -36166,8 +36059,34 @@ export const FamilyMember: MessageFns<FamilyMember> = {
             break;
           }
 
-          message.descendants = reader.uint32();
+          message.buffUntil = reader.int64().toString();
           continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.buffFeature = reader.int32() as any;
+          continue;
+        }
+        case 11: {
+          if (tag === 88) {
+            message.usedFeatures.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 90) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.usedFeatures.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
         }
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -36208,7 +36127,21 @@ export const FamilyMember: MessageFns<FamilyMember> = {
         : isSet(object.channel_id)
         ? globalThis.Number(object.channel_id)
         : 0,
-      descendants: isSet(object.descendants) ? globalThis.Number(object.descendants) : 0,
+      buffUntil: isSet(object.buffUntil)
+        ? globalThis.String(object.buffUntil)
+        : isSet(object.buff_until)
+        ? globalThis.String(object.buff_until)
+        : "0",
+      buffFeature: isSet(object.buffFeature)
+        ? familyFeatureFromJSON(object.buffFeature)
+        : isSet(object.buff_feature)
+        ? familyFeatureFromJSON(object.buff_feature)
+        : 0,
+      usedFeatures: globalThis.Array.isArray(object?.usedFeatures)
+        ? object.usedFeatures.map((e: any) => familyFeatureFromJSON(e))
+        : globalThis.Array.isArray(object?.used_features)
+        ? object.used_features.map((e: any) => familyFeatureFromJSON(e))
+        : [],
     };
   },
 
@@ -36238,8 +36171,14 @@ export const FamilyMember: MessageFns<FamilyMember> = {
     if (message.channelId !== 0) {
       obj.channelId = Math.round(message.channelId);
     }
-    if (message.descendants !== 0) {
-      obj.descendants = Math.round(message.descendants);
+    if (message.buffUntil !== "0") {
+      obj.buffUntil = globalThis.String(message.buffUntil);
+    }
+    if (message.buffFeature !== 0) {
+      obj.buffFeature = familyFeatureToJSON(message.buffFeature);
+    }
+    if (message.usedFeatures?.length) {
+      obj.usedFeatures = message.usedFeatures.map((e) => familyFeatureToJSON(e));
     }
     return obj;
   },
@@ -36257,208 +36196,62 @@ export const FamilyMember: MessageFns<FamilyMember> = {
     message.reputation = object.reputation ?? 0;
     message.totalReputation = object.totalReputation ?? 0;
     message.channelId = object.channelId ?? 0;
-    message.descendants = object.descendants ?? 0;
+    message.buffUntil = object.buffUntil ?? "0";
+    message.buffFeature = object.buffFeature ?? 0;
+    message.usedFeatures = object.usedFeatures?.map((e) => e) || [];
     return message;
   },
 };
 
-function createBaseFamilyState(): FamilyState {
-  return {
-    characterId: 0,
-    seniorId: 0,
-    juniors: [],
-    leaderId: 0,
-    leaderName: "",
-    notice: "",
-    reputation: 0,
-    totalReputation: 0,
-    usedFeatures: [],
-    members: [],
-    buffUntil: "0",
-    buffFeature: 0,
-    memberCount: 0,
-  };
+function createBaseFamily(): Family {
+  return { leaderId: undefined, precept: "", members: [] };
 }
 
-export const FamilyState: MessageFns<FamilyState> = {
-  encode(message: FamilyState, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.characterId !== 0) {
-      writer.uint32(8).uint32(message.characterId);
+export const Family: MessageFns<Family> = {
+  encode(message: Family, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.leaderId !== undefined) {
+      writer.uint32(8).uint32(message.leaderId);
     }
-    if (message.seniorId !== 0) {
-      writer.uint32(16).uint32(message.seniorId);
+    if (message.precept !== "") {
+      writer.uint32(18).string(message.precept);
     }
-    writer.uint32(26).fork();
-    for (const v of message.juniors) {
-      writer.uint32(v);
-    }
-    writer.join();
-    if (message.leaderId !== 0) {
-      writer.uint32(32).uint32(message.leaderId);
-    }
-    if (message.leaderName !== "") {
-      writer.uint32(42).string(message.leaderName);
-    }
-    if (message.notice !== "") {
-      writer.uint32(50).string(message.notice);
-    }
-    if (message.reputation !== 0) {
-      writer.uint32(56).uint32(message.reputation);
-    }
-    if (message.totalReputation !== 0) {
-      writer.uint32(64).uint32(message.totalReputation);
-    }
-    writer.uint32(74).fork();
-    for (const v of message.usedFeatures) {
-      writer.int32(v);
-    }
-    writer.join();
     for (const v of message.members) {
-      FamilyMember.encode(v!, writer.uint32(82).fork()).join();
-    }
-    if (message.buffUntil !== "0") {
-      writer.uint32(88).int64(message.buffUntil);
-    }
-    if (message.buffFeature !== 0) {
-      writer.uint32(96).int32(message.buffFeature);
-    }
-    if (message.memberCount !== 0) {
-      writer.uint32(104).uint32(message.memberCount);
+      FamilyMember.encode(v!, writer.uint32(26).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): FamilyState {
+  decode(input: BinaryReader | Uint8Array, length?: number): Family {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFamilyState();
+    const message = createBaseFamily();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
           if (tag !== 8) {
-            break;
-          }
-
-          message.characterId = reader.uint32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.seniorId = reader.uint32();
-          continue;
-        }
-        case 3: {
-          if (tag === 24) {
-            message.juniors.push(reader.uint32());
-
-            continue;
-          }
-
-          if (tag === 26) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.juniors.push(reader.uint32());
-            }
-
-            continue;
-          }
-
-          break;
-        }
-        case 4: {
-          if (tag !== 32) {
             break;
           }
 
           message.leaderId = reader.uint32();
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
+        case 2: {
+          if (tag !== 18) {
             break;
           }
 
-          message.leaderName = reader.string();
+          message.precept = reader.string();
           continue;
         }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.notice = reader.string();
-          continue;
-        }
-        case 7: {
-          if (tag !== 56) {
-            break;
-          }
-
-          message.reputation = reader.uint32();
-          continue;
-        }
-        case 8: {
-          if (tag !== 64) {
-            break;
-          }
-
-          message.totalReputation = reader.uint32();
-          continue;
-        }
-        case 9: {
-          if (tag === 72) {
-            message.usedFeatures.push(reader.int32() as any);
-
-            continue;
-          }
-
-          if (tag === 74) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.usedFeatures.push(reader.int32() as any);
-            }
-
-            continue;
-          }
-
-          break;
-        }
-        case 10: {
-          if (tag !== 82) {
+        case 3: {
+          if (tag !== 26) {
             break;
           }
 
           message.members.push(FamilyMember.decode(reader, reader.uint32()));
           continue;
         }
-        case 11: {
-          if (tag !== 88) {
-            break;
-          }
-
-          message.buffUntil = reader.int64().toString();
-          continue;
-        }
-        case 12: {
-          if (tag !== 96) {
-            break;
-          }
-
-          message.buffFeature = reader.int32() as any;
-          continue;
-        }
-        case 13: {
-          if (tag !== 104) {
-            break;
-          }
-
-          message.memberCount = reader.uint32();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -36468,428 +36261,48 @@ export const FamilyState: MessageFns<FamilyState> = {
     return message;
   },
 
-  fromJSON(object: any): FamilyState {
+  fromJSON(object: any): Family {
     return {
-      characterId: isSet(object.characterId)
-        ? globalThis.Number(object.characterId)
-        : isSet(object.character_id)
-        ? globalThis.Number(object.character_id)
-        : 0,
-      seniorId: isSet(object.seniorId)
-        ? globalThis.Number(object.seniorId)
-        : isSet(object.senior_id)
-        ? globalThis.Number(object.senior_id)
-        : 0,
-      juniors: globalThis.Array.isArray(object?.juniors) ? object.juniors.map((e: any) => globalThis.Number(e)) : [],
       leaderId: isSet(object.leaderId)
         ? globalThis.Number(object.leaderId)
         : isSet(object.leader_id)
         ? globalThis.Number(object.leader_id)
-        : 0,
-      leaderName: isSet(object.leaderName)
-        ? globalThis.String(object.leaderName)
-        : isSet(object.leader_name)
-        ? globalThis.String(object.leader_name)
-        : "",
-      notice: isSet(object.notice) ? globalThis.String(object.notice) : "",
-      reputation: isSet(object.reputation) ? globalThis.Number(object.reputation) : 0,
-      totalReputation: isSet(object.totalReputation)
-        ? globalThis.Number(object.totalReputation)
-        : isSet(object.total_reputation)
-        ? globalThis.Number(object.total_reputation)
-        : 0,
-      usedFeatures: globalThis.Array.isArray(object?.usedFeatures)
-        ? object.usedFeatures.map((e: any) => familyFeatureFromJSON(e))
-        : globalThis.Array.isArray(object?.used_features)
-        ? object.used_features.map((e: any) => familyFeatureFromJSON(e))
-        : [],
+        : undefined,
+      precept: isSet(object.precept) ? globalThis.String(object.precept) : "",
       members: globalThis.Array.isArray(object?.members)
         ? object.members.map((e: any) => FamilyMember.fromJSON(e))
         : [],
-      buffUntil: isSet(object.buffUntil)
-        ? globalThis.String(object.buffUntil)
-        : isSet(object.buff_until)
-        ? globalThis.String(object.buff_until)
-        : "0",
-      buffFeature: isSet(object.buffFeature)
-        ? familyFeatureFromJSON(object.buffFeature)
-        : isSet(object.buff_feature)
-        ? familyFeatureFromJSON(object.buff_feature)
-        : 0,
-      memberCount: isSet(object.memberCount)
-        ? globalThis.Number(object.memberCount)
-        : isSet(object.member_count)
-        ? globalThis.Number(object.member_count)
-        : 0,
     };
   },
 
-  toJSON(message: FamilyState): unknown {
+  toJSON(message: Family): unknown {
     const obj: any = {};
-    if (message.characterId !== 0) {
-      obj.characterId = Math.round(message.characterId);
-    }
-    if (message.seniorId !== 0) {
-      obj.seniorId = Math.round(message.seniorId);
-    }
-    if (message.juniors?.length) {
-      obj.juniors = message.juniors.map((e) => Math.round(e));
-    }
-    if (message.leaderId !== 0) {
+    if (message.leaderId !== undefined) {
       obj.leaderId = Math.round(message.leaderId);
     }
-    if (message.leaderName !== "") {
-      obj.leaderName = message.leaderName;
-    }
-    if (message.notice !== "") {
-      obj.notice = message.notice;
-    }
-    if (message.reputation !== 0) {
-      obj.reputation = Math.round(message.reputation);
-    }
-    if (message.totalReputation !== 0) {
-      obj.totalReputation = Math.round(message.totalReputation);
-    }
-    if (message.usedFeatures?.length) {
-      obj.usedFeatures = message.usedFeatures.map((e) => familyFeatureToJSON(e));
+    if (message.precept !== "") {
+      obj.precept = message.precept;
     }
     if (message.members?.length) {
       obj.members = message.members.map((e) => FamilyMember.toJSON(e));
     }
-    if (message.buffUntil !== "0") {
-      obj.buffUntil = globalThis.String(message.buffUntil);
-    }
-    if (message.buffFeature !== 0) {
-      obj.buffFeature = familyFeatureToJSON(message.buffFeature);
-    }
-    if (message.memberCount !== 0) {
-      obj.memberCount = Math.round(message.memberCount);
-    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<FamilyState>, I>>(base?: I): FamilyState {
-    return FamilyState.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Family>, I>>(base?: I): Family {
+    return Family.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<FamilyState>, I>>(object: I): FamilyState {
-    const message = createBaseFamilyState();
-    message.characterId = object.characterId ?? 0;
-    message.seniorId = object.seniorId ?? 0;
-    message.juniors = object.juniors?.map((e) => e) || [];
-    message.leaderId = object.leaderId ?? 0;
-    message.leaderName = object.leaderName ?? "";
-    message.notice = object.notice ?? "";
-    message.reputation = object.reputation ?? 0;
-    message.totalReputation = object.totalReputation ?? 0;
-    message.usedFeatures = object.usedFeatures?.map((e) => e) || [];
+  fromPartial<I extends Exact<DeepPartial<Family>, I>>(object: I): Family {
+    const message = createBaseFamily();
+    message.leaderId = object.leaderId ?? undefined;
+    message.precept = object.precept ?? "";
     message.members = object.members?.map((e) => FamilyMember.fromPartial(e)) || [];
-    message.buffUntil = object.buffUntil ?? "0";
-    message.buffFeature = object.buffFeature ?? 0;
-    message.memberCount = object.memberCount ?? 0;
-    return message;
-  },
-};
-
-function createBaseFamilyRequest(): FamilyRequest {
-  return {
-    worldId: 0,
-    characterId: 0,
-    channelId: 0,
-    action: 0,
-    targetId: 0,
-    name: "",
-    feature: 0,
-    accepted: false,
-    level: 0,
-    classId: 0,
-    targetLevel: 0,
-    mapName: "",
-    operationId: "",
-  };
-}
-
-export const FamilyRequest: MessageFns<FamilyRequest> = {
-  encode(message: FamilyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.worldId !== 0) {
-      writer.uint32(8).uint32(message.worldId);
-    }
-    if (message.characterId !== 0) {
-      writer.uint32(16).uint32(message.characterId);
-    }
-    if (message.channelId !== 0) {
-      writer.uint32(24).uint32(message.channelId);
-    }
-    if (message.action !== 0) {
-      writer.uint32(32).int32(message.action);
-    }
-    if (message.targetId !== 0) {
-      writer.uint32(40).uint32(message.targetId);
-    }
-    if (message.name !== "") {
-      writer.uint32(50).string(message.name);
-    }
-    if (message.feature !== 0) {
-      writer.uint32(56).int32(message.feature);
-    }
-    if (message.accepted !== false) {
-      writer.uint32(64).bool(message.accepted);
-    }
-    if (message.level !== 0) {
-      writer.uint32(72).uint32(message.level);
-    }
-    if (message.classId !== 0) {
-      writer.uint32(80).uint32(message.classId);
-    }
-    if (message.targetLevel !== 0) {
-      writer.uint32(88).uint32(message.targetLevel);
-    }
-    if (message.mapName !== "") {
-      writer.uint32(98).string(message.mapName);
-    }
-    if (message.operationId !== "") {
-      writer.uint32(106).string(message.operationId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): FamilyRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFamilyRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.worldId = reader.uint32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.characterId = reader.uint32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.channelId = reader.uint32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.action = reader.int32() as any;
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.targetId = reader.uint32();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 7: {
-          if (tag !== 56) {
-            break;
-          }
-
-          message.feature = reader.int32() as any;
-          continue;
-        }
-        case 8: {
-          if (tag !== 64) {
-            break;
-          }
-
-          message.accepted = reader.bool();
-          continue;
-        }
-        case 9: {
-          if (tag !== 72) {
-            break;
-          }
-
-          message.level = reader.uint32();
-          continue;
-        }
-        case 10: {
-          if (tag !== 80) {
-            break;
-          }
-
-          message.classId = reader.uint32();
-          continue;
-        }
-        case 11: {
-          if (tag !== 88) {
-            break;
-          }
-
-          message.targetLevel = reader.uint32();
-          continue;
-        }
-        case 12: {
-          if (tag !== 98) {
-            break;
-          }
-
-          message.mapName = reader.string();
-          continue;
-        }
-        case 13: {
-          if (tag !== 106) {
-            break;
-          }
-
-          message.operationId = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): FamilyRequest {
-    return {
-      worldId: isSet(object.worldId)
-        ? globalThis.Number(object.worldId)
-        : isSet(object.world_id)
-        ? globalThis.Number(object.world_id)
-        : 0,
-      characterId: isSet(object.characterId)
-        ? globalThis.Number(object.characterId)
-        : isSet(object.character_id)
-        ? globalThis.Number(object.character_id)
-        : 0,
-      channelId: isSet(object.channelId)
-        ? globalThis.Number(object.channelId)
-        : isSet(object.channel_id)
-        ? globalThis.Number(object.channel_id)
-        : 0,
-      action: isSet(object.action) ? familyActionFromJSON(object.action) : 0,
-      targetId: isSet(object.targetId)
-        ? globalThis.Number(object.targetId)
-        : isSet(object.target_id)
-        ? globalThis.Number(object.target_id)
-        : 0,
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      feature: isSet(object.feature) ? familyFeatureFromJSON(object.feature) : 0,
-      accepted: isSet(object.accepted) ? globalThis.Boolean(object.accepted) : false,
-      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
-      classId: isSet(object.classId)
-        ? globalThis.Number(object.classId)
-        : isSet(object.class_id)
-        ? globalThis.Number(object.class_id)
-        : 0,
-      targetLevel: isSet(object.targetLevel)
-        ? globalThis.Number(object.targetLevel)
-        : isSet(object.target_level)
-        ? globalThis.Number(object.target_level)
-        : 0,
-      mapName: isSet(object.mapName)
-        ? globalThis.String(object.mapName)
-        : isSet(object.map_name)
-        ? globalThis.String(object.map_name)
-        : "",
-      operationId: isSet(object.operationId)
-        ? globalThis.String(object.operationId)
-        : isSet(object.operation_id)
-        ? globalThis.String(object.operation_id)
-        : "",
-    };
-  },
-
-  toJSON(message: FamilyRequest): unknown {
-    const obj: any = {};
-    if (message.worldId !== 0) {
-      obj.worldId = Math.round(message.worldId);
-    }
-    if (message.characterId !== 0) {
-      obj.characterId = Math.round(message.characterId);
-    }
-    if (message.channelId !== 0) {
-      obj.channelId = Math.round(message.channelId);
-    }
-    if (message.action !== 0) {
-      obj.action = familyActionToJSON(message.action);
-    }
-    if (message.targetId !== 0) {
-      obj.targetId = Math.round(message.targetId);
-    }
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.feature !== 0) {
-      obj.feature = familyFeatureToJSON(message.feature);
-    }
-    if (message.accepted !== false) {
-      obj.accepted = message.accepted;
-    }
-    if (message.level !== 0) {
-      obj.level = Math.round(message.level);
-    }
-    if (message.classId !== 0) {
-      obj.classId = Math.round(message.classId);
-    }
-    if (message.targetLevel !== 0) {
-      obj.targetLevel = Math.round(message.targetLevel);
-    }
-    if (message.mapName !== "") {
-      obj.mapName = message.mapName;
-    }
-    if (message.operationId !== "") {
-      obj.operationId = message.operationId;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<FamilyRequest>, I>>(base?: I): FamilyRequest {
-    return FamilyRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<FamilyRequest>, I>>(object: I): FamilyRequest {
-    const message = createBaseFamilyRequest();
-    message.worldId = object.worldId ?? 0;
-    message.characterId = object.characterId ?? 0;
-    message.channelId = object.channelId ?? 0;
-    message.action = object.action ?? 0;
-    message.targetId = object.targetId ?? 0;
-    message.name = object.name ?? "";
-    message.feature = object.feature ?? 0;
-    message.accepted = object.accepted ?? false;
-    message.level = object.level ?? 0;
-    message.classId = object.classId ?? 0;
-    message.targetLevel = object.targetLevel ?? 0;
-    message.mapName = object.mapName ?? "";
-    message.operationId = object.operationId ?? "";
     return message;
   },
 };
 
 function createBaseFamilyReply(): FamilyReply {
-  return { status: 0, family: undefined, targetId: 0, targetName: "", accepted: false };
+  return { status: 0, family: undefined };
 }
 
 export const FamilyReply: MessageFns<FamilyReply> = {
@@ -36898,16 +36311,7 @@ export const FamilyReply: MessageFns<FamilyReply> = {
       writer.uint32(8).int32(message.status);
     }
     if (message.family !== undefined) {
-      FamilyState.encode(message.family, writer.uint32(18).fork()).join();
-    }
-    if (message.targetId !== 0) {
-      writer.uint32(24).uint32(message.targetId);
-    }
-    if (message.targetName !== "") {
-      writer.uint32(34).string(message.targetName);
-    }
-    if (message.accepted !== false) {
-      writer.uint32(40).bool(message.accepted);
+      Family.encode(message.family, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -36932,31 +36336,7 @@ export const FamilyReply: MessageFns<FamilyReply> = {
             break;
           }
 
-          message.family = FamilyState.decode(reader, reader.uint32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.targetId = reader.uint32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.targetName = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.accepted = reader.bool();
+          message.family = Family.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -36971,18 +36351,7 @@ export const FamilyReply: MessageFns<FamilyReply> = {
   fromJSON(object: any): FamilyReply {
     return {
       status: isSet(object.status) ? familyResultFromJSON(object.status) : 0,
-      family: isSet(object.family) ? FamilyState.fromJSON(object.family) : undefined,
-      targetId: isSet(object.targetId)
-        ? globalThis.Number(object.targetId)
-        : isSet(object.target_id)
-        ? globalThis.Number(object.target_id)
-        : 0,
-      targetName: isSet(object.targetName)
-        ? globalThis.String(object.targetName)
-        : isSet(object.target_name)
-        ? globalThis.String(object.target_name)
-        : "",
-      accepted: isSet(object.accepted) ? globalThis.Boolean(object.accepted) : false,
+      family: isSet(object.family) ? Family.fromJSON(object.family) : undefined,
     };
   },
 
@@ -36992,16 +36361,7 @@ export const FamilyReply: MessageFns<FamilyReply> = {
       obj.status = familyResultToJSON(message.status);
     }
     if (message.family !== undefined) {
-      obj.family = FamilyState.toJSON(message.family);
-    }
-    if (message.targetId !== 0) {
-      obj.targetId = Math.round(message.targetId);
-    }
-    if (message.targetName !== "") {
-      obj.targetName = message.targetName;
-    }
-    if (message.accepted !== false) {
-      obj.accepted = message.accepted;
+      obj.family = Family.toJSON(message.family);
     }
     return obj;
   },
@@ -37013,11 +36373,750 @@ export const FamilyReply: MessageFns<FamilyReply> = {
     const message = createBaseFamilyReply();
     message.status = object.status ?? 0;
     message.family = (object.family !== undefined && object.family !== null)
-      ? FamilyState.fromPartial(object.family)
+      ? Family.fromPartial(object.family)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseGetFamilyRequest(): GetFamilyRequest {
+  return { worldId: 0, name: "" };
+}
+
+export const GetFamilyRequest: MessageFns<GetFamilyRequest> = {
+  encode(message: GetFamilyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetFamilyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetFamilyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetFamilyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+    };
+  },
+
+  toJSON(message: GetFamilyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetFamilyRequest>, I>>(base?: I): GetFamilyRequest {
+    return GetFamilyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetFamilyRequest>, I>>(object: I): GetFamilyRequest {
+    const message = createBaseGetFamilyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseGetFamilyReply(): GetFamilyReply {
+  return { found: false, characterId: 0, family: undefined };
+}
+
+export const GetFamilyReply: MessageFns<GetFamilyReply> = {
+  encode(message: GetFamilyReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.found !== false) {
+      writer.uint32(8).bool(message.found);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.family !== undefined) {
+      Family.encode(message.family, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetFamilyReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetFamilyReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.found = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.family = Family.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetFamilyReply {
+    return {
+      found: isSet(object.found) ? globalThis.Boolean(object.found) : false,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      family: isSet(object.family) ? Family.fromJSON(object.family) : undefined,
+    };
+  },
+
+  toJSON(message: GetFamilyReply): unknown {
+    const obj: any = {};
+    if (message.found !== false) {
+      obj.found = message.found;
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.family !== undefined) {
+      obj.family = Family.toJSON(message.family);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetFamilyReply>, I>>(base?: I): GetFamilyReply {
+    return GetFamilyReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetFamilyReply>, I>>(object: I): GetFamilyReply {
+    const message = createBaseGetFamilyReply();
+    message.found = object.found ?? false;
+    message.characterId = object.characterId ?? 0;
+    message.family = (object.family !== undefined && object.family !== null)
+      ? Family.fromPartial(object.family)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseJoinFamilyRequest(): JoinFamilyRequest {
+  return { worldId: 0, senior: undefined, junior: undefined };
+}
+
+export const JoinFamilyRequest: MessageFns<JoinFamilyRequest> = {
+  encode(message: JoinFamilyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.senior !== undefined) {
+      FamilyMember.encode(message.senior, writer.uint32(18).fork()).join();
+    }
+    if (message.junior !== undefined) {
+      FamilyMember.encode(message.junior, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): JoinFamilyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseJoinFamilyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.senior = FamilyMember.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.junior = FamilyMember.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): JoinFamilyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      senior: isSet(object.senior) ? FamilyMember.fromJSON(object.senior) : undefined,
+      junior: isSet(object.junior) ? FamilyMember.fromJSON(object.junior) : undefined,
+    };
+  },
+
+  toJSON(message: JoinFamilyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.senior !== undefined) {
+      obj.senior = FamilyMember.toJSON(message.senior);
+    }
+    if (message.junior !== undefined) {
+      obj.junior = FamilyMember.toJSON(message.junior);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<JoinFamilyRequest>, I>>(base?: I): JoinFamilyRequest {
+    return JoinFamilyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<JoinFamilyRequest>, I>>(object: I): JoinFamilyRequest {
+    const message = createBaseJoinFamilyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.senior = (object.senior !== undefined && object.senior !== null)
+      ? FamilyMember.fromPartial(object.senior)
+      : undefined;
+    message.junior = (object.junior !== undefined && object.junior !== null)
+      ? FamilyMember.fromPartial(object.junior)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSeparateFamilyRequest(): SeparateFamilyRequest {
+  return { worldId: 0, characterId: 0, juniorId: 0 };
+}
+
+export const SeparateFamilyRequest: MessageFns<SeparateFamilyRequest> = {
+  encode(message: SeparateFamilyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.juniorId !== 0) {
+      writer.uint32(24).uint32(message.juniorId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SeparateFamilyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSeparateFamilyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.juniorId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SeparateFamilyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      juniorId: isSet(object.juniorId)
+        ? globalThis.Number(object.juniorId)
+        : isSet(object.junior_id)
+        ? globalThis.Number(object.junior_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: SeparateFamilyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.juniorId !== 0) {
+      obj.juniorId = Math.round(message.juniorId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SeparateFamilyRequest>, I>>(base?: I): SeparateFamilyRequest {
+    return SeparateFamilyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SeparateFamilyRequest>, I>>(object: I): SeparateFamilyRequest {
+    const message = createBaseSeparateFamilyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.juniorId = object.juniorId ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetFamilyPreceptRequest(): SetFamilyPreceptRequest {
+  return { worldId: 0, characterId: 0, precept: "" };
+}
+
+export const SetFamilyPreceptRequest: MessageFns<SetFamilyPreceptRequest> = {
+  encode(message: SetFamilyPreceptRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.precept !== "") {
+      writer.uint32(26).string(message.precept);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetFamilyPreceptRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetFamilyPreceptRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.precept = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetFamilyPreceptRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      precept: isSet(object.precept) ? globalThis.String(object.precept) : "",
+    };
+  },
+
+  toJSON(message: SetFamilyPreceptRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.precept !== "") {
+      obj.precept = message.precept;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetFamilyPreceptRequest>, I>>(base?: I): SetFamilyPreceptRequest {
+    return SetFamilyPreceptRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetFamilyPreceptRequest>, I>>(object: I): SetFamilyPreceptRequest {
+    const message = createBaseSetFamilyPreceptRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.precept = object.precept ?? "";
+    return message;
+  },
+};
+
+function createBaseUseFamilyFeatureRequest(): UseFamilyFeatureRequest {
+  return { worldId: 0, characterId: 0, feature: 0, targetId: 0, requestId: "0" };
+}
+
+export const UseFamilyFeatureRequest: MessageFns<UseFamilyFeatureRequest> = {
+  encode(message: UseFamilyFeatureRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.feature !== 0) {
+      writer.uint32(24).int32(message.feature);
+    }
+    if (message.targetId !== 0) {
+      writer.uint32(32).uint32(message.targetId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(40).uint64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UseFamilyFeatureRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUseFamilyFeatureRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.feature = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.targetId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UseFamilyFeatureRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      feature: isSet(object.feature) ? familyFeatureFromJSON(object.feature) : 0,
+      targetId: isSet(object.targetId)
+        ? globalThis.Number(object.targetId)
+        : isSet(object.target_id)
+        ? globalThis.Number(object.target_id)
+        : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+    };
+  },
+
+  toJSON(message: UseFamilyFeatureRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.feature !== 0) {
+      obj.feature = familyFeatureToJSON(message.feature);
+    }
+    if (message.targetId !== 0) {
+      obj.targetId = Math.round(message.targetId);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UseFamilyFeatureRequest>, I>>(base?: I): UseFamilyFeatureRequest {
+    return UseFamilyFeatureRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UseFamilyFeatureRequest>, I>>(object: I): UseFamilyFeatureRequest {
+    const message = createBaseUseFamilyFeatureRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.feature = object.feature ?? 0;
     message.targetId = object.targetId ?? 0;
-    message.targetName = object.targetName ?? "";
-    message.accepted = object.accepted ?? false;
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseFinishFamilyMoveRequest(): FinishFamilyMoveRequest {
+  return { worldId: 0, characterId: 0, requestId: "0", complete: false };
+}
+
+export const FinishFamilyMoveRequest: MessageFns<FinishFamilyMoveRequest> = {
+  encode(message: FinishFamilyMoveRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(24).uint64(message.requestId);
+    }
+    if (message.complete !== false) {
+      writer.uint32(32).bool(message.complete);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FinishFamilyMoveRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFinishFamilyMoveRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.complete = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FinishFamilyMoveRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+      complete: isSet(object.complete) ? globalThis.Boolean(object.complete) : false,
+    };
+  },
+
+  toJSON(message: FinishFamilyMoveRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
+    if (message.complete !== false) {
+      obj.complete = message.complete;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FinishFamilyMoveRequest>, I>>(base?: I): FinishFamilyMoveRequest {
+    return FinishFamilyMoveRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FinishFamilyMoveRequest>, I>>(object: I): FinishFamilyMoveRequest {
+    const message = createBaseFinishFamilyMoveRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.requestId = object.requestId ?? "0";
+    message.complete = object.complete ?? false;
     return message;
   },
 };
@@ -38454,12 +38553,61 @@ export const InternalService = {
     responseSerialize: (value: NotesReply): Buffer => Buffer.from(NotesReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): NotesReply => NotesReply.decode(value),
   },
-  family: {
-    path: "/fm.internal.Internal/Family" as const,
+  getFamily: {
+    path: "/fm.internal.Internal/GetFamily" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: FamilyRequest): Buffer => Buffer.from(FamilyRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): FamilyRequest => FamilyRequest.decode(value),
+    requestSerialize: (value: GetFamilyRequest): Buffer => Buffer.from(GetFamilyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetFamilyRequest => GetFamilyRequest.decode(value),
+    responseSerialize: (value: GetFamilyReply): Buffer => Buffer.from(GetFamilyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetFamilyReply => GetFamilyReply.decode(value),
+  },
+  joinFamily: {
+    path: "/fm.internal.Internal/JoinFamily" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: JoinFamilyRequest): Buffer => Buffer.from(JoinFamilyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): JoinFamilyRequest => JoinFamilyRequest.decode(value),
+    responseSerialize: (value: FamilyReply): Buffer => Buffer.from(FamilyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FamilyReply => FamilyReply.decode(value),
+  },
+  separateFamily: {
+    path: "/fm.internal.Internal/SeparateFamily" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SeparateFamilyRequest): Buffer =>
+      Buffer.from(SeparateFamilyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SeparateFamilyRequest => SeparateFamilyRequest.decode(value),
+    responseSerialize: (value: FamilyReply): Buffer => Buffer.from(FamilyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FamilyReply => FamilyReply.decode(value),
+  },
+  setFamilyPrecept: {
+    path: "/fm.internal.Internal/SetFamilyPrecept" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetFamilyPreceptRequest): Buffer =>
+      Buffer.from(SetFamilyPreceptRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetFamilyPreceptRequest => SetFamilyPreceptRequest.decode(value),
+    responseSerialize: (value: FamilyReply): Buffer => Buffer.from(FamilyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FamilyReply => FamilyReply.decode(value),
+  },
+  useFamilyFeature: {
+    path: "/fm.internal.Internal/UseFamilyFeature" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: UseFamilyFeatureRequest): Buffer =>
+      Buffer.from(UseFamilyFeatureRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): UseFamilyFeatureRequest => UseFamilyFeatureRequest.decode(value),
+    responseSerialize: (value: FamilyReply): Buffer => Buffer.from(FamilyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FamilyReply => FamilyReply.decode(value),
+  },
+  finishFamilyMove: {
+    path: "/fm.internal.Internal/FinishFamilyMove" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FinishFamilyMoveRequest): Buffer =>
+      Buffer.from(FinishFamilyMoveRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FinishFamilyMoveRequest => FinishFamilyMoveRequest.decode(value),
     responseSerialize: (value: FamilyReply): Buffer => Buffer.from(FamilyReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): FamilyReply => FamilyReply.decode(value),
   },
@@ -39593,7 +39741,12 @@ export interface InternalServer extends UntypedServiceImplementation {
   completeWhisper: handleUnaryCall<CompleteWhisperRequest, CompleteWhisperReply>;
   messenger: handleUnaryCall<MessengerRequest, MessengerReply>;
   notes: handleUnaryCall<NotesRequest, NotesReply>;
-  family: handleUnaryCall<FamilyRequest, FamilyReply>;
+  getFamily: handleUnaryCall<GetFamilyRequest, GetFamilyReply>;
+  joinFamily: handleUnaryCall<JoinFamilyRequest, FamilyReply>;
+  separateFamily: handleUnaryCall<SeparateFamilyRequest, FamilyReply>;
+  setFamilyPrecept: handleUnaryCall<SetFamilyPreceptRequest, FamilyReply>;
+  useFamilyFeature: handleUnaryCall<UseFamilyFeatureRequest, FamilyReply>;
+  finishFamilyMove: handleUnaryCall<FinishFamilyMoveRequest, FamilyReply>;
   ping: handleUnaryCall<PingRequest, PingReply>;
   getGameChannelStatus: handleUnaryCall<GetGameChannelStatusRequest, GetGameChannelStatusReply>;
   getServerCatalog: handleUnaryCall<GetServerCatalogRequest, GetServerCatalogReply>;
@@ -39781,17 +39934,92 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: NotesReply) => void,
   ): ClientUnaryCall;
-  family(
-    request: FamilyRequest,
+  getFamily(
+    request: GetFamilyRequest,
+    callback: (error: ServiceError | null, response: GetFamilyReply) => void,
+  ): ClientUnaryCall;
+  getFamily(
+    request: GetFamilyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetFamilyReply) => void,
+  ): ClientUnaryCall;
+  getFamily(
+    request: GetFamilyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetFamilyReply) => void,
+  ): ClientUnaryCall;
+  joinFamily(
+    request: JoinFamilyRequest,
     callback: (error: ServiceError | null, response: FamilyReply) => void,
   ): ClientUnaryCall;
-  family(
-    request: FamilyRequest,
+  joinFamily(
+    request: JoinFamilyRequest,
     metadata: Metadata,
     callback: (error: ServiceError | null, response: FamilyReply) => void,
   ): ClientUnaryCall;
-  family(
-    request: FamilyRequest,
+  joinFamily(
+    request: JoinFamilyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  separateFamily(
+    request: SeparateFamilyRequest,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  separateFamily(
+    request: SeparateFamilyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  separateFamily(
+    request: SeparateFamilyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  setFamilyPrecept(
+    request: SetFamilyPreceptRequest,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  setFamilyPrecept(
+    request: SetFamilyPreceptRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  setFamilyPrecept(
+    request: SetFamilyPreceptRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  useFamilyFeature(
+    request: UseFamilyFeatureRequest,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  useFamilyFeature(
+    request: UseFamilyFeatureRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  useFamilyFeature(
+    request: UseFamilyFeatureRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  finishFamilyMove(
+    request: FinishFamilyMoveRequest,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  finishFamilyMove(
+    request: FinishFamilyMoveRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  finishFamilyMove(
+    request: FinishFamilyMoveRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: FamilyReply) => void,

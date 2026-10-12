@@ -26,9 +26,7 @@ type Whisper struct {
 
 func (ch *Character) SocialLogin(notes []*internal.Note) {
 	ch.Listener.OnFamilyPrivileges(ch)
-	if ch.Family.State != nil {
-		ch.Listener.OnFamilyChanged(ch)
-	}
+	ch.Listener.OnFamilyChanged(ch)
 
 	ch.Notes = notes
 	if len(notes) > 0 {

@@ -147,11 +147,7 @@ type DeliverMessenger struct {
 
 type DeliverFamily struct {
 	CharacterID uint32
-	Event       internal.FamilyEvent
-	SenderID    uint32
-	Name        string
-	MapName     string
-	Accepted    bool
+	Family      *internal.Family
 }
 
 type DeliverNoteArrived struct {

@@ -2,10 +2,12 @@ package server
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type familyMq struct{ gs *GameServer }
@@ -18,28 +20,26 @@ func (*familyMq) EventType() string {
 	return "family"
 }
 
+// Every member on this server shares the decoded family, so no one modifies it.
 func (h *familyMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	var payload struct {
-		CharacterID uint32               `json:"character_id"`
-		Event       internal.FamilyEvent `json:"event"`
-		SenderID    uint32               `json:"sender_id"`
-		Name        string               `json:"name"`
-		MapName     string               `json:"map_name"`
-		Accepted    bool                 `json:"accepted"`
+		CharacterIDs []uint32        `json:"character_ids"`
+		Family       json.RawMessage `json:"family"`
 	}
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil
 	}
-	if payload.CharacterID == 0 {
+	family := &internal.Family{}
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(payload.Family, family); err != nil {
+		log.Printf("familyMq: %v", err)
 		return nil
 	}
-	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverFamily{
-		CharacterID: payload.CharacterID,
-		Event:       payload.Event,
-		SenderID:    payload.SenderID,
-		Name:        payload.Name,
-		MapName:     payload.MapName,
-		Accepted:    payload.Accepted,
-	})
+
+	for _, id := range payload.CharacterIDs {
+		h.gs.Deliver(nil, id, &g_actor.DeliverFamily{
+			CharacterID: id,
+			Family:      family,
+		})
+	}
 	return nil
 }

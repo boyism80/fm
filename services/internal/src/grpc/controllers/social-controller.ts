@@ -2,11 +2,17 @@ import type {
     CompleteWhisperReply,
     CompleteWhisperRequest,
     FamilyReply,
-    FamilyRequest,
+    FinishFamilyMoveRequest,
+    GetFamilyReply,
+    GetFamilyRequest,
+    JoinFamilyRequest,
     MessengerReply,
     MessengerRequest,
     NotesReply,
     NotesRequest,
+    SeparateFamilyRequest,
+    SetFamilyPreceptRequest,
+    UseFamilyFeatureRequest,
     WhisperReply,
     WhisperRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
@@ -63,10 +69,55 @@ export class SocialGrpcController {
         }
     }
 
-    @Method("family")
-    async family(call: GrpcCall<FamilyRequest>, callback: GrpcCallback<FamilyReply>) {
+    @Method("getFamily")
+    async getFamily(call: GrpcCall<GetFamilyRequest>, callback: GrpcCallback<GetFamilyReply>) {
         try {
-            callback(null, await this.familyService.family(call.request));
+            callback(null, await this.familyService.get(call.request));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("joinFamily")
+    async joinFamily(call: GrpcCall<JoinFamilyRequest>, callback: GrpcCallback<FamilyReply>) {
+        try {
+            callback(null, await this.familyService.join(call.request));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("separateFamily")
+    async separateFamily(call: GrpcCall<SeparateFamilyRequest>, callback: GrpcCallback<FamilyReply>) {
+        try {
+            callback(null, await this.familyService.separate(call.request));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("setFamilyPrecept")
+    async setFamilyPrecept(call: GrpcCall<SetFamilyPreceptRequest>, callback: GrpcCallback<FamilyReply>) {
+        try {
+            callback(null, await this.familyService.setPrecept(call.request));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("useFamilyFeature")
+    async useFamilyFeature(call: GrpcCall<UseFamilyFeatureRequest>, callback: GrpcCallback<FamilyReply>) {
+        try {
+            callback(null, await this.familyService.use(call.request));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("finishFamilyMove")
+    async finishFamilyMove(call: GrpcCall<FinishFamilyMoveRequest>, callback: GrpcCallback<FamilyReply>) {
+        try {
+            callback(null, await this.familyService.finishMove(call.request));
         } catch (err) {
             this.grpcError(err, callback);
         }

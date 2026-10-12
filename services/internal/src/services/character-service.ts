@@ -242,14 +242,7 @@ export class CharacterService {
     async getCharacter(worldId: number, characterId: number): Promise<CharacterRowModel | null> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
-        const row = await this.repo.get(worldId, characterId);
-        if (!row) {
-            return null;
-        }
-
-        const character = { ...row };
-        await this.familyService.progress(worldId, character);
-        return character as CharacterRowModel;
+        return (await this.repo.get(worldId, characterId)) as CharacterRowModel | null;
     }
 
     async getKeyLayoutBindings(worldId: number, characterId: number) {

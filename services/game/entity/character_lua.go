@@ -3322,15 +3322,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			state := ch.Family.State
+			self := ch.Family.Self()
 			table := L.NewTable()
-			if state != nil {
-				table.RawSetString("leader", lua.LNumber(state.LeaderId))
-				table.RawSetString("senior", lua.LNumber(state.SeniorId))
-				table.RawSetString("juniors", lua.LNumber(len(state.Juniors)))
-				table.RawSetString("reputation", lua.LNumber(state.Reputation))
-				table.RawSetString("total_reputation", lua.LNumber(state.TotalReputation))
-			}
+			table.RawSetString("leader", lua.LNumber(ch.Family.Tree.Leader().GetCharacterId()))
+			table.RawSetString("senior", lua.LNumber(self.GetSeniorId()))
+			table.RawSetString("juniors", lua.LNumber(len(ch.Family.Tree.Juniors(ch.GetID()))))
+			table.RawSetString("reputation", lua.LNumber(self.GetReputation()))
+			table.RawSetString("total_reputation", lua.LNumber(self.GetTotalReputation()))
 			L.Push(table)
 			return 1
 		},

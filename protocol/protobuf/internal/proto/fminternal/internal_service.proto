@@ -10,7 +10,12 @@ service Internal {
   rpc CompleteWhisper (CompleteWhisperRequest) returns (CompleteWhisperReply);
   rpc Messenger (MessengerRequest) returns (MessengerReply);
   rpc Notes (NotesRequest) returns (NotesReply);
-  rpc Family (FamilyRequest) returns (FamilyReply);
+  rpc GetFamily (GetFamilyRequest) returns (GetFamilyReply);
+  rpc JoinFamily (JoinFamilyRequest) returns (FamilyReply);
+  rpc SeparateFamily (SeparateFamilyRequest) returns (FamilyReply);
+  rpc SetFamilyPrecept (SetFamilyPreceptRequest) returns (FamilyReply);
+  rpc UseFamilyFeature (UseFamilyFeatureRequest) returns (FamilyReply);
+  rpc FinishFamilyMove (FinishFamilyMoveRequest) returns (FamilyReply);
   rpc Ping (PingRequest) returns (PingReply);
   rpc GetGameChannelStatus (GetGameChannelStatusRequest) returns (GetGameChannelStatusReply);
   rpc GetServerCatalog (GetServerCatalogRequest) returns (GetServerCatalogReply);
@@ -724,7 +729,7 @@ message EnterGameReply {
   repeated MonsterBookCard monster_book = 17;
   repeated Record records = 18;
   Mount mount = 19;
-  FamilyState family = 20;
+  Family family = 20;
   repeated Note notes = 21;
   Account account = 22;
   repeated SkillMacro skill_macros = 23;
@@ -2159,21 +2164,6 @@ message WriteOperationLogReply {
   bool ok = 1;
 }
 
-enum FamilyAction {
-  FAMILY_ACTION_NONE = 0;
-  FAMILY_ACTION_PEDIGREE = 1;
-  FAMILY_ACTION_OPEN = 2;
-  FAMILY_ACTION_INVITE = 3;
-  FAMILY_ACTION_REMOVE_JUNIOR = 4;
-  FAMILY_ACTION_REMOVE_SENIOR = 5;
-  FAMILY_ACTION_ACCEPT = 6;
-  FAMILY_ACTION_USE = 7;
-  FAMILY_ACTION_PRECEPT = 8;
-  FAMILY_ACTION_SUMMON = 9;
-  FAMILY_ACTION_REFUND = 10;
-  FAMILY_ACTION_MOVE_COMPLETE = 11;
-}
-
 enum FamilyFeature {
   FAMILY_FEATURE_TELEPORT = 0;
   FAMILY_FEATURE_SUMMON = 1;
@@ -2202,14 +2192,6 @@ enum FamilyResult {
   FAMILY_RESULT_SUMMON_FAILED = 12;
 }
 
-enum FamilyEvent {
-  FAMILY_EVENT_REFRESH = 0;
-  FAMILY_EVENT_INVITE = 1;
-  FAMILY_EVENT_INVITE_RESULT = 2;
-  FAMILY_EVENT_SUMMON = 3;
-  FAMILY_EVENT_JOINED = 4;
-}
-
 message FamilyMember {
   uint32 character_id = 1;
   uint32 senior_id = 2;
@@ -2218,45 +2200,64 @@ message FamilyMember {
   uint32 class_id = 5;
   uint32 reputation = 6;
   uint32 total_reputation = 7;
+  // -1 while offline.
   int32 channel_id = 8;
-  uint32 descendants = 9;
+  int64 buff_until = 9 [jstype = JS_STRING];
+  FamilyFeature buff_feature = 10;
+  // Uses of the current day in Korea time.
+  repeated FamilyFeature used_features = 11;
 }
-message FamilyState {
-  uint32 character_id = 1;
-  uint32 senior_id = 2;
-  repeated uint32 juniors = 3;
-  uint32 leader_id = 4;
-  string leader_name = 5;
-  string notice = 6;
-  uint32 reputation = 7;
-  uint32 total_reputation = 8;
-  repeated FamilyFeature used_features = 9;
-  repeated FamilyMember members = 10;
-  int64 buff_until = 11 [jstype = JS_STRING];
-  FamilyFeature buff_feature = 12;
-  uint32 member_count = 13;
-}
-message FamilyRequest {
-  uint32 world_id = 1;
-  uint32 character_id = 2;
-  uint32 channel_id = 3;
-  FamilyAction action = 4;
-  uint32 target_id = 5;
-  string name = 6;
-  FamilyFeature feature = 7;
-  bool accepted = 8;
-  uint32 level = 9;
-  uint32 class_id = 10;
-  uint32 target_level = 11;
-  string map_name = 12;
-  string operation_id = 13;
+// The whole family. A character outside any family is its only member, with no leader_id.
+message Family {
+  optional uint32 leader_id = 1;
+  string precept = 2;
+  repeated FamilyMember members = 3;
 }
 message FamilyReply {
   FamilyResult status = 1;
-  FamilyState family = 2;
-  uint32 target_id = 3;
-  string target_name = 4;
-  bool accepted = 5;
+  // The requester's family after the change.
+  Family family = 2;
+}
+message GetFamilyRequest {
+  uint32 world_id = 1;
+  string name = 2;
+}
+message GetFamilyReply {
+  bool found = 1;
+  uint32 character_id = 2;
+  Family family = 3;
+}
+// Levels are the live ones; only the identity fields are read.
+message JoinFamilyRequest {
+  uint32 world_id = 1;
+  FamilyMember senior = 2;
+  FamilyMember junior = 3;
+}
+// character_id is either the junior's senior or the junior itself.
+message SeparateFamilyRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 junior_id = 3;
+}
+message SetFamilyPreceptRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  string precept = 3;
+}
+// Teleport and summon move character_id to or from target_id. The summoner,
+// target_id, pays for a summon; character_id pays for everything else.
+message UseFamilyFeatureRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  FamilyFeature feature = 3;
+  uint32 target_id = 4;
+  uint64 request_id = 5 [jstype = JS_STRING];
+}
+message FinishFamilyMoveRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint64 request_id = 3 [jstype = JS_STRING];
+  bool complete = 4;
 }
 
 // Values are the client's whisper packet modes.

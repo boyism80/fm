@@ -292,9 +292,13 @@ type CharacterListener interface {
 	OnNoteArrived(ch *Character)
 	OnFamilyPrivileges(ch *Character)
 	OnFamilyChanged(ch *Character)
-	LoadFamilyAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FamilyReply]
+	GetFamilyAsync(ctx actor.Context, ch *Character, name string) *async.Promise[*internal.GetFamilyReply]
+	JoinFamilyAsync(ctx actor.Context, senior *Character, junior *Character) *async.Promise[*internal.FamilyReply]
+	SeparateFamilyAsync(ctx actor.Context, ch *Character, juniorID uint32) *async.Promise[*internal.FamilyReply]
+	SetFamilyPreceptAsync(ctx actor.Context, ch *Character, precept string) *async.Promise[*internal.FamilyReply]
+	UseFamilyFeatureAsync(ctx actor.Context, ch *Character, feature internal.FamilyFeature, targetID uint32, requestID uint64) *async.Promise[*internal.FamilyReply]
 	FinishFamilyMoveAsync(ctx actor.Context, ch *Character, requestID uint64, complete bool) *async.Promise[*internal.FamilyReply]
-	OnFamilyChart(ch *Character, state *internal.FamilyState)
+	OnFamilyChart(ch *Character, tree FamilyTree, characterID uint32)
 	OnFamilyResult(ch *Character, result internal.FamilyResult)
 	OnFamilyInvite(ch *Character, inviterID uint32, name string)
 	OnFamilyInviteResult(ch *Character, accepted bool, name string)

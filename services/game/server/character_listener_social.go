@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -208,14 +207,25 @@ func (l *CharacterListenerImpl) OnFamilyPrivileges(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnFamilyChanged(ch *entity.Character) {
-	ch.Send(&response.FamilyInfo{
-		State: ch.Family.State,
-	}, types.SEND_POLICY_ENCRYPT)
+	id := ch.GetID()
+	self := ch.Family.Self()
+	info := &response.FamilyInfo{
+		Reputation:      self.GetReputation(),
+		TotalReputation: self.GetTotalReputation(),
+		Juniors:         uint16(len(ch.Family.Tree.Juniors(id))),
+		Precept:         ch.Family.Tree.Precept(),
+		UsedFeatures:    self.GetUsedFeatures(),
+	}
+	if leader := ch.Family.Tree.Leader(); leader != nil {
+		info.LeaderID = leader.GetCharacterId()
+		info.LeaderName = leader.GetName()
+	}
+	ch.Send(info, types.SEND_POLICY_ENCRYPT)
 
 	remaining := ch.Family.BuffRemaining()
 	if remaining > 0 {
 		ch.Send(&response.FamilyBuff{
-			Feature:   ch.Family.State.BuffFeature,
+			Feature:   self.GetBuffFeature(),
 			ExpRate:   ch.Family.ExpRate(),
 			DropRate:  ch.Family.DropRate(),
 			Remaining: remaining,
@@ -223,44 +233,118 @@ func (l *CharacterListenerImpl) OnFamilyChanged(ch *entity.Character) {
 	}
 }
 
-func (l *CharacterListenerImpl) LoadFamilyAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.FamilyReply] {
-	req := &internal.FamilyRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		ChannelId:   l.gs.config.ChannelId,
-		Action:      internal.FamilyAction_FAMILY_ACTION_OPEN,
+func (l *CharacterListenerImpl) GetFamilyAsync(ctx actor.Context, ch *entity.Character, name string) *async.Promise[*internal.GetFamilyReply] {
+	req := &internal.GetFamilyRequest{
+		WorldId: l.gs.config.WorldId,
+		Name:    name,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.GetFamilyReply, error) {
+			return l.gs.internalClient.GetFamily(c, req)
+		},
+		nil,
+	)
+}
+
+func (l *CharacterListenerImpl) JoinFamilyAsync(ctx actor.Context, senior *entity.Character, junior *entity.Character) *async.Promise[*internal.FamilyReply] {
+	req := &internal.JoinFamilyRequest{
+		WorldId: l.gs.config.WorldId,
+		Senior: &internal.FamilyMember{
+			CharacterId: senior.GetID(),
+			Name:        senior.GetName(),
+			Level:       uint32(senior.GetLevel()),
+			ClassId:     uint32(senior.Class),
+		},
+		Junior: &internal.FamilyMember{
+			CharacterId: junior.GetID(),
+			Name:        junior.GetName(),
+			Level:       uint32(junior.GetLevel()),
+			ClassId:     uint32(junior.Class),
+		},
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.FamilyReply, error) {
-			return l.gs.internalClient.Family(c, req)
+			return l.gs.internalClient.JoinFamily(c, req)
+		},
+		nil,
+	)
+}
+
+func (l *CharacterListenerImpl) SeparateFamilyAsync(ctx actor.Context, ch *entity.Character, juniorID uint32) *async.Promise[*internal.FamilyReply] {
+	req := &internal.SeparateFamilyRequest{
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+		JuniorId:    juniorID,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.FamilyReply, error) {
+			return l.gs.internalClient.SeparateFamily(c, req)
+		},
+		nil,
+	)
+}
+
+func (l *CharacterListenerImpl) SetFamilyPreceptAsync(ctx actor.Context, ch *entity.Character, precept string) *async.Promise[*internal.FamilyReply] {
+	req := &internal.SetFamilyPreceptRequest{
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+		Precept:     precept,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.FamilyReply, error) {
+			return l.gs.internalClient.SetFamilyPrecept(c, req)
+		},
+		nil,
+	)
+}
+
+func (l *CharacterListenerImpl) UseFamilyFeatureAsync(ctx actor.Context, ch *entity.Character, feature internal.FamilyFeature, targetID uint32, requestID uint64) *async.Promise[*internal.FamilyReply] {
+	req := &internal.UseFamilyFeatureRequest{
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+		Feature:     feature,
+		TargetId:    targetID,
+		RequestId:   requestID,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.FamilyReply, error) {
+			return l.gs.internalClient.UseFamilyFeature(c, req)
 		},
 		nil,
 	)
 }
 
 func (l *CharacterListenerImpl) FinishFamilyMoveAsync(ctx actor.Context, ch *entity.Character, requestID uint64, complete bool) *async.Promise[*internal.FamilyReply] {
-	req := &internal.FamilyRequest{
-		OperationId: strconv.FormatUint(requestID, 10),
+	req := &internal.FinishFamilyMoveRequest{
 		WorldId:     l.gs.config.WorldId,
 		CharacterId: ch.GetID(),
-		ChannelId:   l.gs.config.ChannelId,
-		Action:      internal.FamilyAction_FAMILY_ACTION_REFUND,
-	}
-	if complete {
-		req.Action = internal.FamilyAction_FAMILY_ACTION_MOVE_COMPLETE
+		RequestId:   requestID,
+		Complete:    complete,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.FamilyReply, error) {
-			return l.gs.internalClient.Family(c, req)
+			return l.gs.internalClient.FinishFamilyMove(c, req)
 		},
 		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) OnFamilyChart(ch *entity.Character, state *internal.FamilyState) {
-	ch.Send(&response.FamilyChart{
-		State: state,
-	}, types.SEND_POLICY_ENCRYPT)
+func (l *CharacterListenerImpl) OnFamilyChart(ch *entity.Character, tree entity.FamilyTree, characterID uint32) {
+	chart := &response.FamilyChart{
+		CharacterID:  characterID,
+		Members:      tree.Pedigree(characterID),
+		MemberCount:  tree.Size(),
+		UsedFeatures: tree.Member(characterID).GetUsedFeatures(),
+	}
+	for _, junior := range tree.Juniors(characterID) {
+		for _, grand := range tree.Juniors(junior.GetCharacterId()) {
+			chart.GrandJuniors = append(chart.GrandJuniors, response.FamilyDescendants{
+				CharacterID: grand.GetCharacterId(),
+				Count:       tree.Descendants(grand.GetCharacterId()),
+			})
+		}
+	}
+	ch.Send(chart, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnFamilyResult(ch *entity.Character, result internal.FamilyResult) {

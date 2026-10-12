@@ -18,4 +18,6 @@ func (p *FamilySummon) Serialize(w *stream.StreamWriter) error {
 }
 
 func (p *FamilySummon) Deserialize(reader *stream.StreamReader) {
+	p.Name = reader.ReadStr16()
+	p.MapName = reader.ReadStr16()
 }

@@ -23,7 +23,12 @@ const (
 	Internal_CompleteWhisper_FullMethodName                = "/fm.internal.Internal/CompleteWhisper"
 	Internal_Messenger_FullMethodName                      = "/fm.internal.Internal/Messenger"
 	Internal_Notes_FullMethodName                          = "/fm.internal.Internal/Notes"
-	Internal_Family_FullMethodName                         = "/fm.internal.Internal/Family"
+	Internal_GetFamily_FullMethodName                      = "/fm.internal.Internal/GetFamily"
+	Internal_JoinFamily_FullMethodName                     = "/fm.internal.Internal/JoinFamily"
+	Internal_SeparateFamily_FullMethodName                 = "/fm.internal.Internal/SeparateFamily"
+	Internal_SetFamilyPrecept_FullMethodName               = "/fm.internal.Internal/SetFamilyPrecept"
+	Internal_UseFamilyFeature_FullMethodName               = "/fm.internal.Internal/UseFamilyFeature"
+	Internal_FinishFamilyMove_FullMethodName               = "/fm.internal.Internal/FinishFamilyMove"
 	Internal_Ping_FullMethodName                           = "/fm.internal.Internal/Ping"
 	Internal_GetGameChannelStatus_FullMethodName           = "/fm.internal.Internal/GetGameChannelStatus"
 	Internal_GetServerCatalog_FullMethodName               = "/fm.internal.Internal/GetServerCatalog"
@@ -143,7 +148,12 @@ type InternalClient interface {
 	CompleteWhisper(ctx context.Context, in *CompleteWhisperRequest, opts ...grpc.CallOption) (*CompleteWhisperReply, error)
 	Messenger(ctx context.Context, in *MessengerRequest, opts ...grpc.CallOption) (*MessengerReply, error)
 	Notes(ctx context.Context, in *NotesRequest, opts ...grpc.CallOption) (*NotesReply, error)
-	Family(ctx context.Context, in *FamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error)
+	GetFamily(ctx context.Context, in *GetFamilyRequest, opts ...grpc.CallOption) (*GetFamilyReply, error)
+	JoinFamily(ctx context.Context, in *JoinFamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error)
+	SeparateFamily(ctx context.Context, in *SeparateFamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error)
+	SetFamilyPrecept(ctx context.Context, in *SetFamilyPreceptRequest, opts ...grpc.CallOption) (*FamilyReply, error)
+	UseFamilyFeature(ctx context.Context, in *UseFamilyFeatureRequest, opts ...grpc.CallOption) (*FamilyReply, error)
+	FinishFamilyMove(ctx context.Context, in *FinishFamilyMoveRequest, opts ...grpc.CallOption) (*FamilyReply, error)
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error)
 	GetGameChannelStatus(ctx context.Context, in *GetGameChannelStatusRequest, opts ...grpc.CallOption) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(ctx context.Context, in *GetServerCatalogRequest, opts ...grpc.CallOption) (*GetServerCatalogReply, error)
@@ -303,10 +313,60 @@ func (c *internalClient) Notes(ctx context.Context, in *NotesRequest, opts ...gr
 	return out, nil
 }
 
-func (c *internalClient) Family(ctx context.Context, in *FamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error) {
+func (c *internalClient) GetFamily(ctx context.Context, in *GetFamilyRequest, opts ...grpc.CallOption) (*GetFamilyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFamilyReply)
+	err := c.cc.Invoke(ctx, Internal_GetFamily_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) JoinFamily(ctx context.Context, in *JoinFamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FamilyReply)
-	err := c.cc.Invoke(ctx, Internal_Family_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Internal_JoinFamily_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SeparateFamily(ctx context.Context, in *SeparateFamilyRequest, opts ...grpc.CallOption) (*FamilyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FamilyReply)
+	err := c.cc.Invoke(ctx, Internal_SeparateFamily_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SetFamilyPrecept(ctx context.Context, in *SetFamilyPreceptRequest, opts ...grpc.CallOption) (*FamilyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FamilyReply)
+	err := c.cc.Invoke(ctx, Internal_SetFamilyPrecept_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) UseFamilyFeature(ctx context.Context, in *UseFamilyFeatureRequest, opts ...grpc.CallOption) (*FamilyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FamilyReply)
+	err := c.cc.Invoke(ctx, Internal_UseFamilyFeature_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) FinishFamilyMove(ctx context.Context, in *FinishFamilyMoveRequest, opts ...grpc.CallOption) (*FamilyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FamilyReply)
+	err := c.cc.Invoke(ctx, Internal_FinishFamilyMove_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1411,7 +1471,12 @@ type InternalServer interface {
 	CompleteWhisper(context.Context, *CompleteWhisperRequest) (*CompleteWhisperReply, error)
 	Messenger(context.Context, *MessengerRequest) (*MessengerReply, error)
 	Notes(context.Context, *NotesRequest) (*NotesReply, error)
-	Family(context.Context, *FamilyRequest) (*FamilyReply, error)
+	GetFamily(context.Context, *GetFamilyRequest) (*GetFamilyReply, error)
+	JoinFamily(context.Context, *JoinFamilyRequest) (*FamilyReply, error)
+	SeparateFamily(context.Context, *SeparateFamilyRequest) (*FamilyReply, error)
+	SetFamilyPrecept(context.Context, *SetFamilyPreceptRequest) (*FamilyReply, error)
+	UseFamilyFeature(context.Context, *UseFamilyFeatureRequest) (*FamilyReply, error)
+	FinishFamilyMove(context.Context, *FinishFamilyMoveRequest) (*FamilyReply, error)
 	Ping(context.Context, *PingRequest) (*PingReply, error)
 	GetGameChannelStatus(context.Context, *GetGameChannelStatusRequest) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(context.Context, *GetServerCatalogRequest) (*GetServerCatalogReply, error)
@@ -1543,8 +1608,23 @@ func (UnimplementedInternalServer) Messenger(context.Context, *MessengerRequest)
 func (UnimplementedInternalServer) Notes(context.Context, *NotesRequest) (*NotesReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Notes not implemented")
 }
-func (UnimplementedInternalServer) Family(context.Context, *FamilyRequest) (*FamilyReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Family not implemented")
+func (UnimplementedInternalServer) GetFamily(context.Context, *GetFamilyRequest) (*GetFamilyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFamily not implemented")
+}
+func (UnimplementedInternalServer) JoinFamily(context.Context, *JoinFamilyRequest) (*FamilyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method JoinFamily not implemented")
+}
+func (UnimplementedInternalServer) SeparateFamily(context.Context, *SeparateFamilyRequest) (*FamilyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SeparateFamily not implemented")
+}
+func (UnimplementedInternalServer) SetFamilyPrecept(context.Context, *SetFamilyPreceptRequest) (*FamilyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetFamilyPrecept not implemented")
+}
+func (UnimplementedInternalServer) UseFamilyFeature(context.Context, *UseFamilyFeatureRequest) (*FamilyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UseFamilyFeature not implemented")
+}
+func (UnimplementedInternalServer) FinishFamilyMove(context.Context, *FinishFamilyMoveRequest) (*FamilyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FinishFamilyMove not implemented")
 }
 func (UnimplementedInternalServer) Ping(context.Context, *PingRequest) (*PingReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -1966,20 +2046,110 @@ func _Internal_Notes_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Internal_Family_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FamilyRequest)
+func _Internal_GetFamily_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFamilyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InternalServer).Family(ctx, in)
+		return srv.(InternalServer).GetFamily(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Internal_Family_FullMethodName,
+		FullMethod: Internal_GetFamily_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).Family(ctx, req.(*FamilyRequest))
+		return srv.(InternalServer).GetFamily(ctx, req.(*GetFamilyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_JoinFamily_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinFamilyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).JoinFamily(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_JoinFamily_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).JoinFamily(ctx, req.(*JoinFamilyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SeparateFamily_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SeparateFamilyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SeparateFamily(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SeparateFamily_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SeparateFamily(ctx, req.(*SeparateFamilyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SetFamilyPrecept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetFamilyPreceptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetFamilyPrecept(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetFamilyPrecept_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetFamilyPrecept(ctx, req.(*SetFamilyPreceptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_UseFamilyFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UseFamilyFeatureRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).UseFamilyFeature(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_UseFamilyFeature_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).UseFamilyFeature(ctx, req.(*UseFamilyFeatureRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_FinishFamilyMove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FinishFamilyMoveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).FinishFamilyMove(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_FinishFamilyMove_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).FinishFamilyMove(ctx, req.(*FinishFamilyMoveRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3970,8 +4140,28 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Internal_Notes_Handler,
 		},
 		{
-			MethodName: "Family",
-			Handler:    _Internal_Family_Handler,
+			MethodName: "GetFamily",
+			Handler:    _Internal_GetFamily_Handler,
+		},
+		{
+			MethodName: "JoinFamily",
+			Handler:    _Internal_JoinFamily_Handler,
+		},
+		{
+			MethodName: "SeparateFamily",
+			Handler:    _Internal_SeparateFamily_Handler,
+		},
+		{
+			MethodName: "SetFamilyPrecept",
+			Handler:    _Internal_SetFamilyPrecept_Handler,
+		},
+		{
+			MethodName: "UseFamilyFeature",
+			Handler:    _Internal_UseFamilyFeature_Handler,
+		},
+		{
+			MethodName: "FinishFamilyMove",
+			Handler:    _Internal_FinishFamilyMove_Handler,
 		},
 		{
 			MethodName: "Ping",

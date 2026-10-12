@@ -3,18 +3,28 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type FamilyPrecept struct {
-	familyHandler
+	gs *GameServer
 }
 
 func (FamilyPrecept) New(gs *GameServer) *FamilyPrecept {
-	return &FamilyPrecept{
-		familyHandler: familyHandler{gs: gs},
-	}
+	return &FamilyPrecept{gs: gs}
 }
 
 func (h *FamilyPrecept) Handle(ctx *core.ClientContext, req *request.FamilyPrecept) error {
-	return h.handle(ctx, &req.Family)
+	gameClient, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		return nil
+	}
+	ch := gameClient.GetCharacter()
+	if ch == nil || (req.Precept != "" && !entity.ClientText(req.Precept).Valid(200)) {
+		return nil
+	}
+
+	ch.Family.SetPrecept(ctx.ActorContext, req.Precept)
+	return nil
 }

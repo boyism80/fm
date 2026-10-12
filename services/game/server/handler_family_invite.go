@@ -3,18 +3,28 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type FamilyInvite struct {
-	familyHandler
+	gs *GameServer
 }
 
 func (FamilyInvite) New(gs *GameServer) *FamilyInvite {
-	return &FamilyInvite{
-		familyHandler: familyHandler{gs: gs},
-	}
+	return &FamilyInvite{gs: gs}
 }
 
 func (h *FamilyInvite) Handle(ctx *core.ClientContext, req *request.FamilyInvite) error {
-	return h.handle(ctx, &req.Family)
+	gameClient, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		return nil
+	}
+	ch := gameClient.GetCharacter()
+	if ch == nil || (req.Name != "" && !entity.ClientText(req.Name).Valid(13)) {
+		return nil
+	}
+
+	ch.Family.Invite(req.Name)
+	return nil
 }

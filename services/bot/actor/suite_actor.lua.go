@@ -83,6 +83,7 @@ var requests = []outbound{
 	&request.FamilyRemoveSenior{},
 	&request.FamilyPedigree{},
 	&request.FamilyUse{},
+	&request.FamilySummon{},
 	&request.FaceExpression{},
 	&request.ItemEffect{},
 	&request.CloseChalkboard{},

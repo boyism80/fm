@@ -3,18 +3,27 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game/client"
 )
 
 type FamilyRemoveSenior struct {
-	familyHandler
+	gs *GameServer
 }
 
 func (FamilyRemoveSenior) New(gs *GameServer) *FamilyRemoveSenior {
-	return &FamilyRemoveSenior{
-		familyHandler: familyHandler{gs: gs},
-	}
+	return &FamilyRemoveSenior{gs: gs}
 }
 
 func (h *FamilyRemoveSenior) Handle(ctx *core.ClientContext, req *request.FamilyRemoveSenior) error {
-	return h.handle(ctx, &req.Family)
+	gameClient, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		return nil
+	}
+	ch := gameClient.GetCharacter()
+	if ch == nil {
+		return nil
+	}
+
+	ch.Family.Separate(ctx.ActorContext, ch.GetID())
+	return nil
 }

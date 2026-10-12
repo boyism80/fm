@@ -1,14 +1,21 @@
 package response
 
 import (
-	"slices"
-
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/stream"
 )
 
+type FamilyDescendants struct {
+	CharacterID uint32
+	Count       uint32
+}
+
 type FamilyChart struct {
-	State *internal.FamilyState
+	CharacterID  uint32
+	Members      []*internal.FamilyMember
+	GrandJuniors []FamilyDescendants
+	MemberCount  uint32
+	UsedFeatures []internal.FamilyFeature
 }
 
 func (p *FamilyChart) Opcode() uint16 {
@@ -16,42 +23,36 @@ func (p *FamilyChart) Opcode() uint16 {
 }
 
 func (p *FamilyChart) Serialize(w *stream.StreamWriter) error {
-	w.WriteU32(p.State.CharacterId)
+	w.WriteU32(p.CharacterID)
 
-	w.WriteU32(uint32(len(p.State.Members)))
-	for _, m := range p.State.Members {
-		w.WriteU32(m.CharacterId)
-		w.WriteU32(m.SeniorId)
-		w.WriteU16(uint16(m.ClassId))
-		w.WriteU8(uint8(m.Level))
-		w.WriteBoolean(m.ChannelId >= 0)
-		w.WriteU32(m.Reputation)
-		w.WriteU32(m.TotalReputation)
+	w.WriteU32(uint32(len(p.Members)))
+	for _, m := range p.Members {
+		w.WriteU32(m.GetCharacterId())
+		w.WriteU32(m.GetSeniorId())
+		w.WriteU16(uint16(m.GetClassId()))
+		w.WriteU8(uint8(m.GetLevel()))
+		w.WriteBoolean(m.GetChannelId() >= 0)
+		w.WriteU32(m.GetReputation())
+		w.WriteU32(m.GetTotalReputation())
 		w.WriteU32(0)
 		w.WriteU32(0)
-		w.Write32(max(0, m.ChannelId))
+		w.Write32(max(0, m.GetChannelId()))
 		w.WriteU32(0)
-		w.WriteStr16(m.Name)
+		w.WriteStr16(m.GetName())
 	}
 
-	var grandJuniors []*internal.FamilyMember
-	for _, m := range p.State.Members {
-		if slices.Contains(p.State.Juniors, m.SeniorId) {
-			grandJuniors = append(grandJuniors, m)
-		}
-	}
-	w.WriteU32(uint32(2 + len(grandJuniors)))
+	w.WriteU32(uint32(2 + len(p.GrandJuniors)))
 	w.WriteU32(0)
-	w.WriteU32(uint32(len(grandJuniors)))
+	w.WriteU32(uint32(len(p.GrandJuniors)))
 	w.Write32(-1)
-	w.WriteU32(p.State.MemberCount)
-	for _, m := range grandJuniors {
-		w.WriteU32(m.CharacterId)
-		w.WriteU32(m.Descendants)
+	w.WriteU32(p.MemberCount)
+	for _, d := range p.GrandJuniors {
+		w.WriteU32(d.CharacterID)
+		w.WriteU32(d.Count)
 	}
 
-	w.WriteU32(uint32(len(p.State.UsedFeatures)))
-	for _, f := range p.State.UsedFeatures {
+	w.WriteU32(uint32(len(p.UsedFeatures)))
+	for _, f := range p.UsedFeatures {
 		w.WriteU32(uint32(f))
 		w.WriteU32(1)
 	}
@@ -60,7 +61,7 @@ func (p *FamilyChart) Serialize(w *stream.StreamWriter) error {
 }
 
 func (p *FamilyChart) Deserialize(reader *stream.StreamReader) {
-	p.State = &internal.FamilyState{CharacterId: reader.ReadU32()}
+	p.CharacterID = reader.ReadU32()
 	count := int(reader.ReadU32())
 	for range count {
 		m := &internal.FamilyMember{
@@ -79,20 +80,24 @@ func (p *FamilyChart) Deserialize(reader *stream.StreamReader) {
 		}
 		reader.Skip(4)
 		m.Name = reader.ReadStr16()
-		p.State.Members = append(p.State.Members, m)
+		p.Members = append(p.Members, m)
 	}
 
 	pairs := int(reader.ReadU32())
 	for range pairs {
 		key := reader.Read32()
 		value := reader.ReadU32()
-		if key == -1 {
-			p.State.MemberCount = value
+		switch key {
+		case 0:
+		case -1:
+			p.MemberCount = value
+		default:
+			p.GrandJuniors = append(p.GrandJuniors, FamilyDescendants{CharacterID: uint32(key), Count: value})
 		}
 	}
 	features := int(reader.ReadU32())
 	for range features {
-		p.State.UsedFeatures = append(p.State.UsedFeatures, internal.FamilyFeature(reader.ReadU32()))
+		p.UsedFeatures = append(p.UsedFeatures, internal.FamilyFeature(reader.ReadU32()))
 		reader.Skip(4)
 	}
 	reader.Skip(2)

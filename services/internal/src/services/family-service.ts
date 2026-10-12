@@ -8,94 +8,38 @@ import type { CharacterModel } from "../types/repository-models";
 import type {
     FamilyMember,
     FamilyReply,
-    FamilyRequest,
-    FamilyState,
+    FinishFamilyMoveRequest,
+    GetFamilyReply,
+    GetFamilyRequest,
+    JoinFamilyRequest,
+    SeparateFamilyRequest,
+    SetFamilyPreceptRequest,
+    UseFamilyFeatureRequest,
 } from "../protobuf/generated/fminternal/internal_service";
-import {
-    FamilyAction,
-    FamilyEvent,
-    FamilyFeature,
-    FamilyResult,
-} from "../protobuf/generated/fminternal/internal_service";
+import { Family, FamilyFeature, FamilyResult } from "../protobuf/generated/fminternal/internal_service";
 
 type Relative = {
     character_id: number;
+    leader_id: number | null;
     senior_id: number;
     name: string;
     level: number;
     class_id: number;
     reputation: number;
     total_reputation: number;
-    notice: string;
-    progress: string;
     buff_until: Date | null;
     buff_feature: FamilyFeature;
 };
 
-type FamilyMessage = {
-    id: number;
-    payload: Record<string, unknown>;
-};
-
-const TREE_LOCK = "SELECT pg_advisory_xact_lock(281, $1)";
-const TREES = `
-    WITH RECURSIVE up AS (
-        SELECT character_id, senior_id FROM social_family WHERE character_id = ANY($1::int[])
-        UNION
-        SELECT f.character_id, f.senior_id FROM social_family f JOIN up ON f.character_id = up.senior_id
-    ), down AS (
-        SELECT f.* FROM social_family f JOIN up ON f.character_id = up.character_id AND up.senior_id = 0
-        UNION
-        SELECT f.* FROM social_family f JOIN down ON f.senior_id = down.character_id
-    )
-    SELECT * FROM down`;
+const RELATIVES = `
+    SELECT * FROM social_family
+    WHERE character_id = ANY($1::int[])
+       OR leader_id IN (SELECT leader_id FROM social_family WHERE character_id = ANY($1::int[]) AND leader_id IS NOT NULL)
+    ORDER BY character_id`;
 const COSTS = [300, 500, 700, 800, 1000, 1200, 3000];
 const TODAY = "(NOW() AT TIME ZONE 'Asia/Seoul')::date";
 const UNITY_MEMBERS = 7;
-
-export function familyRoot(rows: Map<number, Relative>, id: number): number {
-    const seen = new Set<number>();
-    while (rows.get(id)?.senior_id) {
-        if (seen.has(id)) {
-            throw new Error("Family cycle");
-        }
-        seen.add(id);
-        id = rows.get(id)!.senior_id;
-    }
-    return id;
-}
-
-export function checkRecruit(
-    rows: Map<number, Relative>,
-    senior: number,
-    junior: number,
-    seniorLevel: number,
-    juniorLevel: number,
-): FamilyResult {
-    if (senior === junior || juniorLevel < 10) {
-        return FamilyResult.FAMILY_RESULT_CANNOT_BE_JUNIOR;
-    }
-    if (seniorLevel <= juniorLevel) {
-        return FamilyResult.FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH;
-    }
-    if (seniorLevel - juniorLevel > 20) {
-        return FamilyResult.FAMILY_RESULT_LEVEL_GAP_TOO_LARGE;
-    }
-    if (rows.get(junior)?.senior_id) {
-        return FamilyResult.FAMILY_RESULT_ALREADY_JUNIOR;
-    }
-    if ([...rows.values()].filter(r => r.senior_id === senior).length >= 2) {
-        return FamilyResult.FAMILY_RESULT_CANNOT_BE_JUNIOR;
-    }
-    if (familyRoot(rows, senior) === junior) {
-        return FamilyResult.FAMILY_RESULT_SAME_FAMILY;
-    }
-    return FamilyResult.FAMILY_RESULT_OK;
-}
-
-function familyFailure(status = FamilyResult.FAMILY_RESULT_FAILED): FamilyReply {
-    return { status, family: undefined, targetId: 0, targetName: "", accepted: false };
-}
+const MAX_JUNIORS = 2;
 
 export class FamilyService {
     constructor(
@@ -106,118 +50,50 @@ export class FamilyService {
         private readonly socialService: SocialService,
     ) {}
 
-    // Whole trees that contain any of the ids, read in one statement so a
-    // concurrent merge or split cannot show half a tree.
-    private async trees(tx: PoolClient, ids: number[]) {
-        const result = await tx.query<Relative>(TREES, [ids]);
+    // Everyone in the families of the ids, plus the ids themselves when they have no family.
+    private async relatives(tx: PoolClient, ids: number[]) {
+        const result = await tx.query<Relative>(RELATIVES, [ids]);
         return new Map(result.rows.map(r => [r.character_id, r]));
     }
 
-    // Creating the row must not lock an existing one: a tree operation that
-    // holds the tree lock may be waiting to update it.
-    private async ensure(tx: PoolClient, character: CharacterModel) {
-        await tx.query(
-            `INSERT INTO social_family (character_id, name, level, class_id, progress) VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (character_id) DO NOTHING`,
-            [character.characterId, character.name, character.level, character.classId, character.familyProgress ?? "0"],
+    // The member and everyone below it.
+    private subtree(rows: Map<number, Relative>, id: number): number[] {
+        const ids = [id];
+        for (let i = 0; i < ids.length; i++) {
+            for (const row of rows.values()) {
+                if (row.senior_id === ids[i]) {
+                    ids.push(row.character_id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    private async families(tx: PoolClient, world: number, ids: number[]): Promise<Family[]> {
+        const rows = await this.relatives(tx, ids);
+        const leaders = [...new Set([...rows.values()].map(r => r.leader_id).filter(id => id !== null))];
+        const precepts = await tx.query<{ leader_id: number; precept: string }>(
+            "SELECT leader_id, precept FROM families WHERE leader_id = ANY($1::int[])",
+            [leaders],
         );
-    }
-
-    private async rename(tx: PoolClient, character: CharacterModel) {
-        await tx.query(
-            "UPDATE social_family SET name=$2 WHERE character_id=$1 AND name<>$2",
-            [character.characterId, character.name],
+        const uses = await tx.query<{ character_id: number; feature: FamilyFeature }>(
+            `SELECT character_id, feature FROM social_family_uses WHERE character_id = ANY($1::int[]) AND day=${TODAY} ORDER BY feature`,
+            [[...rows.keys()]],
         );
-    }
 
-    // Only work that holds a tree's root lock may change that tree, so roots
-    // are locked in id order and the transaction restarts, releasing them, if
-    // a root moved before its lock was taken.
-    private async withTrees<T>(
-        world: number,
-        members: CharacterModel[],
-        others: number[],
-        fn: (tx: PoolClient, rows: Map<number, Relative>) => Promise<T>,
-    ): Promise<T> {
-        const ids = [...members.map(m => m.characterId), ...others];
-        const roots = (rows: Map<number, Relative>) => [...new Set(ids.filter(id => rows.has(id)).map(id => familyRoot(rows, id)))]
-            .sort((a, b) => a - b);
-        for (;;) {
-            const result = await this.internalContext.withPgGlobalTransaction(world, async tx => {
-                for (const member of members) {
-                    await this.ensure(tx, member);
-                }
-                const locked = roots(await this.trees(tx, ids));
-                for (const root of locked) {
-                    await tx.query(TREE_LOCK, [root]);
-                }
-                for (const member of members) {
-                    await this.rename(tx, member);
-                }
-
-                const rows = await this.trees(tx, ids);
-                if (roots(rows).join() !== locked.join()) {
-                    return undefined;
-                }
-                return { value: await fn(tx, rows) };
-            });
-            if (result) {
-                return result.value;
+        const families = new Map<number, Family>();
+        for (const row of rows.values()) {
+            const key = row.leader_id ?? row.character_id;
+            let family = families.get(key);
+            if (!family) {
+                family = {
+                    leaderId: row.leader_id ?? undefined,
+                    precept: precepts.rows.find(p => p.leader_id === row.leader_id)?.precept ?? "",
+                    members: [],
+                };
+                families.set(key, family);
             }
-        }
-    }
-
-    private async state(tx: PoolClient, world: number, rows: Map<number, Relative>, id: number): Promise<FamilyState> {
-        const me = rows.get(id)!;
-        const root = familyRoot(rows, id);
-        const leader = rows.get(root)!;
-        const children = (parent: number) => [...rows.values()]
-            .filter(r => r.senior_id === parent)
-            .sort((a, b) => a.character_id - b.character_id);
-        const descendants = (parent: number): number => {
-            const pending = children(parent);
-            const seen = new Set<number>();
-            while (pending.length) {
-                const child = pending.pop()!;
-                if (seen.has(child.character_id)) {
-                    throw new Error("Family cycle");
-                }
-                seen.add(child.character_id);
-                pending.push(...children(child.character_id));
-            }
-            return seen.size;
-        };
-
-        // Client expects a separate leader node, then two generations above and below the selected character; the leader repeats when it is one of them.
-        const visible: Relative[] = [leader];
-        const senior = rows.get(me.senior_id);
-        const grandSenior = senior ? rows.get(senior.senior_id) : undefined;
-        if (grandSenior) {
-            visible.push(grandSenior);
-        }
-        if (senior) {
-            visible.push(senior);
-        }
-        visible.push(me);
-        if (senior) {
-            for (const sibling of children(senior.character_id)) {
-                if (sibling !== me) {
-                    visible.push(sibling);
-                }
-            }
-        }
-        for (const junior of children(id)) {
-            visible.push(junior);
-        }
-        for (const junior of children(id)) {
-            for (const grand of children(junior.character_id)) {
-                visible.push(grand);
-            }
-        }
-
-        const members: FamilyMember[] = [];
-        for (const row of visible) {
-            members.push({
+            family.members.push({
                 characterId: row.character_id,
                 seniorId: row.senior_id,
                 name: row.name,
@@ -226,410 +102,411 @@ export class FamilyService {
                 reputation: row.reputation,
                 totalReputation: row.total_reputation,
                 channelId: (await this.sessionRepository.findChannel(world, row.character_id)) ?? -1,
-                descendants: descendants(row.character_id),
+                buffUntil: String(row.buff_until?.getTime() ?? 0),
+                buffFeature: row.buff_feature,
+                usedFeatures: uses.rows.filter(u => u.character_id === row.character_id).map(u => u.feature),
             });
         }
+        return [...families.values()];
+    }
 
-        const uses = await tx.query<{ feature: FamilyFeature }>(
-            `SELECT feature FROM social_family_uses WHERE character_id=$1 AND day=${TODAY} ORDER BY feature`,
-            [id],
-        );
-        const inFamily = me.senior_id !== 0 || children(id).length > 0;
+    private async family(tx: PoolClient, world: number, id: number) {
+        return (await this.families(tx, world, [id])).find(f => f.members.some(m => m.characterId === id));
+    }
+
+    private alone(character: CharacterModel): Family {
         return {
-            characterId: id,
-            seniorId: me.senior_id,
-            juniors: children(id).map(r => r.character_id),
-            leaderId: inFamily ? root : 0,
-            leaderName: inFamily ? leader.name : "",
-            notice: leader.notice,
-            reputation: me.reputation,
-            totalReputation: me.total_reputation,
-            usedFeatures: uses.rows.map(r => r.feature),
-            members,
-            buffUntil: String(me.buff_until?.getTime() ?? 0),
-            buffFeature: me.buff_feature,
-            memberCount: inFamily ? descendants(root) + 1 : 0,
+            leaderId: undefined,
+            precept: "",
+            members: [{
+                characterId: character.characterId,
+                seniorId: 0,
+                name: character.name,
+                level: character.level,
+                classId: character.classId,
+                reputation: 0,
+                totalReputation: 0,
+                channelId: -1,
+                buffUntil: "0",
+                buffFeature: FamilyFeature.FAMILY_FEATURE_TELEPORT,
+                usedFeatures: [],
+            }],
         };
     }
 
-    async load(world: number, character: CharacterModel) {
-        return this.internalContext.withPgGlobalTransaction(world, async tx => {
-            await this.ensure(tx, character);
-            await this.rename(tx, character);
-            return this.state(tx, world, await this.trees(tx, [character.characterId]), character.characterId);
-        });
+    // Sends each family to its online members, one message per channel.
+    private async publish(world: number, ids: number[]): Promise<Family[]> {
+        const families = await this.internalContext.withPgGlobalTransaction(world, tx => this.families(tx, world, ids));
+        for (const family of families) {
+            const channels = new Map<number, number[]>();
+            for (const member of family.members) {
+                if (member.channelId < 0) {
+                    continue;
+                }
+                channels.set(member.channelId, [...(channels.get(member.channelId) ?? []), member.characterId]);
+            }
+            for (const [channel, members] of channels) {
+                await this.socialService
+                    .publish(world, channel, "family", { character_ids: members, family: Family.toJSON(family) })
+                    .catch(err => console.error("[family] publish failed", err));
+            }
+        }
+        return families;
     }
 
-    // Receivers are locked through their own trees: a senior may have left
-    // since the game server earned that reputation.
-    async progress(world: number, character: CharacterModel) {
-        const receivers = Object.keys(character.familyReputation ?? {}).map(Number);
-        const changed = await this.withTrees(world, [character], receivers, async (tx, rows) => {
-            await tx.query(
-                "UPDATE social_family SET level=$2, class_id=$3, progress=GREATEST(progress, $4) WHERE character_id=$1",
-                [character.characterId, character.level, character.classId, character.familyProgress ?? "0"],
-            );
+    private async reply(world: number, status: FamilyResult, id: number, ...others: number[]): Promise<FamilyReply> {
+        if (status !== FamilyResult.FAMILY_RESULT_OK) {
+            return { status, family: undefined };
+        }
 
-            const ids: number[] = [];
-            for (const [receiver, reputation] of Object.entries(character.familyReputation ?? {})) {
-                const receiverId = Number(receiver);
-                if (!rows.has(receiverId) || receiverId === character.characterId) {
+        const families = await this.publish(world, [id, ...others.filter(n => n !== 0)]);
+        return { status, family: families.find(f => f.members.some(m => m.characterId === id)) };
+    }
+
+    // A family changes only while its families row is locked. Families are locked
+    // in leader order before the member rows; the transaction restarts if a member
+    // changed family in between.
+    private async withFamilies<T>(
+        world: number,
+        ids: number[],
+        fn: (tx: PoolClient, rows: Map<number, Relative>) => Promise<T>,
+    ): Promise<T> {
+        const sorted = [...new Set(ids)].sort((a, b) => a - b);
+        const memberships = async (tx: PoolClient, lock: boolean) => {
+            const result = await tx.query<{ leader_id: number | null }>(
+                `SELECT leader_id FROM social_family WHERE character_id = ANY($1::int[]) ORDER BY character_id${lock ? " FOR UPDATE" : ""}`,
+                [sorted],
+            );
+            return result.rows.map(r => r.leader_id);
+        };
+        for (;;) {
+            const result = await this.internalContext.withPgGlobalTransaction(world, async tx => {
+                const before = await memberships(tx, false);
+                await tx.query(
+                    "SELECT leader_id FROM families WHERE leader_id = ANY($1::int[]) ORDER BY leader_id FOR UPDATE",
+                    [before.filter(id => id !== null)],
+                );
+                if ((await memberships(tx, true)).join() !== before.join()) {
+                    return undefined;
+                }
+
+                return { value: await fn(tx, await this.relatives(tx, sorted)) };
+            });
+            if (result) {
+                return result.value;
+            }
+        }
+    }
+
+    async load(world: number, character: CharacterModel): Promise<Family> {
+        const family = await this.internalContext.withPgGlobalTransaction(world, tx => this.family(tx, world, character.characterId));
+        return family ?? this.alone(character);
+    }
+
+    async get(req: GetFamilyRequest): Promise<GetFamilyReply> {
+        const entry = await this.unifiedRepository.findCharacterNameEntry(req.name);
+        if (entry?.world_id !== req.worldId) {
+            return { found: false, characterId: 0, family: undefined };
+        }
+
+        const world = req.worldId;
+        const id = entry.character_id;
+        const family = await this.internalContext.withPgGlobalTransaction(world, tx => this.family(tx, world, id));
+        if (family) {
+            return { found: true, characterId: id, family };
+        }
+        const character = await this.characterRepository.get(world, id);
+        if (!character) {
+            return { found: false, characterId: 0, family: undefined };
+        }
+        return { found: true, characterId: id, family: this.alone(character) };
+    }
+
+    // Reputation goes to whoever was senior when it was earned, even if they have
+    // left since. Rows are updated in id order so two saves cannot deadlock.
+    async progress(world: number, character: CharacterModel) {
+        const reputation = character.familyReputation ?? {};
+        const ids = [character.characterId, ...Object.keys(reputation).map(Number)]
+            .filter((id, i, all) => all.indexOf(id) === i)
+            .sort((a, b) => a - b);
+        const receivers = await this.internalContext.withPgGlobalTransaction(world, async tx => {
+            const credited: number[] = [];
+            for (const id of ids) {
+                if (id === character.characterId) {
+                    await tx.query(
+                        `UPDATE social_family SET name=$2, level=$3, class_id=$4, progress=GREATEST(progress, $5)
+                        WHERE character_id=$1 AND (name<>$2 OR level<>$3 OR class_id<>$4 OR progress<$5::bigint)`,
+                        [id, character.name, character.level, character.classId, character.familyProgress ?? "0"],
+                    );
                     continue;
                 }
 
                 const credit = await tx.query<{ reputation: string }>(
                     "SELECT reputation FROM social_family_credit WHERE character_id=$1 AND receiver_id=$2",
-                    [character.characterId, receiverId],
+                    [character.characterId, id],
                 );
-                const delta = BigInt(reputation) - BigInt(credit.rows[0]?.reputation ?? "0");
+                const delta = BigInt(reputation[id]!) - BigInt(credit.rows[0]?.reputation ?? "0");
                 if (delta <= 0n) {
+                    continue;
+                }
+
+                const updated = await tx.query(
+                    `UPDATE social_family SET
+                        reputation=LEAST(2147483647, reputation::bigint+$2::bigint),
+                        total_reputation=LEAST(2147483647, total_reputation::bigint+$2::bigint)
+                    WHERE character_id=$1`,
+                    [id, String(delta)],
+                );
+                if (!updated.rowCount) {
                     continue;
                 }
 
                 await tx.query(
                     `INSERT INTO social_family_credit VALUES ($1, $2, $3)
                     ON CONFLICT (character_id, receiver_id) DO UPDATE SET reputation=EXCLUDED.reputation`,
-                    [character.characterId, receiverId, reputation],
+                    [character.characterId, id, reputation[id]],
                 );
-                await tx.query(
-                    `UPDATE social_family SET
-                        reputation=LEAST(2147483647, reputation::bigint+$2::bigint),
-                        total_reputation=LEAST(2147483647, total_reputation::bigint+$2::bigint)
-                    WHERE character_id=$1`,
-                    [receiverId, String(delta)],
-                );
-                ids.push(receiverId);
+                credited.push(id);
             }
-            return ids;
+            return credited;
         });
 
-        for (const id of changed) {
-            await this.notify(world, id, { event: FamilyEvent.FAMILY_EVENT_REFRESH }).catch(() => {});
+        if (receivers.length > 0) {
+            await this.publish(world, receivers);
         }
-    }
-
-    private async notify(world: number, id: number, payload: Record<string, unknown>) {
-        const channel = await this.sessionRepository.findChannel(world, id);
-        if (channel == null) {
-            return;
-        }
-        await this.socialService.publish(world, channel, "family", { character_id: id, ...payload });
     }
 
     async presence(world: number, characterId: number) {
-        const ids = await this.internalContext.withPgGlobalTransaction(world, async tx => {
-            const rows = await this.trees(tx, [characterId]);
-            if (!rows.has(characterId)) {
-                return [];
-            }
-
-            const root = familyRoot(rows, characterId);
-            return [...rows.values()]
-                .filter(row => familyRoot(rows, row.character_id) === root)
-                .map(row => row.character_id);
-        });
-
-        for (const id of ids) {
-            await this.notify(world, id, { event: FamilyEvent.FAMILY_EVENT_REFRESH }).catch(() => {});
-        }
+        await this.publish(world, [characterId]);
     }
 
-    async family(req: FamilyRequest): Promise<FamilyReply> {
+    private checkJoin(rows: Map<number, Relative>, senior: FamilyMember, junior: FamilyMember): FamilyResult {
+        if (senior.characterId === junior.characterId || junior.level < 10) {
+            return FamilyResult.FAMILY_RESULT_CANNOT_BE_JUNIOR;
+        }
+        if (senior.level <= junior.level) {
+            return FamilyResult.FAMILY_RESULT_JUNIOR_LEVEL_TOO_HIGH;
+        }
+        if (senior.level - junior.level > 20) {
+            return FamilyResult.FAMILY_RESULT_LEVEL_GAP_TOO_LARGE;
+        }
+        if (rows.get(junior.characterId)?.senior_id) {
+            return FamilyResult.FAMILY_RESULT_ALREADY_JUNIOR;
+        }
+        if ([...rows.values()].filter(r => r.senior_id === senior.characterId).length >= MAX_JUNIORS) {
+            return FamilyResult.FAMILY_RESULT_CANNOT_BE_JUNIOR;
+        }
+        if (rows.get(senior.characterId)?.leader_id === junior.characterId) {
+            return FamilyResult.FAMILY_RESULT_SAME_FAMILY;
+        }
+        return FamilyResult.FAMILY_RESULT_OK;
+    }
+
+    async join(req: JoinFamilyRequest): Promise<FamilyReply> {
         const world = req.worldId;
-        const id = req.characterId;
-        const me = await this.characterRepository.get(world, id);
-        const settling = req.action === FamilyAction.FAMILY_ACTION_REFUND || req.action === FamilyAction.FAMILY_ACTION_MOVE_COMPLETE;
-        if (!me || (!settling && (await this.sessionRepository.findChannel(world, id)) !== req.channelId)) {
-            return familyFailure();
+        const senior = req.senior;
+        const junior = req.junior;
+        if (!senior || !junior) {
+            return { status: FamilyResult.FAMILY_RESULT_FAILED, family: undefined };
         }
 
-        let targetId = req.targetId;
-        const named = [
-            FamilyAction.FAMILY_ACTION_PEDIGREE,
-            FamilyAction.FAMILY_ACTION_INVITE,
-            FamilyAction.FAMILY_ACTION_USE,
-            FamilyAction.FAMILY_ACTION_SUMMON,
-        ];
-        if (req.name && named.includes(req.action)) {
-            const entry = await this.unifiedRepository.findCharacterNameEntry(req.name);
-            if (entry?.world_id !== world) {
-                return familyFailure(FamilyResult.FAMILY_RESULT_WRONG_NAME);
+        // Rows are created outside the family transaction so that creating one
+        // never waits on a row another family transaction holds.
+        await this.internalContext.withPgGlobalTransaction(world, async tx => {
+            for (const member of [senior, junior]) {
+                await tx.query(
+                    `INSERT INTO social_family (character_id, name, level, class_id) VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (character_id) DO NOTHING`,
+                    [member.characterId, member.name, member.level, member.classId],
+                );
             }
-            targetId = entry.character_id;
-        }
-
-        const target = targetId ? await this.characterRepository.get(world, targetId) : null;
-        const events: FamilyMessage[] = [];
-        const members = target ? [me, target] : [me];
-        const reply = await this.withTrees(world, members, [], async (tx, rows) => {
-            const own = rows.get(id)!;
-            switch (req.action) {
-                case FamilyAction.FAMILY_ACTION_PEDIGREE:
-                case FamilyAction.FAMILY_ACTION_OPEN:
-                    break;
-                case FamilyAction.FAMILY_ACTION_MOVE_COMPLETE:
-                case FamilyAction.FAMILY_ACTION_REFUND: {
-                    if (!req.operationId) {
-                        return familyFailure();
-                    }
-
-                    const complete = req.action === FamilyAction.FAMILY_ACTION_MOVE_COMPLETE;
-                    const move = await tx.query<{ payer_id: number; feature: number }>(
-                        `UPDATE social_family_moves SET status=$3
-                        WHERE operation_id=$1 AND character_id=$2 AND status='pending' RETURNING *`,
-                        [req.operationId, id, complete ? "completed" : "refunded"],
-                    );
-                    if (!complete) {
-                        // Cancellation may arrive before the timed-out reservation RPC.
-                        await tx.query(
-                            `INSERT INTO social_family_moves (operation_id, character_id, payer_id, feature, status)
-                            VALUES ($1, $2, 0, 0, 'refunded') ON CONFLICT DO NOTHING`,
-                            [req.operationId, id],
-                        );
-                        for (const reservation of move.rows) {
-                            await tx.query("DELETE FROM social_family_uses WHERE operation_id=$1", [req.operationId]);
-                            await tx.query(
-                                "UPDATE social_family SET reputation=LEAST(2147483647, reputation::bigint+$2) WHERE character_id=$1",
-                                [reservation.payer_id, COSTS[reservation.feature]],
-                            );
-                            events.push({ id: reservation.payer_id, payload: { event: FamilyEvent.FAMILY_EVENT_REFRESH } });
-                        }
-                    }
-                    break;
-                }
-                case FamilyAction.FAMILY_ACTION_INVITE:
-                case FamilyAction.FAMILY_ACTION_ACCEPT: {
-                    const inviting = req.action === FamilyAction.FAMILY_ACTION_INVITE;
-                    const seniorId = inviting ? id : targetId;
-                    const juniorId = inviting ? targetId : id;
-                    const seniorLevel = inviting ? req.level : req.targetLevel;
-                    const juniorLevel = inviting ? req.targetLevel : req.level;
-                    const senior = rows.get(seniorId);
-                    const junior = rows.get(juniorId);
-                    if (!senior || !junior) {
-                        return familyFailure(FamilyResult.FAMILY_RESULT_WRONG_NAME);
-                    }
-                    if ((await this.sessionRepository.findChannel(world, targetId)) !== req.channelId) {
-                        return familyFailure(FamilyResult.FAMILY_RESULT_NOT_SAME_MAP);
-                    }
-                    const recruit = checkRecruit(rows, seniorId, juniorId, seniorLevel, juniorLevel);
-                    if (recruit !== FamilyResult.FAMILY_RESULT_OK) {
-                        return familyFailure(recruit);
-                    }
-
-                    if (inviting) {
-                        await tx.query(
-                            `INSERT INTO social_family_invites VALUES ($1, $2, $3, NOW()+INTERVAL '60 seconds')
-                            ON CONFLICT (receiver_id) DO UPDATE SET sender_id=$2, channel_id=$3, expires_at=EXCLUDED.expires_at`,
-                            [juniorId, seniorId, req.channelId],
-                        );
-                        events.push({ id: juniorId, payload: { event: FamilyEvent.FAMILY_EVENT_INVITE, sender_id: seniorId, name: senior.name } });
-                        break;
-                    }
-
-                    const invite = await tx.query(
-                        `DELETE FROM social_family_invites
-                        WHERE receiver_id=$1 AND sender_id=$2 AND channel_id=$3 AND expires_at>NOW() RETURNING *`,
-                        [id, targetId, req.channelId],
-                    );
-                    if (!invite.rowCount || req.name !== senior.name) {
-                        return familyFailure();
-                    }
-
-                    if (req.accepted) {
-                        await tx.query("UPDATE social_family SET senior_id=$2 WHERE character_id=$1", [id, targetId]);
-                    }
-                    events.push({ id: targetId, payload: { event: FamilyEvent.FAMILY_EVENT_INVITE_RESULT, name: me.name, accepted: req.accepted } });
-                    if (req.accepted) {
-                        events.push({ id, payload: { event: FamilyEvent.FAMILY_EVENT_JOINED, name: senior.name } });
-                    }
-                    break;
-                }
-                case FamilyAction.FAMILY_ACTION_REMOVE_JUNIOR:
-                case FamilyAction.FAMILY_ACTION_REMOVE_SENIOR: {
-                    const leaving = req.action === FamilyAction.FAMILY_ACTION_REMOVE_SENIOR;
-                    const juniorId = leaving ? id : targetId;
-                    if (leaving ? !own.senior_id : rows.get(juniorId)?.senior_id !== id) {
-                        return familyFailure();
-                    }
-
-                    await tx.query("UPDATE social_family SET senior_id=0 WHERE character_id=$1", [juniorId]);
-                    break;
-                }
-                case FamilyAction.FAMILY_ACTION_PRECEPT: {
-                    if (familyRoot(rows, id) !== id || req.name.length > 200 || /[\x00-\x1f\x7f]/u.test(req.name)) {
-                        return familyFailure();
-                    }
-
-                    await tx.query("UPDATE social_family SET notice=$2 WHERE character_id=$1", [id, req.name]);
-                    break;
-                }
-                case FamilyAction.FAMILY_ACTION_USE:
-                case FamilyAction.FAMILY_ACTION_SUMMON: {
-                    const feature = req.action === FamilyAction.FAMILY_ACTION_SUMMON ? FamilyFeature.FAMILY_FEATURE_SUMMON : req.feature;
-                    if (feature < 0 || feature >= COSTS.length) {
-                        return familyFailure();
-                    }
-                    if (!own.senior_id && ![...rows.values()].some(r => r.senior_id === id)) {
-                        return familyFailure();
-                    }
-
-                    let payer = id;
-                    if (feature === FamilyFeature.FAMILY_FEATURE_TELEPORT || feature === FamilyFeature.FAMILY_FEATURE_SUMMON) {
-                        const sameFamily = target && targetId !== id && familyRoot(rows, id) === familyRoot(rows, targetId);
-                        if (!sameFamily) {
-                            return familyFailure(FamilyResult.FAMILY_RESULT_NOT_SAME_FAMILY);
-                        }
-                        if ((await this.sessionRepository.findChannel(world, targetId)) !== req.channelId) {
-                            return familyFailure();
-                        }
-
-                        if (req.action === FamilyAction.FAMILY_ACTION_USE && feature === FamilyFeature.FAMILY_FEATURE_SUMMON) {
-                            if (own.reputation < COSTS[feature]!) {
-                                return familyFailure();
-                            }
-
-                            const used = await tx.query(
-                                `SELECT 1 FROM social_family_uses WHERE character_id=$1 AND feature=$2 AND day=${TODAY}`,
-                                [id, feature],
-                            );
-                            if (used.rowCount) {
-                                return familyFailure();
-                            }
-
-                            await tx.query("DELETE FROM social_family_summons WHERE expires_at<=NOW()");
-                            const summon = await tx.query(
-                                `INSERT INTO social_family_summons VALUES ($1, $2, $3, NOW()+INTERVAL '60 seconds')
-                                ON CONFLICT (receiver_id) DO NOTHING RETURNING *`,
-                                [targetId, id, req.channelId],
-                            );
-                            if (!summon.rowCount) {
-                                return familyFailure(FamilyResult.FAMILY_RESULT_SUMMON_PENDING);
-                            }
-
-                            events.push({ id: targetId, payload: { event: FamilyEvent.FAMILY_EVENT_SUMMON, name: me.name, map_name: req.mapName } });
-                            return { ...familyFailure(FamilyResult.FAMILY_RESULT_OK), targetId, targetName: target!.name };
-                        }
-
-                        if (req.action === FamilyAction.FAMILY_ACTION_SUMMON) {
-                            const pending = await tx.query(
-                                `DELETE FROM social_family_summons
-                                WHERE receiver_id=$1 AND sender_id=$2 AND channel_id=$3 AND expires_at>NOW() RETURNING *`,
-                                [id, targetId, req.channelId],
-                            );
-                            if (!pending.rowCount) {
-                                return familyFailure(FamilyResult.FAMILY_RESULT_SUMMON_FAILED);
-                            }
-                            if (!req.accepted) {
-                                return { ...familyFailure(FamilyResult.FAMILY_RESULT_OK), accepted: false };
-                            }
-                            payer = targetId;
-                        }
-                    }
-
-                    if (rows.get(payer)!.reputation < COSTS[feature]!) {
-                        return familyFailure();
-                    }
-
-                    const use = await tx.query(
-                        `INSERT INTO social_family_uses VALUES ($1, $2, ${TODAY}, $3) ON CONFLICT DO NOTHING RETURNING *`,
-                        [payer, feature, req.operationId],
-                    );
-                    if (!use.rowCount) {
-                        return familyFailure();
-                    }
-
-                    let beneficiaries = [id];
-                    if (feature === FamilyFeature.FAMILY_FEATURE_UNITY) {
-                        const juniors = [...rows.values()]
-                            .filter(r => r.senior_id === id || rows.get(r.senior_id)?.senior_id === id)
-                            .map(r => r.character_id);
-                        const online: number[] = [];
-                        for (const member of [id, ...juniors]) {
-                            if ((await this.sessionRepository.findChannel(world, member)) != null) {
-                                online.push(member);
-                            }
-                        }
-                        if (online.length < UNITY_MEMBERS) {
-                            await tx.query(
-                                `DELETE FROM social_family_uses WHERE character_id=$1 AND feature=$2 AND day=${TODAY}`,
-                                [payer, feature],
-                            );
-                            return familyFailure();
-                        }
-                        beneficiaries = online;
-                    }
-
-                    if (feature === FamilyFeature.FAMILY_FEATURE_TELEPORT || feature === FamilyFeature.FAMILY_FEATURE_SUMMON) {
-                        const move = await tx.query(
-                            `INSERT INTO social_family_moves (operation_id, character_id, payer_id, feature)
-                            VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING *`,
-                            [req.operationId, id, payer, feature],
-                        );
-                        if (!move.rowCount) {
-                            await tx.query("DELETE FROM social_family_uses WHERE operation_id=$1", [req.operationId]);
-                            return familyFailure();
-                        }
-                    }
-
-                    await tx.query(
-                        "UPDATE social_family SET reputation=reputation-$2 WHERE character_id=$1",
-                        [payer, COSTS[feature]],
-                    );
-                    if (payer !== id) {
-                        events.push({ id: payer, payload: { event: FamilyEvent.FAMILY_EVENT_REFRESH } });
-                    }
-                    if (feature !== FamilyFeature.FAMILY_FEATURE_TELEPORT && feature !== FamilyFeature.FAMILY_FEATURE_SUMMON) {
-                        const short = feature === FamilyFeature.FAMILY_FEATURE_DROP_15_MINUTES || feature === FamilyFeature.FAMILY_FEATURE_EXP_15_MINUTES;
-                        await tx.query(
-                            `UPDATE social_family SET buff_feature=$2, buff_until=NOW()+($3::int*INTERVAL '1 minute')
-                            WHERE character_id=ANY($1::int[])`,
-                            [beneficiaries, feature, short ? 15 : 30],
-                        );
-                        for (const member of beneficiaries) {
-                            events.push({ id: member, payload: { event: FamilyEvent.FAMILY_EVENT_REFRESH } });
-                        }
-                    }
-                    break;
-                }
-                default:
-                    return familyFailure();
-            }
-
-            rows = await this.trees(tx, [id, targetId, own.senior_id].filter(n => n !== 0));
-            const regrouped = [
-                FamilyAction.FAMILY_ACTION_REMOVE_JUNIOR,
-                FamilyAction.FAMILY_ACTION_REMOVE_SENIOR,
-                FamilyAction.FAMILY_ACTION_ACCEPT,
-                FamilyAction.FAMILY_ACTION_PRECEPT,
-            ];
-            if (regrouped.includes(req.action)) {
-                // Includes both halves after splitting and both trees after merging.
-                const affected = new Set([
-                    familyRoot(rows, id),
-                    targetId && familyRoot(rows, targetId),
-                    own.senior_id && familyRoot(rows, own.senior_id),
-                ]);
-                for (const row of rows.values()) {
-                    if (affected.has(familyRoot(rows, row.character_id))) {
-                        events.push({ id: row.character_id, payload: { event: FamilyEvent.FAMILY_EVENT_REFRESH } });
-                    }
-                }
-            }
-
-            const shown = req.action === FamilyAction.FAMILY_ACTION_PEDIGREE && target ? targetId : id;
-            return {
-                status: FamilyResult.FAMILY_RESULT_OK,
-                family: await this.state(tx, world, rows, shown),
-                targetId,
-                targetName: target?.name ?? "",
-                accepted: req.accepted,
-            };
         });
 
-        for (const event of events) {
-            await this.notify(world, event.id, event.payload).catch(() => {});
+        const status = await this.withFamilies(world, [senior.characterId, junior.characterId], async (tx, rows) => {
+            const result = this.checkJoin(rows, senior, junior);
+            if (result !== FamilyResult.FAMILY_RESULT_OK) {
+                return result;
+            }
+
+            const juniorLeader = rows.get(junior.characterId)!.leader_id;
+            let leader = rows.get(senior.characterId)!.leader_id;
+            if (leader === null) {
+                leader = senior.characterId;
+                await tx.query("INSERT INTO families (leader_id) VALUES ($1)", [leader]);
+            }
+            await tx.query("UPDATE social_family SET senior_id=$2 WHERE character_id=$1", [junior.characterId, senior.characterId]);
+            await tx.query(
+                "UPDATE social_family SET leader_id=$1 WHERE character_id = ANY($2::int[]) OR leader_id=$3",
+                [leader, [senior.characterId, junior.characterId], juniorLeader],
+            );
+            if (juniorLeader !== null) {
+                await tx.query("DELETE FROM families WHERE leader_id=$1", [juniorLeader]);
+            }
+            return FamilyResult.FAMILY_RESULT_OK;
+        });
+        return this.reply(world, status, junior.characterId);
+    }
+
+    async separate(req: SeparateFamilyRequest): Promise<FamilyReply> {
+        const world = req.worldId;
+        const id = req.characterId;
+        const juniorId = req.juniorId;
+        let seniorId = 0;
+        const status = await this.withFamilies(world, [id, juniorId], async (tx, rows) => {
+            const junior = rows.get(juniorId);
+            if (!junior || junior.senior_id === 0 || (id !== juniorId && junior.senior_id !== id)) {
+                return FamilyResult.FAMILY_RESULT_FAILED;
+            }
+
+            seniorId = junior.senior_id;
+            await tx.query("UPDATE social_family SET senior_id=0 WHERE character_id=$1", [juniorId]);
+            junior.senior_id = 0;
+
+            const split = this.subtree(rows, juniorId);
+            const staying = [...rows.values()].filter(r => r.leader_id === junior.leader_id && !split.includes(r.character_id));
+            let leader: number | null = null;
+            if (split.length > 1) {
+                leader = juniorId;
+                await tx.query("INSERT INTO families (leader_id) VALUES ($1)", [leader]);
+            }
+            await tx.query("UPDATE social_family SET leader_id=$1 WHERE character_id = ANY($2::int[])", [leader, split]);
+            if (staying.length === 1) {
+                await tx.query("UPDATE social_family SET leader_id=NULL WHERE character_id=$1", [staying[0]!.character_id]);
+                await tx.query("DELETE FROM families WHERE leader_id=$1", [junior.leader_id]);
+            }
+            return FamilyResult.FAMILY_RESULT_OK;
+        });
+        return this.reply(world, status, id, juniorId, seniorId);
+    }
+
+    async setPrecept(req: SetFamilyPreceptRequest): Promise<FamilyReply> {
+        const world = req.worldId;
+        const id = req.characterId;
+        const status = await this.withFamilies(world, [id], async (tx, rows) => {
+            const me = rows.get(id);
+            if (!me || me.leader_id !== id || req.precept.length > 200 || /[\x00-\x1f\x7f]/u.test(req.precept)) {
+                return FamilyResult.FAMILY_RESULT_FAILED;
+            }
+
+            await tx.query("UPDATE families SET precept=$2 WHERE leader_id=$1", [id, req.precept]);
+            return FamilyResult.FAMILY_RESULT_OK;
+        });
+        return this.reply(world, status, id);
+    }
+
+    // The payer's row is locked, so its uses of the day cannot race. A move
+    // reservation is written first: a refund that arrived earlier left its
+    // tombstone there.
+    async use(req: UseFamilyFeatureRequest): Promise<FamilyReply> {
+        const world = req.worldId;
+        const id = req.characterId;
+        const feature = req.feature;
+        const moving = feature === FamilyFeature.FAMILY_FEATURE_TELEPORT || feature === FamilyFeature.FAMILY_FEATURE_SUMMON;
+        const payer = feature === FamilyFeature.FAMILY_FEATURE_SUMMON ? req.targetId : id;
+        const status = await this.withFamilies(world, moving ? [id, req.targetId] : [id], async (tx, rows) => {
+            const me = rows.get(id);
+            const paying = rows.get(payer);
+            if (feature < 0 || feature >= COSTS.length || !me || !paying || paying.leader_id === null || paying.reputation < COSTS[feature]!) {
+                return FamilyResult.FAMILY_RESULT_FAILED;
+            }
+            if (moving && (req.targetId === id || rows.get(req.targetId)?.leader_id !== me.leader_id)) {
+                return FamilyResult.FAMILY_RESULT_NOT_SAME_FAMILY;
+            }
+            if (moving && req.requestId === "0") {
+                return FamilyResult.FAMILY_RESULT_FAILED;
+            }
+
+            const used = await tx.query(
+                `SELECT 1 FROM social_family_uses WHERE character_id=$1 AND feature=$2 AND day=${TODAY}`,
+                [payer, feature],
+            );
+            if (used.rowCount) {
+                return FamilyResult.FAMILY_RESULT_FAILED;
+            }
+
+            let beneficiaries = [id];
+            if (feature === FamilyFeature.FAMILY_FEATURE_UNITY) {
+                const juniors = [...rows.values()]
+                    .filter(r => r.senior_id === id || rows.get(r.senior_id)?.senior_id === id)
+                    .map(r => r.character_id);
+                beneficiaries = [];
+                for (const member of [id, ...juniors]) {
+                    if ((await this.sessionRepository.findChannel(world, member)) != null) {
+                        beneficiaries.push(member);
+                    }
+                }
+                if (beneficiaries.length < UNITY_MEMBERS) {
+                    return FamilyResult.FAMILY_RESULT_FAILED;
+                }
+            }
+
+            const operation = moving ? req.requestId : "";
+            if (moving) {
+                const move = await tx.query(
+                    `INSERT INTO social_family_moves (operation_id, character_id, payer_id, feature)
+                    VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING *`,
+                    [operation, id, payer, feature],
+                );
+                if (!move.rowCount) {
+                    return FamilyResult.FAMILY_RESULT_FAILED;
+                }
+            }
+            await tx.query(`INSERT INTO social_family_uses VALUES ($1, $2, ${TODAY}, $3)`, [payer, feature, operation]);
+            await tx.query("UPDATE social_family SET reputation=reputation-$2 WHERE character_id=$1", [payer, COSTS[feature]]);
+            if (!moving) {
+                const short = feature === FamilyFeature.FAMILY_FEATURE_DROP_15_MINUTES || feature === FamilyFeature.FAMILY_FEATURE_EXP_15_MINUTES;
+                await tx.query(
+                    `UPDATE social_family SET buff_feature=$2, buff_until=NOW()+($3::int*INTERVAL '1 minute')
+                    WHERE character_id = ANY($1::int[])`,
+                    [beneficiaries, feature, short ? 15 : 30],
+                );
+            }
+            return FamilyResult.FAMILY_RESULT_OK;
+        });
+        return this.reply(world, status, id, payer);
+    }
+
+    // A refund writes its tombstone before looking for the reservation, so a
+    // reservation that arrives later is rejected.
+    async finishMove(req: FinishFamilyMoveRequest): Promise<FamilyReply> {
+        const world = req.worldId;
+        const id = req.characterId;
+        if (req.requestId === "0") {
+            return { status: FamilyResult.FAMILY_RESULT_FAILED, family: undefined };
         }
-        return reply;
+
+        if (req.complete) {
+            await this.internalContext.withPgGlobalTransaction(world, async tx => {
+                await tx.query(
+                    "UPDATE social_family_moves SET status='completed' WHERE operation_id=$1 AND character_id=$2 AND status='pending'",
+                    [req.requestId, id],
+                );
+            });
+            return { status: FamilyResult.FAMILY_RESULT_OK, family: undefined };
+        }
+
+        const payer = await this.internalContext.withPgGlobalTransaction(world, async tx => {
+            await tx.query(
+                `INSERT INTO social_family_moves (operation_id, character_id, payer_id, feature, status)
+                VALUES ($1, $2, 0, 0, 'refunded') ON CONFLICT DO NOTHING`,
+                [req.requestId, id],
+            );
+            const move = await tx.query<{ payer_id: number; feature: number }>(
+                `UPDATE social_family_moves SET status='refunded'
+                WHERE operation_id=$1 AND character_id=$2 AND status='pending' RETURNING payer_id, feature`,
+                [req.requestId, id],
+            );
+            const reservation = move.rows[0];
+            if (!reservation) {
+                return 0;
+            }
+            await tx.query("DELETE FROM social_family_uses WHERE operation_id=$1", [req.requestId]);
+            await tx.query(
+                "UPDATE social_family SET reputation=LEAST(2147483647, reputation::bigint+$2) WHERE character_id=$1",
+                [reservation.payer_id, COSTS[reservation.feature]],
+            );
+            return reservation.payer_id;
+        });
+        return this.reply(world, FamilyResult.FAMILY_RESULT_OK, id, payer);
     }
 }
