@@ -11,6 +11,7 @@ import (
 	"github.com/boyism80/fm/core/clock"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game/constant"
 )
 
 const (
@@ -134,7 +135,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 	rewards := map[uint32]uint16{}
 	for _, listed := range sb.Items {
 		model := listed.Item.GetModel()
-		if model.IsOnly() && sb.owner.Inventory.HasItem(model.GetID()) {
+		if model.GetTraits()&constant.ItemTraitOnly != 0 && sb.owner.Inventory.HasItem(model.GetID()) {
 			return pconst.StoreBankResultOnlyOne
 		}
 		rewards[model.GetID()] += listed.count()

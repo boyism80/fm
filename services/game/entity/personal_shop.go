@@ -215,7 +215,7 @@ func (ps *PersonalShop) returnItems(ch *Character) {
 		}
 		model := listed.Item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if (model.IsOnly() && ch.Inventory.HasItem(model.GetID())) || spec.Valid(ch) != ExchangeOK {
+		if (model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID())) || spec.Valid(ch) != ExchangeOK {
 			items = append(items, listed)
 			continue
 		}
@@ -264,7 +264,7 @@ func (ch *Character) CreatePersonalShop(actx actor.Context, title string, slot i
 		return ErrMiniRoomBusy
 	}
 	permit := ch.Inventory.GetItem(constant.InventoryTypeCash, slot)
-	if permit == nil || permit.GetModel().GetID() != itemID || itemID/10000 != 514 {
+	if permit == nil || permit.GetModel().GetID() != itemID || permit.GetModel().GetTraits()&constant.ItemTraitPersonalShopPermit == 0 {
 		return ErrMiniRoomInvalid
 	}
 	if expiration := permit.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {

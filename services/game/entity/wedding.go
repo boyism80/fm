@@ -584,7 +584,7 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 	if item == nil || item.GetModel().GetID() != itemID || count == 0 || item.GetCount() < count {
 		return ErrMarriageInvalid
 	}
-	if model.IsTradeBlock() || model.IsQuest() || model.IsAccountSharable() || model.GetTraits()&constant.ItemTraitPet != 0 {
+	if model.GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitQuest|constant.ItemTraitAccountSharable|constant.ItemTraitPet) != 0 {
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveRejected, nil, nil)
 		return nil
 	}
@@ -690,7 +690,7 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 		return ErrWeddingGiftEmpty
 	}
-	if gift.Item.GetModel().IsOnly() && w.owner.Inventory.HasItem(gift.Item.GetModel().GetID()) {
+	if gift.Item.GetModel().GetTraits()&constant.ItemTraitOnly != 0 && w.owner.Inventory.HasItem(gift.Item.GetModel().GetID()) {
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftOneOfAKind, nil, nil)
 		return nil
 	}
@@ -739,7 +739,7 @@ func (w *Wedding) receiveClaimed(id uint64, pb *internal.WeddingGift) bool {
 		return false
 	}
 	model := item.GetModel()
-	if (model.IsOnly() && w.owner.Inventory.HasItem(model.GetID())) || !w.owner.canReceive(model.GetID(), item.GetCount()) {
+	if (model.GetTraits()&constant.ItemTraitOnly != 0 && w.owner.Inventory.HasItem(model.GetID())) || !w.owner.canReceive(model.GetID(), item.GetCount()) {
 		w.owner.Unsettled.Find(id).InFlight = false
 		return false
 	}

@@ -8,18 +8,17 @@ import (
 
 type EquipmentCore struct {
 	*ItemCore
-	EquipmentType   constant.EquipmentType
-	Parts           []constant.EquipmentPartsType
-	Required        RequiredStats
-	Ability         AbilityStats
-	EnhanceChance   uint8
-	EquipTradeBlock bool
-	RoyalSpecial    bool
-	MasterSpecial   bool
-	Hide            bool
-	AttackSpeed     int
-	Pets            []uint32
-	TamingMob       uint32
+	EquipmentType constant.EquipmentType
+	Parts         []constant.EquipmentPartsType
+	Required      RequiredStats
+	Ability       AbilityStats
+	EnhanceChance uint8
+	RoyalSpecial  bool
+	MasterSpecial bool
+	Hide          bool
+	AttackSpeed   int
+	Pets          []uint32
+	TamingMob     uint32
 }
 
 var equipmentPartsByCategory = map[uint32][]constant.EquipmentPartsType{
@@ -122,4 +121,3 @@ func (core *EquipmentCore) GetRequired() RequiredStats {
 	return core.Required
 }
 func (core *EquipmentCore) GetAbility() AbilityStats { return core.Ability }
-func (core *EquipmentCore) IsEquipTradeBlock() bool  { return core.EquipTradeBlock }

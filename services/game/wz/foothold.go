@@ -6,10 +6,7 @@ type Foothold struct {
 	X1, Y1, X2, Y2 int16
 	ID             int16
 	Prev, Next     int16
-}
-
-func (f Foothold) IsWall() bool {
-	return f.X1 == f.X2
+	Wall           bool
 }
 
 func (f Foothold) Bounds() types.Rect[int16] {

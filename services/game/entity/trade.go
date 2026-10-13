@@ -173,7 +173,7 @@ func (t *Trade) PutItem(ch *Character, invType constant.InventoryType, slot int1
 	if err != nil {
 		return err
 	}
-	if invType == constant.InventoryTypeCash || item.GetModel().IsCash() {
+	if invType == constant.InventoryTypeCash || item.GetModel().GetTraits()&constant.ItemTraitCash != 0 {
 		return ErrMiniRoomInvalid
 	}
 	if invType == constant.InventoryTypeEquipment || item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
@@ -271,7 +271,7 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 				continue
 			}
 			model := item.GetModel()
-			if model.IsOnly() && (side.ch.Inventory.HasItem(model.GetID()) || rewards[model.GetID()] > 0) {
+			if model.GetTraits()&constant.ItemTraitOnly != 0 && (side.ch.Inventory.HasItem(model.GetID()) || rewards[model.GetID()] > 0) {
 				return pconst.MiniRoomLeaveTradeOnly
 			}
 			rewards[model.GetID()] += item.GetCount()

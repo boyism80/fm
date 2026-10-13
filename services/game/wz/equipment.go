@@ -10,5 +10,4 @@ type Equipment interface {
 	GetEnhanceChance() uint8
 	GetRequired() RequiredStats
 	GetAbility() AbilityStats
-	IsEquipTradeBlock() bool
 }

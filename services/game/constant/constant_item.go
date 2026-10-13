@@ -30,6 +30,19 @@ const (
 	ItemTraitShopScanner
 	ItemTraitCashTeleportStone
 	ItemTraitVipTeleportStone
+	ItemTraitCash
+	ItemTraitQuest
+	ItemTraitTradeBlock
+	ItemTraitOnly
+	ItemTraitAccountSharable
+	ItemTraitEquipTradeBlock
+	ItemTraitConsumeOnPickup
+	ItemTraitSummonBag
+	ItemTraitCatchItem
+	ItemTraitSkillBook
+	ItemTraitItemEffect
+	ItemTraitEntrustedShopPermit
+	ItemTraitPersonalShopPermit
 )
 
 const ChaosScrollRange = 5

@@ -1740,7 +1740,7 @@ func (l *CharacterListenerImpl) OnRemoveInventorySlot(ch *entity.Character, inve
 func (l *CharacterListenerImpl) OnItemExpired(ch *entity.Character, items []wz.Item) {
 	var expired []uint32
 	for _, model := range items {
-		if model.IsCash() {
+		if model.GetTraits()&constant.ItemTraitCash != 0 {
 			ch.Send(&response.CashItemExpired{ItemID: model.GetID()}, types.SEND_POLICY_ENCRYPT)
 		} else {
 			expired = append(expired, model.GetID())

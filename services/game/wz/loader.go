@@ -172,7 +172,9 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "only":
 				case "timeLimited":
 				case "quest":
-					model.Quest = intField.Value == 1
+					if intField.Value == 1 {
+						model.Traits |= constant.ItemTraitQuest
+					}
 				case "incPAD":
 					model.ScrollIncPAD = int16(intField.Value)
 				case "reqLevel":
@@ -320,7 +322,9 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "time":
 					model.BuffDuration = time.Duration(intField.Value) * time.Millisecond
 				case "consumeOnPickup":
-					model.ConsumeOnPickup = intField.Value != 0
+					if intField.Value != 0 {
+						model.Traits |= constant.ItemTraitConsumeOnPickup
+					}
 				case "cp":
 					model.CP = intField.Value
 				case "nuffSkill":
@@ -616,13 +620,19 @@ func loadWeapons(path string) (Item, error) {
 		case "attackSpeed":
 			model.AttackSpeed = intField.Value
 		case "cash":
-			model.Cash = intField.Value == 1
+			if intField.Value == 1 {
+				model.Traits |= constant.ItemTraitCash
+			}
 		case "slotMax":
 			model.SlotMax = uint16(intField.Value)
 		case "quest":
-			model.Quest = intField.Value == 1
+			if intField.Value == 1 {
+				model.Traits |= constant.ItemTraitQuest
+			}
 		case "equipTradeBlock":
-			model.EquipTradeBlock = intField.Value == 1
+			if intField.Value == 1 {
+				model.Traits |= constant.ItemTraitEquipTradeBlock
+			}
 		case "tradeAvailable":
 			model.TradeAvailable = intField.Value
 		case "hide":
@@ -816,7 +826,9 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 				case "randOption":
 				case "randStat":
 				case "quest":
-					model.Quest = intField.Value == 1
+					if intField.Value == 1 {
+						model.Traits |= constant.ItemTraitQuest
+					}
 				case "exp":
 				case "grade":
 				case "questId":
@@ -1231,6 +1243,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 						Y2:   int16(y2),
 						Prev: int16(prev),
 						Next: int16(next),
+						Wall: x1 == x2,
 					}
 					buffer = append(buffer, foothold)
 

@@ -47,7 +47,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	if !recovery && !special && core.EnhanceChance < 1 {
 		return ErrCannotScroll
 	}
-	if (recovery || chaos || special) && model.IsCash() {
+	if (recovery || chaos || special) && model.GetTraits()&constant.ItemTraitCash != 0 {
 		return ErrCannotScroll
 	}
 	switch model.GetEquipmentType() {

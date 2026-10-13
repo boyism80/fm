@@ -172,7 +172,7 @@ func (ch *Character) makeCrystal(itemID uint32) {
 func (ch *Character) disassembleItem(slot int16, itemID uint32) {
 	item := ch.Inventory.GetItem(constant.InventoryTypeEquipment, slot)
 	equipment, ok := item.(Equipment)
-	if !ok || item.GetModel().GetID() != itemID || item.GetModel().IsTradeBlock() || item.GetModel().IsAccountSharable() {
+	if !ok || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable) != 0 {
 		return
 	}
 	model, ok := item.GetModel().(wz.Equipment)
@@ -186,7 +186,7 @@ func (ch *Character) disassembleItem(slot int16, itemID uint32) {
 
 	quality := equipment.GetEquipmentCore().BonusStats.quality()
 	count := 3 + rand.Intn(5)
-	if model.GetEquipmentType() == constant.EquipmentTypeWeapon || itemID/10000 == 105 {
+	if model.GetEquipmentType() == constant.EquipmentTypeWeapon || model.GetEquipmentType() == constant.EquipmentTypeLongcoat {
 		count = 5 + rand.Intn(7)
 	}
 	if quality > 0 {

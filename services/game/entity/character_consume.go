@@ -84,11 +84,8 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 }
 
 func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
-	if itemID/10000 != 227 {
-		return
-	}
 	item := ch.Inventory.Tabs[constant.InventoryTypeConsume].Get(uint8(slot))
-	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
+	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&constant.ItemTraitCatchItem == 0 {
 		return
 	}
 	consume, ok := item.GetModel().(*wz.Consume)

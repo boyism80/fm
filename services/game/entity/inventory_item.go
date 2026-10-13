@@ -517,7 +517,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 
 	switch parts {
 	case constant.EquipmentPartsTop:
-		if newEq.GetEquipmentCore().IsOverall() {
+		if newEq.GetModel().(wz.Equipment).GetEquipmentType() == constant.EquipmentTypeLongcoat {
 			if equipments[constant.EquipmentPartsPants] != nil {
 				storageSlot, isFree := inven.NextSlot()
 				if !isFree {
@@ -531,7 +531,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	case constant.EquipmentPartsPants:
 		topEq := equipments[constant.EquipmentPartsTop]
 		if topEq != nil {
-			if topEq.GetEquipmentCore().IsOverall() {
+			if topEq.GetModel().(wz.Equipment).GetEquipmentType() == constant.EquipmentTypeLongcoat {
 				storageSlot, isFree := inven.NextSlot()
 				if swap && !isFree {
 					return ErrInventoryFull
@@ -543,7 +543,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		}
 	}
 
-	if model, ok := newEq.GetModel().(wz.Equipment); ok && model.IsEquipTradeBlock() && newEq.GetFlags()&constant.ItemFlagUntradeable == 0 {
+	if newEq.GetModel().GetTraits()&constant.ItemTraitEquipTradeBlock != 0 && newEq.GetFlags()&constant.ItemFlagUntradeable == 0 {
 		newEq.SetFlags(newEq.GetFlags() | constant.ItemFlagUntradeable)
 		ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, slot)
 		ch.Listener.OnInventorySlotAdded(ch, constant.InventoryTypeEquipment, slot, newEq)

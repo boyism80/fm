@@ -18,7 +18,6 @@ func (meso *Meso) GetFieldPlacement() *FieldPlacement {
 func (meso *Meso) BindFieldPlacement(placement *FieldPlacement) {
 	meso.FieldPlacement = placement
 }
-func (meso *Meso) IsMeso() bool { return true }
 
 func (meso *Meso) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeItem

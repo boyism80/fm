@@ -213,7 +213,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		return
 	}
 	wzItem := h.cs.resources.Items[commodity.ItemID]
-	if wzItem == nil || !wzItem.IsQuest() {
+	if wzItem == nil || wzItem.GetTraits()&gconstant.ItemTraitQuest == 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}

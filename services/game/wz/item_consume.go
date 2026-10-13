@@ -11,48 +11,47 @@ const ConsumeMoveToReturnMap int32 = 999999999
 
 type Consume struct {
 	*ItemCore
-	ConsumeType     constant.ConsumeType
-	UnitPrice       float64
-	ActiveEffect    ActiveEffect
-	BuffDuration    time.Duration
-	BuffValues      map[constant.BuffFlag]int32
-	ScrollSuccess   int32
-	ScrollCursed    int32
-	ScrollRandStat  int32
-	ScrollRecover   int32
-	ScrollFlag      constant.ItemFlag
-	ScrollReqRUC    int32
-	ScrollReqs      []uint32
-	ScrollIncStr    int16
-	ScrollIncDex    int16
-	ScrollIncInt    int16
-	ScrollIncLuk    int16
-	ScrollIncMaxHP  int16
-	ScrollIncMaxMP  int16
-	ScrollIncPAD    int16
-	ScrollIncMAD    int16
-	ScrollIncPDD    int16
-	ScrollIncMDD    int16
-	ScrollIncACC    int16
-	ScrollIncAvoid  int16
-	ScrollIncHands  int16
-	ScrollIncSpeed  int16
-	ScrollIncJump   int16
-	ConsumeOnPickup bool
-	PetFood         *PetFood
-	Party           bool
-	MoveTo          int32
-	ExpInc          int32
-	CP              int
-	NuffSkillID     uint32
-	NuffSkillLevel  uint8
-	MobID           uint32
-	MobHP           int32
-	CreateID        uint32
-	MonsterBook     bool
-	MountFatigue    int
-	SkillBook       *SkillBook
-	SummonBag       []SummonBagEntry
+	ConsumeType    constant.ConsumeType
+	UnitPrice      float64
+	ActiveEffect   ActiveEffect
+	BuffDuration   time.Duration
+	BuffValues     map[constant.BuffFlag]int32
+	ScrollSuccess  int32
+	ScrollCursed   int32
+	ScrollRandStat int32
+	ScrollRecover  int32
+	ScrollFlag     constant.ItemFlag
+	ScrollReqRUC   int32
+	ScrollReqs     []uint32
+	ScrollIncStr   int16
+	ScrollIncDex   int16
+	ScrollIncInt   int16
+	ScrollIncLuk   int16
+	ScrollIncMaxHP int16
+	ScrollIncMaxMP int16
+	ScrollIncPAD   int16
+	ScrollIncMAD   int16
+	ScrollIncPDD   int16
+	ScrollIncMDD   int16
+	ScrollIncACC   int16
+	ScrollIncAvoid int16
+	ScrollIncHands int16
+	ScrollIncSpeed int16
+	ScrollIncJump  int16
+	PetFood        *PetFood
+	Party          bool
+	MoveTo         int32
+	ExpInc         int32
+	CP             int
+	NuffSkillID    uint32
+	NuffSkillLevel uint8
+	MobID          uint32
+	MobHP          int32
+	CreateID       uint32
+	MonsterBook    bool
+	MountFatigue   int
+	SkillBook      *SkillBook
+	SummonBag      []SummonBagEntry
 
 	CureDebuffs   []constant.DebuffFlag
 	AvailableMaps []MapRange
@@ -128,10 +127,6 @@ func (c *Consume) IsAvailableAt(mapID uint32) bool {
 		}
 	}
 	return false
-}
-
-func (c *Consume) IsConsumeOnPickup() bool {
-	return c != nil && c.ConsumeOnPickup
 }
 
 func (c *Consume) BuffSpecValues() map[constant.BuffFlag]int32 {

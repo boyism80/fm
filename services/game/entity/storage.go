@@ -75,11 +75,11 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if model.GetTraits()&constant.ItemTraitPet != 0 {
 		return ErrStorageNotStorable
 	}
-	if model.IsOnly() && s.has(invType, itemID) {
+	if model.GetTraits()&constant.ItemTraitOnly != 0 && s.has(invType, itemID) {
 		return ErrStorageNotStorable
 	}
 	flags := item.GetFlags()
-	untradeable := model.IsTradeBlock() || model.IsQuest()
+	untradeable := model.GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitQuest) != 0
 	karma := constant.ItemFlagBundleKarma
 	if invType == constant.InventoryTypeEquipment {
 		untradeable = untradeable || flags&constant.ItemFlagUntradeable != 0
@@ -118,7 +118,7 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 		return ErrStorageItemNotFound
 	}
 	item := items[index]
-	if item.GetModel().IsOnly() && s.owner.Inventory.HasItem(item.GetModel().GetID()) {
+	if item.GetModel().GetTraits()&constant.ItemTraitOnly != 0 && s.owner.Inventory.HasItem(item.GetModel().GetID()) {
 		return ErrStorageNotStorable
 	}
 

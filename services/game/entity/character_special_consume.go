@@ -8,11 +8,11 @@ import (
 )
 
 func (ch *Character) UseSkillBook(slot int16, itemID uint32) {
-	if ch.GetHp() == 0 || itemID/10000 != 228 && itemID/10000 != 229 {
+	if ch.GetHp() == 0 {
 		return
 	}
 	item := ch.Inventory.GetItem(constant.InventoryTypeConsume, slot)
-	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
+	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&constant.ItemTraitSkillBook == 0 {
 		return
 	}
 	consume, ok := item.GetModel().(*wz.Consume)
@@ -53,11 +53,11 @@ func (ch *Character) UseSkillBook(slot int16, itemID uint32) {
 }
 
 func (ch *Character) UseSummonBag(slot int16, itemID uint32) {
-	if ch.GetHp() == 0 || itemID/10000 != 210 {
+	if ch.GetHp() == 0 {
 		return
 	}
 	item := ch.Inventory.GetItem(constant.InventoryTypeConsume, slot)
-	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
+	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&constant.ItemTraitSummonBag == 0 {
 		return
 	}
 	consume, ok := item.GetModel().(*wz.Consume)

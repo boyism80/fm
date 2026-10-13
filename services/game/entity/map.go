@@ -1380,7 +1380,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedNoOwnership
 		}
 
-		if item.GetModel().IsConsumeOnPickup() {
+		if item.GetModel().GetTraits()&constant.ItemTraitConsumeOnPickup != 0 {
 			consume, ok := item.(*Consume)
 			if !ok {
 				return constant.LootFailedInvalidItem

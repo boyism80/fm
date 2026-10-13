@@ -190,7 +190,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 			return ErrDueyInvalid
 		}
 		model := item.GetModel()
-		if model.IsTradeBlock() || model.IsAccountSharable() || model.IsQuest() {
+		if model.GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable|constant.ItemTraitQuest) != 0 {
 			return ErrDueyNotSendable
 		}
 		if model.GetTraits()&constant.ItemTraitPet != 0 {
@@ -223,7 +223,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	oneOfAKind := false
 	if item != nil {
 		parcel.Item = item.Clone(uint16(count)).ToProto(0, 0)
-		oneOfAKind = item.GetModel().IsOnly()
+		oneOfAKind = item.GetModel().GetTraits()&constant.ItemTraitOnly != 0
 		detail.Item = parcel.Item
 		d.owner.Inventory.RemoveItem(invType, slot, uint16(count))
 	}
@@ -391,7 +391,7 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 	if parcel.Item == nil {
 		return nil
 	}
-	if parcel.Item.GetModel().IsOnly() && d.owner.Inventory.HasItem(parcel.Item.GetModel().GetID()) {
+	if parcel.Item.GetModel().GetTraits()&constant.ItemTraitOnly != 0 && d.owner.Inventory.HasItem(parcel.Item.GetModel().GetID()) {
 		return ErrDueyOnlyHeld
 	}
 	spec := ExchangeSpec{

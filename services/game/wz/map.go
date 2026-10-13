@@ -144,7 +144,7 @@ func (model *Map) findBelow(p types.Point[int16]) (*Foothold, bool) {
 	})
 	for i := range xMatches {
 		fh := xMatches[i]
-		if fh.IsWall() {
+		if fh.Wall {
 			continue
 		}
 		if fh.X1 != fh.X2 && fh.Y1 != fh.Y2 {
@@ -170,7 +170,7 @@ func (model *Map) PointBelow(point types.Point[int16]) *types.Point[int16] {
 		return nil
 	}
 	var y int16
-	if !fh.IsWall() && fh.Y1 != fh.Y2 {
+	if !fh.Wall && fh.Y1 != fh.Y2 {
 		y = footholdSurfaceYAtX(*fh, point.X)
 	} else {
 		y = fh.Y1

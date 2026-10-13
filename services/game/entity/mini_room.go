@@ -192,7 +192,7 @@ func (r *shopRoom) list(ch *Character, invType constant.InventoryType, slot int1
 func (r *shopRoom) holds(itemID uint32) bool {
 	for _, listed := range r.Items {
 		model := listed.Item.GetModel()
-		if model.IsOnly() && model.GetID() == itemID {
+		if model.GetTraits()&constant.ItemTraitOnly != 0 && model.GetID() == itemID {
 			return true
 		}
 	}
@@ -236,7 +236,7 @@ func (inv *Inventory) findTradable(invType constant.InventoryType, slot int16) (
 		return nil, ErrMiniRoomItemNotFound
 	}
 	model := item.GetModel()
-	if model.IsQuest() || model.GetTraits()&constant.ItemTraitPet != 0 {
+	if model.GetTraits()&(constant.ItemTraitQuest|constant.ItemTraitPet) != 0 {
 		return nil, ErrMiniRoomInvalid
 	}
 	flags := item.GetFlags()
@@ -244,7 +244,7 @@ func (inv *Inventory) findTradable(invType constant.InventoryType, slot int16) (
 		return nil, ErrMiniRoomInvalid
 	}
 
-	untradeable := model.IsTradeBlock() || model.IsAccountSharable()
+	untradeable := model.GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable) != 0
 	karma := constant.ItemFlagBundleKarma
 	if invType == constant.InventoryTypeEquipment {
 		untradeable = untradeable || flags&constant.ItemFlagUntradeable != 0
@@ -275,7 +275,7 @@ func (ch *Character) collectShopGoods(meso int32, items []*ShopItem) (int32, []*
 	for _, listed := range items {
 		model := listed.Item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if (model.IsOnly() && ch.Inventory.HasItem(model.GetID())) || spec.Valid(ch) != ExchangeOK {
+		if (model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID())) || spec.Valid(ch) != ExchangeOK {
 			kept = append(kept, listed)
 			continue
 		}
@@ -292,7 +292,7 @@ func (r *shopRoom) unlist(ch *Character, index uint16) error {
 	listed := r.Items[index]
 	if listed.Bundles > 0 {
 		model := listed.Item.GetModel()
-		if model.IsOnly() && ch.Inventory.HasItem(model.GetID()) {
+		if model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID()) {
 			return ErrMiniRoomOnlyHeld
 		}
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
@@ -327,7 +327,7 @@ func (r *shopRoom) sell(ch *Character, index uint16, bundles uint16, held int32)
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuySellerLimit}
 	}
 	model := listed.Item.GetModel()
-	if model.IsOnly() && ch.Inventory.HasItem(model.GetID()) {
+	if model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID()) {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyOnlyOne}
 	}
 	count := bundles * listed.PerBundle

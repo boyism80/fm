@@ -19,7 +19,6 @@ type FieldPlaceable interface {
 	GetFieldPlacement() *FieldPlacement
 	BindFieldPlacement(placement *FieldPlacement)
 	GetCount32() int32
-	IsMeso() bool
 }
 
 type Item interface {
@@ -86,7 +85,6 @@ func (e *EquipmentCore) SetFlags(flags constant.ItemFlag) {
 }
 func (e *EquipmentCore) Reduce(count uint16) uint16   { return 0 }
 func (e *EquipmentCore) Increase(count uint16) uint16 { return 0 }
-func (e *EquipmentCore) IsOverall() bool              { return e.GetModel().GetID()/10000 == 105 }
 
 type Equipment interface {
 	Item
@@ -171,7 +169,6 @@ func (item *ItemCore) SendDestroySyncToViewer(viewer *Character) {
 func (item *ItemCore) GetFieldPlacement() *FieldPlacement           { return item.FieldPlacement }
 func (item *ItemCore) Getcount() uint16                             { return item.Count }
 func (item *ItemCore) GetCount32() int32                            { return int32(item.Count) }
-func (item *ItemCore) IsMeso() bool                                 { return false }
 func (item *ItemCore) SetCount(count uint16)                        { item.Count = count }
 func (item *ItemCore) GetFlags() constant.ItemFlag                  { return 0 }
 func (item *ItemCore) SetFlags(flags constant.ItemFlag)             {}

@@ -8,26 +8,27 @@ import (
 )
 
 type ItemCore struct {
-	ID              uint32
-	Name            string
-	Price           int
-	Cash            bool
-	Quest           bool
-	SlotMax         uint16
-	TradeAvailable  int
-	TradeBlock      bool
-	Only            bool
-	AccountSharable bool
-	MakerLevel      int
-	MakerBonus      map[string]int16
-	InventoryType   constant.InventoryType
-	Traits          constant.ItemTrait
+	ID             uint32
+	Name           string
+	Price          int
+	SlotMax        uint16
+	TradeAvailable int
+	MakerLevel     int
+	MakerBonus     map[string]int16
+	InventoryType  constant.InventoryType
+	Traits         constant.ItemTrait
 }
 
 func (model *ItemCore) setTradeFlags(info *node) {
-	model.TradeBlock = info.Int("tradeBlock", 0) == 1
-	model.Only = info.Int("only", 0) == 1
-	model.AccountSharable = info.Int("accountSharable", 0) == 1
+	if info.Int("tradeBlock", 0) == 1 {
+		model.Traits |= constant.ItemTraitTradeBlock
+	}
+	if info.Int("only", 0) == 1 {
+		model.Traits |= constant.ItemTraitOnly
+	}
+	if info.Int("accountSharable", 0) == 1 {
+		model.Traits |= constant.ItemTraitAccountSharable
+	}
 }
 
 var crushRings = []uint32{1112001, 1112002, 1112003, 1112005, 1112006, 1112007, 1112012, 1112015, 1048000, 1048001, 1048002}
@@ -56,8 +57,20 @@ func (model *ItemCore) classify() {
 		model.Traits |= constant.ItemTraitPet
 	case constant.ItemCategoryMarriage:
 		model.Traits |= constant.ItemTraitMarriage
+	case 210:
+		model.Traits |= constant.ItemTraitSummonBag
+	case 227:
+		model.Traits |= constant.ItemTraitCatchItem
+	case 228, 229:
+		model.Traits |= constant.ItemTraitSkillBook
 	case 231, 523:
 		model.Traits |= constant.ItemTraitShopScanner
+	case 501:
+		model.Traits |= constant.ItemTraitItemEffect
+	case 503:
+		model.Traits |= constant.ItemTraitEntrustedShopPermit
+	case 514:
+		model.Traits |= constant.ItemTraitPersonalShopPermit
 	case 504:
 		model.Traits |= constant.ItemTraitCashTeleportStone
 		if model.ID/1000 != 5040 {
@@ -100,32 +113,8 @@ func (model *ItemCore) SellPrice(quantity uint16) int {
 	return int(math.Ceil(float64(model.Price) / float64(model.GetCapacity()) * float64(quantity)))
 }
 
-func (model *ItemCore) IsCash() bool {
-	return model.Cash
-}
-
-func (model *ItemCore) IsQuest() bool {
-	return model.Quest
-}
-
 func (model *ItemCore) GetCapacity() uint16 {
 	return max(1, model.SlotMax)
-}
-
-func (model *ItemCore) IsTradeAvailable() int {
-	return model.TradeAvailable
-}
-
-func (model *ItemCore) IsTradeBlock() bool {
-	return model.TradeBlock
-}
-
-func (model *ItemCore) IsOnly() bool {
-	return model.Only
-}
-
-func (model *ItemCore) IsAccountSharable() bool {
-	return model.AccountSharable
 }
 
 func (model *ItemCore) GetMakerLevel() int { return model.MakerLevel }
@@ -134,7 +123,3 @@ func (model *ItemCore) GetMakerBonus() map[string]int16 { return model.MakerBonu
 
 func (model *ItemCore) GetInventoryType() constant.InventoryType { return model.InventoryType }
 func (model *ItemCore) GetTraits() constant.ItemTrait            { return model.Traits }
-
-func (model *ItemCore) IsConsumeOnPickup() bool {
-	return false
-}

@@ -560,7 +560,7 @@ func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot 
 		return ErrMiniRoomBusy
 	}
 	permit := ch.Inventory.GetItem(constant.InventoryTypeCash, slot)
-	if permit == nil || permit.GetModel().GetID() != itemID || itemID/10000 != 503 {
+	if permit == nil || permit.GetModel().GetID() != itemID || permit.GetModel().GetTraits()&constant.ItemTraitEntrustedShopPermit == 0 {
 		return ErrMiniRoomInvalid
 	}
 	if expiration := permit.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {

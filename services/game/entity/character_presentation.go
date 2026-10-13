@@ -50,8 +50,11 @@ func (ch *Character) SetItemEffect(itemID uint32) {
 	if ch.GetMap() == nil || !ch.IsAlive() || ch.Spectating() || ch.ItemEffectID == itemID {
 		return
 	}
-	if itemID != 0 && (itemID/10000 != 501 || ch.Inventory.Tabs[constant.InventoryTypeCash].Find(itemID) == nil) {
-		return
+	if itemID != 0 {
+		item := ch.Inventory.Tabs[constant.InventoryTypeCash].Find(itemID)
+		if item == nil || item.GetModel().GetTraits()&constant.ItemTraitItemEffect == 0 {
+			return
+		}
 	}
 	ch.ItemEffectID = itemID
 	ch.Listener.OnItemEffect(ch)
