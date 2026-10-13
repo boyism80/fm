@@ -124,7 +124,7 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 	if event == nil {
 		return
 	}
-	if event.Type == constant.ReactorEventTypeDirectionalHit && hitSide.IsLeft() {
+	if event.Type == constant.ReactorEventTypeDirectionalHit && (hitSide == constant.ReactorHitAirLeft || hitSide == constant.ReactorHitGroundLeft) {
 		return
 	}
 

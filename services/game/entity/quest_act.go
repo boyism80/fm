@@ -29,7 +29,7 @@ type QuestPhaseOpts struct {
 }
 
 type questActionOpts struct {
-	ClassID   uint16
+	Class     *wz.Class
 	Selection *uint32
 	Forfeited bool
 	NpcID     uint32
@@ -98,19 +98,19 @@ func (qc *Quests) buildPhaseExchange(actions wz.QuestActions, opts questActionOp
 		}
 	}
 	if len(actions.Item) > 0 {
-		qc.appendPhaseActItems(&spec, opts.ClassID, actions.Item, opts.Selection)
+		qc.appendPhaseActItems(&spec, opts.Class, actions.Item, opts.Selection)
 	}
 	if len(actions.Skills) == 0 {
 		return spec
 	}
-	if len(actions.SkillClasses) > 0 && !matchesQuestClass(opts.ClassID, actions.SkillClasses) {
+	if !opts.Class.InQuestClasses(actions.SkillClasses) {
 		return spec
 	}
 	for _, skill := range actions.Skills {
 		if skill.SkillID == 0 {
 			continue
 		}
-		if len(skill.Classes) > 0 && !matchesQuestClass(opts.ClassID, skill.Classes) {
+		if !opts.Class.InQuestClasses(skill.Classes) {
 			continue
 		}
 		spec.Reward.Skills = append(spec.Reward.Skills, ExchangeSkill{
@@ -162,7 +162,7 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	qp.InitMobKillCounters()
 	if !opts.Force {
 		err := qc.grant(qp, qp.Wz.Start.Actions, questActionOpts{
-			ClassID:   uint16(qc.owner.Class.ID),
+			Class:     qc.owner.Class,
 			Forfeited: qp.Forfeited > 0,
 			NpcID:     wireNPC,
 		})
@@ -226,7 +226,7 @@ func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
 		return ErrQuestNotStartable
 	}
 	exchange := qc.buildPhaseExchange(def.Start.Actions, questActionOpts{
-		ClassID:   uint16(qc.owner.Class.ID),
+		Class:     qc.owner.Class,
 		Forfeited: existing != nil && existing.Forfeited > 0,
 	})
 	if exchange.Cost.ValidCost(qc.owner) != ExchangeOK {
@@ -298,14 +298,14 @@ func (qc *Quests) completeLinkedQuest(refID uint32) {
 	refQP.CompletionTime = clock.Now()
 }
 
-func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items []wz.QuestActionItem, selection *uint32) {
+func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, class *wz.Class, items []wz.QuestActionItem, selection *uint32) {
 	if qc == nil || spec == nil {
 		return
 	}
 
 	var randomPool []uint32
 	for _, item := range items {
-		if !qc.matchesRewardItem(item, classID) || item.Count <= 0 || !item.Prop.IsWeightedRandom() {
+		if !qc.matchesRewardItem(item, class) || item.Count <= 0 || item.Prop <= 0 {
 			continue
 		}
 		for i := 0; i < item.Prop.RandomWeight(); i++ {
@@ -325,7 +325,7 @@ func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items 
 
 	extNum := 0
 	for _, item := range items {
-		if !qc.matchesRewardItem(item, classID) || item.Count == 0 {
+		if !qc.matchesRewardItem(item, class) || item.Count == 0 {
 			continue
 		}
 		if item.Count < 0 {
@@ -337,8 +337,8 @@ func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items 
 		}
 
 		switch {
-		case item.Prop.IsAlways():
-		case item.Prop.IsSelection():
+		case item.Prop == wz.QuestRewardPropAlways:
+		case item.Prop == wz.QuestRewardPropSelect:
 			if selectionIdx < 0 {
 				continue
 			}
@@ -366,25 +366,6 @@ func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items 
 	}
 }
 
-func matchesQuestClass(classID uint16, codes []int) bool {
-	if len(codes) == 0 {
-		return true
-	}
-	class := int(classID)
-	for _, code := range codes {
-		if code == 0 && class == 0 {
-			return true
-		}
-		if code == class {
-			return true
-		}
-		if code%100 == 0 && class/100 == code/100 {
-			return true
-		}
-	}
-	return false
-}
-
 func (qc *Quests) completedQuestCount() int {
 	if qc == nil {
 		return 0
@@ -402,101 +383,20 @@ func (qc *Quests) completedQuestCount() int {
 	return count
 }
 
-func (qc *Quests) matchesRewardItem(item wz.QuestRewardItem, classID uint16) bool {
+func (qc *Quests) matchesRewardItem(item wz.QuestRewardItem, class *wz.Class) bool {
 	if qc == nil || qc.owner == nil {
 		return false
 	}
 	if item.Gender <= 1 && item.Gender != int(qc.owner.look.Gender) {
 		return false
 	}
-	if item.Class <= 0 {
+	if item.Classes == nil {
 		return true
 	}
-	classCode := int(classID)
-	for _, codec := range classesBy5ByteEncoding(item.Class) {
-		if codec/100 == classCode/100 {
+	for _, code := range item.Classes {
+		if code/100 == int(class.ID)/100 {
 			return true
 		}
 	}
-	if item.ClassEx > 0 {
-		for _, codec := range classesBySimpleEncoding(item.ClassEx) {
-			if (codec/100)%10 == (classCode/100)%10 {
-				return true
-			}
-		}
-	}
 	return false
-}
-
-func classesBy5ByteEncoding(encoded int) []int {
-	ret := make([]int, 0, 8)
-	if encoded&0x1 != 0 {
-		ret = append(ret, 0)
-	}
-	if encoded&0x2 != 0 {
-		ret = append(ret, 100)
-	}
-	if encoded&0x4 != 0 {
-		ret = append(ret, 200)
-	}
-	if encoded&0x8 != 0 {
-		ret = append(ret, 300)
-	}
-	if encoded&0x10 != 0 {
-		ret = append(ret, 400)
-	}
-	if encoded&0x20 != 0 {
-		ret = append(ret, 500)
-	}
-	if encoded&0x400 != 0 {
-		ret = append(ret, 1000)
-	}
-	if encoded&0x800 != 0 {
-		ret = append(ret, 1100)
-	}
-	if encoded&0x1000 != 0 {
-		ret = append(ret, 1200)
-	}
-	if encoded&0x2000 != 0 {
-		ret = append(ret, 1300)
-	}
-	if encoded&0x4000 != 0 {
-		ret = append(ret, 1400)
-	}
-	if encoded&0x8000 != 0 {
-		ret = append(ret, 1500)
-	}
-	if encoded&0x20000 != 0 {
-		ret = append(ret, 2001, 2200)
-	}
-	if encoded&0x100000 != 0 {
-		ret = append(ret, 2000, 2001)
-	}
-	if encoded&0x200000 != 0 {
-		ret = append(ret, 2100)
-	}
-	if encoded&0x400000 != 0 {
-		ret = append(ret, 2001, 2200)
-	}
-	if encoded&0x40000000 != 0 {
-		ret = append(ret, 3000, 3200, 3300, 3500)
-	}
-	return ret
-}
-
-func classesBySimpleEncoding(encoded int) []int {
-	ret := make([]int, 0, 4)
-	if encoded&0x1 != 0 {
-		ret = append(ret, 200)
-	}
-	if encoded&0x2 != 0 {
-		ret = append(ret, 300)
-	}
-	if encoded&0x4 != 0 {
-		ret = append(ret, 400)
-	}
-	if encoded&0x8 != 0 {
-		ret = append(ret, 500)
-	}
-	return ret
 }

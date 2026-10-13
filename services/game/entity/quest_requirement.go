@@ -2,7 +2,6 @@ package entity
 
 import (
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -45,7 +44,7 @@ func (qc *Quests) requirementsMet(req wz.QuestRequirements, qp *Quest, opts Ques
 	if req.Level > 0 && int(qc.owner.GetLevel()) < req.Level {
 		return false
 	}
-	if len(req.Classes) > 0 && !matchesQuestClass(uint16(qc.owner.Class.ID), req.Classes) {
+	if !qc.owner.Class.InQuestClasses(req.Classes) {
 		return false
 	}
 	for itemID, count := range req.Item {
@@ -92,17 +91,11 @@ func (qc *Quests) requirementsMet(req wz.QuestRequirements, qp *Quest, opts Ques
 			}
 		}
 	}
-	if req.Start != "" {
-		eventTime, ok := parseQuestEventTime(req.Start)
-		if !ok || clock.Now().Before(eventTime) {
-			return false
-		}
+	if !req.Start.IsZero() && clock.Now().Before(req.Start) {
+		return false
 	}
-	if req.End != "" {
-		eventTime, ok := parseQuestEventTime(req.End)
-		if !ok || !clock.Now().Before(eventTime) {
-			return false
-		}
+	if !req.End.IsZero() && !clock.Now().Before(req.End) {
+		return false
 	}
 	if req.InfoNumber > 0 {
 		refQP := qc.Get(uint32(req.InfoNumber))
@@ -211,32 +204,6 @@ func (qc *Quests) requirementsMet(req wz.QuestRequirements, qp *Quest, opts Ques
 	}
 
 	return true
-}
-
-func parseQuestEventTime(raw string) (time.Time, bool) {
-	if len(raw) != 10 {
-		return time.Time{}, false
-	}
-	year, err := strconv.Atoi(raw[0:4])
-	if err != nil {
-		return time.Time{}, false
-	}
-	month, err := strconv.Atoi(raw[4:6])
-	if err != nil {
-		return time.Time{}, false
-	}
-	day, err := strconv.Atoi(raw[6:8])
-	if err != nil {
-		return time.Time{}, false
-	}
-	hour, err := strconv.Atoi(raw[8:10])
-	if err != nil {
-		return time.Time{}, false
-	}
-	if month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 {
-		return time.Time{}, false
-	}
-	return time.Date(year, time.Month(month), day, hour, 0, 0, 0, time.Local), true
 }
 
 func sameCalendarDay(a, b time.Time) bool {

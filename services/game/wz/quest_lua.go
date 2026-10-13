@@ -152,16 +152,16 @@ func questRequirementsToLuaTable(L *lua.LState, reqs QuestRequirements) *lua.LTa
 		tbl.RawSetString("value", lua.LString(reqs.EndScript))
 		appendReq(tbl)
 	}
-	if reqs.Start != "" {
+	if !reqs.Start.IsZero() {
 		tbl := L.NewTable()
 		tbl.RawSetString("kind", lua.LString("start"))
-		tbl.RawSetString("value", lua.LString(reqs.Start))
+		tbl.RawSetString("value", lua.LString(reqs.Start.Format("2006010215")))
 		appendReq(tbl)
 	}
-	if reqs.End != "" {
+	if !reqs.End.IsZero() {
 		tbl := L.NewTable()
 		tbl.RawSetString("kind", lua.LString("end"))
-		tbl.RawSetString("value", lua.LString(reqs.End))
+		tbl.RawSetString("value", lua.LString(reqs.End.Format("2006010215")))
 		appendReq(tbl)
 	}
 	if len(reqs.Info) > 0 {

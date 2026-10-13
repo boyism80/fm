@@ -1,5 +1,7 @@
 package wz
 
+import "time"
+
 type Quest struct {
 	ID         uint32
 	Meta       QuestMeta
@@ -71,8 +73,8 @@ type QuestRequirements struct {
 	PartyQuestS       int
 	StartScript       string
 	EndScript         string
-	Start             string
-	End               string
+	Start             time.Time
+	End               time.Time
 	Info              []string
 	InfoNumber        int
 	WorldMin          string
@@ -133,18 +135,6 @@ const (
 	QuestRewardPropSelect QuestRewardProp = -1
 )
 
-func (p QuestRewardProp) IsAlways() bool {
-	return p == QuestRewardPropAlways
-}
-
-func (p QuestRewardProp) IsSelection() bool {
-	return p == QuestRewardPropSelect
-}
-
-func (p QuestRewardProp) IsWeightedRandom() bool {
-	return p > 0
-}
-
 func (p QuestRewardProp) RandomWeight() int {
 	if p <= 0 {
 		return 0
@@ -155,8 +145,7 @@ func (p QuestRewardProp) RandomWeight() int {
 type QuestActionItem struct {
 	ItemID     uint32
 	Count      int
-	Class      int
-	ClassEx    int
+	Classes    []int
 	Gender     int
 	Period     int
 	Prop       QuestRewardProp
@@ -192,10 +181,6 @@ func (q *Quest) HasAutoStartMeta() bool {
 		return false
 	}
 	return q.Meta.AutoStart || q.Meta.AutoAccept
-}
-
-func (q *Quest) IsPartyQuest() bool {
-	return q != nil && len(q.PartyRanks) > 0
 }
 
 func (q *Quest) PartyRankChecks(rank string) []PartyQuestRankCheck {

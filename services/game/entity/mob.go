@@ -135,10 +135,6 @@ func (m *Mob) Is(typ constant.ObjectType) bool {
 	return m.GetObjectType().Has(typ)
 }
 
-func (m *Mob) IsFake() bool {
-	return m != nil && m.Fake
-}
-
 func (m *Mob) SetScaleLevel(scale int) {
 	if m == nil || m.Wz == nil || scale <= 0 {
 		return
@@ -175,7 +171,7 @@ func (m *Mob) canReceiveMobBuff(flag constant.MobBuffFlag, skillWz *wz.Skill) bo
 	if skillWz != nil && skillWz.MobSkill {
 		return true
 	}
-	if m.IsFake() {
+	if m.Fake {
 		switch flag {
 		case constant.MobBuffStun, constant.MobBuffSpeed, constant.MobBuffPoison, constant.MobBuffVenom:
 			return false
@@ -628,7 +624,7 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 
 	pos := m.Position
 	revives := []uint32(nil)
-	if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 {
+	if !m.Fake && m.Wz != nil && len(m.Wz.Revives) > 0 {
 		revives = m.Wz.Revives
 	}
 

@@ -11,10 +11,6 @@ const (
 	ReactorHitGroundRight ReactorHitSide = 3
 )
 
-func (s ReactorHitSide) IsLeft() bool {
-	return s == ReactorHitAirLeft || s == ReactorHitGroundLeft
-}
-
 func (s ReactorHitSide) String() string {
 	switch s {
 	case ReactorHitAirLeft:

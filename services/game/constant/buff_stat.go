@@ -80,17 +80,17 @@ var (
 	BuffFlagSoaring       = BuffFlag{0x40000, 2}
 )
 
-func IsTargetStatFlag(flag BuffFlag) bool {
-	return flag == BuffFlagSpeed ||
-		flag == BuffFlagCombo ||
-		flag == BuffFlagWkCharge ||
-		flag == BuffFlagShadowPartner ||
-		flag == BuffFlagDarksight ||
-		flag == BuffFlagSoulArrow ||
-		flag == BuffFlagMorph ||
-		flag == BuffFlagSpiritClaw ||
-		flag == BuffFlagBerserkFury ||
-		flag == BuffFlagDivineBody
+var TargetStatFlags = map[BuffFlag]bool{
+	BuffFlagSpeed:         true,
+	BuffFlagCombo:         true,
+	BuffFlagWkCharge:      true,
+	BuffFlagShadowPartner: true,
+	BuffFlagDarksight:     true,
+	BuffFlagSoulArrow:     true,
+	BuffFlagMorph:         true,
+	BuffFlagSpiritClaw:    true,
+	BuffFlagBerserkFury:   true,
+	BuffFlagDivineBody:    true,
 }
 
 func AllBuffFlags() map[string]BuffFlag {

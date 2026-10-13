@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sort"
 	"strconv"
+	"time"
 )
 
 func loadQuests(questPath string) (map[uint32]*Quest, error) {
@@ -153,9 +154,9 @@ func mergeQuestRequirementChild(reqs *QuestRequirements, child *node) {
 	case "skill":
 		reqs.Skill = parseQuestSkillRefs(child)
 	case "start":
-		reqs.Start = nodeStringValue(child)
+		reqs.Start = parseQuestTime(nodeStringValue(child))
 	case "end":
-		reqs.End = nodeStringValue(child)
+		reqs.End = parseQuestTime(nodeStringValue(child))
 	case "startscript":
 		reqs.StartScript = nodeStringValue(child)
 	case "endscript":
@@ -288,9 +289,9 @@ func setQuestRequirementInt(reqs *QuestRequirements, kind string, value int) {
 func setQuestRequirementStr(reqs *QuestRequirements, kind string, value string) {
 	switch kind {
 	case "start":
-		reqs.Start = value
+		reqs.Start = parseQuestTime(value)
 	case "end":
-		reqs.End = value
+		reqs.End = parseQuestTime(value)
 	case "startscript":
 		reqs.StartScript = value
 	case "endscript":
@@ -573,8 +574,7 @@ func parseQuestActionItems(n *node) []QuestActionItem {
 		item := QuestActionItem{
 			ItemID:     uint32(child.Int("id", 0)),
 			Count:      child.Int("count", 0),
-			Class:      child.Int("job", -1),
-			ClassEx:    child.Int("jobEx", -1),
+			Classes:    parseQuestItemClasses(child.Int("job", -1)),
 			Gender:     child.Int("gender", 2),
 			Period:     child.Int("period", 0),
 			Prop:       QuestRewardPropAlways,
@@ -764,4 +764,46 @@ func nodeStringValue(n *node) string {
 		return n.Value
 	}
 	return ""
+}
+
+func parseQuestTime(raw string) time.Time {
+	t, err := time.ParseInLocation("2006010215", raw, time.Local)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+func parseQuestItemClasses(encoded int) []int {
+	if encoded <= 0 {
+		return nil
+	}
+	classes := make([]int, 0, 8)
+	for _, bit := range []struct {
+		mask    int
+		classes []int
+	}{
+		{0x1, []int{0}},
+		{0x2, []int{100}},
+		{0x4, []int{200}},
+		{0x8, []int{300}},
+		{0x10, []int{400}},
+		{0x20, []int{500}},
+		{0x400, []int{1000}},
+		{0x800, []int{1100}},
+		{0x1000, []int{1200}},
+		{0x2000, []int{1300}},
+		{0x4000, []int{1400}},
+		{0x8000, []int{1500}},
+		{0x20000, []int{2001, 2200}},
+		{0x100000, []int{2000, 2001}},
+		{0x200000, []int{2100}},
+		{0x400000, []int{2001, 2200}},
+		{0x40000000, []int{3000, 3200, 3300, 3500}},
+	} {
+		if encoded&bit.mask != 0 {
+			classes = append(classes, bit.classes...)
+		}
+	}
+	return classes
 }

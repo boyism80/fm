@@ -496,7 +496,7 @@ func (bc *Buffs) SpawnPlayerData() SpawnPlayerBuffData {
 			if idx < 0 || idx >= constant.MaxBuffFlag {
 				continue
 			}
-			if constant.IsTargetStatFlag(flag) {
+			if constant.TargetStatFlags[flag] {
 				data.BuffStates[idx] |= flag.Mask
 			}
 			switch flag {

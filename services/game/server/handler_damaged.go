@@ -58,7 +58,7 @@ func (h *Damaged) adjustDamage(character *entity.Character, req *request.Damaged
 		return damage
 	}
 	if req.OID != 0 {
-		if mob := mapInstance.GetMob(req.OID); mob != nil && mob.IsFake() {
+		if mob := mapInstance.GetMob(req.OID); mob != nil && mob.Fake {
 			return 0
 		}
 	}

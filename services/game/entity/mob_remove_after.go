@@ -12,7 +12,7 @@ func (m *Mob) scheduleRemoveAfter() {
 	if m == nil || m.Wz == nil {
 		return
 	}
-	if m.IsFake() {
+	if m.Fake {
 		return
 	}
 	removeAfter := m.Wz.RemoveAfter

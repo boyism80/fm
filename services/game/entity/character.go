@@ -761,18 +761,6 @@ func (inv *Inventory) SetMeso(meso int32) {
 	inv.Meso = meso
 }
 
-func (ch *Character) IsRanked() bool {
-	if ch.HasRoleAtLeast(constant.RoleAdmin) {
-		return false
-	}
-
-	if ch.level < 30 {
-		return false
-	}
-
-	return true
-}
-
 func (ch *Character) remainingExpToMaxLevel() uint32 {
 	if ch == nil || ch.level >= 200 {
 		return 0

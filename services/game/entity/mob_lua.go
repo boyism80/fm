@@ -26,7 +26,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			argc := L.GetTop()
 			if argc == 1 {
-				L.Push(lua.LBool(mob.IsFake()))
+				L.Push(lua.LBool(mob.Fake))
 				return 1
 			}
 			if argc == 2 {

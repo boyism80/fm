@@ -24,7 +24,7 @@ func (m *Mob) MarkHit() {
 }
 
 func (m *Mob) startTimedDrop() {
-	if m == nil || m.Wz == nil || m.IsFake() {
+	if m == nil || m.Wz == nil || m.Fake {
 		return
 	}
 	period := m.Wz.DropItemPeriod
