@@ -2,8 +2,6 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
 )
 
 type DeliverPartyUpdateJoinHandler struct{}
@@ -28,16 +26,5 @@ func (h *DeliverPartyUpdateJoinHandler) Handle(ctx actor.Context, a *GameLogicAc
 	if ch.GetID() != msg.JoinCharacterID {
 		return
 	}
-	ch.Listener.OnPartyMemberHPChanged(ch, nil)
-	for _, obj := range m.GetObjects(constant.ObjectTypeCharacter) {
-		peer, ok := obj.(*entity.Character)
-		if !ok || peer == nil || peer.GetID() == ch.GetID() {
-			continue
-		}
-		pPeer := peer.Party.ID()
-		if pPeer == nil || *pPeer != msg.PartyID {
-			continue
-		}
-		peer.Listener.OnPartyMemberHPChanged(peer, ch)
-	}
+	m.SyncPartyHP(ch, msg.PartyID)
 }

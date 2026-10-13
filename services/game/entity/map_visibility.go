@@ -24,7 +24,7 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 			o.SendSpawnSyncToViewer(mover)
 			if peer, ok := o.(*Character); ok {
 				mover.SendSpawnSyncToViewer(peer)
-				syncPartyMemberHP(mover, peer)
+				mover.syncPartyHP(peer)
 			}
 		}
 		for _, o := range beforeNear {
@@ -57,17 +57,21 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 	}
 }
 
-func syncPartyMemberHP(a, b *Character) {
-	if a == nil || b == nil {
+func (ch *Character) syncPartyHP(peer *Character) {
+	if !ch.Party.Is(peer.Party.ID()) {
 		return
 	}
-	if !a.Party.Is(b.Party.ID()) {
-		return
-	}
-	if a.Listener != nil {
-		a.Listener.OnPartyMemberHPChanged(a, b)
-	}
-	if b.Listener != nil {
-		b.Listener.OnPartyMemberHPChanged(b, a)
+	ch.Listener.OnPartyMemberHPChanged(ch, peer)
+	peer.Listener.OnPartyMemberHPChanged(peer, ch)
+}
+
+func (m *Map) SyncPartyHP(ch *Character, partyID uint32) {
+	ch.Listener.OnPartyMemberHPChanged(ch, nil)
+	for _, obj := range m.GetObjects(constant.ObjectTypeCharacter) {
+		peer, ok := obj.(*Character)
+		if !ok || peer == ch || !peer.Party.Is(&partyID) {
+			continue
+		}
+		peer.Listener.OnPartyMemberHPChanged(peer, ch)
 	}
 }

@@ -83,7 +83,9 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		obj.SendSpawnSyncToViewer(character)
 	}
 
-	SyncPartyMemberHPOnMapEnter(mapInstance, character, nil)
+	if partyID := character.Party.ID(); partyID != nil {
+		mapInstance.SyncPartyHP(character, *partyID)
+	}
 
 	if match := character.CarnivalMatch(); match != nil {
 		mapID := mapInstance.GetMapID()
@@ -106,36 +108,6 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		if init {
 			character.Quests.RunAutoTriggers(ctx, entity.AutoQuestTriggerLogin, mapID)
 		}
-	}
-}
-
-func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Character, effectivePartyID *uint32) {
-	if mapInstance == nil || character == nil {
-		return
-	}
-	var partyID uint32
-	inParty := false
-	if effectivePartyID != nil {
-		partyID = *effectivePartyID
-		inParty = true
-	} else if pid := character.Party.ID(); pid != nil {
-		partyID = *pid
-		inParty = true
-	}
-	if !inParty {
-		return
-	}
-	character.Listener.OnPartyMemberHPChanged(character, nil)
-	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
-		peer, ok := obj.(*entity.Character)
-		if !ok || peer == nil || peer.GetID() == character.GetID() {
-			continue
-		}
-		pPeer := peer.Party.ID()
-		if pPeer == nil || *pPeer != partyID {
-			continue
-		}
-		peer.Listener.OnPartyMemberHPChanged(peer, character)
 	}
 }
 
