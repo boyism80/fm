@@ -62,7 +62,7 @@ func (ch *Character) ToDTO() *dto.Character {
 		Face:          ch.look.Face,
 		Hair:          ch.look.Hair,
 		Level:         ch.level,
-		Class:         ch.Class,
+		Class:         uint16(ch.Class.ID),
 		Str:           ch.Stats.TotalStr(),
 		Dex:           ch.Stats.TotalDex(),
 		Int:           ch.Stats.TotalInt(),

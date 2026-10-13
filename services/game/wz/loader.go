@@ -2408,6 +2408,7 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 
 		skill := &Skill{
 			ID:        uint32(skillID),
+			Class:     NewClass(constant.ClassType(skillID / 10000)),
 			LevelData: make(map[int]*SkillLevelData),
 			Charge:    skillChild.find("keydown") != nil,
 		}

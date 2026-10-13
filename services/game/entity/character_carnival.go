@@ -31,7 +31,7 @@ func (ch *Character) CarnivalMember() *CarnivalMember {
 		ID:    ch.GetID(),
 		Name:  ch.GetName(),
 		Level: ch.GetLevel(),
-		Class: ch.Class,
+		Class: uint16(ch.Class.ID),
 	}
 }
 

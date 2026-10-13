@@ -3,6 +3,7 @@ package wz
 import (
 	"time"
 
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
 
@@ -49,6 +50,7 @@ type SkillLevelData struct {
 
 type Skill struct {
 	ID           uint32
+	Class        *Class
 	MaxLevel     int
 	MasterLevel  int
 	Invisible    bool
@@ -73,6 +75,25 @@ func (s *Skill) DefaultMasterLevel() int {
 		return 0
 	}
 	return s.MaxLevel
+}
+
+func (s *Skill) LearnableBy(c *Class) bool {
+	switch s.Class.ID {
+	case constant.ClassBeginner:
+		return c.Family == constant.ClassFamilyExplorer
+	case constant.ClassNoblesse:
+		return c.Family == constant.ClassFamilyCygnus
+	case constant.ClassLegend:
+		return c.Family == constant.ClassFamilyLegend
+	}
+
+	if s.Class.Family != c.Family || s.Class.Branch != c.Branch {
+		return false
+	}
+	if s.Class.Specialty != 0 && s.Class.Specialty != c.Specialty {
+		return false
+	}
+	return s.Class.Advancement <= c.Advancement
 }
 
 func (s *Skill) IsBeginnerSkill() bool {

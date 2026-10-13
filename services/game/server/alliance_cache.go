@@ -189,7 +189,7 @@ func (ac *AllianceCache) NotifyMemberFieldsChanged(ch *entity.Character) {
 	}
 	subjectID := ch.GetID()
 	level := uint32(ch.GetLevel())
-	classID := uint32(ch.Class)
+	classID := uint32(ch.Class.ID)
 	ac.deliverMemberFieldsChange(allianceID, guildID, subjectID, level, classID)
 }
 

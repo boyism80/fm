@@ -63,7 +63,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 			if !ch.HasRoleAtLeast(constant.RoleAdmin) && target.HasRoleAtLeast(constant.RoleAdmin) {
 				continue
 			}
-			if !entity.MatchesPartySearchClassMask(target, cfg.ClassMask) {
+			if !cfg.Accepts(target.Class) {
 				continue
 			}
 			targetIDs = append(targetIDs, target.GetID())

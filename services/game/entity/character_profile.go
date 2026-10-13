@@ -24,7 +24,7 @@ func (ch *Character) Inspect(targetID uint32) {
 	profile := &response.CharacterProfile{
 		CharacterID: target.GetID(),
 		Level:       target.level,
-		Job:         target.Class,
+		Job:         uint16(target.Class.ID),
 		Population:  target.Stats.Population,
 		Married:     target.Wedding.Marriage != nil && target.Wedding.Marriage.Status == MarriageStatusMarried,
 		GuildName:   "-",

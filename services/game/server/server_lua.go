@@ -20,27 +20,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func getClassAdvancementClasses(class uint16) []uint16 {
-	if class < 100 {
-		return []uint16{class}
-	}
-	classes := make([]uint16, 0, 4)
-	baseClass := (class / 100) * 100
-	secondClass := (class / 10) * 10
-	thirdClass := secondClass + 1
-	classes = append(classes, baseClass)
-	if secondClass != baseClass {
-		classes = append(classes, secondClass)
-	}
-	if thirdClass != secondClass && thirdClass <= class {
-		classes = append(classes, thirdClass)
-	}
-	if class != thirdClass && class != secondClass && class != baseClass {
-		classes = append(classes, class)
-	}
-	return classes
-}
-
 func luaArgToInterface(v lua.LValue) (interface{}, error) {
 	if v == nil || v == lua.LNil {
 		return nil, nil
@@ -789,17 +768,19 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	})
 
 	luax.RegisterFunc(luaState, "class_learnable_skill_wzs", func(L *lua.LState) int {
-		class := uint16(L.CheckInt(1))
+		class := wz.NewClass(constant.ClassType(L.CheckInt(1)))
 		result := L.NewTable()
 		if gs.resources == nil {
 			L.Push(result)
 			return 1
 		}
 
-		classIDs := getClassAdvancementClasses(class)
 		skillByID := make(map[uint32]*wz.Skill)
-		for _, classID := range classIDs {
-			skillIDStart := uint32(classID) * 10000
+		for c := class; c != nil; c = c.Parent {
+			if c != class && c.Advancement == 0 {
+				continue
+			}
+			skillIDStart := uint32(c.ID) * 10000
 			skillIDEnd := skillIDStart + 9999
 			for skillID := skillIDStart; skillID <= skillIDEnd; skillID++ {
 				wzSkill := gs.resources.GetSkill(skillID)

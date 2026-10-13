@@ -12,28 +12,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) canLearn(skillID uint32) bool {
-	class := uint32(ch.Class)
-	skillClass := skillID / 10000
-	switch skillClass {
-	case uint32(constant.ClassBeginner):
-		return class < uint32(constant.ClassNoblesse)
-	case uint32(constant.ClassNoblesse):
-		return class >= uint32(constant.ClassNoblesse) && class < uint32(constant.ClassLegend)
-	case uint32(constant.ClassLegend):
-		return class >= uint32(constant.ClassLegend) && class <= uint32(constant.ClassAran5)
-	}
-
-	if class/100 != skillClass/100 {
-		return false
-	}
-	skillBranch := (skillClass / 10) % 10
-	if skillBranch != 0 && skillBranch != (class/10)%10 {
-		return false
-	}
-	return skillClass%10 <= class%10
-}
-
 // WZ lt/rb describe the area while facing left; facing right mirrors it. Range widens the front.
 func (ch *Character) SkillArea(ld *wz.SkillLevelData) types.Rect[int32] {
 	px := int32(ch.Position.X)

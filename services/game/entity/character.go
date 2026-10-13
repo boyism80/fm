@@ -14,6 +14,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
@@ -48,7 +49,7 @@ type Character struct {
 	MonsterBook       *MonsterBook
 	Dialog            *Dialog
 	Listener          CharacterListener
-	Class             uint16
+	Class             *wz.Class
 	Role              constant.CharacterRole
 	AccountID         uint32
 	Account           *Account

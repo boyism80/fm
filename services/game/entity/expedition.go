@@ -66,7 +66,7 @@ func (ch *Character) ExpeditionMember() *ExpeditionMember {
 	return &ExpeditionMember{
 		ID:        ch.GetID(),
 		Name:      ch.GetName(),
-		Class:     ch.Class,
+		Class:     uint16(ch.Class.ID),
 		character: ch,
 	}
 }

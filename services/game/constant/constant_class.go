@@ -2,6 +2,26 @@ package constant
 
 type ClassType uint16
 
+type ClassFamily uint8
+
+const (
+	ClassFamilyExplorer ClassFamily = iota
+	ClassFamilyCygnus
+	ClassFamilyLegend
+)
+
+type ClassBranch uint8
+
+const (
+	ClassBranchNone     ClassBranch = 0
+	ClassBranchWarrior  ClassBranch = 1
+	ClassBranchMagician ClassBranch = 2
+	ClassBranchBowman   ClassBranch = 3
+	ClassBranchThief    ClassBranch = 4
+	ClassBranchPirate   ClassBranch = 5
+	ClassBranchGM       ClassBranch = 9
+)
+
 const (
 	ClassBeginner           ClassType = 0
 	ClassWarrior            ClassType = 100

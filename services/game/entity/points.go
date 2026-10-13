@@ -87,23 +87,16 @@ func (p *Points) SetSP(v uint16, notify bool) {
 }
 
 func (p *Points) DistributeSkill(skillID uint32) bool {
-	if p.SP == 0 || !p.owner.canLearn(skillID) {
+	if p.SP == 0 {
+		return false
+	}
+	wzSkill := p.owner.GameWorld.GetResources().GetSkill(skillID)
+	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.Class) {
 		return false
 	}
 
 	skillEntry := p.owner.Skills.Learned(skillID)
 	if skillEntry == nil {
-		if p.owner.GameWorld == nil {
-			return false
-		}
-		resources := p.owner.GameWorld.GetResources()
-		if resources == nil {
-			return false
-		}
-		wzSkill := resources.GetSkill(skillID)
-		if wzSkill == nil {
-			return false
-		}
 		skillEntry = NewSkillEntry(p.owner, wzSkill, 0, wzSkill.DefaultMasterLevel())
 	}
 

@@ -162,7 +162,7 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	qp.InitMobKillCounters()
 	if !opts.Force {
 		err := qc.grant(qp, qp.Wz.Start.Actions, questActionOpts{
-			ClassID:   qc.owner.Class,
+			ClassID:   uint16(qc.owner.Class.ID),
 			Forfeited: qp.Forfeited > 0,
 			NpcID:     wireNPC,
 		})
@@ -226,7 +226,7 @@ func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
 		return ErrQuestNotStartable
 	}
 	exchange := qc.buildPhaseExchange(def.Start.Actions, questActionOpts{
-		ClassID:   qc.owner.Class,
+		ClassID:   uint16(qc.owner.Class.ID),
 		Forfeited: existing != nil && existing.Forfeited > 0,
 	})
 	if exchange.Cost.ValidCost(qc.owner) != ExchangeOK {

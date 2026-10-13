@@ -22,15 +22,12 @@ func (ch *Character) UseSkillBook(slot int16, itemID uint32) {
 
 	var target *SkillEntry
 	for _, skillID := range consume.SkillBook.Skills {
-		if !ch.canLearn(skillID) {
+		model := ch.GameWorld.GetResources().GetSkill(skillID)
+		if model == nil || !model.LearnableBy(ch.Class) {
 			continue
 		}
 		entry := ch.Skills.Learned(skillID)
 		if entry == nil {
-			model := ch.GameWorld.GetResources().GetSkill(skillID)
-			if model == nil {
-				continue
-			}
 			entry = NewSkillEntry(ch, model, 0, 0)
 		}
 		if entry.Level() < consume.SkillBook.RequiredLevel || entry.MasterLevel >= consume.SkillBook.MasterLevel {
