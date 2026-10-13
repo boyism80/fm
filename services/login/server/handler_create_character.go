@@ -65,7 +65,7 @@ func (h *CreateCharacter) sendCreateCharacterResult(ctx *core.ClientContext, rep
 		Success: reply.Success,
 	}
 	if reply.Success && reply.Character != nil {
-		ch := overviewToDto(reply.Character)
+		ch := characterFromProto(reply.Character)
 		createResp.Character = &ch
 	}
 	return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)

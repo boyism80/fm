@@ -83,7 +83,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 func (h *CharacterList) sendCharacterList(ctx *core.ClientContext, reply *internal.GetCharacterListReply) error {
 	characters := make([]dto.Character, 0, len(reply.Characters))
 	for _, ov := range reply.Characters {
-		characters = append(characters, overviewToDto(ov))
+		characters = append(characters, characterFromProto(ov))
 	}
 
 	charListResp := &response.CharacterList{
@@ -94,7 +94,7 @@ func (h *CharacterList) sendCharacterList(ctx *core.ClientContext, reply *intern
 	return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
 }
 
-func overviewToDto(ov *internal.CharacterOverview) dto.Character {
+func characterFromProto(ov *internal.CharacterOverview) dto.Character {
 	baseLooks := make(map[int8]uint32)
 	for k, v := range ov.BaseLooks {
 		baseLooks[int8(k)] = v

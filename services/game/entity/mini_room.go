@@ -347,7 +347,7 @@ func (r *shopRoom) sell(ch *Character, index uint16, bundles uint16, held int32)
 
 func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Character) {
 	for _, ch := range characters {
-		r.entries[ch.GetID()] = ch.ToProto(r.GameWorld.GetWorldID())
+		r.entries[ch.GetID()] = ch.BuildRPC(r.GameWorld.GetWorldID())
 	}
 	if closing {
 		r.closing = true
@@ -372,7 +372,7 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 			r.save(actx, r.closing)
 		}
 	}
-	r.GameWorld.SaveShopAsync(actx, r.ToProto(), entries, storeBank, r.closing).Do(func(*internal.SaveShopReply) error {
+	r.GameWorld.SaveShopAsync(actx, r.BuildRPC(), entries, storeBank, r.closing).Do(func(*internal.SaveShopReply) error {
 		done()
 		return nil
 	}).OnError(func(err error) {

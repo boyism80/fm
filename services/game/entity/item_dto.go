@@ -6,14 +6,7 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-func ItemToDTO(item Item) dto.Item {
-	if item == nil {
-		return nil
-	}
-	return item.ToDTO()
-}
-
-func (item *Consume) ToDTO() dto.Item {
+func (item *Consume) BuildS2C() dto.Item {
 	model := item.GetModel()
 	cons, ok := model.(*wz.Consume)
 	if !ok {
@@ -28,7 +21,7 @@ func (item *Consume) ToDTO() dto.Item {
 	}
 }
 
-func (item *MiscItem) ToDTO() dto.Item {
+func (item *MiscItem) BuildS2C() dto.Item {
 	return &dto.MiscItem{
 		ItemId:     item.GetModel().GetID(),
 		Count:      item.GetCount(),
@@ -38,7 +31,7 @@ func (item *MiscItem) ToDTO() dto.Item {
 	}
 }
 
-func (item *CashItem) ToDTO() dto.Item {
+func (item *CashItem) BuildS2C() dto.Item {
 	return &dto.CashItem{
 		ItemId:     item.GetModel().GetID(),
 		UniqueId:   copyUint64Ptr(item.UniqueId),
@@ -49,7 +42,7 @@ func (item *CashItem) ToDTO() dto.Item {
 	}
 }
 
-func (item *Installation) ToDTO() dto.Item {
+func (item *Installation) BuildS2C() dto.Item {
 	return &dto.InstallationItem{
 		ItemId:     item.GetModel().GetID(),
 		Expiration: item.GetExpiration(),
@@ -58,7 +51,7 @@ func (item *Installation) ToDTO() dto.Item {
 	}
 }
 
-func (pet *Pet) ToDTO() dto.Item {
+func (pet *Pet) BuildS2C() dto.Item {
 	return &dto.PetItem{
 		ItemId:         pet.GetModel().GetID(),
 		UniqueId:       copyUint64Ptr(pet.UniqueId),
@@ -74,9 +67,9 @@ func (pet *Pet) ToDTO() dto.Item {
 	}
 }
 
-func (e *EquipmentCore) ToDTO() dto.Item { return e.ToEquipmentDTO() }
+func (e *EquipmentCore) BuildS2C() dto.Item { return e.BuildEquipmentS2C() }
 
-func (e *EquipmentCore) ToEquipmentDTO() *dto.Equipment {
+func (e *EquipmentCore) BuildEquipmentS2C() *dto.Equipment {
 	if e == nil || e.Wz == nil {
 		return nil
 	}

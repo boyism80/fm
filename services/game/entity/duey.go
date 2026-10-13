@@ -9,6 +9,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
 )
@@ -59,6 +60,21 @@ func (p *Parcel) ArrivedAt() time.Time {
 
 func (p *Parcel) ExpiresAt() time.Time {
 	return p.ArrivedAt().Add(ParcelKeepDuration)
+}
+
+func (p *Parcel) BuildS2C() dto.Parcel {
+	parcel := dto.Parcel{
+		ID:      p.ID,
+		Sender:  p.Sender,
+		Meso:    p.Meso,
+		Expire:  p.ExpiresAt(),
+		Quick:   p.Quick,
+		Message: p.Message,
+	}
+	if p.Item != nil {
+		parcel.Item = p.Item.BuildS2C()
+	}
+	return parcel
 }
 
 type parcelSendDetail struct {
@@ -222,7 +238,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	detail := parcelSendDetail{Recipient: recipient, Meso: int32(cost), Quick: quick}
 	oneOfAKind := false
 	if item != nil {
-		parcel.Item = item.Clone(uint16(count)).ToProto(0, 0)
+		parcel.Item = item.Clone(uint16(count)).BuildRPC(0, 0)
 		oneOfAKind = item.GetModel().GetTraits()&constant.ItemTraitOnly != 0
 		detail.Item = parcel.Item
 		d.owner.Inventory.RemoveItem(invType, slot, uint16(count))
@@ -452,7 +468,7 @@ func (d *Duey) SendFromSystem(actx actor.Context, recipient string, senderName s
 		if err != nil || count == 0 {
 			return ErrDueyInvalid
 		}
-		parcel.Item = item.ToProto(0, 0)
+		parcel.Item = item.BuildRPC(0, 0)
 	}
 	if parcel.Item == nil && meso == 0 {
 		return ErrDueyInvalid
@@ -481,4 +497,16 @@ func (d *Duey) CheckArrivals(actx actor.Context) {
 	}).OnError(func(err error) {
 		log.Printf("Duey.CheckArrivals character=%d: %v", d.owner.GetID(), err)
 	})
+}
+
+func (d *Duey) BuildS2C() (parcels, expired []dto.Parcel) {
+	parcels = make([]dto.Parcel, 0, len(d.Parcels))
+	for _, parcel := range d.Parcels {
+		parcels = append(parcels, parcel.BuildS2C())
+	}
+	expired = make([]dto.Parcel, 0, len(d.Expired))
+	for _, parcel := range d.Expired {
+		expired = append(expired, parcel.BuildS2C())
+	}
+	return parcels, expired
 }

@@ -32,7 +32,7 @@ func NewStorageFromInternalProto(pb *internal.Storage, owner *Character) *Storag
 	return storage
 }
 
-func (s *Storage) ToProto(worldID uint32) *internal.Storage {
+func (s *Storage) BuildRPC(worldID uint32) *internal.Storage {
 	pb := &internal.Storage{
 		AccountId: s.owner.AccountID,
 		WorldId:   worldID,
@@ -41,7 +41,7 @@ func (s *Storage) ToProto(worldID uint32) *internal.Storage {
 	}
 	for _, items := range s.Tabs {
 		for index, item := range items {
-			pb.Items = append(pb.Items, item.ToProto(s.owner.AccountID, int32(index)))
+			pb.Items = append(pb.Items, item.BuildRPC(s.owner.AccountID, int32(index)))
 		}
 	}
 	return pb

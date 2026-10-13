@@ -292,7 +292,7 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
 	if ent == nil {
 		return
 	}
-	info := ent.ToDTO()
+	info := ent.BuildS2C()
 	if info == nil {
 		return
 	}
@@ -845,7 +845,7 @@ func (l *CharacterListenerImpl) storageTabs(storage *entity.Storage, invTypes ..
 	for _, invType := range invTypes {
 		items := make([]dto.Item, 0, len(storage.Tabs[invType]))
 		for _, item := range storage.Tabs[invType] {
-			items = append(items, item.ToDTO())
+			items = append(items, item.BuildS2C())
 		}
 		tabs[invType] = items
 	}
@@ -1022,30 +1022,12 @@ func (l *CharacterListenerImpl) CheckParcelArrivalsAsync(ctx actor.Context, ch *
 	)
 }
 
-func (l *CharacterListenerImpl) parcelsDTO(parcels []*entity.Parcel) []dto.Parcel {
-	out := make([]dto.Parcel, 0, len(parcels))
-	for _, parcel := range parcels {
-		p := dto.Parcel{
-			ID:      parcel.ID,
-			Sender:  parcel.Sender,
-			Meso:    parcel.Meso,
-			Expire:  parcel.ExpiresAt(),
-			Quick:   parcel.Quick,
-			Message: parcel.Message,
-		}
-		if parcel.Item != nil {
-			p.Item = parcel.Item.ToDTO()
-		}
-		out = append(out, p)
-	}
-	return out
-}
-
 func (l *CharacterListenerImpl) OnOpenDuey(ch *entity.Character, fromArrival bool) {
+	parcels, expired := ch.Duey.BuildS2C()
 	ch.Send(&response.DueyOpen{
 		FromArrival: fromArrival,
-		Parcels:     l.parcelsDTO(ch.Duey.Parcels),
-		Expired:     l.parcelsDTO(ch.Duey.Expired),
+		Parcels:     parcels,
+		Expired:     expired,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -1335,7 +1317,10 @@ func (l *CharacterListenerImpl) OnItemGainFailed(ch *entity.Character, mode cons
 }
 
 func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
-	itemDTO := entity.ItemToDTO(item)
+	var itemDTO dto.Item
+	if item != nil {
+		itemDTO = item.BuildS2C()
+	}
 	ch.Send(&response.UpdateInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
@@ -1344,7 +1329,10 @@ func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *entity.Character, inv
 }
 
 func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
-	itemDTO := entity.ItemToDTO(item)
+	var itemDTO dto.Item
+	if item != nil {
+		itemDTO = item.BuildS2C()
+	}
 	ch.Send(&response.AddInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
@@ -1604,7 +1592,10 @@ func (l *CharacterListenerImpl) OnShowScrollEffect(ch *entity.Character, success
 }
 
 func (l *CharacterListenerImpl) OnScrolledItem(ch *entity.Character, scrollInventoryType constant.InventoryType, scrollSlot int16, scrollCount uint16, upgradedSlot int16, destroyed bool, potential bool, upgradedItem entity.Item) {
-	upgradedItemDTO := entity.ItemToDTO(upgradedItem)
+	var upgradedItemDTO dto.Item
+	if upgradedItem != nil {
+		upgradedItemDTO = upgradedItem.BuildS2C()
+	}
 	ch.Send(&response.ScrolledItem{
 		ScrollInventoryType: scrollInventoryType,
 		ScrollSlot:          scrollSlot,
@@ -1654,7 +1645,7 @@ func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint ty
 		return
 	}
 
-	characterDTO := ch.ToDTO()
+	characterDTO := ch.BuildS2C()
 
 	movePacket := &response.Move{
 		Character:  characterDTO,
@@ -1778,10 +1769,10 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
 	}
 
 	lookPacket := &response.UpdateCharacterLook{
-		Character:      ch.ToDTO(),
+		Character:      ch.BuildS2C(),
 		CrushRing:      ch.Inventory.WornRing(ch.Inventory.Rings.Left),
 		FriendshipRing: ch.Inventory.WornRing(ch.Inventory.Rings.Mid),
-		MarriageRing:   ch.Wedding.RingToDTO(),
+		MarriageRing:   ch.Wedding.BuildRingS2C(),
 	}
 
 	ch.Broadcast(lookPacket, nil)
@@ -1791,7 +1782,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
 				return
 			}
 			w := stream.NewStreamWriter(stream.LittleEndian)
-			current.ToDTO().SerializeLook(w)
+			current.BuildS2C().SerializeLook(w)
 			req := &internal.MessengerRequest{
 				WorldId:     l.gs.config.WorldId,
 				CharacterId: current.GetID(),
@@ -1993,7 +1984,7 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 func (l *CharacterListenerImpl) OnPetSpawn(ch *entity.Character) {
 	ch.Broadcast(&response.SpawnPet{
 		CharacterID: ch.GetID(),
-		Pet:         ch.Pets.Active.ToDTO(),
+		Pet:         ch.Pets.Active.BuildS2C(),
 	}, &entity.ObjectBroadcastOption{WithMe: true})
 	l.OnPetExceptions(ch)
 	sn := *ch.Pets.Active.Item.UniqueId

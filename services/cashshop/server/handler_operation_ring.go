@@ -79,7 +79,7 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *entity.Character
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 			character.AddLocker(item)
-			_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultBought, Item: character.LockerItemDTO(item)}, types.SEND_POLICY_ENCRYPT)
+			_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultBought, Item: character.BuildLockerItemS2C(item)}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.CashShopResult{
 				Kind:      constant.CashShopResultGiftSent,
 				Recipient: req.Recipient,

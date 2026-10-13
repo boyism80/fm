@@ -245,7 +245,7 @@ func (gc *GuildCache) BroadcastMemberJoined(guildID uint32, joinerCharacterID ui
 		if m == nil || m.GetCharacterId() != joinerCharacterID {
 			continue
 		}
-		joinerStatus = m.ToDTO()
+		joinerStatus = m.BuildS2C()
 		found = true
 		break
 	}

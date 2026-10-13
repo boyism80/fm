@@ -93,7 +93,7 @@ func (ac *AllianceCache) Update(alliancePb *internal.Alliance) {
 		}
 		aid := allianceID
 		cloned.AllianceID = &aid
-		ac.gs.guild.Update(cloned.ToProto())
+		ac.gs.guild.Update(cloned.BuildRPC())
 	}
 	info := entity.AllianceInfoFromProto(alliancePb)
 	if info == nil {

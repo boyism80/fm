@@ -6,7 +6,7 @@ import (
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func (ch *Character) ToDTO() *dto.Character {
+func (ch *Character) BuildS2C() *dto.Character {
 	equipments := make(map[int8]uint32)
 	overlays := make(map[int8]uint32)
 
@@ -89,12 +89,12 @@ func (ch *Character) ToDTO() *dto.Character {
 	}
 }
 
-func (ch *Character) ToFullDTO() *dto.Character {
-	charDTO := ch.ToDTO()
+func (ch *Character) BuildFullS2C() *dto.Character {
+	charDTO := ch.BuildS2C()
 
 	charDTO.SkillPoint = ch.Points.SP
 	if ch.Wedding.Marriage != nil {
-		charDTO.Marriage = ch.Wedding.Marriage.ToDTO()
+		charDTO.Marriage = ch.Wedding.Marriage.BuildS2C()
 	}
 	charDTO.TeleportStones = ch.TeleportStones.regular
 	charDTO.VipTeleportStones = ch.TeleportStones.vip
@@ -116,11 +116,8 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.Inventory = &dto.Inventory{
 		Tabs:     make(map[constant.InventoryType]*dto.InventoryTab),
 		Equipped: make(map[constant.EquipmentPartsType]*dto.Equipment),
-		Rings: dto.Rings{
-			Left: RingsToDTO(ch.Inventory.Rings.Left),
-			Mid:  RingsToDTO(ch.Inventory.Rings.Mid),
-		},
-		Meso: ch.Inventory.Meso,
+		Rings:    ch.Inventory.Rings.BuildS2C(),
+		Meso:     ch.Inventory.Meso,
 	}
 	for invType, inv := range ch.Inventory.Tabs {
 		if inv == nil {
@@ -136,10 +133,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 			if item == nil {
 				continue
 			}
-			itemDTO := ItemToDTO(item)
-			if itemDTO != nil {
-				invDTO.Items[slot] = itemDTO
-			}
+			invDTO.Items[slot] = item.BuildS2C()
 		}
 		charDTO.Inventory.Tabs[invType] = invDTO
 	}
@@ -148,7 +142,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		if equipment == nil {
 			continue
 		}
-		equipDTO := equipment.ToEquipmentDTO()
+		equipDTO := equipment.BuildEquipmentS2C()
 		if equipDTO != nil {
 			charDTO.Inventory.Equipped[parts] = equipDTO
 		}

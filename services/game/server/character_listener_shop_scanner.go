@@ -58,7 +58,7 @@ func (l *CharacterListenerImpl) OnShopScannerResult(ch *entity.Character, itemID
 			InventoryType: uint8(item.GetInventoryType()),
 		}
 		if item.GetInventoryType() == constant.InventoryTypeEquipment {
-			listed.Item = item.ToDTO()
+			listed.Item = item.BuildS2C()
 		}
 		result.Entries = append(result.Entries, listed)
 	}

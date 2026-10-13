@@ -25,7 +25,7 @@ func (n *Npc) SendSpawnSyncToViewer(viewer *Character) {
 	if n == nil || viewer == nil {
 		return
 	}
-	npcDTO := n.ToDTO()
+	npcDTO := n.BuildS2C()
 	viewer.Send(&response.SpawnNpc{
 		NPC:     npcDTO,
 		Visible: true,

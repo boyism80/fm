@@ -131,7 +131,7 @@ func EquipmentBonusStatsFromProto(pb *internal.EquipmentBonusStats) *EquipmentBo
 	return &s
 }
 
-func (s *EquipmentBonusStats) ToProto() *internal.EquipmentBonusStats {
+func (s *EquipmentBonusStats) BuildRPC() *internal.EquipmentBonusStats {
 	if s == nil {
 		return nil
 	}

@@ -93,10 +93,10 @@ func (bl *BuddyList) SetChannel(characterID uint32, channel int32) bool {
 	return true
 }
 
-func (bl *BuddyList) SnapshotForClient() []response.BuddyEntry {
+func (bl *BuddyList) BuildS2C() []response.BuddyEntry {
 	out := make([]response.BuddyEntry, 0, len(bl.entries))
 	for _, entry := range bl.entries {
-		out = append(out, entry.ToResponse())
+		out = append(out, entry.BuildS2C())
 	}
 	sort.Slice(out, func(i, j int) bool {
 		return out[i].CharacterID < out[j].CharacterID
@@ -105,7 +105,7 @@ func (bl *BuddyList) SnapshotForClient() []response.BuddyEntry {
 }
 
 func (bl *BuddyList) SyncLogin() {
-	bl.owner.Listener.OnBuddyListUpdate(bl.owner, pconst.BuddyListSyncLogin, bl.SnapshotForClient())
+	bl.owner.Listener.OnBuddyListUpdate(bl.owner, pconst.BuddyListSyncLogin, bl.BuildS2C())
 }
 
 func BuddyListEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {
@@ -122,7 +122,7 @@ func BuddyListEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {
 	}
 }
 
-func (e BuddyListEntry) ToResponse() response.BuddyEntry {
+func (e BuddyListEntry) BuildS2C() response.BuddyEntry {
 	ch := e.Channel
 	if ch < 0 {
 		ch = -1

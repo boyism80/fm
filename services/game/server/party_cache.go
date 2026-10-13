@@ -233,7 +233,7 @@ func (pc *PartyCache) DeliverPartySilent(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}
-	respMembers := party.MembersToResponse()
+	respMembers := party.BuildS2C()
 	forChannel := int32(pc.gs.config.ChannelId)
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()
@@ -296,7 +296,7 @@ func (pc *PartyCache) sendPartySilentToCharacter(ch *entity.Character, party *en
 	if pc == nil || ch == nil || party == nil || pc.gs == nil {
 		return
 	}
-	members := party.MembersToResponse()
+	members := party.BuildS2C()
 	forChannel := int32(pc.gs.config.ChannelId)
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()

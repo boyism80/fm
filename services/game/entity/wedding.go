@@ -58,7 +58,7 @@ type weddingGiftWindow struct {
 	pending    bool
 }
 
-func (w *Wedding) RingToDTO() *dto.MarriageRing {
+func (w *Wedding) BuildRingS2C() *dto.MarriageRing {
 	if w.Marriage == nil || w.Marriage.Status != MarriageStatusMarried {
 		return nil
 	}
@@ -460,7 +460,7 @@ func (w *Wedding) InviteGuest(actx actor.Context, guestName string, marriageID u
 			SenderName: w.owner.GetName(),
 			Quick:      true,
 			Message:    "결혼식에 초대되었습니다. 청첩장을 확인해주세요.",
-			Item:       invited.ToProto(0, 0),
+			Item:       invited.BuildRPC(0, 0),
 		}
 		w.owner.Listener.SendParcelAsync(actx, w.owner, 0, 0, reply.GetGuestName(), parcel, false).OnError(func(err error) {
 			log.Printf("InviteWeddingGuest parcel character=%d guest=%s: %v", w.owner.GetID(), reply.GetGuestName(), err)
@@ -594,7 +594,7 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 
 	gift := item.Clone(count)
 	w.owner.Inventory.RemoveItem(invType, slot, count)
-	pb := &internal.WeddingGift{SenderName: w.owner.GetName(), Item: gift.ToProto(0, 0)}
+	pb := &internal.WeddingGift{SenderName: w.owner.GetName(), Item: gift.BuildRPC(0, 0)}
 	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_SEND, uint64(w.gift.receiverID), weddingGiftDetail{Item: pb.Item})
 
 	w.gift.pending = true

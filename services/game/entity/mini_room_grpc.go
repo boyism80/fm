@@ -4,7 +4,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (r *shopRoom) ToProto() *internal.Shop {
+func (r *shopRoom) BuildRPC() *internal.Shop {
 	pb := &internal.Shop{
 		ShopId:         r.ID,
 		AccountId:      r.AccountID,
@@ -14,7 +14,7 @@ func (r *shopRoom) ToProto() *internal.Shop {
 		ItemId:         r.ItemID,
 		Title:          r.Title,
 		Meso:           r.Meso,
-		Items:          r.itemsToProto(r.Items),
+		Items:          r.buildItemsRPC(r.Items),
 		OpenedAtUnixMs: r.OpenedAt.UnixMilli(),
 		Kind:           uint32(r.kind),
 	}
@@ -32,7 +32,7 @@ func (r *shopRoom) ToProto() *internal.Shop {
 	return pb
 }
 
-func (r *shopRoom) storeBankToProto(meso int32, items []*ShopItem) *internal.Shop {
+func (r *shopRoom) buildStoreBankRPC(meso int32, items []*ShopItem) *internal.Shop {
 	return &internal.Shop{
 		AccountId:   r.AccountID,
 		CharacterId: r.OwnerID,
@@ -40,17 +40,17 @@ func (r *shopRoom) storeBankToProto(meso int32, items []*ShopItem) *internal.Sho
 		ItemId:      r.ItemID,
 		Title:       r.Title,
 		Meso:        meso,
-		Items:       r.itemsToProto(items),
+		Items:       r.buildItemsRPC(items),
 		Kind:        uint32(r.kind),
 		StoreBankId: r.GameWorld.NewUniqueID(),
 	}
 }
 
-func (r *shopRoom) itemsToProto(items []*ShopItem) []*internal.ShopItem {
+func (r *shopRoom) buildItemsRPC(items []*ShopItem) []*internal.ShopItem {
 	pb := make([]*internal.ShopItem, 0, len(items))
 	for _, listed := range items {
 		pb = append(pb, &internal.ShopItem{
-			Item:      listed.Item.ToProto(0, 0),
+			Item:      listed.Item.BuildRPC(0, 0),
 			Bundles:   uint32(listed.Bundles),
 			PerBundle: uint32(listed.PerBundle),
 			Price:     listed.Price,

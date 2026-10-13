@@ -90,7 +90,7 @@ func GuildMemberFromProto(pb *internal.GuildMember) *GuildMember {
 	return m
 }
 
-func (m *GuildMember) ToProto() *internal.GuildMember {
+func (m *GuildMember) BuildRPC() *internal.GuildMember {
 	if m == nil {
 		return nil
 	}

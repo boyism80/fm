@@ -133,7 +133,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		carnivalTeam = team.TeamID
 	}
 	spawnPacket := &response.SpawnPlayer{
-		Character:         ch.ToDTO(),
+		Character:         ch.BuildS2C(),
 		BuffStates:        spawnBuffData.BuffStates,
 		Diseases:          ch.Debuffs.DiseaseMask(),
 		SpeedBuff:         spawnBuffData.SpeedBuff,
@@ -148,7 +148,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MountFatigue:      ch.Mount.Fatigue,
 		CrushRing:         ch.Inventory.WornRing(ch.Inventory.Rings.Left),
 		FriendshipRing:    ch.Inventory.WornRing(ch.Inventory.Rings.Mid),
-		MarriageRing:      ch.Wedding.RingToDTO(),
+		MarriageRing:      ch.Wedding.BuildRingS2C(),
 		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
 		Team:              carnivalTeam,
 	}
@@ -165,7 +165,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		}
 	}
 	if ch.Pets.Active != nil {
-		spawnPacket.Pet = ch.Pets.Active.ToDTO()
+		spawnPacket.Pet = ch.Pets.Active.BuildS2C()
 	}
 	if guildID, ok := ch.Guild.ID(); ok && ch.GameWorld != nil {
 		if guild := ch.GameWorld.GetGuildSystem().Get(guildID); guild != nil {
@@ -732,14 +732,14 @@ func (ch *Character) GetName() string {
 
 func (ch *Character) ToProtoPartyMember(worldID uint32, channelID int32, role internal.PartyMemberRole) *internal.PartyMember {
 	if m := PartyMemberFromCharacter(ch, worldID, channelID, role); m != nil {
-		return m.ToProto()
+		return m.BuildRPC()
 	}
 	return nil
 }
 
 func (ch *Character) ToProtoGuildMember(worldID uint32, channelID int32, rank internal.GuildMemberRank) *internal.GuildMember {
 	if m := GuildMemberFromCharacter(ch, worldID, channelID, rank); m != nil {
-		return m.ToProto()
+		return m.BuildRPC()
 	}
 	return nil
 }

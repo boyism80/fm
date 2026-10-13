@@ -52,13 +52,13 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 		}
 
 		_ = ctx.Client.Send(&response.SetCashShop{
-			CharacterInfo: response.CharacterInfo{Character: character.ToDTO(h.cs)},
+			CharacterInfo: response.CharacterInfo{Character: character.BuildS2C(h.cs)},
 			AccountName:   character.Name(),
 		}, types.SEND_POLICY_ENCRYPT)
 		_ = ctx.Client.Send(&response.CashShopBalance{NXCash: character.NXCash, MaplePoint: character.MaplePoint}, types.SEND_POLICY_ENCRYPT)
 		_ = ctx.Client.Send(&response.CashShopResult{
 			Kind:           constant.CashShopResultLocker,
-			Locker:         character.LockerDTO(),
+			Locker:         character.BuildLockerS2C(),
 			StorageSlots:   character.StorageSlots,
 			CharacterSlots: character.CharacterSlots,
 		}, types.SEND_POLICY_ENCRYPT)

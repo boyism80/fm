@@ -15,7 +15,7 @@ func NewUnsettledRequestsFromInternalProto(owner *Character, pbs []*internal.Uns
 	return u
 }
 
-func (u *UnsettledRequests) ToProto() []*internal.UnsettledRequest {
+func (u *UnsettledRequests) BuildRPC() []*internal.UnsettledRequest {
 	pbs := make([]*internal.UnsettledRequest, 0, len(u.requests))
 	for _, id := range slices.Sorted(maps.Keys(u.requests)) {
 		request := u.requests[id]

@@ -44,7 +44,7 @@ func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
 			key = free
 		}
 
-		pb := held.item.ToProto(ownerID, int32(key.slot))
+		pb := held.item.BuildRPC(ownerID, int32(key.slot))
 		taken[key] = pb
 		items = append(items, pb)
 	}

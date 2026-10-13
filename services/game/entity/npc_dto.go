@@ -4,7 +4,7 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 )
 
-func (n *Npc) ToDTO() *dto.Npc {
+func (n *Npc) BuildS2C() *dto.Npc {
 	if n == nil {
 		return nil
 	}

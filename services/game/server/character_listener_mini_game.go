@@ -18,7 +18,7 @@ func (l *CharacterListenerImpl) OnMiniGameEntered(ch *entity.Character, g *entit
 	for _, member := range g.Members() {
 		memberSlot, _ := g.SlotOf(member)
 		enter.Members = append(enter.Members, response.MiniGameMember{
-			MiniRoomVisitor: response.MiniRoomVisitor{Slot: memberSlot, Character: member.ToDTO()},
+			MiniRoomVisitor: response.MiniRoomVisitor{Slot: memberSlot, Character: member.BuildS2C()},
 			Record:          g.Record(member),
 		})
 	}
@@ -27,7 +27,7 @@ func (l *CharacterListenerImpl) OnMiniGameEntered(ch *entity.Character, g *entit
 
 func (l *CharacterListenerImpl) OnMiniGameVisited(ch *entity.Character, g *entity.MiniGame, visitor *entity.Character) {
 	ch.Send(&response.MiniGameVisited{MiniGameMember: response.MiniGameMember{
-		MiniRoomVisitor: response.MiniRoomVisitor{Slot: 1, Character: visitor.ToDTO()},
+		MiniRoomVisitor: response.MiniRoomVisitor{Slot: 1, Character: visitor.BuildS2C()},
 		Record:          g.Record(visitor),
 	}}, types.SEND_POLICY_ENCRYPT)
 }

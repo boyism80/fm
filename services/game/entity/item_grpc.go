@@ -42,33 +42,33 @@ func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64
 	return out
 }
 
-func (e *EquipmentCore) ToProto(ownerID uint32, slot int32) *internal.Inventory {
+func (e *EquipmentCore) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
 	pb := buildInventoryProto(e, ownerID, slot, e.UniqueId, e.OwnerName, e.Flag, e.EnhanceChance, e.EnhanceCount, e.SkillBonus)
-	if bonus := e.BonusStats.ToProto(); bonus != nil {
+	if bonus := e.BonusStats.BuildRPC(); bonus != nil {
 		pb.EquipBonusStats = bonus
 	}
 	return pb
 }
 
-func (item *Consume) ToProto(ownerID uint32, slot int32) *internal.Inventory {
+func (item *Consume) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
-func (item *Installation) ToProto(ownerID uint32, slot int32) *internal.Inventory {
+func (item *Installation) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
-func (item *MiscItem) ToProto(ownerID uint32, slot int32) *internal.Inventory {
+func (item *MiscItem) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
 	pb := buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 	pb.MarriageId = item.MarriageID
 	return pb
 }
 
-func (item *CashItem) ToProto(ownerID uint32, slot int32) *internal.Inventory {
+func (item *CashItem) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
-func (item *Pet) ToProto(ownerID uint32, slot int32) *internal.Inventory {
+func (item *Pet) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
 	pb := buildInventoryProto(item, ownerID, slot, item.UniqueId, "", 0, 0, 0, 0)
 	pb.Pet = &internal.Pet{
 		Name:        item.Name,

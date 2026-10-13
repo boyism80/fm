@@ -2,7 +2,7 @@ package entity
 
 import "github.com/boyism80/fm/protocol/response"
 
-func (p *Party) MembersToResponse() []response.PartyMemberStatus {
+func (p *Party) BuildS2C() []response.PartyMemberStatus {
 	out := make([]response.PartyMemberStatus, 0, len(p.Members))
 	for _, m := range p.Members {
 		if m == nil {

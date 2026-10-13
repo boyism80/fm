@@ -35,7 +35,7 @@ func (d *Debuffs) Load(pbs []*internal.Debuff) {
 	}
 }
 
-func (d *Debuffs) ToProto() []*internal.Debuff {
+func (d *Debuffs) BuildRPC() []*internal.Debuff {
 	now := clock.Now()
 	out := make([]*internal.Debuff, 0, len(d.entries))
 	for _, holder := range d.entries {

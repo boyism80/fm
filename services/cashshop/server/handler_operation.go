@@ -110,7 +110,7 @@ func (h *Operation) buy(ctx *core.ClientContext, character *entity.Character, re
 	}
 
 	h.purchase(ctx, character, req.Currency, commodity.Price, []*internal.CashItem{cashItem}, constant.CashShopResultBuyFailed, func() {
-		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultBought, Item: character.LockerItemDTO(cashItem)}, types.SEND_POLICY_ENCRYPT)
+		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultBought, Item: character.BuildLockerItemS2C(cashItem)}, types.SEND_POLICY_ENCRYPT)
 	})
 }
 
@@ -138,7 +138,7 @@ func (h *Operation) buyPackage(ctx *core.ClientContext, character *entity.Charac
 	h.purchase(ctx, character, req.Currency, commodity.Price, items, constant.CashShopResultPackageFailed, func() {
 		bought := make([]*dto.CashShopItem, 0, len(items))
 		for _, item := range items {
-			bought = append(bought, character.LockerItemDTO(item))
+			bought = append(bought, character.BuildLockerItemS2C(item))
 		}
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultPackageBought, Items: bought}, types.SEND_POLICY_ENCRYPT)
 	})
@@ -232,7 +232,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	pb := item.ToProto(character.ID(), int32(slot))
+	pb := item.BuildRPC(character.ID(), int32(slot))
 	pb.InventoryType = uint32(invType)
 	if pb.UniqueId == nil {
 		serial := h.cs.NewUniqueID()
@@ -252,7 +252,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 			character.SetMeso(reply.GetMeso())
 			character.AddInventory(pb)
-			_ = ctx.Client.Send(&response.AddInventorySlot{InventoryType: invType, Slot: int16(slot), Item: item.ToDTO()}, types.SEND_POLICY_ENCRYPT)
+			_ = ctx.Client.Send(&response.AddInventorySlot{InventoryType: invType, Slot: int16(slot), Item: item.BuildS2C()}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.UpdateStats{Stats: map[gconstant.Stat]int32{gconstant.StatMeso: reply.GetMeso()}}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.CashShopResult{
 				Kind:    constant.CashShopResultQuestItemBought,
@@ -358,7 +358,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	pb := item.ToProto(character.ID(), int32(slot))
+	pb := item.BuildRPC(character.ID(), int32(slot))
 	pb.InventoryType = uint32(invType)
 
 	promise := h.start(ctx, character, constant.CashShopResultTakeOutFailed)
@@ -375,7 +375,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 			return nil
 		}
 		character.TakeOut(req.Serial, pb)
-		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultTakenOut, Slot: slot, TakenOut: item.ToDTO()}, types.SEND_POLICY_ENCRYPT)
+		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultTakenOut, Slot: slot, TakenOut: item.BuildS2C()}, types.SEND_POLICY_ENCRYPT)
 		return nil
 	})
 }
@@ -406,7 +406,7 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *entity.Character, 
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 			character.PutIn(req.Serial, gconstant.InventoryType(req.InventoryType), cashItem)
-			_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultPutIn, Item: character.LockerItemDTO(cashItem)}, types.SEND_POLICY_ENCRYPT)
+			_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultPutIn, Item: character.BuildLockerItemS2C(cashItem)}, types.SEND_POLICY_ENCRYPT)
 		case internal.CashShopResult_CASH_SHOP_RESULT_LOCKER_FULL:
 			fail(constant.CashShopFailureLockerFull)
 		default:

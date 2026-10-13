@@ -332,7 +332,7 @@ func (ch *Character) PersistMapID() uint32 {
 	return m.TemplateID()
 }
 
-func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
+func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 	mapID := ch.PersistMapID()
 	if mapID == 0 {
 		return nil
@@ -380,7 +380,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Population:        int32(ch.Stats.Population),
 		FamilyProgress:    ch.Family.Progress,
 		FamilyReputation:  reputation,
-		PopulationHistory: ch.PopulationHistory.ToProto(),
+		PopulationHistory: ch.PopulationHistory.BuildRPC(),
 		HpApUsed:          uint32(ch.Points.HPMPUsed),
 		PetHpItem:         ch.Pets.HPItem,
 		PetMpItem:         ch.Pets.MPItem,
@@ -395,53 +395,53 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Character:         pb,
 		BaseLooks:         baseLooks,
 		Overlays:          overlays,
-		Inventory:         ch.InventoryToProto(),
-		Skills:            ch.SkillsToProto(),
-		SkillMacros:       ch.SkillMacros.ToProto(),
-		Buffs:             ch.BuffsToProto(),
-		KeyLayout:         ch.KeyLayout.ToProto(),
-		Quests:            ch.QuestsToProto(),
-		SavedLocations:    ch.SavedLocations.ToProto(),
-		MonsterBook:       ch.MonsterBook.ToProto(),
-		Records:           ch.Records.ToProto(),
-		Account:           ch.Account.ToProto(worldID),
+		Inventory:         ch.buildInventoryRPC(),
+		Skills:            ch.buildSkillsRPC(),
+		SkillMacros:       ch.SkillMacros.BuildRPC(),
+		Buffs:             ch.buildBuffsRPC(),
+		KeyLayout:         ch.KeyLayout.BuildRPC(),
+		Quests:            ch.buildQuestsRPC(),
+		SavedLocations:    ch.SavedLocations.BuildRPC(),
+		MonsterBook:       ch.MonsterBook.BuildRPC(),
+		Records:           ch.Records.BuildRPC(),
+		Account:           ch.Account.BuildRPC(worldID),
 		ClaimedShops:      slices.Clone(ch.StoreBank.claimed),
 		Mount:             &internal.Mount{Level: ch.Mount.Level, Exp: ch.Mount.Exp, Fatigue: ch.Mount.Fatigue},
-		UnsettledRequests: ch.Unsettled.ToProto(),
+		UnsettledRequests: ch.Unsettled.BuildRPC(),
 	}
 }
 
-func (ch *Character) InventoryToProto() []*internal.Inventory {
+func (ch *Character) buildInventoryRPC() []*internal.Inventory {
 	items := make([]*internal.Inventory, 0, len(ch.Inventory.Equipped)+64)
 	ownerID := ch.GetID()
 	for parts, item := range ch.Inventory.Equipped {
 		if item == nil {
 			continue
 		}
-		if pb := item.ToProto(ownerID, int32(parts)); pb != nil {
+		if pb := item.BuildRPC(ownerID, int32(parts)); pb != nil {
 			items = append(items, pb)
 		}
 	}
 	for _, inv := range ch.Inventory.Tabs {
-		items = append(items, inv.ToProto(ownerID)...)
+		items = append(items, inv.BuildRPC(ownerID)...)
 	}
 	return ch.Escrow.mergeProto(items)
 }
 
-func (ch *Character) SkillsToProto() []*internal.Skill {
+func (ch *Character) buildSkillsRPC() []*internal.Skill {
 	skills := make([]*internal.Skill, 0, 64)
 	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
 		if entry == nil {
 			return
 		}
-		if pb := entry.ToProto(ch.GetID(), skillID); pb != nil {
+		if pb := entry.BuildRPC(ch.GetID(), skillID); pb != nil {
 			skills = append(skills, pb)
 		}
 	})
 	return skills
 }
 
-func (ch *Character) BuffsToProto() []*internal.Buff {
+func (ch *Character) buildBuffsRPC() []*internal.Buff {
 	if ch == nil {
 		return nil
 	}
@@ -512,7 +512,7 @@ func (ch *Character) BuffsToProto() []*internal.Buff {
 	return out
 }
 
-func (ch *Character) QuestsToProto() []*internal.Quest {
+func (ch *Character) buildQuestsRPC() []*internal.Quest {
 	if ch == nil {
 		return nil
 	}

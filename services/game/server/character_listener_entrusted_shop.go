@@ -63,7 +63,7 @@ func (l *CharacterListenerImpl) miniRoomItems(items []*entity.ShopItem) response
 			Bundles:   listed.Bundles,
 			PerBundle: listed.PerBundle,
 			Price:     listed.Price,
-			Item:      listed.Item.ToDTO(),
+			Item:      listed.Item.BuildS2C(),
 		})
 	}
 	return out
@@ -111,7 +111,7 @@ func (l *CharacterListenerImpl) OnMiniRoomVisited(ch *entity.Character, slot uin
 	ch.Send(&response.MiniRoomVisited{
 		MiniRoomVisitor: response.MiniRoomVisitor{
 			Slot:      slot,
-			Character: visitor.ToDTO(),
+			Character: visitor.BuildS2C(),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -162,7 +162,7 @@ func (l *CharacterListenerImpl) OnOpenStoreBank(ch *entity.Character, npcID uint
 	}
 	for _, listed := range ch.StoreBank.Items {
 		invType := listed.Item.GetInventoryType()
-		tabs[invType] = append(tabs[invType], listed.Item.Clone(listed.Bundles*listed.PerBundle).ToDTO())
+		tabs[invType] = append(tabs[invType], listed.Item.Clone(listed.Bundles*listed.PerBundle).BuildS2C())
 	}
 	ch.Send(&response.StoreBankOpen{
 		NpcID: npcID,

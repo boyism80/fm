@@ -14,7 +14,7 @@ func (l *CharacterListenerImpl) OnTradeEntered(ch *entity.Character, t *entity.T
 		memberSlot, _ := t.SlotOf(member)
 		enter.Members = append(enter.Members, response.MiniRoomVisitor{
 			Slot:      memberSlot,
-			Character: member.ToDTO(),
+			Character: member.BuildS2C(),
 		})
 	}
 	ch.Send(enter, types.SEND_POLICY_ENCRYPT)
@@ -38,7 +38,7 @@ func (l *CharacterListenerImpl) OnTradeItem(ch *entity.Character, who uint8, slo
 	ch.Send(&response.TradeItem{
 		Who:  who,
 		Slot: slot,
-		Item: item.ToDTO(),
+		Item: item.BuildS2C(),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

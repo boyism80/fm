@@ -37,7 +37,7 @@ func (r *Reactor) Is(typ constant.ObjectType) bool {
 	return r.GetObjectType().Has(typ)
 }
 
-func (r *Reactor) ToDTO() *dto.Reactor {
+func (r *Reactor) BuildS2C() *dto.Reactor {
 	if r == nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func (r *Reactor) SendSpawnSyncToViewer(viewer *Character) {
 	}
 
 	viewer.Send(&response.SpawnReactor{
-		Reactor: r.ToDTO(),
+		Reactor: r.BuildS2C(),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -78,7 +78,7 @@ func (r *Reactor) SendDestroySyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.DestroyReactor{
-		Reactor: r.ToDTO(),
+		Reactor: r.BuildS2C(),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

@@ -66,7 +66,7 @@ func (es *EntrustedShop) view() EntrustedShopView {
 	}
 	for i, visitor := range es.Visitors {
 		if visitor != nil {
-			view.Visitors[i] = visitor.ToDTO()
+			view.Visitors[i] = visitor.BuildS2C()
 		}
 	}
 	return view
@@ -145,7 +145,7 @@ func (es *EntrustedShop) payOwner(meso int32, items []*ShopItem, closing bool, n
 		var entry *internal.CharacterSaveEntry
 		if c != nil {
 			meso, items = c.collectShopGoods(meso, items)
-			entry = c.ToProto(worldID)
+			entry = c.BuildRPC(worldID)
 			if c.MiniRoom == es {
 				notify(c)
 			}
@@ -159,7 +159,7 @@ func (es *EntrustedShop) payOwner(meso int32, items []*ShopItem, closing bool, n
 				es.entries[es.OwnerID] = entry
 			}
 			if meso > 0 || len(items) > 0 {
-				es.storeBank = append(es.storeBank, es.storeBankToProto(meso, items))
+				es.storeBank = append(es.storeBank, es.buildStoreBankRPC(meso, items))
 			}
 			es.save(ctx, closing)
 		})
@@ -277,7 +277,7 @@ func (es *EntrustedShop) AddItem(actx actor.Context, ch *Character, invType cons
 		return err
 	}
 
-	entry := ch.ToProto(es.GameWorld.GetWorldID())
+	entry := ch.BuildRPC(es.GameWorld.GetWorldID())
 	es.GameWorld.GetMapSystem().Call(es.home, func(ctx actor.Context) {
 		if !es.managing || len(es.Items) >= EntrustedShopMaxItems || es.holds(listed.Item.GetModel().GetID()) {
 			es.payOwner(0, []*ShopItem{listed}, false, func(owner *Character) {
@@ -595,7 +595,7 @@ func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot 
 	es.Position = ch.Position
 
 	ch.miniRoomPending = true
-	ch.Listener.OpenShopAsync(actx, ch, es.ToProto()).Do(func(v *internal.OpenShopReply) error {
+	ch.Listener.OpenShopAsync(actx, ch, es.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
 		ch.miniRoomPending = false
 		if v.GetExisting() != nil {
 			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)

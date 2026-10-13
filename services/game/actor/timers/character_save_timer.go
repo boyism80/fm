@@ -40,7 +40,7 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 		if !ok || ch == nil || ch.LoggedOut() {
 			continue
 		}
-		entry := ch.ToProto(worldID)
+		entry := ch.BuildRPC(worldID)
 		if entry == nil {
 			continue
 		}

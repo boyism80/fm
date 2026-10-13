@@ -136,7 +136,7 @@ func (h *Coupon) claim(ctx *core.ClientContext, promise *async.Task, character *
 			redeemed.Meso = value
 		case internal.CashCouponKind_CASH_COUPON_KIND_ITEM:
 			character.AddLocker(item)
-			redeemed.Items = []*dto.CashShopItem{character.LockerItemDTO(item)}
+			redeemed.Items = []*dto.CashShopItem{character.BuildLockerItemS2C(item)}
 		}
 		_ = ctx.Client.Send(redeemed, types.SEND_POLICY_ENCRYPT)
 		if kind == internal.CashCouponKind_CASH_COUPON_KIND_MESO {

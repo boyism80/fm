@@ -26,7 +26,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 	}
 
 	if init {
-		characterDTO := character.ToFullDTO()
+		characterDTO := character.BuildFullS2C()
 		characterDTO.SpawnPoint = spawnPoint
 		loginPacket := &response.Login{
 			Channel:       l.gs.config.ChannelId,
@@ -38,7 +38,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Buffs.ShowAll()
 		character.Listener.OnSkillMacros(character)
 	} else {
-		characterDTO := character.ToDTO()
+		characterDTO := character.BuildS2C()
 		characterDTO.SpawnPoint = spawnPoint
 		warpPacket := &response.Warp{
 			Character: characterDTO,
@@ -50,7 +50,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Send(&response.SuperHide{Hidden: true}, types.SEND_POLICY_ENCRYPT)
 	}
 	if character.Pets.Active != nil {
-		character.Send(&response.SpawnPet{CharacterID: character.GetID(), Pet: character.Pets.Active.ToDTO()}, types.SEND_POLICY_ENCRYPT)
+		character.Send(&response.SpawnPet{CharacterID: character.GetID(), Pet: character.Pets.Active.BuildS2C()}, types.SEND_POLICY_ENCRYPT)
 		if init {
 			character.Listener.OnPetExceptions(character)
 		}
@@ -166,7 +166,7 @@ func (l *MapListenerImpl) OnPlayerMove(mapInstance *entity.Map, character *entit
 		return
 	}
 
-	characterDTO := character.ToDTO()
+	characterDTO := character.BuildS2C()
 
 	movePacket := &response.Move{
 		Character:  characterDTO,
@@ -260,7 +260,7 @@ func (l *MapListenerImpl) OnMobSpawned(mapInstance *entity.Map, mob *entity.Mob,
 		return
 	}
 
-	mobDTO := mob.ToDTO()
+	mobDTO := mob.BuildS2C()
 
 	spawnPacket := &response.SpawnMob{
 		Mob:       mobDTO,
@@ -290,7 +290,7 @@ func (l *MapListenerImpl) OnReactorSpawned(mapInstance *entity.Map, reactor *ent
 	}
 
 	reactor.Broadcast(&response.SpawnReactor{
-		Reactor: reactor.ToDTO(),
+		Reactor: reactor.BuildS2C(),
 	}, nil)
 }
 
@@ -300,7 +300,7 @@ func (l *MapListenerImpl) OnReactorRemoved(mapInstance *entity.Map, reactor *ent
 	}
 
 	mapInstance.BroadcastNear(reactor.GetPosition(), &response.DestroyReactor{
-		Reactor: reactor.ToDTO(),
+		Reactor: reactor.BuildS2C(),
 	}, nil)
 }
 
@@ -310,7 +310,7 @@ func (l *MapListenerImpl) OnReactorTriggered(mapInstance *entity.Map, reactor *e
 	}
 
 	reactor.Broadcast(&response.TriggerReactor{
-		Reactor: reactor.ToDTO(),
+		Reactor: reactor.BuildS2C(),
 		Stance:  stance,
 	}, nil)
 }
@@ -401,12 +401,12 @@ func (l *MapListenerImpl) OnTremble(mapInstance *entity.Map, typ uint8, delay in
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character, aggro bool) {
 	switch {
 	case before == nil && after != nil:
-		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
+		after.Send(&response.StartControlMob{Mob: mob.BuildS2C(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
 	case before != nil && after == nil:
 		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
 	case before != nil && after != nil:
 		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
-		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
+		after.Send(&response.StartControlMob{Mob: mob.BuildS2C(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
 	}
 }
 

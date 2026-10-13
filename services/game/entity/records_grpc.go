@@ -25,7 +25,7 @@ func NewRecordsFromInternalProto(pbs []*internal.Record) *Records {
 	return r
 }
 
-func (r *Records) ToProto() []*internal.Record {
+func (r *Records) BuildRPC() []*internal.Record {
 	out := make([]*internal.Record, 0, len(r.entries))
 	for key := range r.entries {
 		record := r.find(key)

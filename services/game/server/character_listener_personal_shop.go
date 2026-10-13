@@ -18,7 +18,7 @@ func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *entity.Character, ps *
 		memberSlot, _ := ps.SlotOf(member)
 		enter.Members = append(enter.Members, response.MiniRoomVisitor{
 			Slot:      memberSlot,
-			Character: member.ToDTO(),
+			Character: member.BuildS2C(),
 		})
 	}
 	ch.Send(enter, types.SEND_POLICY_ENCRYPT)

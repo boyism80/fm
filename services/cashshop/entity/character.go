@@ -174,7 +174,7 @@ func (ch *Character) NewCashItem(commodity *wz.Commodity, world gentity.ItemWorl
 		return nil, err
 	}
 
-	pb := item.ToProto(ch.ID(), 0)
+	pb := item.BuildRPC(ch.ID(), 0)
 	if pb.UniqueId == nil {
 		serial := world.NewUniqueID()
 		pb.UniqueId = &serial
@@ -185,7 +185,7 @@ func (ch *Character) NewCashItem(commodity *wz.Commodity, world gentity.ItemWorl
 	return &internal.CashItem{CommoditySn: commodity.SN, BuyerName: ch.Name(), Item: pb}, nil
 }
 
-func (ch *Character) LockerItemDTO(item *internal.CashItem) *dto.CashShopItem {
+func (ch *Character) BuildLockerItemS2C(item *internal.CashItem) *dto.CashShopItem {
 	expiration := util.TimeMax
 	if exp := item.GetItem().GetExpirationUnixMs(); exp > 0 {
 		expiration = time.UnixMilli(exp)
@@ -201,15 +201,15 @@ func (ch *Character) LockerItemDTO(item *internal.CashItem) *dto.CashShopItem {
 	}
 }
 
-func (ch *Character) LockerDTO() []*dto.CashShopItem {
+func (ch *Character) BuildLockerS2C() []*dto.CashShopItem {
 	items := make([]*dto.CashShopItem, 0, len(ch.Locker))
 	for _, item := range ch.Locker {
-		items = append(items, ch.LockerItemDTO(item))
+		items = append(items, ch.BuildLockerItemS2C(item))
 	}
 	return items
 }
 
-func (ch *Character) ToDTO(world gentity.ItemWorld) *dto.Character {
+func (ch *Character) BuildS2C(world gentity.ItemWorld) *dto.Character {
 	p := ch.Game.GetCharacter()
 	character := &dto.Character{
 		ID:                p.GetCharacterId(),
@@ -255,12 +255,12 @@ func (ch *Character) ToDTO(world gentity.ItemWorld) *dto.Character {
 		}
 		if pb.GetSlot() < 0 {
 			if equipment, ok := item.(gentity.Equipment); ok {
-				character.Inventory.Equipped[constant.EquipmentPartsType(pb.GetSlot())] = equipment.ToEquipmentDTO()
+				character.Inventory.Equipped[constant.EquipmentPartsType(pb.GetSlot())] = equipment.BuildEquipmentS2C()
 			}
 			continue
 		}
 		if tab := character.Inventory.Tabs[ch.inventoryType(pb)]; tab != nil {
-			tab.Items[int16(pb.GetSlot())] = item.ToDTO()
+			tab.Items[int16(pb.GetSlot())] = item.BuildS2C()
 		}
 	}
 

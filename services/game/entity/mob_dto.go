@@ -7,7 +7,7 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 )
 
-func (m *Mob) ToDTO() *dto.Mob {
+func (m *Mob) BuildS2C() *dto.Mob {
 	if m == nil {
 		return nil
 	}

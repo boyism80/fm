@@ -54,7 +54,7 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 	}
 
 	w := stream.NewStreamWriter(stream.LittleEndian)
-	ch.ToDTO().SerializeLook(w)
+	ch.BuildS2C().SerializeLook(w)
 	rpc := &internal.MessengerRequest{
 		WorldId:     h.gs.config.WorldId,
 		CharacterId: ch.GetID(),

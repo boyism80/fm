@@ -2,7 +2,7 @@ package entity
 
 import "github.com/boyism80/fm/protocol/dto"
 
-func (m *Marriage) ToDTO() *dto.Marriage {
+func (m *Marriage) BuildS2C() *dto.Marriage {
 	return &dto.Marriage{
 		ID:          m.ID,
 		GroomID:     m.GroomID,

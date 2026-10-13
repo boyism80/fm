@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/clock"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
@@ -258,7 +259,7 @@ func GuildLogoFromProto(pb *internal.GuildLogo) *GuildLogo {
 	}
 }
 
-func (l *GuildLogo) ToProto() *internal.GuildLogo {
+func (l *GuildLogo) BuildRPC() *internal.GuildLogo {
 	if l == nil {
 		return &internal.GuildLogo{}
 	}
@@ -309,13 +310,13 @@ func GuildFromProto(gw GameWorld, pb *internal.Guild) *Guild {
 	return guild
 }
 
-func (g *Guild) ToProto() *internal.Guild {
+func (g *Guild) BuildRPC() *internal.Guild {
 	if g == nil {
 		return nil
 	}
 	members := make([]*internal.GuildMember, 0, len(g.Members))
 	for _, m := range g.Members {
-		if pm := m.ToProto(); pm != nil {
+		if pm := m.BuildRPC(); pm != nil {
 			members = append(members, pm)
 		}
 	}
@@ -332,7 +333,7 @@ func (g *Guild) ToProto() *internal.Guild {
 		Gp:                g.GP,
 		Capacity:          g.Capacity,
 		Notice:            g.Notice,
-		Logo:              g.Logo.ToProto(),
+		Logo:              g.Logo.BuildRPC(),
 		RankTitles:        rankTitles,
 		Members:           members,
 	}

@@ -528,7 +528,7 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 		h.gs.guild.RefreshAsync(actorCtx, []uint32{removedGuildID}).Do(func() error {
 			var removedGuildPb *internal.Guild
 			if g := h.gs.guild.Get(removedGuildID); g != nil {
-				removedGuildPb = g.ToProto()
+				removedGuildPb = g.BuildRPC()
 			}
 			h.gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, false)
 			return nil

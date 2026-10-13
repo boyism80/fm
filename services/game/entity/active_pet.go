@@ -35,7 +35,7 @@ type ActivePet struct {
 	Stance   uint8
 }
 
-func (p *ActivePet) ToDTO() *dto.ActivePet {
+func (p *ActivePet) BuildS2C() *dto.ActivePet {
 	return &dto.ActivePet{
 		ItemID:   p.Item.GetModel().GetID(),
 		Name:     p.Item.Name,

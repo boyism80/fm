@@ -29,7 +29,7 @@ func NewSkillMacrosFromInternalProto(entries []*internal.SkillMacro) []SkillMacr
 	return macros
 }
 
-func (m *SkillMacros) ToProto() []*internal.SkillMacro {
+func (m *SkillMacros) BuildRPC() []*internal.SkillMacro {
 	entries := make([]*internal.SkillMacro, 0, len(m.entries))
 	for position, entry := range m.entries {
 		entries = append(entries, &internal.SkillMacro{

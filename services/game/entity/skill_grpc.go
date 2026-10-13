@@ -2,13 +2,14 @@ package entity
 
 import (
 	"fmt"
-	"github.com/boyism80/fm/core/clock"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (e *SkillEntry) ToProto(characterID uint32, skillID uint32) *internal.Skill {
+func (e *SkillEntry) BuildRPC(characterID uint32, skillID uint32) *internal.Skill {
 	if e == nil {
 		return nil
 	}

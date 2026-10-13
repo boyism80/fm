@@ -1764,7 +1764,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LFalse)
 					return 1
 				}
-				megaphone.Item = item.ToDTO()
+				megaphone.Item = item.BuildS2C()
 			}
 			cfg, ok := luax.GetConfiguration(L)
 			if !ok || cfg.ActorContext == nil {

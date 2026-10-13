@@ -167,7 +167,7 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 	sb.Close()
 	sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultClaimed)
 
-	entry := sb.owner.ToProto(sb.owner.GameWorld.GetWorldID())
+	entry := sb.owner.BuildRPC(sb.owner.GameWorld.GetWorldID())
 	sb.owner.GameWorld.SaveAsync(actx, []*internal.CharacterSaveEntry{entry}).Do(func() error {
 		sb.claimed = slices.DeleteFunc(sb.claimed, func(id uint32) bool {
 			return slices.Contains(entry.GetClaimedShops(), id)

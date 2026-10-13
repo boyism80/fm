@@ -219,7 +219,7 @@ func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.SpawnMob{
-		Mob:       m.ToDTO(),
+		Mob:       m.BuildS2C(),
 		SpawnType: constant.MobSpawnTypeNone,
 	}, types.SEND_POLICY_ENCRYPT)
 }

@@ -27,13 +27,13 @@ func PartyFromProto(gw GameWorld, pb *internal.Party) *Party {
 	}
 }
 
-func (p *Party) ToProto() *internal.Party {
+func (p *Party) BuildRPC() *internal.Party {
 	if p == nil {
 		return nil
 	}
 	members := make([]*internal.PartyMember, 0, len(p.Members))
 	for _, m := range p.Members {
-		if pm := m.ToProto(); pm != nil {
+		if pm := m.BuildRPC(); pm != nil {
 			members = append(members, pm)
 		}
 	}

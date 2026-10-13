@@ -27,8 +27,8 @@ func PartyMemberFromProto(pb *internal.PartyMember) *PartyMember {
 	return m
 }
 
-// ToProto serializes this member to protobuf.
-func (m *PartyMember) ToProto() *internal.PartyMember {
+// BuildRPC serializes this member to protobuf.
+func (m *PartyMember) BuildRPC() *internal.PartyMember {
 	if m == nil {
 		return nil
 	}
@@ -45,7 +45,7 @@ func (m *PartyMember) ToProto() *internal.PartyMember {
 		c := *m.ChannelIndex
 		pm.ChannelIndex = &c
 	}
-	pm.Door = m.Door.ToProto()
+	pm.Door = m.Door.BuildRPC()
 	return pm
 }
 
@@ -72,7 +72,7 @@ func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ro
 		m.ChannelIndex = &ci
 	}
 	if door := ch.Doors.Find(constant.SkillMysticDoor); door != nil {
-		if pb := door.ToProto(); pb != nil {
+		if pb := door.BuildRPC(); pb != nil {
 			m.Door = PartyDoorFromProto(pb)
 		}
 	}

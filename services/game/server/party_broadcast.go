@@ -25,7 +25,7 @@ func (pc *PartyCache) BroadcastMemberJoined(party *entity.Party, joinedCharacter
 	if joinName == "" {
 		return
 	}
-	respMembers := party.MembersToResponse()
+	respMembers := party.BuildS2C()
 	for _, m := range members {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
@@ -63,7 +63,7 @@ func (pc *PartyCache) BroadcastMemberLeft(prev, current *entity.Party, targetCha
 	if current != nil {
 		partyID = current.GetPartyId()
 		leaderID = current.GetLeaderCharacterId()
-		respMembers = current.MembersToResponse()
+		respMembers = current.BuildS2C()
 	}
 
 	if pc.gs.characterRuntime != nil {
@@ -168,7 +168,7 @@ func (pc *PartyCache) BroadcastLogOnOff(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}
-	respMembers := party.MembersToResponse()
+	respMembers := party.BuildS2C()
 	forChannel := int32(pc.gs.config.ChannelId)
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()

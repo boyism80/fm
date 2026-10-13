@@ -44,7 +44,7 @@ func (ac *AllianceCache) guildInfos(alliancePb *internal.Alliance) []*dto.GuildI
 		if ent == nil {
 			continue
 		}
-		pb := ent.ToProto()
+		pb := ent.BuildRPC()
 		if pb == nil {
 			continue
 		}
@@ -69,7 +69,7 @@ func (ac *AllianceCache) membershipGuilds(alliancePb *internal.Alliance) []dto.A
 		if ent == nil {
 			continue
 		}
-		pb := ent.ToProto()
+		pb := ent.BuildRPC()
 		if pb == nil {
 			continue
 		}

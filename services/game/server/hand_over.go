@@ -45,12 +45,12 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 			return fmt.Errorf("hand over: no route (world=%d)", worldID)
 		}
 		route = found
-		entry = character.ToProto(worldID)
+		entry = character.BuildRPC(worldID)
 		if entry == nil {
 			block()
 			return fmt.Errorf("hand over: character %d has no map to save", character.GetID())
 		}
-		debuffs = character.Debuffs.ToProto()
+		debuffs = character.Debuffs.BuildRPC()
 		return nil
 	})
 	promise.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {

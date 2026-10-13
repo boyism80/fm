@@ -168,7 +168,7 @@ func (d *Door) SendOwnerPortalResync(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (d *Door) ToProto() *internal.PartyDoor {
+func (d *Door) BuildRPC() *internal.PartyDoor {
 	return &internal.PartyDoor{
 		Town:   d.Return.Map.TemplateID(),
 		Target: d.Field.Map.TemplateID(),

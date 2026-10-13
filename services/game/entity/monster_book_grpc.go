@@ -18,7 +18,7 @@ func NewMonsterBookFromInternalProto(owner *Character, cover uint32, cards []*in
 	return book
 }
 
-func (b *MonsterBook) ToProto() []*internal.MonsterBookCard {
+func (b *MonsterBook) BuildRPC() []*internal.MonsterBookCard {
 	out := make([]*internal.MonsterBookCard, 0, len(b.Cards))
 	for cardID, count := range b.Cards {
 		out = append(out, &internal.MonsterBookCard{CardId: cardID, Count: count})

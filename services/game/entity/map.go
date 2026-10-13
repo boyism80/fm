@@ -393,7 +393,7 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 	if character.MiniRoom != nil {
 		character.MiniRoom.Leave(character)
 	}
-	entry := character.ToProto(m.GameWorld.GetWorldID())
+	entry := character.BuildRPC(m.GameWorld.GetWorldID())
 	err := m.RemovePlayer(playerID)
 	character.ClearTimers()
 	select {
@@ -937,11 +937,11 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	m.sections.add(npc)
 
 	npc.Broadcast(&response.SpawnNpc{
-		NPC:     npc.ToDTO(),
+		NPC:     npc.BuildS2C(),
 		Visible: true,
 	}, nil)
 	npc.Broadcast(&response.NpcControl{
-		NPC:     npc.ToDTO(),
+		NPC:     npc.BuildS2C(),
 		MiniMap: true,
 	}, nil)
 

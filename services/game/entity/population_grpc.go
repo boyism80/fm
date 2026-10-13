@@ -23,7 +23,7 @@ func NewPopulationHistoryFromInternalProto(pb *internal.PopulationHistory) Popul
 	return history
 }
 
-func (h *PopulationHistory) ToProto() *internal.PopulationHistory {
+func (h *PopulationHistory) BuildRPC() *internal.PopulationHistory {
 	pb := &internal.PopulationHistory{GivenUnixMs: make(map[uint32]int64, len(h.Given))}
 	if !h.LastGivenAt.IsZero() {
 		pb.LastGivenUnixMs = h.LastGivenAt.UnixMilli()

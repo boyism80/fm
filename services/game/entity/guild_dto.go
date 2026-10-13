@@ -41,7 +41,7 @@ func (m *GuildMember) RankWire() uint8 {
 	return uint8(guildRankToUint32(m.Rank))
 }
 
-func (m *GuildMember) ToDTO() dto.GuildMemberStatus {
+func (m *GuildMember) BuildS2C() dto.GuildMemberStatus {
 	return dto.GuildMemberStatus{
 		CharacterID:  m.CharacterID,
 		Name:         m.CharacterName,
@@ -123,7 +123,7 @@ func GuildInfoFromProto(pb *internal.Guild) *dto.GuildInfo {
 	}
 }
 
-func (g *Guild) ToDTO() *dto.GuildInfo {
+func (g *Guild) BuildS2C() *dto.GuildInfo {
 	logoBG := uint16(0)
 	logoBGColor := uint8(0)
 	logo := uint16(0)
@@ -139,7 +139,7 @@ func (g *Guild) ToDTO() *dto.GuildInfo {
 		if m == nil {
 			continue
 		}
-		members = append(members, m.ToDTO())
+		members = append(members, m.BuildS2C())
 	}
 	return &dto.GuildInfo{
 		GuildID:     g.GuildID,

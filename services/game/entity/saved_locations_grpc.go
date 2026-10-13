@@ -17,7 +17,7 @@ func (s *SavedLocations) Load(pbs []*internal.SavedLocation) {
 	}
 }
 
-func (s *SavedLocations) ToProto() []*internal.SavedLocation {
+func (s *SavedLocations) BuildRPC() []*internal.SavedLocation {
 	if len(s.entries) == 0 {
 		return nil
 	}

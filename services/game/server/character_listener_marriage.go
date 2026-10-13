@@ -266,7 +266,7 @@ func (l *CharacterListenerImpl) OnWeddingWishlistInput(ch *entity.Character) {
 func (l *CharacterListenerImpl) OnEngageResult(ch *entity.Character, result pconst.EngageResult) {
 	packet := &response.EngageResult{Result: result}
 	if result == pconst.EngageResultEngaged || result == pconst.EngageResultMarried {
-		packet.Marriage = ch.Wedding.Marriage.ToDTO()
+		packet.Marriage = ch.Wedding.Marriage.BuildS2C()
 	}
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }
@@ -287,7 +287,7 @@ func (l *CharacterListenerImpl) OnWeddingGift(ch *entity.Character, mode pconst.
 		for typ, items := range tabs {
 			dtos := make([]dto.Item, 0, len(items))
 			for _, item := range items {
-				dtos = append(dtos, entity.ItemToDTO(item))
+				dtos = append(dtos, item.BuildS2C())
 			}
 			packet.Tabs[typ] = dtos
 		}

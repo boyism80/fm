@@ -37,8 +37,8 @@ type Item interface {
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
 	BindFieldPlacement(placement *FieldPlacement)
-	ToDTO() dto.Item
-	ToProto(ownerID uint32, slot int32) *internal.Inventory
+	BuildS2C() dto.Item
+	BuildRPC(ownerID uint32, slot int32) *internal.Inventory
 }
 
 type FieldPlacement struct {
@@ -89,7 +89,7 @@ func (e *EquipmentCore) Increase(count uint16) uint16 { return 0 }
 type Equipment interface {
 	Item
 	GetEquipmentCore() *EquipmentCore
-	ToEquipmentDTO() *dto.Equipment
+	BuildEquipmentS2C() *dto.Equipment
 }
 
 func copyUint64Ptr(p *uint64) *uint64 {

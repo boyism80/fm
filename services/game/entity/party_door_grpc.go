@@ -14,7 +14,7 @@ func PartyDoorFromProto(pb *internal.PartyDoor) *PartyDoor {
 	}
 }
 
-func (d *PartyDoor) ToProto() *internal.PartyDoor {
+func (d *PartyDoor) BuildRPC() *internal.PartyDoor {
 	if d == nil {
 		return nil
 	}

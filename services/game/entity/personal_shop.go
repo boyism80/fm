@@ -245,7 +245,7 @@ func (ps *PersonalShop) close(reason pconst.MiniRoomLeaveReason) {
 	if ps.published {
 		owner.Listener.OnMiniRoomBalloon(owner, nil)
 	}
-	ps.entries[owner.GetID()] = owner.ToProto(ps.GameWorld.GetWorldID())
+	ps.entries[owner.GetID()] = owner.BuildRPC(ps.GameWorld.GetWorldID())
 	m.RemovePersonalShop(ps)
 	ps.GameWorld.GetMapSystem().Call(m, func(ctx actor.Context) {
 		ps.save(ctx, true)
@@ -300,7 +300,7 @@ func (ch *Character) CreatePersonalShop(actx actor.Context, title string, slot i
 	ps.Position = ch.Position
 
 	ch.miniRoomPending = true
-	ch.Listener.OpenShopAsync(actx, ch, ps.ToProto()).Do(func(v *internal.OpenShopReply) error {
+	ch.Listener.OpenShopAsync(actx, ch, ps.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
 		ch.miniRoomPending = false
 		if v.GetExisting() != nil {
 			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)

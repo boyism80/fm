@@ -18,9 +18,9 @@ func NewAccountFromInternalProto(pb *internal.Account, owner *Character) *Accoun
 	}
 }
 
-func (a *Account) ToProto(worldID uint32) *internal.Account {
+func (a *Account) BuildRPC(worldID uint32) *internal.Account {
 	return &internal.Account{
-		Storage: a.Storage.ToProto(worldID),
-		Records: a.Records.ToProto(),
+		Storage: a.Storage.BuildRPC(worldID),
+		Records: a.Records.BuildRPC(),
 	}
 }

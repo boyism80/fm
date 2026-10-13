@@ -4,7 +4,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (m *InventoryTab) ToProto(ownerID uint32) []*internal.Inventory {
+func (m *InventoryTab) BuildRPC(ownerID uint32) []*internal.Inventory {
 	if m == nil {
 		return nil
 	}
@@ -13,7 +13,7 @@ func (m *InventoryTab) ToProto(ownerID uint32) []*internal.Inventory {
 		if item == nil {
 			continue
 		}
-		if pb := item.ToProto(ownerID, int32(slot)); pb != nil {
+		if pb := item.BuildRPC(ownerID, int32(slot)); pb != nil {
 			out = append(out, pb)
 		}
 	}

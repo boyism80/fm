@@ -699,7 +699,7 @@ func (gs *GameServer) removeCharacter(character *entity.Character, logout <-chan
 	case entry = <-logout:
 	case <-time.After(logoutWaitTimeout):
 		log.Printf("remove character %d: no map actor owns it; clearing timers here", charID)
-		entry = character.ToProto(gs.config.WorldId)
+		entry = character.BuildRPC(gs.config.WorldId)
 		character.ClearTimers()
 	}
 
