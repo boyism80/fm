@@ -23,7 +23,7 @@ func (ch *Character) UseItemMaker(typ uint32, itemID uint32, catalyst bool, enha
 
 func (ch *Character) makerSkillLevel() int {
 	skillID := uint32(constant.SkillMaker)
-	if ch.Class.Family == constant.ClassFamilyCygnus {
+	if ch.Class >= 1000 && ch.Class < 2000 {
 		skillID = uint32(constant.SkillMakerCygnus)
 	}
 	entry := ch.Skills.Get(skillID)
@@ -40,7 +40,7 @@ func (ch *Character) makeItem(itemID uint32, catalyst bool, enhancers []uint32) 
 		return
 	}
 	if recipe.Class != 0 {
-		category := int(ch.Class.Branch)
+		category := int(ch.Class) / 100 % 10
 		if category < 1 || recipe.Class&(1<<(category-1)) == 0 {
 			return
 		}

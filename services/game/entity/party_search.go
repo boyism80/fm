@@ -1,9 +1,6 @@
 package entity
 
-import (
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/wz"
-)
+import "github.com/boyism80/fm/services/game/constant"
 
 type PartySearchConfig struct {
 	MinLevel      int32
@@ -53,14 +50,17 @@ func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32)
 	if !leader.HasRoleAtLeast(constant.RoleAdmin) && accepter.HasRoleAtLeast(constant.RoleAdmin) {
 		return false
 	}
-	if !cfg.Accepts(accepter.Class) {
+	if !MatchesPartySearchClassMask(accepter, cfg.ClassMask) {
 		return false
 	}
 	return true
 }
 
-func (cfg *PartySearchConfig) Accepts(class *wz.Class) bool {
-	if (cfg.ClassMask & 0x1) != 0 {
+func MatchesPartySearchClassMask(ch *Character, classMask int32) bool {
+	if ch == nil {
+		return false
+	}
+	if (classMask & 0x1) != 0 {
 		return true
 	}
 	classCodesByMask := map[int32]constant.ClassType{
@@ -82,16 +82,16 @@ func (cfg *PartySearchConfig) Accepts(class *wz.Class) bool {
 		0x20000: constant.ClassHunter,
 		0x40000: constant.ClassCrossbowman,
 	}
-	if (cfg.ClassMask & 0x2) != 0 {
-		if class.Of(constant.ClassBeginner) {
+	if (classMask & 0x2) != 0 {
+		if ch.ClassOf(constant.ClassBeginner) {
 			return true
 		}
 	}
 	for bit, classCode := range classCodesByMask {
-		if (cfg.ClassMask & bit) == 0 {
+		if (classMask & bit) == 0 {
 			continue
 		}
-		if class.Of(classCode) {
+		if ch.ClassOf(classCode) {
 			return true
 		}
 	}

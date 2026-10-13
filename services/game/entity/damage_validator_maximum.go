@@ -31,7 +31,7 @@ type damageStats struct {
 	MAD    float64
 	ACC    float64
 	Level  int
-	Class  *wz.Class
+	Class  constant.ClassType
 	Weapon constant.WeaponType
 }
 
@@ -181,7 +181,7 @@ func (a attack) physicalBase(w float64) (damageRange, error) {
 	case constant.WeaponTypeSword1H:
 		return formula(str, 4, a.stats.DEX, 100), nil
 	case constant.WeaponTypeDagger:
-		if a.stats.Class.Branch == constant.ClassBranchThief {
+		if a.stats.Class%1000/100 == 4 {
 			return formula(luk, 3.6, a.stats.STR+a.stats.DEX, 100), nil
 		}
 		return formula(str, 4, a.stats.DEX, 100), nil
@@ -189,7 +189,7 @@ func (a attack) physicalBase(w float64) (damageRange, error) {
 		return formula(str, 4.4, a.stats.DEX, 100).union(formula(str, 3.2, a.stats.DEX, 100)), nil
 	case constant.WeaponTypeNone:
 		c := 4.2
-		if a.stats.Class.ID == constant.ClassPirate {
+		if a.stats.Class == constant.ClassPirate {
 			c = 3
 		}
 		return formula(str, c, a.stats.DEX, 100), nil
@@ -538,10 +538,10 @@ func (a attack) magic() (damageRange, bool) {
 
 func (a attack) summon() damageRange {
 	p, secondary := a.stats.DEX, a.stats.STR
-	switch a.stats.Class.Branch {
-	case constant.ClassBranchWarrior, constant.ClassBranchPirate:
+	switch a.stats.Class % 1000 / 100 {
+	case 1, 5:
 		p, secondary = a.stats.STR, a.stats.DEX
-	case constant.ClassBranchThief:
+	case 4:
 		p, secondary = a.stats.LUK, a.stats.DEX
 	}
 

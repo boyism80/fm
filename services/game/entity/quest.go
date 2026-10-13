@@ -102,7 +102,7 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 		return ErrQuestNotCompletable
 	}
 	exchange := ch.Quests.buildPhaseExchange(qp.Wz.Complete.Actions, questActionOpts{
-		Class:     ch.Class,
+		ClassID:   ch.Class,
 		Selection: opts.Selection,
 	})
 	if exchange.Cost.ValidCost(ch) != ExchangeOK {
@@ -261,7 +261,7 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 			return err
 		}
 		if err := ch.Quests.grant(qp, qp.Wz.Complete.Actions, questActionOpts{
-			Class:     ch.Class,
+			ClassID:   ch.Class,
 			Selection: opts.Selection,
 			NpcID:     wireNPC,
 		}); err != nil {

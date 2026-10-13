@@ -101,7 +101,7 @@ func (gc *GuildCache) NotifyMemberFieldsChanged(ch *entity.Character) {
 	}
 	subjectID := ch.GetID()
 	level := uint32(ch.GetLevel())
-	classID := uint32(ch.Class.ID)
+	classID := uint32(ch.Class)
 	gc.mu.Lock()
 	g := gc.guilds[guildID]
 	if g == nil {

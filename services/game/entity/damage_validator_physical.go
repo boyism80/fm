@@ -75,7 +75,7 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 		}
 	}
 
-	if a.stats.Class.ID == constant.ClassPaladin {
+	if a.stats.Class == constant.ClassPaladin {
 		if p := v.ch.Skills.LevelData(constant.SkillAdvancedCharge); p != nil {
 			a.modifiers.SkillDamageOverride = float64(p.Damage)
 		}
@@ -87,7 +87,7 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 		// The server keeps no dark sight timer, so take the longest the skill allows.
 		a.modifiers.AssassinateSeconds = a.data.Time.Seconds()
 	}
-	if v.ch.Buffs.value(constant.BuffFlagDarksight) > 0 && a.stats.Class.Family == constant.ClassFamilyCygnus {
+	if v.ch.Buffs.value(constant.BuffFlagDarksight) > 0 && a.stats.Class >= 1000 {
 		if p := v.ch.Skills.LevelData(constant.SkillVanish); p != nil {
 			a.modifiers.ExtraPercent = float64(p.Damage)
 		}

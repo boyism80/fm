@@ -63,7 +63,7 @@ func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ro
 		CharacterID:   ch.GetID(),
 		CharacterName: ch.GetName(),
 		Level:         uint32(ch.GetLevel()),
-		ClassID:       uint32(ch.Class.ID),
+		ClassID:       uint32(ch.Class),
 		Role:          role,
 		MapID:         mapID,
 	}

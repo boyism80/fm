@@ -44,7 +44,7 @@ func (qc *Quests) requirementsMet(req wz.QuestRequirements, qp *Quest, opts Ques
 	if req.Level > 0 && int(qc.owner.GetLevel()) < req.Level {
 		return false
 	}
-	if !qc.owner.Class.InQuestClasses(req.Classes) {
+	if len(req.Classes) > 0 && !matchesQuestClass(qc.owner.Class, req.Classes) {
 		return false
 	}
 	for itemID, count := range req.Item {

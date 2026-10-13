@@ -122,7 +122,7 @@ func GuildMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ra
 		CharacterID:   ch.GetID(),
 		CharacterName: ch.GetName(),
 		Level:         uint32(ch.GetLevel()),
-		ClassID:       uint32(ch.Class.ID),
+		ClassID:       uint32(ch.Class),
 		Rank:          rank,
 	}
 	if channelID >= 0 {

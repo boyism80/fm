@@ -96,7 +96,8 @@ func (s *Skill) DefaultMasterLevel() int {
 	return s.MaxLevel
 }
 
-func (s *Skill) LearnableBy(c *Class) bool {
+func (s *Skill) LearnableBy(class constant.ClassType) bool {
+	c := NewClass(class)
 	switch s.Class.ID {
 	case constant.ClassBeginner:
 		return c.Family == constant.ClassFamilyExplorer

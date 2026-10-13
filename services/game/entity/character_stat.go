@@ -41,7 +41,7 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	case constant.StatEXP:
 		return int32(ch.exp), true
 	case constant.StatClass:
-		return int32(ch.Class.ID), true
+		return int32(ch.Class), true
 	case constant.StatStr:
 		return int32(ch.Stats.TotalStr()), true
 	case constant.StatDex:

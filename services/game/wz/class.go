@@ -47,23 +47,6 @@ func NewClass(id constant.ClassType) *Class {
 	return c
 }
 
-// A quest class code ending in 00 stands for its whole branch.
-func (c *Class) InQuestClasses(codes []int) bool {
-	if len(codes) == 0 {
-		return true
-	}
-	class := int(c.ID)
-	for _, code := range codes {
-		if code == class {
-			return true
-		}
-		if code%100 == 0 && class/100 == code/100 {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *Class) Of(ancestor constant.ClassType) bool {
 	for cur := c; cur != nil; cur = cur.Parent {
 		if cur.ID == ancestor {
