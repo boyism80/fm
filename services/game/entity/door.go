@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"log"
+
+	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
@@ -62,6 +65,37 @@ func (d *Door) UsableBy(ch *Character) bool {
 		return false
 	}
 	return ch.Party.Is(d.PartyID)
+}
+
+func (d *Door) Destination(from *Map) (DoorEndpoint, bool) {
+	switch from {
+	case d.Field.Map:
+		return d.Return, true
+	case d.Return.Map:
+		return d.Field, true
+	}
+	return DoorEndpoint{}, false
+}
+
+func (ch *Character) UseDoor(actx actor.Context, ownerID uint32) bool {
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
+		return false
+	}
+	door := m.FindDoorOwner(ownerID)
+	if door == nil || door.Map != m || !door.UsableBy(ch) {
+		return false
+	}
+	dest, ok := door.Destination(m)
+	if !ok || dest.Map == nil || dest.Map.Wz == nil {
+		return false
+	}
+
+	if err := ch.Warp(actx, dest.Map, dest.PortalID); err != nil {
+		log.Printf("use door warp: %v", err)
+		return false
+	}
+	return true
 }
 
 func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
