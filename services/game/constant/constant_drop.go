@@ -21,6 +21,11 @@ const (
 )
 
 const (
+	DropMesoMin int32 = 10
+	DropMesoMax int32 = 50000
+)
+
+const (
 	ItemExpireTime = 120 * time.Second
 	ItemFFATime    = 30 * time.Second
 )

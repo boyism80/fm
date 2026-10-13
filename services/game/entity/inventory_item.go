@@ -580,3 +580,41 @@ func (inv *Inventory) validateMeso(costMeso, rewardMeso int32) ExchangeResult {
 	}
 	return ExchangeOK
 }
+
+func (inv *Inventory) Move(invType constant.InventoryType, src, dst int16) bool {
+	inven := inv.Tabs[invType]
+	if inven == nil {
+		return false
+	}
+	if dst < 1 || dst > int16(inven.SlotLimit) || src == dst {
+		return false
+	}
+	srcItem, ok := inven.Items[src]
+	if !ok {
+		return false
+	}
+
+	dstItem, ok := inven.Items[dst]
+	if !ok {
+		inven.Items[dst] = srcItem
+		delete(inven.Items, src)
+		inv.owner.Listener.OnSwapInventorySlot(inv.owner, invType, src, dst, 0)
+		return true
+	}
+
+	if !inven.Stackable(srcItem, dstItem) {
+		inven.Items[src], inven.Items[dst] = dstItem, srcItem
+		inv.owner.Listener.OnSwapInventorySlot(inv.owner, invType, src, dst, 0)
+		return true
+	}
+
+	moved := min(srcItem.GetCount(), srcItem.GetModel().GetCapacity()-dstItem.GetCount())
+	dstItem.Increase(moved)
+	if srcItem.Reduce(moved) == 0 {
+		inv.owner.Listener.OnFullMergeInventorySlot(inv.owner, invType, src, dst, dstItem.GetCount())
+		delete(inven.Items, src)
+	} else {
+		inv.owner.Listener.OnPartialMergeInventorySlot(inv.owner, invType, src, dst, srcItem.GetCount(), dstItem.GetCount())
+	}
+	return true
+}
