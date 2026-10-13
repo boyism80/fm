@@ -7,7 +7,6 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -15,7 +14,6 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type GuildOperation struct {
@@ -25,27 +23,6 @@ type GuildOperation struct {
 func (GuildOperation) New(gs *GameServer) *GuildOperation {
 	return &GuildOperation{
 		gs: gs,
-	}
-}
-
-func (h *GuildOperation) resumeGuildCreate(ch *entity.Character, result gameconst.GuildCreateResult) {
-	if ch == nil {
-		return
-	}
-	thread := ch.Dialog.Thread()
-	if thread == nil {
-		return
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return
-	}
-	if _, _, err := luax.Resume(root, thread, lua.LNumber(result)); err != nil {
-		log.Printf("GuildOperation(create): failed to resume npc script character=%d: %v", ch.GetID(), err)
 	}
 }
 
@@ -86,16 +63,15 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 	case pconst.GuildC2SCreate:
 		if _, inGuild := ch.Guild.ID(); inGuild {
 			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
-			h.resumeGuildCreate(ch, gameconst.GuildCreateResultAlreadyInGuild)
 			return nil
 		}
 		mapInstance := ch.GetMap()
 		if mapInstance == nil || mapInstance.Wz == nil || uint32(mapInstance.Wz.ID) != gameconst.GuildEmblemMapID {
-			h.resumeGuildCreate(ch, gameconst.GuildCreateResultNotAllowed)
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateNotAllowedMessage)
 			return nil
 		}
 		if !ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost) {
-			h.resumeGuildCreate(ch, gameconst.GuildCreateResultInsufficientMeso)
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateInsufficientMesoMessage)
 			return nil
 		}
 
@@ -108,24 +84,24 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 				} else {
 					log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
+					ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 				}
 				ch.Inventory.AddMeso(detail.Meso)
-				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 				return nil
 			}
 			guildPb := reply.GetGuild()
 			if guildPb == nil {
 				log.Printf("GuildOperation(create): ok but missing guild character=%d", charID)
-				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
+				ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 				return nil
 			}
 			h.gs.guildSystem.applyGuildFromProto(ch, guildPb)
-			h.resumeGuildCreate(ch, gameconst.GuildCreateResultOK)
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreatedMessage)
 			return nil
 		}).OnError(func(err error) {
 			ch.Unsettled.Find(id).InFlight = false
 			log.Printf("GuildOperation(create) character=%d id=%d: %v", charID, id, err)
-			h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 		})
 		return nil
 	case pconst.GuildC2SInvite:

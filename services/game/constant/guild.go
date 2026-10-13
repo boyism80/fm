@@ -21,15 +21,11 @@ const GuildEmblemChangeMesoCost int32 = 5_000_000
 
 const GuildEmblemChangeCashItemID uint32 = 5220001
 
-type GuildCreateResult int
-
 const (
-	GuildCreateResultOK               GuildCreateResult = 0
-	GuildCreateResultNotAllowed       GuildCreateResult = 1
-	GuildCreateResultInsufficientMeso GuildCreateResult = 2
-	GuildCreateResultAlreadyInGuild   GuildCreateResult = 3
-	GuildCreateResultFailed           GuildCreateResult = 4
-	GuildCreateResultSendFailed       GuildCreateResult = -1
+	GuildCreatedMessage                = "길드가 성공적으로 생성되었습니다."
+	GuildCreateNotAllowedMessage       = "길드를 만들 수 없습니다."
+	GuildCreateInsufficientMesoMessage = "길드를 생성할 메소가 부족합니다."
+	GuildCreateFailedMessage           = "잠시 후 다시 시도해 주세요."
 )
 
 type GuildDisbandResult int

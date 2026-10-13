@@ -3281,19 +3281,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			code := pconst.GuildResponseCode(L.CheckInt(2))
-			err := ch.Send(&response.GuildMessage{
-				Code: code,
-			}, types.SEND_POLICY_ENCRYPT)
-			if err != nil {
-				L.Push(lua.LNumber(constant.GuildCreateResultSendFailed))
-				return 1
-			}
-			if code == pconst.GuildResponseEmblemDialog {
-				return 0
-			}
-			ch.Dialog.Set(L)
-			return L.Yield(lua.LNumber(0))
+			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseCode(L.CheckInt(2)))
+			return 0
 		},
 		"hidden": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

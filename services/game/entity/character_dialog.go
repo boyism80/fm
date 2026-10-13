@@ -23,11 +23,12 @@ type npcDialog struct {
 }
 
 type Dialog struct {
-	owner  *Character
-	mutex  sync.Mutex
-	thread *lua.LState
-	asked  *npcDialog
-	ShopID uint32
+	owner   *Character
+	mutex   sync.Mutex
+	thread  *lua.LState
+	asked   *npcDialog
+	waiting bool
+	ShopID  uint32
 }
 
 func NewDialog(owner *Character) *Dialog {
@@ -45,6 +46,7 @@ func (d *Dialog) Set(thread *lua.LState) {
 	defer d.mutex.Unlock()
 	d.thread = thread
 	d.asked = nil
+	d.waiting = false
 }
 
 func (d *Dialog) Ask(thread *lua.LState, dialogType constant.DialogType, choices int) {
@@ -52,6 +54,15 @@ func (d *Dialog) Ask(thread *lua.LState, dialogType constant.DialogType, choices
 	defer d.mutex.Unlock()
 	d.thread = thread
 	d.asked = &npcDialog{dialogType: dialogType, choices: choices}
+	d.waiting = false
+}
+
+func (d *Dialog) Wait(thread *lua.LState) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.thread = thread
+	d.asked = nil
+	d.waiting = true
 }
 
 func (d *Dialog) Reset() {
@@ -59,6 +70,7 @@ func (d *Dialog) Reset() {
 	defer d.mutex.Unlock()
 	d.thread = nil
 	d.asked = nil
+	d.waiting = false
 }
 
 func (d *Dialog) Close() {
@@ -73,6 +85,30 @@ func (d *Dialog) Close() {
 		luax.SetConfiguration(thread, cfg)
 	}
 	luax.Close(thread)
+}
+
+// The reply can arrive after the dialog was closed or replaced, so only the thread still waiting for it resumes.
+func (d *Dialog) Wake(thread *lua.LState, value lua.LValue) error {
+	d.mutex.Lock()
+	if d.thread != thread || !d.waiting {
+		d.mutex.Unlock()
+		return ErrDialogNotExpected
+	}
+	d.waiting = false
+	d.mutex.Unlock()
+
+	mapInstance := d.owner.GetMap()
+	if mapInstance == nil {
+		return ErrDialogNoLuaRoot
+	}
+	root := mapInstance.GetLuaRoot()
+	if root == nil {
+		return ErrDialogNoLuaRoot
+	}
+	if _, _, err := luax.Resume(root, thread, value); err != nil {
+		return fmt.Errorf("wake dialog: %w", err)
+	}
+	return nil
 }
 
 func (d *Dialog) Resume(actx actor.Context, dialogType constant.DialogType, next bool, selected uint32, text string) error {

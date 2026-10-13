@@ -7,7 +7,8 @@ local LENARIO = 2010009
 local GUILD_SHOW_INFO = 0x1A
 local GUILD_EMBLEM_CHANGE = 0x42
 local DIALOG = { yes_no = 1 }
-local HERACLE_MENU = { capacity = 2 }
+local HERACLE_MENU = { create = 0, capacity = 2 }
+local GUILD_NAME_INPUT = 1
 local LENARIO_MENU = { create = 2, capacity = 3, disband = 4 }
 
 local MESO = 10000000
@@ -259,6 +260,51 @@ local function ask(ctx, bot, npc, selected, expected)
 		return ctx:fail(string.format("%s NPC %d 확인 질문이 다름: %s", bot:name(), npc, dlg and tostring(dlg.text) or "nil"))
 	end
 	return true
+end
+
+local function ask_guild_create(ctx, bot)
+	return ask(ctx, bot, HERACLE, HERACLE_MENU.create, "길드 제작 수수료")
+end
+
+local function name_input(bot)
+	return bot:request(resp.guild_message, req.dialog { dialog_type = DIALOG.yes_no, next = true }, code(GUILD_NAME_INPUT), 3000)
+end
+
+local function create_cancelled(ctx)
+	local bot = ctx:bot(5)
+	if setup(ctx, bot) == false then
+		return false
+	end
+	if ask_guild_create(ctx, bot) == false then
+		return false
+	end
+	if name_input(bot) == false then
+		return ctx:fail("길드 이름 입력창이 오지 않음")
+	end
+
+	if ask_guild_create(ctx, bot) == false then
+		return false
+	end
+	bot:dialog(false)
+	return holds(ctx, bot, MESO, "이름 입력 취소 뒤")
+end
+
+local function create_during_question(ctx)
+	local bot = ctx:bot(5)
+	if ask_guild_create(ctx, bot) == false then
+		return false
+	end
+	if bot:request(resp.guild_message, create_request(bot), code(GUILD_SHOW_INFO), 10000) == false then
+		bot:dialog(false)
+		return ctx:fail("길드 생성 정보가 오지 않음")
+	end
+	if bot:request(resp.guild_message, nil, code(GUILD_NAME_INPUT), 1500) ~= false then
+		return ctx:fail("길드 생성 패킷이 열린 질문을 진행시킴")
+	end
+	if name_input(bot) == false then
+		return ctx:fail("질문에 답한 뒤 대화가 이어지지 않음")
+	end
+	return holds(ctx, bot, MESO - CREATE_COST, "질문 중 길드 생성 뒤")
 end
 
 local function ask_guild_capacity(ctx, bot)
@@ -707,9 +753,11 @@ end
 
 test_suite {
 	name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구",
-	bot_count = 5,
+	bot_count = 6,
 
 	scenarios = {
+		create_cancelled,
+		create_during_question,
 		create_lost_timer,
 		create_lost_relogin,
 		create_not_sent,

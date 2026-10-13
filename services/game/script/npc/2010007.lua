@@ -1,11 +1,5 @@
 -- NPC name (String.wz/Npc.img.xml): 헤라클
 
-local guild_create_ok = 0
-local guild_create_not_allowed = 1
-local guild_create_insufficient_meso = 2
-local guild_create_already_in_guild = 3
-local guild_create_failed = 4
-
 local guild_disband_ok = 0
 local guild_disband_not_in_guild = 1
 local guild_disband_not_master = 2
@@ -42,16 +36,7 @@ return {
 			if not me:dialog_yes_no(npc, '길드 제작 수수료는 #b1,500,000 메소#k라네, 정말 만들어 보고 싶은가?') then
 				return
 			end
-			local result = me:generic_guild_message(1)
-			if result == guild_create_ok then
-				me:dialog(npc, '길드가 성공적으로 생성되었습니다.')
-			elseif result == guild_create_not_allowed then
-				me:dialog(npc, '길드를 만들 수 없습니다.')
-			elseif result == guild_create_insufficient_meso then
-				me:dialog(npc, '길드를 생성할 메소가 부족합니다.')
-			elseif result == guild_create_already_in_guild then
-				me:dialog(npc, '흐음.. 이미 길드에 가입되어 있는 것 같은데?')
-			end
+			me:generic_guild_message(1)
 		elseif selected == 2 then
 			local g = me:guild()
 			if not g or g:rank(me) ~= 1 then

@@ -27,21 +27,10 @@ func luaYieldGuildRPC[T any](L *lua.LState, ch *Character, failCode int, result 
 		L.Push(lua.LNumber(failCode))
 		return 1
 	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		L.Push(lua.LNumber(failCode))
-		return 1
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		L.Push(lua.LNumber(failCode))
-		return 1
-	}
-	ch.Dialog.Set(L)
+	ch.Dialog.Wait(L)
 	thread := L
 	promise.Finally(func() {
-		_, _, err := luax.Resume(root, thread, lua.LNumber(*result))
-		if err != nil {
+		if err := ch.Dialog.Wake(thread, lua.LNumber(*result)); err != nil {
 			log.Printf("guild lua resume: character=%d: %v", ch.GetID(), err)
 		}
 	})
