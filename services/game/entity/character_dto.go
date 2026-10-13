@@ -188,7 +188,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 				StatusRecord:   qp.StatusRecord.AsString(),
 				CompletionTime: qp.CompletionTime,
 			}
-			if len(qp.Wz.OrderedMobIDs()) > 0 {
+			if len(qp.Wz.MobIDs) > 0 {
 				questDTO.MobKills = qp.MobKillCountsOrdered()
 			}
 			switch qp.Status {

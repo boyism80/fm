@@ -5,6 +5,7 @@ type Quest struct {
 	Meta       QuestMeta
 	Start      QuestPhase
 	Complete   QuestPhase
+	MobIDs     []uint32
 	PartyRanks map[string][]PartyQuestRankCheck
 }
 
@@ -182,24 +183,6 @@ func (q *Quest) RelevantMobs() map[uint32]int {
 	}
 	for mobID, count := range q.Complete.Requirements.Mob {
 		out[mobID] = count
-	}
-	return out
-}
-
-func (q *Quest) OrderedMobIDs() []uint32 {
-	if q == nil {
-		return nil
-	}
-	out := make([]uint32, 0)
-	seen := make(map[uint32]struct{})
-	for _, mobs := range []map[uint32]int{q.Complete.Requirements.Mob, q.Start.Requirements.Mob} {
-		for mobID := range mobs {
-			if _, ok := seen[mobID]; ok {
-				continue
-			}
-			seen[mobID] = struct{}{}
-			out = append(out, mobID)
-		}
 	}
 	return out
 }

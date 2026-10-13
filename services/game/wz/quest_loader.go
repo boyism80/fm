@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 )
@@ -62,6 +63,7 @@ func loadQuests(questPath string) (map[uint32]*Quest, error) {
 		if complete := check.find("1"); complete != nil {
 			q.Complete.Requirements = parseQuestRequirements(complete)
 		}
+		q.MobIDs = parseQuestMobIDs(check)
 	}
 
 	for i := range parts["Act"].Children {
@@ -498,6 +500,28 @@ func parseQuestMobCounts(n *node) map[uint32]int {
 	}
 	if len(out) == 0 {
 		return nil
+	}
+	return out
+}
+
+// The client lists kill counts in Check.img order, completion mobs before start mobs.
+func parseQuestMobIDs(check *node) []uint32 {
+	var out []uint32
+	for _, path := range []string{"1:mob", "0:mob"} {
+		mobs := check.find(path)
+		if mobs == nil {
+			continue
+		}
+		for _, child := range mobs.Children {
+			mobID := uint32(child.Int("id", 0))
+			if mobID == 0 && child.Int("count", 0) == 0 {
+				continue
+			}
+			if slices.Contains(out, mobID) {
+				continue
+			}
+			out = append(out, mobID)
+		}
 	}
 	return out
 }

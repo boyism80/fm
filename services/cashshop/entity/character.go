@@ -287,7 +287,7 @@ func (ch *Character) ToDTO(world gentity.ItemWorld) *dto.Character {
 			status.Deadline = time.UnixMilli(deadline)
 		}
 		if wzQuest := resources.Quests[quest.GetQuestId()]; wzQuest != nil {
-			for _, mobID := range wzQuest.OrderedMobIDs() {
+			for _, mobID := range wzQuest.MobIDs {
 				status.MobKills = append(status.MobKills, uint16(quest.GetMobKills()[mobID]))
 			}
 		}
