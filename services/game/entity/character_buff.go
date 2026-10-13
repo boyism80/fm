@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -18,6 +19,7 @@ type Buff interface {
 	hookScript(ch *Character) (string, interface{}, bool)
 	GetBuffID() int32
 	expiresAt() (time.Time, bool)
+	dropFlag(flag constant.BuffFlag)
 }
 
 type BaseBuff struct {
@@ -56,6 +58,13 @@ func (e *BaseBuff) expiresAt() (time.Time, bool) {
 		return time.Time{}, false
 	}
 	return e.StartTime.Add(e.Duration), true
+}
+
+func (e *BaseBuff) dropFlag(flag constant.BuffFlag) {
+	e.Flags = slices.DeleteFunc(e.Flags, func(f constant.BuffFlag) bool {
+		return f == flag
+	})
+	delete(e.Values, flag)
 }
 
 func (e *BaseBuff) GetFlags() []constant.BuffFlag {
@@ -202,15 +211,17 @@ func (bc *Buffs) add(entity Buff) (removed []Buff) {
 		}
 	}
 
+	// A buff that keeps some flags keeps its timer; its expiry cancels only the flags it still holds.
 	for existing := range conflicts {
+		for _, flag := range entity.GetFlags() {
+			existing.dropFlag(flag)
+		}
+		if len(existing.GetFlags()) > 0 {
+			continue
+		}
 		removed = append(removed, existing)
 		bc.owner.RemoveTimer(bc.timerKey(existing))
 		delete(bc.entities, existing)
-		for _, flag := range existing.GetFlags() {
-			if current := bc.byFlag[flag]; current == existing {
-				delete(bc.byFlag, flag)
-			}
-		}
 	}
 
 	bc.entities[entity] = struct{}{}
