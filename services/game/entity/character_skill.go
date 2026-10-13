@@ -42,9 +42,9 @@ func (ch *Character) SkillArea(ld *wz.SkillLevelData) types.Rect[int32] {
 	facingLeft := ch.Stance%2 != 0
 	if ld.LT == (types.Vector2[int32]{}) && ld.RB == (types.Vector2[int32]{}) {
 		if facingLeft {
-			return types.Rect[int32]{Left: px - 200 - r, Top: py - 100 - r, Right: px, Bottom: py}
+			return types.Rect[int32]{Left: px - 200 - r, Top: py - 100 - r, Right: px, Bottom: py + 100}
 		}
-		return types.Rect[int32]{Left: px, Top: py - 100 - r, Right: px + 200 + r, Bottom: py}
+		return types.Rect[int32]{Left: px, Top: py - 100 - r, Right: px + 200 + r, Bottom: py + 100}
 	}
 	if facingLeft {
 		return types.Rect[int32]{Left: px + ld.LT.X - r, Top: py + ld.LT.Y, Right: px + ld.RB.X, Bottom: py + ld.RB.Y}
