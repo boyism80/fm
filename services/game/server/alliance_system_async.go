@@ -42,13 +42,7 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		*result = int(constant.AllianceIncreaseCapacityResultNotGuildMaster)
 		return nil
 	}
-	m := g.FindMember(charID)
-	if m == nil {
-		*result = int(constant.AllianceIncreaseCapacityResultNotLeader)
-		return nil
-	}
-	ar, isAllianceLeader := m.GetAllianceRank()
-	if !isAllianceLeader || ar != 1 {
+	if !g.IsAllianceLeader(charID) {
 		*result = int(constant.AllianceIncreaseCapacityResultNotLeader)
 		return nil
 	}

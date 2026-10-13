@@ -472,13 +472,7 @@ func (s guildSystem) DisbandAllianceAsync(ctx actor.Context, ch *entity.Characte
 		*result = int(constant.AllianceDisbandResultNotGuildMaster)
 		return nil
 	}
-	m := g.FindMember(charID)
-	if m == nil {
-		*result = int(constant.AllianceDisbandResultNotLeader)
-		return nil
-	}
-	ar, isAllianceLeader := m.GetAllianceRank()
-	if !isAllianceLeader || ar != 1 {
+	if !g.IsAllianceLeader(charID) {
 		*result = int(constant.AllianceDisbandResultNotLeader)
 		return nil
 	}

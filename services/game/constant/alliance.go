@@ -16,6 +16,11 @@ const AllianceIncreaseCapacityMesoCost int32 = 5_000_000
 
 const AllianceCapacityMax uint32 = 5
 
+const (
+	AllianceRankLeader  uint32 = 1
+	AllianceRankOfficer uint32 = 2
+)
+
 type AllianceCreateResult int
 
 const (

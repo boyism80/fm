@@ -87,8 +87,7 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *entity.Char
 		return nil
 	}
 	charID := ch.GetID()
-	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
-	if !hasRank || ar != 1 {
+	if !g.IsAllianceLeader(charID) {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
@@ -140,8 +139,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	charID := ch.GetID()
-	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
-	if !hasRank || ar != 1 {
+	if !g.IsAllianceLeader(charID) {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
@@ -189,8 +187,7 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	charID := ch.GetID()
-	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
-	if !hasRank || ar > 2 {
+	if !g.IsAllianceOfficer(charID) {
 		return nil
 	}
 	if _, inAlliance := g.GetAllianceID(); !inAlliance {
@@ -232,8 +229,7 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 		return nil
 	}
 	charID := ch.GetID()
-	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
-	if !hasRank || ar != 1 {
+	if !g.IsAllianceLeader(charID) {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
@@ -290,8 +286,7 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 		return nil
 	}
 	charID := ch.GetID()
-	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
-	if !hasRank || ar > 2 {
+	if !g.IsAllianceOfficer(charID) {
 		return nil
 	}
 	if _, inAlliance := g.GetAllianceID(); !inAlliance {
@@ -335,8 +330,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 		return nil
 	}
 	charID := ch.GetID()
-	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
-	if !hasRank || ar != 1 {
+	if !g.IsAllianceLeader(charID) {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
