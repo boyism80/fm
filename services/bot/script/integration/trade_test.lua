@@ -197,6 +197,29 @@ local function cancel_flow(ctx)
 	return check(ctx, a:slot(POTION) == potion_slot and a:slot(SWORD) == sword_slot, "취소 후 원래 칸으로 돌아오지 않음")
 end
 
+local function move_flow(ctx)
+	local a = ctx:bot(0)
+	local b = ctx:bot(1)
+	if setup(ctx, a, 0, POTION .. ":100") == false or setup(ctx, b, 0, "-") == false then
+		return false
+	end
+
+	if open(ctx, a, b) == false or put_item(ctx, a, b, CONSUME, POTION, 40, 1) == false then
+		return false
+	end
+	local refused = a:request(resp.server_blocked, req.enter_cash_shop(), nil, 5000)
+	if check(ctx, refused ~= false, "교환 중 캐시샵 이동이 거절되지 않음") == false then
+		return false
+	end
+
+	local left = a:request_on(b, resp.mini_room_leave, req.mini_room { mode = MODE.exit }, nil, 5000)
+	if check(ctx, left ~= false and left.reason == LEAVE.cancel, "이동 거절 뒤 교환 취소 알림이 오지 않음") == false then
+		return false
+	end
+	ctx:sleep(500)
+	return has(ctx, a, POTION, 100) and has(ctx, b, POTION, 0)
+end
+
 local function decline_flow(ctx)
 	local a = ctx:bot(0)
 	local b = ctx:bot(1)
@@ -218,12 +241,13 @@ local function decline_flow(ctx)
 end
 
 test_suite {
-	name = "Trade: 개인 거래 성사·취소·거절",
+	name = "Trade: 개인 거래 성사·취소·이동 거절·거절",
 	bot_count = 2,
 
 	scenarios = {
 		trade_flow,
 		cancel_flow,
+		move_flow,
 		decline_flow,
 	},
 }

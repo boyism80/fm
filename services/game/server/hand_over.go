@@ -25,6 +25,12 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		_ = ctx.Client.Send(&response.ServerBlocked{Reason: blocked}, types.SEND_POLICY_ENCRYPT)
 	}
 
+	// The save below snapshots escrow as owned, so a room still open after it could hand the same goods over again.
+	if character.MiniRoom != nil {
+		block()
+		return
+	}
+
 	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
 	gameClient.SetChangingChannel(true)
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)

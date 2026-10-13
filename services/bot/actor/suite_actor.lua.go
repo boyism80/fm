@@ -32,6 +32,7 @@ var requests = []outbound{
 	&request.PartyOperation{},
 	&request.GuildOperation{},
 	&request.SwitchChannel{},
+	&request.EnterCashShop{},
 	&request.QuestAction{},
 	&request.Attack{},
 	&request.ActiveSkill{},

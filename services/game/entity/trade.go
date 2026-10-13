@@ -261,6 +261,9 @@ func (t *Trade) close() {
 
 func (t *Trade) check() pconst.MiniRoomLeaveReason {
 	for i, side := range t.sides {
+		if side.ch.LoggedOut() {
+			return pconst.MiniRoomLeaveTradeFail
+		}
 		giver := t.sides[1-i]
 		rewards := make(map[uint32]uint16)
 		for _, item := range giver.items {
