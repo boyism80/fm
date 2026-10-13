@@ -7,27 +7,19 @@ import (
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func (ch *Character) skillLevelData(id constant.SkillID) *wz.SkillLevelData {
-	entry := ch.Skills.Get(uint32(id))
-	if entry == nil || entry.Level() <= 0 {
-		return nil
-	}
-	return entry.Wz.GetLevelData(entry.Level())
-}
-
 // comboPercent implements the client's stored-count minus one convention.
 func (ch *Character) comboPercent(finisher bool) float64 {
 	baseID, advancedID, capLevel := constant.SkillComboAttack, constant.SkillAdvancedCombo, 30
 	if ch.Class.Family == constant.ClassFamilyCygnus {
 		baseID, advancedID, capLevel = constant.SkillComboAttackCygnus, constant.SkillAdvancedComboCygnus, 20
 	}
-	skill := ch.skillLevelData(baseID)
+	skill := ch.Skills.LevelData(baseID)
 	if skill == nil {
 		return 100
 	}
-	level := ch.GetTotalSkillLevel(uint32(baseID))
+	level := ch.Skills.Level(uint32(baseID))
 	if level >= capLevel {
-		if advanced := ch.skillLevelData(advancedID); advanced != nil {
+		if advanced := ch.Skills.LevelData(advancedID); advanced != nil {
 			skill = advanced
 		}
 	}
@@ -120,12 +112,12 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		constant.SkillBulletTimeCygnus,
 	}
 	for _, id := range accuracySkills {
-		if p := ch.skillLevelData(id); p != nil {
+		if p := ch.Skills.LevelData(id); p != nil {
 			s.ACC += float64(p.X)
 		}
 	}
 	for _, id := range []constant.SkillID{constant.SkillBlessingOfTheFairy, constant.SkillBlessingOfTheFairyCygnus} {
-		if p := ch.skillLevelData(id); p != nil {
+		if p := ch.Skills.LevelData(id); p != nil {
 			s.PAD += float64(p.X)
 			s.MAD += float64(p.Y)
 			s.ACC += float64(p.Z)
@@ -147,14 +139,14 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 	}
 
 	for _, id := range ch.masterySkills(s.Weapon) {
-		if p := ch.skillLevelData(id); p != nil {
+		if p := ch.Skills.LevelData(id); p != nil {
 			b.Mastery = max(b.Mastery, float64(p.Mastery))
 			s.PAD += float64(p.X)
 			s.ACC += float64(p.X)
 		}
 	}
 	if s.Weapon == constant.WeaponTypeSpear || s.Weapon == constant.WeaponTypePoleArm {
-		if p := ch.skillLevelData(constant.SkillBeholder); p != nil {
+		if p := ch.Skills.LevelData(constant.SkillBeholder); p != nil {
 			b.Mastery += float64(p.Mastery)
 		}
 	}
@@ -172,7 +164,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		if s.Class.Family == constant.ClassFamilyCygnus {
 			energyCharge = constant.SkillEnergyChargeCygnus
 		}
-		if p := ch.skillLevelData(energyCharge); p != nil {
+		if p := ch.Skills.LevelData(energyCharge); p != nil {
 			b.EnergyPAD = float64(p.PAD)
 		}
 	}
@@ -183,7 +175,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		constant.SkillElementAmplificationCygnus,
 	}
 	for _, id := range amplificationSkills {
-		if p := ch.skillLevelData(id); p != nil {
+		if p := ch.Skills.LevelData(id); p != nil {
 			b.Amplification = max(b.Amplification, float64(p.Y))
 		}
 	}
@@ -209,7 +201,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		}
 	}
 
-	if berserk := ch.skillLevelData(constant.SkillBerserk); s.Class.ID == constant.ClassDarkKnight && berserk != nil {
+	if berserk := ch.Skills.LevelData(constant.SkillBerserk); s.Class.ID == constant.ClassDarkKnight && berserk != nil {
 		if float64(ch.GetHp()) <= math.Trunc(float64(ch.GetMaxHp())*float64(berserk.X)/100) {
 			b.Berserk = float64(berserk.Damage)
 		}
@@ -259,16 +251,16 @@ func (ch *Character) criticalSkill(weapon constant.WeaponType) *wz.SkillLevelDat
 	switch weapon {
 	case constant.WeaponTypeBow, constant.WeaponTypeCrossbow:
 		if ch.Class.Family == constant.ClassFamilyCygnus {
-			return ch.skillLevelData(constant.SkillCriticalShotCygnus)
+			return ch.Skills.LevelData(constant.SkillCriticalShotCygnus)
 		}
-		return ch.skillLevelData(constant.SkillCriticalShot)
+		return ch.Skills.LevelData(constant.SkillCriticalShot)
 	case constant.WeaponTypeClaw:
 		if ch.Class.Family == constant.ClassFamilyCygnus {
-			return ch.skillLevelData(constant.SkillCriticalThrowCygnus)
+			return ch.Skills.LevelData(constant.SkillCriticalThrowCygnus)
 		}
-		return ch.skillLevelData(constant.SkillCriticalThrow)
+		return ch.Skills.LevelData(constant.SkillCriticalThrow)
 	case constant.WeaponTypeKnuckle:
-		return ch.skillLevelData(constant.SkillCriticalPunch)
+		return ch.Skills.LevelData(constant.SkillCriticalPunch)
 	}
 	return nil
 }

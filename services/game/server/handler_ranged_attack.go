@@ -55,7 +55,7 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 		return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
 	}, func() {
 		if req.Skill != 0 {
-			skillLevel = uint8(character.GetTotalSkillLevel(req.Skill))
+			skillLevel = uint8(character.Skills.Level(req.Skill))
 		}
 		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, true)
 	})

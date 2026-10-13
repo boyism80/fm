@@ -1,5 +1,12 @@
 package entity
 
+import (
+	"log"
+
+	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
+)
+
 type Skills struct {
 	owner   *Character
 	entries map[uint32]*SkillEntry
@@ -82,4 +89,48 @@ func (sc *Skills) ForEach(fn func(skillID uint32, entry *SkillEntry)) {
 	for id, e := range sc.entries {
 		fn(id, e)
 	}
+}
+
+func (sc *Skills) Level(skillID uint32) int {
+	entry := sc.Get(skillID)
+	if entry == nil {
+		return 0
+	}
+	return entry.Level()
+}
+
+func (sc *Skills) UseAttack(skillID uint32, activate func() bool) bool {
+	wzSkill := sc.owner.GameWorld.GetResources().GetSkill(skillID)
+	if wzSkill == nil {
+		log.Printf("Skill not found: %d", skillID)
+		return false
+	}
+	skillLevel := sc.Level(skillID)
+	if skillLevel <= 0 {
+		log.Printf("Character does not have skill %d or skill level is 0", skillID)
+		return false
+	}
+	levelData := wzSkill.GetLevelData(skillLevel)
+	if levelData == nil {
+		return false
+	}
+	skillEntry := sc.Get(skillID)
+	if levelData.Cooldown > 0 && (skillEntry == nil || skillEntry.IsCooling()) {
+		return false
+	}
+	if !activate() {
+		return false
+	}
+	if levelData.Cooldown > 0 {
+		skillEntry.StartCooldown(levelData.Cooldown)
+	}
+	return true
+}
+
+func (sc *Skills) LevelData(id constant.SkillID) *wz.SkillLevelData {
+	entry := sc.Get(uint32(id))
+	if entry == nil || entry.Level() <= 0 {
+		return nil
+	}
+	return entry.Wz.GetLevelData(entry.Level())
 }

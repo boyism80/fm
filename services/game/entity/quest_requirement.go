@@ -152,7 +152,7 @@ func (qc *Quests) requirementsMet(req wz.QuestRequirements, qp *Quest, opts Ques
 		}
 		if mustAcquire {
 			ok := false
-			if wzSkill != nil && wzSkill.IsFourthClass() {
+			if wzSkill != nil && wzSkill.FourthClass {
 				ok = masterLevel > 0
 			} else {
 				ok = skillLevel > 0

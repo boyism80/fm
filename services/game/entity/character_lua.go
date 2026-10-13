@@ -1308,7 +1308,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			area := ch.SkillArea(ld)
+			area := ld.Area(int32(ch.Position.X), int32(ch.Position.Y), ch.Stance%2 != 0)
 			tbl := L.NewTable()
 			tbl.RawSetString("left", lua.LNumber(area.Left))
 			tbl.RawSetString("top", lua.LNumber(area.Top))

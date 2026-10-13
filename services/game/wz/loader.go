@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -2610,6 +2611,22 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 				skill.MaxLevel = 1
 			}
 		}
+
+		block := skill.ID / 10000
+		skill.Beginner = slices.Contains([]uint32{0, 1, 1000, 2000, 2001, 2002, 3000, 3001}, block)
+		switch {
+		case block == 2312:
+			skill.FourthClass = true
+		case skill.MaxLevel <= 15 && !skill.Invisible && skill.MasterLevel <= 0,
+			slices.Contains([]uint32{3220010, 3120011, 33120010, 32120009, 5321006, 21120011, 22181004, 4340010}, skill.ID):
+		case block >= 2212 && block < 3000:
+			skill.FourthClass = block%10 >= 7
+		case block >= 430 && block <= 434:
+			skill.FourthClass = block%10 == 4 || skill.MasterLevel > 0
+		default:
+			skill.FourthClass = block%10 == 2 && skill.ID < 90000000 && !skill.Beginner
+		}
+		skill.Distributable = !skill.Beginner || slices.Contains([]uint32{1000, 1001, 1002}, skill.ID%10000)
 
 		skills[uint32(skillID)] = skill
 	}

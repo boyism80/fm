@@ -248,7 +248,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	}
 	b := bounds
 	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
-		b = ch.SkillArea(ld)
+		b = ld.Area(int32(ch.Position.X), int32(ch.Position.Y), ch.Stance%2 != 0)
 	}
 	if poisonTickMultiplier <= 0 {
 		poisonTickMultiplier = 1.0

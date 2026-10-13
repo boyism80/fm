@@ -120,13 +120,13 @@ func (v attackValidator) checkDamage(damages, bounds []dto.AttackPair) error {
 
 func (v attackValidator) targetModifiers(modifiers damageModifiers, mob *Mob) damageModifiers {
 	if mob.Buffs.GetValue(constant.MobBuffStun) > 0 {
-		if p := v.ch.skillLevelData(constant.SkillStunMastery); p != nil {
+		if p := v.ch.Skills.LevelData(constant.SkillStunMastery); p != nil {
 			modifiers.CriticalChance += float64(p.Prop)
 			modifiers.CriticalPercent += float64(p.Damage)
 		}
 	}
 	if v.ch.HomingTargetOID != nil && *v.ch.HomingTargetOID == mob.GetOID() {
-		if p := v.ch.skillLevelData(constant.SkillAdvancedHoming); p != nil {
+		if p := v.ch.Skills.LevelData(constant.SkillAdvancedHoming); p != nil {
 			modifiers.HomingPercent = 100 + float64(p.X)
 		}
 	}

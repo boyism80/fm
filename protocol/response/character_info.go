@@ -131,7 +131,7 @@ func (p *CharacterInfo) serializeSkills(writer *stream.StreamWriter) {
 		writer.WriteU32(skill.ID)
 		writer.WriteU32(skill.SkillLevel)
 
-		if (skill.ID/10000)%100 > 0 && (skill.ID/10000)%10 == 2 {
+		if skill.WritesMasterLevel() {
 			writer.WriteU32(skill.MasterLevel)
 		}
 	}
@@ -330,7 +330,7 @@ func (a *CharacterInfo) deserializeSkills(reader *stream.StreamReader) {
 	a.Character.Skills = make([]*dto.Skill, 0, count)
 	for range count {
 		skill := &dto.Skill{ID: reader.ReadU32(), SkillLevel: reader.ReadU32()}
-		if (skill.ID/10000)%100 > 0 && (skill.ID/10000)%10 == 2 {
+		if skill.WritesMasterLevel() {
 			skill.MasterLevel = reader.ReadU32()
 		}
 		a.Character.Skills = append(a.Character.Skills, skill)

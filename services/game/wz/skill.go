@@ -48,6 +48,21 @@ type SkillLevelData struct {
 	Action         string
 }
 
+// WZ lt/rb describe the area while facing left; facing right mirrors it. Range widens the front.
+func (ld *SkillLevelData) Area(x, y int32, facingLeft bool) types.Rect[int32] {
+	r := int32(ld.Range)
+	if ld.LT == (types.Vector2[int32]{}) && ld.RB == (types.Vector2[int32]{}) {
+		if facingLeft {
+			return types.Rect[int32]{Left: x - 200 - r, Top: y - 100 - r, Right: x, Bottom: y + 100}
+		}
+		return types.Rect[int32]{Left: x, Top: y - 100 - r, Right: x + 200 + r, Bottom: y + 100}
+	}
+	if facingLeft {
+		return types.Rect[int32]{Left: x + ld.LT.X - r, Top: y + ld.LT.Y, Right: x + ld.RB.X, Bottom: y + ld.RB.Y}
+	}
+	return types.Rect[int32]{Left: x - ld.RB.X, Top: y + ld.LT.Y, Right: x - ld.LT.X + r, Bottom: y + ld.RB.Y}
+}
+
 type Skill struct {
 	ID           uint32
 	Class        *Class
@@ -65,13 +80,17 @@ type Skill struct {
 	ExtraElement   string
 	Dojo           bool
 	FullHolySymbol bool
+
+	Beginner      bool
+	FourthClass   bool
+	Distributable bool
 }
 
 func (s *Skill) DefaultMasterLevel() int {
 	if s.MasterLevel > 0 {
 		return s.MasterLevel
 	}
-	if s.IsFourthClass() {
+	if s.FourthClass {
 		return 0
 	}
 	return s.MaxLevel
@@ -94,36 +113,6 @@ func (s *Skill) LearnableBy(c *Class) bool {
 		return false
 	}
 	return s.Class.Advancement <= c.Advancement
-}
-
-func (s *Skill) IsBeginnerSkill() bool {
-	if s == nil {
-		return false
-	}
-	classID := int(s.ID / 10000)
-	return classID == 0 || classID == 1 || classID == 1000 || classID == 2000 || classID == 2001 || classID == 3000 || classID == 3001 || classID == 2002
-}
-
-func (s *Skill) IsFourthClass() bool {
-	if s == nil {
-		return false
-	}
-	id := s.ID
-	if id/10000 == 2312 {
-		return true
-	}
-	if (s.MaxLevel <= 15 && !s.Invisible && s.MasterLevel <= 0) ||
-		id == 3220010 || id == 3120011 || id == 33120010 || id == 32120009 || id == 5321006 || id == 21120011 || id == 22181004 || id == 4340010 {
-		return false
-	}
-	block := id / 10000
-	if block >= 2212 && block < 3000 {
-		return (block % 10) >= 7
-	}
-	if block >= 430 && block <= 434 {
-		return (block%10) == 4 || s.MasterLevel > 0
-	}
-	return (block%10) == 2 && id < 90000000 && !s.IsBeginnerSkill()
 }
 
 func (s *Skill) GetLevelData(level int) *SkillLevelData {

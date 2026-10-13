@@ -7,28 +7,8 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/wz"
-	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
-
-// WZ lt/rb describe the area while facing left; facing right mirrors it. Range widens the front.
-func (ch *Character) SkillArea(ld *wz.SkillLevelData) types.Rect[int32] {
-	px := int32(ch.Position.X)
-	py := int32(ch.Position.Y)
-	r := int32(ld.Range)
-	facingLeft := ch.Stance%2 != 0
-	if ld.LT == (types.Vector2[int32]{}) && ld.RB == (types.Vector2[int32]{}) {
-		if facingLeft {
-			return types.Rect[int32]{Left: px - 200 - r, Top: py - 100 - r, Right: px, Bottom: py + 100}
-		}
-		return types.Rect[int32]{Left: px, Top: py - 100 - r, Right: px + 200 + r, Bottom: py + 100}
-	}
-	if facingLeft {
-		return types.Rect[int32]{Left: px + ld.LT.X - r, Top: py + ld.LT.Y, Right: px + ld.RB.X, Bottom: py + ld.RB.Y}
-	}
-	return types.Rect[int32]{Left: px - ld.RB.X, Top: py + ld.LT.Y, Right: px - ld.LT.X + r, Bottom: py + ld.RB.Y}
-}
 
 func (ch *Character) CallSkillHook(ctx actor.Context, skill *SkillEntry, hook string, args ...interface{}) bool {
 	mapInstance := ch.GetMap()
@@ -63,49 +43,6 @@ func (ch *Character) CallSkillHook(ctx actor.Context, skill *SkillEntry, hook st
 		if ret != nil && ret.Type() == lua.LTBool && !lua.LVAsBool(ret) {
 			return false
 		}
-	}
-	return true
-}
-
-func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
-	entry := ch.Skills.Get(skillID)
-	if entry == nil {
-		return 0
-	}
-	return entry.Level()
-}
-
-func (ch *Character) UseAttackSkill(skillID uint32, activate func() bool) bool {
-	if ch.GameWorld == nil {
-		return false
-	}
-	resources := ch.GameWorld.GetResources()
-	if resources == nil {
-		return false
-	}
-	wzSkill := resources.GetSkill(skillID)
-	if wzSkill == nil {
-		log.Printf("Skill not found: %d", skillID)
-		return false
-	}
-	skillLevel := ch.GetTotalSkillLevel(skillID)
-	if skillLevel <= 0 {
-		log.Printf("Character does not have skill %d or skill level is 0", skillID)
-		return false
-	}
-	levelData := wzSkill.GetLevelData(skillLevel)
-	if levelData == nil {
-		return false
-	}
-	skillEntry := ch.Skills.Get(skillID)
-	if levelData.Cooldown > 0 && (skillEntry == nil || skillEntry.IsCooling()) {
-		return false
-	}
-	if !activate() {
-		return false
-	}
-	if levelData.Cooldown > 0 {
-		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 	return true
 }

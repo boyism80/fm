@@ -60,7 +60,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	skillLevel := ch.GetTotalSkillLevel(req.SkillID)
+	skillLevel := ch.Skills.Level(req.SkillID)
 	if skillLevel <= 0 || skillLevel != int(req.SkillLevel) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil

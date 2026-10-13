@@ -33,7 +33,7 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 		return false, err
 	}
 
-	if info.Skill != 0 && !ch.UseAttackSkill(info.Skill, activating) {
+	if info.Skill != 0 && !ch.Skills.UseAttack(info.Skill, activating) {
 		return false, nil
 	}
 	if info.Ranged && !ch.shoot(info) {
@@ -91,7 +91,7 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 	}
 
 	count := 1
-	if p := ch.skillLevelData(constant.SkillID(info.Skill)); p != nil {
+	if p := ch.Skills.LevelData(constant.SkillID(info.Skill)); p != nil {
 		count = max(1, p.BulletCount, p.AttackCount)
 		if p.BulletConsume > 0 {
 			count = p.BulletConsume
@@ -229,7 +229,7 @@ func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
 	if skill == nil {
 		return types.Rect[int32]{}, false
 	}
-	levelData := skill.GetLevelData(ch.GetTotalSkillLevel(skillID))
+	levelData := skill.GetLevelData(ch.Skills.Level(skillID))
 	if levelData == nil {
 		return types.Rect[int32]{}, false
 	}
