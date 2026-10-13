@@ -6,6 +6,7 @@ type Item interface {
 	GetID() uint32
 	GetName() string
 	GetPrice() int
+	SellPrice(quantity uint16) int
 	IsCash() bool
 	IsQuest() bool
 	GetCapacity() uint16

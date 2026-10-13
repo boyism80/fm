@@ -1,6 +1,7 @@
 package wz
 
 import (
+	"math"
 	"time"
 
 	"github.com/boyism80/fm/services/game/constant"
@@ -11,6 +12,7 @@ const ConsumeMoveToReturnMap int32 = 999999999
 type Consume struct {
 	*ItemCore
 	ConsumeType     constant.ConsumeType
+	UnitPrice       float64
 	ActiveEffect    ActiveEffect
 	BuffDuration    time.Duration
 	BuffValues      map[constant.BuffFlag]int32
@@ -110,6 +112,10 @@ type SummonBagEntry struct {
 type MapRange struct {
 	Start uint32
 	End   uint32
+}
+
+func (c *Consume) RechargePrice(missing uint16) int {
+	return int(math.Round(c.UnitPrice * float64(missing)))
 }
 
 func (c *Consume) IsAvailableAt(mapID uint32) bool {

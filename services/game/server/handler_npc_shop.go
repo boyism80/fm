@@ -183,28 +183,18 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 		return
 	}
 
-	price := itemModel.GetPrice()
-	if itemModel.GetTraits()&constant.ItemTraitRechargeable != 0 {
-		wholePrice := itemModel.GetPrice()
-		slotMax := itemModel.GetCapacity()
-		if slotMax > 0 {
-			price = int(math.Ceil(float64(wholePrice) / float64(slotMax)))
-		}
-	}
-
-	recvMesos := int32(math.Max(math.Ceil(float64(price)*float64(quantity)), 0))
-	if price == -1 || recvMesos <= 0 {
+	if itemModel.GetPrice() == -1 {
 		return
 	}
-
-	if recvMesos > math.MaxInt32-ch.Inventory.Meso {
+	recvMesos := itemModel.SellPrice(quantity)
+	if recvMesos <= 0 || recvMesos > math.MaxInt32-int(ch.Inventory.Meso) {
 		return
 	}
 	if !ch.Inventory.RemoveItem(inventoryType, tx.Slot, quantity) {
 		return
 	}
 
-	ch.Inventory.GainMeso(recvMesos)
+	ch.Inventory.GainMeso(int32(recvMesos))
 	ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionUpdateOK)
 }
 
@@ -219,8 +209,8 @@ func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction
 		return
 	}
 
-	itemModel := item.GetModel()
-	if itemModel.GetTraits()&constant.ItemTraitRechargeable == 0 {
+	itemModel, ok := item.GetModel().(*wz.Consume)
+	if !ok || itemModel.GetTraits()&constant.ItemTraitRechargeable == 0 {
 		return
 	}
 
@@ -229,7 +219,7 @@ func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction
 		return
 	}
 
-	price := int(math.Round(float64(itemModel.GetPrice()) * float64(slotMax-item.GetCount())))
+	price := itemModel.RechargePrice(slotMax - item.GetCount())
 	if ch.Inventory.Meso < int32(price) {
 		return
 	}

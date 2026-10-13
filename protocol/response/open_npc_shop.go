@@ -36,19 +36,11 @@ func (p *OpenNpcShop) Serialize(writer *stream.StreamWriter) error {
 			writer.WriteU8(0)
 			writer.WriteU8(0)
 
-			var priceAsDouble float64
+			priceAsDouble := 1.0
 			if item.UnitPrice > 0 {
 				priceAsDouble = item.UnitPrice
-			} else if itemData, ok := p.Items[item.ItemID]; ok {
-				wholePrice := itemData.GetPrice()
-				slotMax := int(itemData.GetCapacity())
-				if slotMax > 0 {
-					priceAsDouble = float64(wholePrice) / float64(slotMax)
-				} else {
-					priceAsDouble = 1.0
-				}
-			} else {
-				priceAsDouble = 1.0
+			} else if itemData, ok := p.Items[item.ItemID].(*wz.Consume); ok {
+				priceAsDouble = itemData.UnitPrice
 			}
 			writer.Write16(doubleToShortBits(priceAsDouble))
 

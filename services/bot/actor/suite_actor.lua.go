@@ -718,6 +718,22 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(b.Send(magic) == nil))
 			return 1
 		},
+		"shop_sell": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pkt := &request.NpcShop{Mode: 1, Transaction: &request.SellTransaction{
+				Slot:     int16(L.CheckInt(2)),
+				ItemID:   uint32(L.CheckInt(3)),
+				Quantity: uint16(L.CheckInt(4)),
+			}}
+			L.Push(lua.LBool(b.Send(pkt) == nil))
+			return 1
+		},
+		"shop_recharge": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pkt := &request.NpcShop{Mode: 2, Transaction: &request.RechargeTransaction{Slot: int16(L.CheckInt(2))}}
+			L.Push(lua.LBool(b.Send(pkt) == nil))
+			return 1
+		},
 		"energy_attack": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			pkt, ok := a.attackPacket(b, uint32(L.CheckInt(2)), uint32(L.OptInt(3, 0)), uint8(L.OptInt(4, 1)))

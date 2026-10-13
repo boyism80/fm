@@ -4,6 +4,7 @@ import "github.com/boyism80/fm/stream"
 
 type ShopTransaction interface {
 	GetMode() byte
+	Serialize(writer *stream.StreamWriter)
 	Deserialize(reader *stream.StreamReader)
 }
 
@@ -20,6 +21,12 @@ type BuyTransaction struct {
 
 func (t *BuyTransaction) GetMode() byte {
 	return 0
+}
+
+func (t *BuyTransaction) Serialize(writer *stream.StreamWriter) {
+	writer.Write16(t.Unknown)
+	writer.WriteU32(t.ItemID)
+	writer.WriteU16(t.Quantity)
 }
 
 func (t *BuyTransaction) Deserialize(reader *stream.StreamReader) {
@@ -39,6 +46,12 @@ func (t *SellTransaction) GetMode() byte {
 	return 1
 }
 
+func (t *SellTransaction) Serialize(writer *stream.StreamWriter) {
+	writer.Write16(t.Slot)
+	writer.WriteU32(t.ItemID)
+	writer.WriteU16(t.Quantity)
+}
+
 func (t *SellTransaction) Deserialize(reader *stream.StreamReader) {
 	t.Slot = reader.Read16()
 	t.ItemID = reader.ReadU32()
@@ -54,6 +67,10 @@ func (t *RechargeTransaction) GetMode() byte {
 	return 2
 }
 
+func (t *RechargeTransaction) Serialize(writer *stream.StreamWriter) {
+	writer.Write16(t.Slot)
+}
+
 func (t *RechargeTransaction) Deserialize(reader *stream.StreamReader) {
 	t.Slot = reader.Read16()
 
@@ -62,6 +79,10 @@ func (t *RechargeTransaction) Deserialize(reader *stream.StreamReader) {
 func (*NpcShop) Opcode() byte { return 0x2C }
 
 func (n *NpcShop) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(n.Mode)
+	if n.Transaction != nil {
+		n.Transaction.Serialize(writer)
+	}
 	return nil
 }
 

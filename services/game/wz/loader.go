@@ -220,7 +220,6 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					model.ScrollRecover = int32(intField.Value)
 				case "randstat":
 					model.ScrollRandStat = int32(intField.Value)
-				case "unitPrice":
 				case "useDelay":
 				case "delayMsg":
 				case "reqSkillLevel":
@@ -244,6 +243,7 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "noCancelMouse":
 				}
 			}
+			model.UnitPrice = nodeInfo.Float("unitPrice", float64(model.Price))
 			if skillNode := nodeInfo.find("skill"); skillNode != nil {
 				for _, field := range skillNode.Ints {
 					book.Skills = append(book.Skills, uint32(field.Value))

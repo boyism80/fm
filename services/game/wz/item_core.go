@@ -1,6 +1,7 @@
 package wz
 
 import (
+	"math"
 	"slices"
 
 	"github.com/boyism80/fm/services/game/constant"
@@ -90,6 +91,13 @@ func (model *ItemCore) GetName() string {
 
 func (model *ItemCore) GetPrice() int {
 	return model.Price
+}
+
+func (model *ItemCore) SellPrice(quantity uint16) int {
+	if model.Traits&constant.ItemTraitRechargeable == 0 {
+		return model.Price * int(quantity)
+	}
+	return int(math.Ceil(float64(model.Price) / float64(model.GetCapacity()) * float64(quantity)))
 }
 
 func (model *ItemCore) IsCash() bool {
