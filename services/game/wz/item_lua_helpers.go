@@ -21,12 +21,11 @@ func pushWeaponType(L *lua.LState, v interface{}) bool {
 		L.Push(lua.LNil)
 		return false
 	}
-	wt := w.WeaponType()
-	if wt == constant.WeaponTypeNone {
+	if w.WeaponType == constant.WeaponTypeNone {
 		L.Push(lua.LNil)
 		return false
 	}
-	L.Push(lua.LNumber(wt))
+	L.Push(lua.LNumber(w.WeaponType))
 	return true
 }
 
@@ -36,11 +35,10 @@ func pushConsumeType(L *lua.LState, v interface{}) bool {
 		L.Push(lua.LNil)
 		return false
 	}
-	ct := constant.GetConsumeType(c.GetID())
-	if ct == constant.ConsumeTypeNone {
+	if c.ConsumeType == constant.ConsumeTypeNone {
 		L.Push(lua.LNil)
 		return false
 	}
-	L.Push(lua.LNumber(ct))
+	L.Push(lua.LNumber(c.ConsumeType))
 	return true
 }

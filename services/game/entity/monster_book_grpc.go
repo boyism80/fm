@@ -3,12 +3,14 @@ package entity
 import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 )
 
-func NewMonsterBookFromInternalProto(cover uint32, cards []*internal.MonsterBookCard) *MonsterBook {
-	book := &MonsterBook{Cover: cover, Cards: make(map[uint32]uint32, len(cards))}
+func NewMonsterBookFromInternalProto(owner *Character, cover uint32, cards []*internal.MonsterBookCard) *MonsterBook {
+	book := &MonsterBook{owner: owner, Cover: cover, Cards: make(map[uint32]uint32, len(cards))}
 	for _, pb := range cards {
-		if !constant.IsMonsterCard(pb.GetCardId()) || pb.GetCount() == 0 {
+		model, ok := owner.itemModel(pb.GetCardId()).(*wz.Consume)
+		if !ok || model.ConsumeType != constant.ConsumeTypeCard || pb.GetCount() == 0 {
 			continue
 		}
 		book.Cards[pb.GetCardId()] = min(pb.GetCount(), constant.MonsterBookCardMax)

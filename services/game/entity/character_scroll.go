@@ -50,7 +50,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	if (recovery || chaos || special) && model.IsCash() {
 		return ErrCannotScroll
 	}
-	switch constant.GetEquipmentType(model.GetID()) {
+	switch model.GetEquipmentType() {
 	case constant.EquipmentTypeTaming, constant.EquipmentTypeDragon, constant.EquipmentTypeMechanic, constant.EquipmentTypeAndroid:
 		return ErrCannotScroll
 	}

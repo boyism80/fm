@@ -40,7 +40,7 @@ func (ch *Character) UseShopScanner(actx actor.Context, invType constant.Invento
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
-	if item == nil || item.GetModel().GetID() != itemID || !constant.IsShopScanner(itemID) {
+	if item == nil || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&constant.ItemTraitShopScanner == 0 {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}

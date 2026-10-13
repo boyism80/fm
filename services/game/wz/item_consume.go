@@ -10,6 +10,7 @@ const ConsumeMoveToReturnMap int32 = 999999999
 
 type Consume struct {
 	*ItemCore
+	ConsumeType     constant.ConsumeType
 	ActiveEffect    ActiveEffect
 	BuffDuration    time.Duration
 	BuffValues      map[constant.BuffFlag]int32
@@ -55,6 +56,45 @@ type Consume struct {
 	AvailableMaps []MapRange
 }
 
+func (model *Consume) setConsumeType() {
+	switch model.ID / 10000 {
+	case 203:
+		model.ConsumeType = constant.ConsumeTypeReturnScroll
+	case 204:
+		model.ConsumeType = constant.ConsumeTypeEnhanceScroll
+	case 206:
+		if model.ID >= 2061000 && model.ID < 2062000 {
+			model.ConsumeType = constant.ConsumeTypeArrowCrossBow
+		} else {
+			model.ConsumeType = constant.ConsumeTypeArrowBow
+		}
+	case 207:
+		model.ConsumeType = constant.ConsumeTypeShuriken
+	case 210:
+		model.ConsumeType = constant.ConsumeTypeMonsterSummon
+	case 212:
+		model.ConsumeType = constant.ConsumeTypePetFood
+	case 224:
+		model.ConsumeType = constant.ConsumeTypeWeddingRing
+	case 226:
+		model.ConsumeType = constant.ConsumeTypeRidingFood
+	case 228:
+		model.ConsumeType = constant.ConsumeTypeSkillBookGet
+	case 229:
+		model.ConsumeType = constant.ConsumeTypeSkillBookUnlock
+	case 231:
+		model.ConsumeType = constant.ConsumeTypeMinervaOwl
+	case 232:
+		model.ConsumeType = constant.ConsumeTypeTeleportStone
+	case 233:
+		model.ConsumeType = constant.ConsumeTypeBullet
+	case 238:
+		model.ConsumeType = constant.ConsumeTypeCard
+	default:
+		model.ConsumeType = constant.ConsumeTypeNone
+	}
+}
+
 type SkillBook struct {
 	Success       int
 	RequiredLevel int
@@ -82,22 +122,6 @@ func (c *Consume) IsAvailableAt(mapID uint32) bool {
 		}
 	}
 	return false
-}
-
-func (c *Consume) IsShuriken() bool {
-	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeShuriken
-}
-
-func (c *Consume) IsBullet() bool {
-	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeBullet
-}
-
-func (c *Consume) IsArrowForBow() bool {
-	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeArrowBow
-}
-
-func (c *Consume) IsArrowForCrossBow() bool {
-	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeArrowCrossBow
 }
 
 func (c *Consume) IsConsumeOnPickup() bool {

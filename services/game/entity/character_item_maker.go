@@ -186,7 +186,7 @@ func (ch *Character) disassembleItem(slot int16, itemID uint32) {
 
 	quality := equipment.GetEquipmentCore().BonusStats.quality()
 	count := 3 + rand.Intn(5)
-	if constant.GetEquipmentType(itemID) == constant.EquipmentTypeWeapon || itemID/10000 == 105 {
+	if model.GetEquipmentType() == constant.EquipmentTypeWeapon || itemID/10000 == 105 {
 		count = 5 + rand.Intn(7)
 	}
 	if quality > 0 {

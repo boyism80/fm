@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 )
 
@@ -56,9 +57,13 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 	if weapon == nil {
 		return true
 	}
+	weaponModel, ok := weapon.GetModel().(*wz.Weapon)
+	if !ok {
+		return true
+	}
 
 	var ammo constant.ConsumeType
-	switch constant.GetWeaponType(weapon.GetModel().GetID()) {
+	switch weaponModel.WeaponType {
 	case constant.WeaponTypeBow:
 		ammo = constant.ConsumeTypeArrowBow
 	case constant.WeaponTypeCrossbow:
@@ -74,7 +79,11 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 		return true
 	}
 	item := ch.Inventory.GetItem(constant.InventoryTypeConsume, int16(info.Slot))
-	if item == nil || constant.GetConsumeType(item.GetModel().GetID()) != ammo {
+	if item == nil {
+		return false
+	}
+	projectile, ok := item.GetModel().(*wz.Consume)
+	if !ok || projectile.ConsumeType != ammo {
 		return false
 	}
 	if ch.Buffs.Has(constant.BuffFlagSpiritClaw) && ammo == constant.ConsumeTypeShuriken {

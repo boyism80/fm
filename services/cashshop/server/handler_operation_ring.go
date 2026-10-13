@@ -27,11 +27,12 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *entity.Character
 		return
 	}
 	couple := req.Action == request.CashShopActionCoupleRing
-	ring := gconstant.IsFriendshipRing(commodity.ItemID)
+	ring := gconstant.ItemTraitFriendshipRing
 	if couple {
-		ring = gconstant.IsCrushRing(commodity.ItemID)
+		ring = gconstant.ItemTraitCrushRing
 	}
-	if !ring {
+	model := h.cs.resources.Items[commodity.ItemID]
+	if model == nil || model.GetTraits()&ring == 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}

@@ -193,10 +193,10 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		if model.IsTradeBlock() || model.IsAccountSharable() || model.IsQuest() {
 			return ErrDueyNotSendable
 		}
-		if constant.ItemCategoryOf(model.GetID()) == constant.ItemCategoryPet {
+		if model.GetTraits()&constant.ItemTraitPet != 0 {
 			return ErrDueyNotSendable
 		}
-		if constant.IsRechargeable(model.GetID()) {
+		if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
 			count = int16(item.GetCount())
 		}
 	}

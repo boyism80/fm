@@ -26,9 +26,10 @@ type Character struct {
 	Gifts          []*internal.CashGift
 	Expired        []uint64
 	Busy           bool
+	resources      *wz.Resources
 }
 
-func NewCharacter(reply *internal.EnterCashShopReply) *Character {
+func NewCharacter(reply *internal.EnterCashShopReply, resources *wz.Resources) *Character {
 	return &Character{
 		Game:           reply.GetGame(),
 		ReturnChannel:  reply.GetReturnChannelId(),
@@ -40,6 +41,7 @@ func NewCharacter(reply *internal.EnterCashShopReply) *Character {
 		StorageSlots:   uint16(reply.GetStorageSlotCount()),
 		Gifts:          reply.GetGifts(),
 		Expired:        reply.GetExpired(),
+		resources:      resources,
 	}
 }
 
@@ -159,7 +161,11 @@ func (ch *Character) inventoryType(item *internal.Inventory) constant.InventoryT
 	if item.GetInventoryType() != 0 {
 		return constant.InventoryType(item.GetInventoryType())
 	}
-	return constant.GetInventoryTypeByItemID(item.GetItemId())
+	model := ch.resources.Items[item.GetItemId()]
+	if model == nil {
+		return 0
+	}
+	return model.GetInventoryType()
 }
 
 func (ch *Character) NewCashItem(commodity *wz.Commodity, world gentity.ItemWorld) (*internal.CashItem, error) {

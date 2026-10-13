@@ -23,11 +23,3 @@ var WeddingTickets = map[uint32]WeddingTicket{
 	5251005: {Invitation: 4211001, InvitationCount: 15, InvitedItem: 4212001},
 	5251006: {Invitation: 4211002, InvitationCount: 30, InvitedItem: 4212002},
 }
-
-func IsEngagementRing(itemID uint32) bool {
-	return itemID >= EngagementRingFirst && itemID <= EngagementRingLast
-}
-
-func IsWeddingRing(itemID uint32) bool {
-	return itemID >= WeddingRingFirst && itemID <= WeddingRingLast
-}

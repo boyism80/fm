@@ -176,7 +176,7 @@ func (t *Trade) PutItem(ch *Character, invType constant.InventoryType, slot int1
 	if invType == constant.InventoryTypeCash || item.GetModel().IsCash() {
 		return ErrMiniRoomInvalid
 	}
-	if invType == constant.InventoryTypeEquipment || constant.IsRechargeable(item.GetModel().GetID()) {
+	if invType == constant.InventoryTypeEquipment || item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
 		count = item.GetCount()
 	}
 

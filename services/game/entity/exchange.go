@@ -160,10 +160,11 @@ func groupExchangeItemsByInventory(items map[uint32]uint16, modelOf func(uint32)
 		if count == 0 {
 			continue
 		}
-		if modelOf != nil && modelOf(id) == nil {
+		model := modelOf(id)
+		if model == nil {
 			continue
 		}
-		invType := constant.GetInventoryTypeByItemID(id)
+		invType := model.GetInventoryType()
 		if out[invType] == nil {
 			out[invType] = make(map[uint32]uint16)
 		}

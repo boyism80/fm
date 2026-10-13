@@ -66,9 +66,9 @@ func (w *Wedding) RingToDTO() *dto.MarriageRing {
 		if equipment == nil {
 			continue
 		}
-		itemID := equipment.GetModel().GetID()
-		if constant.IsWeddingRing(itemID) {
-			return &dto.MarriageRing{CharacterID: w.owner.GetID(), PartnerID: w.Marriage.PartnerID(w.owner.GetID()), ItemID: itemID}
+		model := equipment.GetModel()
+		if model.GetTraits()&constant.ItemTraitWeddingRing != 0 {
+			return &dto.MarriageRing{CharacterID: w.owner.GetID(), PartnerID: w.Marriage.PartnerID(w.owner.GetID()), ItemID: model.GetID()}
 		}
 	}
 	return nil
@@ -245,7 +245,7 @@ func (w *Wedding) settleProposal(actx actor.Context, request *UnsettledRequest) 
 
 func (w *Wedding) discardRings() {
 	for parts, equipment := range w.owner.Inventory.Equipped {
-		if equipment != nil && constant.IsWeddingRing(equipment.GetModel().GetID()) {
+		if equipment != nil && equipment.GetModel().GetTraits()&constant.ItemTraitWeddingRing != 0 {
 			w.owner.Inventory.RemoveEquipped(parts)
 		}
 	}
@@ -254,8 +254,7 @@ func (w *Wedding) discardRings() {
 			if item == nil {
 				continue
 			}
-			itemID := item.GetModel().GetID()
-			if constant.IsEngagementRing(itemID) || constant.IsWeddingRing(itemID) {
+			if item.GetModel().GetTraits()&(constant.ItemTraitEngagementRing|constant.ItemTraitWeddingRing) != 0 {
 				w.owner.Inventory.RemoveItem(typ, slot, item.GetCount())
 			}
 		}
@@ -263,10 +262,11 @@ func (w *Wedding) discardRings() {
 }
 
 func (w *Wedding) DropItem(actx actor.Context, itemID uint32) {
-	if constant.ItemCategoryOf(itemID) != 421 || !w.owner.Inventory.HasItem(itemID) {
+	model := w.owner.itemModel(itemID)
+	if model == nil || model.GetTraits()&constant.ItemTraitMarriage == 0 || !w.owner.Inventory.HasItem(itemID) {
 		return
 	}
-	if !constant.IsEngagementRing(itemID) || w.Marriage == nil || w.Marriage.Status != MarriageStatusEngaged {
+	if model.GetTraits()&constant.ItemTraitEngagementRing == 0 || w.Marriage == nil || w.Marriage.Status != MarriageStatusEngaged {
 		w.owner.Inventory.RemoveByItemIDCount(itemID, w.owner.Inventory.GetCountByItemID(itemID))
 		return
 	}
@@ -575,17 +575,20 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftOneAtATime, nil, nil)
 		return ErrWeddingGiftBusy
 	}
-	invType := constant.GetInventoryTypeByItemID(itemID)
+	model := w.owner.itemModel(itemID)
+	if model == nil {
+		return ErrMarriageInvalid
+	}
+	invType := model.GetInventoryType()
 	item := w.owner.Inventory.GetItem(invType, slot)
 	if item == nil || item.GetModel().GetID() != itemID || count == 0 || item.GetCount() < count {
 		return ErrMarriageInvalid
 	}
-	model := item.GetModel()
-	if model.IsTradeBlock() || model.IsQuest() || model.IsAccountSharable() || constant.ItemCategoryOf(itemID) == constant.ItemCategoryPet {
+	if model.IsTradeBlock() || model.IsQuest() || model.IsAccountSharable() || model.GetTraits()&constant.ItemTraitPet != 0 {
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveRejected, nil, nil)
 		return nil
 	}
-	if constant.IsRechargeable(itemID) {
+	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
 		count = item.GetCount()
 	}
 

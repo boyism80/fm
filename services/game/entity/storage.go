@@ -63,15 +63,18 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 		return ErrStorageFull
 	}
 
-	invType := constant.GetInventoryTypeByItemID(itemID)
+	model := s.owner.itemModel(itemID)
+	if model == nil {
+		return ErrStorageItemNotFound
+	}
+	invType := model.GetInventoryType()
 	item := s.owner.Inventory.GetItem(invType, slot)
 	if item == nil || item.GetModel().GetID() != itemID {
 		return ErrStorageItemNotFound
 	}
-	if constant.ItemCategoryOf(itemID) == constant.ItemCategoryPet {
+	if model.GetTraits()&constant.ItemTraitPet != 0 {
 		return ErrStorageNotStorable
 	}
-	model := item.GetModel()
 	if model.IsOnly() && s.has(invType, itemID) {
 		return ErrStorageNotStorable
 	}
@@ -85,7 +88,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if untradeable && flags&karma == 0 {
 		return ErrStorageNotStorable
 	}
-	if constant.IsRechargeable(itemID) {
+	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
 		count = item.GetCount()
 	}
 	if count == 0 || item.GetCount() < count {

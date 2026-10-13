@@ -208,7 +208,7 @@ func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bu
 	if err != nil {
 		return nil, err
 	}
-	if constant.IsRechargeable(item.GetModel().GetID()) {
+	if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
 		bundles = 1
 		perBundle = item.GetCount()
 	}
@@ -236,7 +236,7 @@ func (inv *Inventory) findTradable(invType constant.InventoryType, slot int16) (
 		return nil, ErrMiniRoomItemNotFound
 	}
 	model := item.GetModel()
-	if model.IsQuest() || constant.ItemCategoryOf(model.GetID()) == constant.ItemCategoryPet {
+	if model.IsQuest() || model.GetTraits()&constant.ItemTraitPet != 0 {
 		return nil, ErrMiniRoomInvalid
 	}
 	flags := item.GetFlags()

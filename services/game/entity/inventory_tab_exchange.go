@@ -81,7 +81,7 @@ func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map
 		}
 		capacity := max(int(model.GetCapacity()), 1)
 		need := int(count)
-		if capacity > 1 && !constant.IsRechargeable(id) && period[id] == 0 {
+		if capacity > 1 && model.GetTraits()&constant.ItemTraitRechargeable == 0 && period[id] == 0 {
 			for _, slot := range slotsByID[id] {
 				snap, ok := slots[slot]
 				if !ok || snap.expires {

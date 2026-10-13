@@ -115,7 +115,7 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 
 	switch m := model.(type) {
 	case wz.Equipment:
-		if !constant.IsEquipment(itemID) {
+		if !m.GetEquipmentType().Equippable() {
 			return nil, fmt.Errorf("item %d: not equippable", itemID)
 		}
 		return &EquipmentCore{

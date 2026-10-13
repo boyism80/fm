@@ -63,11 +63,16 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 			return nil, fmt.Errorf("missing projectile")
 		}
 		projectile, ok := item.GetModel().(*wz.Consume)
-		if !ok || !(projectile.IsShuriken() || projectile.IsBullet() || projectile.IsArrowForBow() || projectile.IsArrowForCrossBow()) {
+		if !ok {
 			return nil, fmt.Errorf("invalid projectile %d", item.GetModel().GetID())
 		}
-		a.projectile = projectile.ID
-		a.modifiers.ProjectilePAD = float64(projectile.ScrollIncPAD)
+		switch projectile.ConsumeType {
+		case constant.ConsumeTypeShuriken, constant.ConsumeTypeBullet, constant.ConsumeTypeArrowBow, constant.ConsumeTypeArrowCrossBow:
+			a.projectile = projectile.ID
+			a.modifiers.ProjectilePAD = float64(projectile.ScrollIncPAD)
+		default:
+			return nil, fmt.Errorf("invalid projectile %d", item.GetModel().GetID())
+		}
 	}
 
 	if a.stats.Class == constant.ClassPaladin {

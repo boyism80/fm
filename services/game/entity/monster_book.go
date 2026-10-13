@@ -3,13 +3,15 @@ package entity
 import "github.com/boyism80/fm/services/game/constant"
 
 type MonsterBook struct {
+	owner *Character
 	Cover uint32
 	Cards map[uint32]uint32
 }
 
 func (b *MonsterBook) Count() (normal uint32, special uint32) {
 	for cardID := range b.Cards {
-		if constant.IsSpecialMonsterCard(cardID) {
+		model := b.owner.itemModel(cardID)
+		if model != nil && model.GetTraits()&constant.ItemTraitSpecialMonsterCard != 0 {
 			special++
 		} else {
 			normal++

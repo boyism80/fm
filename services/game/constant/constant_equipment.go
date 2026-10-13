@@ -1,7 +1,5 @@
 package constant
 
-import "slices"
-
 type EquipmentPartsType int16
 
 const (
@@ -29,57 +27,8 @@ const (
 	EquipmentPartsBelt      EquipmentPartsType = -22
 )
 
-const equipmentPartsCashOffset EquipmentPartsType = -100
+const EquipmentPartsCashOffset EquipmentPartsType = -100
 
 func (p EquipmentPartsType) Cash() EquipmentPartsType {
-	return p + equipmentPartsCashOffset
-}
-
-var equipmentPartsByCategory = map[uint32][]EquipmentPartsType{
-	100: {EquipmentPartsCap},
-	101: {EquipmentPartsFace},
-	102: {EquipmentPartsEye},
-	103: {EquipmentPartsEar},
-	104: {EquipmentPartsTop},
-	105: {EquipmentPartsTop},
-	106: {EquipmentPartsPants},
-	107: {EquipmentPartsShoes},
-	108: {EquipmentPartsGlove},
-	109: {EquipmentPartsShield},
-	110: {EquipmentPartsCape},
-	111: {EquipmentPartsRing, EquipmentPartsRing2, EquipmentPartsRing3, EquipmentPartsRing4},
-	112: {EquipmentPartsPendant},
-	113: {EquipmentPartsBelt},
-	114: {EquipmentPartsMedal},
-	119: {EquipmentPartsShield},
-	180: {EquipmentPartsPetEquip},
-	190: {EquipmentPartsTamingMob},
-	191: {EquipmentPartsSaddle},
-	192: {EquipmentPartsMobEquip},
-}
-
-func EquipmentParts(itemID uint32) []EquipmentPartsType {
-	category := ItemCategoryOf(itemID)
-	if parts, ok := equipmentPartsByCategory[category]; ok {
-		return parts
-	}
-	switch category / 10 {
-	case 13, 14, 16, 17:
-		return []EquipmentPartsType{EquipmentPartsWeapon}
-	}
-	return nil
-}
-
-func CanEquipAt(itemID uint32, parts EquipmentPartsType) bool {
-	if parts <= 2*equipmentPartsCashOffset || parts >= 0 {
-		return false
-	}
-	if parts <= equipmentPartsCashOffset {
-		parts -= equipmentPartsCashOffset
-	}
-	if parts >= 0 {
-		return false
-	}
-
-	return slices.Contains(EquipmentParts(itemID), parts)
+	return p + EquipmentPartsCashOffset
 }

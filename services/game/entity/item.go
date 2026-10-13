@@ -201,8 +201,8 @@ func NewItem(itemId uint32, count uint16, gw ItemWorld) (Item, error) {
 	}
 	switch m := model.(type) {
 	case wz.Equipment:
-		if !constant.IsEquipment(itemId) {
-			return nil, fmt.Errorf("item %d: model is equipment but GetEquipmentType is not equippable", itemId)
+		if !m.GetEquipmentType().Equippable() {
+			return nil, fmt.Errorf("item %d: model is equipment but not equippable", itemId)
 		}
 		return &EquipmentCore{
 			ItemCore: &ItemCore{

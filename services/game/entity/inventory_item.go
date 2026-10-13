@@ -115,7 +115,7 @@ func (inv *Inventory) useAmmo(slot int16, count uint16) bool {
 	if item == nil || item.GetCount() < count {
 		return false
 	}
-	if !constant.IsRechargeable(item.GetModel().GetID()) {
+	if item.GetModel().GetTraits()&constant.ItemTraitRechargeable == 0 {
 		return inv.RemoveItem(constant.InventoryTypeConsume, slot, count)
 	}
 
@@ -125,7 +125,11 @@ func (inv *Inventory) useAmmo(slot int16, count uint16) bool {
 }
 
 func (inv *Inventory) FindSlots(itemID uint32) (invType constant.InventoryType, slots []int16) {
-	invType = constant.GetInventoryTypeByItemID(itemID)
+	model := inv.owner.itemModel(itemID)
+	if model == nil {
+		return 0, nil
+	}
+	invType = model.GetInventoryType()
 	inven := inv.Tabs[invType]
 	if inven == nil {
 		return invType, nil
@@ -151,8 +155,11 @@ func (inv *Inventory) GetCountByItemID(itemID uint32) uint16 {
 }
 
 func (inv *Inventory) HasItem(itemID uint32) bool {
-	invType := constant.GetInventoryTypeByItemID(itemID)
-	inven := inv.Tabs[invType]
+	model := inv.owner.itemModel(itemID)
+	if model == nil {
+		return false
+	}
+	inven := inv.Tabs[model.GetInventoryType()]
 	if inven == nil {
 		return false
 	}
@@ -169,8 +176,11 @@ func (inv *Inventory) HasItemCount(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
 	}
-	invType := constant.GetInventoryTypeByItemID(itemID)
-	inven := inv.Tabs[invType]
+	model := inv.owner.itemModel(itemID)
+	if model == nil {
+		return false
+	}
+	inven := inv.Tabs[model.GetInventoryType()]
 	if inven == nil {
 		return false
 	}
@@ -496,10 +506,10 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	if !ok {
 		return ErrItemNotEquipment
 	}
-	if !constant.CanEquipAt(newEq.GetModel().GetID(), parts) {
+	if !newEq.GetModel().(wz.Equipment).CanEquipAt(parts) {
 		return ErrInvalidEquipmentPart
 	}
-	if armor, ok := newEq.GetModel().(*wz.Armor); ok && constant.GetEquipmentType(armor.ID) == constant.EquipmentTypePetEquip {
+	if armor, ok := newEq.GetModel().(*wz.Armor); ok && armor.EquipmentType == constant.EquipmentTypePetEquip {
 		if ch.Pets.Active == nil || !slices.Contains(armor.Pets, ch.Pets.Active.Item.GetModel().GetID()) {
 			return ErrInvalidEquipmentPart
 		}

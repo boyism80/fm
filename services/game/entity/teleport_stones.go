@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -77,7 +78,12 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 		t.owner.session.cashItemInUse.Store(false)
 		t.owner.Listener.OnUpdateStats(t.owner, nil, true)
 	}
-	vip := constant.IsVipTeleportStone(itemID)
+	model := t.owner.itemModel(itemID)
+	if model == nil {
+		finish()
+		return
+	}
+	vip := model.GetTraits()&constant.ItemTraitVipTeleportStone != 0
 	fail := func(result pconst.TeleportStoneResult) {
 		t.owner.Listener.OnTeleportStoneFailed(t.owner, vip, result)
 		finish()
@@ -85,12 +91,13 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 
 	switch invType {
 	case constant.InventoryTypeCash:
-		if !constant.IsCashTeleportStone(itemID) {
+		if model.GetTraits()&constant.ItemTraitCashTeleportStone == 0 {
 			finish()
 			return
 		}
 	case constant.InventoryTypeConsume:
-		if constant.GetConsumeType(itemID) != constant.ConsumeTypeTeleportStone {
+		consume, ok := model.(*wz.Consume)
+		if !ok || consume.ConsumeType != constant.ConsumeTypeTeleportStone {
 			finish()
 			return
 		}

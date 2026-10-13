@@ -24,3 +24,8 @@ const (
 	EquipmentTypeTaming
 	EquipmentTypeMechanic
 )
+
+func (t EquipmentType) Equippable() bool {
+	return t != EquipmentTypeUnknown && t != EquipmentTypeMonsterBook && t != EquipmentTypeAndroid &&
+		t != EquipmentTypeDragon && t != EquipmentTypeMechanic && t != EquipmentTypeHair
+}

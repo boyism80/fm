@@ -31,10 +31,14 @@ func (inv *Inventory) LoadRings(rings []*internal.CashRing) {
 			ItemId:       pb.GetItemId(),
 			PartnerName:  pb.GetPartnerName(),
 		}
+		model := inv.owner.itemModel(ring.ItemId)
+		if model == nil {
+			continue
+		}
 		switch {
-		case constant.IsCrushRing(ring.ItemId):
+		case model.GetTraits()&constant.ItemTraitCrushRing != 0:
 			inv.Rings.Left = append(inv.Rings.Left, ring)
-		case constant.IsFriendshipRing(ring.ItemId):
+		case model.GetTraits()&constant.ItemTraitFriendshipRing != 0:
 			inv.Rings.Mid = append(inv.Rings.Mid, ring)
 		}
 	}

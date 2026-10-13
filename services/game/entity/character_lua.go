@@ -4201,7 +4201,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			parts := constant.EquipmentParts(item.GetModel().GetID())
+			model, ok := item.GetModel().(wz.Equipment)
+			if !ok {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			parts := model.GetParts()
 			if len(parts) == 0 {
 				L.Push(lua.LBool(false))
 				return 1
@@ -4449,9 +4454,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(2, "item id (number) or item name (string) expected")
 					return 0
 				}
-				invType := constant.GetInventoryTypeByItemID(itemID)
 				slotTbl := L.NewTable()
-				if inven := ch.Inventory.Tabs[invType]; inven != nil {
+				model := ch.itemModel(itemID)
+				if model == nil {
+					L.Push(slotTbl)
+					return 1
+				}
+				if inven := ch.Inventory.Tabs[model.GetInventoryType()]; inven != nil {
 					for slot, item := range inven.Items {
 						if item != nil && item.GetModel().GetID() == itemID {
 							L.Push(luax.NewLuable(L, item))

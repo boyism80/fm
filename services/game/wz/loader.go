@@ -42,6 +42,7 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 			return nil, err
 		}
 		model.ID = uint32(id)
+		model.classify()
 		info := v.find("info")
 		model.setTradeFlags(info)
 		if info != nil {
@@ -153,6 +154,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			return nil, err
 		}
 		model.ID = uint32(id)
+		model.classify()
+		model.setConsumeType()
 		nodeInfo := v.find("info")
 		model.setTradeFlags(nodeInfo)
 		if nodeInfo != nil {
@@ -553,6 +556,8 @@ func loadWeapons(path string) (Item, error) {
 		return nil, nil
 	}
 	model.ID = uint32(id)
+	model.classify()
+	model.setEquipmentType()
 	node := root.find("info")
 	if node == nil {
 		return nil, fmt.Errorf("'info' does not exist in %s", path)
@@ -741,7 +746,7 @@ func loadWeapons(path string) (Item, error) {
 		model.SlotMax = 1
 	}
 
-	if constant.GetEquipmentType(model.ID) == constant.EquipmentTypePetEquip {
+	if model.EquipmentType == constant.EquipmentTypePetEquip {
 		for _, v := range root.Children {
 			if petID, err := strconv.ParseUint(v.Name, 10, 32); err == nil {
 				model.Pets = append(model.Pets, uint32(petID))
@@ -755,8 +760,10 @@ func loadWeapons(path string) (Item, error) {
 	}
 
 	eq := &model
-	if constant.GetEquipmentType(model.ID) == constant.EquipmentTypeWeapon {
-		return &Weapon{EquipmentCore: eq}, nil
+	if model.EquipmentType == constant.EquipmentTypeWeapon {
+		weapon := &Weapon{EquipmentCore: eq}
+		weapon.setWeaponType()
+		return weapon, nil
 	}
 	return &Armor{EquipmentCore: eq}, nil
 }
@@ -784,6 +791,7 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 			return nil, err
 		}
 		model.ID = uint32(id)
+		model.classify()
 		info := v.find("info")
 		model.setTradeFlags(info)
 		if info != nil {
@@ -885,6 +893,7 @@ func loadInstallations(path string) (*[]*Installation, error) {
 			return nil, err
 		}
 		model.ID = uint32(id)
+		model.classify()
 		info := v.find("info")
 		model.setTradeFlags(info)
 		if info != nil {
@@ -1610,6 +1619,7 @@ func loadPets(path string) (*Pet, error) {
 			SlotMax: 100,
 		},
 	}
+	model.classify()
 	info := root.find("info")
 	model.setTradeFlags(info)
 	model.Hungry = info.Int("hungry", 1)
@@ -1717,6 +1727,7 @@ func loadSpecialItems(path string) (*[]*SpecialItem, error) {
 			return nil, err
 		}
 		model.ID = uint32(id)
+		model.classify()
 		for _, iv := range v.Children {
 			switch iv.Name {
 			case "icon":
@@ -1799,6 +1810,14 @@ func parseUnitPrice(unitPriceStr string) float64 {
 	return price
 }
 
+var rechargeableItems = []uint32{
+	2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
+	2070006, 2070007, 2070008, 2070009, 2070010, 2070011,
+	2070012, 2070013,
+	2330000, 2330001, 2330002, 2330003, 2330004, 2330005,
+	2331000, 2332000,
+}
+
 func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1853,10 +1872,6 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 				shop.Items = append(shop.Items, item)
 			}
 		}
-
-		rechargeableItems := make([]uint32, 0, len(constant.RechargeableShurikens)+len(constant.RechargeableBullets))
-		rechargeableItems = append(rechargeableItems, constant.RechargeableShurikens...)
-		rechargeableItems = append(rechargeableItems, constant.RechargeableBullets...)
 
 		existingRechargeable := make(map[uint32]bool)
 		for _, existingItem := range shop.Items {

@@ -38,8 +38,7 @@ func (i *ConsumeItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOp
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
 
-	switch constant.GetConsumeType(i.ItemId) {
-	case constant.ConsumeTypeShuriken, constant.ConsumeTypeBullet:
+	if i.rechargeable() {
 		writer.WriteU64(54399043)
 	}
 }
@@ -52,7 +51,12 @@ func (i *ConsumeItem) Deserialize(reader *stream.StreamReader) {
 	i.Count = reader.ReadU16()
 	i.OwnerName = reader.ReadStr16()
 	i.Flags = reader.ReadU16()
-	if constant.ConsumeNeedsAmmoInventoryID(i.ItemId) {
+	if i.rechargeable() {
 		reader.Skip(8)
 	}
+}
+
+func (i *ConsumeItem) rechargeable() bool {
+	category := i.ItemId / 10000
+	return category == constant.ItemCategoryShuriken || category == constant.ItemCategoryBullet
 }

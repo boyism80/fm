@@ -46,7 +46,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 		}
 		entered = reply
 
-		character := entity.NewCharacter(reply)
+		character := entity.NewCharacter(reply, h.cs.resources)
 		if !csClient.SetCharacter(character) {
 			return fmt.Errorf("character %d: client disconnected during cash shop login", req.PlayerId)
 		}

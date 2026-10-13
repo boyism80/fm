@@ -109,7 +109,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 
 	ch.KeyLayout.LoadKeyLayoutProto(reply.GetKeyLayout())
 	ch.CashWishlist = reply.GetCashWishlist()
-	ch.MonsterBook = NewMonsterBookFromInternalProto(p.GetMonsterBookCover(), reply.GetMonsterBook())
+	ch.MonsterBook = NewMonsterBookFromInternalProto(ch, p.GetMonsterBookCover(), reply.GetMonsterBook())
 	ch.LoadInventory(reply.GetInventory())
 	ch.Inventory.LoadRings(reply.GetRings())
 	ch.LoadSkills(reply.GetSkills())
@@ -127,29 +127,31 @@ func (ch *Character) LoadInventory(items []*internal.Inventory) {
 		if pb == nil {
 			continue
 		}
-		itemID := pb.GetItemId()
-		if ch.Wedding.Marriage == nil && (constant.IsEngagementRing(itemID) || constant.IsWeddingRing(itemID)) {
-			continue
-		}
 		item, err := NewItemFromInternalProto(pb, ch.GameWorld)
 		if err != nil {
 			continue
 		}
+		if ch.Wedding.Marriage == nil && item.GetModel().GetTraits()&(constant.ItemTraitEngagementRing|constant.ItemTraitWeddingRing) != 0 {
+			continue
+		}
 		slot := int16(pb.GetSlot())
 		if slot < 0 {
+			eq, ok := item.(Equipment)
+			if !ok {
+				continue
+			}
+			model := eq.GetModel().(wz.Equipment)
 			parts := constant.EquipmentPartsType(slot)
-			if !constant.CanEquipAt(itemID, parts) {
-				if known := constant.EquipmentParts(itemID); len(known) > 0 && ch.Inventory.Equipped[known[0]] == nil {
+			if !model.CanEquipAt(parts) {
+				if known := model.GetParts(); len(known) > 0 && ch.Inventory.Equipped[known[0]] == nil {
 					parts = known[0]
 				}
 			}
-			if eq, ok := item.(Equipment); ok {
-				ch.Inventory.Equipped[parts] = eq
-			}
+			ch.Inventory.Equipped[parts] = eq
 		} else {
 			invType := constant.InventoryType(pb.GetInventoryType())
 			if invType == 0 {
-				invType = constant.GetInventoryTypeByItemID(itemID)
+				invType = item.GetModel().GetInventoryType()
 			}
 			if inv, ok := ch.Inventory.Tabs[invType]; ok {
 				inv.Items[slot] = item

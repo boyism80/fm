@@ -221,7 +221,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		fail(constant.CashShopFailureNotEnoughMeso)
 		return
 	}
-	invType := gconstant.GetInventoryTypeByItemID(commodity.ItemID)
+	invType := wzItem.GetInventoryType()
 	slot, ok := character.FreeSlot(invType)
 	if !ok {
 		fail(constant.CashShopFailureLockerFull)
@@ -277,7 +277,8 @@ func (h *Operation) payBack(ctx *core.ClientContext, character *entity.Character
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	if gconstant.GetInventoryTypeByItemID(cashItem.GetItem().GetItemId()) != gconstant.InventoryTypeEquipment || cashItem.GetItem().GetExpirationUnixMs() > 0 {
+	model := h.cs.resources.Items[cashItem.GetItem().GetItemId()]
+	if model == nil || model.GetInventoryType() != gconstant.InventoryTypeEquipment || cashItem.GetItem().GetExpirationUnixMs() > 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
@@ -341,7 +342,12 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	invType := gconstant.GetInventoryTypeByItemID(cashItem.GetItem().GetItemId())
+	model := h.cs.resources.Items[cashItem.GetItem().GetItemId()]
+	if model == nil {
+		fail(constant.CashShopFailureUnknown)
+		return
+	}
+	invType := model.GetInventoryType()
 	slot, ok := character.FreeSlot(invType)
 	if !ok {
 		fail(constant.CashShopFailureNotEnoughSlots)

@@ -110,20 +110,19 @@ func (h *NpcShop) buy(ch *entity.Character, shop *wz.Shop, tx *request.BuyTransa
 	}
 
 	price := shopItem.Price
-	if !constant.IsRechargeable(tx.ItemID) {
+	if itemModel.GetTraits()&constant.ItemTraitRechargeable == 0 {
 		price = shopItem.Price * int(tx.Quantity)
 	}
 	if ch.Inventory.Meso < int32(price) {
 		return
 	}
 
-	inventoryType := constant.GetInventoryTypeByItemID(tx.ItemID)
-	if ch.Inventory.Tabs[inventoryType] == nil {
+	if ch.Inventory.Tabs[itemModel.GetInventoryType()] == nil {
 		return
 	}
 
 	quantity := tx.Quantity
-	if constant.IsRechargeable(tx.ItemID) {
+	if itemModel.GetTraits()&constant.ItemTraitRechargeable != 0 {
 		quantity = itemModel.GetCapacity()
 	}
 
@@ -151,7 +150,11 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 		quantity = 1
 	}
 
-	inventoryType := constant.GetInventoryTypeByItemID(tx.ItemID)
+	itemModel, ok := h.gs.GetResources().Items[tx.ItemID]
+	if !ok {
+		return
+	}
+	inventoryType := itemModel.GetInventoryType()
 	inventory := ch.Inventory.Tabs[inventoryType]
 	if inventory == nil {
 		return
@@ -165,7 +168,7 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 		return
 	}
 
-	if constant.IsRechargeable(tx.ItemID) {
+	if itemModel.GetTraits()&constant.ItemTraitRechargeable != 0 {
 		quantity = item.GetCount()
 	}
 
@@ -176,13 +179,12 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 	if quantity > itemQuantity || itemQuantity <= 0 {
 		return
 	}
-	if constant.ItemCategoryOf(tx.ItemID) == constant.ItemCategoryPet {
+	if itemModel.GetTraits()&constant.ItemTraitPet != 0 {
 		return
 	}
 
-	itemModel := item.GetModel()
 	price := itemModel.GetPrice()
-	if constant.IsRechargeable(tx.ItemID) {
+	if itemModel.GetTraits()&constant.ItemTraitRechargeable != 0 {
 		wholePrice := itemModel.GetPrice()
 		slotMax := itemModel.GetCapacity()
 		if slotMax > 0 {
@@ -217,12 +219,11 @@ func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction
 		return
 	}
 
-	itemID := item.GetModel().GetID()
-	if !constant.IsRechargeable(itemID) {
+	itemModel := item.GetModel()
+	if itemModel.GetTraits()&constant.ItemTraitRechargeable == 0 {
 		return
 	}
 
-	itemModel := item.GetModel()
 	slotMax := itemModel.GetCapacity()
 	if item.GetCount() >= slotMax {
 		return

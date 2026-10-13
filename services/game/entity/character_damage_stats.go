@@ -97,8 +97,8 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		s.PAD += float64(e.PAD)
 		s.MAD += float64(e.MAD)
 		s.ACC += float64(e.ACC)
-		if slot == constant.EquipmentPartsWeapon {
-			s.Weapon = constant.GetWeaponType(e.ItemId)
+		if weapon, ok := item.GetModel().(*wz.Weapon); ok && slot == constant.EquipmentPartsWeapon {
+			s.Weapon = weapon.WeaponType
 		}
 	}
 

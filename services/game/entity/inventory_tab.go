@@ -42,7 +42,7 @@ func (m *InventoryTab) Stackable(a, b Item) bool {
 	model := a.GetModel()
 	return model.GetID() == b.GetModel().GetID() &&
 		model.GetCapacity() > 1 &&
-		!constant.IsRechargeable(model.GetID()) &&
+		model.GetTraits()&constant.ItemTraitRechargeable == 0 &&
 		a.GetExpiration().Equal(b.GetExpiration())
 }
 

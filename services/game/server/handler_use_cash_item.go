@@ -11,13 +11,15 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-type UseCashItem struct{}
-
-func (UseCashItem) New(_ *GameServer) *UseCashItem {
-	return &UseCashItem{}
+type UseCashItem struct {
+	gs *GameServer
 }
 
-func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) error {
+func (UseCashItem) New(gs *GameServer) *UseCashItem {
+	return &UseCashItem{gs: gs}
+}
+
+func (h *UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) error {
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
@@ -29,11 +31,12 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 		return nil
 	}
 
-	if constant.IsCashTeleportStone(req.ItemID) {
+	model, ok := h.gs.GetResources().Items[req.ItemID]
+	if ok && model.GetTraits()&constant.ItemTraitCashTeleportStone != 0 {
 		ch.TeleportStones.Use(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.Target.MapID, req.Target.Name)
 		return nil
 	}
-	if constant.IsShopScanner(req.ItemID) {
+	if ok && model.GetTraits()&constant.ItemTraitShopScanner != 0 {
 		ch.UseShopScanner(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.SearchID, req.HighFirst)
 		return nil
 	}

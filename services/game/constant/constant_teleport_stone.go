@@ -8,14 +8,6 @@ const (
 
 type TeleportStoneSlots []uint32
 
-func IsCashTeleportStone(itemID uint32) bool {
-	return itemID/10000 == 504
-}
-
-func IsVipTeleportStone(itemID uint32) bool {
-	return IsCashTeleportStone(itemID) && itemID/1000 != 5040
-}
-
 func NewTeleportStoneSlots(registered []uint32, size int) TeleportStoneSlots {
 	stones := make(TeleportStoneSlots, size)
 	for i := range stones {

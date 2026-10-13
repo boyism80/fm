@@ -1,5 +1,7 @@
 package wz
 
+import "github.com/boyism80/fm/services/game/constant"
+
 type Item interface {
 	GetID() uint32
 	GetName() string
@@ -13,6 +15,8 @@ type Item interface {
 	IsAccountSharable() bool
 	GetMakerLevel() int
 	GetMakerBonus() map[string]int16
+	GetInventoryType() constant.InventoryType
+	GetTraits() constant.ItemTrait
 
 	IsConsumeOnPickup() bool
 }
