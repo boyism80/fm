@@ -289,8 +289,8 @@ func (s mapSystem) returnMap(m *entity.Map) *entity.Map {
 		return nil
 	}
 	exitID := uint32(m.Wz.ReturnMapId)
-	if m.Wz.HasForcedReturn() {
-		exitID = uint32(m.Wz.ForcedReturn)
+	if m.Wz.ForcedReturn != 0 {
+		exitID = m.Wz.ForcedReturn
 	}
 	if exitID == 0 || exitID == m.TemplateID() {
 		return nil

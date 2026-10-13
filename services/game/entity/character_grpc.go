@@ -323,8 +323,8 @@ func (ch *Character) PersistMapID() uint32 {
 	if m == nil || m.Wz == nil {
 		return 0
 	}
-	if m.Wz.HasForcedReturn() {
-		return uint32(m.Wz.ForcedReturn)
+	if m.Wz.ForcedReturn != 0 {
+		return m.Wz.ForcedReturn
 	}
 	if ch.GetHp() < 1 && m.Wz.ReturnMapId > 0 {
 		return uint32(m.Wz.ReturnMapId)

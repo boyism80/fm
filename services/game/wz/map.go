@@ -28,7 +28,7 @@ type MobSpawn struct {
 
 const dropPointSearchOffset int16 = 50
 
-const ForcedReturnNone = 999999999
+const forcedReturnNone = 999999999
 
 type FieldType int
 
@@ -45,7 +45,7 @@ type Map struct {
 	Version      int
 	Cloud        int
 	ReturnMapId  int
-	ForcedReturn int
+	ForcedReturn uint32
 	FieldLimit   constant.FieldLimit
 	FieldType    FieldType
 
@@ -73,13 +73,6 @@ type Map struct {
 	Footholds         *types.QuadTreeNode[int16, Foothold]
 	Carnival          *CarnivalField
 	doorReturnPortals []Portal
-}
-
-func (m *Map) HasForcedReturn() bool {
-	if m == nil {
-		return false
-	}
-	return m.ForcedReturn > 0 && m.ForcedReturn != ForcedReturnNone
 }
 
 func (m *Map) Limits(limit constant.FieldLimit) bool {

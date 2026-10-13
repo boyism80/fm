@@ -97,7 +97,7 @@ type Map struct {
 	StreetName    string                  `yaml:"street_name,omitempty"`
 	MapName       string                  `yaml:"map_name,omitempty"`
 	ReturnMapID   int                     `yaml:"return_map_id,omitempty"`
-	ForcedReturn  int                     `yaml:"forced_return,omitempty"`
+	ForcedReturn  uint32                  `yaml:"forced_return,omitempty"`
 	FieldLimit    int                     `yaml:"field_limit,omitempty"`
 	IsTown        bool                    `yaml:"is_town,omitempty"`
 	BGM           string                  `yaml:"bgm,omitempty"`
