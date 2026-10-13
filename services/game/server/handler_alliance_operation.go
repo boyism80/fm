@@ -43,8 +43,6 @@ func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.Allianc
 			ch.Listener.OnAllianceUpdateInfo(ch)
 		}
 		return nil
-	case pconst.AllianceC2SCreate:
-		return h.handleCreate(ctx, ch, req)
 	case pconst.AllianceC2SLeave:
 		return h.handleLeave(ctx, ch)
 	case pconst.AllianceC2SInvite:
@@ -537,50 +535,6 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(leave) async error: %v", err)
-	})
-	return nil
-}
-
-func (h *AllianceOperation) handleCreate(ctx *core.ClientContext, ch *entity.Character, req *request.AllianceOperation) error {
-	if h.gs == nil || h.gs.internalClient == nil {
-		return nil
-	}
-	partnerCharacterID, ok := h.gs.alliance.ValidateCreateAlliance(ch)
-	if !ok || partnerCharacterID == 0 {
-		return nil
-	}
-
-	worldID := h.gs.config.WorldId
-	charID := ch.GetID()
-	allianceName := req.AllianceName
-	if allianceName == "" {
-		return nil
-	}
-
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.CreateAllianceReply, error) {
-		return h.gs.internalClient.CreateAlliance(c, &internal.CreateAllianceRequest{
-			WorldId:            worldID,
-			AllianceName:       allianceName,
-			LeaderCharacterId:  charID,
-			PartnerCharacterId: partnerCharacterID,
-		})
-	}, func(reply *internal.CreateAllianceReply) error {
-		if !reply.GetOk() {
-			log.Printf("AllianceOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
-			return nil
-		}
-		alliancePb := reply.GetAlliance()
-		if alliancePb == nil {
-			log.Printf("AllianceOperation(create): ok but missing alliance character=%d", charID)
-			return nil
-		}
-		h.gs.alliance.Update(alliancePb)
-		h.gs.alliance.BroadcastCreate(alliancePb)
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(create) async error: %v", err)
 	})
 	return nil
 }

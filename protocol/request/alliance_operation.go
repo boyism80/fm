@@ -7,7 +7,6 @@ import (
 
 type AllianceOperation struct {
 	Operation             constant.AllianceC2SOperation
-	AllianceName          string
 	TargetGuildLeaderName string
 	TargetGuildID         uint32
 	AllianceID            uint32
@@ -29,9 +28,6 @@ func (p *AllianceOperation) Serialize(writer *stream.StreamWriter) error {
 func (p *AllianceOperation) Deserialize(reader *stream.StreamReader) {
 	p.Operation = constant.AllianceC2SOperation(reader.ReadU8())
 	switch p.Operation {
-	case constant.AllianceC2SCreate:
-		p.AllianceName = reader.ReadStr16()
-
 	case constant.AllianceC2SInvite:
 		p.TargetGuildLeaderName = reader.ReadStr16()
 

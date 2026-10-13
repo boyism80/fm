@@ -5,7 +5,6 @@ type AllianceC2SOperation uint8
 const (
 	AllianceC2SLoadInfo         AllianceC2SOperation = 0x01
 	AllianceC2SLeave            AllianceC2SOperation = 0x02
-	AllianceC2SCreate           AllianceC2SOperation = 0x05
 	AllianceC2SInvite           AllianceC2SOperation = 0x03
 	AllianceC2SAcceptInvite     AllianceC2SOperation = 0x04
 	AllianceC2SExpel            AllianceC2SOperation = 0x06
