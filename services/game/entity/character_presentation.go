@@ -24,7 +24,7 @@ func (ch *Character) SetChalkboard(text string) bool {
 
 func (ch *Character) PlaceMessageBox(itemID uint32, text string) bool {
 	m := ch.GetMap()
-	if m == nil || !ch.IsAlive() || m.TemplateID()/10000000 == 91 || !ClientText(text).ValidLines(messageBoxLines, messageBoxLineLimit) {
+	if m == nil || !ch.IsAlive() || m.Wz.MessageBoxBlocked || !ClientText(text).ValidLines(messageBoxLines, messageBoxLineLimit) {
 		return false
 	}
 	box := &MessageBox{ItemID: itemID, Owner: ch.GetName(), Text: text}

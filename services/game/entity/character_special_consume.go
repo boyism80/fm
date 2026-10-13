@@ -65,7 +65,7 @@ func (ch *Character) UseSummonBag(slot int16, itemID uint32) {
 		return
 	}
 	mapInstance := ch.GetMap()
-	if mapInstance == nil || mapInstance.TemplateID() >= 910000000 && mapInstance.TemplateID() <= 910000022 {
+	if mapInstance == nil || mapInstance.Wz.FreeMarket {
 		return
 	}
 

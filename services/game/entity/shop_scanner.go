@@ -13,9 +13,7 @@ import (
 )
 
 const (
-	FreeMarketEntranceMapID = 910000000
-	FreeMarketLastMapID     = 910000022
-	shopScanRetryDelay      = 5 * time.Second
+	shopScanRetryDelay = 5 * time.Second
 )
 
 type shopScan struct {
@@ -36,7 +34,7 @@ func (ch *Character) FindPopularShopSearches(actx actor.Context) {
 func (ch *Character) UseShopScanner(actx actor.Context, invType constant.InventoryType, slot int16, itemID uint32, searchID uint32, highFirst bool) {
 	m := ch.GetMap()
 	item := ch.Inventory.GetItem(invType, slot)
-	if m == nil || m.TemplateID() < FreeMarketEntranceMapID || m.TemplateID() > FreeMarketLastMapID {
+	if m == nil || !m.Wz.FreeMarket {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
@@ -84,7 +82,7 @@ func (ch *Character) UseShopScanner(actx actor.Context, invType constant.Invento
 
 func (ch *Character) VisitShopBySearch(actx actor.Context, sn uint32, mapID uint32) error {
 	m := ch.GetMap()
-	if m == nil || m.TemplateID() < FreeMarketEntranceMapID || m.TemplateID() > FreeMarketLastMapID {
+	if m == nil || !m.Wz.FreeMarket {
 		return ErrMiniRoomInvalid
 	}
 	if !ch.shopScan.found[remoteShop{sn: sn, mapID: mapID}] {

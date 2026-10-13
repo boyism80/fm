@@ -30,6 +30,12 @@ const dropPointSearchOffset int16 = 50
 
 const forcedReturnNone = 999999999
 
+const (
+	freeMarketFirstMapID    = 910000000
+	freeMarketLastMapID     = 910000022
+	messageBoxBlockedRegion = 91
+)
+
 type FieldType int
 
 const (
@@ -48,6 +54,10 @@ type Map struct {
 	ForcedReturn uint32
 	FieldLimit   constant.FieldLimit
 	FieldType    FieldType
+
+	Continent         uint32
+	FreeMarket        bool
+	MessageBoxBlocked bool
 
 	VRTop             int
 	VRLeft            int

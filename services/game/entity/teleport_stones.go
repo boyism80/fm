@@ -180,7 +180,7 @@ func (t *TeleportStones) teleport(ctx actor.Context, itemID uint32, vip bool, ta
 		onFail(pconst.TeleportStoneResultCannotGo)
 		return
 	}
-	if !vip && m.TemplateID()/100000000 != target.TemplateID()/100000000 {
+	if !vip && m.Wz.Continent != target.Wz.Continent {
 		onFail(pconst.TeleportStoneResultCannotGo)
 		return
 	}

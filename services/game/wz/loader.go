@@ -982,11 +982,14 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	}
 
 	model := Map{
-		ID:            mapId,
-		Portals:       map[uint8]Portal{},
-		NpcSpawns:     map[uint32]NpcSpawn{},
-		MobSpawns:     map[uint32]MobSpawn{},
-		ReactorSpawns: map[uint32]ReactorSpawn{},
+		ID:                mapId,
+		Portals:           map[uint8]Portal{},
+		NpcSpawns:         map[uint32]NpcSpawn{},
+		MobSpawns:         map[uint32]MobSpawn{},
+		ReactorSpawns:     map[uint32]ReactorSpawn{},
+		Continent:         mapId / 100000000,
+		FreeMarket:        mapId >= freeMarketFirstMapID && mapId <= freeMarketLastMapID,
+		MessageBoxBlocked: mapId/10000000 == messageBoxBlockedRegion,
 	}
 
 	info := root.find("info")
