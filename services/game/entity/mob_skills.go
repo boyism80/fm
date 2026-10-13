@@ -202,3 +202,15 @@ func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool
 	}
 	return lua.LVAsBool(ret)
 }
+
+func (m *Mob) ConsumeSkillMP(skill *MobSkill) {
+	if skill.LevelData == nil || skill.LevelData.MpCon <= 0 {
+		return
+	}
+	cost := uint32(skill.LevelData.MpCon)
+	next := uint32(0)
+	if current := m.GetMp(); current > cost {
+		next = current - cost
+	}
+	m.SetMp(max(next, min(m.GetMaxMp(), 500)), false)
+}

@@ -132,34 +132,9 @@ func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mo
 	}
 	hook := "on_mob_skill"
 	luax.CallAsync(ctx.ActorContext, root, thread, hook, mob, target, skill).Do(func([]lua.LValue) error {
-		h.consumeMobSkillMp(mob, skill)
+		mob.ConsumeSkillMP(skill)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("mob skill %s: %v", hook, err)
 	})
-}
-
-func (h *MoveMob) consumeMobSkillMp(mob *entity.Mob, skill *entity.MobSkill) {
-	if mob == nil || skill == nil || skill.LevelData == nil {
-		return
-	}
-	mpCon := skill.LevelData.MpCon
-	if mpCon <= 0 {
-		return
-	}
-	floor := mob.GetMaxMp()
-	if floor > 500 {
-		floor = 500
-	}
-	current := mob.GetMp()
-	var next uint32
-	if current > uint32(mpCon) {
-		next = current - uint32(mpCon)
-	} else {
-		next = 0
-	}
-	if next < floor {
-		next = floor
-	}
-	mob.SetMp(next, false)
 }
