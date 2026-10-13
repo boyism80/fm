@@ -11,11 +11,11 @@ func (m *Map) ChangeMusic(song string) {
 	m.listener.OnMusicChanged(m, song)
 }
 
-func (m *Map) MapMessage(message string) {
-	if m == nil || message == "" || m.listener == nil {
+func (m *Map) MapMessage(messageType constant.ServerMessageType, message string) {
+	if message == "" {
 		return
 	}
-	m.listener.OnMapMessage(m, constant.MsgPinkText, message)
+	m.listener.OnMapMessage(m, messageType, message)
 }
 
 func (m *Map) Weather(itemID uint32, message string) {

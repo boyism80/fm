@@ -213,7 +213,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Ite
 		if !ok {
 			continue
 		}
-		if !viewer.NeedsQuestItem(placement.Quest, item.GetModel().GetID()) {
+		if !viewer.Quests.NeedsItem(placement.Quest, item.GetModel().GetID()) {
 			continue
 		}
 		viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)

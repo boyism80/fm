@@ -364,7 +364,7 @@ func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
 		if skillDef.TargetsAll && rand.Intn(100) >= chance {
 			continue
 		}
-		if !target.GiveMobSkillDebuff(skillDef.MobSkillID, skillDef.Level) {
+		if !target.Debuffs.GiveMobSkill(skillDef.MobSkillID, skillDef.Level) {
 			target.Buffs.Dispel()
 		}
 	}

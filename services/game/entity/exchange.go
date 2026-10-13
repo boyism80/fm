@@ -65,13 +65,13 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 		return ExchangeLackCapacity
 	}
 
-	if result := ch.validateMesoExchange(spec.Cost.Meso, spec.Reward.Meso); result != ExchangeOK {
+	if result := ch.Inventory.validateMeso(spec.Cost.Meso, spec.Reward.Meso); result != ExchangeOK {
 		return result
 	}
 	if result := ch.validateExpExchange(spec.Cost.Exp, spec.Reward.Exp); result != ExchangeOK {
 		return result
 	}
-	if result := ch.validatePopulationExchange(spec.Cost.Population, spec.Reward.Population); result != ExchangeOK {
+	if result := ch.Stats.validatePopulation(spec.Cost.Population, spec.Reward.Population); result != ExchangeOK {
 		return result
 	}
 

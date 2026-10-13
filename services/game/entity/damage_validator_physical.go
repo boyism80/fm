@@ -87,7 +87,7 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 		// The server keeps no dark sight timer, so take the longest the skill allows.
 		a.modifiers.AssassinateSeconds = a.data.Time.Seconds()
 	}
-	if v.ch.damageBuff(constant.BuffFlagDarksight) > 0 && a.stats.Class >= 1000 {
+	if v.ch.Buffs.value(constant.BuffFlagDarksight) > 0 && a.stats.Class >= 1000 {
 		if p := v.ch.skillLevelData(constant.SkillVanish); p != nil {
 			a.modifiers.ExtraPercent = float64(p.Damage)
 		}

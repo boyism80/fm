@@ -7,14 +7,6 @@ import (
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func (ch *Character) damageBuff(flag constant.BuffFlag) float64 {
-	_, v, ok := ch.Buffs.GetBuffValue(flag)
-	if !ok {
-		return 0
-	}
-	return float64(v)
-}
-
 func (ch *Character) skillLevelData(id constant.SkillID) *wz.SkillLevelData {
 	entry := ch.Skills.Get(uint32(id))
 	if entry == nil || entry.Level() <= 0 {
@@ -40,7 +32,7 @@ func (ch *Character) comboPercent(finisher bool) float64 {
 		}
 	}
 
-	c := int(ch.damageBuff(constant.BuffFlagCombo)) - 1
+	c := int(ch.Buffs.value(constant.BuffFlagCombo)) - 1
 	d := float64(skill.Damage)
 	l := float64(level)
 	if finisher {
@@ -102,7 +94,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		}
 	}
 
-	mapleWarrior := ch.damageBuff(constant.BuffFlagMapleWarrior)
+	mapleWarrior := ch.Buffs.value(constant.BuffFlagMapleWarrior)
 	s.STR += math.Trunc(base.STR * mapleWarrior / 100)
 	s.DEX += math.Trunc(base.DEX * mapleWarrior / 100)
 	s.INT += math.Trunc(base.INT * mapleWarrior / 100)
@@ -141,13 +133,13 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 	}
 
 	b := damageModifiers{
-		PAD:          ch.damageBuff(constant.BuffFlagWeaponAtk),
-		MAD:          ch.damageBuff(constant.BuffFlagMagicAtk),
-		ACC:          ch.damageBuff(constant.BuffFlagAcc),
-		Echo:         ch.damageBuff(constant.BuffFlagEchoOfHero),
-		SharpEyes:    ch.damageBuff(constant.BuffFlagSharpEyes),
-		ElementReset: ch.damageBuff(constant.BuffFlagElementReset),
-		Double:       ch.damageBuff(constant.BuffFlagBerserkFury) > 0,
+		PAD:          ch.Buffs.value(constant.BuffFlagWeaponAtk),
+		MAD:          ch.Buffs.value(constant.BuffFlagMagicAtk),
+		ACC:          ch.Buffs.value(constant.BuffFlagAcc),
+		Echo:         ch.Buffs.value(constant.BuffFlagEchoOfHero),
+		SharpEyes:    ch.Buffs.value(constant.BuffFlagSharpEyes),
+		ElementReset: ch.Buffs.value(constant.BuffFlagElementReset),
+		Double:       ch.Buffs.value(constant.BuffFlagBerserkFury) > 0,
 		GM:           s.Class%1000/100 == 9 || s.Class >= 28 && s.Class <= 30,
 	}
 	if ch.Debuffs != nil {
@@ -175,7 +167,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 
 	// Energy charge's PAD is active only in the charged state. The server buff
 	// value is authoritative; include its source PAD for an upper envelope.
-	if ch.damageBuff(constant.BuffFlagEnergyCharge) > 0 {
+	if ch.Buffs.value(constant.BuffFlagEnergyCharge) > 0 {
 		energyCharge := constant.SkillEnergyCharge
 		if s.Class >= 1000 {
 			energyCharge = constant.SkillEnergyChargeCygnus
@@ -196,7 +188,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		}
 	}
 
-	if ch.damageBuff(constant.BuffFlagCombo) > 0 {
+	if ch.Buffs.value(constant.BuffFlagCombo) > 0 {
 		b.ComboPercent = ch.comboPercent(false)
 	}
 

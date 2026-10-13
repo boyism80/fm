@@ -1,11 +1,6 @@
 package entity
 
-import (
-	"time"
-
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/wz"
-)
+import "github.com/boyism80/fm/services/game/wz"
 
 func (ch *Character) BindCarnival(team *CarnivalTeam) {
 	ch.carnivalTeam = team
@@ -83,24 +78,4 @@ func (ch *Character) useCarnivalItem(wzConsume *wz.Consume) {
 		return
 	}
 	enemy.Debuff(ch.GetMap(), wzConsume.NuffSkillID)
-}
-
-// Returns false when the mob skill is not a disease, so the caller can fall back to a dispel.
-func (ch *Character) GiveMobSkillDebuff(skillID uint32, skillLevel uint8) bool {
-	mobSkill := ch.GameWorld.GetResources().GetMobSkill(skillID, skillLevel)
-	if mobSkill == nil {
-		return false
-	}
-	for _, flag := range constant.AllDebuffFlags() {
-		if flag.DiseaseSkillID != uint16(skillID) {
-			continue
-		}
-		duration := time.Duration(mobSkill.DurationMs) * time.Millisecond
-		if duration <= 0 {
-			duration = 5 * time.Second
-		}
-		ch.Debuffs.Give(flag, duration, int16(mobSkill.X), uint16(skillID), uint16(skillLevel))
-		return true
-	}
-	return false
 }

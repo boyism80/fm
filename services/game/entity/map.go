@@ -1391,7 +1391,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootSuccess
 		}
 
-		if fp.Quest > 0 && !character.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) {
+		if fp.Quest > 0 && !character.Quests.NeedsItem(fp.Quest, item.GetModel().GetID()) {
 			return constant.LootFailedInventoryFull
 		}
 

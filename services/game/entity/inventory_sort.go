@@ -5,8 +5,8 @@ import (
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
-	inven := ch.Inventory.Tabs[inventoryType]
+func (inv *Inventory) Merge(inventoryType constant.InventoryType) {
+	inven := inv.Tabs[inventoryType]
 	if inven == nil {
 		return
 	}
@@ -40,10 +40,10 @@ func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
 			if item.GetCount() != value {
 				item.SetCount(value)
 				if value == 0 {
-					ch.Listener.OnRemoveInventorySlot(ch, inventoryType, slot)
+					inv.owner.Listener.OnRemoveInventorySlot(inv.owner, inventoryType, slot)
 					delete(inven.Items, slot)
 				} else {
-					ch.Listener.OnInventorySlotUpdated(ch, inventoryType, slot, item)
+					inv.owner.Listener.OnInventorySlotUpdated(inv.owner, inventoryType, slot, item)
 				}
 			}
 			count -= value
@@ -51,8 +51,8 @@ func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
 	}
 }
 
-func (ch *Character) SortItems(inventoryType constant.InventoryType) {
-	inven := ch.Inventory.Tabs[inventoryType]
+func (inv *Inventory) Sort(inventoryType constant.InventoryType) {
+	inven := inv.Tabs[inventoryType]
 	if inven == nil {
 		return
 	}
@@ -91,7 +91,7 @@ func (ch *Character) SortItems(inventoryType constant.InventoryType) {
 			}
 			if i1 <= i2 {
 				buffer[i1], buffer[i2] = buffer[i2], buffer[i1]
-				ch.Listener.OnSwapInventorySlot(ch, inventoryType, int16(i1+1), int16(i2+1), 0)
+				inv.owner.Listener.OnSwapInventorySlot(inv.owner, inventoryType, int16(i1+1), int16(i2+1), 0)
 				i1++
 				i2--
 			}

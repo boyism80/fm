@@ -385,7 +385,7 @@ func (m *Mob) dropItems(attacker *Character) {
 		if !entry.IsAvailableAt(mapInstance.TemplateID()) || !entry.IsAvailableFor(m.Wz) {
 			continue
 		}
-		if entry.Quest != 0 && !attacker.NeedsQuestItem(entry.Quest, entry.Item) {
+		if entry.Quest != 0 && !attacker.Quests.NeedsItem(entry.Quest, entry.Item) {
 			continue
 		}
 		entries = append(entries, dropRule{Drop: entry.Drop, quest: entry.Quest, global: true})

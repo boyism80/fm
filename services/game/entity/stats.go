@@ -162,3 +162,20 @@ func (s *Stats) AddPopulation(delta int32) int32 {
 	s.setPopulation(int32(s.Population) + delta)
 	return int32(s.Population)
 }
+
+func (s *Stats) validatePopulation(costPopulation, rewardPopulation int32) ExchangeResult {
+	if costPopulation < 0 || rewardPopulation < 0 {
+		return ExchangeLackCost
+	}
+	if costPopulation == 0 && rewardPopulation == 0 {
+		return ExchangeOK
+	}
+	current := int32(s.Population)
+	if costPopulation > current {
+		return ExchangeLackCost
+	}
+	if rewardPopulation > populationLimit-(current-costPopulation) {
+		return ExchangeLackCapacity
+	}
+	return ExchangeOK
+}

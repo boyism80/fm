@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"math"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -17,46 +16,6 @@ func (ch *Character) itemModel(itemID uint32) wz.Item {
 		return nil
 	}
 	return resources.Items[itemID]
-}
-
-func (ch *Character) validateMesoExchange(costMeso, rewardMeso int32) ExchangeResult {
-	if ch == nil {
-		return ExchangeLackCost
-	}
-	if costMeso < 0 || rewardMeso < 0 {
-		return ExchangeLackCost
-	}
-	if costMeso == 0 && rewardMeso == 0 {
-		return ExchangeOK
-	}
-	if ch.Inventory.Meso < costMeso {
-		return ExchangeLackCost
-	}
-	after := ch.Inventory.Meso - costMeso
-	if rewardMeso > math.MaxInt32-after {
-		return ExchangeLackCapacity
-	}
-	return ExchangeOK
-}
-
-func (ch *Character) validatePopulationExchange(costPopulation, rewardPopulation int32) ExchangeResult {
-	if ch == nil {
-		return ExchangeLackCost
-	}
-	if costPopulation < 0 || rewardPopulation < 0 {
-		return ExchangeLackCost
-	}
-	if costPopulation == 0 && rewardPopulation == 0 {
-		return ExchangeOK
-	}
-	current := int32(ch.Stats.Population)
-	if costPopulation > current {
-		return ExchangeLackCost
-	}
-	if rewardPopulation > populationLimit-(current-costPopulation) {
-		return ExchangeLackCapacity
-	}
-	return ExchangeOK
 }
 
 func (ch *Character) validateExpExchange(costExp, rewardExp uint32) ExchangeResult {

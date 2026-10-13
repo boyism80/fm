@@ -214,7 +214,7 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 	items := mapInstance.GetItems()
 	for _, oid := range oids {
 		meso, ok := items[oid].(*Meso)
-		if !ok || !ch.canExplode(meso, area) {
+		if !ok || !meso.inArea(area) {
 			continue
 		}
 		if err := mapInstance.RemoveItem(oid, constant.RemoveItemTypeExplosion, ch.GetID()); err != nil {
@@ -242,14 +242,6 @@ func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
 		Right:  reach,
 		Bottom: max(levelData.LT.Y, levelData.RB.Y) + mesoExplosionMargin,
 	}.AtOrigin(origin), true
-}
-
-func (ch *Character) canExplode(meso *Meso, area types.Rect[int32]) bool {
-	if meso.GetFieldPlacement() == nil {
-		return false
-	}
-	pos := meso.GetPosition()
-	return area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
 }
 
 func (ch *Character) TakeDamage(damage int32) {

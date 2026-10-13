@@ -127,7 +127,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.Role) {
 		return
 	}
-	spawnBuffData := ch.GetSpawnPlayerBuffData()
+	spawnBuffData := ch.Buffs.SpawnPlayerData()
 	carnivalTeam := constant.CarnivalTeamNone
 	if team := ch.CarnivalTeam(); team != nil {
 		carnivalTeam = team.TeamID
@@ -327,20 +327,6 @@ func (ch *Character) SetSkin(color uint8) {
 		constant.StatSkin: int32(color),
 	}, false)
 	ch.Listener.OnUpdateCharacterLook(ch)
-}
-
-func (ch *Character) MapMessage(messageType constant.ServerMessageType, message string) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	for _, player := range mapInstance.GetAllPlayers() {
-		other, ok := player.(*Character)
-		if !ok {
-			continue
-		}
-		other.Listener.OnMessage(other, messageType, message)
-	}
 }
 
 func (ch *Character) GetLevel() uint8 { return ch.level }
@@ -1016,63 +1002,4 @@ func (ch *Character) broadcastLevelUpEffect() {
 		CharacterID: ch.id,
 		Type:        response.EffectTypeLevelUp,
 	}, nil)
-}
-
-type SpawnPlayerBuffData struct {
-	BuffStates        [4]uint32
-	SpeedBuff         uint8
-	ComboCount        uint8
-	WKChargeSkillID   uint32
-	MorphID           uint16
-	SpiritClawSkillID uint32
-}
-
-func (ch *Character) GetSpawnPlayerBuffData() SpawnPlayerBuffData {
-	data := SpawnPlayerBuffData{
-		SpeedBuff:  1,
-		ComboCount: 1,
-	}
-	if ch == nil {
-		return data
-	}
-
-	for _, buff := range ch.Buffs.Entities() {
-		if buff == nil {
-			continue
-		}
-		values := buff.GetValues()
-		if values == nil {
-			continue
-		}
-		for flag, value := range values {
-			idx := flag.Position - 1
-			if idx < 0 || idx >= constant.MaxBuffFlag {
-				continue
-			}
-			if constant.IsTargetStatFlag(flag) {
-				data.BuffStates[idx] |= flag.Mask
-			}
-			switch flag {
-			case constant.BuffFlagSpeed:
-				data.SpeedBuff = uint8(value)
-			case constant.BuffFlagCombo:
-				data.ComboCount = uint8(value)
-			case constant.BuffFlagMorph:
-				data.MorphID = uint16(value)
-			}
-		}
-		switch typed := buff.(type) {
-		case *SkillBuff:
-			for _, flag := range typed.GetFlags() {
-				switch flag {
-				case constant.BuffFlagWkCharge:
-					data.WKChargeSkillID = typed.Wz.ID
-				case constant.BuffFlagSpiritClaw:
-					data.SpiritClawSkillID = typed.Wz.ID
-				}
-			}
-		}
-	}
-
-	return data
 }

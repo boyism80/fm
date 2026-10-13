@@ -459,3 +459,67 @@ func (bc *Buffs) ShowAll() {
 		bc.notifyAdded(entity, now)
 	}
 }
+
+func (bc *Buffs) value(flag constant.BuffFlag) float64 {
+	_, v, ok := bc.GetBuffValue(flag)
+	if !ok {
+		return 0
+	}
+	return float64(v)
+}
+
+type SpawnPlayerBuffData struct {
+	BuffStates        [4]uint32
+	SpeedBuff         uint8
+	ComboCount        uint8
+	WKChargeSkillID   uint32
+	MorphID           uint16
+	SpiritClawSkillID uint32
+}
+
+func (bc *Buffs) SpawnPlayerData() SpawnPlayerBuffData {
+	data := SpawnPlayerBuffData{
+		SpeedBuff:  1,
+		ComboCount: 1,
+	}
+
+	for _, buff := range bc.Entities() {
+		if buff == nil {
+			continue
+		}
+		values := buff.GetValues()
+		if values == nil {
+			continue
+		}
+		for flag, value := range values {
+			idx := flag.Position - 1
+			if idx < 0 || idx >= constant.MaxBuffFlag {
+				continue
+			}
+			if constant.IsTargetStatFlag(flag) {
+				data.BuffStates[idx] |= flag.Mask
+			}
+			switch flag {
+			case constant.BuffFlagSpeed:
+				data.SpeedBuff = uint8(value)
+			case constant.BuffFlagCombo:
+				data.ComboCount = uint8(value)
+			case constant.BuffFlagMorph:
+				data.MorphID = uint16(value)
+			}
+		}
+		switch typed := buff.(type) {
+		case *SkillBuff:
+			for _, flag := range typed.GetFlags() {
+				switch flag {
+				case constant.BuffFlagWkCharge:
+					data.WKChargeSkillID = typed.Wz.ID
+				case constant.BuffFlagSpiritClaw:
+					data.SpiritClawSkillID = typed.Wz.ID
+				}
+			}
+		}
+	}
+
+	return data
+}

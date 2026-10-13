@@ -42,7 +42,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 	}
 
 	if wzConsume.MonsterBook {
-		ch.RegisterCard(wzConsume.ID)
+		ch.MonsterBook.Register(wzConsume.ID)
 	}
 
 	if applyWZ {

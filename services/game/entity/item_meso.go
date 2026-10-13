@@ -80,3 +80,11 @@ func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType 
 	}
 	return m
 }
+
+func (meso *Meso) inArea(area types.Rect[int32]) bool {
+	if meso.GetFieldPlacement() == nil {
+		return false
+	}
+	pos := meso.GetPosition()
+	return area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
+}

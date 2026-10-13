@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"slices"
 	"time"
 
@@ -14,11 +15,10 @@ import (
 )
 
 func (inv *Inventory) AddMeso(amount int32) {
-	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
-	if ch.validateMesoExchange(0, amount) != ExchangeOK {
+	if inv.validateMeso(0, amount) != ExchangeOK {
 		return
 	}
 	inv.addMesoUnchecked(amount)
@@ -40,11 +40,10 @@ func (inv *Inventory) addMesoUnchecked(amount int32) {
 }
 
 func (inv *Inventory) RemoveMeso(amount int32) bool {
-	ch := inv.owner
 	if amount <= 0 {
 		return false
 	}
-	if ch.validateMesoExchange(amount, 0) != ExchangeOK {
+	if inv.validateMeso(amount, 0) != ExchangeOK {
 		return false
 	}
 	inv.removeMesoUnchecked(amount)
@@ -398,11 +397,10 @@ func (ch *Character) NotifyItemGained(itemID uint32) {
 }
 
 func (inv *Inventory) GainMeso(amount int32) {
-	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
-	if ch.validateMesoExchange(0, amount) != ExchangeOK {
+	if inv.validateMeso(0, amount) != ExchangeOK {
 		return
 	}
 	inv.gainMesoUnchecked(amount)
@@ -564,4 +562,21 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		ch.Mount.changeEquipment(parts)
 	}
 	return nil
+}
+
+func (inv *Inventory) validateMeso(costMeso, rewardMeso int32) ExchangeResult {
+	if costMeso < 0 || rewardMeso < 0 {
+		return ExchangeLackCost
+	}
+	if costMeso == 0 && rewardMeso == 0 {
+		return ExchangeOK
+	}
+	if inv.Meso < costMeso {
+		return ExchangeLackCost
+	}
+	after := inv.Meso - costMeso
+	if rewardMeso > math.MaxInt32-after {
+		return ExchangeLackCapacity
+	}
+	return ExchangeOK
 }

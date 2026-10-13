@@ -1683,7 +1683,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			switch scope {
 			case constant.MessageScopeMap:
-				ch.MapMessage(msgType, text)
+				if m := ch.GetMap(); m != nil {
+					m.MapMessage(msgType, text)
+				}
 			case constant.MessageScopeChannel:
 				if ch.GameWorld != nil {
 					ch.GameWorld.BroadcastNotice(msgType, text, 0, false)
@@ -3161,7 +3163,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			for range L.OptInt(3, 1) {
-				ch.RegisterCard(cardID)
+				ch.MonsterBook.Register(cardID)
 			}
 			L.Push(lua.LTrue)
 			return 1
@@ -3173,7 +3175,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.ResetMonsterBook()
+			ch.MonsterBook.Reset()
 			return 0
 		},
 		"reset_teleport_stones": func(L *lua.LState) int {

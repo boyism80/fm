@@ -492,3 +492,16 @@ func (qp *Quest) SetRecordExField(key, value string) bool {
 	}
 	return true
 }
+
+func (qc *Quests) NeedsItem(questID uint32, itemID uint32) bool {
+	qp := qc.Get(questID)
+	if !qp.IsStarted() {
+		return false
+	}
+	for _, act := range qp.Wz.Complete.Actions.Item {
+		if act.ItemID == itemID && act.Count < 0 {
+			return !qc.owner.Inventory.HasItemCount(itemID, uint16(-act.Count))
+		}
+	}
+	return true
+}

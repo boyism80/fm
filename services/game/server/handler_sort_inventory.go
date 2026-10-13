@@ -36,8 +36,8 @@ func (h *SortInventory) Handle(ctx *core.ClientContext, req *request.SortInvento
 		return nil
 	}
 
-	character.MergeItems(req.InventoryType)
-	character.SortItems(req.InventoryType)
+	character.Inventory.Merge(req.InventoryType)
+	character.Inventory.Sort(req.InventoryType)
 
 	character.Listener.OnEndSortInventory(character, req.InventoryType)
 	character.Listener.OnUpdateStats(character, nil, true)

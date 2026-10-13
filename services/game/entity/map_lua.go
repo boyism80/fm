@@ -816,7 +816,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			message := L.CheckString(2)
-			mapInstance.MapMessage(message)
+			mapInstance.MapMessage(constant.MsgPinkText, message)
 			return 0
 		},
 		"weather": func(L *lua.LState) int {

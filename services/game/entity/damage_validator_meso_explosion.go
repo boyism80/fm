@@ -89,7 +89,7 @@ func (v *MesoExplosionValidator) amounts(oids []uint32) ([]int32, error) {
 	amounts := make([]int32, 0, len(oids))
 	for _, oid := range oids {
 		meso, ok := items[oid].(*Meso)
-		if !ok || meso.Count <= 0 || seen[oid] || !v.ch.canExplode(meso, area) {
+		if !ok || meso.Count <= 0 || seen[oid] || !meso.inArea(area) {
 			return nil, fmt.Errorf("invalid explosion meso %d", oid)
 		}
 		seen[oid] = true

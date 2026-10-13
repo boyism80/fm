@@ -103,3 +103,23 @@ func (d *Debuffs) DiseaseMask() [4]uint32 {
 	}
 	return mask
 }
+
+// Returns false when the mob skill is not a disease, so the caller can fall back to a dispel.
+func (d *Debuffs) GiveMobSkill(skillID uint32, skillLevel uint8) bool {
+	mobSkill := d.owner.GameWorld.GetResources().GetMobSkill(skillID, skillLevel)
+	if mobSkill == nil {
+		return false
+	}
+	for _, flag := range constant.AllDebuffFlags() {
+		if flag.DiseaseSkillID != uint16(skillID) {
+			continue
+		}
+		duration := time.Duration(mobSkill.DurationMs) * time.Millisecond
+		if duration <= 0 {
+			duration = 5 * time.Second
+		}
+		d.Give(flag, duration, int16(mobSkill.X), uint16(skillID), uint16(skillLevel))
+		return true
+	}
+	return false
+}
