@@ -27,6 +27,7 @@ local RING = { propose = 0, answer = 2, invite = 5, wishlist = 9 }
 local ENGAGE = { engaged = 11, married = 12, divorced = 14, reserved = 16 }
 local GIFT_MODE = { give = 6, receive = 7, close = 8, open_give = 9, open_receive = 10, given = 11, give_failed = 13, received = 15, receive_fail = 16 }
 local SETTLE_WAIT_MS = 40000
+local REPLY_DELAY_MS = 6000
 local DUEY = { send = 3, receive = 5, delete = 6, close = 8 }
 local ETC = 4
 
@@ -820,7 +821,7 @@ local function reservation_unknown(ctx, mode)
 		return false
 	end
 	if mode == "delay" then
-		if fault.rpc_delay(groom, "ReserveWedding", 6000) == false then
+		if fault.rpc_delay(groom, "ReserveWedding", REPLY_DELAY_MS) == false then
 			return ctx:fail("ReserveWedding 지연 주입 실패")
 		end
 		groom:send(req.dialog { dialog_type = DIALOG.normal, next = true })
@@ -887,29 +888,30 @@ local function reservation_not_sent(ctx)
 	return reserved(ctx, groom, false, "환불 뒤")
 end
 
-local function late_reservation_after_abort(ctx)
-	local groom, bride = ctx:bot(0), ctx:bot(1)
+-- A script still waiting for the reply keeps the character on this channel, so the move waits for it.
+local function reservation_delayed(ctx)
+	local groom = ctx:bot(0)
 	if reservation_unknown(ctx, "delay") == false then
 		return false
 	end
-	local moved = groom:transfer(1)
-	fault.rpc_delay(bride, "ReserveWedding", 0)
-	if moved == false then
+	ctx:sleep(REPLY_DELAY_MS + 1500)
+	groom:dialog(false)
+	fault.rpc_delay(groom, "ReserveWedding", 0)
+	if groom:transfer(1) == false then
 		return ctx:fail("채널 이동 실패")
 	end
-	if wait_count(ctx, groom, TICKET, 1, "재접속 중단으로 티켓 환불") == false then
+	ctx:sleep(1000)
+	if holds(ctx, groom, TICKET, 0, "늦은 응답으로 예약") == false then
 		return false
 	end
-
-	ctx:sleep(8000)
 	if groom:transfer(0) == false then
 		return ctx:fail("원래 채널 복귀 실패")
 	end
 	ctx:sleep(1000)
-	if holds(ctx, groom, TICKET, 1, "복귀 뒤 (중복 환불 없음)") == false then
+	if holds(ctx, groom, TICKET, 0, "채널 이동 후 (중복 환불 없음)") == false then
 		return false
 	end
-	return reserved(ctx, groom, false, "중단한 뒤")
+	return reserved(ctx, groom, true, "늦은 응답 후")
 end
 
 local function cleanup(ctx)
@@ -937,7 +939,7 @@ test_suite {
 		reservation_lost_timer,
 		reservation_lost_relogin,
 		reservation_not_sent,
-		late_reservation_after_abort,
+		reservation_delayed,
 		cleanup,
 	},
 }
