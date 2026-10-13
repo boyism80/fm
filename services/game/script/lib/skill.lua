@@ -139,13 +139,14 @@ end
 
 M.apply_resurrection = function(me, skill)
 	combat.for_each_near_party_member(me, skill, function(ch)
+		if ch:is_alive() then
+			return
+		end
 		ch:stance(0)
 		ch:hp(ch:max_hp())
 		ch:mp(ch:max_mp())
-		if ch ~= me then
-			ch:show_skill_effect(skill, SkillEffectType.Affected)
-		end
-	end, { allow_dead = true })
+		ch:show_skill_effect(skill, SkillEffectType.Affected)
+	end, { allow_dead = true, exclude_caster = true })
 end
 
 local archer_puppet_offset_x = 180

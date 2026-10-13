@@ -275,8 +275,16 @@ M.for_each_near_party_member = function(me, skill, callback, opts)
 		return
 	end
 	opts = opts or {}
+	local allow_dead = opts.allow_dead == true
 	local party = me:party()
 	if party == nil then
+		if opts.exclude_caster then
+			return
+		end
+		if not allow_dead and not me:is_alive() then
+			return
+		end
+		callback(me)
 		return
 	end
 	local id_set = {}
@@ -288,7 +296,6 @@ M.for_each_near_party_member = function(me, skill, callback, opts)
 	if opts.exclude_caster then
 		id_set[me:id()] = nil
 	end
-	local allow_dead = opts.allow_dead == true
 	M.for_each_character_in_skill_area(me, skill, function(ch)
 		if ch == nil then
 			return

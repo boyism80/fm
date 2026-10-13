@@ -6,6 +6,7 @@ local STONE_GOLEM = 5130101
 local MAGIC_ROCK = 4006000
 local MYSTIC_DOOR = 2311002
 local GM_HOLY_SYMBOL = 9001002
+local HOLY_SYMBOL = 2311003
 local SHADOW_WEB = 4111003
 local SNAIL = 100100
 local CLAW = 1472000
@@ -142,6 +143,35 @@ local function gm_holy_symbol(ctx)
 		string.format("혼자 받은 GM 홀리 심볼 경험치가 145%%가 아님: %d -> %d", base, boosted))
 end
 
+local function solo_holy_symbol(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, 70, PRIEST, "-") == false then
+		return false
+	end
+	if learn(ctx, bot, HOLY_SYMBOL) == false then
+		return false
+	end
+	if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+		return ctx:fail("마력 설정 실패")
+	end
+	if bot:instance_move(HUNTING_GROUND) == false then
+		return ctx:fail("사냥터 이동 실패")
+	end
+
+	local base = kill_exp(ctx, bot)
+	if base == nil then
+		return false
+	end
+	if cast(ctx, bot, HOLY_SYMBOL) == false then
+		return false
+	end
+	local boosted = kill_exp(ctx, bot)
+	if boosted == nil then
+		return false
+	end
+	return check(ctx, base > 0 and boosted > base, string.format("파티 없이 쓴 홀리 심볼이 시전자에게 걸리지 않음: %d -> %d", base, boosted))
+end
+
 local function spawn_golem(ctx, bot, x, y)
 	if pq.move(bot, x, y) == false then
 		ctx:fail("스톤골렘 생성 위치로 이동 실패")
@@ -273,12 +303,13 @@ local function ranged_ammo(ctx)
 end
 
 test_suite {
-	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·스킬 범위 방향·원거리 탄 소모",
+	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모",
 	bot_count = 2,
 
 	scenarios = {
 		mystic_door,
 		gm_holy_symbol,
+		solo_holy_symbol,
 		shadow_web_front,
 		ranged_ammo,
 	},
