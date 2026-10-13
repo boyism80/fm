@@ -17,6 +17,16 @@ func (a *MagicAttackInfo) Deserialize(sr *stream.StreamReader) {
 	a.Position = types.Vector2[int16]{X: sr.Read16(), Y: sr.Read16()}
 }
 
+func (a *MagicAttackInfo) Serialize(sw *stream.StreamWriter) error {
+	info := AttackInfo{AttackHeader: a.AttackHeader, Damages: a.Damages}
+	if err := info.Serialize(sw); err != nil {
+		return err
+	}
+	sw.Write16(a.Position.X)
+	sw.Write16(a.Position.Y)
+	return nil
+}
+
 func (a MagicAttackInfo) ToAttackInfo() AttackInfo {
 	return AttackInfo{
 		AttackHeader: a.AttackHeader,

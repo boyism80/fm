@@ -702,6 +702,22 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(b.Send(pkt) == nil))
 			return 1
 		},
+		"magic_attack": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pkt, ok := a.attackPacket(b, uint32(L.CheckInt(2)), uint32(L.OptInt(3, 0)), uint8(L.OptInt(4, 1)))
+			if !ok {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			pkt.Skill = uint32(L.CheckInt(5))
+			magic := &request.MagicAttack{MagicAttackInfo: dto.MagicAttackInfo{
+				AttackHeader: pkt.AttackHeader,
+				Damages:      pkt.Damages,
+				Position:     pkt.Position,
+			}}
+			L.Push(lua.LBool(b.Send(magic) == nil))
+			return 1
+		},
 		"energy_attack": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			pkt, ok := a.attackPacket(b, uint32(L.CheckInt(2)), uint32(L.OptInt(3, 0)), uint8(L.OptInt(4, 1)))

@@ -6,10 +6,13 @@ local SNAIL = 100100
 -- Self-destructs, and its attack reaches 110px for at most 145 damage.
 local BOMB = 5100002
 local STONE_GOLEM = 5130101
+local ZOMBIE_MUSHROOM = 2230101
+local CLERIC = 230
 local MARAUDER = 511
 local CORSAIR = 522
 local ENERGY_CHARGE = 5110001
 local HYPNOTIZE = 5221009
+local HEAL = 2301002
 local QUIET_MS = 1500
 
 local function setup(ctx, bot, level, class)
@@ -144,6 +147,40 @@ local function hypnotize_damage(ctx)
 	return true
 end
 
+local function heal_attack(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, 50, CLERIC) == false then
+		return false
+	end
+	if pq.command(bot, "/스킬레벨 " .. HEAL .. " 30", "스킬레벨 설정") == false then
+		return ctx:fail("힐 배우기 실패")
+	end
+	if pq.command(bot, "/전능 999", "전능 설정") == false then
+		return ctx:fail("스탯 설정 실패")
+	end
+	if pq.command(bot, "/마력바꾸기 30000", "마력 설정") == false then
+		return ctx:fail("마력 설정 실패")
+	end
+
+	local snail = spawn(ctx, bot, SNAIL, 1)
+	local zombie = spawn(ctx, bot, ZOMBIE_MUSHROOM, 1)
+	if snail == nil or zombie == nil then
+		return false
+	end
+	local function killed(oid)
+		bot:magic_attack(oid, 0, 1, HEAL)
+		return died(bot, oid, nil, QUIET_MS) ~= false
+	end
+
+	if killed(snail[1]) then
+		return ctx:fail("힐이 언데드가 아닌 몬스터를 때림")
+	end
+	if killed(zombie[1]) == false then
+		return ctx:fail("힐이 언데드 몬스터를 때리지 못함")
+	end
+	return true
+end
+
 local function energy_attack(ctx)
 	local bot = ctx:bot(0)
 	local observer = ctx:bot(1)
@@ -188,12 +225,13 @@ local function energy_attack(ctx)
 end
 
 test_suite {
-	name = "SpecialAttack: 몬스터 자폭·최면 피해·에너지 어택",
+	name = "SpecialAttack: 몬스터 자폭·최면 피해·힐 공격·에너지 어택",
 	bot_count = 2,
 
 	scenarios = {
 		monster_bomb,
 		hypnotize_damage,
+		heal_attack,
 		energy_attack,
 	},
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/services/game/constant"
 )
 
 type MagicValidator struct {
@@ -43,6 +44,15 @@ func (v *MagicValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPair, 
 	maxTargets, maxHits := a.limits()
 	if err := v.checkShape(info, maxTargets); err != nil {
 		return nil, err
+	}
+
+	if constant.SkillID(info.Skill) == constant.SkillHeal {
+		for _, ap := range info.Damages {
+			mob := v.ch.GetMap().GetMob(ap.OID)
+			if mob != nil && mob.IsAlive() && !mob.Wz.Undead {
+				return nil, fmt.Errorf("heal hit non-undead mob %d", ap.OID)
+			}
+		}
 	}
 
 	a.charge = info.Charge

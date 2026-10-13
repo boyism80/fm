@@ -12,7 +12,7 @@ type MagicAttack struct {
 func (*MagicAttack) Opcode() byte { return 0x1D }
 
 func (m *MagicAttack) Serialize(writer *stream.StreamWriter) error {
-	return nil
+	return m.MagicAttackInfo.Serialize(writer)
 }
 
 func (m *MagicAttack) Deserialize(reader *stream.StreamReader) {
