@@ -68,10 +68,24 @@ local function save_and_reload(ctx)
 		return ctx:fail("배우지 않은 스킬로 매크로가 바뀜: " .. describe(list))
 	end
 
+	if bot:send(req.skill_macro {
+		count = 1,
+		entries = { { name = "a\0b", shout = 0, skills = { POWER_STRIKE } } },
+	}) == false then
+		return ctx:fail("제어 문자 이름 매크로 요청 실패")
+	end
+	list = macros(ctx, bot, 1, "제어 문자 이름 저장 후")
+	if list == nil then
+		return false
+	end
+	if #list ~= 2 or list[1].name ~= "공격" then
+		return ctx:fail("제어 문자 이름으로 매크로가 바뀜: " .. describe(list))
+	end
+
 	if bot:send(req.skill_macro { count = 0, entries = {} }) == false then
 		return ctx:fail("매크로 비우기 요청 실패")
 	end
-	list = macros(ctx, bot, 1, "비운 후")
+	list = macros(ctx, bot, 0, "비운 후")
 	if list == nil then
 		return false
 	end

@@ -1,6 +1,6 @@
 package entity
 
-import "unicode/utf8"
+const skillMacroNameLimit = 30
 
 type SkillMacro struct {
 	Name   string
@@ -30,7 +30,7 @@ func (m *SkillMacros) Replace(entries []SkillMacro) bool {
 		return false
 	}
 	for _, entry := range entries {
-		if utf8.RuneCountInString(entry.Name) > 30 {
+		if !ClientText(entry.Name).fits(skillMacroNameLimit) {
 			return false
 		}
 		for _, skillID := range entry.Skills {

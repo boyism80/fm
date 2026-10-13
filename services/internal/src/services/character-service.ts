@@ -231,6 +231,24 @@ export class CharacterService {
         }
     }
 
+    // PostgreSQL text cannot hold NUL; one rejected write would stop the batch halfway.
+    private assertNoNul(value: unknown) {
+        if (typeof value === "string") {
+            if (value.includes("\u0000")) {
+                const err = new Error("text must not contain NUL") as Error & { code?: string };
+                err.code = "INVALID_PAYLOAD";
+                throw err;
+            }
+            return;
+        }
+        if (value === null || typeof value !== "object") {
+            return;
+        }
+        for (const child of Object.values(value)) {
+            this.assertNoNul(child);
+        }
+    }
+
     private validateCharacter(p: { name?: string }) {
         if (typeof p.name !== "string" || p.name.length > MAX_NAME_LEN) {
             const err = new Error(`name must be a string of length <= ${MAX_NAME_LEN}`) as Error & { code?: string };
@@ -274,6 +292,10 @@ export class CharacterService {
     async saveCharacters(entries: SaveCharacterEntry[]) {
         if (!entries || entries.length === 0) {
             return;
+        }
+
+        for (const entry of entries) {
+            this.assertNoNul(entry);
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
