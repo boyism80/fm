@@ -27,17 +27,16 @@ func getClassParent(class uint16) (parent uint16, ok bool) {
 
 func (ch *Character) ClassOf(classCode constant.ClassType) bool {
 	c := ch.Class
-	for c != 0 {
+	for {
 		if c == uint16(classCode) {
 			return true
 		}
-		var ok bool
-		c, ok = getClassParent(c)
+		parent, ok := getClassParent(c)
 		if !ok {
-			break
+			return false
 		}
+		c = parent
 	}
-	return c == uint16(classCode)
 }
 
 func (ch *Character) IsBeginner() bool {
