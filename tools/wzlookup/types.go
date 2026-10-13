@@ -72,8 +72,7 @@ type QuestAction struct {
 type QuestRewardItem struct {
 	ItemID     uint32 `yaml:"item_id"`
 	Count      int    `yaml:"count"`
-	Class      int    `yaml:"class,omitempty"`
-	ClassEx    int    `yaml:"class_ex,omitempty"`
+	Classes    []int  `yaml:"classes,omitempty"`
 	Gender     int    `yaml:"gender,omitempty"`
 	Period     int    `yaml:"period,omitempty"`
 	Prop       int    `yaml:"prop,omitempty"`

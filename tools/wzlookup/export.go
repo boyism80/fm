@@ -164,11 +164,11 @@ func exportQuestRequirements(r wz.QuestRequirements) []QuestRequirement {
 	if r.EndScript != "" {
 		out = append(out, QuestRequirement{Kind: "endscript", StrValue: r.EndScript})
 	}
-	if r.Start != "" {
-		out = append(out, QuestRequirement{Kind: "start", StrValue: r.Start})
+	if !r.Start.IsZero() {
+		out = append(out, QuestRequirement{Kind: "start", StrValue: r.Start.Format("2006010215")})
 	}
-	if r.End != "" {
-		out = append(out, QuestRequirement{Kind: "end", StrValue: r.End})
+	if !r.End.IsZero() {
+		out = append(out, QuestRequirement{Kind: "end", StrValue: r.End.Format("2006010215")})
 	}
 	if len(r.Info) > 0 {
 		out = append(out, QuestRequirement{Kind: "info", InfoStrings: r.Info})
@@ -214,8 +214,7 @@ func exportQuestActions(a wz.QuestActions) []QuestAction {
 			items = append(items, QuestRewardItem{
 				ItemID:     item.ItemID,
 				Count:      item.Count,
-				Class:      item.Class,
-				ClassEx:    item.ClassEx,
+				Classes:    item.Classes,
 				Gender:     item.Gender,
 				Period:     item.Period,
 				Prop:       int(item.Prop),
