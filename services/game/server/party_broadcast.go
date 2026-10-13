@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/asynkron/protoactor-go/actor"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/entity"
 )
@@ -86,19 +87,20 @@ func (pc *PartyCache) BroadcastMemberLeft(prev, current *entity.Party, targetCha
 		}
 	}
 
+	forChannel := int32(pc.gs.config.ChannelId)
 	for _, m := range oldMembers {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeave{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(pc.gs.config.ChannelId),
-			PartyID:     partyID,
-			TargetID:    targetCharacterID,
-			TargetName:  targetName,
-			LeaderID:    leaderID,
-			Members:     respMembers,
-			Expelled:    expelled,
+		pc.gs.GetDispatchSystem().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			if expelled {
+				ch.Listener.OnPartyUpdateExpel(ch, forChannel, partyID, targetCharacterID, targetName, leaderID, respMembers)
+				return
+			}
+			ch.Listener.OnPartyUpdateLeave(ch, forChannel, partyID, targetCharacterID, targetName, leaderID, respMembers)
 		})
 	}
 }
@@ -131,14 +133,16 @@ func (pc *PartyCache) BroadcastDisbanded(prev *entity.Party, leaderCharacterID u
 		}
 	}
 
+	partyID := prev.GetPartyId()
 	for _, m := range prev.GetMembers() {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateDisband{
-			CharacterID: m.GetCharacterId(),
-			PartyID:     prev.GetPartyId(),
-			LeaderID:    leaderCharacterID,
+		pc.gs.GetDispatchSystem().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnPartyUpdateDisband(ch, partyID, leaderCharacterID)
 		})
 	}
 }
@@ -151,10 +155,11 @@ func (pc *PartyCache) BroadcastLeaderChanged(party *entity.Party, newLeaderChara
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeaderChange{
-			CharacterID:          m.GetCharacterId(),
-			NewLeaderCharacterID: newLeaderCharacterID,
-			ByDisconnect:         disconnected,
+		pc.gs.GetDispatchSystem().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnPartyUpdateLeaderChange(ch, newLeaderCharacterID, disconnected)
 		})
 	}
 }
@@ -164,16 +169,18 @@ func (pc *PartyCache) BroadcastLogOnOff(party *entity.Party) {
 		return
 	}
 	respMembers := entity.PartyMembersToResponse(party.GetMembers())
+	forChannel := int32(pc.gs.config.ChannelId)
+	partyID := party.GetPartyId()
+	leaderID := party.GetLeaderCharacterId()
 	for _, m := range party.GetMembers() {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLogOnOff{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(pc.gs.config.ChannelId),
-			PartyID:     party.GetPartyId(),
-			LeaderID:    party.GetLeaderCharacterId(),
-			Members:     respMembers,
+		pc.gs.GetDispatchSystem().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnPartyUpdateLogOnOff(ch, forChannel, partyID, leaderID, respMembers)
 		})
 	}
 }

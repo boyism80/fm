@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/clock"
@@ -478,10 +479,11 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 	if h.gs.characterRuntime == nil || !h.gs.characterRuntime.Exists(leaderID) {
 		return
 	}
-	h.gs.Deliver(nil, leaderID, &g_actor.DeliverMessage{
-		CharacterID: leaderID,
-		MessageType: gameconst.MsgPinkText,
-		Message:     guildName + gameconst.AllianceInviteDeniedMessageSuffix,
+	h.gs.GetDispatchSystem().CallCharacter(leaderID, func(_ actor.Context, ch *entity.Character) {
+		if ch == nil {
+			return
+		}
+		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, guildName+gameconst.AllianceInviteDeniedMessageSuffix)
 	})
 }
 

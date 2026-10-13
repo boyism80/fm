@@ -6,7 +6,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
 
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type partyMqChat struct{ gs *GameServer }
@@ -61,11 +61,11 @@ func (h *partyMqChat) handlePartyMultiChat(gs *GameServer, memberID uint32, send
 		if cid == 0 || cid == senderCharacterID {
 			continue
 		}
-		gs.Deliver(nil, cid, &g_actor.DeliverMultiChat{
-			CharacterID: cid,
-			Mode:        mode,
-			SenderName:  senderName,
-			Message:     message,
+		gs.GetDispatchSystem().CallCharacter(cid, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnMultiChat(ch, mode, senderName, message)
 		})
 	}
 }

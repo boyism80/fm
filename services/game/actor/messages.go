@@ -5,8 +5,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
-	pconst "github.com/boyism80/fm/protocol/constant"
-	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
@@ -129,12 +127,6 @@ type SaveMapCharactersAck struct {
 	Err   string
 }
 
-type DeliverParcelArrived struct {
-	CharacterID uint32
-	SenderName  string
-	Quick       bool
-}
-
 type DeliverWhisper struct {
 	CharacterID uint32
 	Whisper     entity.Whisper
@@ -150,10 +142,6 @@ type DeliverFamily struct {
 	Family      *internal.Family
 }
 
-type DeliverNoteArrived struct {
-	CharacterID uint32
-}
-
 type DeliverMarriageChanged struct {
 	CharacterID uint32
 	Event       string
@@ -166,26 +154,6 @@ type DeliverSpouseMoved struct {
 	Reply       bool
 }
 
-type DeliverPartyInvite struct {
-	CharacterID uint32
-	PartyID     uint32
-	InviterName string
-	PartySearch bool
-}
-
-type DeliverMultiChat struct {
-	CharacterID uint32
-	Mode        pconst.MultiChatMode
-	SenderName  string
-	Message     string
-}
-
-type DeliverPartyStatusMessage struct {
-	CharacterID uint32
-	Code        pconst.PartyStatusCode
-	Name        string
-}
-
 type DeliverPartyUpdateJoin struct {
 	CharacterID     uint32
 	ForChannel      int32
@@ -194,45 +162,6 @@ type DeliverPartyUpdateJoin struct {
 	JoinName        string
 	LeaderID        uint32
 	Members         []response.PartyMemberStatus
-}
-
-type DeliverPartyUpdateLeave struct {
-	CharacterID uint32
-	ForChannel  int32
-	PartyID     uint32
-	TargetID    uint32
-	TargetName  string
-	LeaderID    uint32
-	Members     []response.PartyMemberStatus
-	Expelled    bool
-}
-
-type DeliverPartyUpdateDisband struct {
-	CharacterID uint32
-	PartyID     uint32
-	LeaderID    uint32
-}
-
-type DeliverPartyUpdateLeaderChange struct {
-	CharacterID          uint32
-	NewLeaderCharacterID uint32
-	ByDisconnect         bool
-}
-
-type DeliverPartyUpdateLogOnOff struct {
-	CharacterID uint32
-	ForChannel  int32
-	PartyID     uint32
-	LeaderID    uint32
-	Members     []response.PartyMemberStatus
-}
-
-type DeliverPartyUpdateSilent struct {
-	CharacterID uint32
-	ForChannel  int32
-	PartyID     uint32
-	LeaderID    uint32
-	Members     []response.PartyMemberStatus
 }
 
 type DeliverBuddyChannelUpdate struct {
@@ -247,195 +176,11 @@ type DeliverBuddyListUpdate struct {
 	Entries              []response.BuddyEntry
 }
 
-type DeliverBuddyAddRequest struct {
-	RecipientCharacterID uint32
-	FromCharacterID      uint32
-	FromName             string
-}
-
-type DeliverMessage struct {
-	CharacterID uint32
-	MessageType constant.ServerMessageType
-	Message     string
-}
-
 type DeliverGuildInvite struct {
 	CharacterID        uint32
 	InviterCharacterID uint32
 	GuildID            uint32
 	InviterName        string
-}
-
-type DeliverGuildNewMember struct {
-	CharacterID uint32
-	GuildID     uint32
-	Member      dto.GuildMemberStatus
-}
-
-type DeliverGuildLeaveSelf struct {
-	CharacterID uint32
-}
-
-type DeliverGuildExpelSelf struct {
-	CharacterID uint32
-	GuildID     uint32
-}
-
-type DeliverGuildMemberLeft struct {
-	CharacterID uint32
-	GuildID     uint32
-	TargetID    uint32
-	TargetName  string
-	WasExpelled bool
-}
-
-type DeliverGuildRankTitleChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	RankTitles  [5]string
-}
-
-type DeliverGuildMemberRankChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	TargetID    uint32
-	GuildRank   uint8
-}
-
-type DeliverGuildEmblemChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	LogoBG      uint16
-	LogoBGColor uint8
-	Logo        uint16
-	LogoColor   uint8
-}
-
-type DeliverGuildNoticeChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	Notice      string
-}
-
-type DeliverGuildCapacityChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	Capacity    uint8
-}
-
-type DeliverGuildGPChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	GP          uint32
-	Level       uint32
-	Amount      int32
-}
-
-type DeliverGuildRanking struct {
-	CharacterID uint32
-	NPCID       uint32
-	Entries     []dto.GuildRankingEntry
-}
-
-type DeliverGuildMemberOnlineChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	SubjectID   uint32
-	Online      bool
-}
-
-type DeliverGuildMemberFieldsChange struct {
-	CharacterID uint32
-	GuildID     uint32
-	SubjectID   uint32
-	Level       uint32
-	ClassID     uint32
-}
-
-type DeliverGuildDisbandSelf struct {
-	CharacterID uint32
-	GuildID     uint32
-}
-
-type DeliverGuildMessage struct {
-	CharacterID uint32
-	Code        pconst.GuildResponseCode
-}
-
-type DeliverAllianceMemberOnlineChange struct {
-	CharacterID uint32
-	AllianceID  uint32
-	GuildID     uint32
-	SubjectID   uint32
-	Online      bool
-}
-
-type DeliverAllianceMemberFieldsChange struct {
-	CharacterID uint32
-	AllianceID  uint32
-	GuildID     uint32
-	SubjectID   uint32
-	Level       uint32
-	ClassID     uint32
-}
-
-type DeliverAllianceCreate struct {
-	CharacterID      uint32
-	Info             *dto.AllianceInfo
-	Guilds           []*dto.GuildInfo
-	MembershipGuilds []dto.AllianceMembershipChangeGuild
-}
-
-type DeliverAllianceDisband struct {
-	CharacterID uint32
-	AllianceID  uint32
-}
-
-type DeliverAllianceInfoBroadcast struct {
-	CharacterID uint32
-	Info        *dto.AllianceInfo
-}
-
-type DeliverAllianceNoticeChanged struct {
-	CharacterID uint32
-	Info        *dto.AllianceInfo
-}
-
-type DeliverAllianceLeaderChanged struct {
-	CharacterID uint32
-	AllianceID  uint32
-	OldLeaderID uint32
-	NewLeaderID uint32
-	Info        *dto.AllianceInfo
-	Guilds      []*dto.GuildInfo
-}
-
-type DeliverAllianceMemberRankChanged struct {
-	CharacterID uint32
-	Info        *dto.AllianceInfo
-	Guilds      []*dto.GuildInfo
-}
-
-type DeliverAllianceGuildAdded struct {
-	CharacterID     uint32
-	Info            *dto.AllianceInfo
-	Guilds          []*dto.GuildInfo
-	NewGuildID      uint32
-	AddedGuild      *dto.GuildInfo
-	Members         []dto.AllianceGuildMemberRank
-	Joining         bool
-	MembershipGuild dto.AllianceMembershipChangeGuild
-	HasMembership   bool
-}
-
-type DeliverAllianceGuildLeft struct {
-	CharacterID    uint32
-	Info           *dto.AllianceInfo
-	RemovedGuildID uint32
-	RemovedGuild   *dto.GuildInfo
-	RemovedMembers []dto.AllianceGuildMemberRank
-	Expelled       bool
-	Leaving        bool
 }
 
 type DeliverAllianceInvite struct {

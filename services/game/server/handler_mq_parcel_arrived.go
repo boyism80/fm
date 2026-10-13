@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type parcelMqArrived struct{ gs *GameServer }
@@ -29,10 +29,11 @@ func (h *parcelMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverParcelArrived{
-		CharacterID: payload.CharacterID,
-		SenderName:  payload.SenderName,
-		Quick:       payload.Quick,
+	h.gs.GetDispatchSystem().CallCharacter(payload.CharacterID, func(_ actor.Context, ch *entity.Character) {
+		if ch == nil {
+			return
+		}
+		ch.Listener.OnDueyArrival(ch, payload.SenderName, payload.Quick, 1)
 	})
 	return nil
 }

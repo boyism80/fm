@@ -11,7 +11,6 @@ import (
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/entity"
 )
 
@@ -218,13 +217,11 @@ func (ac *AllianceCache) deliverMemberFieldsChange(allianceID uint32, subjectGui
 			if ac.gs.characterRuntime == nil || !ac.gs.characterRuntime.Exists(memberID) {
 				continue
 			}
-			ac.gs.Deliver(nil, memberID, &g_actor.DeliverAllianceMemberFieldsChange{
-				CharacterID: memberID,
-				AllianceID:  allianceID,
-				GuildID:     subjectGuildID,
-				SubjectID:   subjectID,
-				Level:       level,
-				ClassID:     classID,
+			ac.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+				if ch == nil {
+					return
+				}
+				ch.Listener.OnAllianceMemberFieldsChange(ch, allianceID, subjectGuildID, subjectID, level, classID)
 			})
 		}
 	}
@@ -257,12 +254,11 @@ func (ac *AllianceCache) DeliverMemberOnlineChange(allianceID uint32, subjectGui
 			if ac.gs.characterRuntime == nil || !ac.gs.characterRuntime.Exists(memberID) {
 				continue
 			}
-			ac.gs.Deliver(nil, memberID, &g_actor.DeliverAllianceMemberOnlineChange{
-				CharacterID: memberID,
-				AllianceID:  allianceID,
-				GuildID:     subjectGuildID,
-				SubjectID:   subjectID,
-				Online:      online,
+			ac.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+				if ch == nil {
+					return
+				}
+				ch.Listener.OnAllianceMemberOnlineChange(ch, allianceID, subjectGuildID, subjectID, online)
 			})
 		}
 	}

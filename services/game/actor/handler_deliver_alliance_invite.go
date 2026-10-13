@@ -3,6 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type DeliverAllianceInviteHandler struct{}
@@ -33,10 +34,11 @@ func (h *DeliverAllianceInviteHandler) Handle(ctx actor.Context, a *GameLogicAct
 		}
 	}
 	if !a.GameWorld.GetGuildSystem().TrySetAllianceInvite(msg.TargetGuildID, msg.AllianceID, msg.ExpiresAt) {
-		a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverMessage{
-			CharacterID: msg.InviterCharacterID,
-			MessageType: constant.MsgPinkText,
-			Message:     constant.GuildInviteTargetBusyMessage,
+		a.GameWorld.GetDispatchSystem().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *entity.Character) {
+			if inviter == nil {
+				return
+			}
+			inviter.Listener.OnMessage(inviter, constant.MsgPinkText, constant.GuildInviteTargetBusyMessage)
 		})
 		return
 	}

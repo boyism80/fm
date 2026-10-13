@@ -233,18 +233,19 @@ func (pc *PartyCache) DeliverPartySilent(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}
-	gs := pc.gs
 	respMembers := entity.PartyMembersToResponse(party.GetMembers())
+	forChannel := int32(pc.gs.config.ChannelId)
+	partyID := party.GetPartyId()
+	leaderID := party.GetLeaderCharacterId()
 	for _, m := range party.GetMembers() {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateSilent{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     party.GetPartyId(),
-			LeaderID:    party.GetLeaderCharacterId(),
-			Members:     respMembers,
+		pc.gs.GetDispatchSystem().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnPartyUpdateSilent(ch, forChannel, partyID, leaderID, respMembers)
 		})
 	}
 }
@@ -295,14 +296,15 @@ func (pc *PartyCache) sendPartySilentToCharacter(ch *entity.Character, party *en
 	if pc == nil || ch == nil || party == nil || pc.gs == nil {
 		return
 	}
-	gs := pc.gs
 	members := entity.PartyMembersToResponse(party.GetMembers())
-	gs.Deliver(nil, ch.GetID(), &g_actor.DeliverPartyUpdateSilent{
-		CharacterID: ch.GetID(),
-		ForChannel:  int32(gs.config.ChannelId),
-		PartyID:     party.GetPartyId(),
-		LeaderID:    party.GetLeaderCharacterId(),
-		Members:     members,
+	forChannel := int32(pc.gs.config.ChannelId)
+	partyID := party.GetPartyId()
+	leaderID := party.GetLeaderCharacterId()
+	pc.gs.GetDispatchSystem().CallCharacter(ch.GetID(), func(_ actor.Context, ch *entity.Character) {
+		if ch == nil {
+			return
+		}
+		ch.Listener.OnPartyUpdateSilent(ch, forChannel, partyID, leaderID, members)
 	})
 }
 

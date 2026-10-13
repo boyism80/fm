@@ -11,7 +11,6 @@ import (
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 )
@@ -343,10 +342,11 @@ func (s guildSystem) ShowRankingAsync(ctx actor.Context, ch *entity.Character, n
 			})
 		}
 		// The character may have changed maps (and actors) while the RPC was in flight.
-		s.gs.Deliver(nil, charID, &g_actor.DeliverGuildRanking{
-			CharacterID: charID,
-			NPCID:       npcID,
-			Entries:     entries,
+		s.gs.GetDispatchSystem().CallCharacter(charID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildRanking(ch, npcID, entries)
 		})
 		return nil
 	}).OnError(func(err error) {

@@ -28,17 +28,20 @@ func (h *DeliverGuildInviteHandler) Handle(ctx actor.Context, a *GameLogicActor,
 	switch ch.Guild.Invite(msg.GuildID, msg.InviterName) {
 	case entity.ErrGuildAlreadyJoined:
 		if a.GameWorld != nil {
-			a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverGuildMessage{
-				CharacterID: msg.InviterCharacterID,
-				Code:        pconst.GuildResponseAlreadyInGuild,
+			a.GameWorld.GetDispatchSystem().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *entity.Character) {
+				if inviter == nil {
+					return
+				}
+				inviter.Listener.OnGuildMessage(inviter, pconst.GuildResponseAlreadyInGuild)
 			})
 		}
 	case entity.ErrGuildInviteBusy:
 		if a.GameWorld != nil {
-			a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverMessage{
-				CharacterID: msg.InviterCharacterID,
-				MessageType: constant.MsgPinkText,
-				Message:     constant.GuildInviteTargetBusyMessage,
+			a.GameWorld.GetDispatchSystem().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *entity.Character) {
+				if inviter == nil {
+					return
+				}
+				inviter.Listener.OnMessage(inviter, constant.MsgPinkText, constant.GuildInviteTargetBusyMessage)
 			})
 		}
 	}

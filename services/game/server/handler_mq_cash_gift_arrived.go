@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	gameconst "github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type cashGiftMqArrived struct{ gs *GameServer }
@@ -30,10 +30,12 @@ func (h *cashGiftMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverMessage{
-		CharacterID: payload.CharacterID,
-		MessageType: gameconst.MsgNotice,
-		Message:     fmt.Sprintf("%s님이 캐시샵 선물을 보냈습니다. 캐시샵 보관함을 확인하세요.", payload.SenderName),
+	message := fmt.Sprintf("%s님이 캐시샵 선물을 보냈습니다. 캐시샵 보관함을 확인하세요.", payload.SenderName)
+	h.gs.GetDispatchSystem().CallCharacter(payload.CharacterID, func(_ actor.Context, ch *entity.Character) {
+		if ch == nil {
+			return
+		}
+		ch.Listener.OnMessage(ch, gameconst.MsgNotice, message)
 	})
 	return nil
 }

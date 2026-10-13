@@ -6,7 +6,6 @@ import (
 	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 )
@@ -51,10 +50,11 @@ func (gc *GuildCache) BroadcastNoticeChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	notice := g.Notice
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildNoticeChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			Notice:      notice,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildNoticeChange(ch, gid, notice)
 		})
 	})
 }
@@ -82,11 +82,11 @@ func (gc *GuildCache) BroadcastMemberRankChanged(guildID uint32, targetCharacter
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberRankChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			TargetID:    targetCharacterID,
-			GuildRank:   targetRank,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildMemberRankChange(ch, gid, targetCharacterID, targetRank)
 		})
 	})
 }
@@ -123,12 +123,11 @@ func (gc *GuildCache) BroadcastMemberFieldsChanged(guildID uint32, subjectID uin
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberFieldsChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			SubjectID:   subjectID,
-			Level:       level,
-			ClassID:     classID,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildMemberFieldsChange(ch, gid, subjectID, level, classID)
 		})
 	})
 }
@@ -143,11 +142,11 @@ func (gc *GuildCache) BroadcastMemberOnlineChanged(guildID uint32, subjectID uin
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, subjectID, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberOnlineChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			SubjectID:   subjectID,
-			Online:      online,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildMemberOnlineChange(ch, gid, subjectID, online)
 		})
 	})
 	allianceID, inAlliance := g.GetAllianceID()
@@ -162,15 +161,16 @@ func (gc *GuildCache) BroadcastEmblemChanged(guildID uint32) {
 		return
 	}
 	gid := g.GetGuildId()
-	logo := g.Logo
+	logoBG := uint16(g.Logo.LogoBG)
+	logoBGColor := uint8(g.Logo.LogoBGColor)
+	logo := uint16(g.Logo.Logo)
+	logoColor := uint8(g.Logo.LogoColor)
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildEmblemChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			LogoBG:      uint16(logo.LogoBG),
-			LogoBGColor: uint8(logo.LogoBGColor),
-			Logo:        uint16(logo.Logo),
-			LogoColor:   uint8(logo.LogoColor),
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildEmblemChange(ch, gid, logoBG, logoBGColor, logo, logoColor)
 		})
 	})
 }
@@ -183,10 +183,11 @@ func (gc *GuildCache) BroadcastCapacityChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	capacity := uint8(g.Capacity)
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildCapacityChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			Capacity:    capacity,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildCapacityChange(ch, gid, capacity)
 		})
 	})
 }
@@ -200,12 +201,11 @@ func (gc *GuildCache) BroadcastGPChanged(guildID uint32, amount int32) {
 	gp := g.GP
 	level := g.Level()
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildGPChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			GP:          gp,
-			Level:       level,
-			Amount:      amount,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildGPChange(ch, gid, gp, level, amount)
 		})
 	})
 }
@@ -218,10 +218,11 @@ func (gc *GuildCache) BroadcastRankTitlesChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	rankTitles := g.RankTitles
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildRankTitleChange{
-			CharacterID: memberID,
-			GuildID:     gid,
-			RankTitles:  rankTitles,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildRankTitleChange(ch, gid, rankTitles)
 		})
 	})
 }
@@ -249,10 +250,11 @@ func (gc *GuildCache) BroadcastMemberJoined(guildID uint32, joinerCharacterID ui
 	}
 	gid := g.GetGuildId()
 	gc.forEachOnlineGuildMember(g, joinerCharacterID, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildNewMember{
-			CharacterID: memberID,
-			GuildID:     gid,
-			Member:      joinerStatus,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildNewMember(ch, gid, joinerStatus)
 		})
 	})
 }
@@ -283,13 +285,18 @@ func (gc *GuildCache) BroadcastMemberLeft(prevGuild *entity.Guild, leftCharacter
 		}
 		if memberID == leftCharacterID {
 			if expelled {
-				gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildExpelSelf{
-					CharacterID: memberID,
-					GuildID:     guildID,
+				gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+					if ch == nil {
+						return
+					}
+					ch.Listener.OnGuildExpelledSelf(ch, guildID)
 				})
 			} else {
-				gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildLeaveSelf{
-					CharacterID: memberID,
+				gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+					if ch == nil {
+						return
+					}
+					ch.Listener.OnGuildLeaveSelf(ch)
 				})
 			}
 			continue
@@ -297,12 +304,11 @@ func (gc *GuildCache) BroadcastMemberLeft(prevGuild *entity.Guild, leftCharacter
 		if gc.gs == nil || gc.gs.characterRuntime == nil || !gc.gs.characterRuntime.Exists(memberID) {
 			continue
 		}
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildMemberLeft{
-			CharacterID: memberID,
-			GuildID:     guildID,
-			TargetID:    leftCharacterID,
-			TargetName:  leftName,
-			WasExpelled: expelled,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildMemberLeft(ch, guildID, leftCharacterID, leftName, expelled)
 		})
 	}
 }
@@ -323,9 +329,11 @@ func (gc *GuildCache) BroadcastDisbanded(prevGuild *entity.Guild, memberCharacte
 		if gc.gs == nil || gc.gs.characterRuntime == nil || !gc.gs.characterRuntime.Exists(memberID) {
 			continue
 		}
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverGuildDisbandSelf{
-			CharacterID: memberID,
-			GuildID:     guildID,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnGuildDisbandSelf(ch, guildID)
 		})
 	}
 }
@@ -336,10 +344,11 @@ func (gc *GuildCache) BroadcastMessage(guildID uint32, messageType constant.Serv
 		return
 	}
 	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverMessage{
-			CharacterID: memberID,
-			MessageType: messageType,
-			Message:     message,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnMessage(ch, messageType, message)
 		})
 	})
 }
@@ -354,11 +363,11 @@ func (gc *GuildCache) BroadcastMultiChat(guildID uint32, senderCharacterID uint3
 	}
 	mode := pconst.MultiChatModeGuild
 	gc.forEachOnlineGuildMember(g, senderCharacterID, func(memberID uint32) {
-		gc.gs.Deliver(nil, memberID, &g_actor.DeliverMultiChat{
-			CharacterID: memberID,
-			Mode:        mode,
-			SenderName:  senderName,
-			Message:     message,
+		gc.gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			if ch == nil {
+				return
+			}
+			ch.Listener.OnMultiChat(ch, mode, senderName, message)
 		})
 	})
 }

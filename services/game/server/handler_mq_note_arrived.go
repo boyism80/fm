@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type noteMqArrived struct{ gs *GameServer }
@@ -27,8 +27,11 @@ func (h *noteMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverNoteArrived{
-		CharacterID: payload.CharacterID,
+	h.gs.GetDispatchSystem().CallCharacter(payload.CharacterID, func(_ actor.Context, ch *entity.Character) {
+		if ch == nil || ch.LoggedOut() {
+			return
+		}
+		ch.Listener.OnNoteArrived(ch)
 	})
 	return nil
 }
