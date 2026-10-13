@@ -687,6 +687,9 @@ func (m *Mob) SelfDestruct(attacker *Character) bool {
 	return m.onDead(attacker, constant.MobDieAnimationType(m.Wz.SelfDestructionAction), false)
 }
 
+// Mob bodies have no hitbox in WZ, so a body attack reaches only targets this close.
+const mobTouchRange int64 = 100
+
 func (m *Mob) canAttack(target *Mob, damage uint32) bool {
 	if !m.IsAlive() || !target.IsAlive() {
 		return false
@@ -736,7 +739,15 @@ func (m *Mob) canAttack(target *Mob, damage uint32) bool {
 			}
 		}
 	}
-	return false
+
+	if m.Wz.BodyAttack == 0 || dx*dx+dy*dy > mobTouchRange*mobTouchRange {
+		return false
+	}
+	if target.Wz.Invincible || target.Buffs.Has(constant.MobBuffWeaponImmunity) || target.Buffs.Has(constant.MobBuffDamageImmunity) {
+		return false
+	}
+	maxDamage := m.Wz.PADamage + int(m.Buffs.GetValue(constant.MobBuffWatk)) + int(m.Buffs.GetValue(constant.MobBuffWeaponAttackUp))
+	return maxDamage > 0 && uint64(damage) <= uint64(maxDamage)
 }
 
 func (m *Mob) SpawnRevives(reviveIDs []uint32, pos types.Point[int16], spawnType constant.MobSpawnType, link uint32) map[uint32][]*Mob {

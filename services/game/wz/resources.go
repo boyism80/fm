@@ -501,6 +501,18 @@ func NewResources(wzPath string) *Resources {
 		log.Fatal(err)
 		return nil
 	}
+	for _, mob := range mobs {
+		if mob.Link == "" || len(mob.Attacks) > 0 {
+			continue
+		}
+		link, err := strconv.ParseUint(mob.Link, 10, 32)
+		target, ok := mobs[uint32(link)]
+		if err != nil || !ok || target.Link != "" {
+			log.Printf("mob %d links to missing or linked mob %s", mob.ID, mob.Link)
+			continue
+		}
+		mob.Attacks = target.Attacks
+	}
 
 	err = loadResourceFiles(filepath.Join(wzPath, "Item.wz", "Consume"),
 		workerCount,
