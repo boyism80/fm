@@ -224,12 +224,14 @@ export class FamilyService {
 
     // Reputation goes to whoever was senior when it was earned, even if they have
     // left since. Rows are updated in id order so two saves cannot deadlock.
+    // Saves of one junior run one at a time, or two of them could both pay the same credit delta.
     async progress(world: number, character: CharacterModel) {
         const reputation = character.familyReputation ?? {};
         const ids = [character.characterId, ...Object.keys(reputation).map(Number)]
             .filter((id, i, all) => all.indexOf(id) === i)
             .sort((a, b) => a - b);
         const receivers = await this.internalContext.withPgGlobalTransaction(world, async tx => {
+            await tx.query("SELECT pg_advisory_xact_lock($1, $2)", [0x66616d69, character.characterId]);
             const credited: number[] = [];
             for (const id of ids) {
                 if (id === character.characterId) {

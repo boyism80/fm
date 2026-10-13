@@ -261,7 +261,6 @@ export class SessionGrpcController {
             this.unsettledRequestRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
         ]);
         const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
-        await this.familyService.progress(worldId, row);
         const family = await this.familyService.load(worldId, row);
         const notes = await this.socialService.listNotes(worldId, characterId);
         return {
