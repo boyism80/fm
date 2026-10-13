@@ -4,12 +4,23 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
+
+type Hit struct {
+	Type       constant.IncomingHitType
+	Damage     int32
+	MobOID     uint32
+	SkillID    uint32
+	SkillLevel uint8
+	Reflect    uint8
+}
 
 // Attack validates the reported hits before skill costs and server attack hooks.
 func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() bool, attacking func()) (bool, error) {
@@ -242,6 +253,93 @@ func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
 		Right:  reach,
 		Bottom: max(levelData.LT.Y, levelData.RB.Y) + mesoExplosionMargin,
 	}.AtOrigin(origin), true
+}
+
+func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
+	damage := int32(0)
+	if hit.Damage == -1 && hit.Type == constant.IncomingHitCollide {
+		ch.block(actx, hit)
+	} else {
+		damage = ch.hitDamage(hit)
+	}
+
+	if ch.Invincible {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{}, true)
+		return
+	}
+	ch.TakeDamage(damage)
+}
+
+func (ch *Character) hitDamage(hit Hit) int32 {
+	m := ch.GetMap()
+	if m == nil {
+		return hit.Damage
+	}
+	var mob *Mob
+	if hit.MobOID != 0 {
+		mob = m.GetMob(hit.MobOID)
+	}
+	if mob != nil && mob.Fake {
+		return 0
+	}
+	root := m.GetLuaRoot()
+	if root == nil {
+		return hit.Damage
+	}
+
+	var attackerArg interface{} = lua.LNil
+	if mob != nil {
+		attackerArg = mob
+	}
+	var skillArg interface{} = lua.LNil
+	if hit.SkillID != 0 {
+		if model := ch.GameWorld.GetResources().GetSkill(hit.SkillID); model != nil {
+			skillArg = NewSkillEntry(ch, model, int(hit.SkillLevel), 0)
+		}
+	}
+	params := root.NewTable()
+	params.RawSetString("hit_type", lua.LNumber(int32(hit.Type)))
+	params.RawSetString("reflect_ratio", lua.LNumber(int32(hit.Reflect)))
+
+	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
+	if err != nil {
+		log.Printf("Failed to call script on_damaged: %v", err)
+		return hit.Damage
+	}
+	ret, err := luax.Call(thread, "on_damaged", ch, attackerArg, skillArg, hit.Damage, params)
+	if err != nil {
+		log.Printf("Failed to call script on_damaged: %v", err)
+		return hit.Damage
+	}
+	if ret == nil || ret.Type() != lua.LTNumber {
+		return hit.Damage
+	}
+	return max(int32(lua.LVAsNumber(ret)), 0)
+}
+
+func (ch *Character) block(actx actor.Context, hit Hit) {
+	m := ch.GetMap()
+	if m == nil {
+		return
+	}
+	root := m.GetLuaRoot()
+	if root == nil {
+		return
+	}
+	var attackerArg interface{} = lua.LNil
+	if hit.MobOID != 0 {
+		if mob := m.GetMob(hit.MobOID); mob != nil {
+			attackerArg = mob
+		}
+	}
+	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
+	if err != nil {
+		log.Printf("Failed to call script on_blocked: %v", err)
+		return
+	}
+	luax.CallAsync(actx, root, thread, "on_blocked", ch, attackerArg).OnError(func(err error) {
+		log.Printf("Failed to call script on_blocked: %v", err)
+	})
 }
 
 func (ch *Character) TakeDamage(damage int32) {
