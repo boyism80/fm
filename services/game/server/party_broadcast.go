@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/protocol/response"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/entity"
 )
@@ -24,7 +25,7 @@ func (pc *PartyCache) BroadcastMemberJoined(party *entity.Party, joinedCharacter
 	if joinName == "" {
 		return
 	}
-	respMembers := entity.PartyMembersToResponse(members)
+	respMembers := party.MembersToResponse()
 	for _, m := range members {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
@@ -58,16 +59,15 @@ func (pc *PartyCache) BroadcastMemberLeft(prev, current *entity.Party, targetCha
 	}
 	partyID := prev.GetPartyId()
 	leaderID := prev.GetLeaderCharacterId()
-	var members []*entity.PartyMember
+	respMembers := []response.PartyMemberStatus{}
 	if current != nil {
 		partyID = current.GetPartyId()
 		leaderID = current.GetLeaderCharacterId()
-		members = current.GetMembers()
+		respMembers = current.MembersToResponse()
 	}
-	respMembers := entity.PartyMembersToResponse(members)
 
 	if pc.gs.characterRuntime != nil {
-		oldIDs := entity.PartyMemberCharacterIDs(oldMembers)
+		oldIDs := prev.MemberCharacterIDs()
 		if root := pc.gs.GetRootContext(); root != nil {
 			seen := make(map[string]struct{})
 			for _, cid := range oldIDs {
@@ -111,7 +111,7 @@ func (pc *PartyCache) BroadcastDisbanded(prev *entity.Party, leaderCharacterID u
 	}
 
 	if pc.gs.characterRuntime != nil {
-		formerIDs := entity.PartyMemberCharacterIDs(prev.GetMembers())
+		formerIDs := prev.MemberCharacterIDs()
 		if len(formerIDs) > 0 {
 			if root := pc.gs.GetRootContext(); root != nil {
 				seen := make(map[string]struct{})
@@ -168,7 +168,7 @@ func (pc *PartyCache) BroadcastLogOnOff(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}
-	respMembers := entity.PartyMembersToResponse(party.GetMembers())
+	respMembers := party.MembersToResponse()
 	forChannel := int32(pc.gs.config.ChannelId)
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()

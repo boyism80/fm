@@ -86,7 +86,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		if slot <= -100 || item == nil {
 			continue
 		}
-		e := ToEquipmentDTOFromCore(item.GetEquipmentCore())
+		e := item.GetEquipmentCore().ToEquipmentDTO()
 		if e == nil {
 			continue
 		}

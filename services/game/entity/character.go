@@ -280,15 +280,6 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	return mist
 }
 
-func (ch *Character) RemoveMist(mist *Mist) {
-	if mist == nil {
-		return
-	}
-	if m := mist.GetMap(); m != nil && mist.OID != 0 {
-		m.RemoveMist(mist.OID)
-	}
-}
-
 func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
 func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
 func (ch *Character) GetInvincible() bool { return ch.Invincible }

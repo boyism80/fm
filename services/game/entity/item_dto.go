@@ -74,25 +74,27 @@ func (pet *Pet) ToDTO() dto.Item {
 	}
 }
 
-func ToEquipmentDTOFromCore(core *EquipmentCore) *dto.Equipment {
-	if core == nil || core.Wz == nil {
+func (e *EquipmentCore) ToDTO() dto.Item { return e.ToEquipmentDTO() }
+
+func (e *EquipmentCore) ToEquipmentDTO() *dto.Equipment {
+	if e == nil || e.Wz == nil {
 		return nil
 	}
-	model, ok := core.Wz.(wz.Equipment)
+	model, ok := e.Wz.(wz.Equipment)
 	if !ok || model == nil {
 		return nil
 	}
 	ability := model.GetAbility()
-	b := core.BonusStats
+	b := e.BonusStats
 	if b == nil {
 		b = &EquipmentBonusStats{}
 	}
 	return &dto.Equipment{
 		ItemId:        model.GetID(),
-		UniqueId:      copyUint64Ptr(core.UniqueId),
-		Expiration:    core.Expiration,
-		EnhanceChance: core.EnhanceChance,
-		EnhanceCount:  core.EnhanceCount,
+		UniqueId:      copyUint64Ptr(e.UniqueId),
+		Expiration:    e.Expiration,
+		EnhanceChance: e.EnhanceChance,
+		EnhanceCount:  e.EnhanceCount,
 		Str:           uint16(util.ClampInt32(int32(ability.Str)+int32(b.Str), 0, 0xffff)),
 		Dex:           uint16(util.ClampInt32(int32(ability.Dex)+int32(b.Dex), 0, 0xffff)),
 		Int:           uint16(util.ClampInt32(int32(ability.Int)+int32(b.Int), 0, 0xffff)),
@@ -108,11 +110,8 @@ func ToEquipmentDTOFromCore(core *EquipmentCore) *dto.Equipment {
 		Hands:         uint16(util.ClampInt32(int32(ability.Hands)+int32(b.Hands), 0, 0xffff)),
 		Speed:         uint16(util.ClampInt32(int32(ability.Speed)+int32(b.Speed), 0, 0xffff)),
 		Jump:          uint16(util.ClampInt32(int32(ability.Jump)+int32(b.Jump), 0, 0xffff)),
-		OwnerName:     core.OwnerName,
-		Flag:          core.Flag,
-		SkillBonus:    uint8(core.SkillBonus),
+		OwnerName:     e.OwnerName,
+		Flag:          e.Flag,
+		SkillBonus:    uint8(e.SkillBonus),
 	}
 }
-
-func (e *EquipmentCore) ToDTO() dto.Item                { return ToEquipmentDTOFromCore(e) }
-func (e *EquipmentCore) ToEquipmentDTO() *dto.Equipment { return ToEquipmentDTOFromCore(e) }

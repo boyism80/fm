@@ -40,12 +40,12 @@ type Guild struct {
 	Members           []*GuildMember
 }
 
-func CloneAllianceInvites(src map[uint32]time.Time) map[uint32]time.Time {
-	if len(src) == 0 {
+func (g *Guild) CloneAllianceInvites() map[uint32]time.Time {
+	if len(g.AllianceInvites) == 0 {
 		return nil
 	}
-	out := make(map[uint32]time.Time, len(src))
-	for allianceID, expiresAt := range src {
+	out := make(map[uint32]time.Time, len(g.AllianceInvites))
+	for allianceID, expiresAt := range g.AllianceInvites {
 		out[allianceID] = expiresAt
 	}
 	return out
@@ -228,16 +228,16 @@ func (g *Guild) Clone() *Guild {
 		id := *g.AllianceID
 		out.AllianceID = &id
 	}
-	out.AllianceInvites = CloneAllianceInvites(g.AllianceInvites)
+	out.AllianceInvites = g.CloneAllianceInvites()
 	for _, m := range g.Members {
 		out.Members = append(out.Members, m.Clone())
 	}
 	return out
 }
 
-func GuildMemberCharacterIDs(members []*GuildMember) []uint32 {
-	out := make([]uint32, 0, len(members))
-	for _, m := range members {
+func (g *Guild) MemberCharacterIDs() []uint32 {
+	out := make([]uint32, 0, len(g.Members))
+	for _, m := range g.Members {
 		if m == nil || m.CharacterID == 0 {
 			continue
 		}

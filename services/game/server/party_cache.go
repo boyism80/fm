@@ -54,7 +54,7 @@ func (pc *PartyCache) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 		pc.mu.Lock()
 		var memberIDs []uint32
 		if party, ok := pc.parties[evt.PartyID]; ok && party != nil {
-			memberIDs = entity.PartyMemberCharacterIDs(party.GetMembers())
+			memberIDs = party.MemberCharacterIDs()
 		}
 		if len(memberIDs) > 0 {
 			delete(pc.parties, evt.PartyID)
@@ -121,7 +121,7 @@ func (pc *PartyCache) syncAfterFetch(evt PartyEventEnvelope) error {
 	if evt.EventType == "disbanded" {
 		var memberIDs []uint32
 		if party, ok := pc.parties[partyID]; ok && party != nil {
-			memberIDs = entity.PartyMemberCharacterIDs(party.GetMembers())
+			memberIDs = party.MemberCharacterIDs()
 		}
 		delete(pc.parties, partyID)
 		pc.ClearPartyMembers(memberIDs)
@@ -233,7 +233,7 @@ func (pc *PartyCache) DeliverPartySilent(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}
-	respMembers := entity.PartyMembersToResponse(party.GetMembers())
+	respMembers := party.MembersToResponse()
 	forChannel := int32(pc.gs.config.ChannelId)
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()
@@ -296,7 +296,7 @@ func (pc *PartyCache) sendPartySilentToCharacter(ch *entity.Character, party *en
 	if pc == nil || ch == nil || party == nil || pc.gs == nil {
 		return
 	}
-	members := entity.PartyMembersToResponse(party.GetMembers())
+	members := party.MembersToResponse()
 	forChannel := int32(pc.gs.config.ChannelId)
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()

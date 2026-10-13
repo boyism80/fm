@@ -61,14 +61,7 @@ func (d *Door) UsableBy(ch *Character) bool {
 	if d.SkillID != constant.SkillMysticDoor {
 		return false
 	}
-	if d.PartyID == nil {
-		return false
-	}
-	vParty := ch.Party.ID()
-	if vParty == nil {
-		return false
-	}
-	return *vParty == *d.PartyID
+	return ch.Party.Is(d.PartyID)
 }
 
 func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
@@ -85,12 +78,7 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	onFieldMap := vm == d.Field.Map
 	isOwner := viewer.GetID() == d.OwnerID
-	sameParty := false
-	if d.PartyID != nil {
-		if vid := viewer.Party.ID(); vid != nil && *vid == *d.PartyID {
-			sameParty = true
-		}
-	}
+	sameParty := viewer.Party.Is(d.PartyID)
 	if !onFieldMap && !isOwner && !sameParty {
 		return
 	}
@@ -107,8 +95,7 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 			Animated: false,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
-	vParty := viewer.Party.ID()
-	usePartyPortal := d.PartyID != nil && vParty != nil && (isOwner || *vParty == *d.PartyID)
+	usePartyPortal := d.PartyID != nil && viewer.Party.ID() != nil && (isOwner || sameParty)
 	if usePartyPortal {
 		viewer.Send(&response.PartyPortal{
 			TownMapID:   d.Return.Map.TemplateID(),

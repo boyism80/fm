@@ -292,7 +292,7 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
 	if ent == nil {
 		return
 	}
-	info := entity.GuildToDTO(ent)
+	info := ent.ToDTO()
 	if info == nil {
 		return
 	}
@@ -1855,8 +1855,7 @@ func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, rec
 		if recipient.GetMap() != mapInstance {
 			return
 		}
-		rPID := recipient.Party.ID()
-		if rPID == nil || *rPID != *partyIDPtr {
+		if !recipient.Party.Is(partyIDPtr) {
 			return
 		}
 		_ = recipient.Send(pkt, types.SEND_POLICY_ENCRYPT)
@@ -1867,8 +1866,7 @@ func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, rec
 		if !ok || peer == nil || peer.GetID() == ch.GetID() {
 			continue
 		}
-		pid := peer.Party.ID()
-		if pid == nil || *pid != *partyIDPtr {
+		if !peer.Party.Is(partyIDPtr) {
 			continue
 		}
 		_ = peer.Send(pkt, types.SEND_POLICY_ENCRYPT)

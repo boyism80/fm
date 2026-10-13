@@ -89,7 +89,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
 					return nil
 				}
-				if cur := ch.Party.ID(); cur != nil && reply.PartyId != nil && *cur == *reply.PartyId {
+				if ch.Party.Is(reply.PartyId) {
 					ch.Party.SetID(nil)
 				}
 				return nil

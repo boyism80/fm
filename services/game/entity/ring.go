@@ -51,7 +51,7 @@ func (inv *Inventory) WornRing(rings []*Ring) *dto.Ring {
 				continue
 			}
 			if uniqueID := equipment.GetEquipmentCore().UniqueId; uniqueID != nil && *uniqueID == ring.RingId {
-				return RingToDTO(ring)
+				return ring.ToDTO()
 			}
 		}
 	}

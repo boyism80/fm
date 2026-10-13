@@ -86,7 +86,6 @@ func (e *EquipmentCore) SetFlags(flags constant.ItemFlag) {
 }
 func (e *EquipmentCore) Reduce(count uint16) uint16   { return 0 }
 func (e *EquipmentCore) Increase(count uint16) uint16 { return 0 }
-func (e *EquipmentCore) Clone(count uint16) Item      { return cloneEquipmentCore(e, count) }
 func (e *EquipmentCore) IsOverall() bool              { return e.GetModel().GetID()/10000 == 105 }
 
 type Equipment interface {
@@ -103,25 +102,25 @@ func copyUint64Ptr(p *uint64) *uint64 {
 	return &v
 }
 
-func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
+func (e *EquipmentCore) Clone(count uint16) Item {
 	var bonus *EquipmentBonusStats
-	if c.BonusStats != nil {
-		v := *c.BonusStats
+	if e.BonusStats != nil {
+		v := *e.BonusStats
 		bonus = &v
 	}
 	return &EquipmentCore{
 		ItemCore: &ItemCore{
 			FieldPlacement: nil,
 			Count:          count,
-			Wz:             c.Wz,
-			Expiration:     c.Expiration,
+			Wz:             e.Wz,
+			Expiration:     e.Expiration,
 		},
-		EnhanceChance: c.EnhanceChance,
-		EnhanceCount:  c.EnhanceCount,
-		OwnerName:     c.OwnerName,
-		Flag:          c.Flag,
-		SkillBonus:    c.SkillBonus,
-		UniqueId:      copyUint64Ptr(c.UniqueId),
+		EnhanceChance: e.EnhanceChance,
+		EnhanceCount:  e.EnhanceCount,
+		OwnerName:     e.OwnerName,
+		Flag:          e.Flag,
+		SkillBonus:    e.SkillBonus,
+		UniqueId:      copyUint64Ptr(e.UniqueId),
 		BonusStats:    bonus,
 	}
 }

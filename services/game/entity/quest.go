@@ -98,7 +98,7 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 	if qp.Wz.Meta.AutoPreComplete || qp.Wz.Meta.AutoComplete {
 		checkOpts.NpcID = nil
 	}
-	if !requirementsMet(qp.Wz.Complete.Requirements, qp.quests, qp, checkOpts) {
+	if !qp.quests.requirementsMet(qp.Wz.Complete.Requirements, qp, checkOpts) {
 		return ErrQuestNotCompletable
 	}
 	exchange := ch.Quests.buildPhaseExchange(qp.Wz.Complete.Actions, questActionOpts{

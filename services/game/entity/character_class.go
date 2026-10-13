@@ -40,20 +40,8 @@ func (ch *Character) ClassOf(classCode constant.ClassType) bool {
 	return c == uint16(classCode)
 }
 
-func (ch *Character) IsAdventurer() bool {
-	return ch.Class < 1000
-}
-
 func (ch *Character) IsBeginner() bool {
 	return ch.Class == 0
-}
-
-func (ch *Character) IsCannon() bool {
-	return ch.Class == 1 || ch.Class == 501 || (ch.Class >= 530 && ch.Class <= 532)
-}
-
-func (ch *Character) IsMagician() bool {
-	return ch.Class >= 200 && ch.Class < 300
 }
 
 func (ch *Character) ChangeClass(newClass uint16) {

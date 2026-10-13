@@ -2,10 +2,9 @@ package entity
 
 import "github.com/boyism80/fm/protocol/response"
 
-// PartyMembersToResponse builds S2C party member status rows from entity members.
-func PartyMembersToResponse(members []*PartyMember) []response.PartyMemberStatus {
-	out := make([]response.PartyMemberStatus, 0, len(members))
-	for _, m := range members {
+func (p *Party) MembersToResponse() []response.PartyMemberStatus {
+	out := make([]response.PartyMemberStatus, 0, len(p.Members))
+	for _, m := range p.Members {
 		if m == nil {
 			continue
 		}

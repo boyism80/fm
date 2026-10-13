@@ -37,14 +37,11 @@ func guildRankToUint32(rank internal.GuildMemberRank) uint32 {
 	}
 }
 
-func GuildMemberRankWire(rank internal.GuildMemberRank) uint8 {
-	return uint8(guildRankToUint32(rank))
+func (m *GuildMember) RankWire() uint8 {
+	return uint8(guildRankToUint32(m.Rank))
 }
 
-func GuildMemberToDTO(m *GuildMember) dto.GuildMemberStatus {
-	if m == nil {
-		return dto.GuildMemberStatus{}
-	}
+func (m *GuildMember) ToDTO() dto.GuildMemberStatus {
 	return dto.GuildMemberStatus{
 		CharacterID:  m.CharacterID,
 		Name:         m.CharacterName,
@@ -78,17 +75,6 @@ func GuildMemberStatusFromProto(m *internal.GuildMember) dto.GuildMemberStatus {
 		Online:       online,
 		AllianceRank: allianceRank,
 	}
-}
-
-func GuildMembersToDTO(members []*GuildMember) []dto.GuildMemberStatus {
-	out := make([]dto.GuildMemberStatus, 0, len(members))
-	for _, m := range members {
-		if m == nil {
-			continue
-		}
-		out = append(out, GuildMemberToDTO(m))
-	}
-	return out
 }
 
 func GuildInfoFromProto(pb *internal.Guild) *dto.GuildInfo {
@@ -137,10 +123,7 @@ func GuildInfoFromProto(pb *internal.Guild) *dto.GuildInfo {
 	}
 }
 
-func GuildToDTO(g *Guild) *dto.GuildInfo {
-	if g == nil {
-		return nil
-	}
+func (g *Guild) ToDTO() *dto.GuildInfo {
 	logoBG := uint16(0)
 	logoBGColor := uint8(0)
 	logo := uint16(0)
@@ -151,11 +134,18 @@ func GuildToDTO(g *Guild) *dto.GuildInfo {
 		logo = uint16(g.Logo.Logo)
 		logoColor = uint8(g.Logo.LogoColor)
 	}
+	members := make([]dto.GuildMemberStatus, 0, len(g.Members))
+	for _, m := range g.Members {
+		if m == nil {
+			continue
+		}
+		members = append(members, m.ToDTO())
+	}
 	return &dto.GuildInfo{
 		GuildID:     g.GuildID,
 		Name:        g.Name,
 		RankTitles:  g.RankTitles,
-		Members:     GuildMembersToDTO(g.Members),
+		Members:     members,
 		Capacity:    g.Capacity,
 		LogoBG:      logoBG,
 		LogoBGColor: logoBGColor,

@@ -41,9 +41,9 @@ func (p *Party) Clone() *Party {
 	return out
 }
 
-func PartyMemberCharacterIDs(members []*PartyMember) []uint32 {
-	out := make([]uint32, 0, len(members))
-	for _, m := range members {
+func (p *Party) MemberCharacterIDs() []uint32 {
+	out := make([]uint32, 0, len(p.Members))
+	for _, m := range p.Members {
 		if m == nil || m.CharacterID == 0 {
 			continue
 		}

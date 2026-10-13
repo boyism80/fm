@@ -73,7 +73,7 @@ func (gc *GuildCache) BroadcastMemberRankChanged(guildID uint32, targetCharacter
 		if m == nil || m.GetCharacterId() != targetCharacterID {
 			continue
 		}
-		targetRank = entity.GuildMemberRankWire(m.GetRank())
+		targetRank = m.RankWire()
 		found = true
 		break
 	}
@@ -245,7 +245,7 @@ func (gc *GuildCache) BroadcastMemberJoined(guildID uint32, joinerCharacterID ui
 		if m == nil || m.GetCharacterId() != joinerCharacterID {
 			continue
 		}
-		joinerStatus = entity.GuildMemberToDTO(m)
+		joinerStatus = m.ToDTO()
 		found = true
 		break
 	}
@@ -324,7 +324,7 @@ func (gc *GuildCache) BroadcastDisbanded(prevGuild *entity.Guild, memberCharacte
 	guildID := prevGuild.GetGuildId()
 	memberIDs := memberCharacterIDs
 	if len(memberIDs) == 0 {
-		memberIDs = entity.GuildMemberCharacterIDs(prevGuild.GetMembers())
+		memberIDs = prevGuild.MemberCharacterIDs()
 	}
 	for _, memberID := range memberIDs {
 		if memberID == 0 {

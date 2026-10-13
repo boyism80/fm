@@ -10,18 +10,13 @@ import (
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts QuestPhaseOpts) bool {
-	if qc == nil || qc.owner == nil {
-		return false
-	}
-	ch := qc.owner
-
+func (qc *Quests) requirementsMet(req wz.QuestRequirements, qp *Quest, opts QuestPhaseOpts) bool {
 	if req.NPC != 0 && opts.NpcID != nil {
 		wireNPC := *opts.NpcID
 		if wireNPC != 0 && wireNPC != req.NPC {
 			return false
 		}
-		mapInst := ch.GetMap()
+		mapInst := qc.owner.GetMap()
 		if mapInst == nil {
 			return false
 		}
@@ -41,20 +36,20 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 		}
 	}
 
-	if req.LevelMin > 0 && int(ch.GetLevel()) < req.LevelMin {
+	if req.LevelMin > 0 && int(qc.owner.GetLevel()) < req.LevelMin {
 		return false
 	}
-	if req.LevelMax > 0 && int(ch.GetLevel()) > req.LevelMax {
+	if req.LevelMax > 0 && int(qc.owner.GetLevel()) > req.LevelMax {
 		return false
 	}
-	if req.Level > 0 && int(ch.GetLevel()) < req.Level {
+	if req.Level > 0 && int(qc.owner.GetLevel()) < req.Level {
 		return false
 	}
-	if len(req.Classes) > 0 && !matchesQuestClass(ch.Class, req.Classes) {
+	if len(req.Classes) > 0 && !matchesQuestClass(qc.owner.Class, req.Classes) {
 		return false
 	}
 	for itemID, count := range req.Item {
-		if !ch.Inventory.HasItemCount(itemID, uint16(count)) {
+		if !qc.owner.Inventory.HasItemCount(itemID, uint16(count)) {
 			return false
 		}
 	}
@@ -74,11 +69,11 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 			return false
 		}
 	}
-	if req.Pop > 0 && int(ch.Stats.Population) < req.Pop {
+	if req.Pop > 0 && int(qc.owner.Stats.Population) < req.Pop {
 		return false
 	}
 	if req.FieldEnter > 0 {
-		mapInst := ch.GetMap()
+		mapInst := qc.owner.GetMap()
 		if mapInst == nil || int(mapInst.TemplateID()) != req.FieldEnter {
 			return false
 		}
@@ -142,16 +137,13 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 		}
 		mustAcquire := acquire > 0
 		var wzSkill *wz.Skill
-		if ch.GameWorld != nil {
-			resources := ch.GameWorld.GetResources()
+		if qc.owner.GameWorld != nil {
+			resources := qc.owner.GameWorld.GetResources()
 			if resources != nil {
 				wzSkill = resources.GetSkill(skillID)
 			}
 		}
-		entry := (*SkillEntry)(nil)
-		if ch.Skills != nil {
-			entry = ch.Skills.Learned(skillID)
-		}
+		entry := qc.owner.Skills.Learned(skillID)
 		skillLevel := 0
 		masterLevel := 0
 		if entry != nil {
@@ -196,16 +188,16 @@ func requirementsMet(req wz.QuestRequirements, qc *Quests, qp *Quest, opts Quest
 			return false
 		}
 	}
-	if len(req.Pet) > 0 && (ch.Pets.Active == nil || !slices.Contains(req.Pet, ch.Pets.Active.Item.GetModel().GetID())) {
+	if len(req.Pet) > 0 && (qc.owner.Pets.Active == nil || !slices.Contains(req.Pet, qc.owner.Pets.Active.Item.GetModel().GetID())) {
 		return false
 	}
-	if req.PetTamenessMin > 0 && (ch.Pets.Active == nil || int(ch.Pets.Active.Item.Closeness) < req.PetTamenessMin) {
+	if req.PetTamenessMin > 0 && (qc.owner.Pets.Active == nil || int(qc.owner.Pets.Active.Item.Closeness) < req.PetTamenessMin) {
 		return false
 	}
 	if req.MBMin > 0 || len(req.MBCard) > 0 || req.SubClassFlags != 0 {
 		return false
 	}
-	if req.TamingMobLevelMin > 0 && (ch.Inventory.Equipped[constant.EquipmentPartsTamingMob] == nil || int(ch.Mount.Level) < req.TamingMobLevelMin) {
+	if req.TamingMobLevelMin > 0 && (qc.owner.Inventory.Equipped[constant.EquipmentPartsTamingMob] == nil || int(qc.owner.Mount.Level) < req.TamingMobLevelMin) {
 		return false
 	}
 	if req.EndMeso > 0 || req.EquipAllNeed > 0 || req.EquipSelectNeed > 0 {

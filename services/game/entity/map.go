@@ -234,9 +234,6 @@ func (m *Map) releaseOID(oid uint32) {
 	m.availableOIDs = append(m.availableOIDs, oid)
 }
 
-func OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool) {
-}
-
 func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
 	if character.Map != nil {
 		return fmt.Errorf("character %d is still on map %d", playerID, character.Map.GetMapID())

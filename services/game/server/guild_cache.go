@@ -92,7 +92,7 @@ func (gc *GuildCache) Update(guildPb *internal.Guild) {
 			return
 		}
 		if _, inAlliance := stored.GetAllianceID(); !inAlliance {
-			stored.AllianceInvites = entity.CloneAllianceInvites(prev.AllianceInvites)
+			stored.AllianceInvites = prev.CloneAllianceInvites()
 		}
 	}
 	gc.guilds[guildID] = stored
