@@ -273,6 +273,7 @@ var decoders = func() []decoder {
 		newDecoder[response.RemoveMessageBox](nil),
 		newDecoder[response.MessageBoxFailed](nil),
 		newDecoder[response.ChargeSkillEffect](nil),
+		newDecoder[response.CancelChargeSkillEffect](nil),
 		newDecoder[response.EnergyAttack](nil),
 		newDecoder[response.SkillMacro](nil),
 	}

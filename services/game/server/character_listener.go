@@ -142,6 +142,10 @@ func (l *CharacterListenerImpl) OnChargeSkillEffect(ch *entity.Character, skillI
 	}, nil)
 }
 
+func (l *CharacterListenerImpl) OnChargeSkillCancelled(ch *entity.Character, skillID uint32) {
+	ch.Broadcast(&response.CancelChargeSkillEffect{CharacterID: ch.GetID(), SkillID: skillID}, nil)
+}
+
 func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType constant.ServerMessageType, message string) {
 	l.OnNotice(ch, messageType, message, 0, false)
 }

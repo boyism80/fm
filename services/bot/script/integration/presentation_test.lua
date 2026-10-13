@@ -3,6 +3,7 @@ local pq = require("script/integration/lib/party_quest")
 local HUNTING_GROUND = 104040000
 local BRAWLER = 510
 local CORKSCREW_BLOW = 5101004
+local KNUCKLE_BOOSTER = 5101006
 local VOMIT = 5160000
 local PANIC = 5160001
 local SUN_EFFECT = 5010000
@@ -126,11 +127,23 @@ local function charge_skill_effect(ctx)
 	end) == false then
 		return ctx:fail("충전 이펙트가 다른 플레이어에게 보이지 않음")
 	end
+	if seen(actor, observer, resp.cancel_charge_skill_effect, req.cancel_buff { source_id = CORKSCREW_BLOW }, function(p)
+		return p.skill_id == CORKSCREW_BLOW
+	end) == false then
+		return ctx:fail("충전 취소가 다른 플레이어에게 보이지 않음")
+	end
+
+	if pq.command(actor, "/스킬레벨 " .. KNUCKLE_BOOSTER .. " 1", "스킬레벨 설정") == false then
+		return ctx:fail("너클 부스터 배우기 실패")
+	end
+	if seen(actor, observer, resp.cancel_charge_skill_effect, req.cancel_buff { source_id = KNUCKLE_BOOSTER }, nil, QUIET_MS) ~= false then
+		return ctx:fail("충전 스킬이 아닌 버프 취소에 충전 취소가 보임")
+	end
 	return true
 end
 
 test_suite {
-	name = "Presentation: 표정·아이템 이펙트·칠판 닫기·충전 이펙트",
+	name = "Presentation: 표정·아이템 이펙트·칠판 닫기·충전 이펙트·충전 취소",
 	bot_count = 2,
 
 	scenarios = {

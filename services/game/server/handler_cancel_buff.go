@@ -25,6 +25,6 @@ func (h *CancelBuff) Handle(ctx *core.ClientContext, req *request.CancelBuff) er
 	if character == nil {
 		return nil
 	}
-	character.Buffs.CancelBySource(req.SourceID)
+	character.CancelBuff(req.SourceID)
 	return nil
 }

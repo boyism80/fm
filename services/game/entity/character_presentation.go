@@ -77,3 +77,14 @@ func (ch *Character) ShowChargeSkillEffect(skillID uint32, level, flags, speed u
 	}
 	ch.Listener.OnChargeSkillEffect(ch, skillID, level, flags, speed)
 }
+
+func (ch *Character) CancelBuff(sourceID int32) {
+	if sourceID > 0 {
+		skill := ch.Skills.Learned(uint32(sourceID))
+		if skill != nil && skill.Wz.Charge {
+			ch.Listener.OnChargeSkillCancelled(ch, uint32(sourceID))
+			return
+		}
+	}
+	ch.Buffs.CancelBySource(sourceID)
+}

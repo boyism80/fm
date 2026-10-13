@@ -129,6 +129,7 @@ type CharacterListener interface {
 	OnFaceExpression(ch *Character, expression uint32)
 	OnItemEffect(ch *Character)
 	OnChargeSkillEffect(ch *Character, skillID uint32, level, flags, speed uint8)
+	OnChargeSkillCancelled(ch *Character, skillID uint32)
 	OnClock(ch *Character, seconds int32)
 	OnStopClock(ch *Character)
 	OnPartyCreated(ch *Character, partyID uint32)
