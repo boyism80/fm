@@ -13,6 +13,11 @@ local EQUIP = 1
 local TAMING_MOB_SLOT = -18
 local SADDLE_SLOT = -19
 local HIT_ENV = -3
+local RIDER_QUEST = 6002
+local RIDER_QUEST_NPC = 2060005
+local RIDER_QUEST_ITEMS = "4031507:5,4031508:5"
+local QUEST_START = 1
+local QUEST_COMPLETE = 2
 
 local function check(ctx, ok, message)
 	if ok == false then
@@ -292,6 +297,33 @@ local function no_mount_map(ctx)
 	return riding(ctx, bot, 0, "탈것 금지 맵 진입")
 end
 
+local function quest_reward(ctx)
+	local bot = ctx:bot(8)
+	if setup(ctx, bot, 70, 111, RIDER_QUEST_ITEMS) == false then
+		return false
+	end
+	local p, name = bot:request({ resp.warp, resp.notice }, req.normal_chat { message = "/퀘스트시작준비 " .. RIDER_QUEST }, function(p, name)
+		return name == resp.warp or p.message:find("NPC", 1, true) ~= nil
+	end, 5000)
+	if p == false then
+		return ctx:fail("퀘스트 시작 준비 실패")
+	end
+	p = bot:request(resp.update_quest, req.quest_action { mode = QUEST_START, quest_id = RIDER_QUEST, npcid = RIDER_QUEST_NPC }, function(p)
+		return p.quest_status.quest_id == RIDER_QUEST and p.quest_status.status == 1
+	end, 5000)
+	if p == false then
+		return ctx:fail("몬스터 라이딩 퀘스트 시작 실패")
+	end
+
+	p = bot:request(resp.update_skills, req.quest_action { mode = QUEST_COMPLETE, quest_id = RIDER_QUEST, npcid = RIDER_QUEST_NPC }, function(p)
+		return p.skill_id == MONSTER_RIDER
+	end, 5000)
+	if p == false then
+		return ctx:fail("3차 직업이 퀘스트 보상으로 몬스터 라이딩을 받지 못함")
+	end
+	return check(ctx, p.level == 1, "몬스터 라이딩 레벨이 다름: " .. p.level)
+end
+
 local function battleship(ctx)
 	local bot = ctx:bot(7)
 	if setup(ctx, bot, 130, 522, "-") == false then
@@ -360,7 +392,7 @@ end
 
 test_suite {
 	name = "Mount: 탑승·하차·피로도·먹이·배틀쉽",
-	bot_count = 8,
+	bot_count = 9,
 
 	scenarios = {
 		ride_without_equipment,
@@ -370,5 +402,6 @@ test_suite {
 		persistence,
 		no_mount_map,
 		battleship,
+		quest_reward,
 	},
 }

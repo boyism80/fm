@@ -158,9 +158,6 @@ func (ch *Character) grantSkill(skill ExchangeSkill) {
 	if skill.SkillID == 0 {
 		return
 	}
-	if skill.SkillID/10000 == 0 && !ch.IsBeginner() {
-		return
-	}
 	if ch.GameWorld == nil {
 		return
 	}

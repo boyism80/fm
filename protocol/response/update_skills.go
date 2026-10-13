@@ -25,4 +25,9 @@ func (p *UpdateSkills) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *UpdateSkills) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	reader.ReadU16()
+	p.SkillID = reader.ReadU32()
+	p.Level = int32(reader.ReadU32())
+	p.MasterLevel = int32(reader.ReadU32())
 }

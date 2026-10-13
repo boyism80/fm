@@ -228,6 +228,7 @@ var decoders = func() []decoder {
 		newDecoder[response.ShowSelfItemMakerSuccessEffect](sub(0x11)),
 		newDecoder[response.ShowItemMakerSuccessEffect](func(body []byte) bool { return len(body) > 4 && body[4] == 0x11 }),
 		newDecoder[response.UpdateMount](nil),
+		newDecoder[response.UpdateSkills](nil),
 		newDecoder[response.UpdateRidding](func(body []byte) bool {
 			flag := constant.BuffFlagMonsterRiding
 			at := 4 + 4*int(flag.Position-1)
