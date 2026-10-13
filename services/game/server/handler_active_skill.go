@@ -6,11 +6,9 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
-	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
-	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -36,98 +34,18 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	if ch.Spectating() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	var wzSkill *wz.Skill
-	if ch.GameWorld != nil {
-		resources := ch.GameWorld.GetResources()
-		if resources != nil {
-			wzSkill = resources.GetSkill(req.SkillID)
-		}
-	}
-
-	if wzSkill == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	skillLevel := ch.Skills.Level(req.SkillID)
-	if skillLevel <= 0 || skillLevel != int(req.SkillLevel) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	levelData := wzSkill.GetLevelData(int(skillLevel))
-	if levelData == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	skillEntry := ch.Skills.Get(req.SkillID)
-	if skillEntry == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	if levelData.Cooldown > 0 && skillEntry.IsCooling() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		log.Printf("No lua root state for map %d", mapInstance.GetMapID())
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	params := h.skillParams(root, mapInstance, req)
-
-	if !ch.CallSkillHook(ctx.ActorContext, skillEntry, "can_activate", params) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	if !ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activating", params) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
-		if !ch.Inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
-			ch.Listener.OnUpdateStats(ch, nil, true)
-			return nil
-		}
-	}
-
-	if !ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activated", params) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-	if levelData.Cooldown > 0 && !wzSkill.ManualCooldown {
-		skillEntry.StartCooldown(levelData.Cooldown)
-	}
-	h.showActiveSkillEffect(ch, req)
-	return nil
-}
-
-func (h *ActiveSkill) showActiveSkillEffect(ch *entity.Character, req *request.ActiveSkill) {
-	var dir *uint8
+	var direction *uint8
 	if req.MagnetMobData != nil {
 		d := req.MagnetMobData.Direction
-		dir = &d
+		direction = &d
 	}
-	ch.Listener.OnShowSkillEffect(ch, pconst.SkillEffectTypeCast, req.SkillID, req.SkillLevel, dir)
-	ch.Listener.OnUpdateStats(ch, nil, true)
+	used := ch.UseActiveSkill(ctx.ActorContext, req.SkillID, req.SkillLevel, direction, func(L *lua.LState) lua.LValue {
+		return h.skillParams(L, ch.GetMap(), req)
+	})
+	if !used {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+	}
+	return nil
 }
 
 func (h *ActiveSkill) skillParams(L *lua.LState, mapInstance *entity.Map, req *request.ActiveSkill) lua.LValue {
