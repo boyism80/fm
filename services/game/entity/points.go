@@ -1,6 +1,13 @@
 package entity
 
-import "github.com/boyism80/fm/services/game/constant"
+import (
+	"log"
+	"math"
+
+	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/services/game/constant"
+	lua "github.com/yuin/gopher-lua"
+)
 
 type Points struct {
 	owner    *Character
@@ -45,7 +52,7 @@ func (p *Points) AssignStats(entries []APEntry) bool {
 	return true
 }
 
-func (p *Points) AssignHPMP(stat constant.StatType, increase uint32) bool {
+func (p *Points) AssignHPMP(stat constant.StatType) bool {
 	if p.AP == 0 || p.HPMPUsed >= constant.HpAPUsedMax {
 		return false
 	}
@@ -56,14 +63,14 @@ func (p *Points) AssignHPMP(stat constant.StatType, increase uint32) bool {
 		if p.owner.GetMaxHp() >= constant.StatMaxHPMP {
 			return false
 		}
-		p.owner.AddBaseHp(increase, false)
+		p.owner.AddBaseHp(p.hpmpIncrease("get_ap_to_hp", 10), false)
 		statUpdate[constant.StatHP] = int32(p.owner.GetHp())
 		statUpdate[constant.StatMaxHP] = int32(p.owner.GetMaxHp())
 	case constant.StatTypeMP:
 		if p.owner.GetMaxMp() >= constant.StatMaxHPMP {
 			return false
 		}
-		p.owner.AddBaseMp(increase, false)
+		p.owner.AddBaseMp(p.hpmpIncrease("get_ap_to_mp", 5), false)
 		statUpdate[constant.StatMP] = int32(p.owner.GetMp())
 		statUpdate[constant.StatMaxMP] = int32(p.owner.GetMaxMp())
 	default:
@@ -75,6 +82,30 @@ func (p *Points) AssignHPMP(stat constant.StatType, increase uint32) bool {
 	statUpdate[constant.StatAvailableAP] = int32(p.AP)
 	p.owner.Listener.OnUpdateStats(p.owner, statUpdate, true)
 	return true
+}
+
+func (p *Points) hpmpIncrease(query string, fallback uint32) uint32 {
+	root := p.owner.GetMap().GetLuaRoot()
+	if root == nil {
+		return fallback
+	}
+	thread, err := luax.NewThread(root, constant.CharacterQueryScriptPath)
+	if err != nil {
+		return fallback
+	}
+	value, err := luax.Call(thread, query, p.owner)
+	if err != nil {
+		log.Printf("AssignHPMP: %s character=%d: %v", query, p.owner.GetID(), err)
+		return fallback
+	}
+	n, ok := value.(lua.LNumber)
+	if !ok || n <= 0 {
+		return fallback
+	}
+	if float64(n) >= math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return uint32(n)
 }
 
 func (p *Points) SetSP(v uint16, notify bool) {
