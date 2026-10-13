@@ -181,7 +181,7 @@ func (a attack) physicalBase(w float64) (damageRange, error) {
 	case constant.WeaponTypeSword1H:
 		return formula(str, 4, a.stats.DEX, 100), nil
 	case constant.WeaponTypeDagger:
-		if a.stats.Class%1000/100 == 4 {
+		if a.stats.Class.Of(constant.ClassThief) || a.stats.Class.Of(constant.ClassNightWalker1) {
 			return formula(luk, 3.6, a.stats.STR+a.stats.DEX, 100), nil
 		}
 		return formula(str, 4, a.stats.DEX, 100), nil
@@ -538,10 +538,11 @@ func (a attack) magic() (damageRange, bool) {
 
 func (a attack) summon() damageRange {
 	p, secondary := a.stats.DEX, a.stats.STR
-	switch a.stats.Class % 1000 / 100 {
-	case 1, 5:
+	switch {
+	case a.stats.Class.Of(constant.ClassWarrior) || a.stats.Class.Of(constant.ClassDawnWarrior1) || a.stats.Class.Of(constant.ClassAran2),
+		a.stats.Class.Of(constant.ClassPirate) || a.stats.Class.Of(constant.ClassThunderBreaker1):
 		p, secondary = a.stats.STR, a.stats.DEX
-	case 4:
+	case a.stats.Class.Of(constant.ClassThief) || a.stats.Class.Of(constant.ClassNightWalker1):
 		p, secondary = a.stats.LUK, a.stats.DEX
 	}
 

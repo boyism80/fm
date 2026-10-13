@@ -83,7 +83,7 @@ func MatchesPartySearchClassMask(ch *Character, classMask int32) bool {
 		0x40000: constant.ClassCrossbowman,
 	}
 	if (classMask & 0x2) != 0 {
-		if ch.ClassOf(constant.ClassBeginner) {
+		if ch.Class == constant.ClassBeginner {
 			return true
 		}
 	}
@@ -91,7 +91,7 @@ func MatchesPartySearchClassMask(ch *Character, classMask int32) bool {
 		if (classMask & bit) == 0 {
 			continue
 		}
-		if ch.ClassOf(classCode) {
+		if ch.Class.Of(classCode) {
 			return true
 		}
 	}

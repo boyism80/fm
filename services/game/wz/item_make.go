@@ -4,7 +4,20 @@ import (
 	"encoding/xml"
 	"os"
 	"strconv"
+
+	"github.com/boyism80/fm/services/game/constant"
 )
+
+var itemMakeClassBits = []struct {
+	mask    int
+	classes []constant.ClassType
+}{
+	{0x1, []constant.ClassType{constant.ClassWarrior, constant.ClassDawnWarrior1, constant.ClassAran2}},
+	{0x2, []constant.ClassType{constant.ClassMagician, constant.ClassBlazeWizard1}},
+	{0x4, []constant.ClassType{constant.ClassBowman, constant.ClassWindArcher1}},
+	{0x8, []constant.ClassType{constant.ClassThief, constant.ClassNightWalker1}},
+	{0x10, []constant.ClassType{constant.ClassPirate, constant.ClassThunderBreaker1}},
+}
 
 var makerBonusStats = map[string]string{
 	"incPAD":   "watk",
@@ -34,7 +47,7 @@ type ItemMakeReward struct {
 
 type ItemMakeRecipe struct {
 	ItemID             uint32
-	Class              int
+	Classes            []constant.ClassType
 	RequiredLevel      int
 	RequiredSkillLevel int
 	Count              uint16
@@ -60,9 +73,15 @@ func loadItemMake(path string) (map[uint32]*ItemMakeRecipe, error) {
 	}
 	recipes := make(map[uint32]*ItemMakeRecipe)
 	for _, group := range root.Children {
-		class, err := strconv.Atoi(group.Name)
+		mask, err := strconv.Atoi(group.Name)
 		if err != nil {
 			continue
+		}
+		var classes []constant.ClassType
+		for _, bit := range itemMakeClassBits {
+			if mask&bit.mask != 0 {
+				classes = append(classes, bit.classes...)
+			}
 		}
 		for _, entry := range group.Children {
 			id, err := strconv.Atoi(entry.Name)
@@ -71,7 +90,7 @@ func loadItemMake(path string) (map[uint32]*ItemMakeRecipe, error) {
 			}
 			recipe := &ItemMakeRecipe{
 				ItemID:             uint32(id),
-				Class:              class,
+				Classes:            classes,
 				RequiredLevel:      entry.Int("reqLevel", 0),
 				RequiredSkillLevel: entry.Int("reqSkillLevel", 0),
 				Count:              uint16(max(entry.Int("itemNum", 1), 1)),

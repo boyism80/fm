@@ -2739,7 +2739,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				classValue := L.CheckInt(2)
-				ch.ChangeClass(uint16(classValue))
+				ch.ChangeClass(constant.ClassType(classValue))
 				return 0
 			default:
 				L.ArgError(2, "class() requires 0 or 1 arguments")
@@ -2806,7 +2806,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			classCode := constant.ClassType(L.CheckInt(2))
-			L.Push(lua.LBool(ch.ClassOf(classCode)))
+			L.Push(lua.LBool(ch.Class.Of(classCode)))
 			return 1
 		},
 		"homing": func(L *lua.LState) int {

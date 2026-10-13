@@ -23,7 +23,7 @@ func (ch *Character) UseSkillBook(slot int16, itemID uint32) {
 	var target *SkillEntry
 	for _, skillID := range consume.SkillBook.Skills {
 		model := ch.GameWorld.GetResources().GetSkill(skillID)
-		if model == nil || !model.LearnableBy(constant.ClassType(ch.Class)) {
+		if model == nil || !model.LearnableBy(ch.Class) {
 			continue
 		}
 		entry := ch.Skills.Learned(skillID)

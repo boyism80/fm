@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core/clock"
 
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -29,7 +30,7 @@ type QuestPhaseOpts struct {
 }
 
 type questActionOpts struct {
-	ClassID   uint16
+	ClassID   constant.ClassType
 	Selection *uint32
 	Forfeited bool
 	NpcID     uint32
@@ -298,7 +299,7 @@ func (qc *Quests) completeLinkedQuest(refID uint32) {
 	refQP.CompletionTime = clock.Now()
 }
 
-func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items []wz.QuestActionItem, selection *uint32) {
+func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID constant.ClassType, items []wz.QuestActionItem, selection *uint32) {
 	if qc == nil || spec == nil {
 		return
 	}
@@ -366,7 +367,7 @@ func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items 
 	}
 }
 
-func matchesQuestClass(classID uint16, codes []int) bool {
+func matchesQuestClass(classID constant.ClassType, codes []int) bool {
 	if len(codes) == 0 {
 		return true
 	}
@@ -402,7 +403,7 @@ func (qc *Quests) completedQuestCount() int {
 	return count
 }
 
-func (qc *Quests) matchesRewardItem(item wz.QuestRewardItem, classID uint16) bool {
+func (qc *Quests) matchesRewardItem(item wz.QuestRewardItem, classID constant.ClassType) bool {
 	if qc == nil || qc.owner == nil {
 		return false
 	}

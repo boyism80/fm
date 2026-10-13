@@ -362,7 +362,7 @@ type MakerItem struct {
 }
 
 type ItemMakeRecipe struct {
-	Class              int                  `yaml:"class"`
+	Classes            []uint16             `yaml:"classes,omitempty"`
 	RequiredLevel      int                  `yaml:"required_level"`
 	RequiredSkillLevel int                  `yaml:"required_skill_level"`
 	Count              uint16               `yaml:"count"`

@@ -45,7 +45,7 @@ const (
 type ExpeditionMember struct {
 	ID        uint32
 	Name      string
-	Class     uint16
+	Class     constant.ClassType
 	character *Character
 }
 

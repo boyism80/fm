@@ -10,7 +10,7 @@ import (
 // comboPercent implements the client's stored-count minus one convention.
 func (ch *Character) comboPercent(finisher bool) float64 {
 	baseID, advancedID, capLevel := constant.SkillComboAttack, constant.SkillAdvancedCombo, 30
-	if ch.Class >= 1000 {
+	if ch.Class >= constant.ClassNoblesse {
 		baseID, advancedID, capLevel = constant.SkillComboAttackCygnus, constant.SkillAdvancedComboCygnus, 20
 	}
 	skill := ch.Skills.LevelData(baseID)
@@ -59,7 +59,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		INT:   float64(ch.Stats.TotalInt()),
 		LUK:   float64(ch.Stats.TotalLuk()),
 		Level: int(ch.GetLevel()),
-		Class: constant.ClassType(ch.Class),
+		Class: ch.Class,
 	}
 	base := s
 
@@ -92,14 +92,16 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 	s.INT += math.Trunc(base.INT * mapleWarrior / 100)
 	s.LUK += math.Trunc(base.LUK * mapleWarrior / 100)
 	s.MAD += s.INT
-	if s.Weapon == constant.WeaponTypeNone && s.Class%1000/100 == 5 {
+	if s.Weapon == constant.WeaponTypeNone && (s.Class.Of(constant.ClassPirate) || s.Class.Of(constant.ClassThunderBreaker1)) {
 		s.PAD += min(math.Trunc(.7*float64(s.Level)+10), 31)
 	}
 
 	switch {
-	case s.Class%1000/10 == 51:
+	case s.Class.Of(constant.ClassBrawler) || s.Class.Of(constant.ClassThunderBreaker2):
 		s.ACC += math.Trunc(.9*s.DEX + .3*s.LUK)
-	case s.Class%1000/100 >= 3 && s.Class%1000/100 <= 5:
+	case s.Class.Of(constant.ClassBowman) || s.Class.Of(constant.ClassWindArcher1),
+		s.Class.Of(constant.ClassThief) || s.Class.Of(constant.ClassNightWalker1),
+		s.Class.Of(constant.ClassPirate) || s.Class.Of(constant.ClassThunderBreaker1):
 		s.ACC += math.Trunc(.6*s.DEX + .3*s.LUK)
 	default:
 		s.ACC += math.Trunc(.8*s.DEX + .5*s.LUK)
@@ -132,7 +134,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		SharpEyes:    ch.Buffs.value(constant.BuffFlagSharpEyes),
 		ElementReset: ch.Buffs.value(constant.BuffFlagElementReset),
 		Double:       ch.Buffs.value(constant.BuffFlagBerserkFury) > 0,
-		GM:           s.Class%1000/100 == 9 || s.Class >= 28 && s.Class <= 30,
+		GM:           s.Class.Of(constant.ClassGM) || s.Class >= 28 && s.Class <= 30,
 	}
 	if ch.Debuffs != nil {
 		b.Sealed = ch.Debuffs.Has(constant.DebuffFlagSeal)
@@ -161,7 +163,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 	// value is authoritative; include its source PAD for an upper envelope.
 	if ch.Buffs.value(constant.BuffFlagEnergyCharge) > 0 {
 		energyCharge := constant.SkillEnergyCharge
-		if s.Class >= 1000 {
+		if s.Class >= constant.ClassNoblesse {
 			energyCharge = constant.SkillEnergyChargeCygnus
 		}
 		if p := ch.Skills.LevelData(energyCharge); p != nil {
@@ -225,19 +227,19 @@ func (ch *Character) masterySkills(weapon constant.WeaponType) []constant.SkillI
 	case constant.WeaponTypePoleArm:
 		return []constant.SkillID{constant.SkillPoleArmMastery}
 	case constant.WeaponTypeBow:
-		if ch.Class >= 1000 {
+		if ch.Class >= constant.ClassNoblesse {
 			return []constant.SkillID{constant.SkillBowMasteryCygnus, constant.SkillBowExpertCygnus}
 		}
 		return []constant.SkillID{constant.SkillBowMastery, constant.SkillBowExpert}
 	case constant.WeaponTypeCrossbow:
 		return []constant.SkillID{constant.SkillCrossbowMastery, constant.SkillCrossbowExpert}
 	case constant.WeaponTypeClaw:
-		if ch.Class >= 1000 {
+		if ch.Class >= constant.ClassNoblesse {
 			return []constant.SkillID{constant.SkillClawMasteryCygnus}
 		}
 		return []constant.SkillID{constant.SkillClawMastery}
 	case constant.WeaponTypeKnuckle:
-		if ch.Class >= 1000 {
+		if ch.Class >= constant.ClassNoblesse {
 			return []constant.SkillID{constant.SkillKnuckleMasteryCygnus}
 		}
 		return []constant.SkillID{constant.SkillKnuckleMastery}
@@ -250,12 +252,12 @@ func (ch *Character) masterySkills(weapon constant.WeaponType) []constant.SkillI
 func (ch *Character) criticalSkill(weapon constant.WeaponType) *wz.SkillLevelData {
 	switch weapon {
 	case constant.WeaponTypeBow, constant.WeaponTypeCrossbow:
-		if ch.Class >= 1000 {
+		if ch.Class >= constant.ClassNoblesse {
 			return ch.Skills.LevelData(constant.SkillCriticalShotCygnus)
 		}
 		return ch.Skills.LevelData(constant.SkillCriticalShot)
 	case constant.WeaponTypeClaw:
-		if ch.Class >= 1000 {
+		if ch.Class >= constant.ClassNoblesse {
 			return ch.Skills.LevelData(constant.SkillCriticalThrowCygnus)
 		}
 		return ch.Skills.LevelData(constant.SkillCriticalThrow)

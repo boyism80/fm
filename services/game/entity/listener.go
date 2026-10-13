@@ -219,7 +219,7 @@ type CharacterListener interface {
 	OnPartialMergeInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16)
 	OnUpdateCharacterLook(ch *Character)
 	OnNpcAction(ch *Character, bytes []byte)
-	OnClassChange(ch *Character, oldClass uint16, newClass uint16)
+	OnClassChange(ch *Character, oldClass constant.ClassType, newClass constant.ClassType)
 	OnPartyMemberFieldsChanged(ch *Character)
 	OnPartyMemberHPChanged(ch *Character, recipient *Character)
 	OnBuffAdded(ch *Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32)

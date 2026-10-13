@@ -2,48 +2,7 @@ package entity
 
 import "github.com/boyism80/fm/services/game/constant"
 
-func getClassParent(class uint16) (parent uint16, ok bool) {
-	if class == 0 {
-		return 0, false
-	}
-	if class%10 != 0 {
-		return class - 1, true
-	}
-	switch {
-	case class == 100 || class == 200 || class == 300 || class == 400 || class == 500 || class == 800 || class == 900:
-		return 0, false
-	case class == 1000 || class == 2000:
-		return 0, false
-	case class >= 1100 && class <= 1500 && class%100 == 0:
-		return 1000, true
-	case class >= 2100 && class%100 == 0:
-		return 2000, true
-	case class < 1000:
-		return (class / 100) * 100, true
-	default:
-		return (class/10 - 1) * 10, true
-	}
-}
-
-func (ch *Character) ClassOf(classCode constant.ClassType) bool {
-	c := ch.Class
-	for {
-		if c == uint16(classCode) {
-			return true
-		}
-		parent, ok := getClassParent(c)
-		if !ok {
-			return false
-		}
-		c = parent
-	}
-}
-
-func (ch *Character) IsBeginner() bool {
-	return ch.Class == 0
-}
-
-func (ch *Character) ChangeClass(newClass uint16) {
+func (ch *Character) ChangeClass(newClass constant.ClassType) {
 	oldClass := ch.Class
 	ch.Class = newClass
 
@@ -52,23 +11,20 @@ func (ch *Character) ChangeClass(newClass uint16) {
 	ch.Listener.OnClassChange(ch, oldClass, newClass)
 }
 
-func (ch *Character) grantClassChangeSP(newClass uint16) {
-	if ch.IsBeginner() {
+func (ch *Character) grantClassChangeSP(newClass constant.ClassType) {
+	if ch.Class == constant.ClassBeginner {
 		return
 	}
 
 	ch.Points.SP++
 
-	if newClass >= 100 {
-		thirdDigit := newClass % 10
-		if thirdDigit >= 2 {
-			ch.Points.SP += 2
-		}
+	if newClass%10 >= 2 {
+		ch.Points.SP += 2
 	}
 
 	if newClass%100 == 0 {
 		minLevel := uint8(10)
-		if newClass == 200 {
+		if newClass == constant.ClassMagician {
 			minLevel = 8
 		}
 

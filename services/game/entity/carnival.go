@@ -31,7 +31,7 @@ type CarnivalMember struct {
 	ID    uint32
 	Name  string
 	Level uint8
-	Class uint16
+	Class constant.ClassType
 }
 
 type CarnivalChallenge struct {

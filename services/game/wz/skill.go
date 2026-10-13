@@ -65,7 +65,7 @@ func (ld *SkillLevelData) Area(x, y int32, facingLeft bool) types.Rect[int32] {
 
 type Skill struct {
 	ID           uint32
-	Class        *Class
+	Class        constant.ClassType
 	MaxLevel     int
 	MasterLevel  int
 	Invisible    bool
@@ -97,23 +97,10 @@ func (s *Skill) DefaultMasterLevel() int {
 }
 
 func (s *Skill) LearnableBy(class constant.ClassType) bool {
-	c := NewClass(class)
-	switch s.Class.ID {
-	case constant.ClassBeginner:
-		return c.Family == constant.ClassFamilyExplorer
-	case constant.ClassNoblesse:
-		return c.Family == constant.ClassFamilyCygnus
-	case constant.ClassLegend:
-		return c.Family == constant.ClassFamilyLegend
+	if s.Class == constant.ClassBeginner {
+		return class < constant.ClassNoblesse
 	}
-
-	if s.Class.Family != c.Family || s.Class.Branch != c.Branch {
-		return false
-	}
-	if s.Class.Specialty != 0 && s.Class.Specialty != c.Specialty {
-		return false
-	}
-	return s.Class.Advancement <= c.Advancement
+	return class.Of(s.Class)
 }
 
 func (s *Skill) GetLevelData(level int) *SkillLevelData {

@@ -815,7 +815,6 @@ func exportItems(res *wz.Resources, wzPath, outDir string) error {
 	}
 	for id, recipe := range res.ItemMake {
 		exported := ItemMakeRecipe{
-			Class:              recipe.Class,
 			RequiredLevel:      recipe.RequiredLevel,
 			RequiredSkillLevel: recipe.RequiredSkillLevel,
 			Count:              recipe.Count,
@@ -824,6 +823,9 @@ func exportItems(res *wz.Resources, wzPath, outDir string) error {
 			Catalyst:           recipe.Catalyst,
 			RequiredItem:       recipe.RequiredItem,
 			RequiredEquip:      recipe.RequiredEquip,
+		}
+		for _, class := range recipe.Classes {
+			exported.Classes = append(exported.Classes, uint16(class))
 		}
 		for _, ingredient := range recipe.Ingredients {
 			exported.Ingredients = append(exported.Ingredients, ItemMakeIngredient{ItemID: ingredient.ItemID, Count: ingredient.Count})

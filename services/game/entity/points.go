@@ -122,7 +122,7 @@ func (p *Points) DistributeSkill(skillID uint32) bool {
 		return false
 	}
 	wzSkill := p.owner.GameWorld.GetResources().GetSkill(skillID)
-	if wzSkill == nil || !wzSkill.LearnableBy(constant.ClassType(p.owner.Class)) {
+	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.Class) {
 		return false
 	}
 

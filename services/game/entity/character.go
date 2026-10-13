@@ -48,7 +48,7 @@ type Character struct {
 	MonsterBook       *MonsterBook
 	Dialog            *Dialog
 	Listener          CharacterListener
-	Class             uint16
+	Class             constant.ClassType
 	Role              constant.CharacterRole
 	AccountID         uint32
 	Account           *Account

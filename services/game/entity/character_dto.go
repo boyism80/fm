@@ -62,7 +62,7 @@ func (ch *Character) BuildS2C() *dto.Character {
 		Face:          ch.look.Face,
 		Hair:          ch.look.Hair,
 		Level:         ch.level,
-		Class:         ch.Class,
+		Class:         uint16(ch.Class),
 		Str:           ch.Stats.TotalStr(),
 		Dex:           ch.Stats.TotalDex(),
 		Int:           ch.Stats.TotalInt(),

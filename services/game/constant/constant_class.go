@@ -2,26 +2,6 @@ package constant
 
 type ClassType uint16
 
-type ClassFamily uint8
-
-const (
-	ClassFamilyExplorer ClassFamily = iota
-	ClassFamilyCygnus
-	ClassFamilyLegend
-)
-
-type ClassBranch uint8
-
-const (
-	ClassBranchNone     ClassBranch = 0
-	ClassBranchWarrior  ClassBranch = 1
-	ClassBranchMagician ClassBranch = 2
-	ClassBranchBowman   ClassBranch = 3
-	ClassBranchThief    ClassBranch = 4
-	ClassBranchPirate   ClassBranch = 5
-	ClassBranchGM       ClassBranch = 9
-)
-
 const (
 	ClassBeginner           ClassType = 0
 	ClassWarrior            ClassType = 100
@@ -95,6 +75,38 @@ const (
 	ClassAran4              ClassType = 2111
 	ClassAran5              ClassType = 2112
 )
+
+func (c ClassType) parent() (ClassType, bool) {
+	switch {
+	case c == ClassBeginner || c == ClassNoblesse || c == ClassLegend:
+		return 0, false
+	case c%10 != 0:
+		return c - 1, true
+	case c < ClassNoblesse && c%100 == 0:
+		return 0, false
+	case c < ClassLegend && c%100 == 0:
+		return ClassNoblesse, true
+	case c > ClassLegend && c%100 == 0:
+		return ClassLegend, true
+	case c < ClassNoblesse:
+		return c / 100 * 100, true
+	default:
+		return (c/10 - 1) * 10, true
+	}
+}
+
+func (c ClassType) Of(ancestor ClassType) bool {
+	for {
+		if c == ancestor {
+			return true
+		}
+		parent, ok := c.parent()
+		if !ok {
+			return false
+		}
+		c = parent
+	}
+}
 
 func AllClassConstants() map[string]ClassType {
 	return map[string]ClassType{
