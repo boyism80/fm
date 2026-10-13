@@ -20,6 +20,7 @@ local ALLIANCE_CAPACITY_COST = 5000000
 local ALLIANCE_CAPACITY = 2
 local GP = 100
 local SETTLE_WAIT_MS = 45000
+local REPLY_DELAY_MS = 6000
 
 local WATCHED = {
 	guild_capacity_change = true,
@@ -356,20 +357,22 @@ local function answer_unknown(ctx, bot, method, mode, ask_fn)
 	return asked
 end
 
-local function answer_late(ctx, bot, other, method, ask_fn)
-	if fault.rpc_delay(bot, method, 6000) == false then
+-- A script still waiting for the reply keeps the character on this channel, so the move waits for it.
+local function answer_delayed(ctx, bot, method, ask_fn)
+	if fault.rpc_delay(bot, method, REPLY_DELAY_MS) == false then
 		return ctx:fail(method .. " 지연 주입 실패")
 	end
 	local asked = ask_fn(ctx, bot)
 	if asked ~= false then
 		yes(bot)
+		ctx:sleep(REPLY_DELAY_MS + 1500)
+		bot:dialog(false)
 	end
-	local moved = asked ~= false and bot:transfer(1)
-	fault.rpc_delay(other, method, 0)
+	fault.rpc_delay(bot, method, 0)
 	if asked == false then
 		return false
 	end
-	if moved == false then
+	if bot:transfer(1) == false then
 		return ctx:fail("채널 이동 실패")
 	end
 	return true
@@ -426,23 +429,23 @@ local function capacity_not_sent(ctx)
 	return holds(ctx, bot, MESO - CAPACITY_COST, "다시 보낸 인원 확장 뒤")
 end
 
-local function late_capacity_after_resend(ctx)
-	local bot, other = ctx:bot(3), ctx:bot(4)
+local function capacity_delayed(ctx)
+	local bot = ctx:bot(3)
 	watch(ctx)
 	if setup(ctx, bot) == false then
 		return false
 	end
-	if answer_late(ctx, bot, other, "IncreaseGuildCapacity", ask_guild_capacity) == false then
+	if answer_delayed(ctx, bot, "IncreaseGuildCapacity", ask_guild_capacity) == false then
 		return false
 	end
-	if arrived(ctx, bot, "guild_capacity_change", "재접속 재요청으로 인원 확장") == false then
+	if arrived(ctx, bot, "guild_capacity_change", "늦은 응답으로 인원 확장") == false then
 		return false
 	end
-	ctx:sleep(8000)
-	if once(ctx, bot, "guild_capacity_change", "늦은 원래 요청 뒤 (중복 확장 없음)") == false then
+	ctx:sleep(1000)
+	if once(ctx, bot, "guild_capacity_change", "채널 이동 뒤 (중복 확장 없음)") == false then
 		return false
 	end
-	if holds(ctx, bot, MESO - CAPACITY_COST, "늦은 원래 요청 뒤 (환불·중복 차감 없음)") == false then
+	if holds(ctx, bot, MESO - CAPACITY_COST, "채널 이동 뒤 (환불·중복 차감 없음)") == false then
 		return false
 	end
 	if bot:transfer(0) == false then
@@ -650,23 +653,23 @@ local function alliance_create_not_sent(ctx)
 	return holds(ctx, leader, MESO - ALLIANCE_COST, "다시 보낸 연합 생성 뒤")
 end
 
-local function late_alliance_create_after_resend(ctx)
+local function alliance_create_delayed(ctx)
 	local leader, partner = ctx:bot(0), ctx:bot(1)
 	watch(ctx)
 	if setup(ctx, leader) == false or setup(ctx, partner) == false then
 		return false
 	end
-	if answer_late(ctx, leader, ctx:bot(4), "CreateAlliance", ask_alliance_create) == false then
+	if answer_delayed(ctx, leader, "CreateAlliance", ask_alliance_create) == false then
 		return false
 	end
-	if created(ctx, leader, "재접속 재요청으로 연합 생성") == false then
+	if created(ctx, leader, "늦은 응답으로 연합 생성") == false then
 		return false
 	end
-	ctx:sleep(8000)
-	if created(ctx, leader, "늦은 원래 요청 뒤") == false then
+	ctx:sleep(1000)
+	if created(ctx, leader, "채널 이동 뒤") == false then
 		return false
 	end
-	if holds(ctx, leader, MESO - ALLIANCE_COST, "늦은 원래 요청 뒤 (환불·중복 차감 없음)") == false then
+	if holds(ctx, leader, MESO - ALLIANCE_COST, "채널 이동 뒤 (환불·중복 차감 없음)") == false then
 		return false
 	end
 	if leader:transfer(0) == false then
@@ -725,23 +728,23 @@ local function alliance_capacity_not_sent(ctx)
 	return disband_alliance(ctx, leader)
 end
 
-local function late_alliance_capacity_after_resend(ctx)
+local function alliance_capacity_delayed(ctx)
 	local leader = ctx:bot(0)
 	watch(ctx)
 	if setup(ctx, leader) == false then
 		return false
 	end
-	if answer_late(ctx, leader, ctx:bot(4), "IncreaseAllianceCapacity", ask_alliance_capacity) == false then
+	if answer_delayed(ctx, leader, "IncreaseAllianceCapacity", ask_alliance_capacity) == false then
 		return false
 	end
-	if capacity_is(ctx, leader, "재접속 재요청으로 연합 정원") == false then
+	if capacity_is(ctx, leader, "늦은 응답으로 연합 정원") == false then
 		return false
 	end
-	ctx:sleep(8000)
-	if capacity_is(ctx, leader, "늦은 원래 요청 뒤 (중복 확장 없음)") == false then
+	ctx:sleep(1000)
+	if capacity_is(ctx, leader, "채널 이동 뒤 (중복 확장 없음)") == false then
 		return false
 	end
-	if holds(ctx, leader, MESO - ALLIANCE_CAPACITY_COST, "늦은 원래 요청 뒤 (환불·중복 차감 없음)") == false then
+	if holds(ctx, leader, MESO - ALLIANCE_CAPACITY_COST, "채널 이동 뒤 (환불·중복 차감 없음)") == false then
 		return false
 	end
 	if leader:transfer(0) == false then
@@ -767,7 +770,7 @@ test_suite {
 		capacity_lost_timer,
 		capacity_lost_relogin,
 		capacity_not_sent,
-		late_capacity_after_resend,
+		capacity_delayed,
 		gp_lost_timer,
 		gp_lost_relogin,
 		gp_not_sent,
@@ -778,7 +781,7 @@ test_suite {
 		alliance_capacity_lost_relogin,
 		alliance_create_not_sent,
 		alliance_capacity_not_sent,
-		late_alliance_create_after_resend,
-		late_alliance_capacity_after_resend,
+		alliance_create_delayed,
+		alliance_capacity_delayed,
 	},
 }
