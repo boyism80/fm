@@ -13,11 +13,13 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 	if actx == nil {
 		return fmt.Errorf("actor context is nil")
 	}
+	if ch.Dialog.Busy() {
+		return ErrDialogBusy
+	}
 	npcID := npc.Wz.ID
-	ch.Dialog.Close()
 
 	if shop := ch.GameWorld.GetResources().GetShop(npcID); shop != nil {
-		ch.Dialog.ShopID = npcID
+		ch.Dialog.OpenShop(npcID)
 		ch.Listener.OnOpenNpcShop(ch, npcID, shop)
 		return nil
 	}

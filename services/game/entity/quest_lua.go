@@ -384,7 +384,7 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 		return fmt.Errorf("character is nil")
 	}
 	if ch.Dialog.Thread() != nil {
-		return fmt.Errorf("dialog already active")
+		return ErrDialogBusy
 	}
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {

@@ -15,6 +15,7 @@ var (
 	ErrDialogNotExpected = errors.New("dialog answer not expected")
 	ErrDialogChoiceRange = errors.New("dialog choice out of range")
 	ErrDialogNoLuaRoot   = errors.New("dialog lua root not found")
+	ErrDialogBusy        = errors.New("dialog already open")
 )
 
 type npcDialog struct {
@@ -28,7 +29,7 @@ type Dialog struct {
 	thread  *lua.LState
 	asked   *npcDialog
 	waiting bool
-	ShopID  uint32
+	shopID  uint32
 }
 
 func NewDialog(owner *Character) *Dialog {
@@ -39,6 +40,22 @@ func (d *Dialog) Thread() *lua.LState {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 	return d.thread
+}
+
+func (d *Dialog) Busy() bool {
+	return d.Thread() != nil || d.shopID != 0
+}
+
+func (d *Dialog) OpenShop(id uint32) {
+	d.shopID = id
+}
+
+func (d *Dialog) Shop() uint32 {
+	return d.shopID
+}
+
+func (d *Dialog) CloseShop() {
+	d.shopID = 0
 }
 
 func (d *Dialog) Set(thread *lua.LState) {
@@ -74,7 +91,7 @@ func (d *Dialog) Reset() {
 }
 
 func (d *Dialog) Close() {
-	d.ShopID = 0
+	d.shopID = 0
 	thread := d.Thread()
 	if thread == nil {
 		return

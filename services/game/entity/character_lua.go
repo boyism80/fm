@@ -2569,6 +2569,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					npc = &Npc{Wz: &wz.NpcSpawn{BaseSpawn: &wz.BaseSpawn{ID: npcID}}}
 				}
 			}
+			ch.Dialog.Close()
 			if err := ch.OpenNpc(cfg.ActorContext, npc); err != nil {
 				L.RaiseError("open_npc: %v", err)
 				return 0

@@ -343,7 +343,7 @@ func (f *Family) move(actx actor.Context, feature internal.FamilyFeature, target
 		f.Set(reply.GetFamily())
 		m := f.owner.GetMap()
 		if clock.Now().After(deadline) || m != origin || m.BlocksTeleportStone() || destination.BlocksTeleportStone() ||
-			f.owner.GetHp() == 0 || f.owner.Dialog.Thread() != nil || f.owner.Dialog.ShopID != 0 {
+			f.owner.GetHp() == 0 || f.owner.Dialog.Busy() {
 			f.refund(actx, id)
 			return nil
 		}

@@ -45,7 +45,7 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 		return fmt.Errorf("resources not available")
 	}
 
-	shopID := character.Dialog.ShopID
+	shopID := character.Dialog.Shop()
 	if shopID == 0 {
 		return nil
 	}
@@ -56,7 +56,7 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 	}
 
 	if req.Transaction == nil {
-		character.Dialog.ShopID = 0
+		character.Dialog.CloseShop()
 		return nil
 	}
 
@@ -83,7 +83,7 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 		h.recharge(character, rechargeTx)
 		return nil
 	default:
-		character.Dialog.ShopID = 0
+		character.Dialog.CloseShop()
 		return nil
 	}
 }

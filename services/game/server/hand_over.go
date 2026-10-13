@@ -30,6 +30,11 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		block()
 		return
 	}
+	// A script or shop still open after the save could change the character the next server already loaded.
+	if character.Dialog.Busy() {
+		block()
+		return
+	}
 
 	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
 	gameClient.SetChangingChannel(true)

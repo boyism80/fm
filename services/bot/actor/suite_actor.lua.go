@@ -27,6 +27,7 @@ import (
 var requests = []outbound{
 	&request.NormalChat{},
 	&request.NpcClick{},
+	&request.NpcShop{},
 	&request.Dialog{},
 	&request.Warp{},
 	&request.PartyOperation{},

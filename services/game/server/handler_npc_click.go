@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -33,7 +34,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("character not found")
 	}
 
-	if character.Spectating() || character.UsingCashItem() || character.Dialog.Thread() != nil || character.Dialog.ShopID != 0 {
+	if character.Spectating() || character.UsingCashItem() {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
@@ -51,6 +52,10 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	}
 
 	if err := character.OpenNpc(ctx.ActorContext, npc); err != nil {
+		if errors.Is(err, entity.ErrDialogBusy) {
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil
+		}
 		log.Printf("Failed to open NPC %d: %v", npc.Wz.ID, err)
 		return err
 	}
