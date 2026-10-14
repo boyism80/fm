@@ -211,7 +211,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         return this.delAll(worldId, groupKey, [itemKey], options);
     }
 
-    async replaceBySnapshot(worldId: number, groupKey: string, models: TModel[]): Promise<void> {
+    async replaceBySnapshot(worldId: number, groupKey: string, models: TModel[], options: RepositoryTxOptions = {}): Promise<void> {
         const rows = models.map((m) => this.modelToRow(m));
         await this.ctx.withPgDataTransaction(worldId, this.getShardHash(groupKey), async (txClient) => {
             const select = this.onSelect(groupKey, worldId);
@@ -230,8 +230,10 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
                 const del = this.onBulkDelete(removed, groupKey, worldId);
                 await txClient.query(del.text, del.values);
             }
-        });
-        await this.invalidateCache(worldId, groupKey);
+        }, options);
+        if (!options.txClient) {
+            await this.invalidateCache(worldId, groupKey);
+        }
     }
 
     override async delete(row: { worldId: number } & Record<string, unknown>, options: RepositoryTxOptions = {}): Promise<boolean> {

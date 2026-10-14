@@ -50,19 +50,19 @@ export class CashShopRepository {
         });
     }
 
-    async withAccount<T>(worldId: number, accountId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
-        return this.ctx.withPgDataTransaction(worldId, accountId, fn);
+    async withAccount<T>(worldId: number, accountId: number, fn: (client: PoolClient) => Promise<T>, options: RepositoryTxOptions = {}): Promise<T> {
+        return this.ctx.withPgDataTransaction(worldId, accountId, fn, options);
     }
 
     async findBalance(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<CashBalance> {
-        const client = options.txClient ?? this.ctx.getPgDataPool(worldId, accountId);
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         const res = await client.query("SELECT nx_cash, maple_point FROM accounts WHERE id = $1", [accountId]);
         const row = res.rows[0] as { nx_cash: number; maple_point: number } | undefined;
         return { nxCash: row?.nx_cash ?? 0, maplePoint: row?.maple_point ?? 0 };
     }
 
     async addBalance(worldId: number, accountId: number, delta: CashBalance, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = options.txClient ?? this.ctx.getPgDataPool(worldId, accountId);
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         await client.query(
             "UPDATE accounts SET nx_cash = nx_cash + $2, maple_point = maple_point + $3 WHERE id = $1",
             [accountId, delta.nxCash, delta.maplePoint]
@@ -70,7 +70,7 @@ export class CashShopRepository {
     }
 
     async findItems(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<CashItemRow[]> {
-        const client = options.txClient ?? this.ctx.getPgDataPool(worldId, accountId);
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         const res = await client.query(
             "SELECT serial, account_id, item FROM cash_items WHERE account_id = $1 ORDER BY created_at, serial",
             [accountId]
@@ -79,7 +79,7 @@ export class CashShopRepository {
     }
 
     async insertItem(worldId: number, accountId: number, serial: string, item: unknown, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = options.txClient ?? this.ctx.getPgDataPool(worldId, accountId);
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         await client.query(
             "INSERT INTO cash_items (serial, account_id, item) VALUES ($1, $2, $3)",
             [serial, accountId, JSON.stringify(item)]
@@ -87,7 +87,7 @@ export class CashShopRepository {
     }
 
     async deleteItem(worldId: number, accountId: number, serial: string, options: RepositoryTxOptions = {}): Promise<CashItemRow | null> {
-        const client = options.txClient ?? this.ctx.getPgDataPool(worldId, accountId);
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         const res = await client.query(
             "DELETE FROM cash_items WHERE account_id = $1 AND serial = $2 RETURNING serial, account_id, item",
             [accountId, serial]
@@ -96,7 +96,7 @@ export class CashShopRepository {
     }
 
     async insertGift(worldId: number, accountId: number, gift: CashGiftRow, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = options.txClient ?? this.ctx.getPgDataPool(worldId, accountId);
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         await client.query(
             "INSERT INTO cash_gifts (serial, account_id, item_id, sender_name, message) VALUES ($1, $2, $3, $4, $5)",
             [gift.serial, accountId, gift.item_id, gift.sender_name, gift.message]
@@ -154,8 +154,8 @@ export class CashShopRepository {
         });
     }
 
-    async insertRing(worldId: number, ring: CashRingRow): Promise<void> {
-        await this.ctx.getPgDataPool(worldId, ring.character_id).query(
+    async insertRing(worldId: number, ring: CashRingRow, options: RepositoryTxOptions = {}): Promise<void> {
+        await this.ctx.pgClient(this.ctx.getPgDataPool(worldId, ring.character_id), options).query(
             `INSERT INTO cash_rings (serial, partner_serial, character_id, partner_id, partner_name, item_id)
              VALUES ($1, $2, $3, $4, $5, $6)`,
             [ring.serial, ring.partner_serial, ring.character_id, ring.partner_id, ring.partner_name, ring.item_id]

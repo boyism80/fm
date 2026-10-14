@@ -1,6 +1,6 @@
 import { redisCacheKey } from "../redis-cache-key";
 import { ValueRepository } from "./value-repository";
-import type { RepositoryQuery, RepositoryQueryValue } from "../types/repository-contracts";
+import type { RepositoryQuery, RepositoryQueryValue, RepositoryTxOptions } from "../types/repository-contracts";
 import type { AccountDeleteModel, AccountModel, AccountRow } from "../types/repository-models";
 
 export type { AccountModel };
@@ -93,17 +93,26 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
         await this.update(worldId, accountId, "role = $2", [role]);
     }
 
-    async setCharacterSlotCount(worldId: number, accountId: number, count: number): Promise<void> {
-        await this.update(worldId, accountId, "character_slot_count = $2", [count]);
+    async setCharacterSlotCount(worldId: number, accountId: number, count: number, options: RepositoryTxOptions = {}): Promise<void> {
+        await this.update(worldId, accountId, "character_slot_count = $2", [count], options);
     }
 
-    private async update(worldId: number, accountId: number, columns: string, values: RepositoryQueryValue[]): Promise<void> {
+    private async update(
+        worldId: number,
+        accountId: number,
+        columns: string,
+        values: RepositoryQueryValue[],
+        options: RepositoryTxOptions = {}
+    ): Promise<void> {
         await this.query(
             this.pool(worldId, accountId),
             `UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`,
-            [accountId, ...values]
+            [accountId, ...values],
+            options
         );
-        await this.invalidateCache(worldId, accountId);
+        if (!options.txClient) {
+            await this.invalidateCache(worldId, accountId);
+        }
     }
 
     override onDelete(row: AccountDeleteModel): RepositoryQuery {

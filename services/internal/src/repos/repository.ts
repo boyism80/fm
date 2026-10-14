@@ -52,11 +52,7 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
     }
 
     protected query(pool: Pool, text: string, values: RepositoryQueryValue[], options: RepositoryTxOptions = {}): Promise<QueryResult> {
-        const txClient = options.txClient;
-        if (txClient) {
-            return txClient.query(text, values);
-        }
-        return pool.query(text, values);
+        return this.ctx.pgClient(pool, options).query(text, values);
     }
 
     protected redis(worldId: number, key: TKey): Redis {

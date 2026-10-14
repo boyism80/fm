@@ -114,10 +114,10 @@ export class ShopService {
     }
 
     async saveShop(shop: Shop, characters: SaveCharacterEntry[], close: boolean, storeBank: Shop[]): Promise<void> {
+        if (characters.length > 0) {
+            await this.characterService.saveCharacters(characters);
+        }
         await this.shopRepo.withAccountLock(shop.worldId, shop.accountId, async (txClient) => {
-            if (characters.length > 0) {
-                await this.characterService.saveCharacters(characters);
-            }
             for (const kept of storeBank) {
                 await this.shopRepo.insert(
                     shop.worldId,

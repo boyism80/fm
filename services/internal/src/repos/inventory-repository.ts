@@ -1,6 +1,6 @@
 import { redisCacheKey } from "../redis-cache-key";
 import { HashRepository } from "./hash-repository";
-import type { RepositoryQuery } from "../types/repository-contracts";
+import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
 import type { InventoryModel, InventoryRow } from "../types/repository-models";
 
 const SELECT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
@@ -149,7 +149,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         };
     }
 
-    override async replaceBySnapshot(worldId: number, groupKey: string, models: InventoryModel[]): Promise<void> {
+    override async replaceBySnapshot(worldId: number, groupKey: string, models: InventoryModel[], options: RepositoryTxOptions = {}): Promise<void> {
         const ownerId = Number(groupKey);
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
@@ -165,7 +165,9 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
                     await txClient.query(insert.text, insert.values);
                 }
             }
-        });
-        await this.invalidateCache(worldId, groupKey);
+        }, options);
+        if (!options.txClient) {
+            await this.invalidateCache(worldId, groupKey);
+        }
     }
 }

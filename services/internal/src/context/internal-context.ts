@@ -3,8 +3,11 @@ import Redis, { type RedisOptions } from "ioredis";
 import { getPostgresqlWorld, getRedisWorld } from "../config";
 import type { AppConfiguration } from "../config/app-configuration";
 import type { InternalConfig, PgEndpoint, RedisEndpoint } from "../types/internal-config";
+import type { RepositoryTxOptions } from "../types/repository-contracts";
 
 type TxFn<T> = (client: PoolClient) => Promise<T>;
+
+const PG_CONNECTION_TIMEOUT_MS = 10000;
 
 function shardIndex(hash: number, shardCount: number): number {
     if (shardCount <= 1) {
@@ -26,6 +29,7 @@ export class InternalContext {
     private readonly redisUnified: Redis | null;
     private readonly redisGlobal: Record<string, Redis[]>;
     private readonly redisData: Record<string, Redis[]>;
+    private readonly clientPools = new WeakMap<PoolClient, Pool>();
 
     constructor(appConfiguration: AppConfiguration) {
         this.appConfiguration = appConfiguration;
@@ -70,6 +74,7 @@ export class InternalContext {
             ssl: endpoint.ssl ? { rejectUnauthorized: false } : false,
             max: endpoint.pool.max,
             min: endpoint.pool.min,
+            connectionTimeoutMillis: PG_CONNECTION_TIMEOUT_MS,
         });
         pool.on("error", (error) => {
             console.error(`[pg] idle client error host=${endpoint.host} database=${endpoint.database}`, error);
@@ -109,6 +114,7 @@ export class InternalContext {
 
     async withPgClient<T>(pool: Pool, fn: TxFn<T>): Promise<T> {
         const client = await pool.connect();
+        this.clientPools.set(client, pool);
         let lost: Error | undefined;
         const onError = (error: Error) => {
             lost = error;
@@ -137,8 +143,22 @@ export class InternalContext {
         });
     }
 
-    async withPgDataTransaction<T>(worldId: number, hash: number, fn: TxFn<T>): Promise<T> {
-        return this.withPgTransaction(this.getPgDataPool(worldId, hash), fn);
+    // A transaction client runs a query only on its own pool; another shard's client would hit the wrong database.
+    pgClient(pool: Pool, options: RepositoryTxOptions = {}): Pool | PoolClient {
+        if (options.txClient != null && this.clientPools.get(options.txClient) === pool) {
+            return options.txClient;
+        }
+        return pool;
+    }
+
+    // A transaction already open on the same shard is joined, so the caller never waits for a second connection
+    // from a pool it is holding.
+    async withPgDataTransaction<T>(worldId: number, hash: number, fn: TxFn<T>, options: RepositoryTxOptions = {}): Promise<T> {
+        const pool = this.getPgDataPool(worldId, hash);
+        if (options.txClient != null && this.clientPools.get(options.txClient) === pool) {
+            return fn(options.txClient);
+        }
+        return this.withPgTransaction(pool, fn);
     }
 
     async withPgGlobalTransaction<T>(worldId: number, fn: TxFn<T>): Promise<T> {

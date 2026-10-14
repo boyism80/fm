@@ -28,6 +28,7 @@ import type { StorageRepository } from "../repos/storage-repository";
 import type { InventoryRepository, InventoryModel } from "../repos/inventory-repository";
 import type { SessionRepository } from "../repos/session-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
+import type { RepositoryTxOptions } from "../types/repository-contracts";
 import type { RabbitMQService } from "./rabbitmq-service";
 import type { SocialService } from "./social-service";
 
@@ -147,36 +148,44 @@ export class CashShopService {
     }
 
     async takeOut(worldId: number, accountId: number, characterId: number, item: InventoryModel): Promise<CashShopResult> {
-        return this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
-            const row = await this.cashShopRepo.deleteItem(worldId, accountId, String(item.uniqueId), { txClient });
-            if (row == null) {
-                return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
-            }
+        try {
+            return await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
+                const row = await this.cashShopRepo.deleteItem(worldId, accountId, String(item.uniqueId), { txClient });
+                if (row == null) {
+                    return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
+                }
 
-            const inventory = await this.inventoryRepo.getAll(worldId, String(characterId));
-            await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), [...inventory.values(), item]);
-            return CashShopResult.CASH_SHOP_RESULT_OK;
-        });
+                const inventory = await this.inventoryRepo.getAll(worldId, String(characterId), { txClient });
+                await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), [...inventory.values(), item], { txClient });
+                return CashShopResult.CASH_SHOP_RESULT_OK;
+            });
+        } finally {
+            await this.inventoryRepo.invalidateCache(worldId, String(characterId));
+        }
     }
 
     async putIn(worldId: number, accountId: number, characterId: number, item: CashItem): Promise<CashShopResult> {
         const serial = String(item.item?.uniqueId ?? 0);
-        return this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
-            const items = await this.cashShopRepo.findItems(worldId, accountId, { txClient });
-            if (items.length >= LOCKER_CAPACITY) {
-                return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
-            }
+        try {
+            return await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
+                const items = await this.cashShopRepo.findItems(worldId, accountId, { txClient });
+                if (items.length >= LOCKER_CAPACITY) {
+                    return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
+                }
 
-            const inventory = [...(await this.inventoryRepo.getAll(worldId, String(characterId))).values()];
-            const kept = inventory.filter((model) => String(model.uniqueId) !== serial || model.slot < 0);
-            if (kept.length === inventory.length) {
-                return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
-            }
+                const inventory = [...(await this.inventoryRepo.getAll(worldId, String(characterId), { txClient })).values()];
+                const kept = inventory.filter((model) => String(model.uniqueId) !== serial || model.slot < 0);
+                if (kept.length === inventory.length) {
+                    return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
+                }
 
-            await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), kept);
-            await this.cashShopRepo.insertItem(worldId, accountId, serial, CashItem.toJSON(item), { txClient });
-            return CashShopResult.CASH_SHOP_RESULT_OK;
-        });
+                await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), kept, { txClient });
+                await this.cashShopRepo.insertItem(worldId, accountId, serial, CashItem.toJSON(item), { txClient });
+                return CashShopResult.CASH_SHOP_RESULT_OK;
+            });
+        } finally {
+            await this.inventoryRepo.invalidateCache(worldId, String(characterId));
+        }
     }
 
     async addCash(worldId: number, accountId: number, nxCash: number, maplePoint: number) {
@@ -195,72 +204,96 @@ export class CashShopService {
     }
 
     async expandSlot(req: ExpandCashSlotRequest): Promise<ExpandCashSlotReply> {
-        return this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
-            const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
-            const fail = (result: CashShopResult) => ({ result, slots: 0, nxCash: balance.nxCash, maplePoint: balance.maplePoint });
-            const delta = this.debit(req.currency, req.price);
-            if (this.affordable(balance, delta) === false) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH);
-            }
+        try {
+            return await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
+                const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
+                const fail = (result: CashShopResult) => ({ result, slots: 0, nxCash: balance.nxCash, maplePoint: balance.maplePoint });
+                const delta = this.debit(req.currency, req.price);
+                if (this.affordable(balance, delta) === false) {
+                    return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH);
+                }
 
-            let slots = 0;
+                let slots = 0;
+                switch (req.kind) {
+                    case CashSlotKind.CASH_SLOT_KIND_INVENTORY: {
+                        const character = await this.characterRepo.get(req.worldId, req.characterId, { txClient });
+                        const index = req.inventoryType - 1;
+                        if (character == null || character.slotLimits == null || index < 0 || index >= character.slotLimits.length) {
+                            return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+                        }
+                        slots = (character.slotLimits[index] ?? 0) + req.amount;
+                        if (slots > req.max) {
+                            return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
+                        }
+                        const slotLimits = [...character.slotLimits];
+                        slotLimits[index] = slots;
+                        await this.characterRepo.set(req.worldId, { ...character, slotLimits }, { txClient });
+                        break;
+                    }
+                    case CashSlotKind.CASH_SLOT_KIND_STORAGE: {
+                        const storage = await this.storageRepo.get(req.worldId, req.accountId, { txClient });
+                        slots = (storage?.slots ?? DEFAULT_STORAGE_SLOTS) + req.amount;
+                        if (slots > req.max) {
+                            return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
+                        }
+                        await this.storageRepo.set(
+                            req.worldId,
+                            {
+                                accountId: req.accountId,
+                                worldId: req.worldId,
+                                slots,
+                                meso: storage?.meso ?? 0,
+                            },
+                            { txClient }
+                        );
+                        break;
+                    }
+                    case CashSlotKind.CASH_SLOT_KIND_CHARACTER: {
+                        const account = await this.accountRepo.get(req.worldId, req.accountId, { txClient });
+                        if (account == null) {
+                            return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+                        }
+                        slots = account.characterSlotCount + req.amount;
+                        if (slots > req.max) {
+                            return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
+                        }
+                        await this.accountRepo.setCharacterSlotCount(req.worldId, req.accountId, slots, { txClient });
+                        break;
+                    }
+                    default:
+                        return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+                }
+
+                await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
+                return {
+                    result: CashShopResult.CASH_SHOP_RESULT_OK,
+                    slots,
+                    nxCash: balance.nxCash + delta.nxCash,
+                    maplePoint: balance.maplePoint + delta.maplePoint,
+                };
+            });
+        } finally {
             switch (req.kind) {
-                case CashSlotKind.CASH_SLOT_KIND_INVENTORY: {
-                    const character = await this.characterRepo.get(req.worldId, req.characterId);
-                    const index = req.inventoryType - 1;
-                    if (character == null || character.slotLimits == null || index < 0 || index >= character.slotLimits.length) {
-                        return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-                    }
-                    slots = (character.slotLimits[index] ?? 0) + req.amount;
-                    if (slots > req.max) {
-                        return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
-                    }
-                    const slotLimits = [...character.slotLimits];
-                    slotLimits[index] = slots;
-                    await this.characterRepo.set(req.worldId, { ...character, slotLimits });
+                case CashSlotKind.CASH_SLOT_KIND_INVENTORY:
+                    await this.characterRepo.invalidateCache(req.worldId, req.characterId);
                     break;
-                }
-                case CashSlotKind.CASH_SLOT_KIND_STORAGE: {
-                    const storage = await this.storageRepo.get(req.worldId, req.accountId);
-                    slots = (storage?.slots ?? DEFAULT_STORAGE_SLOTS) + req.amount;
-                    if (slots > req.max) {
-                        return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
-                    }
-                    await this.storageRepo.set(req.worldId, {
-                        accountId: req.accountId,
-                        worldId: req.worldId,
-                        slots,
-                        meso: storage?.meso ?? 0,
-                    });
+                case CashSlotKind.CASH_SLOT_KIND_STORAGE:
+                    await this.storageRepo.invalidateCache(req.worldId, req.accountId);
                     break;
-                }
-                case CashSlotKind.CASH_SLOT_KIND_CHARACTER: {
-                    const account = await this.accountRepo.get(req.worldId, req.accountId);
-                    if (account == null) {
-                        return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-                    }
-                    slots = account.characterSlotCount + req.amount;
-                    if (slots > req.max) {
-                        return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
-                    }
-                    await this.accountRepo.setCharacterSlotCount(req.worldId, req.accountId, slots);
+                case CashSlotKind.CASH_SLOT_KIND_CHARACTER:
+                    await this.accountRepo.invalidateCache(req.worldId, req.accountId);
                     break;
-                }
-                default:
-                    return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
             }
-
-            await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
-            return {
-                result: CashShopResult.CASH_SHOP_RESULT_OK,
-                slots,
-                nxCash: balance.nxCash + delta.nxCash,
-                maplePoint: balance.maplePoint + delta.maplePoint,
-            };
-        });
+        }
     }
 
-    private async grantGift(worldId: number, recipientAccountId: number, items: CashItem[], message: string): Promise<void> {
+    private async grantGift(
+        worldId: number,
+        recipientAccountId: number,
+        items: CashItem[],
+        message: string,
+        options: RepositoryTxOptions
+    ): Promise<void> {
         await this.cashShopRepo.withAccount(worldId, recipientAccountId, async (txClient) => {
             for (const item of items) {
                 const serial = String(item.item?.uniqueId ?? 0);
@@ -272,7 +305,7 @@ export class CashShopService {
                     { txClient }
                 );
             }
-        });
+        }, options);
     }
 
     // The gift is already committed; a failed notice must not report the purchase as failed.
@@ -309,19 +342,19 @@ export class CashShopService {
             if (entry.account_id === req.accountId) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
             }
-            const recipient = await this.characterRepo.get(req.worldId, entry.character_id);
+            const recipient = await this.characterRepo.get(req.worldId, entry.character_id, { txClient });
             if (recipient == null) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
             }
             if (req.gender !== 2 && recipient.gender !== req.gender) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_GENDER);
             }
-            const lockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id);
+            const lockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id, { txClient });
             if (lockerItems.length + req.items.length > LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
-            await this.grantGift(req.worldId, entry.account_id, req.items, req.message);
+            await this.grantGift(req.worldId, entry.account_id, req.items, req.message, { txClient });
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
@@ -356,7 +389,7 @@ export class CashShopService {
             if (entry.account_id === req.accountId) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
             }
-            const partner = await this.characterRepo.get(req.worldId, entry.character_id);
+            const partner = await this.characterRepo.get(req.worldId, entry.character_id, { txClient });
             if (partner == null) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
             }
@@ -367,7 +400,7 @@ export class CashShopService {
             if (lockerItems.length >= LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL);
             }
-            const partnerLockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id);
+            const partnerLockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id, { txClient });
             if (partnerLockerItems.length >= LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
@@ -375,7 +408,7 @@ export class CashShopService {
             const serial = String(item.item?.uniqueId ?? 0);
             const partnerSerial = String(partnerItem.item?.uniqueId ?? 0);
             const itemId = item.item?.itemId ?? 0;
-            await this.grantGift(req.worldId, entry.account_id, [partnerItem], req.message);
+            await this.grantGift(req.worldId, entry.account_id, [partnerItem], req.message, { txClient });
             await this.cashShopRepo.insertItem(req.worldId, req.accountId, serial, CashItem.toJSON(item), { txClient });
             await this.cashShopRepo.insertRing(req.worldId, {
                 serial,
@@ -384,7 +417,7 @@ export class CashShopService {
                 partner_id: entry.character_id,
                 partner_name: partner.name,
                 item_id: itemId,
-            });
+            }, { txClient });
             await this.cashShopRepo.insertRing(req.worldId, {
                 serial: partnerSerial,
                 partner_serial: serial,
@@ -392,7 +425,7 @@ export class CashShopService {
                 partner_id: req.characterId,
                 partner_name: req.characterName,
                 item_id: itemId,
-            });
+            }, { txClient });
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
@@ -494,12 +527,13 @@ export class CashShopService {
                     }
                     case CashCouponKind.CASH_COUPON_KIND_MESO:
                         meso = Math.min(meso + coupon.value, 2147483647);
-                        await this.characterRepo.set(req.worldId, { ...character, meso });
+                        await this.characterRepo.set(req.worldId, { ...character, meso }, { txClient });
                         break;
                 }
                 await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
                 return { nxCash: current.nxCash + delta.nxCash, maplePoint: current.maplePoint + delta.maplePoint };
             });
+            await this.characterRepo.invalidateCache(req.worldId, req.characterId);
             return { result: CashShopResult.CASH_SHOP_RESULT_OK, ...balance, meso };
         }).catch((err: { result?: CashShopResult }) => {
             if (err.result == null) {

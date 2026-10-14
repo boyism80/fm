@@ -69,17 +69,21 @@ export class FamilyService {
         return ids;
     }
 
-    private async families(tx: PoolClient, world: number, ids: number[]): Promise<Family[]> {
-        const rows = await this.relatives(tx, ids);
-        const leaders = [...new Set([...rows.values()].map(r => r.leader_id).filter(id => id !== null))];
-        const precepts = await tx.query<{ leader_id: number; precept: string }>(
-            "SELECT leader_id, precept FROM families WHERE leader_id = ANY($1::int[])",
-            [leaders],
-        );
-        const uses = await tx.query<{ character_id: number; feature: FamilyFeature }>(
-            `SELECT character_id, feature FROM social_family_uses WHERE character_id = ANY($1::int[]) AND day=${TODAY} ORDER BY feature`,
-            [[...rows.keys()]],
-        );
+    // Channels are looked up after the global connection is returned; the lookup reads the data shards.
+    private async families(world: number, ids: number[]): Promise<Family[]> {
+        const { rows, precepts, uses } = await this.internalContext.withPgGlobalTransaction(world, async tx => {
+            const rows = await this.relatives(tx, ids);
+            const leaders = [...new Set([...rows.values()].map(r => r.leader_id).filter(id => id !== null))];
+            const precepts = await tx.query<{ leader_id: number; precept: string }>(
+                "SELECT leader_id, precept FROM families WHERE leader_id = ANY($1::int[])",
+                [leaders],
+            );
+            const uses = await tx.query<{ character_id: number; feature: FamilyFeature }>(
+                `SELECT character_id, feature FROM social_family_uses WHERE character_id = ANY($1::int[]) AND day=${TODAY} ORDER BY feature`,
+                [[...rows.keys()]],
+            );
+            return { rows, precepts, uses };
+        });
 
         const families = new Map<number, Family>();
         for (const row of rows.values()) {
@@ -110,8 +114,8 @@ export class FamilyService {
         return [...families.values()];
     }
 
-    private async family(tx: PoolClient, world: number, id: number) {
-        return (await this.families(tx, world, [id])).find(f => f.members.some(m => m.characterId === id));
+    private async family(world: number, id: number) {
+        return (await this.families(world, [id])).find(f => f.members.some(m => m.characterId === id));
     }
 
     private alone(character: CharacterModel): Family {
@@ -136,7 +140,7 @@ export class FamilyService {
 
     // Sends each family to its online members, one message per channel.
     private async publish(world: number, ids: number[]): Promise<Family[]> {
-        const families = await this.internalContext.withPgGlobalTransaction(world, tx => this.families(tx, world, ids));
+        const families = await this.families(world, ids);
         for (const family of families) {
             const channels = new Map<number, number[]>();
             for (const member of family.members) {
@@ -199,7 +203,7 @@ export class FamilyService {
     }
 
     async load(world: number, character: CharacterModel): Promise<Family> {
-        const family = await this.internalContext.withPgGlobalTransaction(world, tx => this.family(tx, world, character.characterId));
+        const family = await this.family(world, character.characterId);
         return family ?? this.alone(character);
     }
 
@@ -211,7 +215,7 @@ export class FamilyService {
 
         const world = req.worldId;
         const id = entry.character_id;
-        const family = await this.internalContext.withPgGlobalTransaction(world, tx => this.family(tx, world, id));
+        const family = await this.family(world, id);
         if (family) {
             return { found: true, characterId: id, family };
         }
