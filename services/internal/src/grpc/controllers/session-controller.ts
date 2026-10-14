@@ -7,7 +7,7 @@ import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
 import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
 import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
 import { grpcMapper } from "../mappers";
-import { SecondPasswordStatus, SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import { SecondPasswordStatus, SessionDisconnectSource, SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
 import type { AccountService } from "../../services/account-service";
 import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
 import type { CharacterService } from "../../services/character-service";
@@ -390,15 +390,26 @@ export class SessionGrpcController {
                 });
                 return;
             }
-            const reply = await this.loadCharacterReply(worldId, row);
-
-            // Enter the game last: the game server treats an error reply as "did not enter the game".
             const enter = await this.sessionService.enterGame(worldId, row.accountId, row.characterId, channelId, call.request.clientIp);
             if (!enter.ok) {
                 throw new Error(`enter game session failed: ${enter.code}`);
             }
-            reply.debuffs = enter.debuffs ?? [];
-            callback(null, reply);
+
+            // The game server treats an error reply as "did not enter the game", so a failed load leaves the session.
+            try {
+                const reply = await this.loadCharacterReply(worldId, row);
+                reply.debuffs = enter.debuffs ?? [];
+                callback(null, reply);
+            } catch (err) {
+                await this.sessionService.logout(worldId, row.accountId, {
+                    disconnectSource: SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+                    characterId: row.characterId,
+                    channelId,
+                }).catch((logoutErr) => {
+                    console.log(`[session] enter_game rollback failed account=${row.accountId} character=${row.characterId}: ${logoutErr}`);
+                });
+                throw err;
+            }
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -418,15 +429,26 @@ export class SessionGrpcController {
             if (!row) {
                 throw Object.assign(new Error(`character not found: ${characterId}`), { code: "INVALID_CHARACTER_ID" });
             }
-            const game = await this.loadCharacterReply(worldId, row);
-            const account = await this.cashShopService.loadAccount(worldId, row.accountId, characterId);
-
             const enter = await this.sessionService.enterCashShop(worldId, row.accountId, characterId, cashShopId, call.request.clientIp);
             if (!enter.ok) {
                 throw new Error(`enter cash shop session failed: ${enter.code}`);
             }
-            game.debuffs = enter.debuffs ?? [];
-            callback(null, { game, returnChannelId: enter.returnChannelId ?? 0, ...account });
+
+            try {
+                const game = await this.loadCharacterReply(worldId, row);
+                const account = await this.cashShopService.loadAccount(worldId, row.accountId, characterId);
+                game.debuffs = enter.debuffs ?? [];
+                callback(null, { game, returnChannelId: enter.returnChannelId ?? 0, ...account });
+            } catch (err) {
+                await this.sessionService.logout(worldId, row.accountId, {
+                    disconnectSource: SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
+                    characterId,
+                    cashShopId,
+                }).catch((logoutErr) => {
+                    console.log(`[session] enter_cash_shop rollback failed account=${row.accountId} character=${characterId}: ${logoutErr}`);
+                });
+                throw err;
+            }
         } catch (err) {
             this.grpcError(err, callback);
         }
