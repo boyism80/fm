@@ -2,6 +2,18 @@ package entity
 
 import "github.com/boyism80/fm/services/game/constant"
 
+const chatLimit = 70
+
+func (ch *Character) Chat(message string, dontRecordHistory bool) {
+	if ch.GetMap() == nil {
+		return
+	}
+	if !ch.HasRoleAtLeast(constant.RoleAdmin) && !ClientText(message).Valid(chatLimit) {
+		return
+	}
+	ch.Listener.OnChat(ch, message, false, dontRecordHistory)
+}
+
 func (ch *Character) CloseChalkboard() {
 	if ch.Chalkboard == "" || ch.GetMap() == nil {
 		return

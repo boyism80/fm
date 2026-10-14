@@ -54,13 +54,6 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 		return nil
 	}
 
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		log.Printf("Map not found for character chat")
-		return fmt.Errorf("map not found")
-	}
-
-	character.Listener.OnChat(character, req.Message, false, req.DontRecordHistory)
-
+	character.Chat(req.Message, req.DontRecordHistory)
 	return nil
 }
