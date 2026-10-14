@@ -46,8 +46,8 @@ export class CharacterOverviewService {
 
     /** A free name is reserved for the account until it creates the character or its login session ends. */
     async checkCharacterName(name: string, accountId: number) {
-        // The client only knows "taken"; a forbidden name is reported the same way.
-        if (this.wzService.isForbiddenName(name)) {
+        // The client only knows "taken"; an invalid name is reported the same way.
+        if (this.wzService.isValidName(name) === false) {
             return { exists: true };
         }
         if (accountId <= 0) {

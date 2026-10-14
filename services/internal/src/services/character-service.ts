@@ -1,4 +1,3 @@
-const MAX_NAME_LEN = 32;
 const DEFAULT_MAP_ID = 10000;
 const DEFAULT_SPAWN = 3;
 import { EQUIP_SLOT, LOOK_SLOT } from "../constants/equipment-slots";
@@ -250,8 +249,8 @@ export class CharacterService {
     }
 
     private validateCharacter(p: { name?: string }) {
-        if (typeof p.name !== "string" || p.name.length > MAX_NAME_LEN) {
-            const err = new Error(`name must be a string of length <= ${MAX_NAME_LEN}`) as Error & { code?: string };
+        if (typeof p.name !== "string") {
+            const err = new Error("name must be a string") as Error & { code?: string };
             err.code = "INVALID_PAYLOAD";
             throw err;
         }
@@ -424,7 +423,7 @@ export class CharacterService {
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
             return { success: false, errorMsg: "로그인 상태가 아닙니다." };
         }
-        if (this.wzService.isForbiddenName(name)) {
+        if (this.wzService.isValidName(name) === false) {
             return { success: false, errorMsg: "사용할 수 없는 이름입니다." };
         }
 

@@ -3,6 +3,10 @@ import fs from "fs/promises";
 import type { AppConfiguration } from "../config/app-configuration";
 
 const MAKE_CHAR_INFO_GENDER: Record<string, number> = { CharMale: 0, CharFemale: 1 };
+const NAME_PATTERN = /^[a-zA-Z0-9가-힣]+$/;
+const HANGUL_PATTERN = /[가-힣]/g;
+const MIN_NAME_BYTES = 3;
+const MAX_NAME_BYTES = 12;
 
 export class WzService {
     private readonly wzRoot: string;
@@ -127,9 +131,17 @@ export class WzService {
         return looks.every((id, idx) => parts[idx]?.has(id) === true);
     }
 
-    isForbiddenName(name: string): boolean {
+    /** Character, guild and alliance names: letters, digits and Hangul only, 3-12 bytes in the client's CP949. */
+    isValidName(name: string): boolean {
+        if (typeof name !== "string" || NAME_PATTERN.test(name) === false) {
+            return false;
+        }
+        const bytes = name.length + (name.match(HANGUL_PATTERN)?.length ?? 0);
+        if (bytes < MIN_NAME_BYTES || bytes > MAX_NAME_BYTES) {
+            return false;
+        }
         const lower = name.toLowerCase();
-        return this.forbiddenNames.some((word) => word.length > 0 && lower.includes(word));
+        return this.forbiddenNames.some((word) => word.length > 0 && lower.includes(word)) === false;
     }
 
     async getEnhanceChance(itemId: number): Promise<number> {

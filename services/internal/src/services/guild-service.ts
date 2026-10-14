@@ -19,6 +19,7 @@ import type { GuildModel } from "../repos/guild-repository";
 import type { GuildMemberModel } from "../repos/guild-member-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
+import { WzService } from "./wz-service";
 import { redisCacheKey } from "../redis-cache-key";
 import {
     DEFAULT_GUILD_LOGO,
@@ -55,8 +56,6 @@ export type {
 const messages = { GuildErrorCode };
 
 const DEFAULT_GUILD_CAPACITY = 10;
-const MIN_GUILD_NAME_LEN = 3;
-const MAX_GUILD_NAME_LEN = 12;
 const MAX_GUILD_NOTICE_LEN = 100;
 const GUILD_CAPACITY_STEP = 5;
 const GUILD_CAPACITY_STANDARD_MAX = 100;
@@ -175,6 +174,7 @@ export class GuildService {
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
     private readonly distributedLockService: DistributedLockService;
+    private readonly wzService: WzService;
 
     constructor(
         internalContext: InternalContext,
@@ -186,7 +186,8 @@ export class GuildService {
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         sessionRepository: SessionRepository,
         rabbitmqService: RabbitMQService,
-        distributedLockService: DistributedLockService
+        distributedLockService: DistributedLockService,
+        wzService: WzService
     ) {
         this.ctx = internalContext;
         this.app = appConfiguration;
@@ -198,6 +199,7 @@ export class GuildService {
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
         this.distributedLockService = distributedLockService;
+        this.wzService = wzService;
     }
 
     private assertWorld(worldId: number) {
@@ -225,21 +227,6 @@ export class GuildService {
             err.code = "INVALID_PAYLOAD";
             throw err;
         }
-    }
-
-    private normalizeGuildName(name: string) {
-        return name.trim();
-    }
-
-    private validateGuildName(name: string): GuildErrorCode | null {
-        if (typeof name !== "string") {
-            return messages.GuildErrorCode.GUILD_ERROR_GUILD_NAME_INVALID;
-        }
-        const trimmed = this.normalizeGuildName(name);
-        if (trimmed.length < MIN_GUILD_NAME_LEN || trimmed.length > MAX_GUILD_NAME_LEN) {
-            return messages.GuildErrorCode.GUILD_ERROR_GUILD_NAME_INVALID;
-        }
-        return null;
     }
 
     private async publishToGuildRoutes(
@@ -295,12 +282,9 @@ export class GuildService {
         this.assertUInt16(leaderLevel, "level");
         this.assertUInt16(leaderClassId, "class_id");
 
-        const nameError = this.validateGuildName(guildName);
-        if (nameError != null) {
-            return { ok: false, code: nameError };
+        if (this.wzService.isValidName(guildName) === false) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NAME_INVALID };
         }
-
-        const normalizedName = this.normalizeGuildName(guildName);
 
         await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
@@ -324,7 +308,7 @@ export class GuildService {
 
         let guildId: number;
         try {
-            const nameEntry = await this.unifiedRepo.reserveGuildName(normalizedName, worldId);
+            const nameEntry = await this.unifiedRepo.reserveGuildName(guildName, worldId);
             guildId = Number(nameEntry.guild_id);
         } catch (err: unknown) {
             const code = (err as { code?: string })?.code;
@@ -342,7 +326,7 @@ export class GuildService {
                     {
                         worldId,
                         guildId,
-                        name: normalizedName,
+                        name: guildName,
                         leaderCharacterId,
                         gp: 0,
                         capacity: DEFAULT_GUILD_CAPACITY,
@@ -403,7 +387,7 @@ export class GuildService {
 
         await this.publishToGuildRoutes(EVT.CREATED, worldId, guildId, {
             leader_character_id: leaderCharacterId,
-            guild_name: normalizedName,
+            guild_name: guildName,
         });
         const leaderMember: GuildMemberModel = {
             worldId,

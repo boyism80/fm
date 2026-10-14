@@ -18,6 +18,7 @@ import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { DistributedLockGuard, DistributedLockMultiGuard } from "../system/distributed-lock";
 import { GuildService } from "./guild-service";
+import { WzService } from "./wz-service";
 import {
     ALLIANCE_CAPACITY_MAX,
     DEFAULT_ALLIANCE_CAPACITY,
@@ -42,8 +43,6 @@ const ALLIANCE_EVT = {
 } as const;
 
 const MAX_ALLIANCE_NOTICE_LEN = 100;
-const MIN_ALLIANCE_NAME_LEN = 3;
-const MAX_ALLIANCE_NAME_LEN = 12;
 
 export type CreateAllianceResult = {
     ok: boolean;
@@ -134,6 +133,7 @@ export class AllianceService {
     private readonly rabbitmqService: RabbitMQService;
     private readonly distributedLockService: DistributedLockService;
     private readonly guildService: GuildService;
+    private readonly wzService: WzService;
 
     constructor(
         internalContext: InternalContext,
@@ -144,7 +144,8 @@ export class AllianceService {
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         rabbitmqService: RabbitMQService,
         distributedLockService: DistributedLockService,
-        guildService: GuildService
+        guildService: GuildService,
+        wzService: WzService
     ) {
         this.ctx = internalContext;
         this.app = appConfiguration;
@@ -155,6 +156,7 @@ export class AllianceService {
         this.rabbitmqService = rabbitmqService;
         this.distributedLockService = distributedLockService;
         this.guildService = guildService;
+        this.wzService = wzService;
     }
 
     private assertWorld(worldId: number) {
@@ -173,17 +175,6 @@ export class AllianceService {
             err.code = "INVALID_CHARACTER_ID";
             throw err;
         }
-    }
-
-    private validateAllianceName(name: string): AllianceErrorCode | null {
-        if (typeof name !== "string") {
-            return messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID;
-        }
-        const trimmed = name.trim();
-        if (trimmed.length < MIN_ALLIANCE_NAME_LEN || trimmed.length > MAX_ALLIANCE_NAME_LEN) {
-            return messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID;
-        }
-        return null;
     }
 
     private async publishToAllianceRoutes(
@@ -308,11 +299,9 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
         }
 
-        const nameError = this.validateAllianceName(allianceName);
-        if (nameError != null) {
-            return { ok: false, code: nameError };
+        if (this.wzService.isValidName(allianceName) === false) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID };
         }
-        const trimmedName = allianceName.trim();
 
         await using _leaderLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
@@ -406,7 +395,7 @@ export class AllianceService {
                     {
                         worldId,
                         allianceId: newAllianceId,
-                        name: trimmedName,
+                        name: allianceName,
                         leaderCharacterId,
                         guildIds: initialGuildIds,
                         rankTitles: [...DEFAULT_ALLIANCE_RANK_TITLES],
@@ -457,7 +446,7 @@ export class AllianceService {
         const allianceMessage = await this.allianceToPb(worldId, savedAlliance, initialGuildIds);
         const wire = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(ALLIANCE_EVT.CREATED, worldId, createdAllianceId, {
-            alliance_name: trimmedName,
+            alliance_name: allianceName,
             guild_ids: [guildId, partnerGuildId],
             leader_character_id: leaderCharacterId,
             alliance_pb: Buffer.from(wire).toString("base64"),
