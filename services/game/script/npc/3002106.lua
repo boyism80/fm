@@ -2,7 +2,6 @@
 
 local MAIN = {
 	{ text = "#r#e누적 보상#k", npc = 2017 },
-	{ text = "#r#e강화 이전#k", npc = 9000193 },
 	{ text = "#r#e붕어 가챠#k", npc = 9000601 },
 	{ text = "#r#e핫탐 가챠#k#n", npc = 2016 },
 	{ text = "#k캐시 정리#k", npc = 9000556 },

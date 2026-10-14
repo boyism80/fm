@@ -40,9 +40,6 @@ func (*EquipmentCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			if L.GetTop() >= 2 {
-				core.EnhanceCount = uint8(util.ClampInt32(int32(L.CheckInt(2)), 0, 255))
-			}
 			L.Push(lua.LNumber(core.EnhanceCount))
 			return 1
 		},
