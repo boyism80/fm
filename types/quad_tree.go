@@ -1,15 +1,11 @@
 package types
 
 import (
-	"math"
-	"sort"
-
 	"golang.org/x/exp/constraints"
 )
 
 type AnySpatial[T constraints.Integer] interface {
 	Bounds() Rect[T]
-	Compare(other AnySpatial[T]) bool
 }
 
 const (
@@ -82,91 +78,4 @@ func (n *QuadTreeNode[T, U]) QueryRange(r Rect[T], out *[]U) {
 			n.Children[idx].QueryRange(r, out)
 		}
 	}
-}
-
-func (n *QuadTreeNode[T, U]) relations(p Vector2[T]) []U {
-	list := []U{}
-	current := n
-	for current != nil {
-		list = append(list, current.Items...)
-		mid := Point[T]{
-			X: (current.Bounds.Left + current.Bounds.Right) / 2,
-			Y: (current.Bounds.Top + current.Bounds.Bottom) / 2,
-		}
-		var idx int
-		if p.X <= mid.X {
-			if p.Y <= mid.Y {
-				idx = NW
-			} else {
-				idx = SW
-			}
-		} else {
-			if p.Y <= mid.Y {
-				idx = NE
-			} else {
-				idx = SE
-			}
-		}
-		current = current.Children[idx]
-	}
-	return list
-}
-
-func (n *QuadTreeNode[T, U]) Relations(p Vector2[T]) []U {
-	if n == nil {
-		return nil
-	}
-	return n.relations(p)
-}
-
-func (n *QuadTreeNode[T, U]) Find(p Vector2[T]) (*U, bool) {
-	if n == nil {
-		return nil, false
-	}
-	if p.Y > n.Bounds.Bottom {
-		return nil, false
-	}
-	var matched []U
-	n.QueryRange(Rect[T]{
-		Left:   p.X,
-		Top:    p.Y,
-		Right:  p.X,
-		Bottom: n.Bounds.Bottom,
-	}, &matched)
-	items := []U{}
-	for _, item := range matched {
-		b := item.Bounds()
-		if b.Left <= p.X && p.X <= b.Right {
-			items = append(items, item)
-		}
-	}
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Compare(items[j])
-	})
-	for i := range items {
-		item := items[i]
-		bound := item.Bounds()
-		if bound.Left != bound.Right && bound.Top != bound.Bottom {
-			s1 := float64(math.Abs(float64(bound.Bottom - bound.Top)))
-			s2 := float64(math.Abs(float64(bound.Right - bound.Left)))
-			s4 := float64(math.Abs(float64(bound.Left - p.X)))
-			alpha := math.Atan(s2 / s1)
-			beta := math.Atan(s1 / s2)
-			s5 := math.Cos(alpha) * (s4 / math.Cos(beta))
-			var calcY T
-			if bound.Bottom < bound.Top {
-				calcY = T(bound.Top) - T(int64(s5))
-			} else {
-				calcY = T(bound.Top) + T(int64(s5))
-			}
-			if calcY >= p.Y {
-				return &items[i], true
-			}
-		} else {
-			if T(bound.Top) >= p.Y {
-				return &items[i], true
-			}
-		}
-	}
-	return nil, false
 }

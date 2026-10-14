@@ -884,15 +884,10 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	oid := m.allocateOID()
 
 	footholdID := int16(0)
-	foothold, ok := m.Wz.Footholds.Find(position)
-	if ok {
-		footholdID = foothold.ID
-	}
-
-	pointBelow := m.Wz.PointBelow(position)
 	spawnPosition := position
-	if pointBelow != nil {
-		spawnPosition = *pointBelow
+	if foothold, y, ok := m.Wz.FootholdBelow(position); ok {
+		footholdID = foothold.ID
+		spawnPosition.Y = y
 	}
 
 	baseSpawn := &wz.BaseSpawn{
@@ -960,17 +955,14 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	if mobSpawn != nil && mobSpawn.Wz != nil {
 		footholdID = mobSpawn.Wz.Foothold
 	}
-	if footholdID == 0 {
-		foothold, ok := m.Wz.Footholds.Find(position)
-		if ok {
-			footholdID = foothold.ID
-		}
-	}
 
 	position.Y = position.Y - 1
 	spawnPoint := position
-	if pointBelow := m.Wz.PointBelow(position); pointBelow != nil {
-		spawnPoint = *pointBelow
+	if foothold, y, ok := m.Wz.FootholdBelow(position); ok {
+		if footholdID == 0 {
+			footholdID = foothold.ID
+		}
+		spawnPoint.Y = y
 	}
 
 	mob := &Mob{

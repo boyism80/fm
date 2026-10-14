@@ -86,7 +86,7 @@ func (es *EntrustedShop) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	footholdID := uint16(0)
-	if foothold, ok := es.Map.Wz.Footholds.Find(types.Point[int16]{X: es.Position.X, Y: es.Position.Y}); ok {
+	if foothold, _, ok := es.Map.Wz.FootholdBelow(es.Position); ok {
 		footholdID = uint16(foothold.ID)
 	}
 	viewer.Send(&response.SpawnEntrustedShop{

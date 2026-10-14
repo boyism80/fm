@@ -1,7 +1,6 @@
 package wz
 
 import (
-	"math"
 	"sort"
 
 	"github.com/boyism80/fm/services/game/constant"
@@ -102,32 +101,13 @@ func (m *Map) HasTeam() bool {
 	}
 }
 
-func footholdSurfaceYAtX(f Foothold, x int16) int16 {
-	if f.X1 == f.X2 {
-		return f.Y1
-	}
-	if f.Y1 == f.Y2 {
-		return f.Y1
-	}
-	s1 := math.Abs(float64(f.Y2 - f.Y1))
-	s2 := math.Abs(float64(f.X2 - f.X1))
-	dx := math.Abs(float64(x - f.X1))
-	alpha := math.Atan(s2 / s1)
-	beta := math.Atan(s1 / s2)
-	offset := math.Cos(alpha) * (dx / math.Cos(beta))
-	if f.Y2 < f.Y1 {
-		return f.Y1 - int16(offset)
-	}
-	return f.Y1 + int16(offset)
-}
-
-func (model *Map) findBelow(p types.Point[int16]) (*Foothold, bool) {
+func (model *Map) FootholdBelow(p types.Point[int16]) (*Foothold, int16, bool) {
 	if model == nil || model.Footholds == nil {
-		return nil, false
+		return nil, 0, false
 	}
 	bottom := model.Footholds.Bounds.Bottom
 	if p.Y > bottom {
-		return nil, false
+		return nil, 0, false
 	}
 	var candidates []Foothold
 	model.Footholds.QueryRange(types.Rect[int16]{
@@ -143,40 +123,23 @@ func (model *Map) findBelow(p types.Point[int16]) (*Foothold, bool) {
 		}
 	}
 	sort.Slice(xMatches, func(i, j int) bool {
-		return xMatches[i].Compare(xMatches[j])
+		return xMatches[i].Y2 < xMatches[j].Y1
 	})
 	for i := range xMatches {
-		fh := xMatches[i]
-		if fh.Wall {
+		if xMatches[i].Wall {
 			continue
 		}
-		if fh.X1 != fh.X2 && fh.Y1 != fh.Y2 {
-			calcY := footholdSurfaceYAtX(fh, p.X)
-			if calcY >= p.Y {
-				return &xMatches[i], true
-			}
-		} else {
-			if fh.Y1 >= p.Y {
-				return &xMatches[i], true
-			}
+		if y := xMatches[i].SurfaceY(p.X); y >= p.Y {
+			return &xMatches[i], y, true
 		}
 	}
-	return nil, false
+	return nil, 0, false
 }
 
 func (model *Map) PointBelow(point types.Point[int16]) *types.Point[int16] {
-	if model == nil || model.Footholds == nil {
-		return nil
-	}
-	fh, ok := model.findBelow(point)
+	_, y, ok := model.FootholdBelow(point)
 	if !ok {
 		return nil
-	}
-	var y int16
-	if !fh.Wall && fh.Y1 != fh.Y2 {
-		y = footholdSurfaceYAtX(*fh, point.X)
-	} else {
-		y = fh.Y1
 	}
 	return &types.Point[int16]{X: point.X, Y: y}
 }
