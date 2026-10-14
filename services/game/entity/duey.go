@@ -201,18 +201,18 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 
 	var item Item
 	if slot != 0 {
-		item = d.owner.Inventory.GetItem(invType, slot)
-		if item == nil || count == 0 || item.GetCount() < uint16(count) {
+		var err error
+		item, err = d.owner.Inventory.findTradable(invType, slot)
+		if errors.Is(err, ErrMiniRoomItemNotFound) {
 			return ErrDueyInvalid
 		}
-		model := item.GetModel()
-		if model.GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable|constant.ItemTraitQuest) != 0 {
+		if err != nil {
 			return ErrDueyNotSendable
 		}
-		if model.GetTraits()&constant.ItemTraitPet != 0 {
-			return ErrDueyNotSendable
+		if count == 0 || item.GetCount() < uint16(count) {
+			return ErrDueyInvalid
 		}
-		if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
+		if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
 			count = int16(item.GetCount())
 		}
 	}
@@ -380,7 +380,7 @@ func (d *Duey) receiveClaimed(id uint64, pb *internal.Parcel) error {
 
 	d.owner.Inventory.addMesoUnchecked(claimed.Meso)
 	if claimed.Item != nil {
-		d.owner.Inventory.addItemUnchecked(claimed.Item, true)
+		d.owner.Inventory.receive(claimed.Item)
 	}
 	d.owner.Unsettled.Erase(id)
 	return nil
