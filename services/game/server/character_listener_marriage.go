@@ -80,6 +80,7 @@ func (l *CharacterListenerImpl) ReserveWeddingAsync(ctx actor.Context, ch *entit
 		MarriageId:   marriageID,
 		TicketItemId: ticketItemID,
 		RequestId:    requestID,
+		CharacterId:  ch.GetID(),
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.MarriageReply, error) {

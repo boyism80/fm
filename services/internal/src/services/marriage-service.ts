@@ -187,22 +187,38 @@ export class MarriageService {
         return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: undefined };
     }
 
-    async reserveWedding(worldId: number, marriageId: number, ticketItemId: number, requestId: string): Promise<MarriageReply> {
-        return this.marriageRepo.withTransaction(worldId, async (client) => {
+    async reserveWedding(
+        worldId: number,
+        marriageId: number,
+        characterId: number,
+        ticketItemId: number,
+        requestId: string
+    ): Promise<MarriageReply> {
+        const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
             if (requestId !== "0" && (await this.marriageRepo.findRequest(client, requestId)) != null) {
-                return { result: MarriageResult.MARRIAGE_RESULT_ABORTED, marriage: undefined };
+                return MarriageResult.MARRIAGE_RESULT_ABORTED;
             }
-            const row = await this.marriageRepo.find(client, marriageId);
-            if (row == null || row.status !== MarriageStatus.MARRIAGE_STATUS_ENGAGED || row.ticket_item_id !== 0) {
-                return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, marriage: undefined };
+            const found = await this.marriageRepo.find(client, marriageId);
+            if (found == null || found.status !== MarriageStatus.MARRIAGE_STATUS_ENGAGED || found.ticket_item_id !== 0) {
+                return MarriageResult.MARRIAGE_RESULT_INVALID_STATE;
             }
-            row.ticket_item_id = ticketItemId;
-            await this.marriageRepo.update(client, row);
+            if (found.groom_id !== characterId && found.bride_id !== characterId) {
+                return MarriageResult.MARRIAGE_RESULT_INVALID_STATE;
+            }
+            found.ticket_item_id = ticketItemId;
+            await this.marriageRepo.update(client, found);
             if (requestId !== "0") {
                 await this.marriageRepo.insertRequest(client, requestId);
             }
-            return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
+            return found;
         });
+        if (typeof row === "number") {
+            return { result: row, marriage: undefined };
+        }
+
+        const partnerId = row.groom_id === characterId ? row.bride_id : row.groom_id;
+        await this.notify(worldId, [partnerId], "booked");
+        return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
     }
 
     async abortMarriageChange(worldId: number, requestId: string): Promise<boolean> {

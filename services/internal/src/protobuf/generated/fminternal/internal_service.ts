@@ -2109,6 +2109,7 @@ export interface ReserveWeddingRequest {
   marriageId: number;
   ticketItemId: number;
   requestId: string;
+  characterId: number;
 }
 
 export interface AbortMarriageChangeRequest {
@@ -8022,7 +8023,7 @@ export const BreakEngagementRequest: MessageFns<BreakEngagementRequest> = {
 };
 
 function createBaseReserveWeddingRequest(): ReserveWeddingRequest {
-  return { worldId: 0, marriageId: 0, ticketItemId: 0, requestId: "0" };
+  return { worldId: 0, marriageId: 0, ticketItemId: 0, requestId: "0", characterId: 0 };
 }
 
 export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
@@ -8038,6 +8039,9 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
     }
     if (message.requestId !== "0") {
       writer.uint32(32).uint64(message.requestId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(40).uint32(message.characterId);
     }
     return writer;
   },
@@ -8081,6 +8085,14 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
           message.requestId = reader.uint64().toString();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8112,6 +8124,11 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
         : isSet(object.request_id)
         ? globalThis.String(object.request_id)
         : "0",
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
     };
   },
 
@@ -8129,6 +8146,9 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
     if (message.requestId !== "0") {
       obj.requestId = globalThis.String(message.requestId);
     }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
     return obj;
   },
 
@@ -8141,6 +8161,7 @@ export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
     message.marriageId = object.marriageId ?? 0;
     message.ticketItemId = object.ticketItemId ?? 0;
     message.requestId = object.requestId ?? "0";
+    message.characterId = object.characterId ?? 0;
     return message;
   },
 };

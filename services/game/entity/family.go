@@ -56,20 +56,24 @@ func (f *Family) fail(result internal.FamilyResult) {
 }
 
 func (f *Family) finishRequest(reply *internal.FamilyReply) error {
-	f.Pending = false
-	if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
-		f.fail(reply.GetStatus())
-		return nil
-	}
+	f.owner.Call(func(actor.Context) {
+		f.Pending = false
+		if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
+			f.fail(reply.GetStatus())
+			return
+		}
 
-	f.Set(reply.GetFamily())
-	f.owner.Listener.OnUnlockAction(f.owner)
+		f.Set(reply.GetFamily())
+		f.owner.Listener.OnUnlockAction(f.owner)
+	})
 	return nil
 }
 
 func (f *Family) failRequest(error) {
-	f.Pending = false
-	f.fail(internal.FamilyResult_FAMILY_RESULT_FAILED)
+	f.owner.Call(func(actor.Context) {
+		f.Pending = false
+		f.fail(internal.FamilyResult_FAMILY_RESULT_FAILED)
+	})
 }
 
 func (f *Family) Open() {
@@ -172,20 +176,22 @@ func (f *Family) AnswerInvite(actx actor.Context, seniorID uint32, name string, 
 
 	f.Pending = true
 	f.owner.Listener.JoinFamilyAsync(actx, senior, f.owner).Do(func(reply *internal.FamilyReply) error {
-		f.Pending = false
-		if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
-			f.fail(reply.GetStatus())
-			return nil
-		}
-
-		f.Set(reply.GetFamily())
-		f.owner.Listener.OnFamilyJoined(f.owner, name)
-		if m := f.owner.GetMap(); m != nil {
-			if senior := m.GetPlayer(seniorID); senior != nil {
-				senior.Listener.OnFamilyInviteResult(senior, true, f.owner.GetName())
+		f.owner.Call(func(actor.Context) {
+			f.Pending = false
+			if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
+				f.fail(reply.GetStatus())
+				return
 			}
-		}
-		f.owner.Listener.OnUnlockAction(f.owner)
+
+			f.Set(reply.GetFamily())
+			f.owner.Listener.OnFamilyJoined(f.owner, name)
+			if m := f.owner.GetMap(); m != nil {
+				if senior := m.GetPlayer(seniorID); senior != nil {
+					senior.Listener.OnFamilyInviteResult(senior, true, f.owner.GetName())
+				}
+			}
+			f.owner.Listener.OnUnlockAction(f.owner)
+		})
 		return nil
 	}).OnError(f.failRequest)
 }
@@ -342,31 +348,35 @@ func (f *Family) move(actx actor.Context, feature internal.FamilyFeature, target
 	id := f.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_FAMILY_MOVE, 0, nil)
 	deadline := clock.Now().Add(constant.FamilyMoveDuration)
 	f.owner.Listener.UseFamilyFeatureAsync(actx, f.owner, feature, targetID, id).Do(func(reply *internal.FamilyReply) error {
-		f.Pending = false
-		if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
-			f.owner.Unsettled.Erase(id)
-			f.owner.Listener.OnFamilyResult(f.owner, reply.GetStatus())
-			return nil
-		}
+		f.owner.Call(func(actx actor.Context) {
+			f.Pending = false
+			if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
+				f.owner.Unsettled.Erase(id)
+				f.owner.Listener.OnFamilyResult(f.owner, reply.GetStatus())
+				return
+			}
 
-		f.Set(reply.GetFamily())
-		m := f.owner.GetMap()
-		if clock.Now().After(deadline) || m != origin || m.BlocksTeleportStone() || destination.BlocksTeleportStone() ||
-			f.owner.GetHp() == 0 || f.owner.Dialog.Busy() {
-			f.refund(actx, id)
-			return nil
-		}
-		err := f.owner.GameWorld.GetMapSystem().Warp(actx, f.owner, destination, 0, func(entered actor.Context) {
-			f.FinishMove(entered, id, true)
+			f.Set(reply.GetFamily())
+			m := f.owner.GetMap()
+			if clock.Now().After(deadline) || m != origin || m.BlocksTeleportStone() || destination.BlocksTeleportStone() ||
+				f.owner.GetHp() == 0 || f.owner.Dialog.Busy() {
+				f.refund(actx, id)
+				return
+			}
+			err := f.owner.GameWorld.GetMapSystem().Warp(actx, f.owner, destination, 0, func(entered actor.Context) {
+				f.FinishMove(entered, id, true)
+			})
+			if err != nil {
+				f.refund(actx, id)
+			}
 		})
-		if err != nil {
-			f.refund(actx, id)
-		}
 		return nil
 	}).OnError(func(error) {
-		f.Pending = false
-		f.owner.Unsettled.Find(id).InFlight = false
-		f.owner.Listener.OnFamilyResult(f.owner, internal.FamilyResult_FAMILY_RESULT_FAILED)
+		f.owner.Call(func(actor.Context) {
+			f.Pending = false
+			f.owner.Unsettled.Find(id).InFlight = false
+			f.owner.Listener.OnFamilyResult(f.owner, internal.FamilyResult_FAMILY_RESULT_FAILED)
+		})
 	})
 }
 
@@ -399,11 +409,15 @@ func (f *Family) settleMove(actx actor.Context, request *UnsettledRequest) {
 
 func (f *Family) finishMove(actx actor.Context, request *UnsettledRequest, complete bool) {
 	f.owner.Listener.FinishFamilyMoveAsync(actx, f.owner, request.ID, complete).Do(func(reply *internal.FamilyReply) error {
-		f.owner.Unsettled.Erase(request.ID)
-		f.Set(reply.GetFamily())
+		f.owner.Call(func(actor.Context) {
+			f.owner.Unsettled.Erase(request.ID)
+			f.Set(reply.GetFamily())
+		})
 		return nil
 	}).OnError(func(err error) {
-		request.InFlight = false
+		f.owner.Call(func(actor.Context) {
+			request.InFlight = false
+		})
 		log.Printf("Family.finishMove character=%d id=%d: %v", f.owner.GetID(), request.ID, err)
 	})
 }

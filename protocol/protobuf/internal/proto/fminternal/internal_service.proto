@@ -424,6 +424,7 @@ message ReserveWeddingRequest {
   uint32 marriage_id = 2;
   uint32 ticket_item_id = 3;
   uint64 request_id = 4 [jstype = JS_STRING];
+  uint32 character_id = 5;
 }
 
 message AbortMarriageChangeRequest {

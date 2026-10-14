@@ -91,7 +91,7 @@ export class MarriageGrpcController {
     async reserveWedding(call: GrpcCall<ReserveWeddingRequest>, callback: GrpcCallback<MarriageReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.reserveWedding(req.worldId, req.marriageId, req.ticketItemId, req.requestId));
+            callback(null, await this.marriageService.reserveWedding(req.worldId, req.marriageId, req.characterId, req.ticketItemId, req.requestId));
         } catch (err) {
             this.grpcError(err, callback);
         }

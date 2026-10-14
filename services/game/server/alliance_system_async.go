@@ -54,9 +54,13 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 	detail := allianceCapacityDetail{Meso: constant.AllianceIncreaseCapacityMesoCost}
 	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CAPACITY, uint64(allianceID), detail)
 	return s.incCapacityAsync(ctx, ch, id).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
-		ch.Unsettled.Erase(id)
+		ch.Call(func(actor.Context) {
+			ch.Unsettled.Erase(id)
+			if !reply.GetOk() {
+				ch.Inventory.AddMeso(detail.Meso)
+			}
+		})
 		if !reply.GetOk() {
-			ch.Inventory.AddMeso(detail.Meso)
 			switch reply.GetErrorCode() {
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_IN_ALLIANCE,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NOT_FOUND,
@@ -79,7 +83,9 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Unsettled.Find(id).InFlight = false
+		ch.Call(func(actor.Context) {
+			ch.Unsettled.Find(id).InFlight = false
+		})
 		log.Printf("alliance inc_capacity: character=%d id=%d: %v", charID, id, err)
 		*result = int(constant.AllianceIncreaseCapacityResultFailed)
 	})
@@ -107,18 +113,22 @@ func (s allianceSystem) SettleCapacity(ctx actor.Context, ch *entity.Character, 
 		return
 	}
 	s.incCapacityAsync(ctx, ch, request.ID).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
-		ch.Unsettled.Erase(request.ID)
-		if !reply.GetOk() {
-			ch.Inventory.AddMeso(detail.Meso)
-			return nil
-		}
-		if alliancePb := reply.GetAlliance(); alliancePb != nil {
-			s.gs.alliance.Update(alliancePb)
-			s.gs.alliance.BroadcastInfoUpdate(alliancePb)
-		}
+		ch.Call(func(actor.Context) {
+			ch.Unsettled.Erase(request.ID)
+			if !reply.GetOk() {
+				ch.Inventory.AddMeso(detail.Meso)
+				return
+			}
+			if alliancePb := reply.GetAlliance(); alliancePb != nil {
+				s.gs.alliance.Update(alliancePb)
+				s.gs.alliance.BroadcastInfoUpdate(alliancePb)
+			}
+		})
 		return nil
 	}).OnError(func(err error) {
-		request.InFlight = false
+		ch.Call(func(actor.Context) {
+			request.InFlight = false
+		})
 		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 	})
 }
