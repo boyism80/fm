@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -26,9 +27,6 @@ func (SwitchChannel) New(gs *GameServer) *SwitchChannel {
 func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChannel) error {
 	if h.gs == nil || req == nil {
 		return fmt.Errorf("switch channel: invalid state")
-	}
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("switch channel: internal client not configured")
 	}
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("switch channel: actor context required for internal RPC")
@@ -53,7 +51,7 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 	}
 
 	h.gs.handOver(ctx, gameClient, character, constant.ServerBlockedChannelMoveUnavailable, func(c context.Context) (*response.SwitchChannel, error) {
-		statusReply, err := h.gs.internalClient.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
+		statusReply, err := h.gs.systems.Get[*rpc.InternalConnection]().Client.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   worldID,
 			ChannelId: targetChannel,
 		})

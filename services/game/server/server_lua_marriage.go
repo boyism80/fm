@@ -7,8 +7,9 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -25,11 +26,11 @@ func registerMarriageLuaFuncs(gs *GameServer, luaState *lua.LState) {
 		}
 		promise := async.NewTask(cfg.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.MarriageReply, error) {
-				return gs.internalClient.FinishWedding(c, req)
+				return gs.systems.Get[*rpc.InternalConnection]().Client.FinishWedding(c, req)
 			},
 			nil,
 		)
-		return entity.LuaYieldPromise(L, gs, promise, func(reply *internal.MarriageReply, err error) []lua.LValue {
+		return domain.LuaYieldPromise(L, gs, promise, func(reply *internal.MarriageReply, err error) []lua.LValue {
 			if err != nil {
 				log.Printf("finish_wedding marriage=%d: %v", req.GetMarriageId(), err)
 				return []lua.LValue{lua.LFalse}

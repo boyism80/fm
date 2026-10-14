@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -39,13 +40,13 @@ func (h *AuthSecondPassword) Handle(ctx *core.ClientContext, req *request.AuthSe
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SecondPasswordReply, error) {
 			if req.Mode == request.SecondPasswordModeSet {
-				return h.ls.internalClient.SetSecondPassword(c, &internal.SetSecondPasswordRequest{
+				return h.ls.systems.Get[*rpc.InternalConnection]().Client.SetSecondPassword(c, &internal.SetSecondPasswordRequest{
 					WorldId:   loginClient.GetWorldId(),
 					AccountId: accountID,
 					Password:  req.Password,
 				})
 			}
-			return h.ls.internalClient.RemoveSecondPassword(c, &internal.RemoveSecondPasswordRequest{
+			return h.ls.systems.Get[*rpc.InternalConnection]().Client.RemoveSecondPassword(c, &internal.RemoveSecondPasswordRequest{
 				WorldId:   loginClient.GetWorldId(),
 				AccountId: accountID,
 				Password:  req.Password,

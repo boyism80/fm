@@ -1,6 +1,9 @@
 package actor
 
-import "github.com/asynkron/protoactor-go/actor"
+import (
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
+)
 
 type SetDoorPartyIDHandler struct{}
 
@@ -8,7 +11,7 @@ func (SetDoorPartyIDHandler) New() *SetDoorPartyIDHandler {
 	return &SetDoorPartyIDHandler{}
 }
 
-func (h *SetDoorPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SetDoorPartyID) {
+func (h *SetDoorPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.SetDoorPartyID) {
 	if msg == nil || msg.Map == nil {
 		return
 	}

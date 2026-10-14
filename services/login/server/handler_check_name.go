@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -31,7 +32,7 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CheckCharacterNameReply, error) {
-			return h.ls.internalClient.CheckCharacterName(c, reqMsg)
+			return h.ls.systems.Get[*rpc.InternalConnection]().Client.CheckCharacterName(c, reqMsg)
 		}, func(reply *internal.CheckCharacterNameReply) error {
 			checkResp := &response.CheckName{
 				Name:   req.Name,

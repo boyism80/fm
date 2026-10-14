@@ -8,7 +8,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type NpcClick struct {
@@ -45,14 +45,14 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("map not found")
 	}
 
-	npc, ok := mapInstance.GetNpcs()[req.OID].(*entity.Npc)
+	npc, ok := mapInstance.GetNpcs()[req.OID].(*domain.Npc)
 	if !ok {
 		log.Printf("NPC %d not found on map", req.OID)
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
 	if err := character.OpenNpc(ctx.ActorContext, npc); err != nil {
-		if errors.Is(err, entity.ErrDialogBusy) {
+		if errors.Is(err, domain.ErrDialogBusy) {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}

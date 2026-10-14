@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -43,7 +44,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.LoginAccountReply, error) {
-			return h.ls.internalClient.LoginAccount(c, reqMsg)
+			return h.ls.systems.Get[*rpc.InternalConnection]().Client.LoginAccount(c, reqMsg)
 		}, func(reply *internal.LoginAccountReply) error {
 			log.Printf("Login: reply remote=%s id=%s account=%d status=%v", remoteAddr, req.ID, reply.GetAccountId(), reply.GetStatus())
 			return h.sendLoginAccountResult(ctx, loginClient, req, reply)
@@ -81,7 +82,7 @@ func (h *Login) sendLoginAccountResult(ctx *core.ClientContext, loginClient *cli
 		return err
 	}
 
-	for _, world := range h.ls.GetWorldCatalog() {
+	for _, world := range h.ls.systems.Get[*catalogSystem]().worlds {
 		if len(world.GetChannels()) == 0 {
 			continue
 		}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -15,7 +16,7 @@ import (
 	"github.com/boyism80/fm/services/cashshop/client"
 	"github.com/boyism80/fm/services/cashshop/entity"
 	gconstant "github.com/boyism80/fm/services/game/constant"
-	gentity "github.com/boyism80/fm/services/game/entity"
+	gdomain "github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 	"google.golang.org/protobuf/proto"
@@ -82,7 +83,7 @@ func (h *Operation) start(ctx *core.ClientContext, character *entity.Character, 
 }
 
 func (h *Operation) findCommodity(sn uint32) (*wz.Commodity, constant.CashShopFailure) {
-	commodity := h.cs.resources.Commodities[sn]
+	commodity := h.cs.GetResources().Commodities[sn]
 	if commodity == nil || !commodity.OnSale {
 		return nil, constant.CashShopFailureNotPurchasableNow
 	}
@@ -151,7 +152,7 @@ func (h *Operation) packageItems(character *entity.Character, commodity *wz.Comm
 
 	items := make([]*internal.CashItem, 0, len(commodity.Package))
 	for _, sn := range commodity.Package {
-		content := h.cs.resources.Commodities[sn]
+		content := h.cs.GetResources().Commodities[sn]
 		if content == nil {
 			return nil, fmt.Errorf("package content %d not found", sn)
 		}
@@ -177,7 +178,7 @@ func (h *Operation) purchase(ctx *core.ClientContext, character *entity.Characte
 
 	promise := h.start(ctx, character, failed)
 	promise.ThenRPC(func(c context.Context) (*internal.BuyCashItemReply, error) {
-		return h.cs.internalClient.BuyCashItem(c, &internal.BuyCashItemRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.BuyCashItem(c, &internal.BuyCashItemRequest{
 			WorldId:   uint32(h.cs.config.WorldID),
 			AccountId: character.AccountID(),
 			Currency:  pay,
@@ -212,7 +213,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		fail(failure)
 		return
 	}
-	wzItem := h.cs.resources.Items[commodity.ItemID]
+	wzItem := h.cs.GetResources().Items[commodity.ItemID]
 	if wzItem == nil || wzItem.GetTraits()&gconstant.ItemTraitQuest == 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -227,7 +228,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		fail(constant.CashShopFailureLockerFull)
 		return
 	}
-	item, err := gentity.NewItem(commodity.ItemID, max(commodity.Count, 1), h.cs)
+	item, err := gdomain.NewItem(commodity.ItemID, max(commodity.Count, 1), h.cs)
 	if err != nil {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -241,7 +242,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 
 	promise := h.start(ctx, character, constant.CashShopResultQuestItemFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.BuyCashQuestItemReply, error) {
-		return h.cs.internalClient.BuyCashQuestItem(c, &internal.BuyCashQuestItemRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.BuyCashQuestItem(c, &internal.BuyCashQuestItemRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
 			CharacterId: character.ID(),
 			Price:       commodity.Price,
@@ -277,12 +278,12 @@ func (h *Operation) payBack(ctx *core.ClientContext, character *entity.Character
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	model := h.cs.resources.Items[cashItem.GetItem().GetItemId()]
+	model := h.cs.GetResources().Items[cashItem.GetItem().GetItemId()]
 	if model == nil || model.GetInventoryType() != gconstant.InventoryTypeEquipment || cashItem.GetItem().GetExpirationUnixMs() > 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	commodity := h.cs.resources.Commodities[cashItem.GetCommoditySn()]
+	commodity := h.cs.GetResources().Commodities[cashItem.GetCommoditySn()]
 	if commodity == nil || commodity.PayBackRate == 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -291,7 +292,7 @@ func (h *Operation) payBack(ctx *core.ClientContext, character *entity.Character
 
 	promise := h.start(ctx, character, constant.CashShopResultPayBackFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.PayBackCashItemReply, error) {
-		return h.cs.internalClient.PayBackCashItem(c, &internal.PayBackCashItemRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.PayBackCashItem(c, &internal.PayBackCashItemRequest{
 			WorldId:    uint32(h.cs.config.WorldID),
 			AccountId:  character.AccountID(),
 			Serial:     req.Serial,
@@ -320,7 +321,7 @@ func (h *Operation) setWishlist(ctx *core.ClientContext, character *entity.Chara
 
 	promise := h.start(ctx, character, constant.CashShopResultWishlistFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.SetCashWishlistReply, error) {
-		return h.cs.internalClient.SetCashWishlist(c, &internal.SetCashWishlistRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.SetCashWishlist(c, &internal.SetCashWishlistRequest{
 			WorldId:      uint32(h.cs.config.WorldID),
 			CharacterId:  character.ID(),
 			CommoditySns: wishlist,
@@ -342,7 +343,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	model := h.cs.resources.Items[cashItem.GetItem().GetItemId()]
+	model := h.cs.GetResources().Items[cashItem.GetItem().GetItemId()]
 	if model == nil {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -353,7 +354,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 		fail(constant.CashShopFailureNotEnoughSlots)
 		return
 	}
-	item, err := gentity.NewItemFromInternalProto(cashItem.GetItem(), h.cs)
+	item, err := gdomain.NewItemFromInternalProto(cashItem.GetItem(), h.cs)
 	if err != nil {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -363,7 +364,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 
 	promise := h.start(ctx, character, constant.CashShopResultTakeOutFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.TakeOutCashItemReply, error) {
-		return h.cs.internalClient.TakeOutCashItem(c, &internal.TakeOutCashItemRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.TakeOutCashItem(c, &internal.TakeOutCashItemRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),
@@ -396,7 +397,7 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *entity.Character, 
 
 	promise := h.start(ctx, character, constant.CashShopResultPutInFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.PutInCashItemReply, error) {
-		return h.cs.internalClient.PutInCashItem(c, &internal.PutInCashItemRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.PutInCashItem(c, &internal.PutInCashItemRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),

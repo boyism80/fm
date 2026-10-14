@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -36,7 +37,7 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.DeleteCharacterReply, error) {
-			return h.ls.internalClient.DeleteCharacter(c, &internal.DeleteCharacterRequest{AccountId: accountId, CharacterId: req.ID})
+			return h.ls.systems.Get[*rpc.InternalConnection]().Client.DeleteCharacter(c, &internal.DeleteCharacterRequest{AccountId: accountId, CharacterId: req.ID})
 		}, func(reply *internal.DeleteCharacterReply) error {
 			if reply.GetSecondPasswordSet() {
 				_ = ctx.Client.Send(&response.Notice{

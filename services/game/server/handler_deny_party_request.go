@@ -8,6 +8,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
@@ -26,9 +27,6 @@ func (DenyPartyRequest) New(gs *GameServer) *DenyPartyRequest {
 func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPartyRequest) error {
 	if h.gs == nil {
 		return fmt.Errorf("deny party request: game server is nil")
-	}
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("deny party request: internal client not configured")
 	}
 	gameClient, ok := ctx.Client.(*client.GameClient)
 	if !ok {
@@ -53,7 +51,7 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 	deniedCharacterID := character.GetID()
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.DenyPartyReply, error) {
-			return h.gs.internalClient.DenyParty(c, &internal.DenyPartyRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.DenyParty(c, &internal.DenyPartyRequest{
 				WorldId:           worldID,
 				DeniedCharacterId: deniedCharacterID,
 				InviterName:       inviterName,

@@ -1,0 +1,74 @@
+package domain
+
+import (
+	"github.com/boyism80/fm/services/game/constant"
+)
+
+func (m *Map) ChangeMusic(song string) {
+	if m == nil || song == "" || m.listener == nil {
+		return
+	}
+	m.listener.OnMusicChanged(m, song)
+}
+
+func (m *Map) MapMessage(messageType constant.ServerMessageType, message string) {
+	if message == "" {
+		return
+	}
+	m.listener.OnMapMessage(m, messageType, message)
+}
+
+func (m *Map) Weather(itemID uint32, message string) {
+	m.listener.OnWeather(m, itemID, message)
+}
+
+func (m *Map) YellowChat(message string) {
+	m.listener.OnYellowChat(m, message)
+}
+
+func (m *Map) WeddingEffect(groomID uint32, brideID uint32) {
+	m.listener.OnWeddingEffect(m, groomID, brideID)
+}
+
+func (m *Map) ClearEffect() {
+	if m == nil || m.listener == nil {
+		return
+	}
+	m.listener.OnClearEffect(m)
+}
+
+func (m *Map) ShowEffect(path string) {
+	if m == nil || path == "" || m.listener == nil {
+		return
+	}
+	m.listener.OnShowEffect(m, path)
+}
+
+func (m *Map) PlaySound(path string) {
+	if m == nil || path == "" || m.listener == nil {
+		return
+	}
+	m.listener.OnPlaySound(m, path)
+}
+
+func (m *Map) Tremble(typ uint8, delay int32) {
+	m.listener.OnTremble(m, typ, delay)
+}
+
+func (m *Map) PlayersInArea(index int) int {
+	if m == nil || m.Wz == nil || index < 0 || index >= len(m.Wz.Areas) {
+		return 0
+	}
+	area := m.Wz.Areas[index]
+	count := 0
+	for _, obj := range m.GetAllPlayers() {
+		ch, ok := obj.(*Character)
+		if !ok || ch == nil {
+			continue
+		}
+		if area.ContainsPoint(ch.Position) {
+			count++
+		}
+	}
+	return count
+}

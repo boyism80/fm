@@ -2,7 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type PartyDisbandHandler struct{}
@@ -11,11 +11,11 @@ func (PartyDisbandHandler) New() *PartyDisbandHandler {
 	return &PartyDisbandHandler{}
 }
 
-func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *PartyDisband) {
+func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.PartyDisband) {
 	if msg == nil {
 		return
 	}
-	seen := make(map[*entity.StateMachine]struct{})
+	seen := make(map[*domain.StateMachine]struct{})
 	for _, m := range a.Maps() {
 		m.SyncDoors(msg.FormerMemberIDs)
 		for _, id := range msg.FormerMemberIDs {

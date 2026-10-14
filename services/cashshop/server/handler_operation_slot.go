@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -88,7 +89,7 @@ func (h *Operation) expandSlot(ctx *core.ClientContext, character *entity.Charac
 
 	promise := h.start(ctx, character, failed)
 	promise.ThenRPC(func(c context.Context) (*internal.ExpandCashSlotReply, error) {
-		return h.cs.internalClient.ExpandCashSlot(c, expansion)
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.ExpandCashSlot(c, expansion)
 	}, func(reply *internal.ExpandCashSlotReply) error {
 		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
 		switch reply.GetResult() {

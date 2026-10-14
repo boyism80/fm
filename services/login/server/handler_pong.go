@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	loginclient "github.com/boyism80/fm/services/login/client"
@@ -30,7 +31,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	if accountId != 0 {
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(cctx context.Context) (*internal.RefreshSessionReply, error) {
-				return h.ls.internalClient.RefreshSession(cctx, &internal.RefreshSessionRequest{
+				return h.ls.systems.Get[*rpc.InternalConnection]().Client.RefreshSession(cctx, &internal.RefreshSessionRequest{
 					WorldId:   worldId,
 					AccountId: accountId,
 				})

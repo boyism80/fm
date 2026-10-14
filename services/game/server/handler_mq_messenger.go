@@ -6,8 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	g_actor "github.com/boyism80/fm/services/game/actor"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type messengerMq struct{ gs *GameServer }
@@ -42,7 +41,7 @@ func (h *messengerMq) Handle(_ actor.Context, raw json.RawMessage) error {
 		return nil
 	}
 
-	event := entity.MessengerEvent{
+	event := domain.MessengerEvent{
 		Action:   payload.Action,
 		RoomID:   payload.RoomID,
 		Position: payload.Position,
@@ -60,7 +59,7 @@ func (h *messengerMq) Handle(_ actor.Context, raw json.RawMessage) error {
 		event.Channel = payload.Member.ChannelID
 	}
 
-	h.gs.SendToCharacter(nil, payload.CharacterID, &g_actor.ReceiveMessengerEvent{
+	h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, payload.CharacterID, &domain.ReceiveMessengerEvent{
 		CharacterID: payload.CharacterID,
 		Event:       event,
 	})

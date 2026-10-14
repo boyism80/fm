@@ -18,7 +18,7 @@ func (NoteGift) New(gs *GameServer) *NoteGift {
 }
 
 func (h *NoteGift) Handle(ctx *core.ClientContext, _ *request.NoteGift) error {
-	if h.gs.internalClient == nil || ctx.ActorContext == nil {
+	if ctx.ActorContext == nil {
 		return nil
 	}
 

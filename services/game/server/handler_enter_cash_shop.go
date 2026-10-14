@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -38,7 +39,7 @@ func (h *EnterCashShop) Handle(ctx *core.ClientContext, req *request.EnterCashSh
 
 	worldID := h.gs.config.WorldId
 	h.gs.handOver(ctx, gameClient, character, constant.ServerBlockedCashShopUnavailable, func(c context.Context) (*response.SwitchChannel, error) {
-		reply, err := h.gs.internalClient.FindCashShop(c, &internal.FindCashShopRequest{WorldId: worldID})
+		reply, err := h.gs.systems.Get[*rpc.InternalConnection]().Client.FindCashShop(c, &internal.FindCashShopRequest{WorldId: worldID})
 		if err != nil {
 			return nil, err
 		}

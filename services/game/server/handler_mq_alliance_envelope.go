@@ -3,18 +3,12 @@ package server
 import (
 	"encoding/json"
 	"log"
+
+	"github.com/boyism80/fm/services/game/domain"
 )
 
-type AllianceEventEnvelope struct {
-	EventID    string `json:"event_id"`
-	EventType  string `json:"event_type"`
-	WorldID    uint32 `json:"world_id"`
-	AllianceID uint32 `json:"alliance_id"`
-	OccurredAt string `json:"occurred_at"`
-}
-
-func decodeAllianceEventEnvelope(raw json.RawMessage) (AllianceEventEnvelope, bool) {
-	var evt AllianceEventEnvelope
+func decodeAllianceEventEnvelope(raw json.RawMessage) (domain.AllianceEventEnvelope, bool) {
+	var evt domain.AllianceEventEnvelope
 	if err := json.Unmarshal(raw, &evt); err != nil {
 		log.Printf("alliance consumer: invalid envelope: %v", err)
 		return evt, false

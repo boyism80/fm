@@ -3,11 +3,11 @@ package server
 import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) OnTradeEntered(ch *entity.Character, t *entity.Trade) {
+func (l *CharacterListenerImpl) OnTradeEntered(ch *domain.Character, t *domain.Trade) {
 	slot, _ := t.SlotOf(ch)
 	enter := &response.TradeEnter{MySlot: slot}
 	for _, member := range t.Members() {
@@ -20,21 +20,21 @@ func (l *CharacterListenerImpl) OnTradeEntered(ch *entity.Character, t *entity.T
 	ch.Send(enter, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnTradeInvited(ch *entity.Character, inviter string, sn uint32) {
+func (l *CharacterListenerImpl) OnTradeInvited(ch *domain.Character, inviter string, sn uint32) {
 	ch.Send(&response.TradeInvite{
 		Inviter: inviter,
 		SN:      sn,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnTradeInviteResult(ch *entity.Character, result pconst.MiniRoomInviteResult, name string) {
+func (l *CharacterListenerImpl) OnTradeInviteResult(ch *domain.Character, result pconst.MiniRoomInviteResult, name string) {
 	ch.Send(&response.TradeInviteResult{
 		Result: result,
 		Name:   name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnTradeItem(ch *entity.Character, who uint8, slot uint8, item entity.Item) {
+func (l *CharacterListenerImpl) OnTradeItem(ch *domain.Character, who uint8, slot uint8, item domain.Item) {
 	ch.Send(&response.TradeItem{
 		Who:  who,
 		Slot: slot,
@@ -42,13 +42,13 @@ func (l *CharacterListenerImpl) OnTradeItem(ch *entity.Character, who uint8, slo
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnTradeMeso(ch *entity.Character, who uint8, meso int32) {
+func (l *CharacterListenerImpl) OnTradeMeso(ch *domain.Character, who uint8, meso int32) {
 	ch.Send(&response.TradeMeso{
 		Who:  who,
 		Meso: meso,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnTradeConfirmed(ch *entity.Character) {
+func (l *CharacterListenerImpl) OnTradeConfirmed(ch *domain.Character) {
 	ch.Send(&response.TradeConfirm{}, types.SEND_POLICY_ENCRYPT)
 }

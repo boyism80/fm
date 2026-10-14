@@ -8,13 +8,13 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	gameconst "github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type GuildOperation struct {
@@ -27,23 +27,20 @@ func (GuildOperation) New(gs *GameServer) *GuildOperation {
 	}
 }
 
-func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guildEmblemDetail, bool) {
+func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *domain.Character) (domain.GuildEmblemDetail, bool) {
 	if ch.Inventory.HasItem(gameconst.GuildEmblemChangeCashItemID) {
 		if !ch.Inventory.RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
-			return guildEmblemDetail{}, false
+			return domain.GuildEmblemDetail{}, false
 		}
-		return guildEmblemDetail{CashItem: true}, true
+		return domain.GuildEmblemDetail{CashItem: true}, true
 	}
 	if !ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost) {
-		return guildEmblemDetail{}, false
+		return domain.GuildEmblemDetail{}, false
 	}
-	return guildEmblemDetail{Meso: gameconst.GuildEmblemChangeMesoCost}, true
+	return domain.GuildEmblemDetail{Meso: gameconst.GuildEmblemChangeMesoCost}, true
 }
 
 func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOperation) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("guild operation: actor context required")
 	}
@@ -76,9 +73,9 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 
-		detail := guildCreateDetail{Name: req.GuildName, Meso: gameconst.GuildCreateMesoCost}
+		detail := domain.GuildCreateDetail{Name: req.GuildName, Meso: gameconst.GuildCreateMesoCost}
 		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE, 0, detail)
-		h.gs.guildSystem.createAsync(ctx.ActorContext, ch, id, detail.Name).Do(func(reply *internal.CreateGuildReply) error {
+		h.gs.systems.Get[*domain.GuildSystem]().CreateAsync(ctx.ActorContext, ch, id, detail.Name).Do(func(reply *internal.CreateGuildReply) error {
 			ch.Call(func(actor.Context) {
 				ch.Unsettled.Erase(id)
 				if !reply.GetOk() {
@@ -97,7 +94,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 					ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 					return
 				}
-				h.gs.guildSystem.applyGuildFromProto(ch, guildPb)
+				h.gs.systems.Get[*domain.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
 				ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreatedMessage)
 			})
 			return nil
@@ -111,7 +108,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SInvite:
 		guildID, inGuild := ch.Guild.ID()
-		g := h.gs.GetGuildSystem().Get(guildID)
+		g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
@@ -119,10 +116,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if targetName == "" {
 			return nil
 		}
-		if h.gs.characterRuntime == nil {
-			return nil
-		}
-		targetID, ok := h.gs.characterRuntime.NameToCharacterID(targetName)
+		targetID, ok := h.gs.systems.Get[*domain.DispatchSystem]().FindCharacterID(targetName)
 		if !ok || targetID == 0 {
 			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseNotInChannel)
 			return nil
@@ -130,15 +124,15 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if mapInstance := ch.GetMap(); mapInstance != nil {
 			if target := mapInstance.GetPlayer(targetID); target != nil {
 				switch target.Guild.Invite(guildID, ch.GetName()) {
-				case entity.ErrGuildAlreadyJoined:
+				case domain.ErrGuildAlreadyJoined:
 					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
-				case entity.ErrGuildInviteBusy:
+				case domain.ErrGuildInviteBusy:
 					ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.GuildInviteTargetBusyMessage)
 				}
 				return nil
 			}
 		}
-		h.gs.SendToCharacter(nil, targetID, &g_actor.InviteToGuild{
+		h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, targetID, &domain.InviteToGuild{
 			CharacterID:        targetID,
 			InviterCharacterID: charID,
 			GuildID:            guildID,
@@ -156,7 +150,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		member := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_NEW)
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise.ThenRPC(func(c context.Context) (*internal.AcceptGuildInviteReply, error) {
-			return h.gs.internalClient.AcceptGuildInvite(c, &internal.AcceptGuildInviteRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.AcceptGuildInvite(c, &internal.AcceptGuildInviteRequest{
 				WorldId: worldID,
 				GuildId: req.GuildID,
 				Member:  member,
@@ -176,7 +170,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				return nil
 			}
 			ch.Call(func(actor.Context) {
-				h.gs.guildSystem.applyGuildFromProto(ch, guildPb)
+				h.gs.systems.Get[*domain.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
 			})
 			return nil
 		})
@@ -196,7 +190,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise.ThenRPC(func(c context.Context) (*internal.LeaveGuildReply, error) {
-			return h.gs.internalClient.LeaveGuild(c, &internal.LeaveGuildRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.LeaveGuild(c, &internal.LeaveGuildRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
 			})
@@ -220,13 +214,13 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 		guildID, inGuild := ch.Guild.ID()
-		g := h.gs.GetGuildSystem().Get(guildID)
+		g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise.ThenRPC(func(c context.Context) (*internal.ExpelGuildReply, error) {
-			return h.gs.internalClient.ExpelGuild(c, &internal.ExpelGuildRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.ExpelGuild(c, &internal.ExpelGuildRequest{
 				WorldId:              worldID,
 				RequesterCharacterId: charID,
 				TargetCharacterId:    targetID,
@@ -249,13 +243,13 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SChangeRankTitles:
 		guildID, inGuild := ch.Guild.ID()
-		g := h.gs.GetGuildSystem().Get(guildID)
+		g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.IsGuildMaster(charID) {
 			return nil
 		}
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildRankTitlesReply, error) {
-			return h.gs.internalClient.ChangeGuildRankTitles(c, &internal.ChangeGuildRankTitlesRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangeGuildRankTitles(c, &internal.ChangeGuildRankTitlesRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
 				RankTitles: []string{
@@ -291,7 +285,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 		guildID, inGuild := ch.Guild.ID()
-		g := h.gs.GetGuildSystem().Get(guildID)
+		g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
@@ -301,7 +295,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		protoRank := internal.GuildMemberRank(newRank)
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildMemberRankReply, error) {
-			return h.gs.internalClient.ChangeGuildMemberRank(c, &internal.ChangeGuildMemberRankRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangeGuildMemberRank(c, &internal.ChangeGuildMemberRankRequest{
 				WorldId:              worldID,
 				RequesterCharacterId: charID,
 				TargetCharacterId:    targetID,
@@ -325,7 +319,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SChangeEmblem:
 		guildID, inGuild := ch.Guild.ID()
-		g := h.gs.GetGuildSystem().Get(guildID)
+		g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 		mapInstance := ch.GetMap()
 		if !inGuild || g == nil || !g.IsGuildMaster(charID) ||
 			mapInstance == nil || mapInstance.Wz == nil || uint32(mapInstance.Wz.ID) != gameconst.GuildEmblemMapID {
@@ -343,11 +337,11 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			LogoBgColor: uint32(req.LogoBGColor),
 		}
 		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM, uint64(guildID), detail)
-		h.gs.guildSystem.changeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo).Do(func(reply *internal.ChangeGuildEmblemReply) error {
+		h.gs.systems.Get[*domain.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo).Do(func(reply *internal.ChangeGuildEmblemReply) error {
 			ch.Call(func(actor.Context) {
 				ch.Unsettled.Erase(id)
 				if !reply.GetOk() {
-					h.gs.guildSystem.refundEmblem(ch, detail)
+					h.gs.systems.Get[*domain.GuildSystem]().RefundEmblem(ch, detail)
 					if reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD &&
 						reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_AUTHORIZED {
 						log.Printf("GuildOperation(change emblem): failed character=%d code=%v", charID, reply.GetErrorCode())
@@ -364,13 +358,13 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SChangeNotice:
 		guildID, inGuild := ch.Guild.ID()
-		g := h.gs.GetGuildSystem().Get(guildID)
+		g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildNoticeReply, error) {
-			return h.gs.internalClient.ChangeGuildNotice(c, &internal.ChangeGuildNoticeRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangeGuildNotice(c, &internal.ChangeGuildNoticeRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
 				Notice:      req.Notice,

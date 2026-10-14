@@ -12,38 +12,21 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/route"
+	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/core/system"
 	"github.com/boyism80/fm/core/uniqueid"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/cashshop/client"
 	"github.com/boyism80/fm/services/game/wz"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type CashShopServer struct {
 	*core.ServerCore
-	config           *config.CashShop
-	packetHandler    *core.PacketHandler
-	internalClient   internal.InternalClient
-	internalConn     *grpc.ClientConn
-	internalHBCancel context.CancelFunc
-	actorRegistry    *c_actor.ActorRegistry
-	resources        *wz.Resources
-	uniqueIDs        *uniqueid.Generator
+	config  *config.CashShop
+	systems *system.Systems
 }
 
 func NewCashShopServer(cfg *config.CashShop) (*CashShopServer, error) {
-	addr := cfg.Internal.GRPCAddr()
-	if addr == "" {
-		return nil, fmt.Errorf("cash shop server requires internal gRPC endpoint")
-	}
-	internalConn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("internal gRPC dial %s: %w", addr, err)
-	}
-
-	actorSystem := c_actor.NewActorSystem()
 	serverConfig := &core.ServerConfig{
 		Host: cfg.Host,
 		Port: cfg.Port,
@@ -55,38 +38,41 @@ func NewCashShopServer(cfg *config.CashShop) (*CashShopServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	server.SetRootContext(actorSystem.GetRoot())
 
 	cs := &CashShopServer{
-		ServerCore:     server,
-		config:         cfg,
-		packetHandler:  core.NewPacketHandler(),
-		internalClient: internal.NewInternalClient(internalConn),
-		internalConn:   internalConn,
-		actorRegistry:  c_actor.NewActorRegistry(actorSystem),
-		resources:      wz.NewResources(cfg.WzPath),
-		uniqueIDs:      uniqueid.NewForCashShop(uint32(cfg.WorldID), uint32(cfg.CashShopID)),
+		ServerCore: server,
+		config:     cfg,
+		systems:    system.NewSystems(),
 	}
+
+	actors := c_actor.NewActorRegistry(c_actor.NewActorSystem())
+	cs.systems.Add[*c_actor.ActorRegistry](actors)
+	server.SetRootContext(actors.Root())
+
+	heartbeat := cfg.Internal.HeartbeatIntervalSeconds
+	if heartbeat <= 0 {
+		heartbeat = 15
+	}
+	conn, err := rpc.NewInternalConnection(cfg.Internal.GRPCAddr(), time.Duration(heartbeat)*time.Second, cs.ping)
+	if err != nil {
+		return nil, err
+	}
+	cs.systems.Add[*rpc.InternalConnection](conn)
+	cs.systems.Add[*wz.Resources](wz.NewResources(cfg.WzPath))
+	cs.systems.Add[*uniqueid.Generator](uniqueid.NewForCashShop(uint32(cfg.WorldID), uint32(cfg.CashShopID)))
+
 	serverConfig.OnClientConnect = cs.handleClient
 	server.SetOnClientDisconnect(cs.handleClientDisconnect)
 	cs.registerPacketHandlers()
 	return cs, nil
 }
 
-func (cs *CashShopServer) GetPacketHandler() *core.PacketHandler {
-	return cs.packetHandler
-}
-
-func (cs *CashShopServer) Resend(_ *route.Envelope) {}
-
-func (cs *CashShopServer) CompleteEnvelope(_ uint64) {}
-
 func (cs *CashShopServer) GetResources() *wz.Resources {
-	return cs.resources
+	return cs.systems.Get[*wz.Resources]()
 }
 
 func (cs *CashShopServer) NewUniqueID() uint64 {
-	return cs.uniqueIDs.Next()
+	return cs.systems.Get[*uniqueid.Generator]().Next()
 }
 
 func (cs *CashShopServer) handleClient(c core.Client) {
@@ -94,13 +80,13 @@ func (cs *CashShopServer) handleClient(c core.Client) {
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return &sessionActor{client: csClient, server: cs}
 	})
-	pid := cs.actorRegistry.GetOrCreateActor(fmt.Sprintf("cashshop_session_%d", csClient.GetClientID()), props)
+	pid := cs.systems.Get[*c_actor.ActorRegistry]().GetOrCreateActor(fmt.Sprintf("cashshop_session_%d", csClient.GetClientID()), props)
 	csClient.SetLogicActorPID(pid)
 }
 
 func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 	csClient := c.(*client.CashShopClient)
-	cs.actorRegistry.StopActor(fmt.Sprintf("cashshop_session_%d", csClient.GetClientID()), csClient.GetLogicActorPID())
+	cs.systems.Get[*c_actor.ActorRegistry]().StopActor(fmt.Sprintf("cashshop_session_%d", csClient.GetClientID()), csClient.GetLogicActorPID())
 
 	character := csClient.Disconnect()
 	if character == nil {
@@ -114,7 +100,7 @@ func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 		log.Printf("LogoutSession (cash shop disconnect) failed for character %d: %v", characterID, err)
 	})
 	p.ThenRPC(func(ctx context.Context) (*internal.LogoutSessionReply, error) {
-		return cs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
+		return cs.systems.Get[*rpc.InternalConnection]().Client.LogoutSession(ctx, &internal.LogoutSessionRequest{
 			WorldId:          uint32(cs.config.WorldID),
 			AccountId:        character.AccountID(),
 			DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
@@ -124,59 +110,35 @@ func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 	}, nil)
 }
 
-func (cs *CashShopServer) pingInternal(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		online := uint32(0)
-		for _, c := range cs.Clients() {
-			if csClient, ok := c.(*client.CashShopClient); ok && csClient.GetCharacter() != nil {
-				online++
-			}
+func (cs *CashShopServer) ping() *internal.PingRequest {
+	online := uint32(0)
+	for _, c := range cs.Clients() {
+		if csClient, ok := c.(*client.CashShopClient); ok && csClient.GetCharacter() != nil {
+			online++
 		}
-		pingCtx, cancel := context.WithTimeout(ctx, core.InternalRPCPerStepTimeout)
-		_, err := cs.internalClient.Ping(pingCtx, &internal.PingRequest{
-			Role:        internal.ServerRole_SERVER_ROLE_CASH_SHOP,
-			WorldId:     uint32(cs.config.WorldID),
-			CashShopId:  uint32(cs.config.CashShopID),
-			OnlineUsers: online,
-		})
-		cancel()
-		if err != nil {
-			log.Printf("internal ping: %v", err)
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-		}
+	}
+	return &internal.PingRequest{
+		Role:        internal.ServerRole_SERVER_ROLE_CASH_SHOP,
+		WorldId:     uint32(cs.config.WorldID),
+		CashShopId:  uint32(cs.config.CashShopID),
+		OnlineUsers: online,
 	}
 }
 
 func (cs *CashShopServer) Start() error {
+	if err := cs.systems.Start(); err != nil {
+		return err
+	}
 	if err := cs.ServerCore.Start(cs.config.Host, cs.config.Port); err != nil {
 		return err
 	}
-
-	interval := cs.config.Internal.HeartbeatIntervalSeconds
-	if interval <= 0 {
-		interval = 15
-	}
-	hbCtx, cancel := context.WithCancel(context.Background())
-	cs.internalHBCancel = cancel
-	go cs.pingInternal(hbCtx, time.Duration(interval)*time.Second)
 
 	log.Printf("Cash shop server %d (world %d) started on %s:%d", cs.config.CashShopID, cs.config.WorldID, cs.config.Host, cs.config.Port)
 	return nil
 }
 
 func (cs *CashShopServer) Stop() error {
-	if cs.internalHBCancel != nil {
-		cs.internalHBCancel()
-	}
-	if cs.internalConn != nil {
-		_ = cs.internalConn.Close()
-	}
-	return cs.ServerCore.Stop()
+	err := cs.ServerCore.Stop()
+	cs.systems.Stop()
+	return err
 }

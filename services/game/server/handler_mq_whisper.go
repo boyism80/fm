@@ -5,9 +5,8 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type whisperMq struct{ gs *GameServer }
@@ -36,9 +35,9 @@ func (h *whisperMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.SendToCharacter(nil, payload.CharacterID, &g_actor.ReceiveWhisper{
+	h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, payload.CharacterID, &domain.ReceiveWhisper{
 		CharacterID: payload.CharacterID,
-		Whisper: entity.Whisper{
+		Whisper: domain.Whisper{
 			RequestID:  payload.RequestID,
 			Mode:       payload.Mode,
 			SenderName: payload.SenderName,

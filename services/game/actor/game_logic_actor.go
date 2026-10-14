@@ -6,15 +6,15 @@ import (
 	"github.com/boyism80/fm/core/route"
 	"github.com/boyism80/fm/services/game/actor/timers"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type GameLogicActor struct {
-	GameWorld    entity.GameWorld
+	GameWorld    domain.GameWorld
 	scheduler    *scheduler.TimerScheduler
 	timerReg     *TimerRegistry
 	timerCancels []scheduler.CancelFunc
-	maps         func() []*entity.Map
+	maps         func() []*domain.Map
 }
 
 func (a *GameLogicActor) Receive(ctx actor.Context) {
@@ -26,14 +26,14 @@ func (a *GameLogicActor) Receive(ctx actor.Context) {
 	mapMessageRegistry.Dispatch(ctx, a, msg)
 }
 
-func (a *GameLogicActor) Maps() []*entity.Map {
+func (a *GameLogicActor) Maps() []*domain.Map {
 	if a == nil || a.maps == nil {
 		return nil
 	}
 	return a.maps()
 }
 
-func (a *GameLogicActor) GetCharacter(characterID uint32) *entity.Map {
+func (a *GameLogicActor) GetCharacter(characterID uint32) *domain.Map {
 	for _, m := range a.Maps() {
 		if m != nil && m.GetPlayer(characterID) != nil {
 			return m
@@ -42,7 +42,7 @@ func (a *GameLogicActor) GetCharacter(characterID uint32) *entity.Map {
 	return nil
 }
 
-func (a *GameLogicActor) GetObject(objectType constant.ObjectType, oid uint32) *entity.Map {
+func (a *GameLogicActor) GetObject(objectType constant.ObjectType, oid uint32) *domain.Map {
 	for _, m := range a.Maps() {
 		if m != nil && m.GetObject(objectType, oid) != nil {
 			return m
@@ -62,7 +62,7 @@ func (a *GameLogicActor) handleEnvelope(ctx actor.Context, env *route.Envelope) 
 	}
 	if !a.hasCharacterOnMap(env.CharacterID) {
 		if a.GameWorld != nil {
-			a.GameWorld.Resend(env)
+			a.GameWorld.Systems().Get[*domain.DispatchSystem]().Resend(env)
 		}
 		return
 	}
@@ -105,7 +105,7 @@ func (a *GameLogicActor) finishEnvelope(ctx actor.Context, msg *route.Envelope, 
 		return
 	}
 	if a.GameWorld != nil {
-		a.GameWorld.CompleteEnvelope(msg.CorrelationID)
+		a.GameWorld.Systems().Get[*domain.DispatchSystem]().CompleteEnvelope(msg.CorrelationID)
 	}
 	if msg.Caller == nil {
 		return

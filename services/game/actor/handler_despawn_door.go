@@ -1,6 +1,9 @@
 package actor
 
-import "github.com/asynkron/protoactor-go/actor"
+import (
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
+)
 
 type DespawnDoorHandler struct{}
 
@@ -8,7 +11,7 @@ func (DespawnDoorHandler) New() *DespawnDoorHandler {
 	return &DespawnDoorHandler{}
 }
 
-func (h *DespawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DespawnDoor) {
+func (h *DespawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.DespawnDoor) {
 	if msg == nil || msg.Map == nil {
 		return
 	}

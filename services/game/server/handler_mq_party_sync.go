@@ -7,6 +7,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game/domain"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -21,8 +22,8 @@ func (h *partyMqPartySync) Handle(_ actor.Context, raw json.RawMessage) error {
 	if gs == nil {
 		return nil
 	}
-	pc := gs.party
-	var evt PartyEventEnvelope
+	pc := gs.systems.Get[*domain.PartySystem]()
+	var evt domain.PartyEventEnvelope
 	if err := json.Unmarshal(raw, &evt); err != nil {
 		return nil
 	}
@@ -46,7 +47,7 @@ func (h *partyMqPartySync) Handle(_ actor.Context, raw json.RawMessage) error {
 	if partyPb.GetPartyId() != evt.PartyID {
 		log.Printf("party_sync: party_id mismatch envelope=%d party=%d", evt.PartyID, partyPb.GetPartyId())
 	}
-	if _, err := pc.applyPartySnapshot(evt, &partyPb, true); err != nil {
+	if _, err := pc.ApplyPartySnapshot(evt, &partyPb, true); err != nil {
 	}
 	return nil
 }

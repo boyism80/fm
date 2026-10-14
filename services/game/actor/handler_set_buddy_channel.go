@@ -2,6 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type SetBuddyChannelHandler struct{}
@@ -10,7 +11,7 @@ func (SetBuddyChannelHandler) New() *SetBuddyChannelHandler {
 	return &SetBuddyChannelHandler{}
 }
 
-func (h *SetBuddyChannelHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SetBuddyChannel) {
+func (h *SetBuddyChannelHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.SetBuddyChannel) {
 	if msg == nil {
 		return
 	}

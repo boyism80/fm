@@ -7,7 +7,7 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
-	gentity "github.com/boyism80/fm/services/game/entity"
+	gdomain "github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/util"
 )
@@ -168,8 +168,8 @@ func (ch *Character) inventoryType(item *internal.Inventory) constant.InventoryT
 	return model.GetInventoryType()
 }
 
-func (ch *Character) NewCashItem(commodity *wz.Commodity, world gentity.ItemWorld) (*internal.CashItem, error) {
-	item, err := gentity.NewItem(commodity.ItemID, max(commodity.Count, 1), world)
+func (ch *Character) NewCashItem(commodity *wz.Commodity, world gdomain.ItemWorld) (*internal.CashItem, error) {
+	item, err := gdomain.NewItem(commodity.ItemID, max(commodity.Count, 1), world)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (ch *Character) BuildLockerS2C() []*dto.CashShopItem {
 	return items
 }
 
-func (ch *Character) BuildS2C(world gentity.ItemWorld) *dto.Character {
+func (ch *Character) BuildS2C(world gdomain.ItemWorld) *dto.Character {
 	p := ch.Game.GetCharacter()
 	character := &dto.Character{
 		ID:                p.GetCharacterId(),
@@ -249,12 +249,12 @@ func (ch *Character) BuildS2C(world gentity.ItemWorld) *dto.Character {
 		character.Inventory.Tabs[invType] = &dto.InventoryTab{Type: invType, SlotLimit: ch.SlotLimit(invType), Items: make(map[int16]dto.Item)}
 	}
 	for _, pb := range ch.Game.Inventory {
-		item, err := gentity.NewItemFromInternalProto(pb, world)
+		item, err := gdomain.NewItemFromInternalProto(pb, world)
 		if err != nil {
 			continue
 		}
 		if pb.GetSlot() < 0 {
-			if equipment, ok := item.(gentity.Equipment); ok {
+			if equipment, ok := item.(gdomain.Equipment); ok {
 				character.Inventory.Equipped[constant.EquipmentPartsType(pb.GetSlot())] = equipment.BuildEquipmentS2C()
 			}
 			continue

@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -49,7 +50,7 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CreateCharacterReply, error) {
-			return h.ls.internalClient.CreateCharacter(c, reqProto)
+			return h.ls.systems.Get[*rpc.InternalConnection]().Client.CreateCharacter(c, reqProto)
 		}, func(reply *internal.CreateCharacterReply) error {
 			return h.sendCreateCharacterResult(ctx, reply)
 		}).OnError(func(err error) {

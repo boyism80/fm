@@ -8,12 +8,12 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -29,12 +29,8 @@ func (LoginGame) New(gs *GameServer) *LoginGame {
 }
 
 func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
-
 	worldId := h.gs.config.WorldId
-	ic := h.gs.internalClient
+	ic := h.gs.systems.Get[*rpc.InternalConnection]().Client
 
 	reqMsg := &internal.EnterGameRequest{
 		WorldId:     worldId,
@@ -132,7 +128,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 }
 
 func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply, partyReply *internal.GetPartyReply, guildReply *internal.GetGuildReply, allianceReply *internal.GetAllianceReply) error {
-	character := entity.NewCharacterFromInternalProto(ctx.Client, h.gs.characterListener, reply, h.gs)
+	character := domain.NewCharacterFromInternalProto(ctx.Client, h.gs.listeners.Get[domain.CharacterListener](), reply, h.gs)
 
 	gameClient, ok := ctx.Client.(*client.GameClient)
 	if !ok {
@@ -141,22 +137,22 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	mapID := reply.GetCharacter().GetMapId()
 	spawnPoint := uint8(reply.GetCharacter().GetSpawnPoint())
-	mapInstance := h.gs.GetMapSystem().Get(mapID)
+	mapInstance := h.gs.systems.Get[*domain.MapSystem]().Get(mapID)
 	if mapInstance == nil {
 		log.Printf("saved map %d not found, falling back to default", mapID)
-		defaultMapID, ok := h.gs.resources.NameToMap("\xed\x97\xa4\xeb\x84\xa4\xec\x8b\x9c\xec\x8a\xa4")
+		defaultMapID, ok := h.gs.GetResources().NameToMap("\xed\x97\xa4\xeb\x84\xa4\xec\x8b\x9c\xec\x8a\xa4")
 		if !ok {
 			return fmt.Errorf("default map not found")
 		}
 		mapID = defaultMapID
 		spawnPoint = 0
-		mapInstance = h.gs.GetMapSystem().Get(mapID)
+		mapInstance = h.gs.systems.Get[*domain.MapSystem]().Get(mapID)
 		if mapInstance == nil {
 			return fmt.Errorf("default map %d not found", mapID)
 		}
 	}
 	if mapInstance.Wz != nil && mapInstance.Wz.ForcedReturn != 0 {
-		if alt := h.gs.GetMapSystem().Get(mapInstance.Wz.ForcedReturn); alt != nil {
+		if alt := h.gs.systems.Get[*domain.MapSystem]().Get(mapInstance.Wz.ForcedReturn); alt != nil {
 			mapID = mapInstance.Wz.ForcedReturn
 			spawnPoint = 0
 			mapInstance = alt
@@ -175,29 +171,29 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	}
 
 	// Fail before SetCharacter: the login error path ends the session only while no character is set.
-	if err := h.gs.characterRuntime.RegisterCharacter(character.GetID(), character.GetName()); err != nil {
+	if err := h.gs.systems.Get[*domain.DispatchSystem]().RegisterCharacter(character.GetID(), character.GetName()); err != nil {
 		return fmt.Errorf("runtime register: %w", err)
 	}
 	character.BeginMove(mapInstance)
 	if !gameClient.SetCharacter(character) {
-		h.gs.characterRuntime.UnregisterCharacter(character.GetID())
+		h.gs.systems.Get[*domain.DispatchSystem]().UnregisterCharacter(character.GetID())
 		return fmt.Errorf("character %d: client disconnected during login", character.GetID())
 	}
 	_ = ctx.Client.GetConnection().SetReadDeadline(time.Time{})
 
 	if reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
-		h.gs.party.Update(partyReply.GetParty())
+		h.gs.systems.Get[*domain.PartySystem]().Update(partyReply.GetParty())
 	}
 
 	if guildReply != nil && guildReply.GetFound() && guildReply.GetGuild() != nil {
-		h.gs.guild.Update(guildReply.GetGuild())
+		h.gs.systems.Get[*domain.GuildSystem]().Update(guildReply.GetGuild())
 	}
 
 	if allianceReply != nil && allianceReply.GetFound() && allianceReply.GetAlliance() != nil {
-		h.gs.alliance.Update(allianceReply.GetAlliance())
+		h.gs.systems.Get[*domain.AllianceSystem]().Update(allianceReply.GetAlliance())
 	}
 
-	h.gs.GetRootContext().Send(targetMapPID, &g_actor.AddCharacter{
+	h.gs.GetRootContext().Send(targetMapPID, &domain.AddCharacter{
 		Character:  character,
 		TargetMap:  mapInstance,
 		SpawnPoint: spawnPoint,

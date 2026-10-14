@@ -2,6 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type SpouseMovedHandler struct{}
@@ -10,7 +11,7 @@ func (SpouseMovedHandler) New() *SpouseMovedHandler {
 	return &SpouseMovedHandler{}
 }
 
-func (h *SpouseMovedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SpouseMoved) {
+func (h *SpouseMovedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.SpouseMoved) {
 	m := a.GetCharacter(msg.CharacterID)
 	if m == nil {
 		return

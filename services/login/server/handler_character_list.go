@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -47,7 +48,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	sendCharListFallback := true
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise.ThenRPC(func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
-		return h.ls.internalClient.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
+		return h.ls.systems.Get[*rpc.InternalConnection]().Client.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   worldId,
 			ChannelId: uint32(req.Channel),
 		})
@@ -65,7 +66,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 		return nil
 	})
 	promise.ThenRPC(func(c context.Context) (*internal.GetCharacterListReply, error) {
-		return h.ls.internalClient.GetCharacterList(c, reqMsg)
+		return h.ls.systems.Get[*rpc.InternalConnection]().Client.GetCharacterList(c, reqMsg)
 	}, func(reply *internal.GetCharacterListReply) error {
 		return h.sendCharacterList(ctx, reply)
 	})

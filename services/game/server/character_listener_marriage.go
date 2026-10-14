@@ -1,256 +1,15 @@
 package server
 
 import (
-	"context"
-
-	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/clock"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) CreateMarriageAsync(ctx actor.Context, groom *entity.Character, bride *entity.Character, requestID uint64, ringItemID uint32) *async.Promise[*internal.MarriageReply] {
-	req := &internal.CreateMarriageRequest{
-		WorldId:    l.gs.config.WorldId,
-		GroomId:    groom.GetID(),
-		GroomName:  groom.GetName(),
-		BrideId:    bride.GetID(),
-		BrideName:  bride.GetName(),
-		RingItemId: ringItemID,
-		RequestId:  requestID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.CreateMarriage(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) LoadMarriageAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.MarriageReply] {
-	req := &internal.LoadMarriageRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.LoadMarriage(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) GetMarriageAsync(ctx actor.Context, ch *entity.Character, marriageID uint32) *async.Promise[*internal.MarriageReply] {
-	req := &internal.GetMarriageRequest{
-		WorldId:    l.gs.config.WorldId,
-		MarriageId: marriageID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.GetMarriage(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) BreakEngagementAsync(ctx actor.Context, ch *entity.Character, marriageID uint32) *async.Promise[*internal.MarriageReply] {
-	req := &internal.BreakEngagementRequest{
-		WorldId:     l.gs.config.WorldId,
-		MarriageId:  marriageID,
-		CharacterId: ch.GetID(),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.BreakEngagement(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) ReserveWeddingAsync(ctx actor.Context, ch *entity.Character, requestID uint64, marriageID uint32, ticketItemID uint32) *async.Promise[*internal.MarriageReply] {
-	req := &internal.ReserveWeddingRequest{
-		WorldId:      l.gs.config.WorldId,
-		MarriageId:   marriageID,
-		TicketItemId: ticketItemID,
-		RequestId:    requestID,
-		CharacterId:  ch.GetID(),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.ReserveWedding(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) AbortMarriageChangeAsync(ctx actor.Context, ch *entity.Character, requestID uint64) *async.Promise[*internal.AbortMarriageChangeReply] {
-	req := &internal.AbortMarriageChangeRequest{
-		WorldId:   l.gs.config.WorldId,
-		RequestId: requestID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.AbortMarriageChangeReply, error) {
-			return l.gs.internalClient.AbortMarriageChange(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) SetWeddingWishlistAsync(ctx actor.Context, ch *entity.Character, marriageID uint32, wishes []string) *async.Promise[*internal.MarriageReply] {
-	req := &internal.SetWeddingWishlistRequest{
-		WorldId:     l.gs.config.WorldId,
-		MarriageId:  marriageID,
-		CharacterId: ch.GetID(),
-		Wishes:      wishes,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.SetWeddingWishlist(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) InviteWeddingGuestAsync(ctx actor.Context, ch *entity.Character, marriageID uint32, guestName string) *async.Promise[*internal.InviteWeddingGuestReply] {
-	req := &internal.InviteWeddingGuestRequest{
-		WorldId:    l.gs.config.WorldId,
-		MarriageId: marriageID,
-		GuestName:  guestName,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.InviteWeddingGuestReply, error) {
-			return l.gs.internalClient.InviteWeddingGuest(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) RequestDivorceAsync(ctx actor.Context, ch *entity.Character, marriageID uint32) *async.Promise[*internal.MarriageReply] {
-	req := &internal.RequestDivorceRequest{
-		WorldId:     l.gs.config.WorldId,
-		MarriageId:  marriageID,
-		CharacterId: ch.GetID(),
-		NowUnixMs:   uint64(clock.Now().UnixMilli()),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.RequestDivorce(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) CancelDivorceAsync(ctx actor.Context, ch *entity.Character, marriageID uint32) *async.Promise[*internal.MarriageReply] {
-	req := &internal.CancelDivorceRequest{
-		WorldId:     l.gs.config.WorldId,
-		MarriageId:  marriageID,
-		CharacterId: ch.GetID(),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.MarriageReply, error) {
-			return l.gs.internalClient.CancelDivorce(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) GiveWeddingGiftAsync(ctx actor.Context, ch *entity.Character, requestID uint64, receiverID uint32, gift *internal.WeddingGift) *async.Promise[*internal.GiveWeddingGiftReply] {
-	req := &internal.GiveWeddingGiftRequest{
-		WorldId:    l.gs.config.WorldId,
-		ReceiverId: receiverID,
-		Gift:       gift,
-		RequestId:  requestID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.GiveWeddingGiftReply, error) {
-			return l.gs.internalClient.GiveWeddingGift(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) AbortWeddingGiftAsync(ctx actor.Context, ch *entity.Character, requestID uint64, receiverID uint32) *async.Promise[*internal.AbortWeddingGiftReply] {
-	req := &internal.AbortWeddingGiftRequest{
-		WorldId:    l.gs.config.WorldId,
-		ReceiverId: receiverID,
-		RequestId:  requestID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.AbortWeddingGiftReply, error) {
-			return l.gs.internalClient.AbortWeddingGift(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) LoadWeddingGiftsAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.LoadWeddingGiftsReply] {
-	req := &internal.LoadWeddingGiftsRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.LoadWeddingGiftsReply, error) {
-			return l.gs.internalClient.LoadWeddingGifts(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) ClaimWeddingGiftAsync(ctx actor.Context, ch *entity.Character, requestID uint64, giftID uint32) *async.Promise[*internal.ClaimWeddingGiftReply] {
-	req := &internal.ClaimWeddingGiftRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		GiftId:      giftID,
-		RequestId:   requestID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.ClaimWeddingGiftReply, error) {
-			return l.gs.internalClient.ClaimWeddingGift(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) RemoveNotesAsync(ctx actor.Context, ch *entity.Character, requestID uint64, action internal.NotesAction, noteIDs []uint32) *async.Promise[*internal.NotesReply] {
-	req := &internal.NotesRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		Action:      action,
-		NoteIds:     noteIDs,
-		RequestId:   requestID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.NotesReply, error) {
-			return l.gs.internalClient.Notes(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) NotifySpouseMapAsync(ctx actor.Context, ch *entity.Character, spouseID uint32, mapID uint32, reply bool) *async.Promise[*internal.NotifySpouseMapReply] {
-	req := &internal.NotifySpouseMapRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		SpouseId:    spouseID,
-		MapId:       mapID,
-		Reply:       reply,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.NotifySpouseMapReply, error) {
-			return l.gs.internalClient.NotifySpouseMap(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) OnEngageRequest(ch *entity.Character, name string, characterID uint32) {
+func (l *CharacterListenerImpl) OnEngageRequest(ch *domain.Character, name string, characterID uint32) {
 	ch.Send(&response.EngageRequest{
 		Mode:        pconst.EngageRequestPropose,
 		Name:        name,
@@ -258,13 +17,13 @@ func (l *CharacterListenerImpl) OnEngageRequest(ch *entity.Character, name strin
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWeddingWishlistInput(ch *entity.Character) {
+func (l *CharacterListenerImpl) OnWeddingWishlistInput(ch *domain.Character) {
 	ch.Send(&response.EngageRequest{
 		Mode: pconst.EngageRequestWishlist,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnEngageResult(ch *entity.Character, result pconst.EngageResult) {
+func (l *CharacterListenerImpl) OnEngageResult(ch *domain.Character, result pconst.EngageResult) {
 	packet := &response.EngageResult{Result: result}
 	if result == pconst.EngageResultEngaged || result == pconst.EngageResultMarried {
 		packet.Marriage = ch.Wedding.Marriage.BuildS2C()
@@ -272,7 +31,7 @@ func (l *CharacterListenerImpl) OnEngageResult(ch *entity.Character, result pcon
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWeddingInvitation(ch *entity.Character, groomName string, brideName string, weddingType uint16) {
+func (l *CharacterListenerImpl) OnWeddingInvitation(ch *domain.Character, groomName string, brideName string, weddingType uint16) {
 	ch.Send(&response.EngageResult{
 		Result:      pconst.EngageResultInvitation,
 		GroomName:   groomName,
@@ -281,7 +40,7 @@ func (l *CharacterListenerImpl) OnWeddingInvitation(ch *entity.Character, groomN
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWeddingGift(ch *entity.Character, mode pconst.WeddingGiftMode, wishes []string, tabs map[constant.InventoryType][]entity.Item) {
+func (l *CharacterListenerImpl) OnWeddingGift(ch *domain.Character, mode pconst.WeddingGiftMode, wishes []string, tabs map[constant.InventoryType][]domain.Item) {
 	packet := &response.WeddingGift{Mode: mode, Wishes: wishes}
 	if tabs != nil {
 		packet.Tabs = response.WeddingGiftTabs{}
@@ -296,7 +55,7 @@ func (l *CharacterListenerImpl) OnWeddingGift(ch *entity.Character, mode pconst.
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnSpouseMap(ch *entity.Character, mapID uint32, spouseID uint32) {
+func (l *CharacterListenerImpl) OnSpouseMap(ch *domain.Character, mapID uint32, spouseID uint32) {
 	ch.Send(&response.SpouseMap{
 		MapID:       mapID,
 		CharacterID: spouseID,

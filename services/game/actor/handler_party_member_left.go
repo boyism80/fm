@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type PartyMemberLeftHandler struct{}
@@ -12,7 +12,7 @@ func (PartyMemberLeftHandler) New() *PartyMemberLeftHandler {
 	return &PartyMemberLeftHandler{}
 }
 
-func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *PartyMemberLeft) {
+func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.PartyMemberLeft) {
 	if msg == nil {
 		return
 	}
@@ -25,5 +25,5 @@ func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, ms
 	if ch == nil {
 		return
 	}
-	ch.StateMachine().RequestLeave(ch, true, entity.StateMachineLeaveParty)
+	ch.StateMachine().RequestLeave(ch, true, domain.StateMachineLeaveParty)
 }

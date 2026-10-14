@@ -4,7 +4,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type InviteToGuildHandler struct{}
@@ -13,7 +13,7 @@ func (InviteToGuildHandler) New() *InviteToGuildHandler {
 	return &InviteToGuildHandler{}
 }
 
-func (h *InviteToGuildHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *InviteToGuild) {
+func (h *InviteToGuildHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.InviteToGuild) {
 	if msg == nil {
 		return
 	}
@@ -26,18 +26,18 @@ func (h *InviteToGuildHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		return
 	}
 	switch ch.Guild.Invite(msg.GuildID, msg.InviterName) {
-	case entity.ErrGuildAlreadyJoined:
+	case domain.ErrGuildAlreadyJoined:
 		if a.GameWorld != nil {
-			a.GameWorld.GetDispatchSystem().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *entity.Character) {
+			a.GameWorld.Systems().Get[*domain.DispatchSystem]().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *domain.Character) {
 				if inviter == nil {
 					return
 				}
 				inviter.Listener.OnGuildMessage(inviter, pconst.GuildResponseAlreadyInGuild)
 			})
 		}
-	case entity.ErrGuildInviteBusy:
+	case domain.ErrGuildInviteBusy:
 		if a.GameWorld != nil {
-			a.GameWorld.GetDispatchSystem().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *entity.Character) {
+			a.GameWorld.Systems().Get[*domain.DispatchSystem]().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *domain.Character) {
 				if inviter == nil {
 					return
 				}

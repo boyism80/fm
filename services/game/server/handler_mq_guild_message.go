@@ -6,6 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type guildMqMessage struct{ gs *GameServer }
@@ -35,6 +36,6 @@ func (h *guildMqMessage) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.GuildID == 0 || payload.Message == "" {
 		return nil
 	}
-	gs.guild.BroadcastMessage(payload.GuildID, constant.ServerMessageType(payload.MessageType), payload.Message)
+	gs.systems.Get[*domain.GuildSystem]().BroadcastMessage(payload.GuildID, constant.ServerMessageType(payload.MessageType), payload.Message)
 	return nil
 }

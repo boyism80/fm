@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type partyMqMemberLeft struct{ gs *GameServer }
@@ -21,7 +21,7 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 	if h.gs == nil {
 		return nil
 	}
-	pc := h.gs.party
+	pc := h.gs.systems.Get[*domain.PartySystem]()
 	evt, ok := decodePartyEventEnvelope(raw)
 	if !ok {
 		return nil
@@ -40,7 +40,7 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
 			return nil
 		}
-		h.gs.SendToCharacter(nil, extra.CharacterID, &g_actor.ClearPartyByPartyID{
+		h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, extra.CharacterID, &domain.ClearPartyByPartyID{
 			CharacterID: extra.CharacterID,
 			PartyID:     evt.PartyID,
 		})

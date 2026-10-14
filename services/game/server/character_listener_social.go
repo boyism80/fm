@@ -1,27 +1,23 @@
 package server
 
 import (
-	"context"
 	"time"
 
-	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) OnWhisperFailed(ch *entity.Character, name string) {
+func (l *CharacterListenerImpl) OnWhisperFailed(ch *domain.Character, name string) {
 	ch.Send(&response.Whisper{
 		Mode: internal.WhisperMode_WHISPER_MODE_SEND_RESULT,
 		Name: name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWhisperSent(ch *entity.Character, name string) {
+func (l *CharacterListenerImpl) OnWhisperSent(ch *domain.Character, name string) {
 	ch.Send(&response.Whisper{
 		Mode:    internal.WhisperMode_WHISPER_MODE_SEND_RESULT,
 		Name:    name,
@@ -29,7 +25,7 @@ func (l *CharacterListenerImpl) OnWhisperSent(ch *entity.Character, name string)
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWhisperFound(ch *entity.Character, reply *internal.WhisperReply, buddy bool) {
+func (l *CharacterListenerImpl) OnWhisperFound(ch *domain.Character, reply *internal.WhisperReply, buddy bool) {
 	packet := &response.Whisper{
 		Mode:     internal.WhisperMode_WHISPER_MODE_FIND_RESULT,
 		Name:     reply.Name,
@@ -49,7 +45,7 @@ func (l *CharacterListenerImpl) OnWhisperFound(ch *entity.Character, reply *inte
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWhisperReceived(ch *entity.Character, sender string, channel int32, message string) error {
+func (l *CharacterListenerImpl) OnWhisperReceived(ch *domain.Character, sender string, channel int32, message string) error {
 	return ch.Send(&response.Whisper{
 		Mode:    internal.WhisperMode_WHISPER_MODE_RECEIVE,
 		Name:    sender,
@@ -58,38 +54,7 @@ func (l *CharacterListenerImpl) OnWhisperReceived(ch *entity.Character, sender s
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) ClaimWhisperAsync(ctx actor.Context, ch *entity.Character, requestID string) *async.Promise[*internal.CompleteWhisperReply] {
-	req := &internal.CompleteWhisperRequest{
-		WorldId:     l.gs.config.WorldId,
-		RequestId:   requestID,
-		CharacterId: ch.GetID(),
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.CompleteWhisperReply, error) {
-			return l.gs.internalClient.CompleteWhisper(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) CompleteWhisperAsync(ctx actor.Context, ch *entity.Character, requestID string, received bool) *async.Promise[*internal.CompleteWhisperReply] {
-	req := &internal.CompleteWhisperRequest{
-		WorldId:     l.gs.config.WorldId,
-		RequestId:   requestID,
-		CharacterId: ch.GetID(),
-		MapId:       ch.GetMap().TemplateID(),
-		Complete:    true,
-		Received:    received,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.CompleteWhisperReply, error) {
-			return l.gs.internalClient.CompleteWhisper(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) OnMessengerJoined(ch *entity.Character, position uint8, members []*internal.MessengerMember, queued []entity.MessengerEvent) {
+func (l *CharacterListenerImpl) OnMessengerJoined(ch *domain.Character, position uint8, members []*internal.MessengerMember, queued []domain.MessengerEvent) {
 	ch.Send(&response.Messenger{
 		Action:   internal.MessengerAction_MESSENGER_ACTION_SELF_ENTER,
 		Position: position,
@@ -108,7 +73,7 @@ func (l *CharacterListenerImpl) OnMessengerJoined(ch *entity.Character, position
 	}
 }
 
-func (l *CharacterListenerImpl) OnMessengerInviteResult(ch *entity.Character, name string, success bool) {
+func (l *CharacterListenerImpl) OnMessengerInviteResult(ch *domain.Character, name string, success bool) {
 	ch.Send(&response.Messenger{
 		Action:  internal.MessengerAction_MESSENGER_ACTION_INVITE_RESULT,
 		Name:    name,
@@ -116,7 +81,7 @@ func (l *CharacterListenerImpl) OnMessengerInviteResult(ch *entity.Character, na
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMessengerEvent(ch *entity.Character, event entity.MessengerEvent) {
+func (l *CharacterListenerImpl) OnMessengerEvent(ch *domain.Character, event domain.MessengerEvent) {
 	ch.Send(&response.Messenger{
 		Action:   event.Action,
 		Position: event.Position,
@@ -128,13 +93,13 @@ func (l *CharacterListenerImpl) OnMessengerEvent(ch *entity.Character, event ent
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPopulationFailed(ch *entity.Character, result pconst.PopulationResult) {
+func (l *CharacterListenerImpl) OnPopulationFailed(ch *domain.Character, result pconst.PopulationResult) {
 	ch.Send(&response.Population{
 		Status: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPopulationGiven(ch *entity.Character, mode pconst.PopulationMode, targetName string, value int32) {
+func (l *CharacterListenerImpl) OnPopulationGiven(ch *domain.Character, mode pconst.PopulationMode, targetName string, value int32) {
 	ch.Send(&response.Population{
 		Status: pconst.PopulationResultGiven,
 		Mode:   mode,
@@ -143,7 +108,7 @@ func (l *CharacterListenerImpl) OnPopulationGiven(ch *entity.Character, mode pco
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPopulationReceived(ch *entity.Character, mode pconst.PopulationMode, giverName string) {
+func (l *CharacterListenerImpl) OnPopulationReceived(ch *domain.Character, mode pconst.PopulationMode, giverName string) {
 	ch.Send(&response.Population{
 		Status: pconst.PopulationResultReceived,
 		Mode:   mode,
@@ -151,7 +116,7 @@ func (l *CharacterListenerImpl) OnPopulationReceived(ch *entity.Character, mode 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNotes(ch *entity.Character, notes []*internal.Note) {
+func (l *CharacterListenerImpl) OnNotes(ch *domain.Character, notes []*internal.Note) {
 	packet := &response.Notes{Action: pconst.NotesPacketList}
 	for _, n := range notes {
 		packet.Notes = append(packet.Notes, response.Note{
@@ -165,48 +130,30 @@ func (l *CharacterListenerImpl) OnNotes(ch *entity.Character, notes []*internal.
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNoteSent(ch *entity.Character) {
+func (l *CharacterListenerImpl) OnNoteSent(ch *domain.Character) {
 	ch.Send(&response.Notes{
 		Action: pconst.NotesPacketSent,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNoteFailed(ch *entity.Character, result internal.NoteResult) {
+func (l *CharacterListenerImpl) OnNoteFailed(ch *domain.Character, result internal.NoteResult) {
 	ch.Send(&response.Notes{
 		Action: pconst.NotesPacketFailed,
 		Status: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) SendNoteAsync(ctx actor.Context, ch *entity.Character, recipient string, message string) *async.Promise[*internal.NotesReply] {
-	worldID := l.gs.config.WorldId
-	characterID := ch.GetID()
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.NotesReply, error) {
-			return l.gs.internalClient.Notes(c, &internal.NotesRequest{
-				WorldId:     worldID,
-				CharacterId: characterID,
-				Action:      internal.NotesAction_NOTES_ACTION_SEND,
-				TargetName:  recipient,
-				Message:     message,
-				Gift:        uint32(pconst.NoteKindNormal),
-			})
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) OnNoteArrived(ch *entity.Character) {
+func (l *CharacterListenerImpl) OnNoteArrived(ch *domain.Character) {
 	ch.Send(&response.Notes{
 		Action: pconst.NotesPacketRefresh,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyPrivileges(ch *entity.Character) {
+func (l *CharacterListenerImpl) OnFamilyPrivileges(ch *domain.Character) {
 	ch.Send(&response.FamilyPrivileges{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyChanged(ch *entity.Character) {
+func (l *CharacterListenerImpl) OnFamilyChanged(ch *domain.Character) {
 	id := ch.GetID()
 	self := ch.Family.Self()
 	info := &response.FamilyInfo{
@@ -233,103 +180,7 @@ func (l *CharacterListenerImpl) OnFamilyChanged(ch *entity.Character) {
 	}
 }
 
-func (l *CharacterListenerImpl) GetFamilyAsync(ctx actor.Context, ch *entity.Character, name string) *async.Promise[*internal.GetFamilyReply] {
-	req := &internal.GetFamilyRequest{
-		WorldId: l.gs.config.WorldId,
-		Name:    name,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.GetFamilyReply, error) {
-			return l.gs.internalClient.GetFamily(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) JoinFamilyAsync(ctx actor.Context, senior *entity.Character, junior *entity.Character) *async.Promise[*internal.FamilyReply] {
-	req := &internal.JoinFamilyRequest{
-		WorldId: l.gs.config.WorldId,
-		Senior: &internal.FamilyMember{
-			CharacterId: senior.GetID(),
-			Name:        senior.GetName(),
-			Level:       uint32(senior.GetLevel()),
-			ClassId:     uint32(senior.Class),
-		},
-		Junior: &internal.FamilyMember{
-			CharacterId: junior.GetID(),
-			Name:        junior.GetName(),
-			Level:       uint32(junior.GetLevel()),
-			ClassId:     uint32(junior.Class),
-		},
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.FamilyReply, error) {
-			return l.gs.internalClient.JoinFamily(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) SeparateFamilyAsync(ctx actor.Context, ch *entity.Character, juniorID uint32) *async.Promise[*internal.FamilyReply] {
-	req := &internal.SeparateFamilyRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		JuniorId:    juniorID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.FamilyReply, error) {
-			return l.gs.internalClient.SeparateFamily(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) SetFamilyPreceptAsync(ctx actor.Context, ch *entity.Character, precept string) *async.Promise[*internal.FamilyReply] {
-	req := &internal.SetFamilyPreceptRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		Precept:     precept,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.FamilyReply, error) {
-			return l.gs.internalClient.SetFamilyPrecept(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) UseFamilyFeatureAsync(ctx actor.Context, ch *entity.Character, feature internal.FamilyFeature, targetID uint32, requestID uint64) *async.Promise[*internal.FamilyReply] {
-	req := &internal.UseFamilyFeatureRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		Feature:     feature,
-		TargetId:    targetID,
-		RequestId:   requestID,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.FamilyReply, error) {
-			return l.gs.internalClient.UseFamilyFeature(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) FinishFamilyMoveAsync(ctx actor.Context, ch *entity.Character, requestID uint64, complete bool) *async.Promise[*internal.FamilyReply] {
-	req := &internal.FinishFamilyMoveRequest{
-		WorldId:     l.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		RequestId:   requestID,
-		Complete:    complete,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.FamilyReply, error) {
-			return l.gs.internalClient.FinishFamilyMove(c, req)
-		},
-		nil,
-	)
-}
-
-func (l *CharacterListenerImpl) OnFamilyChart(ch *entity.Character, tree entity.FamilyTree, characterID uint32) {
+func (l *CharacterListenerImpl) OnFamilyChart(ch *domain.Character, tree domain.FamilyTree, characterID uint32) {
 	chart := &response.FamilyChart{
 		CharacterID:  characterID,
 		Members:      tree.Pedigree(characterID),
@@ -347,33 +198,33 @@ func (l *CharacterListenerImpl) OnFamilyChart(ch *entity.Character, tree entity.
 	ch.Send(chart, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyResult(ch *entity.Character, result internal.FamilyResult) {
+func (l *CharacterListenerImpl) OnFamilyResult(ch *domain.Character, result internal.FamilyResult) {
 	ch.Send(&response.FamilyResult{
 		Code: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyInvite(ch *entity.Character, inviterID uint32, name string) {
+func (l *CharacterListenerImpl) OnFamilyInvite(ch *domain.Character, inviterID uint32, name string) {
 	ch.Send(&response.FamilyInvite{
 		InviterID: inviterID,
 		Name:      name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyInviteResult(ch *entity.Character, accepted bool, name string) {
+func (l *CharacterListenerImpl) OnFamilyInviteResult(ch *domain.Character, accepted bool, name string) {
 	ch.Send(&response.FamilyInviteResult{
 		Accepted: accepted,
 		Name:     name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyJoined(ch *entity.Character, name string) {
+func (l *CharacterListenerImpl) OnFamilyJoined(ch *domain.Character, name string) {
 	ch.Send(&response.FamilyJoined{
 		Name: name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilySummon(ch *entity.Character, name string, mapName string) {
+func (l *CharacterListenerImpl) OnFamilySummon(ch *domain.Character, name string, mapName string) {
 	ch.Send(&response.FamilySummon{
 		Name:    name,
 		MapName: mapName,

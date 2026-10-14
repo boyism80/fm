@@ -1,6 +1,9 @@
 package actor
 
-import "github.com/asynkron/protoactor-go/actor"
+import (
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
+)
 
 type SetFamilyHandler struct{}
 
@@ -8,7 +11,7 @@ func (SetFamilyHandler) New() *SetFamilyHandler {
 	return &SetFamilyHandler{}
 }
 
-func (h *SetFamilyHandler) Handle(_ actor.Context, a *GameLogicActor, msg *SetFamily) {
+func (h *SetFamilyHandler) Handle(_ actor.Context, a *GameLogicActor, msg *domain.SetFamily) {
 	m := a.GetCharacter(msg.CharacterID)
 	if m == nil {
 		return

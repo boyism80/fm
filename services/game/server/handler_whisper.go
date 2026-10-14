@@ -5,10 +5,11 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type Whisper struct {
@@ -22,7 +23,7 @@ func (Whisper) New(gs *GameServer) *Whisper {
 }
 
 func (h *Whisper) Handle(ctx *core.ClientContext, req *request.Whisper) error {
-	if h.gs.internalClient == nil || ctx.ActorContext == nil {
+	if ctx.ActorContext == nil {
 		return nil
 	}
 
@@ -44,12 +45,12 @@ func (h *Whisper) Handle(ctx *core.ClientContext, req *request.Whisper) error {
 		fail()
 		return nil
 	}
-	if !entity.ClientText(req.Target).Valid(13) || (req.Mode == internal.WhisperMode_WHISPER_MODE_SEND && !entity.ClientText(req.Message).Valid(200)) {
+	if !domain.ClientText(req.Target).Valid(13) || (req.Mode == internal.WhisperMode_WHISPER_MODE_SEND && !domain.ClientText(req.Message).Valid(200)) {
 		fail()
 		return nil
 	}
 
-	rpc := &internal.WhisperRequest{
+	internalReq := &internal.WhisperRequest{
 		WorldId:     h.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 		ChannelId:   h.gs.config.ChannelId,
@@ -59,7 +60,7 @@ func (h *Whisper) Handle(ctx *core.ClientContext, req *request.Whisper) error {
 	}
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.WhisperReply, error) {
-			return h.gs.internalClient.Whisper(c, rpc)
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Whisper(c, internalReq)
 		},
 		func(reply *internal.WhisperReply) error {
 			if ch.LoggedOut() {

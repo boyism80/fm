@@ -2,6 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type SyncCharacterPartyStateHandler struct{}
@@ -10,7 +11,7 @@ func (SyncCharacterPartyStateHandler) New() *SyncCharacterPartyStateHandler {
 	return &SyncCharacterPartyStateHandler{}
 }
 
-func (h *SyncCharacterPartyStateHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SyncCharacterPartyState) {
+func (h *SyncCharacterPartyStateHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.SyncCharacterPartyState) {
 	if msg == nil {
 		return
 	}

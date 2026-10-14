@@ -335,18 +335,6 @@ func (s *ServerCore) GetPacketHandler() *PacketHandler {
 	return s.packetHandler
 }
 
-func (s *ServerCore) GetStats() map[string]interface{} {
-	s.clientsMutex.RLock()
-	clientCount := len(s.clients)
-	s.clientsMutex.RUnlock()
-
-	return map[string]interface{}{
-		"client_count":    clientCount,
-		"listening":       s.listener != nil,
-		"packet_handlers": s.packetHandler.GetHandlerCount(),
-	}
-}
-
 func (s *ServerCore) Clients() []Client {
 	s.clientsMutex.RLock()
 	defer s.clientsMutex.RUnlock()

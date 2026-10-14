@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type allianceMqMemberRankChanged struct{ gs *GameServer }
@@ -60,7 +61,7 @@ func (h *allianceMqMemberRankChanged) Handle(_ actor.Context, raw json.RawMessag
 		log.Printf("alliance consumer: member_rank_changed alliance_id=%d missing rank for character=%d", evt.AllianceID, extra.CharacterID)
 		return nil
 	}
-	gs.alliance.Update(alliancePb)
-	gs.alliance.BroadcastMemberRankChanged(alliancePb, extra.CharacterID, allianceRank)
+	gs.systems.Get[*domain.AllianceSystem]().Update(alliancePb)
+	gs.systems.Get[*domain.AllianceSystem]().BroadcastMemberRankChanged(alliancePb, extra.CharacterID, allianceRank)
 	return nil
 }

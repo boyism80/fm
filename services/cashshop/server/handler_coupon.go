@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -71,7 +72,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 
 	promise := h.start(ctx, character)
 	promise.ThenRPC(func(c context.Context) (*internal.FindCashCouponReply, error) {
-		return h.cs.internalClient.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: uint32(h.cs.config.WorldID), Code: req.Code})
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: uint32(h.cs.config.WorldID), Code: req.Code})
 	}, func(reply *internal.FindCashCouponReply) error {
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
@@ -85,7 +86,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 
 		var item *internal.CashItem
 		if reply.GetKind() == internal.CashCouponKind_CASH_COUPON_KIND_ITEM {
-			commodity := h.cs.resources.Commodities[reply.GetValue()]
+			commodity := h.cs.GetResources().Commodities[reply.GetValue()]
 			if commodity == nil {
 				h.fail(ctx, constant.CashShopFailureUnknown)
 				return nil
@@ -105,7 +106,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 // claim continues the task redeem started, so Busy stays set until the coupon is spent.
 func (h *Coupon) claim(ctx *core.ClientContext, promise *async.Task, character *entity.Character, code string, kind internal.CashCouponKind, value uint32, item *internal.CashItem) {
 	promise.ThenRPC(func(c context.Context) (*internal.RedeemCashCouponReply, error) {
-		return h.cs.internalClient.RedeemCashCoupon(c, &internal.RedeemCashCouponRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.RedeemCashCoupon(c, &internal.RedeemCashCouponRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),

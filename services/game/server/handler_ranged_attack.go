@@ -7,7 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type RangedAttack struct {
@@ -46,7 +46,7 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 		return fmt.Errorf("character is not in a map")
 	}
 
-	var skill *entity.SkillEntry
+	var skill *domain.SkillEntry
 	if req.Skill != 0 {
 		skill = character.Skills.Get(req.Skill)
 	}

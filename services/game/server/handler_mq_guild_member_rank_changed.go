@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type guildMqMemberRankChanged struct{ gs *GameServer }
@@ -32,8 +33,8 @@ func (h *guildMqMemberRankChanged) Handle(ctx actor.Context, raw json.RawMessage
 		return nil
 	}
 	targetID := extra.CharacterID
-	gs.guild.SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
-		gs.guild.BroadcastMemberRankChanged(guildID, targetID)
+	gs.systems.Get[*domain.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
+		gs.systems.Get[*domain.GuildSystem]().BroadcastMemberRankChanged(guildID, targetID)
 	})
 	return nil
 }

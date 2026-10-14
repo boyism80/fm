@@ -7,11 +7,12 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type PartyOperation struct {
@@ -25,9 +26,6 @@ func (PartyOperation) New(gs *GameServer) *PartyOperation {
 }
 
 func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOperation) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("party operation: actor context required")
 	}
@@ -53,7 +51,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					WorldId: worldID,
 					Leader:  leader,
 				}
-				return h.gs.internalClient.CreateParty(c, req)
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateParty(c, req)
 			},
 			func(reply *internal.CreatePartyReply) error {
 				if !reply.GetOk() {
@@ -65,7 +63,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(create): ok but missing party_id character=%d", charID)
 					return nil
 				}
-				h.gs.party.Update(reply.GetParty())
+				h.gs.systems.Get[*domain.PartySystem]().Update(reply.GetParty())
 				ch.Party.SetID(reply.PartyId)
 				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 				return nil
@@ -78,7 +76,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 	case constant.PartyC2SLeave:
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.LeavePartyReply, error) {
-				return h.gs.internalClient.LeaveParty(c, &internal.LeavePartyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.LeaveParty(c, &internal.LeavePartyRequest{
 					WorldId:     worldID,
 					CharacterId: charID,
 				})
@@ -104,7 +102,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		member := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.JoinPartyReply, error) {
-				return h.gs.internalClient.JoinParty(c, &internal.JoinPartyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.JoinParty(c, &internal.JoinPartyRequest{
 					WorldId:                worldID,
 					PartyId:                req.PartyID,
 					Member:                 member,
@@ -136,7 +134,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		}
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.ChangePartyLeaderReply, error) {
-				return h.gs.internalClient.ChangePartyLeader(c, &internal.ChangePartyLeaderRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangePartyLeader(c, &internal.ChangePartyLeaderRequest{
 					WorldId:              worldID,
 					PartyId:              *partyIDPtr,
 					RequesterCharacterId: charID,
@@ -169,7 +167,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 						WorldId: worldID,
 						Leader:  leader,
 					}
-					return h.gs.internalClient.CreateParty(c, req)
+					return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateParty(c, req)
 				},
 				func(reply *internal.CreatePartyReply) error {
 					if reply.GetOk() {
@@ -177,7 +175,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 							log.Printf("PartyOperation(invite pre-create): ok but missing party_id character=%d", charID)
 							return fmt.Errorf("party create before invite failed")
 						}
-						h.gs.party.Update(reply.GetParty())
+						h.gs.systems.Get[*domain.PartySystem]().Update(reply.GetParty())
 						ch.Party.SetID(reply.PartyId)
 						ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 						return nil
@@ -190,7 +188,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		}
 		promise.ThenRPC(
 			func(c context.Context) (*internal.InvitePartyReply, error) {
-				return h.gs.internalClient.InviteParty(c, &internal.InvitePartyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.InviteParty(c, &internal.InvitePartyRequest{
 					WorldId:             worldID,
 					InviterCharacterId:  charID,
 					TargetCharacterName: targetName,
@@ -216,14 +214,14 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(invite): ok but missing party_id inviter=%d", charID)
 					return &internal.GetPartyReply{Found: false}, nil
 				}
-				return h.gs.internalClient.GetParty(c, &internal.GetPartyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.GetParty(c, &internal.GetPartyRequest{
 					WorldId: worldID,
 					PartyId: *inv.PartyId,
 				})
 			},
 			func(gp *internal.GetPartyReply) error {
 				if gp.GetFound() && gp.GetParty() != nil {
-					h.gs.party.Update(gp.GetParty())
+					h.gs.systems.Get[*domain.PartySystem]().Update(gp.GetParty())
 				}
 				return nil
 			},
@@ -236,7 +234,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 	case constant.PartyC2SExpel:
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.ExpelPartyReply, error) {
-				return h.gs.internalClient.ExpelParty(c, &internal.ExpelPartyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.ExpelParty(c, &internal.ExpelPartyRequest{
 					WorldId:              worldID,
 					RequesterCharacterId: charID,
 					TargetCharacterId:    req.TargetCharacterID,
@@ -249,7 +247,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					return nil
 				}
 				if reply.PartyId != nil {
-					h.gs.SendToCharacter(nil, req.TargetCharacterID, &g_actor.ClearPartyByPartyID{
+					h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, req.TargetCharacterID, &domain.ClearPartyByPartyID{
 						CharacterID: req.TargetCharacterID,
 						PartyID:     *reply.PartyId,
 					})

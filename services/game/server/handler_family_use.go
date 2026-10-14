@@ -4,7 +4,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type FamilyUse struct {
@@ -21,7 +21,7 @@ func (h *FamilyUse) Handle(ctx *core.ClientContext, req *request.FamilyUse) erro
 		return nil
 	}
 	ch := gameClient.GetCharacter()
-	if ch == nil || (req.Name != "" && !entity.ClientText(req.Name).Valid(13)) {
+	if ch == nil || (req.Name != "" && !domain.ClientText(req.Name).Valid(13)) {
 		return nil
 	}
 

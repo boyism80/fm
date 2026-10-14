@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type guildMqCapacityChanged struct{ gs *GameServer }
@@ -33,9 +34,9 @@ func (h *guildMqCapacityChanged) Handle(ctx actor.Context, raw json.RawMessage) 
 		log.Printf("guild consumer: capacity_changed guild_id=%d invalid payload: %v", evt.GuildID, err)
 		return nil
 	}
-	gs.guild.SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
-		gs.guild.BroadcastCapacityChanged(guildID)
-		gs.guild.BroadcastGPChanged(guildID, payload.GPAmount)
+	gs.systems.Get[*domain.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
+		gs.systems.Get[*domain.GuildSystem]().BroadcastCapacityChanged(guildID)
+		gs.systems.Get[*domain.GuildSystem]().BroadcastGPChanged(guildID, payload.GPAmount)
 	})
 	return nil
 }

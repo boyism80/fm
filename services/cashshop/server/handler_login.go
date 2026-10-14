@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -34,7 +35,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 	var entered *internal.EnterCashShopReply
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise.ThenRPC(func(c context.Context) (*internal.EnterCashShopReply, error) {
-		return h.cs.internalClient.EnterCashShop(c, &internal.EnterCashShopRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.EnterCashShop(c, &internal.EnterCashShopRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
 			CharacterId: req.PlayerId,
 			CashShopId:  uint32(h.cs.config.CashShopID),
@@ -46,7 +47,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 		}
 		entered = reply
 
-		character := entity.NewCharacter(reply, h.cs.resources)
+		character := entity.NewCharacter(reply, h.cs.GetResources())
 		if !csClient.SetCharacter(character) {
 			return fmt.Errorf("character %d: client disconnected during cash shop login", req.PlayerId)
 		}
@@ -90,7 +91,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 		cashShopID := uint32(h.cs.config.CashShopID)
 		logout := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		logout.ThenRPC(func(c context.Context) (*internal.LogoutSessionReply, error) {
-			return h.cs.internalClient.LogoutSession(c, &internal.LogoutSessionRequest{
+			return h.cs.systems.Get[*rpc.InternalConnection]().Client.LogoutSession(c, &internal.LogoutSessionRequest{
 				WorldId:          uint32(h.cs.config.WorldID),
 				AccountId:        entered.GetGame().GetCharacter().GetAccountId(),
 				CharacterId:      &characterID,

@@ -6,11 +6,12 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type GuildBulletinBoardOperation struct {
@@ -36,9 +37,6 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 	if !inGuild {
 		return nil
 	}
-	if h.gs.internalClient == nil {
-		return nil
-	}
 
 	if req.Action == pconst.GuildBulletinBoardC2SWriteThread {
 		if !h.validateBulletinIcon(ch, req.Icon) {
@@ -53,7 +51,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 	switch req.Action {
 	case pconst.GuildBulletinBoardC2SListThreads:
 		promise.ThenRPC(func(c context.Context) (*internal.ListGuildBulletinBoardThreadsReply, error) {
-			return h.gs.internalClient.ListGuildBulletinBoardThreads(c, &internal.ListGuildBulletinBoardThreadsRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.ListGuildBulletinBoardThreads(c, &internal.ListGuildBulletinBoardThreadsRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
 				Page:        req.Page,
@@ -67,7 +65,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 		})
 	case pconst.GuildBulletinBoardC2SShowThread:
 		promise.ThenRPC(func(c context.Context) (*internal.ShowGuildBulletinBoardThreadReply, error) {
-			return h.gs.internalClient.ShowGuildBulletinBoardThread(c, &internal.ShowGuildBulletinBoardThreadRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.ShowGuildBulletinBoardThread(c, &internal.ShowGuildBulletinBoardThreadRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,
 				LocalThreadId: req.LocalThreadID,
@@ -84,7 +82,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 	case pconst.GuildBulletinBoardC2SWriteThread:
 		if req.Edit {
 			promise.ThenRPC(func(c context.Context) (*internal.UpdateGuildBulletinBoardThreadReply, error) {
-				return h.gs.internalClient.UpdateGuildBulletinBoardThread(c, &internal.UpdateGuildBulletinBoardThreadRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.UpdateGuildBulletinBoardThread(c, &internal.UpdateGuildBulletinBoardThreadRequest{
 					WorldId:       worldID,
 					CharacterId:   charID,
 					LocalThreadId: req.LocalThreadID,
@@ -103,7 +101,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 			})
 		} else {
 			promise.ThenRPC(func(c context.Context) (*internal.CreateGuildBulletinBoardThreadReply, error) {
-				return h.gs.internalClient.CreateGuildBulletinBoardThread(c, &internal.CreateGuildBulletinBoardThreadRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateGuildBulletinBoardThread(c, &internal.CreateGuildBulletinBoardThreadRequest{
 					WorldId:     worldID,
 					CharacterId: charID,
 					Notice:      req.Notice,
@@ -126,7 +124,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 		}
 	case pconst.GuildBulletinBoardC2SDeleteThread:
 		promise.ThenRPC(func(c context.Context) (*internal.DeleteGuildBulletinBoardThreadReply, error) {
-			return h.gs.internalClient.DeleteGuildBulletinBoardThread(c, &internal.DeleteGuildBulletinBoardThreadRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.DeleteGuildBulletinBoardThread(c, &internal.DeleteGuildBulletinBoardThreadRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,
 				LocalThreadId: req.LocalThreadID,
@@ -137,7 +135,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 		})
 	case pconst.GuildBulletinBoardC2SWriteReply:
 		promise.ThenRPC(func(c context.Context) (*internal.CreateGuildBulletinBoardReplyReply, error) {
-			return h.gs.internalClient.CreateGuildBulletinBoardReply(c, &internal.CreateGuildBulletinBoardReplyRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateGuildBulletinBoardReply(c, &internal.CreateGuildBulletinBoardReplyRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,
 				LocalThreadId: req.LocalThreadID,
@@ -154,7 +152,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 		})
 	case pconst.GuildBulletinBoardC2SDeleteReply:
 		promise.ThenRPC(func(c context.Context) (*internal.DeleteGuildBulletinBoardReplyReply, error) {
-			return h.gs.internalClient.DeleteGuildBulletinBoardReply(c, &internal.DeleteGuildBulletinBoardReplyRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.DeleteGuildBulletinBoardReply(c, &internal.DeleteGuildBulletinBoardReplyRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,
 				LocalThreadId: req.LocalThreadID,
@@ -179,7 +177,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 	return nil
 }
 
-func (h *GuildBulletinBoardOperation) validateBulletinIcon(ch *entity.Character, icon int32) bool {
+func (h *GuildBulletinBoardOperation) validateBulletinIcon(ch *domain.Character, icon int32) bool {
 	if icon >= pconst.GuildBulletinBoardIconCashMin && icon <= pconst.GuildBulletinBoardIconCashMax {
 		itemID := uint32(5290000 + icon - pconst.GuildBulletinBoardIconCashMin)
 		return ch.Inventory.HasItem(itemID)

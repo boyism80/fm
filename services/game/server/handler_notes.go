@@ -6,11 +6,12 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type Notes struct {
@@ -24,7 +25,7 @@ func (Notes) New(gs *GameServer) *Notes {
 }
 
 func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
-	if h.gs.internalClient == nil || ctx.ActorContext == nil {
+	if ctx.ActorContext == nil {
 		return nil
 	}
 
@@ -42,10 +43,10 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		if req.Kind != pconst.NoteKindNormal && req.Kind != pconst.NoteKindPopulation {
 			return nil
 		}
-		if !entity.ClientText(req.Message).Valid(200) {
+		if !domain.ClientText(req.Message).Valid(200) {
 			return nil
 		}
-		if !entity.ClientText(req.Target).Valid(13) {
+		if !domain.ClientText(req.Target).Valid(13) {
 			ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
 			return nil
 		}
@@ -61,7 +62,7 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		return nil
 	}
 
-	rpc := &internal.NotesRequest{
+	internalReq := &internal.NotesRequest{
 		WorldId:     h.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 		Action:      req.Action,
@@ -71,10 +72,10 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 	}
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.NotesReply, error) {
-			return h.gs.internalClient.Notes(c, rpc)
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Notes(c, internalReq)
 		},
 		func(reply *internal.NotesReply) error {
-			h.gs.GetDispatchSystem().CallCharacter(ch.GetID(), func(_ actor.Context, current *entity.Character) {
+			h.gs.systems.Get[*domain.DispatchSystem]().CallCharacter(ch.GetID(), func(_ actor.Context, current *domain.Character) {
 				switch req.Action {
 				case internal.NotesAction_NOTES_ACTION_SEND:
 					if reply.Status == internal.NoteResult_NOTE_RESULT_OK {

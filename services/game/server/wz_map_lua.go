@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/boyism80/fm/core/luax"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -18,20 +18,20 @@ func registerWzMapCreateInstance(gs *GameServer, L *lua.LState) {
 				L.ArgError(1, "WzMap expected")
 				return 0
 			}
-			opts := entity.DefaultMapInitOpts()
+			opts := domain.DefaultMapInitOpts()
 			var slot lua.LValue = lua.LNil
 			if L.GetTop() >= 2 && L.Get(2).Type() == lua.LTTable {
 				tbl := L.CheckTable(2)
-				opts = entity.ParseMapInitOptsLua(tbl)
+				opts = domain.ParseMapInitOptsLua(tbl)
 				slot = tbl.RawGetString("slot")
 			}
-			ms := gs.GetMapSystem()
+			ms := gs.systems.Get[*domain.MapSystem]()
 			if ms == nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString("map system not ready"))
 				return 2
 			}
-			var m *entity.Map
+			var m *domain.Map
 			var err error
 			if n, ok := slot.(lua.LNumber); ok {
 				m, err = ms.SlotInstance(tmpl.ID, uint32(n))

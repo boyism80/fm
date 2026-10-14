@@ -8,7 +8,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type UseItem struct{}
@@ -61,7 +61,7 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	consumeEnt, ok := item.(*entity.Consume)
+	consumeEnt, ok := item.(*domain.Consume)
 	if !ok || consumeEnt == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil

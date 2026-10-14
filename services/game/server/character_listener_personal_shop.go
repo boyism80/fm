@@ -2,11 +2,11 @@ package server
 
 import (
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *entity.Character, ps *entity.PersonalShop) {
+func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *domain.Character, ps *domain.PersonalShop) {
 	slot, _ := ps.SlotOf(ch)
 	enter := &response.PersonalShopEnter{
 		MySlot:   slot,
@@ -24,11 +24,11 @@ func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *entity.Character, ps *
 	ch.Send(enter, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPersonalShopItems(ch *entity.Character, ps *entity.PersonalShop) {
+func (l *CharacterListenerImpl) OnPersonalShopItems(ch *domain.Character, ps *domain.PersonalShop) {
 	ch.Send(&response.PersonalShopItems{Items: l.miniRoomItems(ps.Items)}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomSold(ch *entity.Character, index uint8, bundles uint16, buyer string) {
+func (l *CharacterListenerImpl) OnMiniRoomSold(ch *domain.Character, index uint8, bundles uint16, buyer string) {
 	ch.Send(&response.MiniRoomSold{
 		Index:   index,
 		Bundles: bundles,
@@ -36,16 +36,16 @@ func (l *CharacterListenerImpl) OnMiniRoomSold(ch *entity.Character, index uint8
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomItemRemoved(ch *entity.Character, count uint8, index uint16) {
+func (l *CharacterListenerImpl) OnMiniRoomItemRemoved(ch *domain.Character, count uint8, index uint16) {
 	ch.Send(&response.MiniRoomItemRemoved{
 		Count: count,
 		Index: index,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomBalloon(ch *entity.Character, balloon *response.MiniRoomBalloon) {
+func (l *CharacterListenerImpl) OnMiniRoomBalloon(ch *domain.Character, balloon *response.MiniRoomBalloon) {
 	ch.Broadcast(&response.UserMiniRoomBalloon{
 		CharacterID: ch.GetID(),
 		Balloon:     balloon,
-	}, &entity.ObjectBroadcastOption{WithMe: true})
+	}, &domain.ObjectBroadcastOption{WithMe: true})
 }

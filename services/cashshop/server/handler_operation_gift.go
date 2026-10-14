@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -52,7 +53,7 @@ func (h *Operation) gift(ctx *core.ClientContext, character *entity.Character, r
 
 	promise := h.start(ctx, character, constant.CashShopResultGiftFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.GiftCashItemReply, error) {
-		return h.cs.internalClient.GiftCashItem(c, &internal.GiftCashItemRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.GiftCashItem(c, &internal.GiftCashItemRequest{
 			WorldId:       uint32(h.cs.config.WorldID),
 			AccountId:     character.AccountID(),
 			RecipientName: req.Recipient,

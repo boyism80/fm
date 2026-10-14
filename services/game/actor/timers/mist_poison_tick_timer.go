@@ -8,7 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/types"
 )
 
@@ -26,14 +26,14 @@ func (t *MistPoisonTickTimer) GetInitialDelay() time.Duration {
 	return 500 * time.Millisecond
 }
 
-func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
+func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}
 	now := clock.Now()
 	objects := mapData.GetObjects(constant.ObjectTypeMist)
 	for _, obj := range objects {
-		mist, ok := obj.(*entity.Mist)
+		mist, ok := obj.(*domain.Mist)
 		if !ok || mist == nil || mist.OID == 0 {
 			continue
 		}
@@ -50,7 +50,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 		candidates := make([]luax.Luable, 0)
 		if mist.MobMist {
 			for _, obj := range mapData.GetObjectsIn(constant.ObjectTypeCharacter, mist.Bounds) {
-				ch, ok := obj.(*entity.Character)
+				ch, ok := obj.(*domain.Character)
 				if !ok || ch == nil || !ch.IsAlive() {
 					continue
 				}
@@ -61,7 +61,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 			}
 		} else {
 			for _, mobObj := range mapData.GetMobs() {
-				mob, ok := mobObj.(*entity.Mob)
+				mob, ok := mobObj.(*domain.Mob)
 				if !ok || mob == nil || !mob.IsAlive() {
 					continue
 				}

@@ -5,10 +5,11 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/stream"
 )
 
@@ -23,7 +24,7 @@ func (Messenger) New(gs *GameServer) *Messenger {
 }
 
 func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) error {
-	if h.gs.internalClient == nil || ctx.ActorContext == nil {
+	if ctx.ActorContext == nil {
 		return nil
 	}
 
@@ -39,11 +40,11 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 	switch req.Action {
 	case internal.MessengerAction_MESSENGER_ACTION_ENTER, internal.MessengerAction_MESSENGER_ACTION_LEAVE:
 	case internal.MessengerAction_MESSENGER_ACTION_INVITE, internal.MessengerAction_MESSENGER_ACTION_DECLINE:
-		if !entity.ClientText(req.Text).Valid(13) {
+		if !domain.ClientText(req.Text).Valid(13) {
 			return nil
 		}
 	case internal.MessengerAction_MESSENGER_ACTION_CHAT:
-		if !entity.ClientText(req.Text).Valid(200) {
+		if !domain.ClientText(req.Text).Valid(200) {
 			return nil
 		}
 	default:
@@ -55,7 +56,7 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 
 	w := stream.NewStreamWriter(stream.LittleEndian)
 	ch.BuildS2C().SerializeLook(w)
-	rpc := &internal.MessengerRequest{
+	internalReq := &internal.MessengerRequest{
 		WorldId:     h.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 		ChannelId:   h.gs.config.ChannelId,
@@ -66,7 +67,7 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 	}
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.MessengerReply, error) {
-			return h.gs.internalClient.Messenger(c, rpc)
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Messenger(c, internalReq)
 		},
 		func(reply *internal.MessengerReply) error {
 			if ch.LoggedOut() {

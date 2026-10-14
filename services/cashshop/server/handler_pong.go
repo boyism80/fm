@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/cashshop/client"
@@ -34,7 +35,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	characterID := character.ID()
 	cashShopID := uint32(h.cs.config.CashShopID)
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.RefreshSessionReply, error) {
-		return h.cs.internalClient.RefreshSession(c, &internal.RefreshSessionRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.RefreshSession(c, &internal.RefreshSessionRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: &characterID,

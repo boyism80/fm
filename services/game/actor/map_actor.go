@@ -2,22 +2,22 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type MapActor struct {
 	GameLogicActor
-	Map *entity.Map
+	Map *domain.Map
 }
 
-func NewMapActor(m *entity.Map, gameWorld entity.GameWorld) *MapActor {
+func NewMapActor(m *domain.Map, gameWorld domain.GameWorld) *MapActor {
 	a := &MapActor{Map: m}
 	a.GameWorld = gameWorld
-	a.maps = func() []*entity.Map {
+	a.maps = func() []*domain.Map {
 		if a.Map == nil {
 			return nil
 		}
-		return []*entity.Map{a.Map}
+		return []*domain.Map{a.Map}
 	}
 	return a
 }

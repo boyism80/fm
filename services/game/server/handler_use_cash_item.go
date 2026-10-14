@@ -8,7 +8,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type UseCashItem struct {
@@ -44,7 +44,7 @@ func (h *UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) 
 		ch.Listener.OnUnlockAction(ch)
 		return nil
 	}
-	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, entity.CashItemInput{
+	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, domain.CashItemInput{
 		Text:         req.Text,
 		Ear:          req.Ear,
 		PetSN:        req.PetSN,

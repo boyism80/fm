@@ -1,0 +1,1436 @@
+package domain
+
+import (
+	"fmt"
+	"log"
+	"sync"
+	"time"
+
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
+)
+
+type MapListener interface {
+	OnPlayerAdded(ctx actor.Context, mapInstance *Map, character *Character, spawnPoint uint8, init bool)
+	OnPlayerRemoved(mapInstance *Map, character *Character)
+	OnPlayerMoved(mapInstance *Map, character *Character)
+	OnPlayerMove(mapInstance *Map, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
+	OnPlayerChat(mapInstance *Map, character *Character, message string)
+	OnItemSpawned(mapInstance *Map, item Item, placement *FieldPlacement)
+	OnMesoSpawned(mapInstance *Map, meso *Meso)
+	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType, position types.Vector2[int16])
+	OnMobSpawned(mapInstance *Map, mob *Mob, spawnType constant.MobSpawnType, link uint32)
+	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
+	OnReactorSpawned(mapInstance *Map, reactor *Reactor)
+	OnReactorRemoved(mapInstance *Map, reactor *Reactor)
+	OnReactorTriggered(mapInstance *Map, reactor *Reactor, stance int32)
+	OnMusicChanged(mapInstance *Map, song string)
+	OnWeather(mapInstance *Map, itemID uint32, message string)
+	OnYellowChat(mapInstance *Map, message string)
+	OnWeddingEffect(mapInstance *Map, groomID uint32, brideID uint32)
+	OnMapMessage(mapInstance *Map, messageType constant.ServerMessageType, message string)
+	OnClearEffect(mapInstance *Map)
+	OnShowEffect(mapInstance *Map, path string)
+	OnPlaySound(mapInstance *Map, path string)
+	OnTremble(mapInstance *Map, typ uint8, delay int32)
+	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
+	OnMobHomingSet(mapInstance *Map, mob *Mob, homing *Homing, causer *Character)
+	OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool)
+	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
+	OnAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnRangedAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnMagicAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnMistSpawned(mapInstance *Map, mist *Mist)
+	OnMistRemoved(mapInstance *Map, mist *Mist)
+	OnMessageBoxSpawned(mapInstance *Map, box *MessageBox)
+	OnMessageBoxRemoved(mapInstance *Map, box *MessageBox)
+	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
+}
+
+type MobSpawn struct {
+	Wz            *wz.MobSpawn
+	Spawned       bool
+	LastSpawnedAt time.Time
+}
+
+type MapInitOpts struct {
+	Npcs         bool
+	Reactors     bool
+	Respawns     bool
+	Instance     bool
+	StateMachine *StateMachine
+}
+
+func DefaultMapInitOpts() MapInitOpts {
+	return MapInitOpts{
+		Npcs:     true,
+		Reactors: true,
+		Respawns: true,
+	}
+}
+
+func ParseMapInitOptsLua(tbl *lua.LTable) MapInitOpts {
+	opts := DefaultMapInitOpts()
+	if tbl == nil {
+		return opts
+	}
+	if v := tbl.RawGetString("npcs"); v != lua.LNil {
+		opts.Npcs = lua.LVAsBool(v)
+	}
+	if v := tbl.RawGetString("reactors"); v != lua.LNil {
+		opts.Reactors = lua.LVAsBool(v)
+	}
+	if v := tbl.RawGetString("respawns"); v != lua.LNil {
+		opts.Respawns = lua.LVAsBool(v)
+	}
+	return opts
+}
+
+type Map struct {
+	Wz                *wz.Map
+	id                uint32
+	instance          *instanceState
+	objects           map[constant.ObjectType]map[uint32]Object
+	sections          *sectionGrid
+	controllerTable   *ControllerTable
+	MobSpawns         map[uint32]*MobSpawn
+	SummonedMobSpawns []*MobSpawn
+	ReactorSpawns     map[uint32]*ReactorSpawn
+	blockedMobGen     map[uint32]struct{}
+	mobGenBlockedAll  bool
+	reactorGenBlocked bool
+	listener          MapListener
+	mobListener       MobListener
+	sequence          uint32
+	availableOIDs     []uint32
+	GameWorld         GameWorld
+	actorPID          *actor.PID
+	stateMachine      *StateMachine
+	luaRoot           *lua.LState
+	propertyMutex     sync.RWMutex
+	properties        map[string]interface{}
+	portals           map[uint8]*Portal
+	portalsByName     map[string]*Portal
+}
+
+type BroadcastOption struct {
+	SendRaw bool
+}
+
+func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint32, gw GameWorld, actorPID *actor.PID) *Map {
+	return NewMapWithOpts(id, listener, mobListener, mapId, gw, actorPID, DefaultMapInitOpts())
+}
+
+func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, mapId uint32, gw GameWorld, actorPID *actor.PID, opts MapInitOpts) *Map {
+	if listener == nil {
+		panic("MapListener cannot be nil")
+	}
+	if mobListener == nil {
+		panic("MobListener cannot be nil")
+	}
+	if gw == nil {
+		panic("GameWorld cannot be nil")
+	}
+	if actorPID == nil {
+		panic("actor PID cannot be nil")
+	}
+
+	wz, ok := gw.GetResources().Maps[mapId]
+	if !ok {
+		panic(fmt.Sprintf("Wz not found for ID: %d", mapId))
+	}
+
+	mapInstance := &Map{
+		id:              id,
+		objects:         make(map[constant.ObjectType]map[uint32]Object),
+		sections:        newSectionGrid(),
+		controllerTable: nil,
+		MobSpawns:       make(map[uint32]*MobSpawn),
+		blockedMobGen:   make(map[uint32]struct{}),
+		listener:        listener,
+		mobListener:     mobListener,
+		Wz:              wz,
+		sequence:        0,
+		availableOIDs:   make([]uint32, 0),
+		GameWorld:       gw,
+		actorPID:        actorPID,
+		stateMachine:    opts.StateMachine,
+	}
+
+	if opts.Instance {
+		mapInstance.instance = &instanceState{}
+	}
+
+	mapInstance.controllerTable = NewControllerTable(func(mob *Mob, before *Character, after *Character, aggro bool) {
+		mapInstance.listener.OnMobControllerChange(mob, before, after, aggro)
+	})
+
+	mapInstance.initPortals()
+	if opts.Npcs {
+		mapInstance.initNpcs()
+	}
+	if opts.Reactors {
+		mapInstance.initReactors()
+	}
+	if opts.Respawns {
+		mapInstance.initMobs()
+	}
+
+	return mapInstance
+}
+
+func (m *Map) GetLuaRoot() *lua.LState {
+	if m == nil {
+		return nil
+	}
+	return m.luaRoot
+}
+
+func (m *Map) LuaRoot(ctx actor.Context) *lua.LState {
+	if m == nil {
+		return nil
+	}
+	if m.luaRoot == nil {
+		m.luaRoot = luax.NewState()
+	}
+	root := m.luaRoot
+
+	if root == nil {
+		return nil
+	}
+	return root
+}
+
+func (m *Map) ClearLuaRoot() {
+	if m == nil {
+		return
+	}
+	if m.luaRoot != nil {
+		m.luaRoot.Close()
+		m.luaRoot = nil
+	}
+}
+
+func (m *Map) allocateOID() uint32 {
+	if len(m.availableOIDs) > 0 {
+
+		oid := m.availableOIDs[0]
+		m.availableOIDs = m.availableOIDs[1:]
+		return oid
+	}
+
+	m.sequence++
+	return m.sequence
+}
+
+func (m *Map) releaseOID(oid uint32) {
+	m.availableOIDs = append(m.availableOIDs, oid)
+}
+
+func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
+	if character.Map != nil {
+		return fmt.Errorf("character %d is still on map %d", playerID, character.Map.GetMapID())
+	}
+	if err := m.enter(); err != nil {
+		return err
+	}
+
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		m.objects[constant.ObjectTypeCharacter] = make(map[uint32]Object)
+	}
+
+	character.Map = m
+	if m.Wz.FieldType != wz.FieldTypeDojo {
+		character.SetDojoEnergy(0)
+	}
+	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
+		character.Position = pos
+	}
+	character.Stance = constant.StanceDefaultValue
+	if init {
+		character.Pets.restore()
+	}
+	if character.Pets.Active != nil {
+		character.Pets.Active.Position = character.Position
+		character.Pets.Active.Stance = character.Stance
+	}
+
+	m.objects[constant.ObjectTypeCharacter][playerID] = character
+	m.sections.add(character)
+	m.LuaRoot(ctx)
+
+	m.listener.OnPlayerAdded(ctx, m, character, spawnPoint, init)
+	m.controllerTable.EnterPlayer(character)
+	if init {
+		character.Skills.RestorePassives()
+		character.Debuffs.restore()
+		character.Buffs.restoreEffects()
+	}
+	character.Buffs.scheduleExpires()
+	if m.Wz.Limits(constant.FieldLimitMount) {
+		character.Mount.Dismount()
+	} else if init {
+		character.Mount.start()
+	}
+
+	for _, summon := range character.Summons.All() {
+		if summon == nil || summon.Owner != character {
+			continue
+		}
+		summon.Position = character.Position
+		m.AddSummon(summon)
+	}
+
+	m.callMapLifecycleScript(character, "on_map_enter")
+	if sm := character.StateMachine(); sm != nil {
+		sm.HandlePlayerMapEnter(character, m)
+	}
+	m.GameWorld.Systems().Get[*ExpeditionSystem]().SyncClock(character, m)
+
+	return nil
+}
+
+func (m *Map) callMapLifecycleScript(character *Character, hook string) {
+	if m == nil || character == nil || character.GameWorld == nil {
+		return
+	}
+	if character.GetMap() != m {
+		return
+	}
+	root := m.GetLuaRoot()
+	if root == nil {
+		return
+	}
+	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
+	if err != nil {
+		return
+	}
+	luax.CallAsync(nil, root, thread, hook, character, m)
+
+	mapScriptPath := fmt.Sprintf("script/map/%d.lua", m.TemplateID())
+	mapThread, err := luax.NewThread(root, mapScriptPath)
+	if err != nil {
+		return
+	}
+	if !luax.HasFunc(mapThread, hook) {
+		luax.Close(mapThread)
+		return
+	}
+	luax.SetConfiguration(mapThread, luax.Configuration{
+		ActorPID: m.LogicActorPID(),
+	})
+	luax.CallAsync(nil, root, mapThread, hook, character, m)
+}
+
+func (m *Map) RemovePlayer(playerID uint32) error {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		return fmt.Errorf("no players on map")
+	}
+
+	if _, exists := m.objects[constant.ObjectTypeCharacter][playerID]; !exists {
+		return fmt.Errorf("player %d not found on map", playerID)
+	}
+
+	character := m.objects[constant.ObjectTypeCharacter][playerID].(*Character)
+	m.collectOwnedFieldDrops(character)
+	if es, ok := character.MiniRoom.(*EntrustedShop); ok && es.OwnerID == character.GetID() {
+		character.Listener.OnMiniRoomLeft(character, 0, pconst.MiniRoomLeaveMapMoved)
+	}
+	if character.MiniRoom != nil {
+		character.MiniRoom.Leave(character)
+	}
+
+	m.callMapLifecycleScript(character, "on_map_leave")
+
+	for _, summon := range character.Summons.All() {
+		if summon == nil || summon.Map != m || summon.OID == 0 {
+			continue
+		}
+		m.RemoveSummon(summon.OID, false)
+	}
+
+	delete(m.objects[constant.ObjectTypeCharacter], playerID)
+	m.sections.remove(character)
+
+	character.Dialog.Close()
+	character.RemoveTimer(clockTimer)
+	character.SuspendTimers()
+	character.Party.Search = nil
+	m.controllerTable.LeavePlayer(character)
+	character.Map = nil
+
+	m.listener.OnPlayerRemoved(m, character)
+	m.release()
+
+	return nil
+}
+
+func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
+	character := m.GetPlayer(playerID)
+	if character == nil {
+		return fmt.Errorf("player %d not found on map", playerID)
+	}
+	character.Wedding.HideFromSpouse(ctx)
+
+	if root := m.GetLuaRoot(); root != nil {
+		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
+		if err != nil {
+			log.Printf("on_logout: %v", err)
+		} else {
+			luax.CallAsync(nil, root, thread, "on_logout", character).OnError(func(err error) {
+				log.Printf("on_logout: %v", err)
+			})
+		}
+	}
+
+	if character.MiniRoom != nil {
+		character.MiniRoom.Leave(character)
+	}
+	entry := character.BuildRPC(m.GameWorld.GetWorldID())
+	err := m.RemovePlayer(playerID)
+	character.ClearTimers()
+	select {
+	case character.session.logoutEntry <- entry:
+	default:
+	}
+	return err
+}
+
+func (m *Map) GetMapID() uint32 { return m.id }
+
+func (m *Map) TemplateID() uint32 {
+	if m == nil || m.Wz == nil {
+		return 0
+	}
+	return uint32(m.Wz.ID)
+}
+
+func (m *Map) IsInstance() bool {
+	return m != nil && m.instance != nil
+}
+
+func (m *Map) BlocksTeleportStone() bool {
+	return m.Wz.Limits(constant.FieldLimitTeleportStone|constant.FieldLimitMovementSkill) || m.IsInstance() || m.StateMachine() != nil
+}
+
+func (m *Map) GetObject(objectType constant.ObjectType, id uint32) Object {
+	if m == nil {
+		return nil
+	}
+	bucket := m.objects[objectType]
+	if bucket == nil {
+		return nil
+	}
+	return bucket[id]
+}
+
+func (m *Map) GetPlayer(playerID uint32) *Character {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		return nil
+	}
+
+	if player, ok := m.objects[constant.ObjectTypeCharacter][playerID].(*Character); ok {
+		return player
+	}
+	return nil
+}
+
+func (m *Map) GetPlayerCount() int {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		return 0
+	}
+	return len(m.objects[constant.ObjectTypeCharacter])
+}
+
+func (m *Map) GetAllPlayers() map[uint32]Object {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		return make(map[uint32]Object)
+	}
+	return m.objects[constant.ObjectTypeCharacter]
+}
+
+func (m *Map) GetPartyMembers(partyID uint32) []*Character {
+	if m == nil {
+		return nil
+	}
+	players := m.GetAllPlayers()
+	if len(players) == 0 {
+		return nil
+	}
+	out := make([]*Character, 0, len(players))
+	for _, obj := range players {
+		ch, ok := obj.(*Character)
+		if !ok || ch == nil {
+			continue
+		}
+		pid := ch.Party.ID()
+		if pid != nil && *pid == partyID {
+			out = append(out, ch)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func (m *Map) GetControllerTable() *ControllerTable {
+	return m.controllerTable
+}
+
+func (m *Map) GetRecoveryRate() float32 {
+	if m.Wz == nil {
+		return 1.0
+	}
+	if m.Wz.RecoveryRate <= 0 {
+		return 1.0
+	}
+	return m.Wz.RecoveryRate
+}
+
+func (m *Map) PointBelow(point types.Point[int16]) *types.Point[int16] {
+	if m == nil || m.Wz == nil {
+		return nil
+	}
+	return m.Wz.PointBelow(point)
+}
+
+func (m *Map) initNpcs() {
+	if m.objects[constant.ObjectTypeNpc] == nil {
+		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
+	}
+
+	for _, wz := range m.Wz.NpcSpawns {
+		oid := m.allocateOID()
+		npc := &Npc{
+			ObjectCore: ObjectCore{
+				OID:       oid,
+				Position:  types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
+				GameWorld: m.GameWorld,
+				Map:       m,
+			},
+			Wz: &wz,
+		}
+		npc.ObjectCore.self = npc
+		npc.initTimers()
+		m.objects[constant.ObjectTypeNpc][oid] = npc
+		m.sections.add(npc)
+	}
+}
+
+func (m *Map) GetReactor(oid uint32) *Reactor {
+	if m.objects[constant.ObjectTypeReactor] == nil {
+		return nil
+	}
+	if reactor, ok := m.objects[constant.ObjectTypeReactor][oid].(*Reactor); ok {
+		return reactor
+	}
+	return nil
+}
+
+func (m *Map) GetReactors() map[uint32]Object {
+	if m.objects[constant.ObjectTypeReactor] == nil {
+		return make(map[uint32]Object)
+	}
+	return m.objects[constant.ObjectTypeReactor]
+}
+
+func (m *Map) AddSummon(s *Summon) {
+	if s == nil {
+		return
+	}
+	if s.Owner == nil {
+		panic("AddSummon: summon.Owner must not be nil")
+	}
+	if s.LifeCore.ObjectCore.self == nil {
+		s.LifeCore.ObjectCore.self = s
+	}
+	if s.Map == m && m.objects[constant.ObjectTypeSummon] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeSummon][s.OID]; ok && existing == s {
+			return
+		}
+	}
+	if s.Map != nil && s.Map != m {
+		return
+	}
+	s.ObjectCore.GameWorld = m.GameWorld
+	if m.objects[constant.ObjectTypeSummon] == nil {
+		m.objects[constant.ObjectTypeSummon] = make(map[uint32]Object)
+	}
+	if s.OID == 0 {
+		s.OID = m.allocateOID()
+	}
+	if s.Map == nil {
+		s.Map = m
+	}
+	s.initTimers()
+	m.objects[constant.ObjectTypeSummon][s.OID] = s
+	m.sections.add(s)
+
+	s.Owner.Listener.OnSummonSpawn(s.Owner, s)
+}
+
+func (m *Map) RemoveSummon(oid uint32, animated bool) {
+	if m.objects[constant.ObjectTypeSummon] == nil {
+		return
+	}
+	obj, ok := m.objects[constant.ObjectTypeSummon][oid]
+	if !ok {
+		return
+	}
+
+	s, isSummon := obj.(*Summon)
+	if !isSummon {
+		m.sections.remove(obj)
+		delete(m.objects[constant.ObjectTypeSummon], oid)
+		m.releaseOID(oid)
+		return
+	}
+
+	s.Owner.Listener.OnSummonRemove(s.Owner, s, animated)
+
+	m.sections.remove(s)
+	delete(m.objects[constant.ObjectTypeSummon], oid)
+	m.releaseOID(oid)
+	if s.Map == m {
+		s.Map = nil
+		s.OID = 0
+	}
+}
+
+func (m *Map) GetSummon(oid uint32) *Summon {
+	if m.objects[constant.ObjectTypeSummon] == nil {
+		return nil
+	}
+	if s, ok := m.objects[constant.ObjectTypeSummon][oid].(*Summon); ok {
+		return s
+	}
+	return nil
+}
+
+func (m *Map) AddMist(mist *Mist) {
+	if mist == nil {
+		return
+	}
+	if mist.ObjectCore.self == nil {
+		mist.ObjectCore.self = mist
+	}
+	if mist.Map == m && m.objects[constant.ObjectTypeMist] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeMist][mist.OID]; ok && existing == mist {
+			return
+		}
+	}
+	if mist.Map != nil && mist.Map != m {
+		return
+	}
+	mist.ObjectCore.GameWorld = m.GameWorld
+	if m.objects[constant.ObjectTypeMist] == nil {
+		m.objects[constant.ObjectTypeMist] = make(map[uint32]Object)
+	}
+	if mist.OID == 0 {
+		mist.OID = m.allocateOID()
+	}
+	if mist.Map == nil {
+		mist.Map = m
+	}
+	mist.initTimers()
+	m.objects[constant.ObjectTypeMist][mist.OID] = mist
+	m.sections.add(mist)
+	m.listener.OnMistSpawned(m, mist)
+}
+
+func (m *Map) RemoveMist(oid uint32) {
+	if m.objects[constant.ObjectTypeMist] == nil {
+		return
+	}
+	obj, ok := m.objects[constant.ObjectTypeMist][oid]
+	if !ok {
+		return
+	}
+
+	mi, isMist := obj.(*Mist)
+	if !isMist {
+		m.sections.remove(obj)
+		delete(m.objects[constant.ObjectTypeMist], oid)
+		m.releaseOID(oid)
+		return
+	}
+
+	m.listener.OnMistRemoved(m, mi)
+
+	m.sections.remove(mi)
+	delete(m.objects[constant.ObjectTypeMist], oid)
+	m.releaseOID(oid)
+	if mi.Map == m {
+		mi.Map = nil
+		mi.OID = 0
+	}
+}
+
+func (m *Map) GetMist(oid uint32) *Mist {
+	if m.objects[constant.ObjectTypeMist] == nil {
+		return nil
+	}
+	if mi, ok := m.objects[constant.ObjectTypeMist][oid].(*Mist); ok {
+		return mi
+	}
+	return nil
+}
+
+func (m *Map) AddDoor(door *Door) {
+	if door == nil {
+		return
+	}
+	if door.ObjectCore.self == nil {
+		door.ObjectCore.self = door
+	}
+	if door.Map == m && m.objects[constant.ObjectTypeDoor] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeDoor][door.OID]; ok && existing == door {
+			return
+		}
+	}
+	if door.Map != nil && door.Map != m {
+		return
+	}
+	door.ObjectCore.GameWorld = m.GameWorld
+	if m.objects[constant.ObjectTypeDoor] == nil {
+		m.objects[constant.ObjectTypeDoor] = make(map[uint32]Object)
+	}
+	if door.OID == 0 {
+		door.OID = m.allocateOID()
+	}
+	if door.Map == nil {
+		door.Map = m
+	}
+	switch m {
+	case door.Field.Map:
+		door.Position = door.Field.Position
+	case door.Return.Map:
+		door.Position = door.Return.Position
+	}
+	door.initTimers()
+	m.objects[constant.ObjectTypeDoor][door.OID] = door
+	m.sections.add(door)
+	door.BroadcastCall(func(obj Object) {
+		ch, ok := obj.(*Character)
+		if !ok || ch == nil {
+			return
+		}
+		door.SendSpawnSyncToViewer(ch)
+	}, nil)
+}
+
+func (m *Map) RemoveDoor(oid uint32, animated bool) {
+	m.removeDoorInternal(oid, animated, true)
+}
+
+func (m *Map) RemoveDoorByKey(key DoorKey, animated bool, notifyCounterpart bool) {
+	door := m.FindDoorByKey(key)
+	if door == nil {
+		return
+	}
+	m.removeDoorInternal(door.OID, animated, notifyCounterpart)
+}
+
+func (m *Map) FindDoorByKey(key DoorKey) *Door {
+	for _, object := range m.GetObjects(constant.ObjectTypeDoor) {
+		door, ok := object.(*Door)
+		if !ok || door.OID == 0 || door.Key != key {
+			continue
+		}
+		return door
+	}
+	return nil
+}
+
+func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterpart bool) {
+	if m.objects[constant.ObjectTypeDoor] == nil {
+		return
+	}
+	obj, ok := m.objects[constant.ObjectTypeDoor][oid]
+	if !ok {
+		return
+	}
+
+	door, isDoor := obj.(*Door)
+	if !isDoor {
+		m.sections.remove(obj)
+		delete(m.objects[constant.ObjectTypeDoor], oid)
+		m.releaseOID(oid)
+		return
+	}
+
+	if ch := m.GetPlayer(door.OwnerID); ch != nil {
+		ch.Doors.forget(door)
+	}
+
+	var counterpart *Map
+	switch m {
+	case door.Field.Map:
+		counterpart = door.Return.Map
+	case door.Return.Map:
+		counterpart = door.Field.Map
+	}
+	skillID := door.SkillID
+
+	m.listener.OnDoorRemoved(m, door, animated)
+
+	delete(m.objects[constant.ObjectTypeDoor], oid)
+	m.sections.remove(door)
+	m.releaseOID(oid)
+	if door.Map == m {
+		door.Map = nil
+		door.OID = 0
+	}
+
+	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpart != nil && m.GameWorld != nil {
+		m.GameWorld.Systems().Get[*MapSystem]().DespawnDoor(counterpart, door.Key, animated, false)
+	}
+	if m == door.Field.Map {
+		door.fieldRef.Release()
+	}
+}
+
+func (m *Map) GetDoor(oid uint32) *Door {
+	if m.objects[constant.ObjectTypeDoor] == nil {
+		return nil
+	}
+	if door, ok := m.objects[constant.ObjectTypeDoor][oid].(*Door); ok {
+		return door
+	}
+	return nil
+}
+
+func (m *Map) FindDoorOwner(ownerID uint32) *Door {
+	if m == nil || ownerID == 0 {
+		return nil
+	}
+	for _, o := range m.GetObjects(constant.ObjectTypeDoor) {
+		d, ok := o.(*Door)
+		if !ok || d == nil {
+			continue
+		}
+		if d.OwnerID == ownerID {
+			return d
+		}
+	}
+	return nil
+}
+
+func (m *Map) SyncDoors(ownerIDs []uint32) {
+	if m == nil || len(ownerIDs) == 0 {
+		return
+	}
+	owners := make(map[uint32]struct{}, len(ownerIDs))
+	for _, id := range ownerIDs {
+		if id != 0 {
+			owners[id] = struct{}{}
+		}
+	}
+	if len(owners) == 0 {
+		return
+	}
+	for _, obj := range m.GetAllPlayers() {
+		ch, ok := obj.(*Character)
+		if !ok || ch == nil {
+			continue
+		}
+		if _, in := owners[ch.GetID()]; !in {
+			continue
+		}
+		m.resyncOwnerDoorPortals(ch)
+	}
+}
+
+func (m *Map) resyncOwnerDoorPortals(owner *Character) {
+	if m == nil || owner == nil {
+		return
+	}
+	oid := owner.GetID()
+	for _, obj := range m.GetObjects(constant.ObjectTypeDoor) {
+		d, ok := obj.(*Door)
+		if !ok || d == nil || d.OwnerID != oid {
+			continue
+		}
+		d.SendOwnerPortalResync(owner)
+	}
+}
+
+func (m *Map) initMobs() {
+	for spawnId, spawnWz := range m.Wz.MobSpawns {
+		m.MobSpawns[spawnId] = &MobSpawn{
+			Wz:            &spawnWz,
+			Spawned:       false,
+			LastSpawnedAt: time.Time{},
+		}
+	}
+}
+
+func (m *Map) GetNpcs() map[uint32]Object {
+	if m.objects[constant.ObjectTypeNpc] == nil {
+		return make(map[uint32]Object)
+	}
+	return m.objects[constant.ObjectTypeNpc]
+}
+
+func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) {
+	oid := m.allocateOID()
+
+	footholdID := int16(0)
+	spawnPosition := position
+	if foothold, y, ok := m.Wz.FootholdBelow(position); ok {
+		footholdID = foothold.ID
+		spawnPosition.Y = y
+	}
+
+	baseSpawn := &wz.BaseSpawn{
+		ID:              npcId,
+		Position:        spawnPosition,
+		RenderX0:        -50,
+		RenderX1:        50,
+		CollisionY:      spawnPosition.Y,
+		Hide:            false,
+		UseDay:          true,
+		UseNight:        true,
+		Foothold:        footholdID,
+		FacingDirection: wz.FACING_DIRECTION_RIGHT,
+		MobTime:         0,
+		Info:            0,
+		LimitedName:     "",
+		NoFoothold:      false,
+	}
+
+	npcSpawn := wz.NpcSpawn{
+		BaseSpawn: baseSpawn,
+	}
+
+	npc := &Npc{
+		ObjectCore: ObjectCore{
+			OID:       oid,
+			Position:  spawnPosition,
+			GameWorld: m.GameWorld,
+			Map:       m,
+		},
+		Wz:           &npcSpawn,
+		RuntimeSpawn: true,
+	}
+	npc.ObjectCore.self = npc
+	npc.initTimers()
+
+	if m.objects[constant.ObjectTypeNpc] == nil {
+		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
+	}
+
+	m.objects[constant.ObjectTypeNpc][oid] = npc
+	m.sections.add(npc)
+
+	npc.Broadcast(&response.SpawnNpc{
+		NPC:     npc.BuildS2C(),
+		Visible: true,
+	}, nil)
+	npc.Broadcast(&response.NpcControl{
+		NPC:     npc.BuildS2C(),
+		MiniMap: true,
+	}, nil)
+
+	return npc, nil
+}
+
+func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn, spawnType constant.MobSpawnType, link uint32, team constant.CarnivalTeam) (*Mob, error) {
+	oid := m.allocateOID()
+
+	mobWz, ok := m.GameWorld.GetResources().Monsters[mobId]
+	if !ok {
+		return nil, fmt.Errorf("mob model not found for ID: %d", mobId)
+	}
+
+	footholdID := int16(0)
+	if mobSpawn != nil && mobSpawn.Wz != nil {
+		footholdID = mobSpawn.Wz.Foothold
+	}
+
+	position.Y = position.Y - 1
+	spawnPoint := position
+	if foothold, y, ok := m.Wz.FootholdBelow(position); ok {
+		if footholdID == 0 {
+			footholdID = foothold.ID
+		}
+		spawnPoint.Y = y
+	}
+
+	mob := &Mob{
+		Listener: m.mobListener,
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
+				OID:       oid,
+				Position:  spawnPoint,
+				GameWorld: m.GameWorld,
+				Map:       m,
+			},
+			hp:     uint32(max(0, mobWz.MaxHP)),
+			mp:     uint32(max(0, mobWz.MaxMP)),
+			BaseHp: uint32(max(0, mobWz.MaxHP)),
+			BaseMp: uint32(max(0, mobWz.MaxMP)),
+			Stance: 5,
+		},
+		Foothold:     footholdID,
+		Wz:           mobWz,
+		Spawn:        mobSpawn,
+		ExpRate:      100,
+		DropRate:     100,
+		Homing:       make(map[uint32]*Homing),
+		accDamage:    make(map[int64]map[uint32]uint64),
+		CarnivalTeam: team,
+	}
+	mob.sponge.me = mob
+	mob.sponge.children = make([]*Mob, 0)
+	if mob.Listener == nil {
+		panic("SpawnMob: mob listener must not be nil")
+	}
+	mob.Skills = NewMobSkills(mob)
+	mob.Buffs = NewMobBuffs(mob)
+	mob.LifeCore.ObjectCore.self = mob
+	mob.initTimers()
+	if spawnType == constant.MobSpawnTypeFake {
+		mob.Fake = true
+	}
+
+	if m.objects[constant.ObjectTypeMob] == nil {
+		m.objects[constant.ObjectTypeMob] = make(map[uint32]Object)
+	}
+
+	m.objects[constant.ObjectTypeMob][oid] = mob
+	m.sections.add(mob)
+	m.listener.OnMobSpawned(m, mob, spawnType, link)
+	m.controllerTable.EnterMob(mob)
+	mob.scheduleRemoveAfter()
+	mob.startTimedDrop()
+
+	if sm := m.StateMachine(); sm != nil {
+		if sm.ScaleLevel > 0 {
+			mob.SetScaleLevel(sm.ScaleLevel)
+		}
+		sm.CallHook("on_mob_spawn", mob)
+	}
+
+	return mob, nil
+}
+
+func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType) error {
+	if m.objects[constant.ObjectTypeMob] == nil {
+		return fmt.Errorf("no monsters on map")
+	}
+
+	if _, exists := m.objects[constant.ObjectTypeMob][mobID]; !exists {
+		return fmt.Errorf("mob %d not found on map", mobID)
+	}
+
+	mob := m.objects[constant.ObjectTypeMob][mobID].(*Mob)
+	mob.sponge.Disconnect()
+	mob.ClearAllHoming()
+	mob.ClearTimers()
+	m.sections.remove(mob)
+	delete(m.objects[constant.ObjectTypeMob], mobID)
+
+	mob.Buffs.Clear()
+	if mob.Spawn != nil {
+		mob.Spawn.Spawned = false
+	}
+
+	m.releaseOID(mobID)
+	m.controllerTable.LeaveMob(mob)
+	m.listener.OnMobRemoved(m, mob, animationType)
+
+	return nil
+}
+
+func (m *Map) KillAllMonsters(animationType constant.MobDieAnimationType) {
+	if m == nil {
+		return
+	}
+	oids := make([]uint32, 0)
+	for oid, obj := range m.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if !ok || !mob.IsAlive() {
+			continue
+		}
+		oids = append(oids, oid)
+	}
+	for _, oid := range oids {
+		mob := m.GetMob(oid)
+		if mob == nil || !mob.IsAlive() {
+			continue
+		}
+		mob.ClearTimers()
+		_ = m.RemoveMob(oid, animationType)
+	}
+}
+
+func (m *Map) TemplateMobs(mobWZID uint32, limit int) []*Mob {
+	if m == nil {
+		return nil
+	}
+	out := make([]*Mob, 0)
+	for _, obj := range m.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if !ok || mob.Wz == nil || !mob.IsAlive() {
+			continue
+		}
+		if mob.Wz.ID != mobWZID {
+			continue
+		}
+		out = append(out, mob)
+		if limit > 0 && len(out) >= limit {
+			break
+		}
+	}
+	return out
+}
+
+func (m *Map) GetMob(mobID uint32) *Mob {
+	if m.objects[constant.ObjectTypeMob] == nil {
+		return nil
+	}
+
+	if mob, ok := m.objects[constant.ObjectTypeMob][mobID].(*Mob); ok {
+		return mob
+	}
+	return nil
+}
+
+func (m *Map) GetMobs() map[uint32]Object {
+	if m.objects[constant.ObjectTypeMob] == nil {
+		return make(map[uint32]Object)
+	}
+	return m.objects[constant.ObjectTypeMob]
+}
+
+func (m *Map) HasAliveMobs() bool {
+	if m == nil {
+		return false
+	}
+	for _, obj := range m.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if ok && mob.IsAlive() {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Map) GetObjects(filter constant.ObjectType) []Object {
+	out := make([]Object, 0)
+	for _, buckets := range m.objects {
+		for _, obj := range buckets {
+			if obj == nil {
+				continue
+			}
+			if !obj.Is(filter) {
+				continue
+			}
+			out = append(out, obj)
+		}
+	}
+	return out
+}
+
+type SearchOption struct {
+	IncludeHidden bool
+}
+
+func (m *Map) GetObjectsNear(position types.Vector2[int16], filter constant.ObjectType, option *SearchOption) []Object {
+	if m == nil || m.sections == nil {
+		return nil
+	}
+	objects := m.sections.objectsNear(position, filter)
+	if option != nil && option.IncludeHidden {
+		return objects
+	}
+	out := make([]Object, 0, len(objects))
+	for _, obj := range objects {
+		if obj == nil || obj.IsHidden() {
+			continue
+		}
+		out = append(out, obj)
+	}
+	return out
+}
+
+func (m *Map) OnMoved(obj Object, before types.Vector2[int16]) {
+	if m == nil || obj == nil || obj.GetMap() != m || m.sections == nil {
+		return
+	}
+	beforeSection := obj.getSection()
+	m.sections.add(obj)
+	if obj.getSection() == beforeSection {
+		return
+	}
+
+	m.updateVisibility(obj, before)
+	switch value := obj.(type) {
+	case *Character:
+		m.controllerTable.Update(value)
+	case *Mob:
+		m.controllerTable.MoveMob(value)
+	}
+}
+
+func (m *Map) GetObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object {
+	if m == nil || m.sections == nil {
+		return nil
+	}
+	return m.sections.objectsIn(bounds, filter)
+}
+
+func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		return
+	}
+
+	policy := types.SEND_POLICY_ENCRYPT
+	if option != nil && option.SendRaw {
+		policy = types.SEND_POLICY_RAW
+	}
+
+	for _, player := range m.objects[constant.ObjectTypeCharacter] {
+		character, ok := player.(*Character)
+		if !ok {
+			continue
+		}
+		character.Send(message, policy)
+	}
+}
+
+func (m *Map) BroadcastNear(position types.Vector2[int16], message types.Packet, option *BroadcastOption) {
+	if m == nil {
+		return
+	}
+	policy := types.SEND_POLICY_ENCRYPT
+	if option != nil && option.SendRaw {
+		policy = types.SEND_POLICY_RAW
+	}
+	for _, obj := range m.GetObjectsNear(position, constant.ObjectTypeCharacter, &SearchOption{IncludeHidden: true}) {
+		character, ok := obj.(*Character)
+		if !ok || character == nil {
+			continue
+		}
+		character.Send(message, policy)
+	}
+}
+
+type ItemSpawn struct {
+	Position    types.Point[int16]
+	From        types.Point[int16]
+	Owner       uint32
+	DropType    constant.DropType
+	PlayerDrop  bool
+	QuestTagged bool
+	Quest       uint32
+}
+
+func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
+	mapObj, ok := item.(Object)
+	if !ok {
+		return fmt.Errorf("item must implement Object")
+	}
+
+	dropPoint, ok := m.Wz.DropPoint(spawn.Position)
+	if !ok {
+		dropPoint = spawn.From
+	}
+
+	fp := &FieldPlacement{
+		ObjectCore: &ObjectCore{
+			self:      mapObj,
+			OID:       m.allocateOID(),
+			Position:  dropPoint,
+			GameWorld: m.GameWorld,
+			Map:       m,
+		},
+		Owner:        spawn.Owner,
+		SpawnedPoint: spawn.From,
+		DropType:     spawn.DropType,
+		PlayerDrop:   spawn.PlayerDrop,
+	}
+	if spawn.Quest != 0 {
+		fp.Quest = spawn.Quest
+	} else if spawn.QuestTagged {
+		fp.Quest = m.GameWorld.GetResources().QuestItems[item.GetModel().GetID()]
+	}
+	fp.initTimers()
+	item.BindFieldPlacement(fp)
+	m.registerFieldDropTimers(fp, spawn.DropType)
+
+	if m.objects[constant.ObjectTypeItem] == nil {
+		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
+	}
+	m.objects[constant.ObjectTypeItem][fp.OID] = mapObj
+	m.sections.add(mapObj)
+	m.listener.OnItemSpawned(m, item, fp)
+
+	owner := m.GetPlayer(spawn.Owner)
+	m.activateItemReactors(item, owner)
+
+	return nil
+}
+
+func (m *Map) SpawnMeso(count int32, position, spawnFrom types.Point[int16], ownerID uint32, dropType constant.DropType, playerDrop bool) (*Meso, error) {
+	oid := m.allocateOID()
+
+	dropPoint, ok := m.Wz.DropPoint(position)
+	if !ok {
+		dropPoint = spawnFrom
+	}
+
+	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.GameWorld, m)
+
+	fp := meso.GetFieldPlacement()
+	if fp != nil {
+		fp.SpawnedPoint = spawnFrom
+		fp.PlayerDrop = playerDrop
+		m.registerFieldDropTimers(fp, dropType)
+	}
+
+	if m.objects[constant.ObjectTypeItem] == nil {
+		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
+	}
+
+	m.objects[constant.ObjectTypeItem][oid] = meso
+	m.sections.add(meso)
+
+	m.listener.OnMesoSpawned(m, meso)
+
+	return meso, nil
+}
+
+func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, playerID uint32) error {
+	if m.objects[constant.ObjectTypeItem] == nil {
+		return fmt.Errorf("no items on map")
+	}
+
+	if _, exists := m.objects[constant.ObjectTypeItem][itemID]; !exists {
+		return fmt.Errorf("item %d not found on map", itemID)
+	}
+
+	obj := m.objects[constant.ObjectTypeItem][itemID]
+	position := obj.GetPosition()
+	m.sections.remove(obj)
+	delete(m.objects[constant.ObjectTypeItem], itemID)
+
+	m.releaseOID(itemID)
+
+	m.listener.OnItemRemoved(m, itemID, playerID, removeType, position)
+
+	return nil
+}
+
+func (m *Map) GetItem(itemID uint32) Item {
+	if m.objects[constant.ObjectTypeItem] == nil {
+		return nil
+	}
+
+	if item, ok := m.objects[constant.ObjectTypeItem][itemID].(Item); ok {
+		return item
+	}
+	return nil
+}
+
+func (m *Map) GetItems() map[uint32]Object {
+	if m.objects[constant.ObjectTypeItem] == nil {
+		return make(map[uint32]Object)
+	}
+	return m.objects[constant.ObjectTypeItem]
+}
+
+func (m *Map) LootItem(obj Object, character *Character, position types.Point[int16]) constant.LootResult {
+	if m.objects[constant.ObjectTypeItem] == nil {
+		return constant.LootFailedItemNotFound
+	}
+	if character.Trading() {
+		return constant.LootFailedTrading
+	}
+
+	switch item := obj.(type) {
+	case Item:
+		fp := item.GetFieldPlacement()
+		if fp == nil {
+			return constant.LootFailedInvalidItem
+		}
+
+		if fp.Quest > 0 && !character.Quests.Get(fp.Quest).IsStarted() {
+			return constant.LootFailedNoOwnership
+		}
+
+		if !m.canLootFieldDrop(fp, character) {
+			return constant.LootFailedNoOwnership
+		}
+
+		if item.GetModel().GetTraits()&constant.ItemTraitConsumeOnPickup != 0 {
+			consume, ok := item.(*Consume)
+			if !ok {
+				return constant.LootFailedInvalidItem
+			}
+			if !character.UseConsume(consume) {
+				return constant.LootFailedInvalidItem
+			}
+			return constant.LootSuccess
+		}
+
+		if fp.Quest > 0 && !character.Quests.NeedsItem(fp.Quest, item.GetModel().GetID()) {
+			return constant.LootFailedInventoryFull
+		}
+
+		count := item.GetCount()
+		added, err := character.Inventory.AddItem(item, false)
+		if err != nil {
+			log.Printf("Failed to add item: %v", err)
+			return constant.LootFailedInventoryFull
+		}
+		if len(added) == 0 {
+			return constant.LootFailedInventoryFull
+		}
+		if item.GetCount() < count {
+			return constant.LootPartial
+		}
+		return constant.LootSuccess
+
+	case *Meso:
+		fp := item.GetFieldPlacement()
+		if fp == nil {
+			return constant.LootFailedInvalidItem
+		}
+
+		if !m.canLootFieldDrop(fp, character) {
+			return constant.LootFailedNoOwnership
+		}
+
+		mesoCount := item.GetCount32()
+		beforeMeso := character.Inventory.Meso
+		character.Inventory.GainMeso(mesoCount)
+		if character.Inventory.Meso == beforeMeso {
+			return constant.LootFailedMesoFull
+		}
+		return constant.LootSuccess
+
+	default:
+		return constant.LootFailedInvalidItem
+	}
+}
+
+func (m *Map) LogicActorPID() *actor.PID {
+	return m.actorPID
+}
+
+func (m *Map) StateMachine() *StateMachine {
+	if m == nil {
+		return nil
+	}
+	return m.stateMachine
+}

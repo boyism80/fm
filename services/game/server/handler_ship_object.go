@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type ShipObject struct {
@@ -66,7 +67,7 @@ func (h *ShipObject) groupProp(groupName string) func(string) string {
 		if h.gs == nil {
 			return ""
 		}
-		reg := h.gs.GetStateMachineRegistry()
+		reg := h.gs.systems.Get[*domain.StateMachineSystem]()
 		if reg == nil {
 			return ""
 		}

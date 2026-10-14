@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type ResponseSpawnDoorHandler struct{}
@@ -12,11 +12,11 @@ func (ResponseSpawnDoorHandler) New() *ResponseSpawnDoorHandler {
 	return &ResponseSpawnDoorHandler{}
 }
 
-func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *ResponseSpawnDoor) {
+func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.ResponseSpawnDoor) {
 	if msg == nil {
 		return
 	}
-	var ch *entity.Character
+	var ch *domain.Character
 	if m := a.GetCharacter(msg.CharacterID); m != nil {
 		ch = m.GetPlayer(msg.CharacterID)
 	}
@@ -28,6 +28,6 @@ func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	}
 
 	if ch == nil || ch.Doors.SpawnField(msg.Key, msg.SkillID, msg.Return, msg.Field) == nil {
-		msg.Return.Map.GameWorld.GetMapSystem().DespawnDoor(msg.Return.Map, msg.Key, true, false)
+		msg.Return.Map.GameWorld.Systems().Get[*domain.MapSystem]().DespawnDoor(msg.Return.Map, msg.Key, true, false)
 	}
 }

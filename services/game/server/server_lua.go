@@ -14,7 +14,7 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
@@ -320,9 +320,9 @@ func (gs *GameServer) registerEffectTypeConstants(luaState *lua.LState) {
 
 func (gs *GameServer) registerExchangeResultConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
-	t.RawSetString("OK", lua.LNumber(entity.ExchangeOK))
-	t.RawSetString("LackCost", lua.LNumber(entity.ExchangeLackCost))
-	t.RawSetString("LackCapacity", lua.LNumber(entity.ExchangeLackCapacity))
+	t.RawSetString("OK", lua.LNumber(domain.ExchangeOK))
+	t.RawSetString("LackCost", lua.LNumber(domain.ExchangeLackCost))
+	t.RawSetString("LackCapacity", lua.LNumber(domain.ExchangeLackCapacity))
 	luaState.SetGlobal("ExchangeResult", t)
 }
 
@@ -345,7 +345,7 @@ func (gs *GameServer) runStartupScript() {
 	defer luaState.Close()
 
 	luax.RegisterFunc(luaState, "register_quest_item", func(L *lua.LState) int {
-		gs.resources.QuestItems[uint32(L.CheckInt(1))] = uint32(L.CheckInt(2))
+		gs.GetResources().QuestItems[uint32(L.CheckInt(1))] = uint32(L.CheckInt(2))
 		return 0
 	})
 	if err := luaState.DoFile(constant.StartupScriptPath); err != nil {
@@ -355,7 +355,7 @@ func (gs *GameServer) runStartupScript() {
 }
 
 func (gs *GameServer) loadSkillScripts(luaState *lua.LState) {
-	for id, skill := range gs.resources.Skills {
+	for id, skill := range gs.GetResources().Skills {
 		path := fmt.Sprintf("script/skill/%d.lua", id)
 		if _, err := os.Stat(path); err != nil {
 			continue
@@ -393,8 +393,8 @@ func registerWzMobName(gs *GameServer, L *lua.LState) {
 				return 0
 			}
 			name := ""
-			if gs.resources != nil {
-				name = gs.resources.GetMobName(m.ID)
+			if gs.GetResources() != nil {
+				name = gs.GetResources().GetMobName(m.ID)
 			}
 			L.Push(lua.LString(name))
 			return 1
@@ -403,27 +403,27 @@ func registerWzMobName(gs *GameServer, L *lua.LState) {
 }
 
 func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
-	luax.RegisterLuaType[*entity.PartyMember](luaState)
-	luax.RegisterLuaType[*entity.Party](luaState)
-	luax.RegisterLuaType[*entity.StateMachine](luaState)
-	luax.RegisterLuaType[*entity.StateMachineGroup](luaState)
-	luax.RegisterLuaType[*entity.Portal](luaState)
-	luax.RegisterLuaType[*entity.GuildMember](luaState)
-	luax.RegisterLuaType[*entity.Guild](luaState)
-	luax.RegisterLuaType[*entity.Quest](luaState)
-	luax.RegisterLuaType[*entity.Records](luaState)
-	luax.RegisterLuaType[*entity.Alliance](luaState)
-	luax.RegisterLuaType[*entity.Marriage](luaState)
-	luax.RegisterLuaType[*entity.ObjectCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.FieldPlacement, *entity.ObjectCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Meso, *entity.FieldPlacement](luaState)
-	luax.RegisterLuaDerivedType[*entity.LifeCore, *entity.ObjectCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Character, *entity.LifeCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Mob, *entity.LifeCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Summon, *entity.LifeCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Mist, *entity.ObjectCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Npc, *entity.ObjectCore](luaState)
-	luax.RegisterLuaType[*entity.Map](luaState)
+	luax.RegisterLuaType[*domain.PartyMember](luaState)
+	luax.RegisterLuaType[*domain.Party](luaState)
+	luax.RegisterLuaType[*domain.StateMachine](luaState)
+	luax.RegisterLuaType[*domain.StateMachineGroup](luaState)
+	luax.RegisterLuaType[*domain.Portal](luaState)
+	luax.RegisterLuaType[*domain.GuildMember](luaState)
+	luax.RegisterLuaType[*domain.Guild](luaState)
+	luax.RegisterLuaType[*domain.Quest](luaState)
+	luax.RegisterLuaType[*domain.Records](luaState)
+	luax.RegisterLuaType[*domain.Alliance](luaState)
+	luax.RegisterLuaType[*domain.Marriage](luaState)
+	luax.RegisterLuaType[*domain.ObjectCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.FieldPlacement, *domain.ObjectCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Meso, *domain.FieldPlacement](luaState)
+	luax.RegisterLuaDerivedType[*domain.LifeCore, *domain.ObjectCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Character, *domain.LifeCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Mob, *domain.LifeCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Summon, *domain.LifeCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Mist, *domain.ObjectCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Npc, *domain.ObjectCore](luaState)
+	luax.RegisterLuaType[*domain.Map](luaState)
 	luax.RegisterLuaType[*wz.Map](luaState)
 	registerWzMapCreateInstance(gs, luaState)
 	luax.RegisterLuaType[*wz.Mob](luaState)
@@ -431,14 +431,14 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	luax.RegisterLuaType[*wz.Skill](luaState)
 	luax.RegisterLuaType[*wz.Quest](luaState)
 	luax.RegisterLuaType[*wz.NpcSpawn](luaState)
-	luax.RegisterLuaType[*entity.SkillEntry](luaState)
-	luax.RegisterLuaType[*entity.MobSkill](luaState)
-	luax.RegisterLuaDerivedType[*entity.Reactor, *entity.ObjectCore](luaState)
-	luax.RegisterLuaType[*entity.SkillBuff](luaState)
-	luax.RegisterLuaType[*entity.ItemBuff](luaState)
-	luax.RegisterLuaType[*entity.MobBuff](luaState)
-	luax.RegisterLuaType[*entity.ItemCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.EquipmentCore, *entity.ItemCore](luaState)
+	luax.RegisterLuaType[*domain.SkillEntry](luaState)
+	luax.RegisterLuaType[*domain.MobSkill](luaState)
+	luax.RegisterLuaDerivedType[*domain.Reactor, *domain.ObjectCore](luaState)
+	luax.RegisterLuaType[*domain.SkillBuff](luaState)
+	luax.RegisterLuaType[*domain.ItemBuff](luaState)
+	luax.RegisterLuaType[*domain.MobBuff](luaState)
+	luax.RegisterLuaType[*domain.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.EquipmentCore, *domain.ItemCore](luaState)
 	luax.RegisterLuaType[*wz.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*wz.EquipmentCore, *wz.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*wz.Weapon, *wz.EquipmentCore](luaState)
@@ -448,11 +448,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*wz.MiscItem, *wz.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*wz.CashItem, *wz.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*wz.Installation, *wz.ItemCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Consume, *entity.ItemCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.CashItem, *entity.ItemCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.MiscItem, *entity.ItemCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Installation, *entity.ItemCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.Pet, *entity.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Consume, *domain.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.CashItem, *domain.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.MiscItem, *domain.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Installation, *domain.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*domain.Pet, *domain.ItemCore](luaState)
 
 	gs.registerBuffFlag(luaState)
 	gs.registerDebuffFlag(luaState)
@@ -484,8 +484,8 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	registerClockLuaFuncs(gs, luaState)
 	registerMarriageLuaFuncs(gs, luaState)
 	registerFaultLuaFuncs(gs, luaState)
-	entity.RegisterCarnivalLua(luaState, gs)
-	entity.RegisterExpeditionLua(luaState, gs)
+	domain.RegisterCarnivalLua(luaState, gs)
+	domain.RegisterExpeditionLua(luaState, gs)
 
 	luax.RegisterFunc(luaState, "log", func(L *lua.LState) int {
 		parts := make([]string, L.GetTop())
@@ -498,7 +498,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "state_machine", func(L *lua.LState) int {
 		name := L.CheckString(1)
-		reg := gs.GetStateMachineRegistry()
+		reg := gs.systems.Get[*domain.StateMachineSystem]()
 		if reg == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -514,11 +514,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "state_machines", func(L *lua.LState) int {
 		tbl := L.NewTable()
-		if gs.stateMachines == nil {
-			L.Push(tbl)
-			return 1
-		}
-		for _, group := range gs.stateMachines.Groups() {
+		for _, group := range gs.systems.Get[*domain.StateMachineSystem]().Groups() {
 			tbl.Append(luax.NewLuable(L, group))
 		}
 		L.Push(tbl)
@@ -527,16 +523,16 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {
 		name := L.CheckString(1)
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		id, ok := gs.resources.NameToMap(name)
+		id, ok := gs.GetResources().NameToMap(name)
 		if !ok {
 			L.Push(lua.LNil)
 			return 1
 		}
-		m := gs.resources.Maps[id]
+		m := gs.GetResources().Maps[id]
 		if m == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -547,11 +543,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "id2map", func(L *lua.LState) int {
 		id := uint32(L.CheckNumber(1))
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		m := gs.resources.Maps[id]
+		m := gs.GetResources().Maps[id]
 		if m == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -562,7 +558,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "instance_map", func(L *lua.LState) int {
 		key := uint32(L.CheckNumber(1))
-		ms := gs.GetMapSystem()
+		ms := gs.systems.Get[*domain.MapSystem]()
 		if ms == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -579,11 +575,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	luax.RegisterFunc(luaState, "npc_spawns", func(L *lua.LState) int {
 		npcID := uint32(L.CheckNumber(1))
 		out := L.NewTable()
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(out)
 			return 1
 		}
-		spawns := gs.resources.FindNpcSpawns(npcID)
+		spawns := gs.GetResources().FindNpcSpawns(npcID)
 		for i, spawn := range spawns {
 			entry := L.NewTable()
 			entry.RawSetString("map_id", lua.LNumber(spawn.MapID))
@@ -599,11 +595,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		mapID := uint32(L.CheckNumber(1))
 		x := int16(L.CheckNumber(2))
 		y := int16(L.CheckNumber(3))
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		mapWz := gs.resources.Maps[mapID]
+		mapWz := gs.GetResources().Maps[mapID]
 		if mapWz == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -615,16 +611,16 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "name2mob", func(L *lua.LState) int {
 		name := L.CheckString(1)
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		id, ok := gs.resources.NameToMob(name)
+		id, ok := gs.GetResources().NameToMob(name)
 		if !ok {
 			L.Push(lua.LNil)
 			return 1
 		}
-		mob := gs.resources.Monsters[id]
+		mob := gs.GetResources().Monsters[id]
 		if mob == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -635,11 +631,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "id2mob", func(L *lua.LState) int {
 		id := uint32(L.CheckNumber(1))
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		mob := gs.resources.Monsters[id]
+		mob := gs.GetResources().Monsters[id]
 		if mob == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -650,11 +646,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "name2npc", func(L *lua.LState) int {
 		name := L.CheckString(1)
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		id, ok := gs.resources.NameToNpc(name)
+		id, ok := gs.GetResources().NameToNpc(name)
 		if !ok {
 			L.Push(lua.LNil)
 			return 1
@@ -665,11 +661,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "name2item", func(L *lua.LState) int {
 		name := L.CheckString(1)
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		id, ok := gs.resources.NameToItem(name)
+		id, ok := gs.GetResources().NameToItem(name)
 		if !ok {
 			L.Push(lua.LNil)
 			return 1
@@ -680,11 +676,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "item2name", func(L *lua.LState) int {
 		id := uint32(L.CheckNumber(1))
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		name := gs.resources.GetItemName(id)
+		name := gs.GetResources().GetItemName(id)
 		if name == "" {
 			L.Push(lua.LNil)
 			return 1
@@ -694,22 +690,22 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	})
 
 	luax.RegisterFunc(luaState, "valid_text", func(L *lua.LState) int {
-		L.Push(lua.LBool(entity.ClientText(L.CheckString(1)).Valid(L.CheckInt(2))))
+		L.Push(lua.LBool(domain.ClientText(L.CheckString(1)).Valid(L.CheckInt(2))))
 		return 1
 	})
 
 	luax.RegisterFunc(luaState, "name2skill", func(L *lua.LState) int {
 		name := L.CheckString(1)
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		id, ok := gs.resources.NameToSkill(name)
+		id, ok := gs.GetResources().NameToSkill(name)
 		if !ok {
 			L.Push(lua.LNil)
 			return 1
 		}
-		wzSkill := gs.resources.GetSkill(id)
+		wzSkill := gs.GetResources().GetSkill(id)
 		if wzSkill == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -720,11 +716,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "id2quest", func(L *lua.LState) int {
 		id := uint32(L.CheckNumber(1))
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		wzQuest := gs.resources.GetQuest(id)
+		wzQuest := gs.GetResources().GetQuest(id)
 		if wzQuest == nil {
 			L.Push(lua.LNil)
 			return 1
@@ -734,7 +730,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	})
 
 	luax.RegisterFunc(luaState, "item_wz", func(L *lua.LState) int {
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
@@ -760,7 +756,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		var itemId uint32
 		switch lv := L.Get(1).(type) {
 		case lua.LString:
-			id, ok := gs.resources.NameToItem(string(lv))
+			id, ok := gs.GetResources().NameToItem(string(lv))
 			if !ok {
 				L.Push(lua.LNil)
 				return 1
@@ -773,7 +769,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 			return 0
 		}
 
-		model, ok := gs.resources.Items[itemId]
+		model, ok := gs.GetResources().Items[itemId]
 		if !ok {
 			L.Push(lua.LNil)
 			return 1
@@ -791,7 +787,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	luax.RegisterFunc(luaState, "class_learnable_skill_wzs", func(L *lua.LState) int {
 		class := uint16(L.CheckInt(1))
 		result := L.NewTable()
-		if gs.resources == nil {
+		if gs.GetResources() == nil {
 			L.Push(result)
 			return 1
 		}
@@ -802,7 +798,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 			skillIDStart := uint32(classID) * 10000
 			skillIDEnd := skillIDStart + 9999
 			for skillID := skillIDStart; skillID <= skillIDEnd; skillID++ {
-				wzSkill := gs.resources.GetSkill(skillID)
+				wzSkill := gs.GetResources().GetSkill(skillID)
 				if wzSkill == nil {
 					continue
 				}
@@ -833,7 +829,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 			L.Push(lua.LString("save: actor context not found"))
 			return 2
 		}
-		return entity.LuaYieldPromise(L, gs, gs.SaveAllCharactersAsync(cfg.ActorContext), func(_ *saveAllSummary, err error) []lua.LValue {
+		return domain.LuaYieldPromise(L, gs, gs.systems.Get[*domain.InternalSystem]().SaveAllCharactersAsync(cfg.ActorContext), func(_ *domain.SaveAllSummary, err error) []lua.LValue {
 			if err != nil {
 				log.Printf("save: %v", err)
 				return []lua.LValue{lua.LFalse, lua.LString(err.Error())}
@@ -848,7 +844,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		time.AfterFunc(d, func() {
 			task.Complete()
 		})
-		return entity.LuaYieldTask(L, gs, task, nil)
+		return domain.LuaYieldTask(L, gs, task, nil)
 	})
 
 	luax.RegisterFunc(luaState, "run_on_map", func(L *lua.LState) int {
@@ -869,8 +865,8 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		if cfg.ActorContext != nil {
 			caller = cfg.ActorContext.Self()
 		}
-		targetMap := gs.GetMapSystem().Find(gs.stateMachines.FindByActor(caller), mapID)
-		return gs.GetMapSystem().RunScript(L, cfg.ActorContext, targetMap, scriptPath, funcName, args)
+		targetMap := gs.systems.Get[*domain.MapSystem]().Find(gs.systems.Get[*domain.StateMachineSystem]().FindByActor(caller), mapID)
+		return gs.systems.Get[*domain.MapSystem]().RunScript(L, cfg.ActorContext, targetMap, scriptPath, funcName, args)
 	})
 
 	luax.RegisterFunc(luaState, "set_packet_log_enabled", func(L *lua.LState) int {
@@ -886,11 +882,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		return 1
 	})
 	luax.RegisterFunc(luaState, "set_megaphone_muted", func(L *lua.LState) int {
-		gs.megaphoneMuted.Store(L.CheckBool(1))
+		gs.systems.Get[*domain.NoticeSystem]().Muted.Store(L.CheckBool(1))
 		return 0
 	})
 	luax.RegisterFunc(luaState, "get_megaphone_muted", func(L *lua.LState) int {
-		L.Push(lua.LBool(gs.megaphoneMuted.Load()))
+		L.Push(lua.LBool(gs.systems.Get[*domain.NoticeSystem]().Muted.Load()))
 		return 1
 	})
 	luax.RegisterFunc(luaState, "set_packet_log", func(L *lua.LState) int {

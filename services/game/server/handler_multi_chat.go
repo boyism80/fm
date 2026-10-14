@@ -9,11 +9,12 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/core/rpc"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type MultiChat struct {
@@ -77,10 +78,7 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 	}
 }
 
-func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
+func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("guild multi chat: actor context required")
 	}
@@ -93,7 +91,7 @@ func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	worldID := h.gs.config.WorldId
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
-			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:           worldID,
 				MemberId:          guildID,
 				SenderCharacterId: senderID,
@@ -114,10 +112,7 @@ func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	return nil
 }
 
-func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
+func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("alliance multi chat: actor context required")
 	}
@@ -125,7 +120,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *entity.
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.guild.Get(guildID)
+	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -138,7 +133,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *entity.
 	worldID := h.gs.config.WorldId
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
-			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:           worldID,
 				MemberId:          allianceID,
 				SenderCharacterId: senderID,
@@ -159,10 +154,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *entity.
 	return nil
 }
 
-func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
+func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("party multi chat: actor context required")
 	}
@@ -179,7 +171,7 @@ func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	worldID := h.gs.config.WorldId
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
-			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:           worldID,
 				MemberId:          memberID,
 				SenderCharacterId: senderID,
@@ -200,10 +192,7 @@ func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	return nil
 }
 
-func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
+func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("buddy multi chat: actor context required")
 	}
@@ -218,7 +207,7 @@ func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	worldID := h.gs.config.WorldId
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
-			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:               worldID,
 				SenderCharacterId:     senderID,
 				ChatMode:              uint32(pconst.MultiChatModeBuddy),

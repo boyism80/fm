@@ -6,6 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type allianceMqGuildAdded struct{ gs *GameServer }
@@ -44,9 +45,9 @@ func (h *allianceMqGuildAdded) Handle(ctx actor.Context, raw json.RawMessage) er
 		log.Printf("alliance consumer: guild_added alliance_id=%d guild_id=%d not in alliance_pb", evt.AllianceID, payload.AddedGuildID)
 		return nil
 	}
-	gs.alliance.UpdateAsync(ctx, evt).Do(func() error {
-		gs.alliance.Update(alliancePb)
-		gs.alliance.BroadcastGuildAdded(alliancePb, addedGuildPb)
+	gs.systems.Get[*domain.AllianceSystem]().UpdateAsync(ctx, evt).Do(func() error {
+		gs.systems.Get[*domain.AllianceSystem]().Update(alliancePb)
+		gs.systems.Get[*domain.AllianceSystem]().BroadcastGuildAdded(alliancePb, addedGuildPb)
 		return nil
 	})
 	return nil

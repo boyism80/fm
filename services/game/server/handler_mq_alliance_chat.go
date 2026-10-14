@@ -6,7 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type allianceMqChat struct {
@@ -44,13 +44,13 @@ func (h *allianceMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 		return nil
 	}
 	mode := pconst.MultiChatModeAlliance
-	guildIDs := gs.alliance.GuildIDs(payload.AllianceID)
+	guildIDs := gs.systems.Get[*domain.AllianceSystem]().GuildIDs(payload.AllianceID)
 	if len(guildIDs) == 0 {
 		return nil
 	}
 	seen := make(map[uint32]struct{})
 	for _, guildID := range guildIDs {
-		g := gs.guild.Get(guildID)
+		g := gs.systems.Get[*domain.GuildSystem]().Get(guildID)
 		if g == nil {
 			continue
 		}
@@ -66,10 +66,10 @@ func (h *allianceMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 				continue
 			}
 			seen[memberID] = struct{}{}
-			if gs.characterRuntime == nil || !gs.characterRuntime.Exists(memberID) {
+			if !gs.systems.Get[*domain.DispatchSystem]().Exists(memberID) {
 				continue
 			}
-			gs.GetDispatchSystem().CallCharacter(memberID, func(_ actor.Context, ch *entity.Character) {
+			gs.systems.Get[*domain.DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *domain.Character) {
 				if ch == nil {
 					return
 				}

@@ -9,7 +9,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type Duey struct {
@@ -54,15 +54,15 @@ func (h *Duey) Handle(ctx *core.ClientContext, req *request.Duey) error {
 	}
 
 	switch {
-	case errors.Is(err, entity.ErrDueyNotEnoughMeso):
+	case errors.Is(err, domain.ErrDueyNotEnoughMeso):
 		ch.Listener.OnDueyResult(ch, pconst.DueyResultNotEnoughMeso)
-	case errors.Is(err, entity.ErrDueyOnlyHeld):
+	case errors.Is(err, domain.ErrDueyOnlyHeld):
 		ch.Listener.OnDueyResult(ch, pconst.DueyResultOnlyHeld)
-	case errors.Is(err, entity.ErrInventoryFull):
+	case errors.Is(err, domain.ErrInventoryFull):
 		ch.Listener.OnDueyResult(ch, pconst.DueyResultInventoryFull)
-	case errors.Is(err, entity.ErrDueyCannotReceive):
+	case errors.Is(err, domain.ErrDueyCannotReceive):
 		ch.Listener.OnDueyResult(ch, pconst.DueyResultCannotReceive)
-	case errors.Is(err, entity.ErrDueyNotSendable), errors.Is(err, entity.ErrDueyInvalid), errors.Is(err, entity.ErrDueyParcelNotFound):
+	case errors.Is(err, domain.ErrDueyNotSendable), errors.Is(err, domain.ErrDueyInvalid), errors.Is(err, domain.ErrDueyParcelNotFound):
 		ch.Listener.OnDueyResult(ch, pconst.DueyResultInvalid)
 	case err != nil:
 		ch.Listener.OnUnlockAction(ch)

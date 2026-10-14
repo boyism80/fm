@@ -6,6 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type guildMqChat struct {
@@ -42,7 +43,7 @@ func (h *guildMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.ChatMode != uint32(pconst.MultiChatModeGuild) {
 		return nil
 	}
-	gs.guild.BroadcastMultiChat(
+	gs.systems.Get[*domain.GuildSystem]().BroadcastMultiChat(
 		payload.GuildID,
 		payload.SenderCharacterID,
 		payload.SenderName,

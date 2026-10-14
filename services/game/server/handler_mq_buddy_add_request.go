@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type buddyMqAddRequest struct {
@@ -45,10 +45,10 @@ func (h *buddyMqAddRequest) Handle(_ actor.Context, raw json.RawMessage) error {
 		if recipientID == 0 {
 			continue
 		}
-		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
+		if !gs.systems.Get[*domain.DispatchSystem]().Exists(recipientID) {
 			continue
 		}
-		gs.GetDispatchSystem().CallCharacter(recipientID, func(_ actor.Context, ch *entity.Character) {
+		gs.systems.Get[*domain.DispatchSystem]().CallCharacter(recipientID, func(_ actor.Context, ch *domain.Character) {
 			if ch == nil {
 				return
 			}

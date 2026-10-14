@@ -2,6 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type RefreshWeddingHandler struct{}
@@ -10,7 +11,7 @@ func (RefreshWeddingHandler) New() *RefreshWeddingHandler {
 	return &RefreshWeddingHandler{}
 }
 
-func (h *RefreshWeddingHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *RefreshWedding) {
+func (h *RefreshWeddingHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.RefreshWedding) {
 	m := a.GetCharacter(msg.CharacterID)
 	if m == nil {
 		return

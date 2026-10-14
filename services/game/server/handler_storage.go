@@ -9,7 +9,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type Storage struct {
@@ -56,11 +56,11 @@ func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
 	}
 
 	switch {
-	case errors.Is(err, entity.ErrStorageFull):
+	case errors.Is(err, domain.ErrStorageFull):
 		ch.Listener.OnStorageError(ch, pconst.StorageResultFull)
-	case errors.Is(err, entity.ErrStorageNotEnoughMeso):
+	case errors.Is(err, domain.ErrStorageNotEnoughMeso):
 		ch.Listener.OnStorageError(ch, pconst.StorageResultNotEnoughMeso)
-	case errors.Is(err, entity.ErrInventoryFull):
+	case errors.Is(err, domain.ErrInventoryFull):
 		ch.Listener.OnStorageError(ch, pconst.StorageResultInventoryFull)
 	case err != nil:
 		ch.Listener.OnUnlockAction(ch)

@@ -7,11 +7,11 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	lua "github.com/yuin/gopher-lua"
 )
 
-func CallOnAttackHooks(ctx actor.Context, character *entity.Character, damages []dto.AttackPair, skill *entity.SkillEntry, magicAttack bool, ranged bool) {
+func CallOnAttackHooks(ctx actor.Context, character *domain.Character, damages []dto.AttackPair, skill *domain.SkillEntry, magicAttack bool, ranged bool) {
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return
@@ -29,7 +29,7 @@ func CallOnAttackHooks(ctx actor.Context, character *entity.Character, damages [
 	readDamagesFromLuaTableInto(damagesTable, damages)
 }
 
-func CallSummonOnAttackHooks(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
+func CallSummonOnAttackHooks(character *domain.Character, mapInstance *domain.Map, damages []dto.AttackPair, skillID uint32) {
 	if character == nil || mapInstance == nil || skillID == 0 {
 		return
 	}

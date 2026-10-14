@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	gameclient "github.com/boyism80/fm/services/game/client"
@@ -29,7 +30,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	}
 	c.MarkPongReceived()
 	character := c.GetCharacter()
-	if character == nil || character.AccountID == 0 || h.gs.internalClient == nil {
+	if character == nil || character.AccountID == 0 {
 		return nil
 	}
 	if ctx.ActorContext == nil {
@@ -47,7 +48,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 				ch := h.gs.config.ChannelId
 				req.ChannelId = &ch
 			}
-			return h.gs.internalClient.RefreshSession(cctx, req)
+			return h.gs.systems.Get[*rpc.InternalConnection]().Client.RefreshSession(cctx, req)
 		}, func(reply *internal.RefreshSessionReply) error {
 			if reply.GetOk() {
 				return nil

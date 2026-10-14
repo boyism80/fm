@@ -7,7 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type buddyMqUpdate struct {
@@ -73,10 +73,10 @@ func (h *buddyMqUpdate) Handle(_ actor.Context, raw json.RawMessage) error {
 		if recipientID == 0 {
 			continue
 		}
-		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
+		if !gs.systems.Get[*domain.DispatchSystem]().Exists(recipientID) {
 			continue
 		}
-		gs.SendToCharacter(nil, recipientID, &g_actor.SyncBuddyList{
+		gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, recipientID, &domain.SyncBuddyList{
 			RecipientCharacterID: recipientID,
 			SyncAction:           uint8(action),
 			Entries:              entries,

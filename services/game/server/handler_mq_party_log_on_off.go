@@ -6,6 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game/domain"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -23,7 +24,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, raw json.RawMessage) error {
 	if h.gs == nil {
 		return nil
 	}
-	pc := h.gs.party
+	pc := h.gs.systems.Get[*domain.PartySystem]()
 	evt, ok := decodePartyEventEnvelope(raw)
 	if !ok {
 		return nil
@@ -38,7 +39,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, raw json.RawMessage) error {
 			if err == nil {
 				var partyPb internal.Party
 				if err := proto.Unmarshal(wire, &partyPb); err == nil {
-					applied, err := pc.applyPartySnapshot(evt, &partyPb, false)
+					applied, err := pc.ApplyPartySnapshot(evt, &partyPb, false)
 					if err != nil {
 						return nil
 					}

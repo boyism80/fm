@@ -417,6 +417,9 @@ func FindWzPath(configPath string) string {
 	return configPath
 }
 
+func (r *Resources) Start() error { return nil }
+func (r *Resources) Stop()        {}
+
 func NewResources(wzPath string) *Resources {
 
 	originalPath := wzPath

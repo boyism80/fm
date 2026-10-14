@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -45,7 +46,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 	cashShopID := uint32(h.cs.config.CashShopID)
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise.ThenRPC(func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
-		return h.cs.internalClient.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   uint32(h.cs.config.WorldID),
 			ChannelId: character.ReturnChannel,
 		})
@@ -58,7 +59,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 		return nil
 	})
 	promise.ThenRPC(func(c context.Context) (*internal.BeginGameTransitionReply, error) {
-		return h.cs.internalClient.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
 			WorldId:          uint32(h.cs.config.WorldID),
 			AccountId:        character.AccountID(),
 			CharacterId:      character.ID(),

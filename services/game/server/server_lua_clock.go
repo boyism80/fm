@@ -6,7 +6,7 @@ import (
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -30,11 +30,6 @@ func registerClockLuaFuncs(gs *GameServer, luaState *lua.LState) {
 		if argc == 0 {
 			L.Push(lua.LNumber(clock.Now().Unix()))
 			return 1
-		}
-		if gs == nil || gs.internalClient == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("internal client unavailable"))
-			return 2
 		}
 
 		reset := false
@@ -79,11 +74,6 @@ func registerClockLuaFuncs(gs *GameServer, luaState *lua.LState) {
 }
 
 func shiftServerDateTimeFromLua(gs *GameServer, L *lua.LState, forward bool) int {
-	if gs == nil || gs.internalClient == nil {
-		L.Push(lua.LBool(false))
-		L.Push(lua.LString("internal client unavailable"))
-		return 2
-	}
 	raw := L.CheckString(1)
 	delta, err := clock.ParseTimespan(raw)
 	if err != nil {
@@ -105,7 +95,7 @@ func requestServerDateTimeFromLua(gs *GameServer, L *lua.LState, reset bool, dat
 		L.Push(lua.LString("actor context not found"))
 		return 2
 	}
-	return entity.LuaYieldPromise(L, gs, gs.SetServerDateTimeAsync(cfg.ActorContext, reset, datetime), func(_ *internal.SetServerDateTimeReply, err error) []lua.LValue {
+	return domain.LuaYieldPromise(L, gs, gs.systems.Get[*domain.InternalSystem]().SetServerDateTimeAsync(cfg.ActorContext, reset, datetime), func(_ *internal.SetServerDateTimeReply, err error) []lua.LValue {
 		if err != nil {
 			log.Printf("server datetime: %v", err)
 			return []lua.LValue{lua.LFalse, lua.LString(err.Error())}

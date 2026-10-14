@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -40,7 +41,7 @@ func (h *SelectCharacter) selectCharacter(ctx *core.ClientContext, characterID u
 	}
 	worldId := loginClient.GetWorldId()
 	channelId := loginClient.GetChannelId()
-	worldRoutes, ok := h.ls.channelRoutes[worldId]
+	worldRoutes, ok := h.ls.systems.Get[*catalogSystem]().channels[worldId]
 	if !ok {
 		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: route not found for world=%d channel=%d", worldId, channelId)
@@ -57,7 +58,7 @@ func (h *SelectCharacter) selectCharacter(ctx *core.ClientContext, characterID u
 	}
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.AuthorizeCharacterSelectionReply, error) {
-			return h.ls.internalClient.AuthorizeCharacterSelection(c, &internal.AuthorizeCharacterSelectionRequest{
+			return h.ls.systems.Get[*rpc.InternalConnection]().Client.AuthorizeCharacterSelection(c, &internal.AuthorizeCharacterSelectionRequest{
 				WorldId:        worldId,
 				AccountId:      accountId,
 				CharacterId:    characterID,

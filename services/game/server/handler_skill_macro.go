@@ -6,7 +6,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type SkillMacro struct{}
@@ -24,12 +24,12 @@ func (*SkillMacro) Handle(ctx *core.ClientContext, req *request.SkillMacro) erro
 	if req.Count != uint8(len(req.Entries)) {
 		return nil
 	}
-	entries := make([]entity.SkillMacro, 0, len(req.Entries))
+	entries := make([]domain.SkillMacro, 0, len(req.Entries))
 	for _, entry := range req.Entries {
 		if entry.Shout > 1 {
 			return nil
 		}
-		entries = append(entries, entity.SkillMacro{Name: entry.Name, Shout: entry.Shout == 1, Skills: entry.Skills})
+		entries = append(entries, domain.SkillMacro{Name: entry.Name, Shout: entry.Shout == 1, Skills: entry.Skills})
 	}
 	ch.SkillMacros.Replace(entries)
 	return nil

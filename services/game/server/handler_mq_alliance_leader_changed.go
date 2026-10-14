@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type allianceMqLeaderChanged struct{ gs *GameServer }
@@ -39,7 +40,7 @@ func (h *allianceMqLeaderChanged) Handle(_ actor.Context, raw json.RawMessage) e
 		log.Printf("alliance consumer: leader_changed alliance_id=%d missing leader ids", evt.AllianceID)
 		return nil
 	}
-	gs.alliance.Update(alliancePb)
-	gs.alliance.BroadcastLeaderChanged(alliancePb, extra.OldLeaderCharacterID, extra.NewLeaderCharacterID)
+	gs.systems.Get[*domain.AllianceSystem]().Update(alliancePb)
+	gs.systems.Get[*domain.AllianceSystem]().BroadcastLeaderChanged(alliancePb, extra.OldLeaderCharacterID, extra.NewLeaderCharacterID)
 	return nil
 }

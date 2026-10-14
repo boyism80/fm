@@ -14,7 +14,6 @@ func ExecutePacketHandler(actorCtx actor.Context, server Server, client Client, 
 
 	ctx := &ClientContext{
 		Client:        client,
-		Server:        nil,
 		LogicActorPID: logicActorPID,
 		ActorContext:  actorCtx,
 	}

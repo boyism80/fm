@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type partyMqPartyInvite struct{ gs *GameServer }
@@ -33,7 +33,7 @@ func (h *partyMqPartyInvite) Handle(_ actor.Context, raw json.RawMessage) error 
 	if payload.TargetCharacterID == 0 {
 		return nil
 	}
-	h.gs.GetDispatchSystem().CallCharacter(payload.TargetCharacterID, func(_ actor.Context, ch *entity.Character) {
+	h.gs.systems.Get[*domain.DispatchSystem]().CallCharacter(payload.TargetCharacterID, func(_ actor.Context, ch *domain.Character) {
 		if ch == nil {
 			return
 		}

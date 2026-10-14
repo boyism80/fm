@@ -7,12 +7,13 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type Buddy struct {
@@ -26,9 +27,6 @@ func (Buddy) New(gs *GameServer) *Buddy {
 }
 
 func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("buddy: actor context required")
 	}
@@ -51,7 +49,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 		groupName := req.Group
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.RequestBuddyReply, error) {
-				return h.gs.internalClient.RequestBuddy(c, &internal.RequestBuddyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.RequestBuddy(c, &internal.RequestBuddyRequest{
 					WorldId:              worldID,
 					RequesterCharacterId: charID,
 					TargetCharacterName:  targetName,
@@ -65,7 +63,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 					return nil
 				}
 				if view := reply.GetRequesterView(); view != nil {
-					entry := entity.BuddyListEntryFromProto(view)
+					entry := domain.BuddyListEntryFromProto(view)
 					ch.Buddies.Upsert(entry)
 					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
 				}
@@ -80,7 +78,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 		requesterID := req.CharacterID
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.AcceptBuddyReply, error) {
-				return h.gs.internalClient.AcceptBuddy(c, &internal.AcceptBuddyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.AcceptBuddy(c, &internal.AcceptBuddyRequest{
 					WorldId:              worldID,
 					AccepterCharacterId:  charID,
 					RequesterCharacterId: requesterID,
@@ -93,7 +91,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 					return nil
 				}
 				if view := reply.GetAccepterView(); view != nil {
-					entry := entity.BuddyListEntryFromProto(view)
+					entry := domain.BuddyListEntryFromProto(view)
 					ch.Buddies.Upsert(entry)
 					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
 				}
@@ -108,7 +106,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 		buddyID := req.CharacterID
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.RemoveBuddyReply, error) {
-				return h.gs.internalClient.RemoveBuddy(c, &internal.RemoveBuddyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.RemoveBuddy(c, &internal.RemoveBuddyRequest{
 					WorldId:          worldID,
 					CharacterId:      charID,
 					BuddyCharacterId: buddyID,

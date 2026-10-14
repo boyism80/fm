@@ -17,9 +17,3 @@ type Result struct {
 	OK            bool
 	Reason        string
 }
-
-// Coordinator is implemented by the game server (or login server) to complete or resend envelopes.
-type Coordinator interface {
-	Resend(d *Envelope)
-	CompleteEnvelope(correlationID uint64)
-}

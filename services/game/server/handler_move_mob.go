@@ -12,7 +12,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -112,7 +112,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	return nil
 }
 
-func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mob *entity.Mob, controller *entity.Character, skill *entity.MobSkill) {
+func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *domain.Map, mob *domain.Mob, controller *domain.Character, skill *domain.MobSkill) {
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return

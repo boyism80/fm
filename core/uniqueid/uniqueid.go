@@ -36,6 +36,9 @@ func NewForCashShop(worldID uint32, cashShopID uint32) *Generator {
 	return &Generator{node: uint64(worldID)<<5 | serverMax | uint64(cashShopID)}
 }
 
+func (u *Generator) Start() error { return nil }
+func (u *Generator) Stop()        {}
+
 func (u *Generator) Next() uint64 {
 	u.mu.Lock()
 	defer u.mu.Unlock()

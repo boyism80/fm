@@ -7,16 +7,17 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/types"
 )
 
-func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameClient, character *entity.Character, blocked constant.ServerBlockedReason, findRoute func(context.Context) (*response.SwitchChannel, error)) {
-	ic := gs.internalClient
+func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameClient, character *domain.Character, blocked constant.ServerBlockedReason, findRoute func(context.Context) (*response.SwitchChannel, error)) {
+	ic := gs.systems.Get[*rpc.InternalConnection]().Client
 	worldID := gs.config.WorldId
 	var route *response.SwitchChannel
 	var entry *internal.CharacterSaveEntry

@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -31,7 +32,7 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *entity.Character
 	if couple {
 		ring = gconstant.ItemTraitCrushRing
 	}
-	model := h.cs.resources.Items[commodity.ItemID]
+	model := h.cs.GetResources().Items[commodity.ItemID]
 	if model == nil || model.GetTraits()&ring == 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -61,7 +62,7 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *entity.Character
 
 	promise := h.start(ctx, character, constant.CashShopResultBuyFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.BuyCashRingReply, error) {
-		return h.cs.internalClient.BuyCashRing(c, &internal.BuyCashRingRequest{
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.BuyCashRing(c, &internal.BuyCashRingRequest{
 			WorldId:       uint32(h.cs.config.WorldID),
 			AccountId:     character.AccountID(),
 			CharacterId:   character.ID(),

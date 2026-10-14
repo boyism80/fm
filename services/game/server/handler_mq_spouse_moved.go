@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type marriageMqSpouseMoved struct{ gs *GameServer }
@@ -30,7 +30,7 @@ func (h *marriageMqSpouseMoved) Handle(_ actor.Context, raw json.RawMessage) err
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.SendToCharacter(nil, payload.CharacterID, &g_actor.SpouseMoved{
+	h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, payload.CharacterID, &domain.SpouseMoved{
 		CharacterID: payload.CharacterID,
 		SpouseID:    payload.SpouseID,
 		MapID:       payload.MapID,

@@ -6,7 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type MistExpireTimer struct{}
@@ -23,11 +23,11 @@ func (t *MistExpireTimer) GetInitialDelay() time.Duration {
 	return 300 * time.Millisecond
 }
 
-func (t *MistExpireTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
+func (t *MistExpireTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
 	now := clock.Now()
 	objects := mapData.GetObjects(constant.ObjectTypeMist)
 	for _, obj := range objects {
-		mist, ok := obj.(*entity.Mist)
+		mist, ok := obj.(*domain.Mist)
 		if !ok || mist == nil || mist.OID == 0 {
 			continue
 		}

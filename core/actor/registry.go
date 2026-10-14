@@ -23,6 +23,12 @@ func NewActorRegistry(system *ActorSystem) *ActorRegistry {
 	}
 }
 
+func (r *ActorRegistry) Start() error { return nil }
+func (r *ActorRegistry) Stop()        { r.system.GetSystem().Shutdown() }
+
+func (r *ActorRegistry) System() *actor.ActorSystem { return r.system.GetSystem() }
+func (r *ActorRegistry) Root() *actor.RootContext   { return r.system.GetRoot() }
+
 func (r *ActorRegistry) PredictPID(name string) *actor.PID {
 	return actor.NewPID(r.system.GetSystem().Address(), name)
 }

@@ -7,10 +7,11 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/domain"
 )
 
 type PartySearchStart struct {
@@ -45,7 +46,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 		return nil
 	}
 
-	cfg := &entity.PartySearchConfig{
+	cfg := &domain.PartySearchConfig{
 		MinLevel:      req.MinLevel,
 		MaxLevel:      req.MaxLevel,
 		MembersNeeded: req.MembersNeeded,
@@ -53,7 +54,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 	}
 
 	if pid := ch.Party.ID(); pid != nil {
-		party := h.gs.GetPartySystem().Get(*pid)
+		party := h.gs.systems.Get[*domain.PartySystem]().Get(*pid)
 		if party == nil || party.GetLeaderCharacterId() != ch.GetID() {
 			return nil
 		}
@@ -63,7 +64,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 		leader := ch.ToProtoPartyMember(h.gs.config.WorldId, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.CreatePartyReply, error) {
-				return h.gs.internalClient.CreateParty(c, &internal.CreatePartyRequest{
+				return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateParty(c, &internal.CreatePartyRequest{
 					WorldId: h.gs.config.WorldId,
 					Leader:  leader,
 				})
@@ -72,7 +73,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 				if !reply.GetOk() || reply.PartyId == nil {
 					return fmt.Errorf("party create failed")
 				}
-				h.gs.party.Update(reply.GetParty())
+				h.gs.systems.Get[*domain.PartySystem]().Update(reply.GetParty())
 				ch.Party.SetID(reply.PartyId)
 				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 				ch.Party.Search = cfg

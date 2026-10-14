@@ -3,15 +3,17 @@ package server
 import (
 	"time"
 
+	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/fault"
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/core/rpc"
 	lua "github.com/yuin/gopher-lua"
 )
 
 func registerFaultLuaFuncs(gs *GameServer, luaState *lua.LState) {
 	injectors := map[string]*fault.Injector{
-		"actor": gs.actorRegistry.Faults,
-		"rpc":   gs.rpcFaults,
+		"actor": gs.systems.Get[*c_actor.ActorRegistry]().Faults,
+		"rpc":   gs.systems.Get[*rpc.InternalConnection]().Faults,
 	}
 	for name, in := range injectors {
 		luax.RegisterFunc(luaState, name+"_delay", func(L *lua.LState) int {
