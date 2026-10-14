@@ -46,7 +46,7 @@ func (m *Mount) SetFatigue(fatigue uint32) {
 }
 
 func (m *Mount) Ride(skill *SkillEntry, vehicle int32) error {
-	if m.owner.GetMap().Wz.Limits(constant.FieldLimitMount) {
+	if field := m.owner.GetMap(); field == nil || field.Wz.Limits(constant.FieldLimitMount) {
 		return ErrCannotRide
 	}
 

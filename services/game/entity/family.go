@@ -119,7 +119,12 @@ func (f *Family) Invite(name string) {
 		f.fail(internal.FamilyResult_FAMILY_RESULT_WRONG_NAME)
 		return
 	}
-	junior := f.owner.GetMap().GetPlayer(id)
+	m := f.owner.GetMap()
+	if m == nil {
+		f.fail(internal.FamilyResult_FAMILY_RESULT_NOT_SAME_MAP)
+		return
+	}
+	junior := m.GetPlayer(id)
 	if junior == nil || (junior.IsHidden() && f.owner.Role < junior.Role) {
 		f.fail(internal.FamilyResult_FAMILY_RESULT_NOT_SAME_MAP)
 		return
@@ -145,7 +150,10 @@ func (f *Family) AnswerInvite(actx actor.Context, seniorID uint32, name string, 
 		return
 	}
 
-	senior := f.owner.GetMap().GetPlayer(seniorID)
+	var senior *Character
+	if m := f.owner.GetMap(); m != nil {
+		senior = m.GetPlayer(seniorID)
+	}
 	if !accepted {
 		if senior != nil {
 			senior.Listener.OnFamilyInviteResult(senior, false, f.owner.GetName())
@@ -229,6 +237,7 @@ func (f *Family) Use(actx actor.Context, feature internal.FamilyFeature, name st
 	}
 
 	targetID, found := f.owner.GameWorld.GetDispatchSystem().FindCharacterID(name)
+	m := f.owner.GetMap()
 	switch {
 	case !found:
 		f.fail(internal.FamilyResult_FAMILY_RESULT_WRONG_NAME)
@@ -236,7 +245,7 @@ func (f *Family) Use(actx actor.Context, feature internal.FamilyFeature, name st
 		f.fail(internal.FamilyResult_FAMILY_RESULT_FAILED)
 	case f.Tree.Member(targetID) == nil:
 		f.fail(internal.FamilyResult_FAMILY_RESULT_NOT_SAME_FAMILY)
-	case f.owner.GetMap().BlocksTeleportStone():
+	case m == nil || m.BlocksTeleportStone():
 		f.fail(internal.FamilyResult_FAMILY_RESULT_FAILED)
 	case feature == internal.FamilyFeature_FAMILY_FEATURE_TELEPORT:
 		f.moveTo(internal.FamilyFeature_FAMILY_FEATURE_TELEPORT, targetID)
@@ -287,7 +296,7 @@ func (f *Family) AnswerSummon(name string, accepted bool) {
 		f.owner.Listener.OnUnlockAction(f.owner)
 		return
 	}
-	if f.owner.GetMap().BlocksTeleportStone() {
+	if m := f.owner.GetMap(); m == nil || m.BlocksTeleportStone() {
 		f.fail(internal.FamilyResult_FAMILY_RESULT_FAILED)
 		return
 	}

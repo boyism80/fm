@@ -88,8 +88,13 @@ func (w *Wedding) Propose(name string, boxItemID uint32) {
 		return
 	}
 
+	m := w.owner.GetMap()
+	if m == nil {
+		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultWrongName)
+		return
+	}
 	var target *Character
-	for _, obj := range w.owner.GetMap().GetAllPlayers() {
+	for _, obj := range m.GetAllPlayers() {
 		if player, ok := obj.(*Character); ok && strings.EqualFold(player.GetName(), name) {
 			target = player
 			break
@@ -135,7 +140,12 @@ func (w *Wedding) CancelProposal() {
 }
 
 func (w *Wedding) AnswerProposal(actx actor.Context, accepted bool, name string, proposerID uint32) {
-	proposer := w.owner.GetMap().GetPlayer(proposerID)
+	m := w.owner.GetMap()
+	if m == nil {
+		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultProposalCancelled)
+		return
+	}
+	proposer := m.GetPlayer(proposerID)
 	if proposer == nil || !strings.EqualFold(proposer.GetName(), name) || proposer.Wedding.proposal.targetID != w.owner.GetID() {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultProposalCancelled)
 		return
@@ -334,7 +344,11 @@ func (w *Wedding) Reserve(actx actor.Context, ticketItemID uint32) (*async.Promi
 	if _, ok := constant.WeddingTickets[ticketItemID]; !ok || !w.owner.Inventory.HasItem(ticketItemID) {
 		return nil, ErrMarriageInvalid
 	}
-	partner := w.owner.GetMap().GetPlayer(w.Marriage.PartnerID(w.owner.GetID()))
+	m := w.owner.GetMap()
+	if m == nil {
+		return nil, ErrMarriageInvalid
+	}
+	partner := m.GetPlayer(w.Marriage.PartnerID(w.owner.GetID()))
 	if partner == nil {
 		return nil, ErrMarriageInvalid
 	}
