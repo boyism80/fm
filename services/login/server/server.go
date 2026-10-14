@@ -15,8 +15,8 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/delivery"
 	"github.com/boyism80/fm/core/mq"
+	"github.com/boyism80/fm/core/route"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	loginactor "github.com/boyism80/fm/services/login/actor"
 	"github.com/boyism80/fm/services/login/client"
@@ -43,9 +43,9 @@ func (ls *LoginServer) GetPacketHandler() *core.PacketHandler {
 	return ls.packetHandler
 }
 
-func (ls *LoginServer) Redeliver(_ *delivery.Envelope) {}
+func (ls *LoginServer) Resend(_ *route.Envelope) {}
 
-func (ls *LoginServer) CompleteDelivery(_ uint64) {}
+func (ls *LoginServer) CompleteEnvelope(_ uint64) {}
 
 func (ls *LoginServer) handleClient(c core.Client) {
 	loginClient := c.(*client.LoginClient)

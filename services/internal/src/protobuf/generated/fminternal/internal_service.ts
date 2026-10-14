@@ -3673,7 +3673,7 @@ export interface BroadcastMultiChatRequest {
 export interface BroadcastMultiChatReply {
   ok: boolean;
   errorCode: PartyErrorCode;
-  deliveredCount: number;
+  recipientCount: number;
 }
 
 export interface BuddyEntry {
@@ -3870,7 +3870,7 @@ export interface CompleteWhisperRequest {
   characterId: number;
   mapId: number;
   complete: boolean;
-  delivered: boolean;
+  received: boolean;
 }
 
 export interface CompleteWhisperReply {
@@ -34274,7 +34274,7 @@ export const BroadcastMultiChatRequest: MessageFns<BroadcastMultiChatRequest> = 
 };
 
 function createBaseBroadcastMultiChatReply(): BroadcastMultiChatReply {
-  return { ok: false, errorCode: 0, deliveredCount: 0 };
+  return { ok: false, errorCode: 0, recipientCount: 0 };
 }
 
 export const BroadcastMultiChatReply: MessageFns<BroadcastMultiChatReply> = {
@@ -34285,8 +34285,8 @@ export const BroadcastMultiChatReply: MessageFns<BroadcastMultiChatReply> = {
     if (message.errorCode !== 0) {
       writer.uint32(16).int32(message.errorCode);
     }
-    if (message.deliveredCount !== 0) {
-      writer.uint32(24).uint32(message.deliveredCount);
+    if (message.recipientCount !== 0) {
+      writer.uint32(24).uint32(message.recipientCount);
     }
     return writer;
   },
@@ -34319,7 +34319,7 @@ export const BroadcastMultiChatReply: MessageFns<BroadcastMultiChatReply> = {
             break;
           }
 
-          message.deliveredCount = reader.uint32();
+          message.recipientCount = reader.uint32();
           continue;
         }
       }
@@ -34339,10 +34339,10 @@ export const BroadcastMultiChatReply: MessageFns<BroadcastMultiChatReply> = {
         : isSet(object.error_code)
         ? partyErrorCodeFromJSON(object.error_code)
         : 0,
-      deliveredCount: isSet(object.deliveredCount)
-        ? globalThis.Number(object.deliveredCount)
-        : isSet(object.delivered_count)
-        ? globalThis.Number(object.delivered_count)
+      recipientCount: isSet(object.recipientCount)
+        ? globalThis.Number(object.recipientCount)
+        : isSet(object.recipient_count)
+        ? globalThis.Number(object.recipient_count)
         : 0,
     };
   },
@@ -34355,8 +34355,8 @@ export const BroadcastMultiChatReply: MessageFns<BroadcastMultiChatReply> = {
     if (message.errorCode !== 0) {
       obj.errorCode = partyErrorCodeToJSON(message.errorCode);
     }
-    if (message.deliveredCount !== 0) {
-      obj.deliveredCount = Math.round(message.deliveredCount);
+    if (message.recipientCount !== 0) {
+      obj.recipientCount = Math.round(message.recipientCount);
     }
     return obj;
   },
@@ -34368,7 +34368,7 @@ export const BroadcastMultiChatReply: MessageFns<BroadcastMultiChatReply> = {
     const message = createBaseBroadcastMultiChatReply();
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
-    message.deliveredCount = object.deliveredCount ?? 0;
+    message.recipientCount = object.recipientCount ?? 0;
     return message;
   },
 };
@@ -37454,7 +37454,7 @@ export const WhisperReply: MessageFns<WhisperReply> = {
 };
 
 function createBaseCompleteWhisperRequest(): CompleteWhisperRequest {
-  return { worldId: 0, requestId: "", characterId: 0, mapId: 0, complete: false, delivered: false };
+  return { worldId: 0, requestId: "", characterId: 0, mapId: 0, complete: false, received: false };
 }
 
 export const CompleteWhisperRequest: MessageFns<CompleteWhisperRequest> = {
@@ -37474,8 +37474,8 @@ export const CompleteWhisperRequest: MessageFns<CompleteWhisperRequest> = {
     if (message.complete !== false) {
       writer.uint32(40).bool(message.complete);
     }
-    if (message.delivered !== false) {
-      writer.uint32(48).bool(message.delivered);
+    if (message.received !== false) {
+      writer.uint32(48).bool(message.received);
     }
     return writer;
   },
@@ -37532,7 +37532,7 @@ export const CompleteWhisperRequest: MessageFns<CompleteWhisperRequest> = {
             break;
           }
 
-          message.delivered = reader.bool();
+          message.received = reader.bool();
           continue;
         }
       }
@@ -37567,7 +37567,7 @@ export const CompleteWhisperRequest: MessageFns<CompleteWhisperRequest> = {
         ? globalThis.Number(object.map_id)
         : 0,
       complete: isSet(object.complete) ? globalThis.Boolean(object.complete) : false,
-      delivered: isSet(object.delivered) ? globalThis.Boolean(object.delivered) : false,
+      received: isSet(object.received) ? globalThis.Boolean(object.received) : false,
     };
   },
 
@@ -37588,8 +37588,8 @@ export const CompleteWhisperRequest: MessageFns<CompleteWhisperRequest> = {
     if (message.complete !== false) {
       obj.complete = message.complete;
     }
-    if (message.delivered !== false) {
-      obj.delivered = message.delivered;
+    if (message.received !== false) {
+      obj.received = message.received;
     }
     return obj;
   },
@@ -37604,7 +37604,7 @@ export const CompleteWhisperRequest: MessageFns<CompleteWhisperRequest> = {
     message.characterId = object.characterId ?? 0;
     message.mapId = object.mapId ?? 0;
     message.complete = object.complete ?? false;
-    message.delivered = object.delivered ?? false;
+    message.received = object.received ?? false;
     return message;
   },
 };

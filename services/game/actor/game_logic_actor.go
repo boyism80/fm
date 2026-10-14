@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
-	"github.com/boyism80/fm/core/delivery"
+	"github.com/boyism80/fm/core/route"
 	"github.com/boyism80/fm/services/game/actor/timers"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -19,8 +19,8 @@ type GameLogicActor struct {
 
 func (a *GameLogicActor) Receive(ctx actor.Context) {
 	msg := ctx.Message()
-	if env, ok := msg.(*delivery.Envelope); ok {
-		a.handleDelivery(ctx, env)
+	if env, ok := msg.(*route.Envelope); ok {
+		a.handleEnvelope(ctx, env)
 		return
 	}
 	mapMessageRegistry.Dispatch(ctx, a, msg)
@@ -51,23 +51,23 @@ func (a *GameLogicActor) GetObject(objectType constant.ObjectType, oid uint32) *
 	return nil
 }
 
-func (a *GameLogicActor) handleDelivery(ctx actor.Context, env *delivery.Envelope) {
+func (a *GameLogicActor) handleEnvelope(ctx actor.Context, env *route.Envelope) {
 	if env == nil {
 		return
 	}
 	inner := env.Inner
 	if inner == nil {
-		a.finishDelivery(ctx, env, false, "nil_inner")
+		a.finishEnvelope(ctx, env, false, "nil_inner")
 		return
 	}
 	if !a.hasCharacterOnMap(env.CharacterID) {
 		if a.GameWorld != nil {
-			a.GameWorld.Redeliver(env)
+			a.GameWorld.Resend(env)
 		}
 		return
 	}
 	mapMessageRegistry.Dispatch(ctx, a, inner)
-	a.finishDelivery(ctx, env, true, "")
+	a.finishEnvelope(ctx, env, true, "")
 }
 
 func (a *GameLogicActor) hasCharacterOnMap(characterID uint32) bool {
@@ -100,17 +100,17 @@ func (a *GameLogicActor) StopTimers() {
 	a.timerCancels = nil
 }
 
-func (a *GameLogicActor) finishDelivery(ctx actor.Context, msg *delivery.Envelope, ok bool, reason string) {
+func (a *GameLogicActor) finishEnvelope(ctx actor.Context, msg *route.Envelope, ok bool, reason string) {
 	if msg == nil {
 		return
 	}
 	if a.GameWorld != nil {
-		a.GameWorld.CompleteDelivery(msg.CorrelationID)
+		a.GameWorld.CompleteEnvelope(msg.CorrelationID)
 	}
 	if msg.Caller == nil {
 		return
 	}
-	ctx.Send(msg.Caller, &delivery.Result{
+	ctx.Send(msg.Caller, &route.Result{
 		CorrelationID: msg.CorrelationID,
 		OK:            ok,
 		Reason:        reason,

@@ -34,7 +34,7 @@ func (ch *Character) SocialLogin(notes []*internal.Note) {
 	}
 }
 
-// ReceiveWhisper claims the request first so only one channel delivers it,
+// ReceiveWhisper claims the request first so only one channel shows it,
 // then reports whether the message actually reached the client. The claim
 // reply returns to this actor even if the character has moved maps since.
 func (ch *Character) ReceiveWhisper(ctx actor.Context, whisper Whisper) {
@@ -52,11 +52,11 @@ func (ch *Character) ReceiveWhisper(ctx actor.Context, whisper Whisper) {
 				return
 			}
 
-			delivered := !current.LoggedOut()
-			if whisper.Mode == internal.WhisperMode_WHISPER_MODE_SEND && delivered {
-				delivered = current.Listener.OnWhisperReceived(current, whisper.SenderName, whisper.Channel, whisper.Message) == nil
+			received := !current.LoggedOut()
+			if whisper.Mode == internal.WhisperMode_WHISPER_MODE_SEND && received {
+				received = current.Listener.OnWhisperReceived(current, whisper.SenderName, whisper.Channel, whisper.Message) == nil
 			}
-			current.Listener.CompleteWhisperAsync(ctx, current, whisper.RequestID, delivered).OnError(func(error) {})
+			current.Listener.CompleteWhisperAsync(ctx, current, whisper.RequestID, received).OnError(func(error) {})
 		})
 		return nil
 	}).OnError(func(error) {})

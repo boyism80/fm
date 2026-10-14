@@ -249,7 +249,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					return nil
 				}
 				if reply.PartyId != nil {
-					h.gs.Deliver(nil, req.TargetCharacterID, &g_actor.ClearPartyByPartyID{
+					h.gs.SendToCharacter(nil, req.TargetCharacterID, &g_actor.ClearPartyByPartyID{
 						CharacterID: req.TargetCharacterID,
 						PartyID:     *reply.PartyId,
 					})

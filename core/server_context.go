@@ -1,8 +1,8 @@
 package core
 
-import "github.com/boyism80/fm/core/delivery"
+import "github.com/boyism80/fm/core/route"
 
 type Server interface {
-	delivery.Coordinator
+	route.Coordinator
 	GetPacketHandler() *PacketHandler
 }

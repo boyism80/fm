@@ -40,7 +40,7 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
 			return nil
 		}
-		h.gs.Deliver(nil, extra.CharacterID, &g_actor.ClearPartyByPartyID{
+		h.gs.SendToCharacter(nil, extra.CharacterID, &g_actor.ClearPartyByPartyID{
 			CharacterID: extra.CharacterID,
 			PartyID:     evt.PartyID,
 		})

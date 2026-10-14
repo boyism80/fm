@@ -4,13 +4,13 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 )
 
-type DeliverBuddyChannelUpdateHandler struct{}
+type SetBuddyChannelHandler struct{}
 
-func (DeliverBuddyChannelUpdateHandler) New() *DeliverBuddyChannelUpdateHandler {
-	return &DeliverBuddyChannelUpdateHandler{}
+func (SetBuddyChannelHandler) New() *SetBuddyChannelHandler {
+	return &SetBuddyChannelHandler{}
 }
 
-func (h *DeliverBuddyChannelUpdateHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverBuddyChannelUpdate) {
+func (h *SetBuddyChannelHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SetBuddyChannel) {
 	if msg == nil {
 		return
 	}

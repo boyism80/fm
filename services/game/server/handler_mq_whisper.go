@@ -36,7 +36,7 @@ func (h *whisperMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.Deliver(nil, payload.CharacterID, &g_actor.DeliverWhisper{
+	h.gs.SendToCharacter(nil, payload.CharacterID, &g_actor.ReceiveWhisper{
 		CharacterID: payload.CharacterID,
 		Whisper: entity.Whisper{
 			RequestID:  payload.RequestID,

@@ -50,7 +50,7 @@ export type LeavePartyResult = PartyMutationResult & {
     realtimeStateCharacterIds?: number[];
 };
 export type ExpelPartyResult = PartyMutationResult & { disbanded?: boolean; realtimeStateCharacterIds?: number[] };
-export type BroadcastMultiChatResult = { ok: boolean; code?: number; deliveredCount?: number };
+export type BroadcastMultiChatResult = { ok: boolean; code?: number; recipientCount?: number };
 export type GetPartyResult = { found: boolean; party?: PartyModel; members?: PartyMemberModel[] };
 
 export class PartyService {
@@ -938,7 +938,7 @@ export class PartyService {
             sender_name: name,
             message: trimmedMsg,
         });
-        return { ok: true, deliveredCount: 1 };
+        return { ok: true, recipientCount: 1 };
     }
 
     async getParty(worldId: number, partyId: number): Promise<GetPartyResult> {

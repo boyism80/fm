@@ -260,7 +260,7 @@ export class CashShopService {
         });
     }
 
-    private async deliverGift(worldId: number, recipientAccountId: number, items: CashItem[], message: string): Promise<void> {
+    private async grantGift(worldId: number, recipientAccountId: number, items: CashItem[], message: string): Promise<void> {
         await this.cashShopRepo.withAccount(worldId, recipientAccountId, async (txClient) => {
             for (const item of items) {
                 const serial = String(item.item?.uniqueId ?? 0);
@@ -321,7 +321,7 @@ export class CashShopService {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
-            await this.deliverGift(req.worldId, entry.account_id, req.items, req.message);
+            await this.grantGift(req.worldId, entry.account_id, req.items, req.message);
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
@@ -375,7 +375,7 @@ export class CashShopService {
             const serial = String(item.item?.uniqueId ?? 0);
             const partnerSerial = String(partnerItem.item?.uniqueId ?? 0);
             const itemId = item.item?.itemId ?? 0;
-            await this.deliverGift(req.worldId, entry.account_id, [partnerItem], req.message);
+            await this.grantGift(req.worldId, entry.account_id, [partnerItem], req.message);
             await this.cashShopRepo.insertItem(req.worldId, req.accountId, serial, CashItem.toJSON(item), { txClient });
             await this.cashShopRepo.insertRing(req.worldId, {
                 serial,

@@ -333,7 +333,7 @@ func (p *chain) driveFrom(i int, value interface{}) {
 	if step.async {
 		if ctx != nil {
 			// Give the Future slightly more time than the gRPC context so the async
-			// step can complete and deliver its result before the Future times out.
+			// step can complete and send its result before the Future times out.
 			const futureGrace = 5 * time.Second
 			f := actor.NewFuture(ctx.ActorSystem(), p.perStepTimeout+futureGrace)
 			go func() {

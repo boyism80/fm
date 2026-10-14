@@ -2,13 +2,13 @@ package actor
 
 import "github.com/asynkron/protoactor-go/actor"
 
-type DeliverFamilyHandler struct{}
+type SetFamilyHandler struct{}
 
-func (DeliverFamilyHandler) New() *DeliverFamilyHandler {
-	return &DeliverFamilyHandler{}
+func (SetFamilyHandler) New() *SetFamilyHandler {
+	return &SetFamilyHandler{}
 }
 
-func (h *DeliverFamilyHandler) Handle(_ actor.Context, a *GameLogicActor, msg *DeliverFamily) {
+func (h *SetFamilyHandler) Handle(_ actor.Context, a *GameLogicActor, msg *SetFamily) {
 	m := a.GetCharacter(msg.CharacterID)
 	if m == nil {
 		return

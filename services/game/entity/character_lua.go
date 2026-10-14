@@ -2298,7 +2298,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(ch.Pets.Revive(int16(L.CheckInt(2))) == nil))
 			return 1
 		},
-		"open_quick_delivery": func(L *lua.LState) int {
+		"open_quick_parcel": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {

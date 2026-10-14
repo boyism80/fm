@@ -4,13 +4,13 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 )
 
-type DeliverWhisperHandler struct{}
+type ReceiveWhisperHandler struct{}
 
-func (DeliverWhisperHandler) New() *DeliverWhisperHandler {
-	return &DeliverWhisperHandler{}
+func (ReceiveWhisperHandler) New() *ReceiveWhisperHandler {
+	return &ReceiveWhisperHandler{}
 }
 
-func (h *DeliverWhisperHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverWhisper) {
+func (h *ReceiveWhisperHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *ReceiveWhisper) {
 	m := a.GetCharacter(msg.CharacterID)
 	if m == nil {
 		return

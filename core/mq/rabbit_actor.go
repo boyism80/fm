@@ -152,7 +152,7 @@ func (a *RabbitActor) consume(root *actor.RootContext, self *actor.PID, url stri
 			return false
 		}
 	}
-	deliveries, err := ch.Consume(q.Name, a.cfg.ConsumerTag, false, false, false, false, nil)
+	msgs, err := ch.Consume(q.Name, a.cfg.ConsumerTag, false, false, false, false, nil)
 	if err != nil {
 		_ = ch.Close()
 		_ = conn.Close()
@@ -181,7 +181,7 @@ func (a *RabbitActor) consume(root *actor.RootContext, self *actor.PID, url stri
 
 	log.Printf("mq: RabbitActor consuming queue=%s", a.cfg.QueueName)
 
-	for msg := range deliveries {
+	for msg := range msgs {
 		if err := msg.Ack(false); err != nil {
 			log.Printf("mq: immediate Ack failed: %v", err)
 		}

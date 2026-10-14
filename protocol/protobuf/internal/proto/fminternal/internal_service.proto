@@ -2059,7 +2059,7 @@ message BroadcastMultiChatRequest {
 message BroadcastMultiChatReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
-  uint32 delivered_count = 3;
+  uint32 recipient_count = 3;
 }
 
 enum BuddyErrorCode {
@@ -2295,7 +2295,7 @@ message CompleteWhisperRequest {
   uint32 character_id = 3;
   uint32 map_id = 4;
   bool complete = 5;
-  bool delivered = 6;
+  bool received = 6;
 }
 message CompleteWhisperReply { bool ok = 1; }
 

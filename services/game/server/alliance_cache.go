@@ -190,10 +190,10 @@ func (ac *AllianceCache) NotifyMemberFieldsChanged(ch *entity.Character) {
 	subjectID := ch.GetID()
 	level := uint32(ch.GetLevel())
 	classID := uint32(ch.Class)
-	ac.deliverMemberFieldsChange(allianceID, guildID, subjectID, level, classID)
+	ac.broadcastMemberFieldsChanged(allianceID, guildID, subjectID, level, classID)
 }
 
-func (ac *AllianceCache) deliverMemberFieldsChange(allianceID uint32, subjectGuildID uint32, subjectID uint32, level uint32, classID uint32) {
+func (ac *AllianceCache) broadcastMemberFieldsChanged(allianceID uint32, subjectGuildID uint32, subjectID uint32, level uint32, classID uint32) {
 	if ac.gs == nil || subjectID == 0 {
 		return
 	}
@@ -227,7 +227,7 @@ func (ac *AllianceCache) deliverMemberFieldsChange(allianceID uint32, subjectGui
 	}
 }
 
-func (ac *AllianceCache) DeliverMemberOnlineChange(allianceID uint32, subjectGuildID uint32, subjectID uint32, online bool) {
+func (ac *AllianceCache) BroadcastMemberOnlineChanged(allianceID uint32, subjectGuildID uint32, subjectID uint32, online bool) {
 	if ac.gs == nil || subjectID == 0 {
 		return
 	}

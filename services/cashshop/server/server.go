@@ -12,7 +12,7 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/delivery"
+	"github.com/boyism80/fm/core/route"
 	"github.com/boyism80/fm/core/uniqueid"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/cashshop/client"
@@ -77,9 +77,9 @@ func (cs *CashShopServer) GetPacketHandler() *core.PacketHandler {
 	return cs.packetHandler
 }
 
-func (cs *CashShopServer) Redeliver(_ *delivery.Envelope) {}
+func (cs *CashShopServer) Resend(_ *route.Envelope) {}
 
-func (cs *CashShopServer) CompleteDelivery(_ uint64) {}
+func (cs *CashShopServer) CompleteEnvelope(_ uint64) {}
 
 func (cs *CashShopServer) GetResources() *wz.Resources {
 	return cs.resources

@@ -2,7 +2,7 @@
 
 return {
 	on_cash = function(me, item_id, text, ear)
-		me:open_quick_delivery()
+		me:open_quick_parcel()
 		return false
 	end,
 }

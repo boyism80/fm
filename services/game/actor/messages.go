@@ -127,34 +127,34 @@ type SaveMapCharactersAck struct {
 	Err   string
 }
 
-type DeliverWhisper struct {
+type ReceiveWhisper struct {
 	CharacterID uint32
 	Whisper     entity.Whisper
 }
 
-type DeliverMessenger struct {
+type ReceiveMessengerEvent struct {
 	CharacterID uint32
 	Event       entity.MessengerEvent
 }
 
-type DeliverFamily struct {
+type SetFamily struct {
 	CharacterID uint32
 	Family      *internal.Family
 }
 
-type DeliverMarriageChanged struct {
+type RefreshWedding struct {
 	CharacterID uint32
 	Event       string
 }
 
-type DeliverSpouseMoved struct {
+type SpouseMoved struct {
 	CharacterID uint32
 	SpouseID    uint32
 	MapID       uint32
 	Reply       bool
 }
 
-type DeliverPartyUpdateJoin struct {
+type PartyMemberJoined struct {
 	CharacterID     uint32
 	ForChannel      int32
 	PartyID         uint32
@@ -164,26 +164,26 @@ type DeliverPartyUpdateJoin struct {
 	Members         []response.PartyMemberStatus
 }
 
-type DeliverBuddyChannelUpdate struct {
+type SetBuddyChannel struct {
 	RecipientCharacterID uint32
 	BuddyCharacterID     uint32
 	Channel              int32
 }
 
-type DeliverBuddyListUpdate struct {
+type SyncBuddyList struct {
 	RecipientCharacterID uint32
 	SyncAction           uint8
 	Entries              []response.BuddyEntry
 }
 
-type DeliverGuildInvite struct {
+type InviteToGuild struct {
 	CharacterID        uint32
 	InviterCharacterID uint32
 	GuildID            uint32
 	InviterName        string
 }
 
-type DeliverAllianceInvite struct {
+type InviteToAlliance struct {
 	CharacterID        uint32
 	TargetGuildID      uint32
 	AllianceID         uint32

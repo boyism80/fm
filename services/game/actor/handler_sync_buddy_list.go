@@ -6,13 +6,13 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-type DeliverBuddyListUpdateHandler struct{}
+type SyncBuddyListHandler struct{}
 
-func (DeliverBuddyListUpdateHandler) New() *DeliverBuddyListUpdateHandler {
-	return &DeliverBuddyListUpdateHandler{}
+func (SyncBuddyListHandler) New() *SyncBuddyListHandler {
+	return &SyncBuddyListHandler{}
 }
 
-func (h *DeliverBuddyListUpdateHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverBuddyListUpdate) {
+func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SyncBuddyList) {
 	if msg == nil {
 		return
 	}

@@ -6,13 +6,13 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-type DeliverAllianceInviteHandler struct{}
+type InviteToAllianceHandler struct{}
 
-func (DeliverAllianceInviteHandler) New() *DeliverAllianceInviteHandler {
-	return &DeliverAllianceInviteHandler{}
+func (InviteToAllianceHandler) New() *InviteToAllianceHandler {
+	return &InviteToAllianceHandler{}
 }
 
-func (h *DeliverAllianceInviteHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceInvite) {
+func (h *InviteToAllianceHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *InviteToAlliance) {
 	if msg == nil || a.GameWorld == nil {
 		return
 	}

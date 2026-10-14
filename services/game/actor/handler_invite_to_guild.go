@@ -7,13 +7,13 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-type DeliverGuildInviteHandler struct{}
+type InviteToGuildHandler struct{}
 
-func (DeliverGuildInviteHandler) New() *DeliverGuildInviteHandler {
-	return &DeliverGuildInviteHandler{}
+func (InviteToGuildHandler) New() *InviteToGuildHandler {
+	return &InviteToGuildHandler{}
 }
 
-func (h *DeliverGuildInviteHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildInvite) {
+func (h *InviteToGuildHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *InviteToGuild) {
 	if msg == nil {
 		return
 	}

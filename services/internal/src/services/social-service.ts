@@ -128,7 +128,7 @@ export class SocialService {
     }
 
     // The target's channel claims the request through completeWhisper and
-    // pushes the delivery result to the reply list this call waits on.
+    // pushes the whisper result to the reply list this call waits on.
     async whisper(req: WhisperRequest): Promise<WhisperReply> {
         const modes = [WhisperMode.WHISPER_MODE_FIND, WhisperMode.WHISPER_MODE_SEND, WhisperMode.WHISPER_MODE_FIND_BUDDY];
         if (!modes.includes(req.mode) || !this.validText(req.targetName, NAME_LIMIT)) {
@@ -182,8 +182,8 @@ export class SocialService {
                 return offline();
             }
 
-            const delivered = JSON.parse(result[1]) as { mapId: number; delivered: boolean };
-            if (!delivered.delivered) {
+            const outcome = JSON.parse(result[1]) as { mapId: number; received: boolean };
+            if (!outcome.received) {
                 return offline();
             }
             return {
@@ -192,7 +192,7 @@ export class SocialService {
                 name: target.name,
                 channelId: channel,
                 cashShop: false,
-                mapId: delivered.mapId,
+                mapId: outcome.mapId,
             };
         } finally {
             waiter.disconnect();
@@ -222,7 +222,7 @@ export class SocialService {
             expected,
             req.complete ? "1" : "0",
             claimed,
-            JSON.stringify({ mapId: req.mapId, delivered: req.delivered }),
+            JSON.stringify({ mapId: req.mapId, received: req.received }),
         );
         return { ok: Number(ok) === 1 };
     }

@@ -1525,7 +1525,7 @@ export class GuildService {
         senderCharacterId: number,
         senderName: string,
         message: string
-    ): Promise<{ ok: boolean; deliveredCount?: number }> {
+    ): Promise<{ ok: boolean; recipientCount?: number }> {
         this.assertWorld(worldId);
         this.assertGuildId(guildId);
         this.assertCharacterId(senderCharacterId);
@@ -1554,6 +1554,6 @@ export class GuildService {
             sender_name: name,
             message: trimmedMsg,
         });
-        return { ok: true, deliveredCount: 1 };
+        return { ok: true, recipientCount: 1 };
     }
 }

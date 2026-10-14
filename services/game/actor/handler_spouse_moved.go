@@ -4,13 +4,13 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 )
 
-type DeliverSpouseMovedHandler struct{}
+type SpouseMovedHandler struct{}
 
-func (DeliverSpouseMovedHandler) New() *DeliverSpouseMovedHandler {
-	return &DeliverSpouseMovedHandler{}
+func (SpouseMovedHandler) New() *SpouseMovedHandler {
+	return &SpouseMovedHandler{}
 }
 
-func (h *DeliverSpouseMovedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverSpouseMoved) {
+func (h *SpouseMovedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SpouseMoved) {
 	m := a.GetCharacter(msg.CharacterID)
 	if m == nil {
 		return

@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	ParcelDeliveryDelay        = 12 * time.Hour
-	ParcelKeepDuration         = 30 * 24 * time.Hour
-	ParcelMessageBytes         = 100
-	QuickDeliveryCoupon uint32 = 5330000
+	ParcelArrivalDelay        = 12 * time.Hour
+	ParcelKeepDuration        = 30 * 24 * time.Hour
+	ParcelMessageBytes        = 100
+	QuickParcelCoupon  uint32 = 5330000
 )
 
 var (
@@ -55,7 +55,7 @@ func (p *Parcel) ArrivedAt() time.Time {
 	if p.Quick {
 		return p.SentAt
 	}
-	return p.SentAt.Add(ParcelDeliveryDelay)
+	return p.SentAt.Add(ParcelArrivalDelay)
 }
 
 func (p *Parcel) ExpiresAt() time.Time {
@@ -220,7 +220,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		return ErrDueyInvalid
 	}
 
-	if quick && !d.owner.Inventory.HasItem(QuickDeliveryCoupon) {
+	if quick && !d.owner.Inventory.HasItem(QuickParcelCoupon) {
 		return ErrDueyInvalid
 	}
 
@@ -245,7 +245,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	}
 	d.owner.Inventory.removeMesoUnchecked(int32(cost))
 	if quick {
-		d.owner.Inventory.RemoveByItemIDCount(QuickDeliveryCoupon, 1)
+		d.owner.Inventory.RemoveByItemIDCount(QuickParcelCoupon, 1)
 	}
 	id := d.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_PARCEL_SEND, 0, detail)
 
@@ -291,7 +291,7 @@ func (d *Duey) refundSend(detail parcelSendDetail) {
 	if !detail.Quick {
 		return
 	}
-	if coupon, err := NewItem(QuickDeliveryCoupon, 1, d.owner.GameWorld); err == nil {
+	if coupon, err := NewItem(QuickParcelCoupon, 1, d.owner.GameWorld); err == nil {
 		d.owner.Inventory.addItemUnchecked(coupon, true)
 	}
 }

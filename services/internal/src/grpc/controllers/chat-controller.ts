@@ -54,7 +54,7 @@ export class ChatGrpcController {
                 callback(null, {
                     ok: result.ok,
                     errorCode: result.ok ? PartyErrorCode.NONE : PartyErrorCode.UNKNOWN,
-                    deliveredCount: result.deliveredCount ?? 0,
+                    recipientCount: result.recipientCount ?? 0,
                 });
                 return;
             }
@@ -70,7 +70,7 @@ export class ChatGrpcController {
                 callback(null, {
                     ok: result.ok,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
-                    deliveredCount: result.deliveredCount ?? 0,
+                    recipientCount: result.recipientCount ?? 0,
                 });
                 return;
             }
@@ -85,7 +85,7 @@ export class ChatGrpcController {
                 callback(null, {
                     ok: result.ok,
                     errorCode: result.ok ? PartyErrorCode.NONE : PartyErrorCode.UNKNOWN,
-                    deliveredCount: result.deliveredCount ?? 0,
+                    recipientCount: result.recipientCount ?? 0,
                 });
                 return;
             }
@@ -100,14 +100,14 @@ export class ChatGrpcController {
                 callback(null, {
                     ok: result.ok,
                     errorCode: result.ok ? PartyErrorCode.NONE : PartyErrorCode.UNKNOWN,
-                    deliveredCount: result.deliveredCount ?? 0,
+                    recipientCount: result.recipientCount ?? 0,
                 });
                 return;
             }
             callback(null, {
                 ok: false,
                 errorCode: PartyErrorCode.UNKNOWN,
-                deliveredCount: 0,
+                recipientCount: 0,
             });
         } catch (err) {
             this.grpcError(err, callback);

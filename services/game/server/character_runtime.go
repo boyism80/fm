@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core/delivery"
+	"github.com/boyism80/fm/core/route"
 )
 
 type ServerCharacterRuntime struct {
@@ -17,9 +17,9 @@ type ServerCharacterRuntime struct {
 }
 
 type characterRuntimeEntry struct {
-	name       string
-	mapPID     *actor.PID
-	deliveries []*delivery.Envelope
+	name      string
+	mapPID    *actor.PID
+	envelopes []*route.Envelope
 }
 
 func nameKey(name string) string {
@@ -89,7 +89,7 @@ func (r *ServerCharacterRuntime) SetMapPID(characterID uint32, pid *actor.PID) e
 	r.mu.Unlock()
 
 	if pid != nil && r.gs != nil {
-		r.gs.flushDeliveries(characterID, pid)
+		r.gs.flushEnvelopes(characterID, pid)
 	}
 	return nil
 }
@@ -131,9 +131,9 @@ func (r *ServerCharacterRuntime) NameToCharacterID(name string) (uint32, bool) {
 	return id, ok
 }
 
-func (r *ServerCharacterRuntime) queueDelivery(characterID uint32, d *delivery.Envelope) error {
+func (r *ServerCharacterRuntime) queueEnvelope(characterID uint32, d *route.Envelope) error {
 	if r == nil || d == nil {
-		return fmt.Errorf("runtime: nil receiver or deliver")
+		return fmt.Errorf("runtime: nil receiver or envelope")
 	}
 	if characterID == 0 {
 		return fmt.Errorf("runtime: invalid character id 0")
@@ -144,40 +144,40 @@ func (r *ServerCharacterRuntime) queueDelivery(characterID uint32, d *delivery.E
 	if !ok {
 		return fmt.Errorf("runtime: character %d not registered", characterID)
 	}
-	ent.deliveries = append(ent.deliveries, d)
+	ent.envelopes = append(ent.envelopes, d)
 	return nil
 }
 
-func (r *ServerCharacterRuntime) takeDeliveries(characterID uint32) []*delivery.Envelope {
+func (r *ServerCharacterRuntime) takeEnvelopes(characterID uint32) []*route.Envelope {
 	if r == nil || characterID == 0 {
 		return nil
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	ent, ok := r.byCID[characterID]
-	if !ok || len(ent.deliveries) == 0 {
+	if !ok || len(ent.envelopes) == 0 {
 		return nil
 	}
-	buf := ent.deliveries
-	ent.deliveries = nil
+	buf := ent.envelopes
+	ent.envelopes = nil
 	return buf
 }
 
-func (r *ServerCharacterRuntime) removeDelivery(characterID uint32, correlationID uint64) {
+func (r *ServerCharacterRuntime) removeEnvelope(characterID uint32, correlationID uint64) {
 	if r == nil || characterID == 0 || correlationID == 0 {
 		return
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	ent, ok := r.byCID[characterID]
-	if !ok || len(ent.deliveries) == 0 {
+	if !ok || len(ent.envelopes) == 0 {
 		return
 	}
-	out := ent.deliveries[:0]
-	for _, d := range ent.deliveries {
+	out := ent.envelopes[:0]
+	for _, d := range ent.envelopes {
 		if d == nil || d.CorrelationID != correlationID {
 			out = append(out, d)
 		}
 	}
-	ent.deliveries = out
+	ent.envelopes = out
 }

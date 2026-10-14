@@ -12,7 +12,7 @@ import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 
-const DELIVERY_DELAY_MS = 12 * 60 * 60 * 1000;
+const ARRIVAL_DELAY_MS = 12 * 60 * 60 * 1000;
 const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
@@ -51,7 +51,7 @@ export class ParcelService {
         if (row.quick) {
             return sentAt;
         }
-        return sentAt + DELIVERY_DELAY_MS;
+        return sentAt + ARRIVAL_DELAY_MS;
     }
 
     private expired(row: ParcelRow, now: number): boolean {

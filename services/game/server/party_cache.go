@@ -156,7 +156,7 @@ func (pc *PartyCache) applyPartySnapshot(evt PartyEventEnvelope, partyPb *intern
 
 	pc.Sync(cloned)
 	if notifySilent {
-		pc.DeliverPartySilent(cloned)
+		pc.BroadcastPartySilent(cloned)
 	}
 	return true, nil
 }
@@ -207,7 +207,7 @@ func (pc *PartyCache) Sync(party *entity.Party) {
 		}
 		cid := member.GetCharacterId()
 		pid := partyID
-		pc.gs.Deliver(nil, cid, &g_actor.SyncCharacterPartyState{
+		pc.gs.SendToCharacter(nil, cid, &g_actor.SyncCharacterPartyState{
 			CharacterID: cid,
 			PartyID:     &pid,
 		})
@@ -222,14 +222,14 @@ func (pc *PartyCache) ClearPartyMembers(memberIDs []uint32) {
 		if cid == 0 {
 			continue
 		}
-		pc.gs.Deliver(nil, cid, &g_actor.SyncCharacterPartyState{
+		pc.gs.SendToCharacter(nil, cid, &g_actor.SyncCharacterPartyState{
 			CharacterID: cid,
 			PartyID:     nil,
 		})
 	}
 }
 
-func (pc *PartyCache) DeliverPartySilent(party *entity.Party) {
+func (pc *PartyCache) BroadcastPartySilent(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
 	}

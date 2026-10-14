@@ -36,7 +36,7 @@ func (h *familyMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	}
 
 	for _, id := range payload.CharacterIDs {
-		h.gs.Deliver(nil, id, &g_actor.DeliverFamily{
+		h.gs.SendToCharacter(nil, id, &g_actor.SetFamily{
 			CharacterID: id,
 			Family:      family,
 		})

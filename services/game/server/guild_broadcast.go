@@ -155,7 +155,7 @@ func (gc *GuildCache) BroadcastMemberOnlineChanged(guildID uint32, subjectID uin
 	})
 	allianceID, inAlliance := g.GetAllianceID()
 	if inAlliance && allianceID > 0 {
-		gc.gs.alliance.DeliverMemberOnlineChange(allianceID, gid, subjectID, online)
+		gc.gs.alliance.BroadcastMemberOnlineChanged(allianceID, gid, subjectID, online)
 	}
 }
 

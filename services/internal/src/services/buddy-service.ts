@@ -53,7 +53,7 @@ export type RemoveBuddyResult = BuddyMutationResult & {
     removedFromOwner?: boolean;
 };
 
-export type BroadcastBuddyMultiChatResult = { ok: boolean; code?: BuddyErrorCode; deliveredCount?: number };
+export type BroadcastBuddyMultiChatResult = { ok: boolean; code?: BuddyErrorCode; recipientCount?: number };
 
 export class BuddyService {
     private readonly ctx: InternalContext;
@@ -518,7 +518,7 @@ export class BuddyService {
             targets = [...accepted].filter((id) => id !== senderCharacterId);
         }
         if (targets.length === 0) {
-            return { ok: true, deliveredCount: 0 };
+            return { ok: true, recipientCount: 0 };
         }
 
         await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
@@ -532,7 +532,7 @@ export class BuddyService {
             message: trimmedMsg,
             notify_character_ids: targets,
         });
-        return { ok: true, deliveredCount: targets.length };
+        return { ok: true, recipientCount: targets.length };
     }
 
     private async buildEntry(worldId: number, buddy: CharacterBuddyModel): Promise<BuddyListEntry> {

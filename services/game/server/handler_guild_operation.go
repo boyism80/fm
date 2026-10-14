@@ -133,7 +133,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				return nil
 			}
 		}
-		h.gs.Deliver(nil, targetID, &g_actor.DeliverGuildInvite{
+		h.gs.SendToCharacter(nil, targetID, &g_actor.InviteToGuild{
 			CharacterID:        targetID,
 			InviterCharacterID: charID,
 			GuildID:            guildID,

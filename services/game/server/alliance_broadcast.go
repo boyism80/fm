@@ -24,7 +24,7 @@ func (ac *AllianceCache) BroadcastCreate(alliancePb *internal.Alliance) {
 		membershipGuilds = ac.membershipGuilds(alliancePb)
 	}
 	for _, memberID := range ac.recipientIDs(alliancePb) {
-		ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+		ac.callOnlineMember(memberID, func(ch *entity.Character) {
 			ch.Listener.OnAllianceCreate(ch, info, guilds, membershipGuilds)
 		})
 	}
@@ -156,7 +156,7 @@ func (ac *AllianceCache) forEachOnlineAllianceMember(alliancePb *internal.Allian
 	}
 }
 
-func (ac *AllianceCache) deliverToOnlineMember(memberID uint32, run func(ch *entity.Character)) {
+func (ac *AllianceCache) callOnlineMember(memberID uint32, run func(ch *entity.Character)) {
 	if ac.gs == nil || memberID == 0 {
 		return
 	}
@@ -180,7 +180,7 @@ func (ac *AllianceCache) BroadcastNoticeChanged(alliancePb *internal.Alliance, n
 		return
 	}
 	ac.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
-		ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+		ac.callOnlineMember(memberID, func(ch *entity.Character) {
 			ch.Listener.OnAllianceNoticeChanged(ch, info)
 		})
 	})
@@ -213,7 +213,7 @@ func (ac *AllianceCache) BroadcastLeaderChanged(alliancePb *internal.Alliance, o
 		leaderNotice = name + gameconst.AllianceLeaderChangedMessageSuffix
 	}
 	ac.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
-		ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+		ac.callOnlineMember(memberID, func(ch *entity.Character) {
 			ch.Listener.OnAllianceLeaderChanged(ch, allianceID, oldLeaderID, newLeaderID, info, guilds)
 		})
 		if leaderNotice != "" {
@@ -236,7 +236,7 @@ func (ac *AllianceCache) BroadcastInfoUpdate(alliancePb *internal.Alliance) {
 		return
 	}
 	ac.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
-		ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+		ac.callOnlineMember(memberID, func(ch *entity.Character) {
 			ch.Listener.OnAllianceInfoBroadcast(ch, info)
 		})
 	})
@@ -252,7 +252,7 @@ func (ac *AllianceCache) broadcastAllianceStateRefresh(alliancePb *internal.Alli
 	}
 	guilds := ac.guildInfos(alliancePb)
 	ac.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
-		ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+		ac.callOnlineMember(memberID, func(ch *entity.Character) {
 			ch.Listener.OnAllianceMemberRankChanged(ch, info, guilds)
 		})
 	})
@@ -323,7 +323,7 @@ func (ac *AllianceCache) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 	}
 
 	seen := make(map[uint32]struct{})
-	deliver := func(memberID uint32, joining bool) {
+	send := func(memberID uint32, joining bool) {
 		if memberID == 0 {
 			return
 		}
@@ -331,7 +331,7 @@ func (ac *AllianceCache) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 			return
 		}
 		seen[memberID] = struct{}{}
-		ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+		ac.callOnlineMember(memberID, func(ch *entity.Character) {
 			ch.Listener.OnAllianceGuildAdded(ch, info, guilds, newGuildID, addedInfo, members, joining, membershipGuild)
 		})
 	}
@@ -344,14 +344,14 @@ func (ac *AllianceCache) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 			if m == nil {
 				continue
 			}
-			deliver(m.GetCharacterId(), false)
+			send(m.GetCharacterId(), false)
 		}
 	}
 	for _, m := range addedGuildPb.GetMembers() {
 		if m == nil {
 			continue
 		}
-		deliver(m.GetCharacterId(), true)
+		send(m.GetCharacterId(), true)
 	}
 	ac.broadcastAllianceStateRefresh(alliancePb)
 }
@@ -378,7 +378,7 @@ func (ac *AllianceCache) BroadcastGuildLeft(alliancePb *internal.Alliance, remov
 	removedMembers := entity.AllianceGuildMemberRanksFromProto(removedGuildPb)
 
 	seen := make(map[uint32]struct{})
-	deliver := func(memberID uint32, leaving bool) {
+	send := func(memberID uint32, leaving bool) {
 		if memberID == 0 {
 			return
 		}
@@ -386,7 +386,7 @@ func (ac *AllianceCache) BroadcastGuildLeft(alliancePb *internal.Alliance, remov
 			return
 		}
 		seen[memberID] = struct{}{}
-		ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+		ac.callOnlineMember(memberID, func(ch *entity.Character) {
 			ch.Listener.OnAllianceGuildLeft(ch, info, removedGuildID, removedInfo, removedMembers, expelled, leaving)
 		})
 	}
@@ -399,14 +399,14 @@ func (ac *AllianceCache) BroadcastGuildLeft(alliancePb *internal.Alliance, remov
 			if m == nil {
 				continue
 			}
-			deliver(m.GetCharacterId(), false)
+			send(m.GetCharacterId(), false)
 		}
 	}
 	for _, m := range removedGuildPb.GetMembers() {
 		if m == nil {
 			continue
 		}
-		deliver(m.GetCharacterId(), true)
+		send(m.GetCharacterId(), true)
 	}
 }
 
@@ -443,7 +443,7 @@ func (ac *AllianceCache) broadcastDisband(allianceID uint32, guildIDs []uint32) 
 				continue
 			}
 			seen[memberID] = struct{}{}
-			ac.deliverToOnlineMember(memberID, func(ch *entity.Character) {
+			ac.callOnlineMember(memberID, func(ch *entity.Character) {
 				ch.Listener.OnAllianceDisband(ch, allianceID)
 			})
 		}

@@ -1565,7 +1565,7 @@ export class AllianceService {
         senderCharacterId: number,
         senderName: string,
         message: string
-    ): Promise<{ ok: boolean; deliveredCount?: number }> {
+    ): Promise<{ ok: boolean; recipientCount?: number }> {
         this.assertWorld(worldId);
         this.assertCharacterId(senderCharacterId);
         if (!Number.isInteger(allianceId) || allianceId < 1) {
@@ -1602,6 +1602,6 @@ export class AllianceService {
             sender_name: name,
             message: trimmedMsg,
         });
-        return { ok: true, deliveredCount: 1 };
+        return { ok: true, recipientCount: 1 };
     }
 }

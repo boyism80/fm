@@ -364,7 +364,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteTargetNotOnlineMessage)
 		return nil
 	}
-	h.gs.Deliver(nil, targetLeaderID, &g_actor.DeliverAllianceInvite{
+	h.gs.SendToCharacter(nil, targetLeaderID, &g_actor.InviteToAlliance{
 		CharacterID:        targetLeaderID,
 		TargetGuildID:      targetGuildID,
 		AllianceID:         allianceID,

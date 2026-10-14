@@ -4,13 +4,13 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 )
 
-type DeliverPartyUpdateJoinHandler struct{}
+type PartyMemberJoinedHandler struct{}
 
-func (DeliverPartyUpdateJoinHandler) New() *DeliverPartyUpdateJoinHandler {
-	return &DeliverPartyUpdateJoinHandler{}
+func (PartyMemberJoinedHandler) New() *PartyMemberJoinedHandler {
+	return &PartyMemberJoinedHandler{}
 }
 
-func (h *DeliverPartyUpdateJoinHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyUpdateJoin) {
+func (h *PartyMemberJoinedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *PartyMemberJoined) {
 	if msg == nil {
 		return
 	}

@@ -279,7 +279,7 @@ type CharacterListener interface {
 	OnWhisperFound(ch *Character, reply *internal.WhisperReply, buddy bool)
 	OnWhisperReceived(ch *Character, sender string, channel int32, message string) error
 	ClaimWhisperAsync(ctx actor.Context, ch *Character, requestID string) *async.Promise[*internal.CompleteWhisperReply]
-	CompleteWhisperAsync(ctx actor.Context, ch *Character, requestID string, delivered bool) *async.Promise[*internal.CompleteWhisperReply]
+	CompleteWhisperAsync(ctx actor.Context, ch *Character, requestID string, received bool) *async.Promise[*internal.CompleteWhisperReply]
 	OnMessengerJoined(ch *Character, position uint8, members []*internal.MessengerMember, queued []MessengerEvent)
 	OnMessengerInviteResult(ch *Character, name string, success bool)
 	OnMessengerEvent(ch *Character, event MessengerEvent)

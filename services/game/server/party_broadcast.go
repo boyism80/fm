@@ -30,7 +30,7 @@ func (pc *PartyCache) BroadcastMemberJoined(party *entity.Party, joinedCharacter
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		pc.gs.Deliver(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateJoin{
+		pc.gs.SendToCharacter(nil, m.GetCharacterId(), &g_actor.PartyMemberJoined{
 			CharacterID:     m.GetCharacterId(),
 			ForChannel:      int32(pc.gs.config.ChannelId),
 			PartyID:         party.GetPartyId(),

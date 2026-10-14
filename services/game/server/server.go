@@ -17,10 +17,10 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/delivery"
 	"github.com/boyism80/fm/core/fault"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
+	"github.com/boyism80/fm/core/route"
 	"github.com/boyism80/fm/core/uniqueid"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
@@ -34,7 +34,7 @@ import (
 
 const (
 	mapActorCallTimeout = 30 * time.Second
-	logoutWaitTimeout   = deliveryTimeout + time.Second
+	logoutWaitTimeout   = envelopeTimeout + time.Second
 	shutdownWaitTimeout = time.Minute
 )
 
@@ -79,9 +79,9 @@ type GameServer struct {
 	guildSystem       guildSystem
 	allianceSystem    allianceSystem
 	dispatchSystem    dispatchSystem
-	deliveryMu        sync.Mutex
-	pendingDeliveries map[uint64]*delivery.Envelope
-	nextDelivery      atomic.Uint64
+	envelopeMu        sync.Mutex
+	pendingEnvelopes  map[uint64]*route.Envelope
+	nextEnvelope      atomic.Uint64
 	internalHBCancel  context.CancelFunc
 	disconnects       sync.WaitGroup
 	megaphoneMuted    atomic.Bool
@@ -703,7 +703,7 @@ func (gs *GameServer) removeCharacter(character *entity.Character, logout <-chan
 		character.ClearTimers()
 	}
 
-	gs.abandonDeliveries(charID)
+	gs.abandonEnvelopes(charID)
 	gs.characterRuntime.UnregisterCharacter(charID)
 	return entry
 }

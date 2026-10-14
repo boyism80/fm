@@ -76,7 +76,7 @@ func (h *buddyMqUpdate) Handle(_ actor.Context, raw json.RawMessage) error {
 		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
 			continue
 		}
-		gs.Deliver(nil, recipientID, &g_actor.DeliverBuddyListUpdate{
+		gs.SendToCharacter(nil, recipientID, &g_actor.SyncBuddyList{
 			RecipientCharacterID: recipientID,
 			SyncAction:           uint8(action),
 			Entries:              entries,

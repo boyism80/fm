@@ -72,14 +72,14 @@ func (l *CharacterListenerImpl) ClaimWhisperAsync(ctx actor.Context, ch *entity.
 	)
 }
 
-func (l *CharacterListenerImpl) CompleteWhisperAsync(ctx actor.Context, ch *entity.Character, requestID string, delivered bool) *async.Promise[*internal.CompleteWhisperReply] {
+func (l *CharacterListenerImpl) CompleteWhisperAsync(ctx actor.Context, ch *entity.Character, requestID string, received bool) *async.Promise[*internal.CompleteWhisperReply] {
 	req := &internal.CompleteWhisperRequest{
 		WorldId:     l.gs.config.WorldId,
 		RequestId:   requestID,
 		CharacterId: ch.GetID(),
 		MapId:       ch.GetMap().TemplateID(),
 		Complete:    true,
-		Delivered:   delivered,
+		Received:    received,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CompleteWhisperReply, error) {
