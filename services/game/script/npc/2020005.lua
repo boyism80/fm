@@ -42,13 +42,8 @@ return {
 			left = power_left
 		end
 
-		local input = me:dialog_input(npc, "흐음.. #b#t" .. goods.item .. "##k 을 구매하고 싶단 말이지..? " .. goods.desc .. ". 몇개를 구매하고 싶은가? 가격은 #b" .. goods.cost .. " 메소#k일세.")
-		if input == nil then
-			return
-		end
-		local amount = tonumber(input)
-		if amount == nil or amount < 1 or amount > 100 then
-			me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+		local amount = me:dialog_number(npc, "흐음.. #b#t" .. goods.item .. "##k 을 구매하고 싶단 말이지..? " .. goods.desc .. ". 몇개를 구매하고 싶은가? 가격은 #b" .. goods.cost .. " 메소#k일세.", 1, 1, 100)
+		if amount == nil then
 			return
 		end
 		local total = goods.cost * amount

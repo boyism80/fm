@@ -98,6 +98,7 @@ var decoders = func() []decoder {
 		newDecoder[response.RemoveNpc](nil),
 		newDecoder[response.DialogYesNo](dialog(constant.DialogTypeYesNo)),
 		newDecoder[response.DialogInput](dialog(constant.DialogTypeInput)),
+		newDecoder[response.DialogNumber](dialog(constant.DialogTypeNumber)),
 		newDecoder[response.DialogList](dialog(constant.DialogTypeList)),
 		newDecoder[response.DialogStyle](dialog(constant.DialogTypeStyle)),
 		newDecoder[response.DialogAccept](dialog(constant.DialogTypeAccept, constant.DialogTypeAcceptEscape)),

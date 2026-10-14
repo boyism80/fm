@@ -21,7 +21,7 @@ func (p *Dialog) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteBoolean(p.Next)
 
 	switch p.DialogType {
-	case constant.DialogTypeList, constant.DialogTypeStyle:
+	case constant.DialogTypeList, constant.DialogTypeStyle, constant.DialogTypeNumber:
 		if p.Next {
 			writer.WriteU32(p.Selected)
 		}
@@ -41,7 +41,7 @@ func (p *Dialog) Deserialize(reader *stream.StreamReader) {
 	case constant.DialogTypeDefault:
 	case constant.DialogTypeYesNo:
 
-	case constant.DialogTypeList, constant.DialogTypeStyle:
+	case constant.DialogTypeList, constant.DialogTypeStyle, constant.DialogTypeNumber:
 		if p.Next {
 			p.Selected = reader.ReadU32()
 		}

@@ -51,13 +51,8 @@ return {
 		end
 		local to = TOWNS[to_sel]
 
-		local input = me:dialog_input(npc, "#b#h #님#k은 " .. from.name .. " 피그미 에그를 #b" .. held .. "개#k 가지고 있습니다. 몇 개를 교환하시 겠습니까?\r\n#b< 예 : 3 >#k")
-		if input == nil then
-			return
-		end
-		local qty = tonumber(input)
-		if qty == nil or qty < 1 or qty > 32000 or qty > held then
-			me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+		local qty = me:dialog_number(npc, "#b#h #님#k은 " .. from.name .. " 피그미 에그를 #b" .. held .. "개#k 가지고 있습니다. 몇 개를 교환하시 겠습니까?\r\n#b< 예 : 3 >#k", 1, 1, math.min(held, 32000))
+		if qty == nil then
 			return
 		end
 

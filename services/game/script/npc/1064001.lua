@@ -67,12 +67,10 @@ end
 
 local function buy_ticket(me, npc)
 	local max = math.floor(me:meso() / TICKET_PRICE)
-	local input = me:dialog_input(npc, "#z" .. TICKET .. "#은 개당 #b" .. TICKET_PRICE .. " 메소#k입니다.\r\n입장권을 총 몇개 구매하시겠습니까?\r\n\r\n")
-	local n = tonumber(input)
-	if n == nil or n < 1 or n > max or n > 25000 then
+	local n = me:dialog_number(npc, "#z" .. TICKET .. "#은 개당 #b" .. TICKET_PRICE .. " 메소#k입니다.\r\n입장권을 총 몇개 구매하시겠습니까?\r\n\r\n", 1, 1, math.max(1, math.min(max, 25000)))
+	if n == nil then
 		return
 	end
-	n = math.floor(n)
 	if me:exchange({ meso = TICKET_PRICE * n }, { item = { [TICKET] = n } }) ~= ExchangeResult.OK then
 		me:dialog(npc, "메소가 부족하시거나, 값을 조작하였습니다.")
 		return

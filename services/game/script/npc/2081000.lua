@@ -42,13 +42,8 @@ local function buy_seed(me, npc, feellike)
 		return
 	end
 
-	local input = me:dialog_input(npc, "흐음. 마법의 씨앗을 구매하고 싶단건가? 귀한 물건이기 때문에 많이 줄 수 없다네. 가격은 개당 #b" .. price .. " 메소#k 일세. 몇개 구매하고 싶은가?")
-	if input == nil then
-		return
-	end
-	local qty = tonumber(input)
-	if qty == nil or qty < 1 or qty > 100 then
-		me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+	local qty = me:dialog_number(npc, "흐음. 마법의 씨앗을 구매하고 싶단건가? 귀한 물건이기 때문에 많이 줄 수 없다네. 가격은 개당 #b" .. price .. " 메소#k 일세. 몇개 구매하고 싶은가?", 1, 1, 100)
+	if qty == nil then
 		return
 	end
 	if not me:dialog_yes_no(npc, "흐음. 그렇다면 #b#t4031346##k을 " .. qty .. "개 구매하고 싶은 것인가? 총 가격은 " .. price * qty .. " 메소라네. 정말 구매하겠는가?") then
@@ -75,13 +70,8 @@ local function donate(me, npc, feellike)
 	end
 	local donation = DONATIONS[sel]
 
-	local input = me:dialog_input(npc, "#b#t" .. donation.item .. "##k 아이템을 마을에 기부하고 싶다 이건가..? 몇개나 기부하고 싶은가?")
-	if input == nil then
-		return
-	end
-	local qty = tonumber(input)
-	if qty == nil or qty < 1 or qty > 100 then
-		me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+	local qty = me:dialog_number(npc, "#b#t" .. donation.item .. "##k 아이템을 마을에 기부하고 싶다 이건가..? 몇개나 기부하고 싶은가?", 1, 1, 100)
+	if qty == nil then
 		return
 	end
 	if not me:dialog_yes_no(npc, "오오. 그렇다면 #b#t" .. donation.item .. "##k 아이템을 " .. qty .. " 개 기부하고 싶다 이건가?") then

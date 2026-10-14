@@ -17,13 +17,8 @@ return {
 			return
 		end
 
-		local input = me:dialog_input(npc, "얼마를 기부하시겠습니까?\r\n최소 기부금액은 100,000 메소입니다.\r\n기부 가능 최대금액은 2,147,483,647 메소입니다.\r\n#b< 현재 소지금액 : " .. me:meso() .. " 메소 >#k")
-		if input == nil then
-			return
-		end
-		local amount = tonumber(input)
-		if amount == nil or amount > me:meso() or amount < 100000 or amount > 2147483647 then
-			me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+		local amount = me:dialog_number(npc, "얼마를 기부하시겠습니까?\r\n최소 기부금액은 100,000 메소입니다.\r\n기부 가능 최대금액은 2,147,483,647 메소입니다.\r\n#b< 현재 소지금액 : " .. me:meso() .. " 메소 >#k", 100000, 100000, me:meso())
+		if amount == nil then
 			return
 		end
 		local money = tonumber(q:record_ex("money")) or 0

@@ -56,6 +56,14 @@ type DialogInput struct {
 	Text string
 }
 
+type DialogNumber struct {
+	NPC     uint32
+	Text    string
+	Default int32
+	Min     int32
+	Max     int32
+}
+
 type DialogStyle struct {
 	NPC    uint32
 	Text   string
@@ -63,6 +71,10 @@ type DialogStyle struct {
 }
 
 func (p *DialogInput) Opcode() uint16 {
+	return 0xE5
+}
+
+func (p *DialogNumber) Opcode() uint16 {
 	return 0xE5
 }
 
@@ -127,6 +139,18 @@ func (p *DialogInput) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
+func (p *DialogNumber) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(4)
+	writer.WriteU32(p.NPC)
+	writer.WriteU8(uint8(constant.DialogTypeNumber))
+	writer.WriteStr16(p.Text)
+	writer.Write32(p.Default)
+	writer.Write32(p.Min)
+	writer.Write32(p.Max)
+	writer.WriteU32(0)
+	return nil
+}
+
 func (p *DialogStyle) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(4)
 	writer.WriteU32(p.NPC)
@@ -183,6 +207,17 @@ func (p *DialogInput) Deserialize(reader *stream.StreamReader) {
 	reader.ReadU8()
 	p.Text = reader.ReadStr16()
 	reader.ReadU32()
+	reader.ReadU32()
+}
+
+func (p *DialogNumber) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NPC = reader.ReadU32()
+	reader.ReadU8()
+	p.Text = reader.ReadStr16()
+	p.Default = reader.Read32()
+	p.Min = reader.Read32()
+	p.Max = reader.Read32()
 	reader.ReadU32()
 }
 

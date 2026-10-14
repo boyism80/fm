@@ -2,6 +2,7 @@ package entity
 
 import (
 	"log"
+	"math"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -78,6 +79,11 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 			}
 			if countN > 65535 {
 				L.ArgError(argIndex, "exchange side.item count exceeds uint16")
+				failed = true
+				return
+			}
+			if countN != lua.LNumber(math.Trunc(float64(countN))) {
+				L.ArgError(argIndex, "exchange side.item count must be an integer")
 				failed = true
 				return
 			}
@@ -171,6 +177,10 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 			L.ArgError(argIndex, "exchange side.meso exceeds int32")
 			return ExchangeSide{}, false
 		}
+		if n != lua.LNumber(math.Trunc(float64(n))) {
+			L.ArgError(argIndex, "exchange side.meso must be an integer")
+			return ExchangeSide{}, false
+		}
 		side.Meso = int32(n)
 	}
 
@@ -178,6 +188,10 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 		n, ok := expLV.(lua.LNumber)
 		if !ok || n < 0 {
 			L.ArgError(argIndex, "exchange side.exp must be a non-negative number")
+			return ExchangeSide{}, false
+		}
+		if n != lua.LNumber(math.Trunc(float64(n))) {
+			L.ArgError(argIndex, "exchange side.exp must be an integer")
 			return ExchangeSide{}, false
 		}
 		side.Exp = uint32(n)
@@ -191,6 +205,10 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 		}
 		if n > 2147483647 {
 			L.ArgError(argIndex, "exchange side.population exceeds int32")
+			return ExchangeSide{}, false
+		}
+		if n != lua.LNumber(math.Trunc(float64(n))) {
+			L.ArgError(argIndex, "exchange side.population must be an integer")
 			return ExchangeSide{}, false
 		}
 		side.Population = int32(n)
@@ -1658,6 +1676,35 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			ch.Listener.OnDialogInput(ch, uint32(npc), message)
 			ch.Dialog.Ask(L, constant.DialogTypeInput, 0)
+			return L.Yield(lua.LNumber(0))
+		},
+		"dialog_number": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			npc := 0
+			switch npcArg := L.Get(2).(type) {
+			case lua.LNumber:
+				npc = int(npcArg)
+			case *lua.LUserData:
+				if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+					npc = int(n.Wz.BaseSpawn.ID)
+				}
+			}
+			message := L.CheckString(3)
+			def := int32(L.CheckInt(4))
+			min := int32(L.CheckInt(5))
+			max := int32(L.CheckInt(6))
+			if min > max {
+				L.ArgError(5, "min must not exceed max")
+				return 0
+			}
+
+			ch.Listener.OnDialogNumber(ch, uint32(npc), message, def, min, max)
+			ch.Dialog.AskNumber(L, min, max)
 			return L.Yield(lua.LNumber(0))
 		},
 		"message": func(L *lua.LState) int {

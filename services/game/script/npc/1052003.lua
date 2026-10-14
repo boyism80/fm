@@ -82,13 +82,8 @@ return {
 
 		local qty = 1
 		if not category.equip then
-			local input = me:dialog_input(npc, "#t" .. recipe.item .. "# 아이템을 원하시나요? 얼마나 만들어보시고 싶으신가요?")
-			if input == nil then
-				return
-			end
-			qty = tonumber(input)
-			if qty == nil or qty < 1 or qty > 100 then
-				me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+			qty = me:dialog_number(npc, "#t" .. recipe.item .. "# 아이템을 원하시나요? 얼마나 만들어보시고 싶으신가요?", 1, 1, 100)
+			if qty == nil then
 				return
 			end
 		end

@@ -277,6 +277,8 @@ func (b *Bot) Update(pkt any) {
 		b.Dialog = constant.DialogTypeYesNo
 	case *response.DialogInput:
 		b.Dialog = constant.DialogTypeInput
+	case *response.DialogNumber:
+		b.Dialog = constant.DialogTypeNumber
 	case *response.DialogList:
 		b.Dialog = constant.DialogTypeList
 	case *response.DialogStyle:

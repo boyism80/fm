@@ -10,13 +10,8 @@ return {
 			return
 		end
 
-		local input = me:dialog_input(npc, "호오? #t4005004#이 필요하다고? #b#p2020005##k의 부탁인건가? 흐음.. 어찌되었든, 그냥 줄 수는 없고 #b#t4004004# 10개#k와 50000메소만 준다면 #t4005004#을 주도록 하겠네.")
-		if input == nil then
-			return
-		end
-		local qty = tonumber(input)
-		if qty == nil or qty < 1 or qty > 100 then
-			me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+		local qty = me:dialog_number(npc, "호오? #t4005004#이 필요하다고? #b#p2020005##k의 부탁인건가? 흐음.. 어찌되었든, 그냥 줄 수는 없고 #b#t4004004# 10개#k와 50000메소만 준다면 #t4005004#을 주도록 하겠네.", 1, 1, 100)
+		if qty == nil then
 			return
 		end
 

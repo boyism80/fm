@@ -31,13 +31,8 @@ return {
 		end
 		local goods = GOODS[sel]
 
-		local input = me:dialog_input(npc, "#b#t" .. goods.item .. "##k 아이템을 구매하고 싶으세요? #t" .. goods.item .. "# 아이템은 " .. goods.recover .. " " .. goods.stat .. "를 회복시켜 줍니다. 몇개를 구매하시고 싶으세요?")
-		if input == nil then
-			return
-		end
-		local amount = tonumber(input)
-		if amount == nil or amount < 1 or amount > 100 then
-			me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+		local amount = me:dialog_number(npc, "#b#t" .. goods.item .. "##k 아이템을 구매하고 싶으세요? #t" .. goods.item .. "# 아이템은 " .. goods.recover .. " " .. goods.stat .. "를 회복시켜 줍니다. 몇개를 구매하시고 싶으세요?", 1, 1, 100)
+		if amount == nil then
 			return
 		end
 		if not me:dialog_yes_no(npc, "#b#t" .. goods.item .. "##k 아이템을 #r" .. amount .. "#k 개 구매하시고 싶으세요? 개당 가격은 " .. goods.cost .. " 메소 이며, 총 가격은 " .. goods.cost * amount .. " 메소 입니다.") then

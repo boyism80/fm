@@ -21,6 +21,7 @@ var (
 type npcDialog struct {
 	dialogType constant.DialogType
 	choices    int
+	min, max   int32
 }
 
 type Dialog struct {
@@ -71,6 +72,14 @@ func (d *Dialog) Ask(thread *lua.LState, dialogType constant.DialogType, choices
 	defer d.mutex.Unlock()
 	d.thread = thread
 	d.asked = &npcDialog{dialogType: dialogType, choices: choices}
+	d.waiting = false
+}
+
+func (d *Dialog) AskNumber(thread *lua.LState, min, max int32) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.thread = thread
+	d.asked = &npcDialog{dialogType: constant.DialogTypeNumber, min: min, max: max}
 	d.waiting = false
 }
 
@@ -160,6 +169,17 @@ func (d *Dialog) Resume(actx actor.Context, dialogType constant.DialogType, next
 		} else {
 			args = append(args, lua.LNil)
 		}
+	case constant.DialogTypeNumber:
+		if !next {
+			args = append(args, lua.LNil)
+			break
+		}
+		if int32(selected) < asked.min || int32(selected) > asked.max {
+			d.Close()
+			d.owner.Listener.OnUnlockAction(d.owner)
+			return ErrDialogChoiceRange
+		}
+		args = append(args, lua.LNumber(int32(selected)))
 	}
 
 	mapInstance := d.owner.GetMap()

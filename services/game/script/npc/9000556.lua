@@ -41,11 +41,11 @@ return {
 		end
 
 		local limit = math.min(item:count(), MAX_DROP)
-		local count = tonumber(me:dialog_input(npc, "#i" .. id .. ":# #b#z" .. id .. "##k\r\n버릴 개수를 적어주세요."))
-		if count == nil or count < 1 or count > limit then
+		local count = me:dialog_number(npc, "#i" .. id .. ":# #b#z" .. id .. "##k\r\n버릴 개수를 적어주세요.", 1, 1, limit)
+		if count == nil then
 			return
 		end
-		if me:rmitem(InventoryType.Cash, slot, math.floor(count)) == false then
+		if me:rmitem(InventoryType.Cash, slot, count) == false then
 			me:dialog(npc, "Error, please try again!")
 		end
 	end

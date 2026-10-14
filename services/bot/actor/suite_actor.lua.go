@@ -989,7 +989,7 @@ func (a *SuiteActor) packetName(pkt any) string {
 
 func (a *SuiteActor) dialogPacket(pkt any) bool {
 	switch pkt.(type) {
-	case *response.Dialog, *response.DialogYesNo, *response.DialogInput, *response.DialogList, *response.DialogStyle, *response.DialogAccept:
+	case *response.Dialog, *response.DialogYesNo, *response.DialogInput, *response.DialogNumber, *response.DialogList, *response.DialogStyle, *response.DialogAccept:
 		return true
 	default:
 		return false

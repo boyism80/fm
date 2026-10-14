@@ -84,6 +84,16 @@ func (l *CharacterListenerImpl) OnDialogInput(ch *entity.Character, npc uint32, 
 	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnDialogNumber(ch *entity.Character, npc uint32, message string, def, min, max int32) {
+	ch.Send(&response.DialogNumber{
+		NPC:     npc,
+		Text:    message,
+		Default: def,
+		Min:     min,
+		Max:     max,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnChat(ch *entity.Character, message string, highlight bool, dontRecordHistory bool) {
 	chatPacket := &response.NormalChat{
 		CharacterId:       ch.GetID(),

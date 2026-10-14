@@ -76,13 +76,8 @@ return {
 		if recipe.cost > 0 then
 			prompt = prompt .. "\r\n#i4031138# " .. recipe.cost .. " 메소"
 		end
-		local input = me:dialog_input(npc, prompt)
-		if input == nil then
-			return
-		end
-		local qty = tonumber(input)
-		if qty == nil or qty < 1 or qty > 100 then
-			me:dialog(npc, "자네, 이상한 값을 넣었지 않은가?")
+		local qty = me:dialog_number(npc, prompt, 1, 1, 100)
+		if qty == nil then
 			return
 		end
 

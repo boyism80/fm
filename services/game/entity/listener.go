@@ -20,6 +20,7 @@ type CharacterListener interface {
 	OnDialogAccept(ch *Character, npc uint32, message string, enableEscape bool)
 	OnDialogList(ch *Character, npc uint32, message string, selections []string)
 	OnDialogInput(ch *Character, npc uint32, message string)
+	OnDialogNumber(ch *Character, npc uint32, message string, def, min, max int32)
 	OnDialogStyle(ch *Character, npc uint32, message string, styles []uint32)
 	OnOpenNpcShop(ch *Character, shopID uint32, shop *wz.Shop)
 	OnOpenStorage(ch *Character, npcID uint32)
