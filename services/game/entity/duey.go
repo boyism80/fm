@@ -205,12 +205,11 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 
 	var item Item
 	if slot != 0 {
-		var err error
-		item, err = d.owner.Inventory.findTradable(invType, slot)
-		if errors.Is(err, ErrMiniRoomItemNotFound) {
+		item = d.owner.Inventory.GetItem(invType, slot)
+		if item == nil {
 			return ErrDueyInvalid
 		}
-		if err != nil {
+		if !item.Tradable() {
 			return ErrDueyNotSendable
 		}
 		if count == 0 || item.GetCount() < uint16(count) {

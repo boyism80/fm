@@ -43,7 +43,7 @@ func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64
 }
 
 func (e *EquipmentCore) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
-	pb := buildInventoryProto(e, ownerID, slot, e.UniqueId, e.OwnerName, e.Flag, e.EnhanceChance, e.EnhanceCount, e.SkillBonus)
+	pb := buildInventoryProto(e, ownerID, slot, e.UniqueId, e.OwnerName, e.Flags, e.EnhanceChance, e.EnhanceCount, e.SkillBonus)
 	if bonus := e.BonusStats.BuildRPC(); bonus != nil {
 		pb.EquipBonusStats = bonus
 	}
@@ -123,40 +123,36 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 				Wz:         m,
 				Count:      1,
 				Expiration: expiration,
+				Flags:      flag,
 			},
 			EnhanceChance: enhanceChance,
 			EnhanceCount:  enhanceCount,
 			OwnerName:     ownerName,
-			Flag:          flag,
 			SkillBonus:    skillBonus,
 			UniqueId:      uniqueID,
 			BonusStats:    EquipmentBonusStatsFromProto(pb.GetEquipBonusStats()),
 		}, nil
 	case *wz.Consume:
 		return &Consume{
-			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
+			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
 			OwnerName: ownerName,
-			Flags:     flag,
 		}, nil
 	case *wz.Installation:
 		return &Installation{
-			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
+			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
 			OwnerName: ownerName,
-			Flags:     flag,
 		}, nil
 	case *wz.MiscItem:
 		return &MiscItem{
-			ItemCore:   &ItemCore{Wz: m, Count: count, Expiration: expiration},
+			ItemCore:   &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
 			OwnerName:  ownerName,
-			Flags:      flag,
 			MarriageID: pb.GetMarriageId(),
 		}, nil
 	case *wz.CashItem:
 		return &CashItem{
-			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
+			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
 			UniqueId:  uniqueID,
 			OwnerName: ownerName,
-			Flags:     flag,
 		}, nil
 	case *wz.Pet:
 		if uniqueID == nil {

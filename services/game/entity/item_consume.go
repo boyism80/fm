@@ -7,19 +7,12 @@ import (
 type Consume struct {
 	*ItemCore
 	OwnerName string
-	Flags     uint16
 }
 
 func (item *Consume) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeConsume
 }
 func (item *Consume) GetCount() uint16 { return item.Count }
-func (item *Consume) GetFlags() constant.ItemFlag {
-	return constant.ItemFlag(item.Flags)
-}
-func (item *Consume) SetFlags(flags constant.ItemFlag) {
-	item.Flags = uint16(flags)
-}
 func (item *Consume) Reduce(count uint16) uint16 {
 	if count > item.Count {
 		item.Count = 0
@@ -39,8 +32,8 @@ func (item *Consume) Clone(count uint16) Item {
 			Count:          count,
 			Wz:             item.Wz,
 			Expiration:     item.Expiration,
+			Flags:          item.Flags,
 		},
 		OwnerName: item.OwnerName,
-		Flags:     item.Flags,
 	}
 }

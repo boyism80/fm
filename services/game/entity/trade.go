@@ -169,9 +169,12 @@ func (t *Trade) PutItem(ch *Character, invType constant.InventoryType, slot int1
 	if tradeSlot < 1 || tradeSlot > TradeSlots || side.items[tradeSlot-1] != nil {
 		return ErrMiniRoomInvalid
 	}
-	item, err := ch.Inventory.findTradable(invType, slot)
-	if err != nil {
-		return err
+	item := ch.Inventory.GetItem(invType, slot)
+	if item == nil {
+		return ErrMiniRoomItemNotFound
+	}
+	if !item.Tradable() {
+		return ErrMiniRoomInvalid
 	}
 	if invType == constant.InventoryTypeCash || item.GetModel().GetTraits()&constant.ItemTraitCash != 0 {
 		return ErrMiniRoomInvalid

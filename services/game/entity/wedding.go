@@ -615,7 +615,7 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 	if item == nil || item.GetModel().GetID() != itemID || count == 0 || item.GetCount() < count {
 		return ErrMarriageInvalid
 	}
-	if _, err := w.owner.Inventory.findTradable(invType, slot); err != nil {
+	if !item.Tradable() {
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveRejected, nil, nil)
 		return nil
 	}

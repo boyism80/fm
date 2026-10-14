@@ -204,9 +204,12 @@ func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bu
 		return nil, ErrMiniRoomInvalid
 	}
 
-	item, err := ch.Inventory.findTradable(invType, slot)
-	if err != nil {
-		return nil, err
+	item := ch.Inventory.GetItem(invType, slot)
+	if item == nil {
+		return nil, ErrMiniRoomItemNotFound
+	}
+	if !item.Tradable() {
+		return nil, ErrMiniRoomInvalid
 	}
 	if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
 		bundles = 1
@@ -230,38 +233,8 @@ func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bu
 	return listed, nil
 }
 
-func (inv *Inventory) findTradable(invType constant.InventoryType, slot int16) (Item, error) {
-	item := inv.GetItem(invType, slot)
-	if item == nil {
-		return nil, ErrMiniRoomItemNotFound
-	}
-	model := item.GetModel()
-	if model.GetTraits()&(constant.ItemTraitQuest|constant.ItemTraitPet) != 0 {
-		return nil, ErrMiniRoomInvalid
-	}
-	flags := item.GetFlags()
-	if flags&constant.ItemFlagLock != 0 {
-		return nil, ErrMiniRoomInvalid
-	}
-
-	untradeable := model.GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable) != 0
-	karma := constant.ItemFlagBundleKarma
-	if invType == constant.InventoryTypeEquipment {
-		untradeable = untradeable || flags&constant.ItemFlagUntradeable != 0
-		karma = constant.ItemFlagEquipKarma
-	}
-	if untradeable && flags&karma == 0 {
-		return nil, ErrMiniRoomInvalid
-	}
-	return item, nil
-}
-
 func (inv *Inventory) receive(item Item) {
-	karma := constant.ItemFlagBundleKarma
-	if item.GetInventoryType() == constant.InventoryTypeEquipment {
-		karma = constant.ItemFlagEquipKarma
-	}
-	item.SetFlags(item.GetFlags() &^ karma)
+	item.consumeKarma()
 	inv.addItemUnchecked(item, true)
 }
 

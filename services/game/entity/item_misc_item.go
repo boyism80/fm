@@ -7,7 +7,6 @@ import (
 type MiscItem struct {
 	*ItemCore
 	OwnerName  string
-	Flags      uint16
 	MarriageID uint32
 }
 
@@ -15,12 +14,6 @@ func (item *MiscItem) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeETC
 }
 func (item *MiscItem) GetCount() uint16 { return item.Count }
-func (item *MiscItem) GetFlags() constant.ItemFlag {
-	return constant.ItemFlag(item.Flags)
-}
-func (item *MiscItem) SetFlags(flags constant.ItemFlag) {
-	item.Flags = uint16(flags)
-}
 func (item *MiscItem) Reduce(count uint16) uint16 {
 	if count > item.Count {
 		item.Count = 0
@@ -40,9 +33,9 @@ func (item *MiscItem) Clone(count uint16) Item {
 			Count:          count,
 			Wz:             item.Wz,
 			Expiration:     item.Expiration,
+			Flags:          item.Flags,
 		},
 		OwnerName:  item.OwnerName,
-		Flags:      item.Flags,
 		MarriageID: item.MarriageID,
 	}
 }

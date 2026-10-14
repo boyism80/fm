@@ -543,8 +543,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		}
 	}
 
-	if newEq.GetModel().GetTraits()&constant.ItemTraitEquipTradeBlock != 0 && newEq.GetFlags()&constant.ItemFlagUntradeable == 0 {
-		newEq.SetFlags(newEq.GetFlags() | constant.ItemFlagUntradeable)
+	if newEq.GetEquipmentCore().bindToWearer() {
 		ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, slot)
 		ch.Listener.OnInventorySlotAdded(ch, constant.InventoryTypeEquipment, slot, newEq)
 	}

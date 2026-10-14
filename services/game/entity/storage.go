@@ -72,20 +72,10 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if item == nil || item.GetModel().GetID() != itemID {
 		return ErrStorageItemNotFound
 	}
-	if model.GetTraits()&constant.ItemTraitPet != 0 {
+	if !item.Storable() {
 		return ErrStorageNotStorable
 	}
 	if model.GetTraits()&constant.ItemTraitOnly != 0 && s.has(invType, itemID) {
-		return ErrStorageNotStorable
-	}
-	flags := item.GetFlags()
-	untradeable := model.GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitQuest) != 0
-	karma := constant.ItemFlagBundleKarma
-	if invType == constant.InventoryTypeEquipment {
-		untradeable = untradeable || flags&constant.ItemFlagUntradeable != 0
-		karma = constant.ItemFlagEquipKarma
-	}
-	if untradeable && flags&karma == 0 {
 		return ErrStorageNotStorable
 	}
 	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
@@ -99,9 +89,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	}
 
 	stored := item.Clone(count)
-	if untradeable {
-		stored.SetFlags(flags &^ karma)
-	}
+	stored.consumeKarma()
 	s.owner.Inventory.removeMesoUnchecked(s.storeFee)
 	s.owner.Inventory.RemoveItem(invType, slot, count)
 	s.Tabs[invType] = append(s.Tabs[invType], stored)

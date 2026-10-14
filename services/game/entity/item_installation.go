@@ -7,17 +7,12 @@ import (
 type Installation struct {
 	*ItemCore
 	OwnerName string
-	Flags     uint16
 }
 
 func (item *Installation) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeInstallation
 }
-func (item *Installation) GetCount() uint16            { return 1 }
-func (item *Installation) GetFlags() constant.ItemFlag { return constant.ItemFlag(item.Flags) }
-func (item *Installation) SetFlags(flags constant.ItemFlag) {
-	item.Flags = uint16(flags)
-}
+func (item *Installation) GetCount() uint16             { return 1 }
 func (item *Installation) Reduce(count uint16) uint16   { return 0 }
 func (item *Installation) Increase(count uint16) uint16 { return 0 }
 func (item *Installation) Clone(count uint16) Item {
@@ -27,8 +22,8 @@ func (item *Installation) Clone(count uint16) Item {
 			Count:          count,
 			Wz:             item.Wz,
 			Expiration:     item.Expiration,
+			Flags:          item.Flags,
 		},
 		OwnerName: item.OwnerName,
-		Flags:     item.Flags,
 	}
 }

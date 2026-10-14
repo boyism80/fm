@@ -33,6 +33,9 @@ type Item interface {
 	SetCount(count uint16)
 	GetFlags() constant.ItemFlag
 	SetFlags(flags constant.ItemFlag)
+	Tradable() bool
+	Storable() bool
+	consumeKarma()
 	Increase(count uint16) uint16
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
@@ -61,6 +64,7 @@ type ItemCore struct {
 	Wz         wz.Item
 	Expiration time.Time
 	Count      uint16
+	Flags      uint16
 }
 
 type EquipmentCore struct {
@@ -68,7 +72,6 @@ type EquipmentCore struct {
 	EnhanceChance uint8
 	EnhanceCount  uint8
 	OwnerName     string
-	Flag          uint16
 	SkillBonus    uint16
 	UniqueId      *uint64
 	BonusStats    *EquipmentBonusStats
@@ -78,11 +81,7 @@ func (e *EquipmentCore) GetEquipmentCore() *EquipmentCore { return e }
 func (e *EquipmentCore) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeEquipment
 }
-func (e *EquipmentCore) GetCount() uint16            { return 1 }
-func (e *EquipmentCore) GetFlags() constant.ItemFlag { return constant.ItemFlag(e.Flag) }
-func (e *EquipmentCore) SetFlags(flags constant.ItemFlag) {
-	e.Flag = uint16(flags)
-}
+func (e *EquipmentCore) GetCount() uint16             { return 1 }
 func (e *EquipmentCore) Reduce(count uint16) uint16   { return 0 }
 func (e *EquipmentCore) Increase(count uint16) uint16 { return 0 }
 
@@ -112,11 +111,11 @@ func (e *EquipmentCore) Clone(count uint16) Item {
 			Count:          count,
 			Wz:             e.Wz,
 			Expiration:     e.Expiration,
+			Flags:          e.Flags,
 		},
 		EnhanceChance: e.EnhanceChance,
 		EnhanceCount:  e.EnhanceCount,
 		OwnerName:     e.OwnerName,
-		Flag:          e.Flag,
 		SkillBonus:    e.SkillBonus,
 		UniqueId:      copyUint64Ptr(e.UniqueId),
 		BonusStats:    bonus,
@@ -170,12 +169,54 @@ func (item *ItemCore) GetFieldPlacement() *FieldPlacement           { return ite
 func (item *ItemCore) Getcount() uint16                             { return item.Count }
 func (item *ItemCore) GetCount32() int32                            { return int32(item.Count) }
 func (item *ItemCore) SetCount(count uint16)                        { item.Count = count }
-func (item *ItemCore) GetFlags() constant.ItemFlag                  { return 0 }
-func (item *ItemCore) SetFlags(flags constant.ItemFlag)             {}
+func (item *ItemCore) GetFlags() constant.ItemFlag                  { return constant.ItemFlag(item.Flags) }
+func (item *ItemCore) SetFlags(flags constant.ItemFlag)             { item.Flags = uint16(flags) }
 func (item *ItemCore) GetModel() wz.Item                            { return item.Wz }
 func (item *ItemCore) GetExpiration() time.Time                     { return item.Expiration }
 func (item *ItemCore) SetExpiration(expiration time.Time)           { item.Expiration = expiration }
 func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.FieldPlacement = placement }
+
+func (item *ItemCore) Tradable() bool {
+	if item.Wz.GetTraits()&(constant.ItemTraitQuest|constant.ItemTraitPet) != 0 || item.GetFlags()&constant.ItemFlagLock != 0 {
+		return false
+	}
+	return !item.untradeable(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable) || item.GetFlags()&item.karma() != 0
+}
+
+func (item *ItemCore) Storable() bool {
+	if item.Wz.GetTraits()&constant.ItemTraitPet != 0 {
+		return false
+	}
+	return !item.untradeable(constant.ItemTraitTradeBlock|constant.ItemTraitQuest) || item.GetFlags()&item.karma() != 0
+}
+
+func (item *ItemCore) untradeable(traits constant.ItemTrait) bool {
+	if item.Wz.GetTraits()&traits != 0 {
+		return true
+	}
+	return item.Wz.GetInventoryType() == constant.InventoryTypeEquipment && item.GetFlags()&constant.ItemFlagUntradeable != 0
+}
+
+// The client reads a different karma bit for equipment than for other tabs.
+func (item *ItemCore) karma() constant.ItemFlag {
+	if item.Wz.GetInventoryType() == constant.InventoryTypeEquipment {
+		return constant.ItemFlagEquipKarma
+	}
+	return constant.ItemFlagBundleKarma
+}
+
+// Karma lets an untradeable item move once; it is used up when the item arrives.
+func (item *ItemCore) consumeKarma() {
+	item.SetFlags(item.GetFlags() &^ item.karma())
+}
+
+func (e *EquipmentCore) bindToWearer() bool {
+	if e.Wz.GetTraits()&constant.ItemTraitEquipTradeBlock == 0 || e.GetFlags()&constant.ItemFlagUntradeable != 0 {
+		return false
+	}
+	e.SetFlags(e.GetFlags() | constant.ItemFlagUntradeable)
+	return true
+}
 
 func (fp *FieldPlacement) RegisterExpire(duration time.Duration) {
 	fp.nextExpiry = clock.Now().Add(duration)

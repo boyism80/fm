@@ -77,7 +77,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 			success = false
 		}
 	case success && special:
-		core.Flag |= uint16(scroll.ScrollFlag)
+		core.Flags |= uint16(scroll.ScrollFlag)
 	case success:
 		if chaos {
 			core.rollChaosStats()

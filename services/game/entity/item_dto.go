@@ -104,7 +104,7 @@ func (e *EquipmentCore) BuildEquipmentS2C() *dto.Equipment {
 		Speed:         uint16(util.ClampInt32(int32(ability.Speed)+int32(b.Speed), 0, 0xffff)),
 		Jump:          uint16(util.ClampInt32(int32(ability.Jump)+int32(b.Jump), 0, 0xffff)),
 		OwnerName:     e.OwnerName,
-		Flag:          e.Flag,
+		Flag:          e.Flags,
 		SkillBonus:    uint8(e.SkillBonus),
 	}
 }
