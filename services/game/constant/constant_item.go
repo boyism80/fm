@@ -43,6 +43,7 @@ const (
 	ItemTraitItemEffect
 	ItemTraitEntrustedShopPermit
 	ItemTraitPersonalShopPermit
+	ItemTraitNotSale
 )
 
 const ChaosScrollRange = 5

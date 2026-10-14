@@ -42,7 +42,7 @@ func (ch *Character) SellShopItem(slot int16, itemID uint32, count uint16) {
 	if model == nil {
 		return
 	}
-	if model.GetTraits()&constant.ItemTraitPet != 0 || model.GetPrice() == -1 {
+	if model.GetTraits()&(constant.ItemTraitPet|constant.ItemTraitNotSale) != 0 || model.GetPrice() == -1 {
 		return
 	}
 	invType := model.GetInventoryType()
