@@ -83,9 +83,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		obj.SendSpawnSyncToViewer(character)
 	}
 
-	if partyID := character.Party.ID(); partyID != nil {
-		mapInstance.SyncPartyHP(character, *partyID)
-	}
+	mapInstance.SyncPartyHP(character)
 
 	if match := character.CarnivalMatch(); match != nil {
 		mapID := mapInstance.GetMapID()

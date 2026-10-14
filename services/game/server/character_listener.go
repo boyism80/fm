@@ -1364,8 +1364,8 @@ func (l *CharacterListenerImpl) OnUpdateStats(ch *entity.Character, stats map[co
 	if stats != nil {
 		_, hasHP := stats[constant.StatHP]
 		_, hasMaxHP := stats[constant.StatMaxHP]
-		if hasHP || hasMaxHP {
-			l.OnPartyMemberHPChanged(ch, nil)
+		if m := ch.GetMap(); m != nil && (hasHP || hasMaxHP) {
+			m.BroadcastPartyHP(ch)
 		}
 	}
 }
@@ -1825,43 +1825,12 @@ func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character)
 	l.gs.alliance.NotifyMemberFieldsChanged(ch)
 }
 
-func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, recipient *entity.Character) {
-	partyIDPtr := ch.Party.ID()
-	if partyIDPtr == nil {
-		return
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	pkt := &response.UpdatePartyMemberHP{
-		CharacterID: ch.GetID(),
-		CurrentHP:   int32(ch.GetHp()),
-		MaxHP:       int32(ch.GetMaxHp()),
-	}
-	if recipient != nil {
-		if recipient.GetID() == ch.GetID() {
-			return
-		}
-		if recipient.GetMap() != mapInstance {
-			return
-		}
-		if !recipient.Party.Is(partyIDPtr) {
-			return
-		}
-		_ = recipient.Send(pkt, types.SEND_POLICY_ENCRYPT)
-		return
-	}
-	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
-		peer, ok := obj.(*entity.Character)
-		if !ok || peer == nil || peer.GetID() == ch.GetID() {
-			continue
-		}
-		if !peer.Party.Is(partyIDPtr) {
-			continue
-		}
-		_ = peer.Send(pkt, types.SEND_POLICY_ENCRYPT)
-	}
+func (l *CharacterListenerImpl) OnPartyMemberHP(recipient *entity.Character, member *entity.Character) {
+	_ = recipient.Send(&response.UpdatePartyMemberHP{
+		CharacterID: member.GetID(),
+		CurrentHP:   int32(member.GetHp()),
+		MaxHP:       int32(member.GetMaxHp()),
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {

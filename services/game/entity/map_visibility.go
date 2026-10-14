@@ -61,17 +61,35 @@ func (ch *Character) syncPartyHP(peer *Character) {
 	if !ch.Party.Is(peer.Party.ID()) {
 		return
 	}
-	ch.Listener.OnPartyMemberHPChanged(ch, peer)
-	peer.Listener.OnPartyMemberHPChanged(peer, ch)
+	ch.Listener.OnPartyMemberHP(ch, peer)
+	peer.Listener.OnPartyMemberHP(peer, ch)
 }
 
-func (m *Map) SyncPartyHP(ch *Character, partyID uint32) {
-	ch.Listener.OnPartyMemberHPChanged(ch, nil)
+func (m *Map) BroadcastPartyHP(ch *Character) {
+	for _, peer := range m.partyPeers(ch) {
+		peer.Listener.OnPartyMemberHP(peer, ch)
+	}
+}
+
+func (m *Map) SyncPartyHP(ch *Character) {
+	for _, peer := range m.partyPeers(ch) {
+		peer.Listener.OnPartyMemberHP(peer, ch)
+		ch.Listener.OnPartyMemberHP(ch, peer)
+	}
+}
+
+func (m *Map) partyPeers(ch *Character) []*Character {
+	partyID := ch.Party.ID()
+	if partyID == nil {
+		return nil
+	}
+	var peers []*Character
 	for _, obj := range m.GetObjects(constant.ObjectTypeCharacter) {
 		peer, ok := obj.(*Character)
-		if !ok || peer == ch || !peer.Party.Is(&partyID) {
+		if !ok || peer == ch || !peer.Party.Is(partyID) {
 			continue
 		}
-		peer.Listener.OnPartyMemberHPChanged(peer, ch)
+		peers = append(peers, peer)
 	}
+	return peers
 }

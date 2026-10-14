@@ -221,7 +221,7 @@ type CharacterListener interface {
 	OnNpcAction(ch *Character, bytes []byte)
 	OnClassChange(ch *Character, oldClass constant.ClassType, newClass constant.ClassType)
 	OnPartyMemberFieldsChanged(ch *Character)
-	OnPartyMemberHPChanged(ch *Character, recipient *Character)
+	OnPartyMemberHP(recipient *Character, member *Character)
 	OnBuffAdded(ch *Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32)
 	OnBuffRemoved(ch *Character, flags []constant.BuffFlag)
 	OnDebuffAdded(ch *Character, debuff constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)

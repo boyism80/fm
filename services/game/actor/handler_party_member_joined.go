@@ -26,5 +26,5 @@ func (h *PartyMemberJoinedHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	if ch.GetID() != msg.JoinCharacterID {
 		return
 	}
-	m.SyncPartyHP(ch, msg.PartyID)
+	m.SyncPartyHP(ch)
 }
