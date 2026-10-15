@@ -164,7 +164,7 @@ export class CashShopGrpcController {
     @Method("findCashCoupon")
     async findCashCoupon(call: GrpcCall<FindCashCouponRequest>, callback: GrpcCallback<FindCashCouponReply>) {
         try {
-            callback(null, await this.cashShopService.findCoupon(call.request.worldId, call.request.code.toUpperCase()));
+            callback(null, await this.cashShopService.findCoupon(call.request.worldId, call.request.code.toUpperCase(), call.request.accountId));
         } catch (err) {
             this.grpcError(err, callback);
         }

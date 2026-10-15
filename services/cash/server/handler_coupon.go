@@ -72,7 +72,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *cash.Character, req 
 
 	promise := h.start(ctx, character)
 	promise.ThenRPC(func(c context.Context) (*internal.FindCashCouponReply, error) {
-		return h.cs.systems.Get[*rpc.InternalConnection]().Client.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: uint32(h.cs.config.WorldID), Code: req.Code})
+		return h.cs.systems.Get[*rpc.InternalConnection]().Client.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: uint32(h.cs.config.WorldID), Code: req.Code, AccountId: character.AccountID()})
 	}, func(reply *internal.FindCashCouponReply) error {
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:

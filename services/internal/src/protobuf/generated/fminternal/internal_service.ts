@@ -2044,6 +2044,7 @@ export interface BuyCashQuestItemReply {
 export interface FindCashCouponRequest {
   worldId: number;
   code: string;
+  accountId: number;
 }
 
 export interface FindCashCouponReply {
@@ -6545,7 +6546,7 @@ export const BuyCashQuestItemReply: MessageFns<BuyCashQuestItemReply> = {
 };
 
 function createBaseFindCashCouponRequest(): FindCashCouponRequest {
-  return { worldId: 0, code: "" };
+  return { worldId: 0, code: "", accountId: 0 };
 }
 
 export const FindCashCouponRequest: MessageFns<FindCashCouponRequest> = {
@@ -6555,6 +6556,9 @@ export const FindCashCouponRequest: MessageFns<FindCashCouponRequest> = {
     }
     if (message.code !== "") {
       writer.uint32(18).string(message.code);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(24).uint32(message.accountId);
     }
     return writer;
   },
@@ -6582,6 +6586,14 @@ export const FindCashCouponRequest: MessageFns<FindCashCouponRequest> = {
           message.code = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6599,6 +6611,11 @@ export const FindCashCouponRequest: MessageFns<FindCashCouponRequest> = {
         ? globalThis.Number(object.world_id)
         : 0,
       code: isSet(object.code) ? globalThis.String(object.code) : "",
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
     };
   },
 
@@ -6610,6 +6627,9 @@ export const FindCashCouponRequest: MessageFns<FindCashCouponRequest> = {
     if (message.code !== "") {
       obj.code = message.code;
     }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
     return obj;
   },
 
@@ -6620,6 +6640,7 @@ export const FindCashCouponRequest: MessageFns<FindCashCouponRequest> = {
     const message = createBaseFindCashCouponRequest();
     message.worldId = object.worldId ?? 0;
     message.code = object.code ?? "";
+    message.accountId = object.accountId ?? 0;
     return message;
   },
 };

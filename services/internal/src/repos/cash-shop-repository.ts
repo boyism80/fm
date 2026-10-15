@@ -30,6 +30,7 @@ export type CashCouponRow = {
     kind: number;
     value: number;
     used_at: Date | null;
+    used_by: number | null;
 };
 
 export type CashBalance = {
@@ -100,6 +101,8 @@ export class CashShopRepository {
         await this.ctx.withPgDataTransaction(worldId, request.target_id, async (client) => {
             if (request.kind === "gift" || request.kind === "put_in") {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, request.target_id]);
+            } else if (request.kind === "inventory_slot" || request.kind === "meso") {
+                await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, request.target_id]);
             }
             const res = await client.query(
                 "INSERT INTO cash_transfer_receipts (request_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING request_id",
@@ -193,28 +196,34 @@ export class CashShopRepository {
 
     async findCoupon(worldId: number, code: string): Promise<CashCouponRow | null> {
         return this.ctx.withPgGlobalTransaction(worldId, async (client) => {
-            const res = await client.query("SELECT code, kind, value, used_at FROM cash_coupons WHERE code = $1", [code]);
+            const res = await client.query("SELECT code, kind, value, used_at, used_by FROM cash_coupons WHERE code = $1", [code]);
             return (res.rows[0] as CashCouponRow | undefined) ?? null;
         });
     }
 
-    async withCouponClaim<T>(
-        worldId: number,
-        code: string,
-        accountId: number,
-        fn: (coupon: CashCouponRow) => Promise<T>
-    ): Promise<T | null> {
+    async claimCoupon(worldId: number, code: string, accountId: number): Promise<CashCouponRow | null> {
         return this.ctx.withPgGlobalTransaction(worldId, async (client) => {
             const res = await client.query(
-                "UPDATE cash_coupons SET used_by = $2, used_at = NOW() WHERE code = $1 AND used_at IS NULL RETURNING code, kind, value, used_at",
+                `UPDATE cash_coupons SET used_by = $2, used_at = COALESCE(used_at, NOW())
+                 WHERE code = $1 AND (used_at IS NULL OR used_by = $2)
+                 RETURNING code, kind, value, used_at, used_by`,
                 [code, accountId]
             );
-            const coupon = res.rows[0] as CashCouponRow | undefined;
-            if (coupon == null) {
-                return null;
-            }
-            return fn(coupon);
+            return (res.rows[0] as CashCouponRow | undefined) ?? null;
         });
+    }
+
+    async insertCouponGrant(client: PoolClient, code: string, accountId: number): Promise<boolean> {
+        const res = await client.query("INSERT INTO cash_coupon_grants (code, account_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING code", [
+            code,
+            accountId,
+        ]);
+        return (res.rowCount ?? 0) > 0;
+    }
+
+    async findCouponGrant(worldId: number, accountId: number, code: string): Promise<boolean> {
+        const res = await this.ctx.getPgDataPool(worldId, accountId).query("SELECT 1 FROM cash_coupon_grants WHERE code = $1", [code]);
+        return (res.rowCount ?? 0) > 0;
     }
 
     async insertCoupons(worldId: number, kind: number, value: number, codes: string[]): Promise<string[]> {

@@ -318,6 +318,7 @@ enum CashCouponKind {
 message FindCashCouponRequest {
   uint32 world_id = 1;
   string code = 2;
+  uint32 account_id = 3;
 }
 
 message FindCashCouponReply {
