@@ -1,5 +1,7 @@
 -- NPC name (String.wz/Npc.img.xml): 크리스
 
+local maker = require("script/lib/maker")
+
 local CATEGORIES = {
 	{
 		text = "광석 제련",
@@ -51,70 +53,23 @@ local CATEGORIES = {
 	},
 }
 
+local TEXT = {
+	greet = "제가 바로 이 수리점의 주인이지요! 핫핫핫. 약간의 수수료만 주신다면 원하시는 서비스를 제공해 드리도록 하지요.#b",
+	ask_qty = function(item)
+		return "#t" .. item .. "# 아이템을 원하시나요? 얼마나 만들어보시고 싶으신가요?"
+	end,
+	confirm = function(item, qty)
+		return "흐음. #t" .. item .. "# " .. qty .. "개를 제작하고 싶으신거군요? 좋아요. 약간의 수수료와 재료만 갖고오신다면 충분히 만들어 드릴 수 있답니다. 재료는 아래와 같아요. 아, 그리고 인벤토리 공간이 충분한지도 확인해 주세요.#b"
+	end,
+	unit = "개",
+	no_meso = "서비스를 받을 메소가 부족하시네요.",
+	failed = "재료가 부족하시거나 인벤토리 공간이 부족한 건 아니신지 확인해 보시겠어요?",
+	done = "휴, 다 되었답니다. 여기 완성품이에요.",
+	done_next = true,
+}
+
 return {
 	on_click = function(me, npc)
-		local category_options = {}
-		for i, category in ipairs(CATEGORIES) do
-			category_options[i] = category.text
-		end
-		local category_sel = me:dialog_list(npc, "제가 바로 이 수리점의 주인이지요! 핫핫핫. 약간의 수수료만 주신다면 원하시는 서비스를 제공해 드리도록 하지요.#b", category_options)
-		if category_sel == nil then
-			return
-		end
-		local category = CATEGORIES[category_sel]
-
-		local recipe = category.recipes[1]
-		if category.confirm ~= nil then
-			if not me:dialog_yes_no(npc, category.confirm) then
-				return
-			end
-		else
-			local recipe_options = {}
-			for i, entry in ipairs(category.recipes) do
-				recipe_options[i] = entry.text
-			end
-			local recipe_sel = me:dialog_list(npc, category.prompt, recipe_options)
-			if recipe_sel == nil then
-				return
-			end
-			recipe = category.recipes[recipe_sel]
-		end
-
-		local qty = 1
-		if not category.equip then
-			qty = me:dialog_number(npc, "#t" .. recipe.item .. "# 아이템을 원하시나요? 얼마나 만들어보시고 싶으신가요?", 1, 1, 100)
-			if qty == nil then
-				return
-			end
-		end
-
-		local prompt = "흐음. #t" .. recipe.item .. "# " .. qty .. "개를 제작하고 싶으신거군요? 좋아요. 약간의 수수료와 재료만 갖고오신다면 충분히 만들어 드릴 수 있답니다. 재료는 아래와 같아요. 아, 그리고 인벤토리 공간이 충분한지도 확인해 주세요.#b"
-		local cost_items = {}
-		for _, mat in ipairs(recipe.mats) do
-			prompt = prompt .. "\r\n#i" .. mat[1] .. "# #t" .. mat[1] .. "# " .. mat[2] * qty .. "개"
-			cost_items[mat[1]] = mat[2] * qty
-		end
-		local meso = recipe.cost * qty
-		if meso > 0 then
-			prompt = prompt .. "\r\n#i4031138# " .. meso .. " 메소"
-		end
-		if not me:dialog_yes_no(npc, prompt) then
-			return
-		end
-
-		if me:meso() < meso then
-			me:dialog(npc, "서비스를 받을 메소가 부족하시네요.")
-			return
-		end
-		local cost = { item = cost_items }
-		if meso > 0 then
-			cost.meso = meso
-		end
-		local code = me:exchange(cost, { item = { [recipe.item] = qty } })
-		if code ~= ExchangeResult.OK then
-			me:dialog(npc, "재료가 부족하시거나 인벤토리 공간이 부족한 건 아니신지 확인해 보시겠어요?")
-			return
-		end
-		me:dialog(npc, "휴, 다 되었답니다. 여기 완성품이에요.", false, true)
+		maker.run(me, npc, CATEGORIES, TEXT)
 	end
 }
