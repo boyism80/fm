@@ -75,7 +75,7 @@ func (qc *Quests) tryRunAutoQuest(actx actor.Context, def *wz.Quest) {
 		if err := qc.CanStart(def.ID, autoOpts); err != nil {
 			return
 		}
-		_ = qc.owner.RunQuestScript(actx, def.ID, scriptNpcID, "on_start")
+		_ = qc.RunScript(actx, def.ID, scriptNpcID, "on_start")
 		return
 	}
 

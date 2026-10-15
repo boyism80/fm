@@ -1,8 +1,6 @@
 package game
 
 import (
-	"time"
-
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/maple/wz"
 )
@@ -109,41 +107,7 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 		ch.Points.SetSP(ch.Points.SP+side.SkillPoint, true)
 	}
 	for _, skill := range side.Skills {
-		ch.grantSkill(skill)
-	}
-}
-
-func (ch *Character) grantSkill(skill ExchangeSkill) {
-	if skill.SkillID == 0 {
-		return
-	}
-	if ch.GameWorld == nil {
-		return
-	}
-	resources := ch.GameWorld.GetResources()
-	if resources == nil {
-		return
-	}
-	wzSkill := resources.GetSkill(skill.SkillID)
-	if wzSkill == nil {
-		return
-	}
-	targetLevel := exchangeSkillTargetLevel(0, skill.Level)
-	targetMaster := skill.MasterLevel
-	if targetMaster <= 0 {
-		targetMaster = wzSkill.DefaultMasterLevel()
-	}
-	entry := ch.Skills.Learned(skill.SkillID)
-	if entry == nil {
-		entry = NewSkillEntry(ch, wzSkill, targetLevel, targetMaster)
-		entry.Expiration = time.Time{}
-		ch.Skills.Register(skill.SkillID, entry)
-	} else {
-		targetLevel = exchangeSkillTargetLevel(entry.Level(), skill.Level)
-		targetMaster = max(entry.MasterLevel, targetMaster)
-		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
-			entry.SetLevels(targetLevel, targetMaster)
-		}
+		ch.Skills.grant(skill)
 	}
 }
 

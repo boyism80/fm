@@ -58,11 +58,11 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 
 	switch tx := req.Transaction.(type) {
 	case *request.BuyTransaction:
-		character.BuyShopItem(shop, tx.ItemID, tx.Quantity)
+		character.Dialog.Buy(shop, tx.ItemID, tx.Quantity)
 	case *request.SellTransaction:
-		character.SellShopItem(tx.Slot, tx.ItemID, tx.Quantity)
+		character.Dialog.Sell(tx.Slot, tx.ItemID, tx.Quantity)
 	case *request.RechargeTransaction:
-		character.RechargeShopItem(tx.Slot)
+		character.Dialog.Recharge(tx.Slot)
 	default:
 		character.Dialog.CloseShop()
 	}

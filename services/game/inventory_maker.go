@@ -8,47 +8,35 @@ import (
 	"github.com/boyism80/fm/maple/wz"
 )
 
-func (ch *Character) UseItemMaker(typ uint32, itemID uint32, catalyst bool, enhancers []uint32, slot int16) {
-	if ch.GetHp() == 0 || ch.GameWorld == nil {
+func (inv *Inventory) Make(typ uint32, itemID uint32, catalyst bool, enhancers []uint32, slot int16) {
+	if inv.owner.GetHp() == 0 || inv.owner.GameWorld == nil {
 		return
 	}
 	switch typ {
 	case 1, 2:
-		ch.makeItem(itemID, catalyst, enhancers)
+		inv.makeItem(itemID, catalyst, enhancers)
 	case 3:
-		ch.makeCrystal(itemID)
+		inv.makeCrystal(itemID)
 	case 4:
-		ch.disassembleItem(slot, itemID)
+		inv.disassemble(slot, itemID)
 	}
 }
 
-func (ch *Character) makerSkillLevel() int {
-	skillID := uint32(constant.SkillMaker)
-	if ch.Class >= constant.ClassNoblesse && ch.Class < constant.ClassLegend {
-		skillID = uint32(constant.SkillMakerCygnus)
-	}
-	entry := ch.Skills.Get(skillID)
-	if entry == nil {
-		return 0
-	}
-	return entry.Level()
-}
-
-func (ch *Character) makeItem(itemID uint32, catalyst bool, enhancers []uint32) {
-	resources := ch.GameWorld.GetResources()
+func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32) {
+	resources := inv.owner.GameWorld.GetResources()
 	recipe := resources.ItemMake[itemID]
-	if recipe == nil || int(ch.GetLevel()) < recipe.RequiredLevel || ch.makerSkillLevel() < recipe.RequiredSkillLevel {
+	if recipe == nil || int(inv.owner.GetLevel()) < recipe.RequiredLevel || inv.owner.Skills.makerLevel() < recipe.RequiredSkillLevel {
 		return
 	}
-	if recipe.Classes != nil && !slices.ContainsFunc(recipe.Classes, ch.Class.Of) {
+	if recipe.Classes != nil && !slices.ContainsFunc(recipe.Classes, inv.owner.Class.Of) {
 		return
 	}
-	if recipe.RequiredItem != 0 && !ch.Inventory.HasItem(recipe.RequiredItem) {
+	if recipe.RequiredItem != 0 && !inv.HasItem(recipe.RequiredItem) {
 		return
 	}
 	if recipe.RequiredEquip != 0 {
-		owned := ch.Inventory.HasItem(recipe.RequiredEquip)
-		for _, equipment := range ch.Inventory.Equipped {
+		owned := inv.HasItem(recipe.RequiredEquip)
+		for _, equipment := range inv.Equipped {
 			if equipment.GetModel().GetID() == recipe.RequiredEquip {
 				owned = true
 			}
@@ -116,13 +104,13 @@ func (ch *Character) makeItem(itemID uint32, catalyst bool, enhancers []uint32) 
 	if !destroyed {
 		spec.Reward.Items = map[uint32]uint16{rewardID: rewardCount}
 	}
-	if spec.Valid(ch) != ExchangeOK {
+	if spec.Valid(inv.owner) != ExchangeOK {
 		return
 	}
 
 	var made Item
 	if !destroyed {
-		item, err := NewItem(rewardID, rewardCount, ch.GameWorld)
+		item, err := NewItem(rewardID, rewardCount, inv.owner.GameWorld)
 		if err != nil {
 			return
 		}
@@ -139,21 +127,21 @@ func (ch *Character) makeItem(itemID uint32, catalyst bool, enhancers []uint32) 
 		made = item
 	}
 
-	ch.payExchangeCost(spec.Cost)
+	inv.owner.payExchangeCost(spec.Cost)
 	if made == nil {
-		ch.Listener.OnItemMakerDestroyed(ch)
+		inv.owner.Listener.OnItemMakerDestroyed(inv.owner)
 		return
 	}
-	ch.Inventory.addItemUnchecked(made, true)
-	ch.Listener.OnShowSelfItemMakerSuccessEffect(ch)
+	inv.addItemUnchecked(made, true)
+	inv.owner.Listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
 }
 
-func (ch *Character) makeCrystal(itemID uint32) {
-	model := ch.itemModel(itemID)
+func (inv *Inventory) makeCrystal(itemID uint32) {
+	model := inv.owner.itemModel(itemID)
 	if model == nil {
 		return
 	}
-	crystalID := ch.makerCrystalID(model.GetMakerLevel())
+	crystalID := inv.makerCrystalID(model.GetMakerLevel())
 	if crystalID == 0 {
 		return
 	}
@@ -161,14 +149,14 @@ func (ch *Character) makeCrystal(itemID uint32) {
 		Cost:   ExchangeSide{Items: map[uint32]uint16{itemID: 100}},
 		Reward: ExchangeSide{Items: map[uint32]uint16{crystalID: 1}},
 	}
-	if ch.Exchange(spec) != ExchangeOK {
+	if inv.owner.Exchange(spec) != ExchangeOK {
 		return
 	}
-	ch.Listener.OnShowSelfItemMakerSuccessEffect(ch)
+	inv.owner.Listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
 }
 
-func (ch *Character) disassembleItem(slot int16, itemID uint32) {
-	item := ch.Inventory.GetItem(constant.InventoryTypeEquipment, slot)
+func (inv *Inventory) disassemble(slot int16, itemID uint32) {
+	item := inv.GetItem(constant.InventoryTypeEquipment, slot)
 	equipment, ok := item.(Equipment)
 	if !ok || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable) != 0 {
 		return
@@ -177,7 +165,7 @@ func (ch *Character) disassembleItem(slot int16, itemID uint32) {
 	if !ok {
 		return
 	}
-	crystalID := ch.makerCrystalID(int(model.GetRequired().Level))
+	crystalID := inv.makerCrystalID(int(model.GetRequired().Level))
 	if crystalID == 0 {
 		return
 	}
@@ -211,18 +199,18 @@ func (ch *Character) disassembleItem(slot int16, itemID uint32) {
 		Cost:   ExchangeSide{Meso: int32(meso - meso%1000)},
 		Reward: ExchangeSide{Items: map[uint32]uint16{crystalID: uint16(count)}},
 	}
-	if spec.Valid(ch) != ExchangeOK {
+	if spec.Valid(inv.owner) != ExchangeOK {
 		return
 	}
-	if !ch.Inventory.RemoveItem(constant.InventoryTypeEquipment, slot, 1) {
+	if !inv.RemoveItem(constant.InventoryTypeEquipment, slot, 1) {
 		return
 	}
-	ch.payExchangeCost(spec.Cost)
-	ch.grantExchangeReward(spec.Reward)
-	ch.Listener.OnShowSelfItemMakerSuccessEffect(ch)
+	inv.owner.payExchangeCost(spec.Cost)
+	inv.owner.grantExchangeReward(spec.Reward)
+	inv.owner.Listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
 }
 
-func (ch *Character) makerCrystalID(level int) uint32 {
+func (inv *Inventory) makerCrystalID(level int) uint32 {
 	if level < 31 {
 		return 0
 	}

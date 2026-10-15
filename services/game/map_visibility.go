@@ -24,7 +24,7 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 			o.SendSpawnSyncToViewer(mover)
 			if peer, ok := o.(*Character); ok {
 				mover.SendSpawnSyncToViewer(peer)
-				mover.syncPartyHP(peer)
+				mover.Party.syncHP(peer)
 			}
 		}
 		for _, o := range beforeNear {
@@ -55,14 +55,6 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 			obj.SendDestroySyncToViewer(viewer)
 		}
 	}
-}
-
-func (ch *Character) syncPartyHP(peer *Character) {
-	if !ch.Party.Is(peer.Party.ID()) {
-		return
-	}
-	ch.Listener.OnPartyMemberHP(ch, peer)
-	peer.Listener.OnPartyMemberHP(peer, ch)
 }
 
 func (m *Map) BroadcastPartyHP(ch *Character) {

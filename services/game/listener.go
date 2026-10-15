@@ -52,6 +52,7 @@ type CharacterListener interface {
 	OnMiniRoomLeft(ch *Character, slot uint8, reason pconst.MiniRoomLeaveReason)
 	OnMiniRoomItems(ch *Character, view EntrustedShopView)
 	OnMiniRoomBuyFailed(ch *Character, result pconst.MiniRoomBuyResult)
+	OnMiniRoomFailed(ch *Character, err error)
 	OnMiniRoomArranged(ch *Character, view EntrustedShopView)
 	OnMiniRoomClosed(ch *Character, result pconst.MiniRoomCloseResult)
 	OnMiniRoomMesoWithdrawn(ch *Character)

@@ -107,7 +107,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if err := character.RunQuestScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_start"); err != nil {
+		if err := character.Quests.RunScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_start"); err != nil {
 			log.Printf("scripted quest start %d: %v", questDef.ID, err)
 			character.Listener.OnUnlockAction(character)
 		}
@@ -121,7 +121,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if err := character.RunQuestScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_end"); err != nil {
+		if err := character.Quests.RunScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_end"); err != nil {
 			log.Printf("scripted quest end %d: %v", questDef.ID, err)
 			character.Listener.OnUnlockAction(character)
 		}

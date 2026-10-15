@@ -85,7 +85,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 
 	mapInstance.SyncPartyHP(character)
 
-	if match := character.CarnivalMatch(); match != nil {
+	if match := character.Carnival.Match(); match != nil {
 		mapID := mapInstance.GetMapID()
 		if mapID == match.FieldMapID || mapID == match.ReviveMapID {
 			match.NotifyCarnivalStart(character)

@@ -53,7 +53,7 @@ func (s *GuildSystem) CreateAsync(ctx actor.Context, ch *Character, requestID ui
 	req := &internal.CreateGuildRequest{
 		WorldId:   worldID,
 		GuildName: name,
-		Leader:    ch.ToProtoGuildMember(worldID, s.gw.GetChannelID(), internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER),
+		Leader:    GuildMemberFromCharacter(ch, worldID, s.gw.GetChannelID(), internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER).BuildRPC(),
 		RequestId: requestID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.CreateGuildReply, error) {

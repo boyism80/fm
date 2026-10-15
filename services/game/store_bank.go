@@ -178,3 +178,52 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 	})
 	return nil
 }
+
+func (sb *StoreBank) CheckShopOpen(actx actor.Context) {
+	m := sb.owner.GetMap()
+	if m == nil || !m.Wz.EntrustedShop || sb.owner.MiniRoom != nil {
+		sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopCannotOpen, 0, 0)
+		return
+	}
+
+	sb.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
+		sb.owner.Call(func(actor.Context) {
+			shop := v.GetShop()
+			switch {
+			case len(sb.unclaimed(v.GetStoreBank())) > 0:
+				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopStoreBankFull, 0, 0)
+			case shop == nil:
+				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopTitle, 0, 0)
+			case shop.GetCharacterId() == sb.owner.GetID():
+				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopAlreadyOpen, shop.GetMapId(), uint8(shop.GetChannelId()))
+			default:
+				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopAccountBusy, 0, 0)
+			}
+		})
+		return nil
+	}).OnError(func(err error) {
+		log.Printf("CheckShopOpen character=%d: %v", sb.owner.GetID(), err)
+		sb.owner.Call(func(actor.Context) {
+			sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopCannotOpen, 0, 0)
+		})
+	})
+}
+
+func (sb *StoreBank) settleShopOpen(actx actor.Context, request *UnsettledRequest) {
+	sb.owner.GameWorld.Systems().Get[*InternalSystem]().AbortOpenShopAsync(actx, sb.owner, request.ID).Do(func(reply *internal.AbortOpenShopReply) error {
+		sb.owner.Call(func(actor.Context) {
+			if !reply.GetAborted() {
+				request.InFlight = false
+				log.Printf("AbortOpenShop character=%d request=%d: shop is no longer empty", sb.owner.GetID(), request.ID)
+				return
+			}
+			sb.owner.Unsettled.Erase(request.ID)
+		})
+		return nil
+	}).OnError(func(err error) {
+		sb.owner.Call(func(actor.Context) {
+			request.InFlight = false
+		})
+		log.Printf("AbortOpenShop character=%d request=%d: %v", sb.owner.GetID(), request.ID, err)
+	})
+}

@@ -25,6 +25,14 @@ func (h *MonsterBomb) Handle(ctx *core.ClientContext, req *request.MonsterBomb) 
 	if character == nil {
 		return fmt.Errorf("character is nil")
 	}
-	character.SelfDestructMob(req.OID)
+	m := character.GetMap()
+	if m == nil {
+		return nil
+	}
+	mob := m.GetMob(req.OID)
+	if mob == nil {
+		return nil
+	}
+	mob.SelfDestruct(character)
 	return nil
 }

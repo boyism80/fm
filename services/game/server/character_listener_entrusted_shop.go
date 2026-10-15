@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"math"
 
 	"github.com/boyism80/fm/maple/constant"
@@ -75,6 +76,19 @@ func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *game.Character, slot uint8
 
 func (l *CharacterListenerImpl) OnMiniRoomEnterFailed(ch *game.Character, code pconst.MiniRoomEnterError) {
 	ch.Send(&response.MiniRoomEnterFailed{Error: code}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnMiniRoomFailed(ch *game.Character, err error) {
+	var enterErr *game.MiniRoomEnterError
+	var buyErr *game.MiniRoomBuyError
+	switch {
+	case errors.As(err, &enterErr):
+		l.OnMiniRoomEnterFailed(ch, enterErr.Code)
+	case errors.As(err, &buyErr):
+		l.OnMiniRoomBuyFailed(ch, buyErr.Result)
+	case err != nil:
+		l.OnUnlockAction(ch)
+	}
 }
 
 func (l *CharacterListenerImpl) OnMiniRoomVisited(ch *game.Character, slot uint8, visitor *game.Character) {

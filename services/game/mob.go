@@ -506,7 +506,7 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 		return false
 	}
 	if attacker != nil && m.CarnivalTeam != constant.CarnivalTeamNone {
-		if team := attacker.CarnivalTeam(); team != nil && team.TeamID == m.CarnivalTeam {
+		if team := attacker.Carnival.Team(); team != nil && team.TeamID == m.CarnivalTeam {
 			return false
 		}
 	}
@@ -608,8 +608,8 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 	}
 	if reward && attacker != nil {
 		if m.Wz != nil {
-			attacker.OnQuestMobKilled(m.Wz.ID)
-			if match := attacker.CarnivalMatch(); match != nil && m.Wz != nil {
+			attacker.Quests.RecordMobKill(m.Wz.ID)
+			if match := attacker.Carnival.Match(); match != nil && m.Wz != nil {
 				cpAmount := m.Wz.CP
 				if cpAmount <= 0 {
 					cpAmount = m.Wz.Point
@@ -671,7 +671,7 @@ func (m *Mob) Kill(attacker *Character, dieAnim constant.MobDieAnimationType) bo
 }
 
 func (m *Mob) SelfDestruct(attacker *Character) bool {
-	if !m.Wz.HasSelfDestruction {
+	if !m.Wz.HasSelfDestruction || attacker.Spectating() || attacker.IsHidden() || !attacker.IsAlive() {
 		return false
 	}
 	mapInstance := m.GetMap()

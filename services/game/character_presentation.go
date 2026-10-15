@@ -34,20 +34,6 @@ func (ch *Character) SetChalkboard(text string) bool {
 	return true
 }
 
-func (ch *Character) PlaceMessageBox(itemID uint32, text string) bool {
-	m := ch.GetMap()
-	if m == nil || !ch.IsAlive() || m.Wz.MessageBoxBlocked || !ClientText(text).ValidLines(messageBoxLines, messageBoxLineLimit) {
-		return false
-	}
-	box := &MessageBox{ItemID: itemID, Owner: ch.GetName(), Text: text}
-	box.Position = ch.Position
-	if err := m.AddMessageBox(box); err != nil {
-		ch.Listener.OnMessageBoxFailed(ch)
-		return false
-	}
-	return true
-}
-
 func (ch *Character) Express(expression uint32) {
 	if ch.GetMap() == nil || !ch.IsAlive() || ch.Spectating() || expression == 0 || expression > 22 {
 		return
@@ -91,15 +77,4 @@ func (ch *Character) ShowChargeSkillEffect(skillID uint32, level, flags, speed u
 		return
 	}
 	ch.Listener.OnChargeSkillEffect(ch, skillID, level, flags, speed)
-}
-
-func (ch *Character) CancelBuff(sourceID int32) {
-	if sourceID > 0 {
-		skill := ch.Skills.Learned(uint32(sourceID))
-		if skill != nil && skill.Wz.Charge {
-			ch.Listener.OnChargeSkillCancelled(ch, uint32(sourceID))
-			return
-		}
-	}
-	ch.Buffs.CancelBySource(sourceID)
 }

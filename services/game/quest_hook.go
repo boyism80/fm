@@ -7,11 +7,11 @@ import (
 	"github.com/boyism80/fm/core/luax"
 )
 
-func (ch *Character) RunQuestHook(questID uint32, hook string, args ...interface{}) bool {
-	if ch == nil || questID == 0 || hook == "" {
+func (qc *Quests) RunHook(questID uint32, hook string, args ...interface{}) bool {
+	if questID == 0 || hook == "" {
 		return false
 	}
-	mapInstance := ch.GetMap()
+	mapInstance := qc.owner.GetMap()
 	if mapInstance == nil {
 		return false
 	}
@@ -31,7 +31,7 @@ func (ch *Character) RunQuestHook(questID uint32, hook string, args ...interface
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorPID: mapInstance.LogicActorPID(),
 	})
-	luax.CallAsync(nil, root, thread, hook, append([]interface{}{ch}, args...)...).OnError(func(err error) {
+	luax.CallAsync(nil, root, thread, hook, append([]interface{}{qc.owner}, args...)...).OnError(func(err error) {
 		log.Printf("quest script %s %s: %v", scriptPath, hook, err)
 	})
 	return true

@@ -275,7 +275,7 @@ func (m *CarnivalMatch) admitChallengers(challenge *CarnivalChallenge) {
 
 	sm := m.StateMachine()
 	for _, ch := range members {
-		ch.carnivalTeam = blue
+		ch.Carnival.team = blue
 		sm.EnterPlayer(ch)
 	}
 	sm.CallHook("on_challenge_accepted")
@@ -356,4 +356,13 @@ func (m *CarnivalMatch) OnPlayerDied(ch *Character) {
 		return
 	}
 	ch.Listener.OnCarnivalDied(ch, team.TeamID, ch.GetName(), 0)
+}
+
+func NewCarnivalMember(ch *Character) *CarnivalMember {
+	return &CarnivalMember{
+		ID:    ch.GetID(),
+		Name:  ch.GetName(),
+		Level: ch.GetLevel(),
+		Class: ch.Class,
+	}
 }

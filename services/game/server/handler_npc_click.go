@@ -51,7 +51,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
-	if err := character.OpenNpc(ctx.ActorContext, npc); err != nil {
+	if err := character.Dialog.Open(ctx.ActorContext, npc); err != nil {
 		if errors.Is(err, game.ErrDialogBusy) {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil

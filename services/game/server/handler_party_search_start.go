@@ -61,7 +61,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 	}
 
 	if ch.Party.ID() == nil {
-		leader := ch.ToProtoPartyMember(h.gs.config.WorldId, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
+		leader := game.PartyMemberFromCharacter(ch, h.gs.config.WorldId, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER).BuildRPC()
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.CreatePartyReply, error) {
 				return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateParty(c, &internal.CreatePartyRequest{

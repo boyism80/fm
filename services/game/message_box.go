@@ -22,6 +22,24 @@ type MessageBox struct {
 	Text   string
 }
 
+func NewMessageBox(owner *Character, itemID uint32, text string) *MessageBox {
+	m := owner.GetMap()
+	if m == nil || !owner.IsAlive() || m.Wz.MessageBoxBlocked || !ClientText(text).ValidLines(messageBoxLines, messageBoxLineLimit) {
+		return nil
+	}
+	box := &MessageBox{ItemID: itemID, Owner: owner.GetName(), Text: text}
+	box.Position = owner.Position
+	return box
+}
+
+func (box *MessageBox) Place(owner *Character) bool {
+	if err := owner.GetMap().AddMessageBox(box); err != nil {
+		owner.Listener.OnMessageBoxFailed(owner)
+		return false
+	}
+	return true
+}
+
 func (box *MessageBox) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeMessageBox
 }

@@ -39,7 +39,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		d := req.MagnetMobData.Direction
 		direction = &d
 	}
-	used := ch.UseActiveSkill(ctx.ActorContext, req.SkillID, req.SkillLevel, direction, func(L *lua.LState) lua.LValue {
+	used := ch.Skills.UseActive(ctx.ActorContext, req.SkillID, req.SkillLevel, direction, func(L *lua.LState) lua.LValue {
 		return h.skillParams(L, ch.GetMap(), req)
 	})
 	if !used {

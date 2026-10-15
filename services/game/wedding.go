@@ -79,10 +79,6 @@ func (w *Wedding) BuildRingS2C() *dto.MarriageRing {
 	return nil
 }
 
-func (ch *Character) canReceive(itemID uint32, count uint16) bool {
-	return (ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}}}).Valid(ch) == ExchangeOK
-}
-
 func (w *Wedding) Propose(name string, boxItemID uint32) {
 	if w.Marriage != nil {
 		if w.Marriage.Status == MarriageStatusMarried {
@@ -127,11 +123,11 @@ func (w *Wedding) Propose(name string, boxItemID uint32) {
 	}
 
 	ring := constant.EngagementRingFirst + (boxItemID - constant.RingBoxFirst)
-	if !w.owner.canReceive(ring, 1) {
+	if !w.owner.Inventory.canReceive(ring, 1) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultInventoryFull)
 		return
 	}
-	if !target.canReceive(ring, 1) {
+	if !target.Inventory.canReceive(ring, 1) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultPartnerInventory)
 		return
 	}
@@ -167,7 +163,7 @@ func (w *Wedding) AnswerProposal(actx actor.Context, accepted bool, name string,
 	}
 
 	ring := constant.EngagementRingFirst + (boxItemID - constant.RingBoxFirst)
-	if !w.owner.canReceive(ring, 1) || !proposer.canReceive(ring, 1) {
+	if !w.owner.Inventory.canReceive(ring, 1) || !proposer.Inventory.canReceive(ring, 1) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultPartnerInventory)
 		return
 	}
@@ -429,7 +425,7 @@ func (w *Wedding) SubmitWishlist(actx actor.Context, wishes []string) {
 		return
 	}
 	ticket := constant.WeddingTickets[w.Marriage.TicketItemID]
-	if !w.owner.canReceive(ticket.Invitation, ticket.InvitationCount) {
+	if !w.owner.Inventory.canReceive(ticket.Invitation, ticket.InvitationCount) {
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultInventoryFull)
 		return
 	}
@@ -470,7 +466,7 @@ func (w *Wedding) completeWishlist(id uint64, invitation uint32, reply *internal
 		return false
 	}
 	ticket := constant.WeddingTickets[reply.GetMarriage().GetTicketItemId()]
-	if !w.owner.canReceive(invitation, ticket.InvitationCount) {
+	if !w.owner.Inventory.canReceive(invitation, ticket.InvitationCount) {
 		request.InFlight = false
 		w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultInventoryFull)
 		return false
@@ -827,7 +823,7 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftOneOfAKind, nil, nil)
 		return nil
 	}
-	if !w.owner.canReceive(gift.Item.GetModel().GetID(), gift.Item.GetCount()) {
+	if !w.owner.Inventory.canReceive(gift.Item.GetModel().GetID(), gift.Item.GetCount()) {
 		w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 		w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "인벤토리 공간이 부족합니다.")
 		return nil
@@ -876,7 +872,7 @@ func (w *Wedding) receiveClaimed(id uint64, pb *internal.WeddingGift) bool {
 		return false
 	}
 	model := item.GetModel()
-	if (model.GetTraits()&constant.ItemTraitOnly != 0 && w.owner.Inventory.HasItem(model.GetID())) || !w.owner.canReceive(model.GetID(), item.GetCount()) {
+	if (model.GetTraits()&constant.ItemTraitOnly != 0 && w.owner.Inventory.HasItem(model.GetID())) || !w.owner.Inventory.canReceive(model.GetID(), item.GetCount()) {
 		w.owner.Unsettled.Find(id).InFlight = false
 		return false
 	}

@@ -62,7 +62,7 @@ type Expedition struct {
 	registry *ExpeditionSystem
 }
 
-func (ch *Character) ExpeditionMember() *ExpeditionMember {
+func NewExpeditionMember(ch *Character) *ExpeditionMember {
 	return &ExpeditionMember{
 		ID:        ch.GetID(),
 		Name:      ch.GetName(),
@@ -124,7 +124,7 @@ func (e *Expedition) addMember(ch *Character) error {
 		return ErrExpeditionFull
 	}
 
-	e.members = append(e.members, ch.ExpeditionMember())
+	e.members = append(e.members, NewExpeditionMember(ch))
 	return nil
 }
 

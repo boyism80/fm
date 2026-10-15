@@ -155,15 +155,15 @@ func (qp *Quest) MobKillCountsOrdered() []uint16 {
 	return out
 }
 
-func (ch *Character) OnQuestMobKilled(mobID uint32) {
-	if ch == nil || mobID == 0 {
+func (qc *Quests) RecordMobKill(mobID uint32) {
+	if mobID == 0 {
 		return
 	}
-	ch.Quests.ForEach(func(_ uint32, qp *Quest) {
+	qc.ForEach(func(_ uint32, qp *Quest) {
 		if qp == nil || !qp.RecordMobKill(mobID) {
 			return
 		}
-		ch.Listener.OnQuestProgress(ch, qp)
+		qc.owner.Listener.OnQuestProgress(qc.owner, qp)
 	})
 }
 

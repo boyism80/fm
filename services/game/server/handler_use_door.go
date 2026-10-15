@@ -31,7 +31,13 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 		return fmt.Errorf("character not found")
 	}
 
-	if !character.UseDoor(ctx.ActorContext, req.OwnerCharacterID) {
+	m := character.GetMap()
+	if m == nil {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
+	door := m.FindDoorOwner(req.OwnerCharacterID)
+	if door == nil || !door.Use(ctx.ActorContext, character) {
 		character.Listener.OnUpdateStats(character, nil, true)
 	}
 	return nil

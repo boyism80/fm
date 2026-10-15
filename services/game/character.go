@@ -78,7 +78,7 @@ type Character struct {
 	Notes          *Notes
 	GM             GMMode
 	StateMachine   *StateMachine
-	carnivalTeam   *CarnivalTeam
+	Carnival       *CarnivalMembership
 	Dojo           *Dojo
 	SavedLocations *SavedLocations
 	Records        *Records
@@ -124,7 +124,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	spawnBuffData := ch.Buffs.SpawnPlayerData()
 	carnivalTeam := constant.CarnivalTeamNone
-	if team := ch.CarnivalTeam(); team != nil {
+	if team := ch.Carnival.Team(); team != nil {
 		carnivalTeam = team.TeamID
 	}
 	spawnPacket := &response.SpawnPlayer{
@@ -218,61 +218,6 @@ func (ch *Character) SendDestroySyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.LeavePlayer{ID: ch.GetID()}, types.SEND_POLICY_ENCRYPT)
-}
-
-func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
-	if ch == nil || ch.GameWorld == nil {
-		return nil
-	}
-	if skill == nil {
-		return nil
-	}
-	m := ch.GetMap()
-	if m == nil {
-		return nil
-	}
-	wzSkill := ch.GameWorld.GetResources().GetSkill(skill.Wz.ID)
-	if wzSkill == nil {
-		return nil
-	}
-	skillLevel := uint8(skill.Level())
-	ld := wzSkill.GetLevelData(int(skillLevel))
-	if ld == nil {
-		return nil
-	}
-	b := bounds
-	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
-		b = ld.Area(int32(ch.Position.X), int32(ch.Position.Y), ch.Stance%2 != 0)
-	}
-	if poisonTickMultiplier <= 0 {
-		poisonTickMultiplier = 1.0
-	}
-	mist := &Mist{
-		ObjectCore: ObjectCore{
-			Position:  position,
-			GameWorld: m.GameWorld,
-			Map:       nil,
-		},
-		Causer:               ch.GetID(),
-		SkillWz:              wzSkill,
-		SkillLevel:           skillLevel,
-		MistType:             mistType,
-		MobMist:              false,
-		MobSkill:             false,
-		SkillDelay:           8,
-		Bounds:               b,
-		ExpiresAt:            time.Time{},
-		PoisonTickMultiplier: poisonTickMultiplier,
-	}
-	mist.ObjectCore.self = mist
-	if initialDelay > 0 {
-		mist.NextPoisonTickAt = clock.Now().Add(initialDelay)
-	}
-	if duration > 0 {
-		mist.ExpiresAt = clock.Now().Add(duration)
-	}
-	m.AddMist(mist)
-	return mist
 }
 
 func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
@@ -737,20 +682,6 @@ func (ch *Character) GetName() string {
 	return ch.name
 }
 
-func (ch *Character) ToProtoPartyMember(worldID uint32, channelID int32, role internal.PartyMemberRole) *internal.PartyMember {
-	if m := PartyMemberFromCharacter(ch, worldID, channelID, role); m != nil {
-		return m.BuildRPC()
-	}
-	return nil
-}
-
-func (ch *Character) ToProtoGuildMember(worldID uint32, channelID int32, rank internal.GuildMemberRank) *internal.GuildMember {
-	if m := GuildMemberFromCharacter(ch, worldID, channelID, rank); m != nil {
-		return m.BuildRPC()
-	}
-	return nil
-}
-
 func (ch *Character) Message(message string) {
 	ch.Listener.OnMessage(ch, constant.MsgLightBlueText, message)
 }
@@ -838,7 +769,7 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 	if rate := max(ch.Stats.Bonus.ExpRate, int16(ch.Family.ExpRate())); rate > 0 {
 		exp = mulClamp(exp, uint32(rate)) / 100
 	}
-	exp = mulClamp(exp, uint32(ch.GetHolySymbolExpRate())) / 100
+	exp = mulClamp(exp, uint32(ch.Buffs.HolySymbolExpRate())) / 100
 	if ch.Debuffs.Has(constant.DebuffFlagCurse) {
 		exp /= 2
 	}
@@ -848,36 +779,6 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 		}
 	}
 	return exp
-}
-
-func (ch *Character) GetHolySymbolExpRate() int32 {
-	if ch == nil {
-		return 100
-	}
-	ent := ch.Buffs.GetEntity(constant.BuffFlagHolySymbol)
-	sb, typeOk := ent.(*SkillBuff)
-	if !typeOk || sb == nil || sb.Wz == nil {
-		return 100
-	}
-	x, valOk := sb.Values[constant.BuffFlagHolySymbol]
-	if !valOk || x <= 0 {
-		return 100
-	}
-	full := sb.Wz.FullHolySymbol
-	if !full {
-		pid := ch.Party.ID()
-		m := ch.GetMap()
-		full = pid != nil && m != nil && len(m.GetPartyMembers(*pid)) >= 2
-	}
-	if full {
-		return 100 + x
-	}
-	return int32(100 * int64(150+x) / 150)
-}
-
-func (ch *Character) BindKey(slot int, typ byte, action int32) {
-	ch.KeyLayout.SetKey(slot, typ, action)
-	ch.Listener.OnKeyMap(ch)
 }
 
 func (ch *Character) tryLevelUp() bool {

@@ -97,11 +97,11 @@ func (s *SkillEntry) refreshPassiveStats(prevLevel, newLevel int) {
 		return
 	}
 	if prevLevel > 0 && newLevel == 0 {
-		s.Owner.CallSkillHook(nil, s, "on_unpassive")
+		s.Owner.Skills.CallHook(nil, s, "on_unpassive")
 		return
 	}
 	if newLevel > 0 {
-		s.Owner.CallSkillHook(nil, s, "on_passive")
+		s.Owner.Skills.CallHook(nil, s, "on_passive")
 	}
 }
 

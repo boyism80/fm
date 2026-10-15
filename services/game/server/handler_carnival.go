@@ -29,7 +29,7 @@ func (h *Carnival) Handle(ctx *core.ClientContext, req *request.Carnival) error 
 	}
 	defer ch.Listener.OnUnlockAction(ch)
 
-	if ch.CarnivalMatch() == nil || ch.StateMachine == nil {
+	if ch.Carnival.Match() == nil || ch.StateMachine == nil {
 		return nil
 	}
 	ch.StateMachine.CallHook("on_carnival_summon", ch, int(req.Tab), req.Num)

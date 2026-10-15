@@ -76,7 +76,7 @@ func (sm *StateMachine) Register(ch *Character) {
 	}
 	sm.players = append(sm.players, ch)
 	sm.playerSet[id] = ch
-	ch.bindStateMachine(sm)
+	sm.bind(ch)
 }
 
 func (sm *StateMachine) Unregister(ch *Character) {
@@ -183,7 +183,7 @@ func (sm *StateMachine) unregisterLocked(ch *Character) bool {
 		}
 	}
 	sm.players = out
-	ch.unbindStateMachine(sm)
+	sm.unbind(ch)
 	return true
 }
 
@@ -491,7 +491,7 @@ func (sm *StateMachine) AbortStart() {
 	sm.mu.Unlock()
 	for _, ch := range players {
 		if ch != nil {
-			ch.unbindStateMachine(sm)
+			sm.unbind(ch)
 		}
 	}
 }
@@ -528,7 +528,7 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal u
 		if ch == nil {
 			continue
 		}
-		ch.unbindStateMachine(sm)
+		sm.unbind(ch)
 		if exitMap != nil {
 			_ = ch.Warp(ctx, exitMap, exitPortal)
 		}
@@ -635,30 +635,16 @@ func (ch *Character) Spectating() bool {
 	return sm != nil && !sm.HasPlayer(ch)
 }
 
-func (ch *Character) bindStateMachine(sm *StateMachine) {
+func (sm *StateMachine) bind(ch *Character) {
 	ch.GameWorld.Systems().Get[*DispatchSystem]().Call(ch.GetID(), func(actor.Context) {
 		ch.StateMachine = sm
 	})
 }
 
-func (ch *Character) unbindStateMachine(sm *StateMachine) {
+func (sm *StateMachine) unbind(ch *Character) {
 	ch.GameWorld.Systems().Get[*DispatchSystem]().Call(ch.GetID(), func(actor.Context) {
 		if ch.StateMachine == sm {
 			ch.StateMachine = nil
 		}
 	})
-}
-
-func (ch *Character) TryPartyQuest(questID uint32) {
-	if ch == nil || questID == 0 {
-		return
-	}
-	ch.RunQuestHook(questID, "on_quest_try")
-}
-
-func (ch *Character) EndPartyQuest(questID uint32) {
-	if ch == nil || questID == 0 {
-		return
-	}
-	ch.RunQuestHook(questID, "on_quest_end")
 }

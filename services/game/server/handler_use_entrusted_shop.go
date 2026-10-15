@@ -32,6 +32,6 @@ func (h *UseEntrustedShop) Handle(ctx *core.ClientContext, req *request.UseEntru
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	ch.UseEntrustedShop(ctx.ActorContext)
+	ch.StoreBank.CheckShopOpen(ctx.ActorContext)
 	return nil
 }

@@ -140,7 +140,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		b.Sealed = ch.Debuffs.Has(constant.DebuffFlagSeal)
 	}
 
-	for _, id := range ch.masterySkills(s.Weapon) {
+	for _, id := range ch.Skills.masteries(s.Weapon) {
 		if p := ch.Skills.LevelData(id); p != nil {
 			b.Mastery = max(b.Mastery, float64(p.Mastery))
 			s.PAD += float64(p.X)
@@ -154,7 +154,7 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 	}
 
 	b.CriticalPercent = 100
-	if critical := ch.criticalSkill(s.Weapon); critical != nil {
+	if critical := ch.Skills.criticalLevelData(s.Weapon); critical != nil {
 		b.CriticalChance = float64(critical.Prop)
 		b.CriticalPercent = float64(critical.Damage)
 	}
@@ -210,59 +210,4 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 	}
 
 	return s, b
-}
-
-func (ch *Character) masterySkills(weapon constant.WeaponType) []constant.SkillID {
-	switch weapon {
-	case constant.WeaponTypeSword1H, constant.WeaponTypeSword2H:
-		return []constant.SkillID{constant.SkillSwordMastery, constant.SkillSwordMastery1200000, constant.SkillSwordMasteryCygnus}
-	case constant.WeaponTypeAxe1H, constant.WeaponTypeAxe2H:
-		return []constant.SkillID{constant.SkillAxeMastery}
-	case constant.WeaponTypeBlunt1H, constant.WeaponTypeBlunt2H:
-		return []constant.SkillID{constant.SkillBwMastery}
-	case constant.WeaponTypeDagger:
-		return []constant.SkillID{constant.SkillDaggerMastery}
-	case constant.WeaponTypeSpear:
-		return []constant.SkillID{constant.SkillSpearMastery}
-	case constant.WeaponTypePoleArm:
-		return []constant.SkillID{constant.SkillPoleArmMastery}
-	case constant.WeaponTypeBow:
-		if ch.Class >= constant.ClassNoblesse {
-			return []constant.SkillID{constant.SkillBowMasteryCygnus, constant.SkillBowExpertCygnus}
-		}
-		return []constant.SkillID{constant.SkillBowMastery, constant.SkillBowExpert}
-	case constant.WeaponTypeCrossbow:
-		return []constant.SkillID{constant.SkillCrossbowMastery, constant.SkillCrossbowExpert}
-	case constant.WeaponTypeClaw:
-		if ch.Class >= constant.ClassNoblesse {
-			return []constant.SkillID{constant.SkillClawMasteryCygnus}
-		}
-		return []constant.SkillID{constant.SkillClawMastery}
-	case constant.WeaponTypeKnuckle:
-		if ch.Class >= constant.ClassNoblesse {
-			return []constant.SkillID{constant.SkillKnuckleMasteryCygnus}
-		}
-		return []constant.SkillID{constant.SkillKnuckleMastery}
-	case constant.WeaponTypeGun:
-		return []constant.SkillID{constant.SkillGunMastery}
-	}
-	return nil
-}
-
-func (ch *Character) criticalSkill(weapon constant.WeaponType) *wz.SkillLevelData {
-	switch weapon {
-	case constant.WeaponTypeBow, constant.WeaponTypeCrossbow:
-		if ch.Class >= constant.ClassNoblesse {
-			return ch.Skills.LevelData(constant.SkillCriticalShotCygnus)
-		}
-		return ch.Skills.LevelData(constant.SkillCriticalShot)
-	case constant.WeaponTypeClaw:
-		if ch.Class >= constant.ClassNoblesse {
-			return ch.Skills.LevelData(constant.SkillCriticalThrowCygnus)
-		}
-		return ch.Skills.LevelData(constant.SkillCriticalThrow)
-	case constant.WeaponTypeKnuckle:
-		return ch.Skills.LevelData(constant.SkillCriticalPunch)
-	}
-	return nil
 }

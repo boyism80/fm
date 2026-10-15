@@ -2,6 +2,7 @@ package game
 
 import (
 	"log"
+	"time"
 
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -35,17 +36,16 @@ func (sc *Skills) Register(skillID uint32, entry *SkillEntry) {
 		return
 	}
 	sc.Bind(skillID, entry)
-	ch := sc.owner
 	if entry.Level() > 0 {
-		ch.CallSkillHook(nil, entry, "on_passive")
+		sc.CallHook(nil, entry, "on_passive")
 	}
-	ch.Listener.OnUpdateSkill(ch, skillID, int32(entry.Level()), int32(entry.MasterLevel))
+	sc.owner.Listener.OnUpdateSkill(sc.owner, skillID, int32(entry.Level()), int32(entry.MasterLevel))
 }
 
 func (sc *Skills) RestorePassives() {
 	for _, entry := range sc.entries {
 		if entry.Level() > 0 {
-			sc.owner.CallSkillHook(nil, entry, "on_passive")
+			sc.CallHook(nil, entry, "on_passive")
 		}
 	}
 }
@@ -55,9 +55,8 @@ func (sc *Skills) Remove(skillID uint32) bool {
 	if entry == nil {
 		return false
 	}
-	ch := sc.owner
 	if entry.Level() > 0 {
-		ch.CallSkillHook(nil, entry, "on_unpassive")
+		sc.CallHook(nil, entry, "on_unpassive")
 	}
 	delete(sc.entries, skillID)
 	return true
@@ -136,4 +135,105 @@ func (sc *Skills) LevelData(id constant.SkillID) *wz.SkillLevelData {
 		return nil
 	}
 	return entry.Wz.GetLevelData(entry.Level())
+}
+
+func (sc *Skills) masteries(weapon constant.WeaponType) []constant.SkillID {
+	switch weapon {
+	case constant.WeaponTypeSword1H, constant.WeaponTypeSword2H:
+		return []constant.SkillID{constant.SkillSwordMastery, constant.SkillSwordMastery1200000, constant.SkillSwordMasteryCygnus}
+	case constant.WeaponTypeAxe1H, constant.WeaponTypeAxe2H:
+		return []constant.SkillID{constant.SkillAxeMastery}
+	case constant.WeaponTypeBlunt1H, constant.WeaponTypeBlunt2H:
+		return []constant.SkillID{constant.SkillBwMastery}
+	case constant.WeaponTypeDagger:
+		return []constant.SkillID{constant.SkillDaggerMastery}
+	case constant.WeaponTypeSpear:
+		return []constant.SkillID{constant.SkillSpearMastery}
+	case constant.WeaponTypePoleArm:
+		return []constant.SkillID{constant.SkillPoleArmMastery}
+	case constant.WeaponTypeBow:
+		if sc.owner.Class >= constant.ClassNoblesse {
+			return []constant.SkillID{constant.SkillBowMasteryCygnus, constant.SkillBowExpertCygnus}
+		}
+		return []constant.SkillID{constant.SkillBowMastery, constant.SkillBowExpert}
+	case constant.WeaponTypeCrossbow:
+		return []constant.SkillID{constant.SkillCrossbowMastery, constant.SkillCrossbowExpert}
+	case constant.WeaponTypeClaw:
+		if sc.owner.Class >= constant.ClassNoblesse {
+			return []constant.SkillID{constant.SkillClawMasteryCygnus}
+		}
+		return []constant.SkillID{constant.SkillClawMastery}
+	case constant.WeaponTypeKnuckle:
+		if sc.owner.Class >= constant.ClassNoblesse {
+			return []constant.SkillID{constant.SkillKnuckleMasteryCygnus}
+		}
+		return []constant.SkillID{constant.SkillKnuckleMastery}
+	case constant.WeaponTypeGun:
+		return []constant.SkillID{constant.SkillGunMastery}
+	}
+	return nil
+}
+
+func (sc *Skills) criticalLevelData(weapon constant.WeaponType) *wz.SkillLevelData {
+	switch weapon {
+	case constant.WeaponTypeBow, constant.WeaponTypeCrossbow:
+		if sc.owner.Class >= constant.ClassNoblesse {
+			return sc.LevelData(constant.SkillCriticalShotCygnus)
+		}
+		return sc.LevelData(constant.SkillCriticalShot)
+	case constant.WeaponTypeClaw:
+		if sc.owner.Class >= constant.ClassNoblesse {
+			return sc.LevelData(constant.SkillCriticalThrowCygnus)
+		}
+		return sc.LevelData(constant.SkillCriticalThrow)
+	case constant.WeaponTypeKnuckle:
+		return sc.LevelData(constant.SkillCriticalPunch)
+	}
+	return nil
+}
+
+func (sc *Skills) makerLevel() int {
+	skillID := uint32(constant.SkillMaker)
+	if sc.owner.Class >= constant.ClassNoblesse && sc.owner.Class < constant.ClassLegend {
+		skillID = uint32(constant.SkillMakerCygnus)
+	}
+	entry := sc.Get(skillID)
+	if entry == nil {
+		return 0
+	}
+	return entry.Level()
+}
+
+func (sc *Skills) grant(skill ExchangeSkill) {
+	if skill.SkillID == 0 {
+		return
+	}
+	if sc.owner.GameWorld == nil {
+		return
+	}
+	resources := sc.owner.GameWorld.GetResources()
+	if resources == nil {
+		return
+	}
+	wzSkill := resources.GetSkill(skill.SkillID)
+	if wzSkill == nil {
+		return
+	}
+	targetLevel := exchangeSkillTargetLevel(0, skill.Level)
+	targetMaster := skill.MasterLevel
+	if targetMaster <= 0 {
+		targetMaster = wzSkill.DefaultMasterLevel()
+	}
+	entry := sc.Learned(skill.SkillID)
+	if entry == nil {
+		entry = NewSkillEntry(sc.owner, wzSkill, targetLevel, targetMaster)
+		entry.Expiration = time.Time{}
+		sc.Register(skill.SkillID, entry)
+	} else {
+		targetLevel = exchangeSkillTargetLevel(entry.Level(), skill.Level)
+		targetMaster = max(entry.MasterLevel, targetMaster)
+		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
+			entry.SetLevels(targetLevel, targetMaster)
+		}
+	}
 }

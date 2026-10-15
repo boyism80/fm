@@ -49,7 +49,7 @@ func (qc *Quests) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts
 		return ErrQuestExchangeFailed
 	}
 	if actions.BuffItemID != 0 && !opts.Forfeited {
-		if !ch.RunQuestHook(qp.QuestID, "on_buff_item", actions.BuffItemID) {
+		if !ch.Quests.RunHook(qp.QuestID, "on_buff_item", actions.BuffItemID) {
 			ch.UseItemEffect(actions.BuffItemID)
 		}
 	}

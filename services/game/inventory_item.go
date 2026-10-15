@@ -363,18 +363,18 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 	}
 
 	if addedCount > 0 {
-		ch.NotifyItemGained(model.GetID())
+		inv.runGainHook(model.GetID())
 		ch.Listener.OnShowItemGain(ch, model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
 	}
 
 	return addedItems, nil
 }
 
-func (ch *Character) NotifyItemGained(itemID uint32) {
-	if ch == nil || itemID == 0 {
+func (inv *Inventory) runGainHook(itemID uint32) {
+	if itemID == 0 {
 		return
 	}
-	mapInstance := ch.GetMap()
+	mapInstance := inv.owner.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -391,7 +391,7 @@ func (ch *Character) NotifyItemGained(itemID uint32) {
 		ActorPID: mapInstance.LogicActorPID(),
 	})
 	hook := "on_item_gain"
-	luax.CallAsync(nil, root, thread, hook, ch, itemID).OnError(func(err error) {
+	luax.CallAsync(nil, root, thread, hook, inv.owner, itemID).OnError(func(err error) {
 		log.Printf("item gain script %s: %v", hook, err)
 	})
 }
@@ -620,4 +620,8 @@ func (inv *Inventory) Move(invType constant.InventoryType, src, dst int16) bool 
 		inv.owner.Listener.OnPartialMergeInventorySlot(inv.owner, invType, src, dst, srcItem.GetCount(), dstItem.GetCount())
 	}
 	return true
+}
+
+func (inv *Inventory) canReceive(itemID uint32, count uint16) bool {
+	return (ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}}}).Valid(inv.owner) == ExchangeOK
 }

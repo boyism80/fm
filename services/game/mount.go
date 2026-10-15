@@ -69,7 +69,7 @@ func (m *Mount) start() {
 	if skill == nil {
 		return
 	}
-	m.owner.CallSkillHook(nil, skill, "on_ride")
+	m.owner.Skills.CallHook(nil, skill, "on_ride")
 }
 
 func (m *Mount) startFatigue() {
@@ -86,7 +86,7 @@ func (m *Mount) changeEquipment(parts constant.EquipmentPartsType) {
 	if skill == nil {
 		return
 	}
-	m.owner.CallSkillHook(nil, skill, "on_rider_equipment_changed", int(parts))
+	m.owner.Skills.CallHook(nil, skill, "on_rider_equipment_changed", int(parts))
 }
 
 func (m *Mount) tire() {
@@ -146,5 +146,5 @@ func (m *Mount) takeDamage(damage int32) {
 	if skill == nil {
 		return
 	}
-	m.owner.CallSkillHook(nil, skill, "on_rider_damaged", int(damage))
+	m.owner.Skills.CallHook(nil, skill, "on_rider_damaged", int(damage))
 }

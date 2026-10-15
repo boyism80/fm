@@ -18,7 +18,7 @@ func (ch *Character) UseItemEffect(itemID uint32) bool {
 	if !ok || consume == nil {
 		return false
 	}
-	ch.addItemBuff(consume)
+	ch.Buffs.addConsumeBuff(consume)
 	ch.recover(consume)
 	return true
 }
@@ -47,7 +47,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 
 	if applyWZ {
 		if wzConsume.CP > 0 || wzConsume.NuffSkillID > 0 {
-			ch.useCarnivalItem(wzConsume)
+			ch.Carnival.useItem(wzConsume)
 			return true
 		}
 
@@ -72,7 +72,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 			if len(wzConsume.CureDebuffs) > 0 {
 				character.Debuffs.Remove(wzConsume.CureDebuffs...)
 			}
-			character.addItemBuff(wzConsume)
+			character.Buffs.addConsumeBuff(wzConsume)
 			character.recover(wzConsume)
 			if wzConsume.ExpInc > 0 {
 				character.AddExp(uint32(wzConsume.ExpInc))
@@ -171,21 +171,6 @@ func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint3
 		ch.Listener.OnUpdateStats(ch, nil, true)
 	}
 	return err
-}
-
-func (ch *Character) addItemBuff(consumeItem *wz.Consume) bool {
-	if ch == nil || consumeItem == nil {
-		return false
-	}
-	buffValues := consumeItem.BuffSpecValues()
-	if len(buffValues) == 0 {
-		return false
-	}
-	if m := ch.GetMap(); m != nil && !consumeItem.IsAvailableAt(m.TemplateID()) {
-		return false
-	}
-	ch.Buffs.AddItemBuff(consumeItem, consumeItem.BuffDuration, buffValues, true, true)
-	return true
 }
 
 func (ch *Character) recover(consumeItem *wz.Consume) bool {

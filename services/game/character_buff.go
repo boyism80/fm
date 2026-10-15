@@ -523,3 +523,51 @@ func (bc *Buffs) SpawnPlayerData() SpawnPlayerBuffData {
 
 	return data
 }
+
+func (bc *Buffs) Cancel(sourceID int32) {
+	if sourceID > 0 {
+		skill := bc.owner.Skills.Learned(uint32(sourceID))
+		if skill != nil && skill.Wz.Charge {
+			bc.owner.Listener.OnChargeSkillCancelled(bc.owner, uint32(sourceID))
+			return
+		}
+	}
+	bc.CancelBySource(sourceID)
+}
+
+func (bc *Buffs) addConsumeBuff(consumeItem *wz.Consume) bool {
+	if consumeItem == nil {
+		return false
+	}
+	buffValues := consumeItem.BuffSpecValues()
+	if len(buffValues) == 0 {
+		return false
+	}
+	if m := bc.owner.GetMap(); m != nil && !consumeItem.IsAvailableAt(m.TemplateID()) {
+		return false
+	}
+	bc.AddItemBuff(consumeItem, consumeItem.BuffDuration, buffValues, true, true)
+	return true
+}
+
+func (bc *Buffs) HolySymbolExpRate() int32 {
+	ent := bc.GetEntity(constant.BuffFlagHolySymbol)
+	sb, typeOk := ent.(*SkillBuff)
+	if !typeOk || sb == nil || sb.Wz == nil {
+		return 100
+	}
+	x, valOk := sb.Values[constant.BuffFlagHolySymbol]
+	if !valOk || x <= 0 {
+		return 100
+	}
+	full := sb.Wz.FullHolySymbol
+	if !full {
+		pid := bc.owner.Party.ID()
+		m := bc.owner.GetMap()
+		full = pid != nil && m != nil && len(m.GetPartyMembers(*pid)) >= 2
+	}
+	if full {
+		return 100 + x
+	}
+	return int32(100 * int64(150+x) / 150)
+}

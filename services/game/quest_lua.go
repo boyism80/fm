@@ -10,19 +10,16 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) LuaQuest(questID uint32) *Quest {
-	if ch == nil {
-		return nil
-	}
-	if qp := ch.Quests.Get(questID); qp != nil {
+func (qc *Quests) LuaQuest(questID uint32) *Quest {
+	if qp := qc.Get(questID); qp != nil {
 		return qp
 	}
-	def := ch.Quests.wzDef(questID)
+	def := qc.wzDef(questID)
 	if def == nil {
 		return nil
 	}
 	return &Quest{
-		quests:  ch.Quests,
+		quests:  qc,
 		Wz:      def,
 		QuestID: questID,
 		Status:  QuestStatusNotStarted,
@@ -379,14 +376,11 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 }
 
-func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID uint32, entry string) error {
-	if ch == nil {
-		return fmt.Errorf("character is nil")
-	}
-	if ch.Dialog.Thread() != nil {
+func (qc *Quests) RunScript(actx actor.Context, questID uint32, npcID uint32, entry string) error {
+	if qc.owner.Dialog.Thread() != nil {
 		return ErrDialogBusy
 	}
-	mapInstance := ch.GetMap()
+	mapInstance := qc.owner.GetMap()
 	if mapInstance == nil {
 		return fmt.Errorf("map not found")
 	}
@@ -397,28 +391,28 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 	scriptPath := fmt.Sprintf("script/quest/%d.lua", questID)
 	luaThread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
-		ch.Listener.OnScriptError(ch, scriptPath, err)
+		qc.owner.Listener.OnScriptError(qc.owner, scriptPath, err)
 		return err
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
 		ActorContext: actx,
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
-	luax.CallAsync(actx, root, luaThread, entry, ch, npcID).Do(func([]lua.LValue) error {
-		if ch.Dialog.Thread() == nil {
-			ch.Dialog.Reset()
-			if ch.Listener != nil {
-				ch.Listener.OnUnlockAction(ch)
+	luax.CallAsync(actx, root, luaThread, entry, qc.owner, npcID).Do(func([]lua.LValue) error {
+		if qc.owner.Dialog.Thread() == nil {
+			qc.owner.Dialog.Reset()
+			if qc.owner.Listener != nil {
+				qc.owner.Listener.OnUnlockAction(qc.owner)
 			}
 		}
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("quest script %s quest=%d npc=%d: %v", entry, questID, npcID, err)
-		ch.Listener.OnScriptError(ch, scriptPath, err)
-		if ch.Dialog.Thread() == nil {
-			ch.Dialog.Reset()
-			if ch.Listener != nil {
-				ch.Listener.OnUnlockAction(ch)
+		qc.owner.Listener.OnScriptError(qc.owner, scriptPath, err)
+		if qc.owner.Dialog.Thread() == nil {
+			qc.owner.Dialog.Reset()
+			if qc.owner.Listener != nil {
+				qc.owner.Listener.OnUnlockAction(qc.owner)
 			}
 		}
 	})

@@ -11,11 +11,11 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) UseActiveSkill(actx actor.Context, skillID uint32, level uint8, direction *uint8, params func(L *lua.LState) lua.LValue) bool {
-	if ch.Spectating() {
+func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, direction *uint8, params func(L *lua.LState) lua.LValue) bool {
+	if sc.owner.Spectating() {
 		return false
 	}
-	m := ch.GetMap()
+	m := sc.owner.GetMap()
 	if m == nil {
 		return false
 	}
@@ -23,7 +23,7 @@ func (ch *Character) UseActiveSkill(actx actor.Context, skillID uint32, level ui
 	if root == nil {
 		return false
 	}
-	entry := ch.Skills.Get(skillID)
+	entry := sc.Get(skillID)
 	if entry == nil || entry.Level() <= 0 || entry.Level() != int(level) {
 		return false
 	}
@@ -36,31 +36,31 @@ func (ch *Character) UseActiveSkill(actx actor.Context, skillID uint32, level ui
 	}
 
 	args := params(root)
-	if !ch.CallSkillHook(actx, entry, "can_activate", args) {
+	if !sc.CallHook(actx, entry, "can_activate", args) {
 		return false
 	}
-	if !ch.CallSkillHook(actx, entry, "on_activating", args) {
+	if !sc.CallHook(actx, entry, "on_activating", args) {
 		return false
 	}
 	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
-		if !ch.Inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+		if !sc.owner.Inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
 			return false
 		}
 	}
-	if !ch.CallSkillHook(actx, entry, "on_activated", args) {
+	if !sc.CallHook(actx, entry, "on_activated", args) {
 		return false
 	}
 
 	if levelData.Cooldown > 0 && !entry.Wz.ManualCooldown {
 		entry.StartCooldown(levelData.Cooldown)
 	}
-	ch.Listener.OnShowSkillEffect(ch, pconst.SkillEffectTypeCast, skillID, level, direction)
-	ch.Listener.OnUpdateStats(ch, nil, true)
+	sc.owner.Listener.OnShowSkillEffect(sc.owner, pconst.SkillEffectTypeCast, skillID, level, direction)
+	sc.owner.Listener.OnUpdateStats(sc.owner, nil, true)
 	return true
 }
 
-func (ch *Character) CallSkillHook(ctx actor.Context, skill *SkillEntry, hook string, args ...interface{}) bool {
-	mapInstance := ch.GetMap()
+func (sc *Skills) CallHook(ctx actor.Context, skill *SkillEntry, hook string, args ...interface{}) bool {
+	mapInstance := sc.owner.GetMap()
 	if mapInstance == nil {
 		return true
 	}
@@ -75,7 +75,7 @@ func (ch *Character) CallSkillHook(ctx actor.Context, skill *SkillEntry, hook st
 		skillArg = skill
 		paths = append(paths, fmt.Sprintf("script/skill/%d.lua", skill.Wz.ID))
 	}
-	callArgs := append([]interface{}{ch, skillArg}, args...)
+	callArgs := append([]interface{}{sc.owner, skillArg}, args...)
 	for _, path := range paths {
 		thread, err := luax.NewThread(root, path)
 		if err != nil {

@@ -112,7 +112,7 @@ func (r *CarnivalSystem) Enter(slotIndex int, leader *Character) bool {
 	if match == nil {
 		return false
 	}
-	members, party := leader.PartyOnMap()
+	members, party := leader.Party.MembersOnMap()
 	if party == nil || len(members) > match.MaxMembers {
 		return false
 	}
@@ -120,7 +120,7 @@ func (r *CarnivalSystem) Enter(slotIndex int, leader *Character) bool {
 	roster := make([]*CarnivalMember, len(members))
 	personal := make(map[uint32]*CarnivalPersonalCP, len(members))
 	for i, ch := range members {
-		roster[i] = ch.CarnivalMember()
+		roster[i] = NewCarnivalMember(ch)
 		personal[ch.GetID()] = &CarnivalPersonalCP{}
 	}
 	red := &CarnivalTeam{
@@ -144,7 +144,7 @@ func (r *CarnivalSystem) Enter(slotIndex int, leader *Character) bool {
 	match.mu.Unlock()
 
 	for _, ch := range members {
-		ch.carnivalTeam = red
+		ch.Carnival.team = red
 	}
 	return true
 }
@@ -154,14 +154,14 @@ func (r *CarnivalSystem) Challenge(slotIndex int, leader *Character) bool {
 	if match == nil {
 		return false
 	}
-	members, party := leader.PartyOnMap()
+	members, party := leader.Party.MembersOnMap()
 	if party == nil {
 		return false
 	}
 
 	roster := make([]*CarnivalMember, len(members))
 	for i, ch := range members {
-		roster[i] = ch.CarnivalMember()
+		roster[i] = NewCarnivalMember(ch)
 	}
 	challenge := &CarnivalChallenge{
 		LeaderID:    leader.GetID(),

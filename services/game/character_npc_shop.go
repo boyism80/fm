@@ -7,7 +7,7 @@ import (
 	"github.com/boyism80/fm/maple/wz"
 )
 
-func (ch *Character) BuyShopItem(shop *wz.Shop, itemID uint32, count uint16) {
+func (d *Dialog) Buy(shop *wz.Shop, itemID uint32, count uint16) {
 	if count == 0 {
 		return
 	}
@@ -15,7 +15,7 @@ func (ch *Character) BuyShopItem(shop *wz.Shop, itemID uint32, count uint16) {
 	if shopItem == nil || shopItem.Price <= 0 {
 		return
 	}
-	model := ch.itemModel(itemID)
+	model := d.owner.itemModel(itemID)
 	if model == nil {
 		return
 	}
@@ -29,16 +29,16 @@ func (ch *Character) BuyShopItem(shop *wz.Shop, itemID uint32, count uint16) {
 		Cost:   ExchangeSide{Meso: int32(price)},
 		Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}},
 	}
-	switch ch.Exchange(spec) {
+	switch d.owner.Exchange(spec) {
 	case ExchangeOK:
-		ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionBuyOK)
+		d.owner.Listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionBuyOK)
 	case ExchangeLackCapacity:
-		ch.Message("인벤토리 공간이 부족합니다.")
+		d.owner.Message("인벤토리 공간이 부족합니다.")
 	}
 }
 
-func (ch *Character) SellShopItem(slot int16, itemID uint32, count uint16) {
-	model := ch.itemModel(itemID)
+func (d *Dialog) Sell(slot int16, itemID uint32, count uint16) {
+	model := d.owner.itemModel(itemID)
 	if model == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func (ch *Character) SellShopItem(slot int16, itemID uint32, count uint16) {
 		return
 	}
 	invType := model.GetInventoryType()
-	item := ch.Inventory.GetItem(invType, slot)
+	item := d.owner.Inventory.GetItem(invType, slot)
 	if item == nil || item.GetModel().GetID() != itemID {
 		return
 	}
@@ -61,19 +61,19 @@ func (ch *Character) SellShopItem(slot int16, itemID uint32, count uint16) {
 		return
 	}
 	meso := model.SellPrice(count)
-	if meso <= 0 || meso > math.MaxInt32-int(ch.Inventory.Meso) {
+	if meso <= 0 || meso > math.MaxInt32-int(d.owner.Inventory.Meso) {
 		return
 	}
 
-	if !ch.Inventory.RemoveItem(invType, slot, count) {
+	if !d.owner.Inventory.RemoveItem(invType, slot, count) {
 		return
 	}
-	ch.Inventory.GainMeso(int32(meso))
-	ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionUpdateOK)
+	d.owner.Inventory.GainMeso(int32(meso))
+	d.owner.Listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionUpdateOK)
 }
 
-func (ch *Character) RechargeShopItem(slot int16) {
-	item := ch.Inventory.GetItem(constant.InventoryTypeConsume, slot)
+func (d *Dialog) Recharge(slot int16) {
+	item := d.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot)
 	if item == nil {
 		return
 	}
@@ -87,10 +87,10 @@ func (ch *Character) RechargeShopItem(slot int16) {
 	}
 
 	price := int32(model.RechargePrice(capacity - item.GetCount()))
-	if price > 0 && !ch.Inventory.RemoveMeso(price) {
+	if price > 0 && !d.owner.Inventory.RemoveMeso(price) {
 		return
 	}
 	item.SetCount(capacity)
-	ch.Listener.OnInventorySlotUpdated(ch, constant.InventoryTypeConsume, slot, item)
-	ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionUpdateOK)
+	d.owner.Listener.OnInventorySlotUpdated(d.owner, constant.InventoryTypeConsume, slot, item)
+	d.owner.Listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionUpdateOK)
 }

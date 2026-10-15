@@ -67,17 +67,19 @@ func (ch *Character) Trading() bool {
 	return ok
 }
 
-func (ch *Character) CreateTrade() error {
-	m := ch.GetMap()
-	if m == nil || ch.MiniRoom != nil {
-		return ErrMiniRoomInvalid
+func NewTrade(owner *Character) (*Trade, error) {
+	if owner.GetMap() == nil || owner.MiniRoom != nil {
+		return nil, ErrMiniRoomInvalid
 	}
 
 	t := &Trade{}
-	t.sides[0] = &tradeSide{ch: ch}
-	ch.MiniRoom = t
-	ch.Listener.OnTradeEntered(ch, t)
-	return nil
+	t.sides[0] = &tradeSide{ch: owner}
+	return t, nil
+}
+
+func (t *Trade) Open() {
+	t.sides[0].ch.MiniRoom = t
+	t.sides[0].ch.Listener.OnTradeEntered(t.sides[0].ch, t)
 }
 
 func (t *Trade) Invite(ch *Character, targetID uint32) error {
@@ -106,9 +108,8 @@ func (t *Trade) Invite(ch *Character, targetID uint32) error {
 	return nil
 }
 
-func (ch *Character) DeclineTrade(sn uint32, reason uint8) error {
-	t, ok := ch.MiniRoom.(*Trade)
-	if !ok || t.sn != sn || t.invited != ch || t.sides[1] != nil {
+func (t *Trade) Decline(ch *Character, sn uint32, reason uint8) error {
+	if ch.MiniRoom != t || t.sn != sn || t.invited != ch || t.sides[1] != nil {
 		return ErrMiniRoomInvalid
 	}
 

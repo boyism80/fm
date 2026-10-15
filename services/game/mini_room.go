@@ -233,9 +233,9 @@ func (inv *Inventory) receive(item Item) {
 	inv.addItemUnchecked(item, true)
 }
 
-func (ch *Character) collectShopGoods(meso int32, items []*ShopItem) (int32, []*ShopItem) {
-	if meso > 0 && (ExchangeSpec{Reward: ExchangeSide{Meso: meso}}).Valid(ch) == ExchangeOK {
-		ch.Inventory.addMesoUnchecked(meso)
+func (inv *Inventory) collectShopGoods(meso int32, items []*ShopItem) (int32, []*ShopItem) {
+	if meso > 0 && (ExchangeSpec{Reward: ExchangeSide{Meso: meso}}).Valid(inv.owner) == ExchangeOK {
+		inv.addMesoUnchecked(meso)
 		meso = 0
 	}
 
@@ -243,11 +243,11 @@ func (ch *Character) collectShopGoods(meso int32, items []*ShopItem) (int32, []*
 	for _, listed := range items {
 		model := listed.Item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if (model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID())) || spec.Valid(ch) != ExchangeOK {
+		if (model.GetTraits()&constant.ItemTraitOnly != 0 && inv.HasItem(model.GetID())) || spec.Valid(inv.owner) != ExchangeOK {
 			kept = append(kept, listed)
 			continue
 		}
-		ch.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
+		inv.addItemUnchecked(listed.Item.Clone(listed.count()), true)
 	}
 	return meso, kept
 }
@@ -361,12 +361,25 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 	})
 }
 
-func (ch *Character) RejectMiniRoom(err error) {
-	var enterErr *MiniRoomEnterError
-	switch {
-	case errors.As(err, &enterErr):
-		ch.Listener.OnMiniRoomEnterFailed(ch, enterErr.Code)
-	case err != nil:
-		ch.Listener.OnUnlockAction(ch)
+func (m *Map) VisitMiniRoom(ch *Character, sn uint32, password string) error {
+	if t, ok := ch.MiniRoom.(*Trade); ok && t.invited == ch && t.sn == sn {
+		return t.Visit(ch)
 	}
+	if es, ok := m.GetObject(constant.ObjectTypeEntrustedShop, sn).(*EntrustedShop); ok {
+		if ch.GetID() != es.OwnerID {
+			return es.Visit(ch)
+		}
+		if ch.MiniRoom != nil {
+			return ErrMiniRoomInvalid
+		}
+		es.Manage(ch.GetID())
+		return nil
+	}
+	if ps, ok := m.GetObject(constant.ObjectTypePersonalShop, sn).(*PersonalShop); ok {
+		return ps.Visit(ch)
+	}
+	if g, ok := m.GetObject(constant.ObjectTypeMiniGame, sn).(*MiniGame); ok {
+		return g.Visit(ch, password)
+	}
+	return ch.RemoteShops.visitManaged(sn)
 }

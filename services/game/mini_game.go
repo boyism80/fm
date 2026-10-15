@@ -117,38 +117,38 @@ func (g *MiniGame) updateBalloon() {
 	g.owner.Listener.OnMiniRoomBalloon(g.owner, &balloon)
 }
 
-func (ch *Character) CreateMiniGame(kind uint8, title string, password string, piece uint8) error {
-	m := ch.GetMap()
-	if m == nil || ch.MiniRoom != nil {
-		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
+func NewMiniGame(owner *Character, kind uint8, title string, password string, piece uint8) (*MiniGame, error) {
+	m := owner.GetMap()
+	if m == nil || owner.MiniRoom != nil {
+		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
 	if m.Wz.PersonalShop || m.Wz.Limits(constant.FieldLimitMinigame) {
-		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
+		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
 	if title == "" {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
 
 	var itemID uint32
 	switch kind {
 	case pconst.MiniRoomTypeOmok:
 		if piece >= MiniGameOmokSets {
-			return ErrMiniRoomInvalid
+			return nil, ErrMiniRoomInvalid
 		}
 		itemID = miniGameOmokSetBase + uint32(piece)
 	case pconst.MiniRoomTypeMatchCard:
 		if int(piece) >= len(miniGameCardPairs) {
-			return ErrMiniRoomInvalid
+			return nil, ErrMiniRoomInvalid
 		}
 		itemID = MiniGameMatchCardSet
 	default:
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
-	if !ch.Inventory.HasItem(itemID) {
-		return ErrMiniRoomInvalid
+	if !owner.Inventory.HasItem(itemID) {
+		return nil, ErrMiniRoomInvalid
 	}
-	if err := m.checkShopSpot(ch.Position); err != nil {
-		return err
+	if err := m.checkShopSpot(owner.Position); err != nil {
+		return nil, err
 	}
 
 	g := &MiniGame{
@@ -156,15 +156,18 @@ func (ch *Character) CreateMiniGame(kind uint8, title string, password string, p
 		Title:    title,
 		Password: password,
 		Piece:    piece,
-		owner:    ch,
+		owner:    owner,
 	}
 	g.ObjectCore.self = g
-	g.Position = ch.Position
-	m.AddMiniGame(g)
-	ch.MiniRoom = g
-	ch.Listener.OnMiniGameEntered(ch, g)
+	g.Position = owner.Position
+	return g, nil
+}
+
+func (g *MiniGame) Place() {
+	g.owner.GetMap().AddMiniGame(g)
+	g.owner.MiniRoom = g
+	g.owner.Listener.OnMiniGameEntered(g.owner, g)
 	g.updateBalloon()
-	return nil
 }
 
 func (g *MiniGame) Visit(ch *Character, password string) error {

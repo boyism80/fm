@@ -144,7 +144,7 @@ func (es *EntrustedShop) payOwner(meso int32, items []*ShopItem, closing bool, n
 	es.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(es.OwnerID, func(ctx actor.Context, c *Character) {
 		var entry *internal.CharacterSaveEntry
 		if c != nil {
-			meso, items = c.collectShopGoods(meso, items)
+			meso, items = c.Inventory.collectShopGoods(meso, items)
 			entry = c.BuildRPC(worldID)
 			if c.MiniRoom == es {
 				notify(c)
@@ -522,56 +522,26 @@ func (es *EntrustedShop) close(actx actor.Context) {
 	es.save(actx, true)
 }
 
-func (ch *Character) UseEntrustedShop(actx actor.Context) {
-	m := ch.GetMap()
-	if m == nil || !m.Wz.EntrustedShop || ch.MiniRoom != nil {
-		ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
-		return
+func NewEntrustedShop(owner *Character, title string, slot int16, itemID uint32) (*EntrustedShop, error) {
+	m := owner.GetMap()
+	if m == nil || !m.Wz.EntrustedShop || owner.MiniRoom != nil {
+		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
-
-	ch.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, ch).Do(func(v *internal.FindEntrustedShopReply) error {
-		ch.Call(func(actor.Context) {
-			shop := v.GetShop()
-			switch {
-			case len(ch.StoreBank.unclaimed(v.GetStoreBank())) > 0:
-				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopStoreBankFull, 0, 0)
-			case shop == nil:
-				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopTitle, 0, 0)
-			case shop.GetCharacterId() == ch.GetID():
-				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAlreadyOpen, shop.GetMapId(), uint8(shop.GetChannelId()))
-			default:
-				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAccountBusy, 0, 0)
-			}
-		})
-		return nil
-	}).OnError(func(err error) {
-		log.Printf("UseEntrustedShop character=%d: %v", ch.GetID(), err)
-		ch.Call(func(actor.Context) {
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
-		})
-	})
-}
-
-func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot int16, itemID uint32) error {
-	m := ch.GetMap()
-	if m == nil || !m.Wz.EntrustedShop || ch.MiniRoom != nil {
-		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
+	if owner.Unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID)) != nil {
+		return nil, ErrMiniRoomBusy
 	}
-	if ch.Unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID)) != nil {
-		return ErrMiniRoomBusy
-	}
-	permit := ch.Inventory.GetItem(constant.InventoryTypeCash, slot)
+	permit := owner.Inventory.GetItem(constant.InventoryTypeCash, slot)
 	if permit == nil || permit.GetModel().GetID() != itemID || permit.GetModel().GetTraits()&constant.ItemTraitEntrustedShopPermit == 0 {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
 	if expiration := permit.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
 	if title == "" {
-		return ErrMiniRoomInvalid
+		return nil, ErrMiniRoomInvalid
 	}
-	if err := m.checkShopSpot(ch.Position); err != nil {
-		return err
+	if err := m.checkShopSpot(owner.Position); err != nil {
+		return nil, err
 	}
 
 	soldInform := false
@@ -579,99 +549,53 @@ func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot 
 		soldInform = model.SoldInform
 	}
 	es := &EntrustedShop{
-		shopRoom: shopRoom{
-			kind:      pconst.MiniRoomTypeEntrustedShop,
-			AccountID: ch.AccountID,
-			OwnerID:   ch.GetID(),
-			OwnerName: ch.GetName(),
-			MapID:     m.TemplateID(),
-			ItemID:    itemID,
-			Title:     title,
-			OpenedAt:  clock.Now(),
-			entries:   make(map[uint32]*internal.CharacterSaveEntry),
-		},
+		kind:       pconst.MiniRoomTypeEntrustedShop,
+		AccountID:  owner.AccountID,
+		OwnerID:    owner.GetID(),
+		OwnerName:  owner.GetName(),
+		MapID:      m.TemplateID(),
+		ItemID:     itemID,
+		Title:      title,
+		OpenedAt:   clock.Now(),
+		entries:    make(map[uint32]*internal.CharacterSaveEntry),
 		soldInform: soldInform,
 	}
 	es.ObjectCore.self = es
-	es.Position = ch.Position
+	es.Position = owner.Position
+	es.GameWorld = owner.GameWorld
+	es.home = m
+	return es, nil
+}
 
-	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID), nil)
-	ch.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, ch, id, es.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
-		ch.Call(func(actx actor.Context) {
-			ch.Unsettled.Erase(id)
+func (es *EntrustedShop) Place(actx actor.Context, owner *Character) {
+	id := owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID), nil)
+	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, es.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
+		owner.Call(func(actx actor.Context) {
+			owner.Unsettled.Erase(id)
 			if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
-				ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
+				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
 				return
 			}
 
 			es.ID = v.GetShopId()
-			if ch.GetMap() != m || ch.MiniRoom != nil || m.checkShopSpot(es.Position) != nil {
-				es.GameWorld = ch.GameWorld
-				es.home = m
+			if owner.GetMap() != es.home || owner.MiniRoom != nil || es.home.checkShopSpot(es.Position) != nil {
 				es.save(actx, true)
-				ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
+				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
 				return
 			}
-			m.AddEntrustedShop(es)
+			es.home.AddEntrustedShop(es)
 			es.managing = true
-			ch.MiniRoom = es
-			ch.Listener.OnMiniRoomEntered(ch, 0, es.view(), true)
+			owner.MiniRoom = es
+			owner.Listener.OnMiniRoomEntered(owner, 0, es.view(), true)
 		})
 		return nil
 	}).OnError(func(err error) {
-		log.Printf("CreateEntrustedShop character=%d: %v", ch.GetID(), err)
-		ch.Call(func(actx actor.Context) {
-			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
-			if request := ch.Unsettled.Find(id); request != nil {
-				ch.settleOpenShop(actx, request)
+		log.Printf("EntrustedShop.Place character=%d: %v", owner.GetID(), err)
+		owner.Call(func(actx actor.Context) {
+			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+			if request := owner.Unsettled.Find(id); request != nil {
+				owner.StoreBank.settleShopOpen(actx, request)
 			}
 		})
 	})
-	return nil
-}
-
-func (ch *Character) settleOpenShop(actx actor.Context, request *UnsettledRequest) {
-	ch.GameWorld.Systems().Get[*InternalSystem]().AbortOpenShopAsync(actx, ch, request.ID).Do(func(reply *internal.AbortOpenShopReply) error {
-		ch.Call(func(actor.Context) {
-			if !reply.GetAborted() {
-				request.InFlight = false
-				log.Printf("AbortOpenShop character=%d request=%d: shop is no longer empty", ch.GetID(), request.ID)
-				return
-			}
-			ch.Unsettled.Erase(request.ID)
-		})
-		return nil
-	}).OnError(func(err error) {
-		ch.Call(func(actor.Context) {
-			request.InFlight = false
-		})
-		log.Printf("AbortOpenShop character=%d request=%d: %v", ch.GetID(), request.ID, err)
-	})
-}
-
-func (ch *Character) VisitMiniRoom(sn uint32, password string) error {
-	m := ch.GetMap()
-	if m == nil {
-		return ErrMiniRoomInvalid
-	}
-	if t, ok := ch.MiniRoom.(*Trade); ok && t.invited == ch && t.sn == sn {
-		return t.Visit(ch)
-	}
-	if es, ok := m.GetObject(constant.ObjectTypeEntrustedShop, sn).(*EntrustedShop); ok {
-		if ch.GetID() != es.OwnerID {
-			return es.Visit(ch)
-		}
-		if ch.MiniRoom != nil {
-			return ErrMiniRoomInvalid
-		}
-		es.Manage(ch.GetID())
-		return nil
-	}
-	if ps, ok := m.GetObject(constant.ObjectTypePersonalShop, sn).(*PersonalShop); ok {
-		return ps.Visit(ch)
-	}
-	if g, ok := m.GetObject(constant.ObjectTypeMiniGame, sn).(*MiniGame); ok {
-		return g.Visit(ch, password)
-	}
-	return ch.RemoteShops.visitManaged(sn)
 }

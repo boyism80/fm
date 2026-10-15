@@ -402,12 +402,12 @@ func (t *CarnivalTeam) RemoveMember(ch *Character) {
 	t.Roster = slices.DeleteFunc(t.Roster, func(member *CarnivalMember) bool {
 		return member.ID == ch.GetID()
 	})
-	ch.carnivalTeam = nil
+	ch.Carnival.team = nil
 }
 
 func (t *CarnivalTeam) Clear() {
 	for _, ch := range t.Members() {
-		ch.carnivalTeam = nil
+		ch.Carnival.team = nil
 	}
 	t.Roster = nil
 	t.LeaderID = 0

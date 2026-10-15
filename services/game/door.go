@@ -77,16 +77,12 @@ func (d *Door) Destination(from *Map) (DoorEndpoint, bool) {
 	return DoorEndpoint{}, false
 }
 
-func (ch *Character) UseDoor(actx actor.Context, ownerID uint32) bool {
+func (d *Door) Use(actx actor.Context, ch *Character) bool {
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil {
+	if m == nil || m.Wz == nil || d.Map != m || !d.UsableBy(ch) {
 		return false
 	}
-	door := m.FindDoorOwner(ownerID)
-	if door == nil || door.Map != m || !door.UsableBy(ch) {
-		return false
-	}
-	dest, ok := door.Destination(m)
+	dest, ok := d.Destination(m)
 	if !ok || dest.Map == nil || dest.Map.Wz == nil {
 		return false
 	}

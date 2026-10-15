@@ -95,7 +95,7 @@ func (r *RemoteShops) VisitFound(actx actor.Context, sn uint32, mapID uint32) er
 		return ErrMiniRoomInvalid
 	}
 	if m.TemplateID() == mapID {
-		return r.owner.VisitMiniRoom(sn, "")
+		return m.VisitMiniRoom(r.owner, sn, "")
 	}
 
 	target := r.owner.GameWorld.Systems().Get[*MapSystem]().Get(mapID)
@@ -103,7 +103,7 @@ func (r *RemoteShops) VisitFound(actx actor.Context, sn uint32, mapID uint32) er
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}
 	return r.owner.GameWorld.Systems().Get[*MapSystem]().Warp(actx, r.owner, target, 0, func(actor.Context) {
-		r.owner.RejectMiniRoom(r.owner.VisitMiniRoom(sn, ""))
+		r.owner.Listener.OnMiniRoomFailed(r.owner, target.VisitMiniRoom(r.owner, sn, ""))
 	})
 }
 

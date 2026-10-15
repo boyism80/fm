@@ -69,7 +69,7 @@ func (r *ExpeditionSystem) Register(name string, leader *Character, spec Expedit
 		Leader:   leader,
 		BeginMap: leader.GetMap(),
 		Deadline: time.Now().Add(time.Duration(spec.RecruitMs) * time.Millisecond),
-		members:  []*ExpeditionMember{leader.ExpeditionMember()},
+		members:  []*ExpeditionMember{NewExpeditionMember(leader)},
 		registry: r,
 	}
 	if i := board.reservationIndex(leader.GetID()); i >= 0 {
@@ -128,7 +128,7 @@ func (r *ExpeditionSystem) Reserve(name string, ch *Character) bool {
 		return false
 	}
 	board.reservations = append(board.reservations, &expeditionReservation{
-		member: ch.ExpeditionMember(),
+		member: NewExpeditionMember(ch),
 		field:  ch.GetMap(),
 	})
 	return true

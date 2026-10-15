@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/boyism80/fm/core"
@@ -42,20 +41,34 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 	case pconst.MiniRoomCreate:
 		switch req.Type {
 		case pconst.MiniRoomTypeEntrustedShop:
-			err = ch.CreateEntrustedShop(ctx.ActorContext, req.Title, req.Slot, req.ItemID)
+			var es *game.EntrustedShop
+			if es, err = game.NewEntrustedShop(ch, req.Title, req.Slot, req.ItemID); err == nil {
+				es.Place(ctx.ActorContext, ch)
+			}
 		case pconst.MiniRoomTypePersonalShop:
-			err = ch.CreatePersonalShop(ctx.ActorContext, req.Title, req.Slot, req.ItemID)
+			var ps *game.PersonalShop
+			if ps, err = game.NewPersonalShop(ch, req.Title, req.Slot, req.ItemID); err == nil {
+				ps.Place(ctx.ActorContext, ch)
+			}
 		case pconst.MiniRoomTypeTrade:
-			err = ch.CreateTrade()
+			var t *game.Trade
+			if t, err = game.NewTrade(ch); err == nil {
+				t.Open()
+			}
 		case pconst.MiniRoomTypeOmok, pconst.MiniRoomTypeMatchCard:
-			err = ch.CreateMiniGame(req.Type, req.Title, req.Password, req.Piece)
+			var g *game.MiniGame
+			if g, err = game.NewMiniGame(ch, req.Type, req.Title, req.Password, req.Piece); err == nil {
+				g.Place()
+			}
 		default:
 			err = game.ErrMiniRoomInvalid
 		}
 	case pconst.MiniRoomVisit:
-		err = ch.VisitMiniRoom(req.SN, req.Password)
-	case pconst.MiniRoomDecline:
-		err = ch.DeclineTrade(req.SN, req.Reason)
+		if m := ch.GetMap(); m != nil {
+			err = m.VisitMiniRoom(ch, req.SN, req.Password)
+		} else {
+			err = game.ErrMiniRoomInvalid
+		}
 	case pconst.MiniRoomExit:
 		if ch.MiniRoom != nil {
 			ch.MiniRoom.Leave(ch)
@@ -64,16 +77,7 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 		err = h.handleRoom(ctx, ch, req)
 	}
 
-	var enterErr *game.MiniRoomEnterError
-	var buyErr *game.MiniRoomBuyError
-	switch {
-	case errors.As(err, &enterErr):
-		ch.Listener.OnMiniRoomEnterFailed(ch, enterErr.Code)
-	case errors.As(err, &buyErr):
-		ch.Listener.OnMiniRoomBuyFailed(ch, buyErr.Result)
-	case err != nil:
-		ch.Listener.OnUnlockAction(ch)
-	}
+	ch.Listener.OnMiniRoomFailed(ch, err)
 	return nil
 }
 
@@ -91,6 +95,8 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *game.Character, req *
 		switch req.Mode {
 		case pconst.MiniRoomInvite:
 			return room.Invite(ch, req.TargetID)
+		case pconst.MiniRoomDecline:
+			return room.Decline(ch, req.SN, req.Reason)
 		case pconst.MiniRoomTradePutItem:
 			return room.PutItem(ch, constant.InventoryType(req.InventoryType), req.Slot, req.Count, req.TradeSlot)
 		case pconst.MiniRoomTradePutMeso:

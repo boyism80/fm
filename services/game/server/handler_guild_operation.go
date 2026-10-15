@@ -147,7 +147,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 
-		member := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_NEW)
+		member := game.GuildMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_NEW).BuildRPC()
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise.ThenRPC(func(c context.Context) (*internal.AcceptGuildInviteReply, error) {
 			return h.gs.systems.Get[*rpc.InternalConnection]().Client.AcceptGuildInvite(c, &internal.AcceptGuildInviteRequest{

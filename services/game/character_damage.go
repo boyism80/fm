@@ -122,21 +122,6 @@ func (ch *Character) EnergyAttack(info dto.AttackInfo, attacking func()) (bool, 
 	return ch.Attack(info, false, nil, attacking)
 }
 
-func (ch *Character) SelfDestructMob(oid uint32) bool {
-	if ch.Spectating() || ch.IsHidden() || !ch.IsAlive() {
-		return false
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return false
-	}
-	mob := mapInstance.GetMob(oid)
-	if mob == nil {
-		return false
-	}
-	return mob.SelfDestruct(ch)
-}
-
 func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {
 	if ch.Spectating() || !ch.IsAlive() || damage == 0 {
 		return false

@@ -96,6 +96,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Duey = &Duey{owner: ch}
 	ch.Notes = &Notes{owner: ch}
 	ch.Dojo = &Dojo{owner: ch}
+	ch.Carnival = &CarnivalMembership{owner: ch}
 	ch.Unsettled = NewUnsettledRequestsFromInternalProto(ch, reply.GetUnsettledRequests())
 	ch.StoreBank = &StoreBank{owner: ch}
 	ch.RemoteShops = &RemoteShops{owner: ch}
@@ -111,7 +112,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.KeyLayout.LoadKeyLayoutProto(reply.GetKeyLayout())
 	ch.CashWishlist = reply.GetCashWishlist()
 	ch.MonsterBook = NewMonsterBookFromInternalProto(ch, p.GetMonsterBookCover(), reply.GetMonsterBook())
-	ch.LoadInventory(reply.GetInventory())
+	ch.Inventory.Load(reply.GetInventory())
 	ch.Inventory.LoadRings(reply.GetRings())
 	ch.Skills.Load(reply.GetSkills())
 	ch.Skills.Macros.Load(NewSkillMacrosFromInternalProto(reply.GetSkillMacros()))
@@ -121,44 +122,6 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.SavedLocations.Load(reply.GetSavedLocations())
 	ch.Buddies.LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
 	return ch
-}
-
-func (ch *Character) LoadInventory(items []*internal.Inventory) {
-	for _, pb := range items {
-		if pb == nil {
-			continue
-		}
-		item, err := NewItemFromInternalProto(pb, ch.GameWorld)
-		if err != nil {
-			continue
-		}
-		if ch.Wedding.Marriage == nil && item.GetModel().GetTraits()&(constant.ItemTraitEngagementRing|constant.ItemTraitWeddingRing) != 0 {
-			continue
-		}
-		slot := int16(pb.GetSlot())
-		if slot < 0 {
-			eq, ok := item.(Equipment)
-			if !ok {
-				continue
-			}
-			model := eq.GetModel().(wz.Equipment)
-			parts := constant.EquipmentPartsType(slot)
-			if !model.CanEquipAt(parts) {
-				if known := model.GetParts(); len(known) > 0 && ch.Inventory.Equipped[known[0]] == nil {
-					parts = known[0]
-				}
-			}
-			ch.Inventory.Equipped[parts] = eq
-		} else {
-			invType := constant.InventoryType(pb.GetInventoryType())
-			if invType == 0 {
-				invType = item.GetModel().GetInventoryType()
-			}
-			if inv, ok := ch.Inventory.Tabs[invType]; ok {
-				inv.Items[slot] = item
-			}
-		}
-	}
 }
 
 func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint32) {
@@ -273,7 +236,7 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		Character:         pb,
 		BaseLooks:         baseLooks,
 		Overlays:          overlays,
-		Inventory:         ch.buildInventoryRPC(),
+		Inventory:         ch.Inventory.BuildRPC(),
 		Skills:            ch.Skills.BuildRPC(),
 		SkillMacros:       ch.Skills.Macros.BuildRPC(),
 		Buffs:             ch.Buffs.BuildRPC(),
@@ -287,21 +250,4 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		Mount:             &internal.Mount{Level: ch.Mount.Level, Exp: ch.Mount.Exp, Fatigue: ch.Mount.Fatigue},
 		UnsettledRequests: ch.Unsettled.BuildRPC(),
 	}
-}
-
-func (ch *Character) buildInventoryRPC() []*internal.Inventory {
-	items := make([]*internal.Inventory, 0, len(ch.Inventory.Equipped)+64)
-	ownerID := ch.GetID()
-	for parts, item := range ch.Inventory.Equipped {
-		if item == nil {
-			continue
-		}
-		if pb := item.BuildRPC(ownerID, int32(parts)); pb != nil {
-			items = append(items, pb)
-		}
-	}
-	for _, inv := range ch.Inventory.Tabs {
-		items = append(items, inv.BuildRPC(ownerID)...)
-	}
-	return ch.Escrow.mergeProto(items)
 }

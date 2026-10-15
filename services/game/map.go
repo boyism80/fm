@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -1438,4 +1439,52 @@ func (m *Map) StateMachine() *StateMachine {
 		return nil
 	}
 	return m.stateMachine
+}
+
+func (m *Map) SpawnMist(caster *Character, skill *SkillEntry, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
+	if skill == nil {
+		return nil
+	}
+	wzSkill := caster.GameWorld.GetResources().GetSkill(skill.Wz.ID)
+	if wzSkill == nil {
+		return nil
+	}
+	skillLevel := uint8(skill.Level())
+	ld := wzSkill.GetLevelData(int(skillLevel))
+	if ld == nil {
+		return nil
+	}
+	b := bounds
+	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
+		b = ld.Area(int32(caster.Position.X), int32(caster.Position.Y), caster.Stance%2 != 0)
+	}
+	if poisonTickMultiplier <= 0 {
+		poisonTickMultiplier = 1.0
+	}
+	mist := &Mist{
+		ObjectCore: ObjectCore{
+			Position:  position,
+			GameWorld: m.GameWorld,
+			Map:       nil,
+		},
+		Causer:               caster.GetID(),
+		SkillWz:              wzSkill,
+		SkillLevel:           skillLevel,
+		MistType:             mistType,
+		MobMist:              false,
+		MobSkill:             false,
+		SkillDelay:           8,
+		Bounds:               b,
+		ExpiresAt:            time.Time{},
+		PoisonTickMultiplier: poisonTickMultiplier,
+	}
+	mist.ObjectCore.self = mist
+	if initialDelay > 0 {
+		mist.NextPoisonTickAt = clock.Now().Add(initialDelay)
+	}
+	if duration > 0 {
+		mist.ExpiresAt = clock.Now().Add(duration)
+	}
+	m.AddMist(mist)
+	return mist
 }

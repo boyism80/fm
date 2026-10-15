@@ -1374,7 +1374,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			bounds := types.Rect[int32]{Left: left, Top: top, Right: right, Bottom: bottom}
-			mist := ch.SpawnMist(skill, ch.Position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
+			m := ch.GetMap()
+			if m == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			mist := m.SpawnMist(ch, skill, ch.Position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
 			if mist == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1840,7 +1845,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.PlaceMessageBox(uint32(L.CheckInt(2)), L.CheckString(3))))
+			box := NewMessageBox(ch, uint32(L.CheckInt(2)), L.CheckString(3))
+			L.Push(lua.LBool(box != nil && box.Place(ch)))
 			return 1
 		},
 		"send_note": func(L *lua.LState) int {
@@ -2619,7 +2625,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			ch.Dialog.Close()
-			if err := ch.OpenNpc(cfg.ActorContext, npc); err != nil {
+			if err := ch.Dialog.Open(cfg.ActorContext, npc); err != nil {
 				L.RaiseError("open_npc: %v", err)
 				return 0
 			}
@@ -2930,7 +2936,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			ch.TryPartyQuest(questID)
+			ch.Quests.RunHook(questID, "on_quest_try")
 			return 0
 		},
 		"end_party_quest": func(L *lua.LState) int {
@@ -2941,7 +2947,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			ch.EndPartyQuest(questID)
+			ch.Quests.RunHook(questID, "on_quest_end")
 			return 0
 		},
 		"carnival_team": func(L *lua.LState) int {
@@ -2951,7 +2957,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			team := ch.CarnivalTeam()
+			team := ch.Carnival.Team()
 			if team == nil {
 				L.Push(lua.LNil)
 			} else {
@@ -3064,7 +3070,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			qp := ch.LuaQuest(questID)
+			qp := ch.Quests.LuaQuest(questID)
 			if qp == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -3085,7 +3091,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			questID := uint32(L.CheckInt(2))
 			hook := L.CheckString(3)
-			ch.RunQuestHook(questID, hook)
+			ch.Quests.RunHook(questID, hook)
 			return 0
 		},
 		"quests": func(L *lua.LState) int {
@@ -4350,7 +4356,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "put_key(slot, type, action) requires slot, type, and action")
 				return 0
 			}
-			ch.BindKey(L.CheckInt(2), byte(L.CheckInt(3)), int32(L.CheckInt(4)))
+			ch.KeyLayout.SetKey(L.CheckInt(2), byte(L.CheckInt(3)), int32(L.CheckInt(4)))
+			ch.Listener.OnKeyMap(ch)
 			return 0
 		},
 		"morph": func(L *lua.LState) int {

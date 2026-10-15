@@ -55,7 +55,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	}
 	var skillLevel uint8
 	attacked, err := character.Attack(req.ToAttackInfo(), false, func() bool {
-		return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
+		return skill != nil && character.Skills.CallHook(ctx.ActorContext, skill, "on_activating")
 	}, func() {
 		if req.Skill != 0 {
 			skillLevel = uint8(character.Skills.Level(req.Skill))
@@ -72,7 +72,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 
 	character.Listener.OnAttack(character, req, skillLevel)
 	if skill != nil {
-		character.CallSkillHook(ctx.ActorContext, skill, "on_activated")
+		character.Skills.CallHook(ctx.ActorContext, skill, "on_activated")
 	}
 	return nil
 }
