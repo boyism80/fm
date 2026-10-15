@@ -4,4 +4,4 @@ export type GrpcCallback<TReply> = (error: ServiceError | null, reply?: TReply) 
 
 export type GrpcErrorHandler = (err: unknown, callback: (error: ServiceError) => void) => void;
 
-export type GrpcCall<TRequest> = { request: TRequest };
+export type GrpcCall<TRequest> = { request: TRequest; cancelled: boolean };

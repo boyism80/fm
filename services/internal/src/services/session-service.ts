@@ -150,7 +150,7 @@ export class SessionService {
         return { ok: true };
     }
 
-    async enterGame(worldId: number, row: CharacterModel, channelId: number, clientIp: string): Promise<EnterGameReply> {
+    async enterGame(worldId: number, row: CharacterModel, channelId: number, clientIp: string, callerGone: () => boolean): Promise<EnterGameReply> {
         const { accountId, characterId } = row;
         const account = await this.repo.getAccountSession(worldId, accountId);
         const gameToGameTransfer = account?.gameToGameTransfer === true;
@@ -171,7 +171,8 @@ export class SessionService {
         }
         console.log(`[session] enter_game ok account=${accountId} character=${characterId} channel=${channelId}`);
 
-        // The game server reads an error reply as "did not enter the game", so every failure after the session moved leaves it again.
+        // The game server reads an error reply as "did not enter the game", and a caller that already timed out never reads the reply,
+        // so every failure after the session moved, and a caller gone by the end, leaves it again.
         try {
             await this.familyService
                 .presence(worldId, characterId)
@@ -186,6 +187,9 @@ export class SessionService {
                 await this.guildService.publishMemberOnline(worldId, characterId, true);
             }
             const reply = await this.characterService.load(worldId, row);
+            if (callerGone()) {
+                throw new Error(`enter game: caller left before the reply (character=${characterId})`);
+            }
             reply.debuffs = gameToGameTransfer ? account?.debuffs ?? [] : [];
             return reply;
         } catch (err) {
@@ -200,7 +204,7 @@ export class SessionService {
         }
     }
 
-    async enterCashShop(worldId: number, row: CharacterModel, cashShopId: number, clientIp: string): Promise<EnterCashShopReply> {
+    async enterCashShop(worldId: number, row: CharacterModel, cashShopId: number, clientIp: string, callerGone: () => boolean): Promise<EnterCashShopReply> {
         const { accountId, characterId } = row;
         const account = await this.repo.getAccountSession(worldId, accountId);
         const raw = await this.repo.enterCashShop(
@@ -231,6 +235,9 @@ export class SessionService {
             }
             const game = await this.characterService.load(worldId, row);
             const cashShop = await this.cashShopService.loadAccount(worldId, accountId, characterId);
+            if (callerGone()) {
+                throw new Error(`enter cash shop: caller left before the reply (character=${characterId})`);
+            }
             game.debuffs = account?.debuffs ?? [];
             return { game, returnChannelId: Number(raw[2]), ...cashShop };
         } catch (err) {

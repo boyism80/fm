@@ -192,7 +192,7 @@ export class SessionGrpcController {
                 });
                 return;
             }
-            callback(null, await this.sessionService.enterGame(worldId, row, channelId, call.request.clientIp));
+            callback(null, await this.sessionService.enterGame(worldId, row, channelId, call.request.clientIp, () => call.cancelled));
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -212,7 +212,7 @@ export class SessionGrpcController {
             if (!row) {
                 throw Object.assign(new Error(`character not found: ${characterId}`), { code: "INVALID_CHARACTER_ID" });
             }
-            callback(null, await this.sessionService.enterCashShop(worldId, row, cashShopId, call.request.clientIp));
+            callback(null, await this.sessionService.enterCashShop(worldId, row, cashShopId, call.request.clientIp, () => call.cancelled));
         } catch (err) {
             this.grpcError(err, callback);
         }
