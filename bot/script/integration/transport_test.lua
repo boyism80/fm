@@ -1,37 +1,7 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
-local DIALOGS = { resp.dialog, resp.dialog_yes_no, resp.dialog_list, resp.warp }
 local BALROG = 8150000
-
-local function answer(p, name)
-	if name == resp.dialog_yes_no then
-		return req.dialog { dialog_type = 1, next = true }
-	elseif name == resp.dialog_list then
-		return req.dialog { dialog_type = 4, next = true, selected = 0 }
-	end
-	return req.dialog { dialog_type = 0, next = true }
-end
-
-local function talk_until_warp(ctx, bot, template, map_id)
-	local oid = pq.npc(ctx, bot, template)
-	if oid == false then
-		return false
-	end
-	local p, name = bot:request(DIALOGS, req.npc_click { oid = oid })
-	for _ = 1, 10 do
-		if p == false then
-			return ctx:fail(string.format("NPC %d 대화 중 응답 없음 (맵 %d)", template, bot:map()))
-		end
-		if name == resp.warp then
-			if p.character.map ~= map_id then
-				return ctx:fail(string.format("NPC %d 대화 뒤 다른 맵으로 이동: %d", template, p.character.map))
-			end
-			return true
-		end
-		p, name = bot:request(DIALOGS, answer(p, name))
-	end
-	return ctx:fail(string.format("NPC %d 대화가 끝나지 않음", template))
-end
 
 local function phase(ctx, bot, group, name, map_id)
 	if pq.command(bot, "/수송 " .. group .. " " .. name, "강제 호출") == false then
@@ -62,30 +32,30 @@ local function repel(ctx, bot)
 	return true
 end
 
-local function ride(ctx, route)
+local function ride(ctx, line)
 	local bot = ctx:bot(0)
-	if pq.command(bot, "/봇초기화 40 100 0 " .. route.ticket .. ":1 -", "봇초기화 완료") == false then
+	if pq.command(bot, "/봇초기화 40 100 0 " .. line.ticket .. ":1 -", "봇초기화 완료") == false then
 		return ctx:fail("봇 초기화 실패")
 	end
-	if bot:map_move(route.station) == false then
-		return ctx:fail("정거장으로 이동 실패: " .. route.station)
+	if route.travel(ctx, bot, line.station) == false then
+		return ctx:fail("정거장으로 이동 실패: " .. line.station)
 	end
-	if phase(ctx, bot, route.group, "dock") == false then
+	if phase(ctx, bot, line.group, "dock") == false then
 		return false
 	end
-	if talk_until_warp(ctx, bot, route.npc, route.waiting) == false then
+	if route.talk(ctx, bot, { npc = line.npc, to = line.waiting }) == false then
 		return false
 	end
-	if (bot:items()[route.ticket] or 0) ~= 0 then
-		return ctx:fail("탑승권이 회수되지 않음: " .. route.ticket)
+	if (bot:items()[line.ticket] or 0) ~= 0 then
+		return ctx:fail("탑승권이 회수되지 않음: " .. line.ticket)
 	end
-	if phase(ctx, bot, route.group, "takeoff", route.ride) == false then
+	if phase(ctx, bot, line.group, "takeoff", line.ride) == false then
 		return false
 	end
-	if route.group == "Boats" and repel(ctx, bot) == false then
+	if line.group == "Boats" and repel(ctx, bot) == false then
 		return false
 	end
-	return phase(ctx, bot, route.group, "arrived", route.dest)
+	return phase(ctx, bot, line.group, "arrived", line.dest)
 end
 
 local function pass(ctx, bot, x, y, map_id)

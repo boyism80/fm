@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local FREE_MARKET = 910000000
 local TOWNS = {
@@ -66,7 +67,7 @@ for _, town in ipairs(TOWNS) do
 		if setup(ctx, bot, 30) == false then
 			return false
 		end
-		if bot:map_move(town.map) == false then
+		if route.travel(ctx, bot, town.map) == false then
 			return ctx:fail("마을로 이동 실패: " .. town.map)
 		end
 		if walk(ctx, bot, town.x, town.y) == false then

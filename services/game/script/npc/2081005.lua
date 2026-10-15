@@ -1,10 +1,10 @@
 -- NPC name (String.wz/Npc.img.xml): 케로벤
 
-local DRAGON = 2210003
+local DRAGON_MORPH = 4
 
 return {
 	on_click = function(me, npc)
-		local dragon = me:morph() == DRAGON
+		local dragon = me:morph() == DRAGON_MORPH
 		local text = "인간이군! 내가 있는 한 이 곳에서 한걸음도 더 나아갈 수 없다. 썩 사라지거라!"
 		if dragon then
 			text = "오, 우리 동족이로군. 인간의 침입은 걱정 말라고. 내가 단단히 지키고 있으니까 말이야. 그럼 안으로 들어가게나."

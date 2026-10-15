@@ -1,14 +1,15 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local DIALOGS = { resp.dialog, resp.dialog_yes_no, resp.dialog_accept, resp.dialog_list, resp.warp }
 local LAB_HALL = 926130100
 
 local function setup(ctx, bot, args, map_id)
+	if route.travel(ctx, bot, map_id) == false then
+		return ctx:fail("맵 이동 실패: " .. map_id)
+	end
 	if pq.command(bot, "/봇초기화 " .. args, "봇초기화 완료") == false then
 		return ctx:fail("봇 초기화 실패: " .. args)
-	end
-	if bot:map_move(map_id) == false then
-		return ctx:fail("맵 이동 실패: " .. map_id)
 	end
 	return true
 end
@@ -408,7 +409,7 @@ test_suite {
 				if talk_until_warp(ctx, bot, 9120030, { [802000101] = true }) == false then
 					return false
 				end
-				if bot:map_move(802000300) == false then
+				if setup(ctx, bot, "120 100 0 - -", 802000300) == false then
 					return ctx:fail("박 경관에게 돌아가지 못함")
 				end
 			end

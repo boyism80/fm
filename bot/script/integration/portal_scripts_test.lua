@@ -5,7 +5,7 @@ local entries, missing = wz.portal_scripts()
 
 local function enter(ctx, bot, entry)
 	local where = "portal " .. entry.script .. " (map " .. entry.map .. " " .. entry.portal .. ")"
-	if bot:instance_move(entry.map) == false then
+	if bot:force_instance_move(entry.map, "스크립트 전수 점검") == false then
 		return
 	end
 

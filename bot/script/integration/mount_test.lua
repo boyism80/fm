@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local HENESYS_PARK = 100000200
 local NO_MOUNT_MAP = 101000100
@@ -18,6 +19,7 @@ local RIDER_QUEST_NPC = 2060005
 local RIDER_QUEST_ITEMS = "4031507:5,4031508:5"
 local QUEST_START = 1
 local QUEST_COMPLETE = 2
+local SHANE_QUEST = 2050
 
 local function check(ctx, ok, message)
 	if ok == false then
@@ -88,8 +90,8 @@ local function wear(ctx, bot, item_id, slot)
 	return true
 end
 
-local function rider(ctx, bot)
-	if setup(ctx, bot, 70, 0, TAMING_MOB .. ":1," .. SADDLE .. ":1," .. FOOD .. ":5") == false then
+local function rider(ctx, bot, quests)
+	if setup(ctx, bot, 70, 0, TAMING_MOB .. ":1," .. SADDLE .. ":1," .. FOOD .. ":5 " .. (quests or "-")) == false then
 		return false
 	end
 	if learn(ctx, bot, MONSTER_RIDER) == false then
@@ -282,7 +284,7 @@ end
 
 local function no_mount_map(ctx)
 	local bot = ctx:bot(6)
-	if rider(ctx, bot) == false then
+	if rider(ctx, bot, SHANE_QUEST .. ":" .. QUEST_COMPLETE) == false then
 		return false
 	end
 	if ride(ctx, bot, MONSTER_RIDER) == false then
@@ -291,7 +293,7 @@ local function no_mount_map(ctx)
 	if riding(ctx, bot, TAMING_MOB, "탑승") == false then
 		return false
 	end
-	if bot:map_move(NO_MOUNT_MAP) == false then
+	if route.travel(ctx, bot, NO_MOUNT_MAP) == false then
 		return ctx:fail("탈것 금지 맵 이동 실패")
 	end
 	return riding(ctx, bot, 0, "탈것 금지 맵 진입")

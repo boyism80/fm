@@ -64,6 +64,7 @@ var requests = []outbound{
 	&request.PetAutoPotion{},
 	&request.ChangeKeymap{},
 	&request.EnhanceEquipment{},
+	&request.UseItem{},
 	&request.UseMountFood{},
 	&request.UseSummonBag{},
 	&request.UseSkillBook{},
@@ -152,7 +153,7 @@ func (a *SuiteActor) register() {
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
 	a.wrapWaits(ctxIndex, "sleep")
-	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "enter_cash_shop", "leave_cash_shop", "npc", "npc_click", "dialog", "kill", "catch", "loot", "drop", "hit_reactor")
+	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "force_move", "force_instance_move", "warp", "transfer", "enter_cash_shop", "leave_cash_shop", "npc", "npc_click", "dialog", "kill", "catch", "loot", "drop", "hit_reactor")
 	L.SetField(L.NewTypeMetatable("bot_ctx"), "__index", ctxIndex)
 	L.SetField(L.NewTypeMetatable("bot"), "__index", botIndex)
 	a.ctxUD = a.newUserData(a, "bot_ctx")
@@ -374,6 +375,20 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNil)
 			return 1
 		},
+		"portal_position": func(L *lua.LState) int {
+			name := L.CheckString(2)
+			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
+				for _, portal := range m.Portals {
+					if portal.Name == name {
+						L.Push(lua.LNumber(portal.Position.X))
+						L.Push(lua.LNumber(portal.Position.Y))
+						return 2
+					}
+				}
+			}
+			L.Push(lua.LNil)
+			return 1
+		},
 		"mob_spots": func(L *lua.LState) int {
 			t := L.NewTable()
 			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
@@ -577,18 +592,25 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(a.marshal.ToLua(L, a.checkBot(L).Stones[L.OptBool(2, false)]))
 			return 1
 		},
+		"walkable": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			from := uint32(L.OptInt(3, int(b.Map)))
+			L.Push(lua.LBool(a.atlas.Walkable(from, uint32(L.CheckInt(2)))))
+			return 1
+		},
 		"instance_move": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			mapID := uint32(L.CheckInt(2))
+			if !a.atlas.Walkable(b.Map, mapID) {
+				a.Fail(fmt.Sprintf("%s 맵 %d은 일반 포탈로 갈 수 없음 (현재 %d): route.travel로 이동", b.Name, mapID, b.Map))
+				L.Push(lua.LFalse)
+				return 1
+			}
 			text := fmt.Sprintf("/인스턴스이동 %d %d", mapID, a.seat)
 			if L.GetTop() >= 3 {
 				text = fmt.Sprintf("%s %d", text, L.CheckInt(3))
 			}
-			a.park(L)
-			a.warpByCommand(L, b, text, mapID, true, func(ok bool) {
-				a.wake(L, lua.LBool(ok))
-			})
-			return L.Yield()
+			return a.moveByCommand(L, b, text, mapID)
 		},
 		"map_move": func(L *lua.LState) int {
 			b := a.checkBot(L)
@@ -597,15 +619,28 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LTrue)
 				return 1
 			}
+			if !a.atlas.Walkable(b.Map, mapID) {
+				a.Fail(fmt.Sprintf("%s 맵 %d은 일반 포탈로 갈 수 없음 (현재 %d): route.travel로 이동", b.Name, mapID, b.Map))
+				L.Push(lua.LFalse)
+				return 1
+			}
 			text := fmt.Sprintf("/맵이동 %d", mapID)
 			if L.GetTop() >= 3 {
 				text = fmt.Sprintf("%s %d", text, L.CheckInt(3))
 			}
-			a.park(L)
-			a.warpByCommand(L, b, text, mapID, true, func(ok bool) {
-				a.wake(L, lua.LBool(ok))
-			})
-			return L.Yield()
+			return a.moveByCommand(L, b, text, mapID)
+		},
+		"force_move": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			mapID := uint32(L.CheckInt(2))
+			log.Printf("[%s] %s 맵 %d 강제 이동: %s", a.name, b.Name, mapID, L.CheckString(3))
+			return a.moveByCommand(L, b, fmt.Sprintf("/맵이동 %d", mapID), mapID)
+		},
+		"force_instance_move": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			mapID := uint32(L.CheckInt(2))
+			log.Printf("[%s] %s 맵 %d 강제 인스턴스 이동: %s", a.name, b.Name, mapID, L.CheckString(3))
+			return a.moveByCommand(L, b, fmt.Sprintf("/인스턴스이동 %d %d", mapID, a.seat), mapID)
 		},
 		"npc": func(L *lua.LState) int {
 			b := a.checkBot(L)

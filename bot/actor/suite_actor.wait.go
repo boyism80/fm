@@ -81,6 +81,14 @@ func (a *SuiteActor) warpByCommand(thread *lua.LState, b *bot.Bot, text string, 
 	})
 }
 
+func (a *SuiteActor) moveByCommand(L *lua.LState, b *bot.Bot, text string, mapID uint32) int {
+	a.park(L)
+	a.warpByCommand(L, b, text, mapID, true, func(ok bool) {
+		a.wake(L, lua.LBool(ok))
+	})
+	return L.Yield()
+}
+
 func (a *SuiteActor) move(thread *lua.LState, i int, pkt outbound, label string, enter func(ip string, port uint16) error, done func(bool)) {
 	b := a.bots[i]
 	a.Request(thread, b, b, pkt, a.timeout(), func(pkt any) bool {

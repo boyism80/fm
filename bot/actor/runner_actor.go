@@ -18,6 +18,7 @@ import (
 type RunnerActor struct {
 	cfg      *config.Bot
 	wz       *wz.Resources
+	atlas    *Atlas
 	filter   string
 	junit    string
 	done     chan<- int
@@ -35,6 +36,7 @@ func NewRunnerActor(cfg *config.Bot, resources *wz.Resources, filter, junit stri
 	r := &RunnerActor{
 		cfg:    cfg,
 		wz:     resources,
+		atlas:  NewAtlas(resources),
 		filter: filter,
 		junit:  junit,
 		done:   done,
@@ -122,7 +124,7 @@ func (r *RunnerActor) schedule(ctx actor.Context) {
 func (r *RunnerActor) start(ctx actor.Context, s *Suite, seat int) {
 	r.running++
 	ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
-		return NewSuiteActor(r.cfg, r.wz, s, seat, r.runID, &r.botSeq)
+		return NewSuiteActor(r.cfg, r.wz, r.atlas, s, seat, r.runID, &r.botSeq)
 	}))
 }
 

@@ -1,3 +1,5 @@
+local route = require("script/integration/lib/route")
+
 local STATION = 103000310
 local PORTAL = "out00"
 local SUBWAY = 103000301
@@ -10,7 +12,7 @@ test_suite {
 	scenarios = {
 		function(ctx)
 			local bot = ctx:bot(0)
-			if bot:map_move(STATION) == false then
+			if route.travel(ctx, bot, STATION) == false then
 				return ctx:fail("커닝 스퀘어 역 이동 실패")
 			end
 

@@ -52,7 +52,7 @@ local function visit(bot, spot)
 	if spot == nil then
 		return true
 	end
-	if bot:instance_move(spot.map) == false then
+	if bot:force_instance_move(spot.map, "스크립트 전수 점검") == false then
 		return false
 	end
 	if spot.x ~= nil then

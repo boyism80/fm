@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local ROOMS = 39
 local DUNGEONS = {
@@ -44,7 +45,7 @@ local function explore(ctx, dungeon)
 	local leader = ctx:bot(0)
 	local member = ctx:bot(1)
 	for i = 0, ctx:bot_count() - 1 do
-		if ctx:bot(i):map_move(dungeon.base) == false then
+		if route.travel(ctx, ctx:bot(i), dungeon.base) == false then
 			return ctx:fail(dungeon.name .. " 입구로 이동 실패")
 		end
 	end

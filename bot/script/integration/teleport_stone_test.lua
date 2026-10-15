@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local HENESYS = 100000000
 local ELLINIA = 101000000
@@ -52,7 +53,7 @@ local function setup(ctx, bot, items)
 end
 
 local function move(ctx, bot, map_id)
-	if bot:map_move(map_id) == false then
+	if route.travel(ctx, bot, map_id) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패: " .. map_id)
 	end
 	return true

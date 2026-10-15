@@ -427,7 +427,7 @@ local function explore(ctx, bot, entry)
 
 				at = os.clock()
 				if away or bot:map() ~= spot.map then
-					if bot:instance_move(spot.map) == false then
+					if bot:force_instance_move(spot.map, "스크립트 전수 점검") == false then
 						ctx:fail(where .. ": 맵 " .. spot.map .. " 이동 실패")
 						return
 					end

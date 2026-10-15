@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local LOBBY = 925020001
 local EXIT = 925020002
@@ -134,7 +135,7 @@ test_suite {
 			if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 				return ctx:fail(bot:name() .. " 플레이어 모드 설정 실패")
 			end
-			if bot:map_move(LOBBY) == false then
+			if route.travel(ctx, bot, LOBBY) == false then
 				return false
 			end
 		end
@@ -192,7 +193,7 @@ test_suite {
 			if give_up(ctx, bot) == false then
 				return false
 			end
-			if bot:map_move(LOBBY) == false then
+			if route.travel(ctx, bot, LOBBY) == false then
 				return ctx:fail("로비로 돌아가지 못함")
 			end
 			if talk(ctx, bot) == false then
@@ -210,7 +211,7 @@ test_suite {
 			if pq.command(bot, "/봇초기화 30 0 0 - - - " .. POINT_RECORD .. "=20," .. REST_RECORD .. "=1", "봇초기화 완료") == false then
 				return ctx:fail("휴식층 저장 상태 설정 실패")
 			end
-			if bot:map_move(LOBBY) == false then
+			if route.travel(ctx, bot, LOBBY) == false then
 				return ctx:fail("로비로 돌아가지 못함")
 			end
 			if choose_warp(ctx, bot, 0, FLOOR_6, "저장된 6층으로 이동하지 않음") == false then
@@ -241,7 +242,7 @@ test_suite {
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
-			if bot:map_move(LOBBY) == false then
+			if route.travel(ctx, bot, LOBBY) == false then
 				return ctx:fail("로비로 돌아가지 못함")
 			end
 			if talk(ctx, bot) == false then

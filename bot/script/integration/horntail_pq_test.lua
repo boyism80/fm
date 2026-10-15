@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local ENTRY = 240050000
 local HUB = 240050100
@@ -166,7 +167,7 @@ local function return_to_entry(ctx)
 		if pq.command(bot, "/인벤토리초기화", "슬롯 비움") == false then
 			return ctx:fail(bot:name() .. " 인벤토리 초기화 실패")
 		end
-		if bot:map_move(ENTRY) == false then
+		if route.travel(ctx, bot, ENTRY) == false then
 			return false
 		end
 	end
@@ -186,7 +187,7 @@ test_suite {
 			if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 				return ctx:fail(bot:name() .. " 플레이어 모드 설정 실패")
 			end
-			if bot:map_move(ENTRY) == false then
+			if route.travel(ctx, bot, ENTRY) == false then
 				return false
 			end
 		end

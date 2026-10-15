@@ -13,6 +13,9 @@ type UseItem struct {
 func (*UseItem) Opcode() byte { return 0x37 }
 
 func (p *UseItem) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU16(p.Slot)
+	writer.WriteU32(p.ItemID)
 	return nil
 }
 

@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local SKILL_BOOK = 2280000
 local SKILL = 2121003
@@ -79,7 +80,7 @@ local function summon_bag(ctx)
 	if setup(ctx, bot, 0, 0, SUMMON_BAG .. ":2") == false then
 		return false
 	end
-	if bot:map_move(910000000) == false then
+	if route.travel(ctx, bot, 910000000) == false then
 		return ctx:fail("자유시장 이동 실패")
 	end
 	local blocked = bot:request(resp.spawn_mob, req.use_summon_bag {

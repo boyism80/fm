@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local HUB = 980000000
 local HUB_DELAY_MS = 1000
@@ -110,7 +111,7 @@ test_suite {
 			if pq.command(bot, "/레벨바꾸기 30", "레벨 설정") == false then
 				return ctx:fail(bot:name() .. " 레벨 설정 실패")
 			end
-			if bot:map_move(HUB) == false then
+			if route.travel(ctx, bot, HUB) == false then
 				return false
 			end
 			if bot:request(resp.party_created, req.party_operation { operation = PARTY.Create }) == false then
@@ -180,7 +181,7 @@ test_suite {
 			if wait_map(ctx, blue, AWAY, 30000) == false then
 				return false
 			end
-			if blue:map_move(HUB) == false then
+			if route.travel(ctx, blue, HUB) == false then
 				return ctx:fail("블루팀 허브 복귀 실패")
 			end
 			return true

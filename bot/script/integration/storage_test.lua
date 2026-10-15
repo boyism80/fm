@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local HENESYS_PARK = 100000200
 local KEEPER = 1012009
@@ -35,7 +36,7 @@ local function setup(ctx, bot, meso, items)
 end
 
 local function open(ctx, bot, map, keeper)
-	if bot:map_move(map) == false then
+	if route.travel(ctx, bot, map) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패: " .. map)
 	end
 	local oid = pq.npc(ctx, bot, keeper)

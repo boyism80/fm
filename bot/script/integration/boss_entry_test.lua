@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local WAITING_ROOM = 123256780
 local BOSSES = {
@@ -12,7 +13,7 @@ local BOSSES = {
 }
 
 local function enter_and_kill(ctx, bot, boss)
-	if bot:map_move(WAITING_ROOM) == false then
+	if route.travel(ctx, bot, WAITING_ROOM) == false then
 		return ctx:fail("보스 대기실로 이동 실패")
 	end
 	local oid = pq.npc(ctx, bot, boss.npc)
@@ -69,7 +70,7 @@ test_suite {
 		if pq.command(bot, "/즉사 on", "즉사 상태: enabled") == false then
 			return ctx:fail("즉사 설정 실패")
 		end
-		return bot:map_move(WAITING_ROOM)
+		return route.travel(ctx, bot, WAITING_ROOM)
 	end,
 
 	on_finished = function(ctx)
@@ -85,7 +86,7 @@ test_suite {
 					passed = false
 				end
 			end
-			if ctx:bot(0):map_move(WAITING_ROOM) == false then
+			if route.travel(ctx, ctx:bot(0), WAITING_ROOM) == false then
 				return false
 			end
 			return passed

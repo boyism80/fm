@@ -21,6 +21,7 @@ import (
 type SuiteActor struct {
 	cfg      *config.Bot
 	wz       *wz.Resources
+	atlas    *Atlas
 	suite    *Suite
 	seat     int
 	runID    string
@@ -54,10 +55,11 @@ type SuiteActor struct {
 	botUDs   map[*bot.Bot]*lua.LUserData
 }
 
-func NewSuiteActor(cfg *config.Bot, resources *wz.Resources, suite *Suite, seat int, runID string, botSeq *atomic.Int32) *SuiteActor {
+func NewSuiteActor(cfg *config.Bot, resources *wz.Resources, atlas *Atlas, suite *Suite, seat int, runID string, botSeq *atomic.Int32) *SuiteActor {
 	return &SuiteActor{
 		cfg:      cfg,
 		wz:       resources,
+		atlas:    atlas,
 		suite:    suite,
 		seat:     seat,
 		runID:    runID,

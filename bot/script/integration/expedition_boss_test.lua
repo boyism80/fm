@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local ADOBIS = 2030013
 local ZAKUM_DOOR = 211042300
@@ -132,7 +133,7 @@ end
 local function expedite(ctx, npc, entrance, boss_map)
 	local leader = ctx:bot(1)
 	for i = 0, ctx:bot_count() - 1 do
-		if ctx:bot(i):map_move(entrance) == false then
+		if route.travel(ctx, ctx:bot(i), entrance) == false then
 			return ctx:fail("원정대 접수 맵으로 이동 실패: " .. entrance)
 		end
 	end
@@ -167,7 +168,7 @@ local function bounce(ctx, bot)
 	if bot:transfer(0) == false then
 		return ctx:fail(bot:name() .. " 채널 0 복귀 실패")
 	end
-	if bot:map_move(ALTAR_ENTRANCE) == false then
+	if route.travel(ctx, bot, ALTAR_ENTRANCE) == false then
 		return ctx:fail(bot:name() .. " 채널 복귀 뒤 제단 입구로 이동 실패")
 	end
 	return true
@@ -176,7 +177,7 @@ end
 local function recruit(ctx)
 	local member, leader, late, waiter = ctx:bot(0), ctx:bot(1), ctx:bot(2), ctx:bot(3)
 	for i = 0, ctx:bot_count() - 1 do
-		if ctx:bot(i):map_move(ALTAR_ENTRANCE) == false then
+		if route.travel(ctx, ctx:bot(i), ALTAR_ENTRANCE) == false then
 			return ctx:fail("자쿰의 제단 입구로 이동 실패")
 		end
 	end
@@ -234,16 +235,16 @@ end
 
 local function promote(ctx, leader)
 	local member, late, waiter = ctx:bot(0), ctx:bot(2), ctx:bot(3)
-	if member:map_move(ALTAR_ENTRANCE) == false or late:map_move(ALTAR_ENTRANCE) == false then
+	if member:map_move(ZAKUM_DOOR) == false or late:map_move(ZAKUM_DOOR) == false then
 		return ctx:fail("제단에서 나가기 실패")
 	end
-	local notice = leader:request_on(waiter, resp.notice, req.normal_chat { message = "/맵이동 " .. ALTAR_ENTRANCE }, function(p)
+	local notice = leader:request_on(waiter, resp.notice, req.normal_chat { message = "/맵이동 " .. ZAKUM_DOOR }, function(p)
 		return p.message:find(waiter:name() .. "님이 자쿰 원정대장이 되었습니다", 1, true) ~= nil
 	end, 15000)
 	if notice == false then
 		return ctx:fail("전투가 끝나도 대기자가 원정대장이 되지 않음")
 	end
-	if pq.wait_map(ctx, leader, ALTAR_ENTRANCE) == false then
+	if pq.wait_map(ctx, leader, ZAKUM_DOOR) == false or route.travel(ctx, leader, ALTAR_ENTRANCE) == false then
 		return false
 	end
 	if open(ctx, waiter, ADOBIS, "원정대장님 무엇을") == false then
@@ -299,7 +300,7 @@ local function zakum(ctx)
 	if blocked == false then
 		return ctx:fail("자쿰이 소환됐는데 Zakum05 포탈이 막히지 않음")
 	end
-	if waiter:map_move(ALTAR_ENTRANCE) == false then
+	if waiter:force_move(ALTAR_ENTRANCE, "전투 중 막힌 Zakum05를 확인한 대기자는 원래 서 있던 제단 입구로 돌아감") == false then
 		return ctx:fail("제단 입구로 돌아가기 실패")
 	end
 	if slay(ctx, bot, ZAKUM_FINAL) == false then

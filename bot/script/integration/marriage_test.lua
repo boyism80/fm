@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 local fault = require("script/integration/lib/fault")
 
 local VILLAGE = 680000000
@@ -44,7 +45,7 @@ local function setup(ctx, bot, items)
 	if pq.command(bot, string.format("/봇초기화 30 0 1000000 %s -", items), "봇초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 봇 초기화 실패")
 	end
-	if bot:map() ~= VILLAGE and bot:map_move(VILLAGE) == false then
+	if bot:map() ~= VILLAGE and route.travel(ctx, bot, VILLAGE) == false then
 		return ctx:fail(bot:name() .. " 웨딩빌리지 이동 실패")
 	end
 	return true
@@ -103,7 +104,7 @@ local function shift_clock(ctx, bot, text, expected)
 end
 
 local function settle_divorce(ctx, bot)
-	if bot:map_move(VILLAGE) == false then
+	if route.travel(ctx, bot, VILLAGE) == false then
 		return ctx:fail(bot:name() .. " 웨딩빌리지 이동 실패")
 	end
 	for _ = 1, 3 do
@@ -420,7 +421,7 @@ local function ceremony(ctx)
 	end
 
 	for _, bot in ipairs({ groom, bride }) do
-		if bot:map_move(VILLAGE) == false then
+		if route.travel(ctx, bot, VILLAGE) == false then
 			return ctx:fail(bot:name() .. " 웨딩빌리지 이동 실패")
 		end
 		if talk(ctx, bot, MARGARET, "이미 결혼을 하신 커플", "결혼 후 마가렛") == false then
@@ -441,7 +442,7 @@ local function ceremony(ctx)
 	if spouse == false then
 		return ctx:fail("신랑이 맵을 옮겼는데 신부에게 배우자 위치가 오지 않음")
 	end
-	if groom:map_move(VILLAGE) == false then
+	if route.travel(ctx, groom, VILLAGE) == false then
 		return ctx:fail("신랑 웨딩빌리지 복귀 실패")
 	end
 	return true

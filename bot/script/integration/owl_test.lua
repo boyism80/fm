@@ -1,4 +1,5 @@
 local pq = require("script/integration/lib/party_quest")
+local route = require("script/integration/lib/route")
 
 local FREE_MARKET = 910000000
 local ENTRUSTED_ROOM = 910000009
@@ -47,7 +48,7 @@ local function has(ctx, bot, item_id, count)
 end
 
 local function move_to(ctx, bot, map, spot)
-	if bot:map() ~= map and bot:map_move(map) == false then
+	if route.travel(ctx, bot, map) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패: " .. map)
 	end
 	if spot ~= nil and pq.move(bot, spot.x, spot.y) == false then
