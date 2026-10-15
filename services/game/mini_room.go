@@ -353,7 +353,7 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 		}
 		r.storeBank = append(storeBank, r.storeBank...)
 		time.AfterFunc(shopSaveRetryDelay, func() {
-			r.GameWorld.Systems().Get[*MapSystem]().Call(r.home, func(ctx actor.Context) {
+			r.GameWorld.Systems().Get[*MapSystem]().Visit(r.home, func(ctx actor.Context) {
 				r.saving = false
 				r.save(ctx, r.closing)
 			})

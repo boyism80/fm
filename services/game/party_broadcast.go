@@ -89,7 +89,7 @@ func (s *PartySystem) BroadcastMemberLeft(prev, current *Party, targetCharacterI
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -133,7 +133,7 @@ func (s *PartySystem) BroadcastDisbanded(prev *Party, leaderCharacterID uint32) 
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -150,7 +150,7 @@ func (s *PartySystem) BroadcastLeaderChanged(party *Party, newLeaderCharacterID 
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -171,7 +171,7 @@ func (s *PartySystem) BroadcastLogOnOff(party *Party) {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}

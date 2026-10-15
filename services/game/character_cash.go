@@ -83,7 +83,7 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, i
 			finish()
 			return nil
 		}
-		ch.GameWorld.Systems().Get[*DispatchSystem]().Call(ch.GetID(), func(actor.Context) {
+		ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
 			item := cash.Get(uint8(slot))
 			if item != nil && item.GetModel().GetID() == itemID {
 				ch.Inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)

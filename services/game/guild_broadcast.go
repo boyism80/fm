@@ -49,7 +49,7 @@ func (s *GuildSystem) BroadcastNoticeChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	notice := g.Notice
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -81,7 +81,7 @@ func (s *GuildSystem) BroadcastMemberRankChanged(guildID uint32, targetCharacter
 	}
 	gid := g.GetGuildId()
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -126,7 +126,7 @@ func (s *GuildSystem) BroadcastMemberFieldsChanged(guildID uint32, subjectID uin
 	}
 	gid := g.GetGuildId()
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -145,7 +145,7 @@ func (s *GuildSystem) BroadcastMemberOnlineChanged(guildID uint32, subjectID uin
 	}
 	gid := g.GetGuildId()
 	s.forEachOnlineGuildMember(g, subjectID, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -169,7 +169,7 @@ func (s *GuildSystem) BroadcastEmblemChanged(guildID uint32) {
 	logo := uint16(g.Logo.Logo)
 	logoColor := uint8(g.Logo.LogoColor)
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -186,7 +186,7 @@ func (s *GuildSystem) BroadcastCapacityChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	capacity := uint8(g.Capacity)
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -204,7 +204,7 @@ func (s *GuildSystem) BroadcastGPChanged(guildID uint32, amount int32) {
 	gp := g.GP
 	level := g.Level()
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -221,7 +221,7 @@ func (s *GuildSystem) BroadcastRankTitlesChanged(guildID uint32) {
 	gid := g.GetGuildId()
 	rankTitles := g.RankTitles
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -253,7 +253,7 @@ func (s *GuildSystem) BroadcastMemberJoined(guildID uint32, joinerCharacterID ui
 	}
 	gid := g.GetGuildId()
 	s.forEachOnlineGuildMember(g, joinerCharacterID, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -288,14 +288,14 @@ func (s *GuildSystem) BroadcastMemberLeft(prevGuild *Guild, leftCharacterID uint
 		}
 		if memberID == leftCharacterID {
 			if expelled {
-				s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+				s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 					if ch == nil {
 						return
 					}
 					ch.Listener.OnGuildExpelledSelf(ch, guildID)
 				})
 			} else {
-				s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+				s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 					if ch == nil {
 						return
 					}
@@ -307,7 +307,7 @@ func (s *GuildSystem) BroadcastMemberLeft(prevGuild *Guild, leftCharacterID uint
 		if s.gw == nil || !s.gw.Systems().Get[*DispatchSystem]().Exists(memberID) {
 			continue
 		}
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -332,7 +332,7 @@ func (s *GuildSystem) BroadcastDisbanded(prevGuild *Guild, memberCharacterIDs []
 		if s.gw == nil || !s.gw.Systems().Get[*DispatchSystem]().Exists(memberID) {
 			continue
 		}
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -347,7 +347,7 @@ func (s *GuildSystem) BroadcastMessage(guildID uint32, messageType constant.Serv
 		return
 	}
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -366,7 +366,7 @@ func (s *GuildSystem) BroadcastMultiChat(guildID uint32, senderCharacterID uint3
 	}
 	mode := pconst.MultiChatModeGuild
 	s.forEachOnlineGuildMember(g, senderCharacterID, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}

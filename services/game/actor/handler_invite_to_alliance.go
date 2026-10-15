@@ -34,7 +34,7 @@ func (h *InviteToAllianceHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		}
 	}
 	if !a.GameWorld.Systems().Get[*game.GuildSystem]().TrySetAllianceInvite(msg.TargetGuildID, msg.AllianceID, msg.ExpiresAt) {
-		a.GameWorld.Systems().Get[*game.DispatchSystem]().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *game.Character) {
+		a.GameWorld.Systems().Get[*game.DispatchSystem]().Visit(msg.InviterCharacterID, func(_ actor.Context, inviter *game.Character) {
 			if inviter == nil {
 				return
 			}

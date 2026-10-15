@@ -660,10 +660,10 @@ func (ch *Character) LoggedOut() bool {
 }
 
 // An RPC reply returns to the actor that sent the request, which the character may have left by moving maps.
-// Call runs fn on the actor that owns the character now. It skips fn once the character has left the channel or
+// Resume runs fn on the actor that owns the character now. It skips fn once the character has left the channel or
 // logged in again; unsettled requests are settled after that login.
-func (ch *Character) Call(fn func(actx actor.Context)) {
-	ch.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(ch.GetID(), func(actx actor.Context, current *Character) {
+func (ch *Character) Resume(fn func(actx actor.Context)) {
+	ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actx actor.Context, current *Character) {
 		if current != ch {
 			return
 		}

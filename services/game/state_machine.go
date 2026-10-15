@@ -636,13 +636,13 @@ func (ch *Character) Spectating() bool {
 }
 
 func (sm *StateMachine) bind(ch *Character) {
-	ch.GameWorld.Systems().Get[*DispatchSystem]().Call(ch.GetID(), func(actor.Context) {
+	ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
 		ch.StateMachine = sm
 	})
 }
 
 func (sm *StateMachine) unbind(ch *Character) {
-	ch.GameWorld.Systems().Get[*DispatchSystem]().Call(ch.GetID(), func(actor.Context) {
+	ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
 		if ch.StateMachine == sm {
 			ch.StateMachine = nil
 		}

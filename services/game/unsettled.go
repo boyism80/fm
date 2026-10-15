@@ -111,7 +111,7 @@ func (u *UnsettledRequests) Settle(actx actor.Context) {
 // Timer callbacks run without an actor context; settle through the character's dispatch.
 func (u *UnsettledRequests) ScheduleSettle() {
 	u.owner.AddTimer(unsettledSettleTimer, unsettledSettleInterval, true, func() {
-		u.owner.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(u.owner.GetID(), func(ctx actor.Context, current *Character) {
+		u.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(u.owner.GetID(), func(ctx actor.Context, current *Character) {
 			if current != u.owner {
 				return
 			}

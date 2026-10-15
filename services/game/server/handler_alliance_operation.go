@@ -455,7 +455,7 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 	if !h.gs.systems.Get[*game.DispatchSystem]().Exists(leaderID) {
 		return
 	}
-	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(leaderID, func(_ actor.Context, ch *game.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().Visit(leaderID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}

@@ -278,7 +278,7 @@ func (gs *GameServer) removeCharacter(character *game.Character, logout <-chan *
 		character.StateMachine.RequestLeave(character, false, game.StateMachineLeaveDisconnect)
 	}
 	dispatch := gs.systems.Get[*game.DispatchSystem]()
-	dispatch.Call(charID, func(ctx actor.Context) {
+	dispatch.Visit(charID, func(ctx actor.Context, _ *game.Character) {
 		if m := character.GetMap(); m != nil {
 			_ = m.LogoutPlayer(ctx, charID)
 		}

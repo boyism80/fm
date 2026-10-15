@@ -72,7 +72,7 @@ func (s *MapSystem) PreCreate() {
 	log.Printf("Pre-created %d map instances", len(s.maps))
 }
 
-func (s *MapSystem) Visit(fn func(*Map)) {
+func (s *MapSystem) Each(fn func(*Map)) {
 	if s.gw == nil || fn == nil {
 		return
 	}
@@ -213,7 +213,7 @@ func (s *MapSystem) CloseInstance(m *Map) {
 	m.Close()
 
 	exitMap := s.returnMap(m)
-	s.gw.Systems().Get[*c_actor.ActorRegistry]().Root().Send(m.LogicActorPID(), &MapCall{Run: func(ctx actor.Context, _ []*Map) []lua.LValue {
+	s.Visit(m, func(ctx actor.Context) {
 		for _, obj := range m.GetObjects(gameconst.ObjectTypeDoor) {
 			if door, ok := obj.(*Door); ok {
 				m.RemoveDoor(door.OID, true)
@@ -222,7 +222,7 @@ func (s *MapSystem) CloseInstance(m *Map) {
 
 		if exitMap == nil {
 			log.Printf("instance map %d (template %d) has no return map; players stay until they leave", m.GetMapID(), m.TemplateID())
-			return nil
+			return
 		}
 		for _, obj := range m.GetAllPlayers() {
 			ch, ok := obj.(*Character)
@@ -233,11 +233,10 @@ func (s *MapSystem) CloseInstance(m *Map) {
 				log.Printf("instance map %d: return character %d: %v", m.GetMapID(), ch.GetID(), err)
 			}
 		}
-		return nil
-	}})
+	})
 }
 
-func (s *MapSystem) Call(m *Map, run func(ctx actor.Context)) {
+func (s *MapSystem) Visit(m *Map, run func(ctx actor.Context)) {
 	pid := m.LogicActorPID()
 	if pid == nil {
 		return
@@ -249,7 +248,7 @@ func (s *MapSystem) Call(m *Map, run func(ctx actor.Context)) {
 }
 
 func (s *MapSystem) Broadcast(m *Map, message types.Packet) {
-	s.Call(m, func(actor.Context) {
+	s.Visit(m, func(actor.Context) {
 		m.Broadcast(message, nil)
 	})
 }

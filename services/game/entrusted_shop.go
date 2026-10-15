@@ -121,7 +121,7 @@ func (es *EntrustedShop) accepting() bool {
 }
 
 func (es *EntrustedShop) release(member *Character, slot uint8, reason pconst.MiniRoomLeaveReason) {
-	es.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(member.GetID(), func(ctx actor.Context, c *Character) {
+	es.GameWorld.Systems().Get[*DispatchSystem]().Visit(member.GetID(), func(ctx actor.Context, c *Character) {
 		if c == nil || c.MiniRoom != es {
 			return
 		}
@@ -131,7 +131,7 @@ func (es *EntrustedShop) release(member *Character, slot uint8, reason pconst.Mi
 }
 
 func (es *EntrustedShop) notifyOwner(notify func(owner *Character)) {
-	es.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(es.OwnerID, func(ctx actor.Context, c *Character) {
+	es.GameWorld.Systems().Get[*DispatchSystem]().Visit(es.OwnerID, func(ctx actor.Context, c *Character) {
 		if c == nil || c.MiniRoom != es {
 			return
 		}
@@ -141,7 +141,7 @@ func (es *EntrustedShop) notifyOwner(notify func(owner *Character)) {
 
 func (es *EntrustedShop) payOwner(meso int32, items []*ShopItem, closing bool, notify func(owner *Character)) {
 	worldID := es.GameWorld.GetWorldID()
-	es.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(es.OwnerID, func(ctx actor.Context, c *Character) {
+	es.GameWorld.Systems().Get[*DispatchSystem]().Visit(es.OwnerID, func(ctx actor.Context, c *Character) {
 		var entry *internal.CharacterSaveEntry
 		if c != nil {
 			meso, items = c.Inventory.collectShopGoods(meso, items)
@@ -154,7 +154,7 @@ func (es *EntrustedShop) payOwner(meso int32, items []*ShopItem, closing bool, n
 			}
 		}
 
-		es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+		es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 			if entry != nil {
 				es.entries[es.OwnerID] = entry
 			}
@@ -198,7 +198,7 @@ func (es *EntrustedShop) Visit(ch *Character) error {
 
 func (es *EntrustedShop) Manage(ownerID uint32) {
 	if !es.accepting() || es.OwnerID != ownerID {
-		es.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(ownerID, func(ctx actor.Context, c *Character) {
+		es.GameWorld.Systems().Get[*DispatchSystem]().Visit(ownerID, func(ctx actor.Context, c *Character) {
 			if c == nil {
 				return
 			}
@@ -218,13 +218,13 @@ func (es *EntrustedShop) Manage(ownerID uint32) {
 	es.updateBalloon()
 
 	view := es.view()
-	es.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(ownerID, func(ctx actor.Context, c *Character) {
+	es.GameWorld.Systems().Get[*DispatchSystem]().Visit(ownerID, func(ctx actor.Context, c *Character) {
 		if c != nil && c.MiniRoom == nil {
 			c.MiniRoom = es
 			c.Listener.OnMiniRoomEntered(c, 0, view, false)
 			return
 		}
-		es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, es.stopManaging)
+		es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, es.stopManaging)
 	})
 }
 
@@ -244,7 +244,7 @@ func (es *EntrustedShop) stopManaging(ctx actor.Context) {
 func (es *EntrustedShop) Leave(ch *Character) {
 	if ch.GetID() == es.OwnerID {
 		ch.MiniRoom = nil
-		es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, es.stopManaging)
+		es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, es.stopManaging)
 		return
 	}
 
@@ -278,7 +278,7 @@ func (es *EntrustedShop) AddItem(actx actor.Context, ch *Character, invType cons
 	}
 
 	entry := ch.BuildRPC(es.GameWorld.GetWorldID())
-	es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+	es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 		if !es.managing || len(es.Items) >= EntrustedShopMaxItems || es.holds(listed.Item.GetModel().GetID()) {
 			es.payOwner(0, []*ShopItem{listed}, false, func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
@@ -302,7 +302,7 @@ func (es *EntrustedShop) RemoveItem(actx actor.Context, ch *Character, index uin
 		return ErrMiniRoomNotOwner
 	}
 
-	es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+	es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 		if !es.managing || int(index) >= len(es.Items) {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
@@ -329,7 +329,7 @@ func (es *EntrustedShop) Open(actx actor.Context, ch *Character) error {
 		return ErrMiniRoomNotOwner
 	}
 
-	es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+	es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 		if !es.managing || es.published || len(es.Items) == 0 || es.Map == nil {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
@@ -358,7 +358,7 @@ func (es *EntrustedShop) Open(actx actor.Context, ch *Character) error {
 func (es *EntrustedShop) scheduleClose() {
 	remaining := max(EntrustedShopDuration-es.Elapsed(), 0)
 	es.AddTimer(entrustedShopCloseTimer, remaining, false, func() {
-		es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+		es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 			if es.Map == nil {
 				return
 			}
@@ -420,7 +420,7 @@ func (es *EntrustedShop) Buy(actx actor.Context, ch *Character, index uint16, bu
 		return nil
 	}
 	message := fmt.Sprintf("고용상점에서 %s %d개가 판매되었습니다.", es.GameWorld.GetResources().GetItemName(model.GetID()), bundles*listed.PerBundle)
-	es.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(es.OwnerID, func(ctx actor.Context, owner *Character) {
+	es.GameWorld.Systems().Get[*DispatchSystem]().Visit(es.OwnerID, func(ctx actor.Context, owner *Character) {
 		if owner == nil {
 			return
 		}
@@ -434,7 +434,7 @@ func (es *EntrustedShop) Arrange(actx actor.Context, ch *Character) error {
 		return ErrMiniRoomNotOwner
 	}
 
-	es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+	es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 		if !es.managing {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
@@ -464,7 +464,7 @@ func (es *EntrustedShop) WithdrawMeso(actx actor.Context, ch *Character) error {
 		return ErrMiniRoomNotOwner
 	}
 
-	es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+	es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 		if !es.managing || es.Meso <= 0 {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
@@ -486,7 +486,7 @@ func (es *EntrustedShop) Close(actx actor.Context, ch *Character) error {
 		return ErrMiniRoomNotOwner
 	}
 
-	es.GameWorld.Systems().Get[*MapSystem]().Call(es.home, func(ctx actor.Context) {
+	es.GameWorld.Systems().Get[*MapSystem]().Visit(es.home, func(ctx actor.Context) {
 		if !es.managing || es.Map == nil {
 			es.notifyOwner(func(owner *Character) {
 				owner.Listener.OnUnlockAction(owner)
@@ -570,7 +570,7 @@ func NewEntrustedShop(owner *Character, title string, slot int16, itemID uint32)
 func (es *EntrustedShop) Place(actx actor.Context, owner *Character) {
 	id := owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID), nil)
 	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, es.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
-		owner.Call(func(actx actor.Context) {
+		owner.Resume(func(actx actor.Context) {
 			owner.Unsettled.Erase(id)
 			if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
 				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
@@ -591,7 +591,7 @@ func (es *EntrustedShop) Place(actx actor.Context, owner *Character) {
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("EntrustedShop.Place character=%d: %v", owner.GetID(), err)
-		owner.Call(func(actx actor.Context) {
+		owner.Resume(func(actx actor.Context) {
 			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
 			if request := owner.Unsettled.Find(id); request != nil {
 				owner.StoreBank.settleShopOpen(actx, request)

@@ -162,7 +162,7 @@ func (s *AllianceSystem) callOnlineMember(memberID uint32, run func(ch *Characte
 	if !s.gw.Systems().Get[*DispatchSystem]().Exists(memberID) {
 		return
 	}
-	s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+	s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 		if ch == nil {
 			return
 		}
@@ -188,7 +188,7 @@ func (s *AllianceSystem) BroadcastNoticeChanged(alliancePb *internal.Alliance, n
 	}
 	msg := gameconst.AllianceNoticeChangedMessagePrefix + notice
 	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -216,7 +216,7 @@ func (s *AllianceSystem) BroadcastLeaderChanged(alliancePb *internal.Alliance, o
 			ch.Listener.OnAllianceLeaderChanged(ch, allianceID, oldLeaderID, newLeaderID, info, guilds)
 		})
 		if leaderNotice != "" {
-			s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+			s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 				if ch == nil {
 					return
 				}

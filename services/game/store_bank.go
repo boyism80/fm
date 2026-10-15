@@ -187,7 +187,7 @@ func (sb *StoreBank) CheckShopOpen(actx actor.Context) {
 	}
 
 	sb.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
-		sb.owner.Call(func(actor.Context) {
+		sb.owner.Resume(func(actor.Context) {
 			shop := v.GetShop()
 			switch {
 			case len(sb.unclaimed(v.GetStoreBank())) > 0:
@@ -203,7 +203,7 @@ func (sb *StoreBank) CheckShopOpen(actx actor.Context) {
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("CheckShopOpen character=%d: %v", sb.owner.GetID(), err)
-		sb.owner.Call(func(actor.Context) {
+		sb.owner.Resume(func(actor.Context) {
 			sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopCannotOpen, 0, 0)
 		})
 	})
@@ -211,7 +211,7 @@ func (sb *StoreBank) CheckShopOpen(actx actor.Context) {
 
 func (sb *StoreBank) settleShopOpen(actx actor.Context, request *UnsettledRequest) {
 	sb.owner.GameWorld.Systems().Get[*InternalSystem]().AbortOpenShopAsync(actx, sb.owner, request.ID).Do(func(reply *internal.AbortOpenShopReply) error {
-		sb.owner.Call(func(actor.Context) {
+		sb.owner.Resume(func(actor.Context) {
 			if !reply.GetAborted() {
 				request.InFlight = false
 				log.Printf("AbortOpenShop character=%d request=%d: shop is no longer empty", sb.owner.GetID(), request.ID)
@@ -221,7 +221,7 @@ func (sb *StoreBank) settleShopOpen(actx actor.Context, request *UnsettledReques
 		})
 		return nil
 	}).OnError(func(err error) {
-		sb.owner.Call(func(actor.Context) {
+		sb.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("AbortOpenShop character=%d request=%d: %v", sb.owner.GetID(), request.ID, err)

@@ -233,7 +233,7 @@ func (s *PartySystem) BroadcastPartySilent(party *Party) {
 		if m == nil || m.GetCharacterId() == 0 {
 			continue
 		}
-		s.gw.Systems().Get[*DispatchSystem]().CallCharacter(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
+		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
 			if ch == nil {
 				return
 			}
@@ -289,7 +289,7 @@ func (s *PartySystem) sendPartySilentToCharacter(ch *Character, party *Party) {
 	forChannel := s.gw.GetChannelID()
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()
-	s.gw.Systems().Get[*DispatchSystem]().CallCharacter(ch.GetID(), func(_ actor.Context, ch *Character) {
+	s.gw.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(_ actor.Context, ch *Character) {
 		if ch == nil {
 			return
 		}

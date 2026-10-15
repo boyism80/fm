@@ -38,7 +38,7 @@ func (ch *Character) ReceiveWhisper(ctx actor.Context, whisper Whisper) {
 			return nil
 		}
 
-		ch.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(ch.GetID(), func(ctx actor.Context, current *Character) {
+		ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(ctx actor.Context, current *Character) {
 			if current == nil {
 				return
 			}

@@ -76,7 +76,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		detail := game.GuildCreateDetail{Name: req.GuildName, Meso: gameconst.GuildCreateMesoCost}
 		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE, 0, detail)
 		h.gs.systems.Get[*game.GuildSystem]().CreateAsync(ctx.ActorContext, ch, id, detail.Name).Do(func(reply *internal.CreateGuildReply) error {
-			ch.Call(func(actor.Context) {
+			ch.Resume(func(actor.Context) {
 				ch.Unsettled.Erase(id)
 				if !reply.GetOk() {
 					if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
@@ -99,7 +99,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			})
 			return nil
 		}).OnError(func(err error) {
-			ch.Call(func(actor.Context) {
+			ch.Resume(func(actor.Context) {
 				ch.Unsettled.Find(id).InFlight = false
 				ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 			})
@@ -169,7 +169,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				log.Printf("GuildOperation(accept invite): ok but missing guild character=%d", charID)
 				return nil
 			}
-			ch.Call(func(actor.Context) {
+			ch.Resume(func(actor.Context) {
 				h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
 			})
 			return nil
@@ -338,7 +338,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM, uint64(guildID), detail)
 		h.gs.systems.Get[*game.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo).Do(func(reply *internal.ChangeGuildEmblemReply) error {
-			ch.Call(func(actor.Context) {
+			ch.Resume(func(actor.Context) {
 				ch.Unsettled.Erase(id)
 				if !reply.GetOk() {
 					h.gs.systems.Get[*game.GuildSystem]().RefundEmblem(ch, detail)
@@ -350,7 +350,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			})
 			return nil
 		}).OnError(func(err error) {
-			ch.Call(func(actor.Context) {
+			ch.Resume(func(actor.Context) {
 				ch.Unsettled.Find(id).InFlight = false
 			})
 			log.Printf("GuildOperation(change emblem) character=%d id=%d: %v", charID, id, err)

@@ -144,14 +144,7 @@ func (s *DispatchSystem) SendTo(characterID uint32, msg interface{}) {
 	s.SendToCharacter(nil, characterID, msg)
 }
 
-func (s *DispatchSystem) Call(characterID uint32, run func(ctx actor.Context)) {
-	s.SendTo(characterID, &MapCall{Run: func(ctx actor.Context, _ []*Map) []lua.LValue {
-		run(ctx)
-		return nil
-	}})
-}
-
-func (s *DispatchSystem) CallCharacter(characterID uint32, run func(ctx actor.Context, ch *Character)) {
+func (s *DispatchSystem) Visit(characterID uint32, run func(ctx actor.Context, ch *Character)) {
 	s.SendTo(characterID, &MapCall{Run: func(ctx actor.Context, maps []*Map) []lua.LValue {
 		for _, m := range maps {
 			if ch := m.GetPlayer(characterID); ch != nil {

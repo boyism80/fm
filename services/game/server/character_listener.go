@@ -1583,7 +1583,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *game.Character) {
 
 	ch.Broadcast(lookPacket, nil)
 	if ch.Messenger.RoomID != 0 {
-		l.gs.systems.Get[*game.DispatchSystem]().CallCharacter(ch.GetID(), func(ctx actor.Context, current *game.Character) {
+		l.gs.systems.Get[*game.DispatchSystem]().Visit(ch.GetID(), func(ctx actor.Context, current *game.Character) {
 			if current.Messenger.RoomID == 0 {
 				return
 			}

@@ -100,7 +100,7 @@ func (d *Duey) Open(actx actor.Context, fromArrival bool) {
 
 	d.pending = true
 	d.owner.GameWorld.Systems().Get[*InternalSystem]().LoadParcelsAsync(actx, d.owner).Do(func(v *internal.LoadParcelsReply) error {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 			reply := v
 			d.Parcels = d.parcelsOf(reply.GetParcels())
@@ -115,7 +115,7 @@ func (d *Duey) Open(actx actor.Context, fromArrival bool) {
 		})
 		return nil
 	}).OnError(func(err error) {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 		})
 		log.Printf("Duey.Open character=%d: %v", d.owner.GetID(), err)
@@ -254,7 +254,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 
 	d.pending = true
 	d.owner.GameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, id, d.owner.AccountID, recipient, parcel, oneOfAKind).Do(func(v *internal.SendParcelReply) error {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 			result := v.GetResult()
 			if result != internal.ParcelResult_PARCEL_RESULT_OK {
@@ -278,7 +278,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		})
 		return nil
 	}).OnError(func(err error) {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 			d.owner.Unsettled.Find(id).InFlight = false
 			d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultUnknown)
@@ -311,7 +311,7 @@ func (d *Duey) settleSend(actx actor.Context, request *UnsettledRequest) {
 	}
 
 	d.owner.GameWorld.Systems().Get[*InternalSystem]().AbortParcelSendAsync(actx, d.owner, request.ID, detail.Recipient).Do(func(v *internal.AbortParcelSendReply) error {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			if !v.GetSent() {
 				d.refundSend(detail)
 			}
@@ -319,7 +319,7 @@ func (d *Duey) settleSend(actx actor.Context, request *UnsettledRequest) {
 		})
 		return nil
 	}).OnError(func(err error) {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Duey.settleSend character=%d id=%d: %v", d.owner.GetID(), request.ID, err)
@@ -356,7 +356,7 @@ func (d *Duey) Receive(actx actor.Context, parcelID uint32) error {
 	id := d.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_PARCEL_CLAIM, uint64(parcelID), nil)
 	d.pending = true
 	d.owner.GameWorld.Systems().Get[*InternalSystem]().ClaimParcelAsync(actx, d.owner, id, parcelID).Do(func(v *internal.ClaimParcelReply) error {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 			if v.GetResult() != internal.ParcelResult_PARCEL_RESULT_OK {
 				d.owner.Unsettled.Erase(id)
@@ -375,7 +375,7 @@ func (d *Duey) Receive(actx actor.Context, parcelID uint32) error {
 		})
 		return nil
 	}).OnError(func(err error) {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 			d.owner.Unsettled.Find(id).InFlight = false
 			d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultUnknown)
@@ -403,7 +403,7 @@ func (d *Duey) receiveClaimed(id uint64, pb *internal.Parcel) error {
 
 func (d *Duey) settleClaim(actx actor.Context, request *UnsettledRequest) {
 	d.owner.GameWorld.Systems().Get[*InternalSystem]().ClaimParcelAsync(actx, d.owner, request.ID, uint32(request.Target)).Do(func(v *internal.ClaimParcelReply) error {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			if v.GetResult() != internal.ParcelResult_PARCEL_RESULT_OK {
 				d.owner.Unsettled.Erase(request.ID)
 				return
@@ -412,7 +412,7 @@ func (d *Duey) settleClaim(actx actor.Context, request *UnsettledRequest) {
 		})
 		return nil
 	}).OnError(func(err error) {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Duey.settleClaim character=%d id=%d: %v", d.owner.GetID(), request.ID, err)
@@ -454,7 +454,7 @@ func (d *Duey) Delete(actx actor.Context, parcelID uint32) error {
 
 	d.pending = true
 	d.owner.GameWorld.Systems().Get[*InternalSystem]().DeleteParcelAsync(actx, d.owner, parcelID).Do(func(v *internal.DeleteParcelReply) error {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 			if index, _ := d.find(parcelID); index >= 0 {
 				d.Parcels = append(d.Parcels[:index:index], d.Parcels[index+1:]...)
@@ -467,7 +467,7 @@ func (d *Duey) Delete(actx actor.Context, parcelID uint32) error {
 		})
 		return nil
 	}).OnError(func(err error) {
-		d.owner.Call(func(actor.Context) {
+		d.owner.Resume(func(actor.Context) {
 			d.pending = false
 			d.owner.Listener.OnDueyResult(d.owner, pconst.DueyResultUnknown)
 		})

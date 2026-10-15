@@ -288,7 +288,7 @@ func (e *Expedition) Start(leader *Character) (*StateMachine, []*Character, erro
 }
 
 func (e *Expedition) stopClock() {
-	e.registry.gw.Systems().Get[*MapSystem]().Call(e.BeginMap, func(actor.Context) {
+	e.registry.gw.Systems().Get[*MapSystem]().Visit(e.BeginMap, func(actor.Context) {
 		for _, obj := range e.BeginMap.GetAllPlayers() {
 			if ch, ok := obj.(*Character); ok {
 				ch.Listener.OnStopClock(ch)

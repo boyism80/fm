@@ -69,7 +69,7 @@ func (h *allianceMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 			if !gs.systems.Get[*game.DispatchSystem]().Exists(memberID) {
 				continue
 			}
-			gs.systems.Get[*game.DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *game.Character) {
+			gs.systems.Get[*game.DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *game.Character) {
 				if ch == nil {
 					return
 				}

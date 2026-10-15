@@ -222,7 +222,7 @@ func (s *AllianceSystem) broadcastMemberFieldsChanged(allianceID uint32, subject
 			if !s.gw.Systems().Get[*DispatchSystem]().Exists(memberID) {
 				continue
 			}
-			s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+			s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 				if ch == nil {
 					return
 				}
@@ -259,7 +259,7 @@ func (s *AllianceSystem) BroadcastMemberOnlineChanged(allianceID uint32, subject
 			if !s.gw.Systems().Get[*DispatchSystem]().Exists(memberID) {
 				continue
 			}
-			s.gw.Systems().Get[*DispatchSystem]().CallCharacter(memberID, func(_ actor.Context, ch *Character) {
+			s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 				if ch == nil {
 					return
 				}

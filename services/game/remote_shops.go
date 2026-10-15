@@ -120,7 +120,7 @@ func (r *RemoteShops) Manage(actx actor.Context, slot int16) error {
 	}
 
 	r.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, r.owner).Do(func(v *internal.FindEntrustedShopReply) error {
-		r.owner.Call(func(actor.Context) {
+		r.owner.Resume(func(actor.Context) {
 			shop := v.GetShop()
 			target := r.owner.GameWorld.Systems().Get[*MapSystem]().Get(shop.GetMapId())
 			switch {
@@ -131,9 +131,9 @@ func (r *RemoteShops) Manage(actx actor.Context, slot int16) error {
 			case target == nil:
 				r.owner.Listener.OnEntrustedShopCheck(r.owner, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
 			default:
-				r.owner.GameWorld.Systems().Get[*MapSystem]().Call(target, func(actor.Context) {
+				r.owner.GameWorld.Systems().Get[*MapSystem]().Visit(target, func(actor.Context) {
 					sn, ok := target.FindEntrustedShopByOwner(r.owner.GetID())
-					r.owner.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(r.owner.GetID(), func(ctx actor.Context, c *Character) {
+					r.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(r.owner.GetID(), func(ctx actor.Context, c *Character) {
 						if c == nil {
 							return
 						}
@@ -150,7 +150,7 @@ func (r *RemoteShops) Manage(actx actor.Context, slot int16) error {
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("UseRemoteEntrustedShop character=%d: %v", r.owner.GetID(), err)
-		r.owner.Call(func(actor.Context) {
+		r.owner.Resume(func(actor.Context) {
 			r.owner.Listener.OnUnlockAction(r.owner)
 		})
 	})
@@ -172,10 +172,10 @@ func (r *RemoteShops) visitManaged(sn uint32) error {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 	}
 	ownerID := r.owner.GetID()
-	r.owner.GameWorld.Systems().Get[*MapSystem]().Call(target, func(actor.Context) {
+	r.owner.GameWorld.Systems().Get[*MapSystem]().Visit(target, func(actor.Context) {
 		es, ok := target.GetObject(constant.ObjectTypeEntrustedShop, sn).(*EntrustedShop)
 		if !ok {
-			r.owner.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(ownerID, func(ctx actor.Context, c *Character) {
+			r.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(ownerID, func(ctx actor.Context, c *Character) {
 				if c == nil {
 					return
 				}

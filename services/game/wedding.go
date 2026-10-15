@@ -191,7 +191,7 @@ func (w *Wedding) AnswerProposal(actx actor.Context, accepted bool, name string,
 			failure = pconst.EngageResultAlreadyEngaged
 		}
 		for i, member := range members {
-			member.Call(func(actor.Context) {
+			member.Resume(func(actor.Context) {
 				member.Wedding.closeProposal(id, engaged)
 				if engaged {
 					member.Wedding.Marriage = NewMarriageFromInternalProto(v.GetMarriage())
@@ -204,7 +204,7 @@ func (w *Wedding) AnswerProposal(actx actor.Context, accepted bool, name string,
 		return nil
 	}).OnError(func(err error) {
 		for _, member := range members {
-			member.Call(func(actor.Context) {
+			member.Resume(func(actor.Context) {
 				if request := member.Unsettled.Find(id); request != nil {
 					request.InFlight = false
 				}
@@ -241,7 +241,7 @@ func (w *Wedding) closeProposal(id uint64, engaged bool) {
 
 func (w *Wedding) settleProposal(actx actor.Context, request *UnsettledRequest) {
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().AbortMarriageChangeAsync(actx, w.owner, request.ID).Do(func(v *internal.AbortMarriageChangeReply) error {
-		w.owner.Call(func(actx actor.Context) {
+		w.owner.Resume(func(actx actor.Context) {
 			w.closeProposal(request.ID, v.GetChanged())
 			if v.GetChanged() {
 				w.Refresh(actx, "")
@@ -249,7 +249,7 @@ func (w *Wedding) settleProposal(actx actor.Context, request *UnsettledRequest) 
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Wedding.settleProposal character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
@@ -304,7 +304,7 @@ func (w *Wedding) BreakEngagement(actx actor.Context) (*async.Promise[bool], err
 
 	return w.owner.GameWorld.Systems().Get[*InternalSystem]().BreakEngagementAsync(actx, w.owner, w.Marriage.ID).Then(func(v *internal.MarriageReply) (bool, error) {
 		broken := v.GetResult() == internal.MarriageResult_MARRIAGE_RESULT_OK
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			if !broken {
 				w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultCannotCancel)
 				return
@@ -319,7 +319,7 @@ func (w *Wedding) BreakEngagement(actx actor.Context) (*async.Promise[bool], err
 
 func (w *Wedding) Refresh(actx actor.Context, event string) {
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().LoadMarriageAsync(actx, w.owner).Do(func(v *internal.MarriageReply) error {
-		w.owner.Call(func(actx actor.Context) {
+		w.owner.Resume(func(actx actor.Context) {
 			w.Marriage = NewMarriageFromInternalProto(v.GetMarriage())
 			if w.Marriage == nil {
 				w.discardRings()
@@ -369,7 +369,7 @@ func (w *Wedding) Reserve(actx actor.Context, ticketItemID uint32) (*async.Promi
 
 	return w.owner.GameWorld.Systems().Get[*InternalSystem]().ReserveWeddingAsync(actx, w.owner, id, w.Marriage.ID, ticketItemID).Then(func(v *internal.MarriageReply) (bool, error) {
 		reserved := v.GetResult() == internal.MarriageResult_MARRIAGE_RESULT_OK
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.closeReservation(id, reserved)
 			if !reserved {
 				return
@@ -379,7 +379,7 @@ func (w *Wedding) Reserve(actx actor.Context, ticketItemID uint32) (*async.Promi
 		})
 		return reserved, nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.owner.Unsettled.Find(id).InFlight = false
 		})
 		log.Printf("ReserveWedding character=%d: %v", w.owner.GetID(), err)
@@ -408,7 +408,7 @@ func (w *Wedding) closeReservation(id uint64, reserved bool) {
 
 func (w *Wedding) settleReservation(actx actor.Context, request *UnsettledRequest) {
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().AbortMarriageChangeAsync(actx, w.owner, request.ID).Do(func(v *internal.AbortMarriageChangeReply) error {
-		w.owner.Call(func(actx actor.Context) {
+		w.owner.Resume(func(actx actor.Context) {
 			w.closeReservation(request.ID, v.GetChanged())
 			if v.GetChanged() {
 				w.Refresh(actx, "")
@@ -416,7 +416,7 @@ func (w *Wedding) settleReservation(actx actor.Context, request *UnsettledReques
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Wedding.settleReservation character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
@@ -441,7 +441,7 @@ func (w *Wedding) SubmitWishlist(actx actor.Context, wishes []string) {
 
 	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_WISHLIST, uint64(w.Marriage.ID), weddingWishlistDetail{Ticket: ticket.Invitation, Wishes: wishes})
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().SetWeddingWishlistAsync(actx, w.owner, id, w.Marriage.ID, wishes).Do(func(v *internal.MarriageReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			if !w.completeWishlist(id, ticket.Invitation, v) {
 				return
 			}
@@ -453,7 +453,7 @@ func (w *Wedding) SubmitWishlist(actx actor.Context, wishes []string) {
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			if request := w.owner.Unsettled.Find(id); request != nil {
 				request.InFlight = false
 			}
@@ -496,12 +496,12 @@ func (w *Wedding) settleWishlist(actx actor.Context, request *UnsettledRequest) 
 		return
 	}
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().SetWeddingWishlistAsync(actx, w.owner, request.ID, uint32(request.Target), detail.Wishes).Do(func(v *internal.MarriageReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.completeWishlist(request.ID, detail.Ticket, v)
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Wedding.settleWishlist character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
@@ -533,7 +533,7 @@ func (w *Wedding) InviteGuest(actx actor.Context, guestName string, marriageID u
 	w.owner.Inventory.RemoveByItemIDCount(ticket.Invitation, 1)
 	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_INVITE, uint64(marriageID), weddingInviteDetail{Invitation: ticket.Invitation, Guest: guestName, Parcel: parcel})
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().InviteWeddingGuestAsync(actx, w.owner, id, marriageID, guestName, parcel).Do(func(v *internal.InviteWeddingGuestReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.closeInvite(id, v.GetResult())
 			switch v.GetResult() {
 			case internal.MarriageResult_MARRIAGE_RESULT_OK:
@@ -548,7 +548,7 @@ func (w *Wedding) InviteGuest(actx actor.Context, guestName string, marriageID u
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			if request := w.owner.Unsettled.Find(id); request != nil {
 				request.InFlight = false
 			}
@@ -584,12 +584,12 @@ func (w *Wedding) settleInvite(actx actor.Context, request *UnsettledRequest) {
 		return
 	}
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().InviteWeddingGuestAsync(actx, w.owner, request.ID, uint32(request.Target), detail.Guest, detail.Parcel).Do(func(v *internal.InviteWeddingGuestReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.closeInvite(request.ID, v.GetResult())
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Wedding.settleInvite character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
@@ -643,7 +643,7 @@ func (w *Wedding) RequestDivorce(actx actor.Context) (*async.Promise[string], er
 			return "pending", nil
 		}
 		marriage := NewMarriageFromInternalProto(v.GetMarriage())
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.Marriage = marriage
 			if marriage != nil {
 				return
@@ -668,7 +668,7 @@ func (w *Wedding) CancelDivorce(actx actor.Context) (*async.Promise[bool], error
 		if reply.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
 			return false, nil
 		}
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
 		})
 		return true, nil
@@ -734,7 +734,7 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 
 	w.gift.pending = true
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().GiveWeddingGiftAsync(actx, w.owner, id, w.gift.receiverID, pb).Do(func(v *internal.GiveWeddingGiftReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.gift.pending = false
 			w.owner.Unsettled.Erase(id)
 			if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
@@ -746,7 +746,7 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.gift.pending = false
 			w.owner.Unsettled.Find(id).InFlight = false
 			w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
@@ -764,7 +764,7 @@ func (w *Wedding) settleGiftSend(actx actor.Context, request *UnsettledRequest) 
 	}
 
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().AbortWeddingGiftAsync(actx, w.owner, request.ID, uint32(request.Target)).Do(func(v *internal.AbortWeddingGiftReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			if !v.GetGiven() {
 				if item, err := NewItemFromInternalProto(detail.Item, w.owner.GameWorld); err == nil {
 					w.owner.Inventory.addItemUnchecked(item, true)
@@ -774,7 +774,7 @@ func (w *Wedding) settleGiftSend(actx actor.Context, request *UnsettledRequest) 
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
@@ -802,7 +802,7 @@ func (w *Wedding) OpenGiftBox(actx actor.Context) *async.Promise[bool] {
 			gifts = append(gifts, &WeddingGift{ID: pb.GetGiftId(), Sender: pb.GetSenderName(), Item: item})
 		}
 
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.gift = weddingGiftWindow{gifts: gifts}
 			if len(gifts) == 0 {
 				return
@@ -849,7 +849,7 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_CLAIM, uint64(gift.ID), nil)
 	w.gift.pending = true
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().ClaimWeddingGiftAsync(actx, w.owner, id, gift.ID).Do(func(v *internal.ClaimWeddingGiftReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.gift.pending = false
 			for i, candidate := range w.gift.gifts {
 				if candidate == gift {
@@ -870,7 +870,7 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			w.gift.pending = false
 			w.owner.Unsettled.Find(id).InFlight = false
 			w.owner.Listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
@@ -901,7 +901,7 @@ func (w *Wedding) receiveClaimed(id uint64, pb *internal.WeddingGift) bool {
 
 func (w *Wedding) settleGiftClaim(actx actor.Context, request *UnsettledRequest) {
 	w.owner.GameWorld.Systems().Get[*InternalSystem]().ClaimWeddingGiftAsync(actx, w.owner, request.ID, uint32(request.Target)).Do(func(v *internal.ClaimWeddingGiftReply) error {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
 				w.owner.Unsettled.Erase(request.ID)
 				return
@@ -910,7 +910,7 @@ func (w *Wedding) settleGiftClaim(actx actor.Context, request *UnsettledRequest)
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actor.Context) {
+		w.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Wedding.settleGiftClaim character=%d id=%d: %v", w.owner.GetID(), request.ID, err)

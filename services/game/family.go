@@ -56,7 +56,7 @@ func (f *Family) fail(result internal.FamilyResult) {
 }
 
 func (f *Family) finishRequest(reply *internal.FamilyReply) error {
-	f.owner.Call(func(actor.Context) {
+	f.owner.Resume(func(actor.Context) {
 		f.Pending = false
 		if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
 			f.fail(reply.GetStatus())
@@ -70,7 +70,7 @@ func (f *Family) finishRequest(reply *internal.FamilyReply) error {
 }
 
 func (f *Family) failRequest(error) {
-	f.owner.Call(func(actor.Context) {
+	f.owner.Resume(func(actor.Context) {
 		f.Pending = false
 		f.fail(internal.FamilyResult_FAMILY_RESULT_FAILED)
 	})
@@ -176,7 +176,7 @@ func (f *Family) AnswerInvite(actx actor.Context, seniorID uint32, name string, 
 
 	f.Pending = true
 	f.owner.GameWorld.Systems().Get[*InternalSystem]().JoinFamilyAsync(actx, senior, f.owner).Do(func(reply *internal.FamilyReply) error {
-		f.owner.Call(func(actor.Context) {
+		f.owner.Resume(func(actor.Context) {
 			f.Pending = false
 			if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
 				f.fail(reply.GetStatus())
@@ -267,7 +267,7 @@ func (f *Family) summon(targetID uint32) {
 	dispatch := f.owner.GameWorld.Systems().Get[*DispatchSystem]()
 	f.owner.Listener.OnUnlockAction(f.owner)
 
-	dispatch.CallCharacter(targetID, func(_ actor.Context, target *Character) {
+	dispatch.Visit(targetID, func(_ actor.Context, target *Character) {
 		result := internal.FamilyResult_FAMILY_RESULT_OK
 		switch {
 		case target == nil || target.LoggedOut() || target.GetMap() == nil || (target.IsHidden() && role < target.Role):
@@ -283,7 +283,7 @@ func (f *Family) summon(targetID uint32) {
 			return
 		}
 
-		dispatch.CallCharacter(ownerID, func(_ actor.Context, owner *Character) {
+		dispatch.Visit(ownerID, func(_ actor.Context, owner *Character) {
 			if owner != nil {
 				owner.Listener.OnFamilyResult(owner, result)
 			}
@@ -317,9 +317,9 @@ func (f *Family) moveTo(feature internal.FamilyFeature, targetID uint32) {
 	dispatch := f.owner.GameWorld.Systems().Get[*DispatchSystem]()
 	f.owner.Listener.OnUnlockAction(f.owner)
 
-	dispatch.CallCharacter(targetID, func(_ actor.Context, target *Character) {
+	dispatch.Visit(targetID, func(_ actor.Context, target *Character) {
 		if target == nil || target.LoggedOut() || target.GetMap() == nil || (target.IsHidden() && role < target.Role) || target.GetMap().BlocksTeleportStone() {
-			dispatch.CallCharacter(ownerID, func(_ actor.Context, owner *Character) {
+			dispatch.Visit(ownerID, func(_ actor.Context, owner *Character) {
 				if owner != nil {
 					owner.Listener.OnFamilyResult(owner, internal.FamilyResult_FAMILY_RESULT_FAILED)
 				}
@@ -328,7 +328,7 @@ func (f *Family) moveTo(feature internal.FamilyFeature, targetID uint32) {
 		}
 
 		destination := target.GetMap()
-		dispatch.CallCharacter(ownerID, func(c actor.Context, owner *Character) {
+		dispatch.Visit(ownerID, func(c actor.Context, owner *Character) {
 			if owner != nil {
 				owner.Family.move(c, feature, targetID, destination, origin)
 			}
@@ -348,7 +348,7 @@ func (f *Family) move(actx actor.Context, feature internal.FamilyFeature, target
 	id := f.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_FAMILY_MOVE, 0, nil)
 	deadline := clock.Now().Add(constant.FamilyMoveDuration)
 	f.owner.GameWorld.Systems().Get[*InternalSystem]().UseFamilyFeatureAsync(actx, f.owner, feature, targetID, id).Do(func(reply *internal.FamilyReply) error {
-		f.owner.Call(func(actx actor.Context) {
+		f.owner.Resume(func(actx actor.Context) {
 			f.Pending = false
 			if reply.GetStatus() != internal.FamilyResult_FAMILY_RESULT_OK {
 				f.owner.Unsettled.Erase(id)
@@ -372,7 +372,7 @@ func (f *Family) move(actx actor.Context, feature internal.FamilyFeature, target
 		})
 		return nil
 	}).OnError(func(error) {
-		f.owner.Call(func(actor.Context) {
+		f.owner.Resume(func(actor.Context) {
 			f.Pending = false
 			f.owner.Unsettled.Find(id).InFlight = false
 			f.owner.Listener.OnFamilyResult(f.owner, internal.FamilyResult_FAMILY_RESULT_FAILED)
@@ -409,13 +409,13 @@ func (f *Family) settleMove(actx actor.Context, request *UnsettledRequest) {
 
 func (f *Family) finishMove(actx actor.Context, request *UnsettledRequest, complete bool) {
 	f.owner.GameWorld.Systems().Get[*InternalSystem]().FinishFamilyMoveAsync(actx, f.owner, request.ID, complete).Do(func(reply *internal.FamilyReply) error {
-		f.owner.Call(func(actor.Context) {
+		f.owner.Resume(func(actor.Context) {
 			f.owner.Unsettled.Erase(request.ID)
 			f.Set(reply.GetFamily())
 		})
 		return nil
 	}).OnError(func(err error) {
-		f.owner.Call(func(actor.Context) {
+		f.owner.Resume(func(actor.Context) {
 			request.InFlight = false
 		})
 		log.Printf("Family.finishMove character=%d id=%d: %v", f.owner.GetID(), request.ID, err)

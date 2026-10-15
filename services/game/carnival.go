@@ -232,7 +232,7 @@ func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld) bool {
 	}
 	m.mu.Unlock()
 
-	gw.Systems().Get[*MapSystem]().Call(challenge.Map, func(actor.Context) {
+	gw.Systems().Get[*MapSystem]().Visit(challenge.Map, func(actor.Context) {
 		m.admitChallengers(challenge)
 	})
 	return true

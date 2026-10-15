@@ -29,7 +29,7 @@ func (h *parcelMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(payload.CharacterID, func(_ actor.Context, ch *game.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().Visit(payload.CharacterID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}

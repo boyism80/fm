@@ -140,7 +140,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 	admin := t.owner.HasRoleAtLeast(constant.RoleAdmin)
 	var settled atomic.Bool
 	settle := func(run func(ctx actor.Context)) {
-		t.owner.GameWorld.Systems().Get[*DispatchSystem]().Call(t.owner.GetID(), func(ctx actor.Context) {
+		t.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(t.owner.GetID(), func(ctx actor.Context, _ *Character) {
 			if settled.CompareAndSwap(false, true) {
 				run(ctx)
 			}
@@ -151,7 +151,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 			fail(pconst.TeleportStoneResultNotFound)
 		})
 	})
-	t.owner.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(targetID, func(_ actor.Context, target *Character) {
+	t.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(targetID, func(_ actor.Context, target *Character) {
 		if target == nil || ((target.IsHidden() || target.HasRoleAtLeast(constant.RoleAdmin)) && !admin) {
 			settle(func(actor.Context) {
 				fail(pconst.TeleportStoneResultNotFound)

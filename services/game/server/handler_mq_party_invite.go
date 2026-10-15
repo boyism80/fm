@@ -33,7 +33,7 @@ func (h *partyMqPartyInvite) Handle(_ actor.Context, raw json.RawMessage) error 
 	if payload.TargetCharacterID == 0 {
 		return nil
 	}
-	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(payload.TargetCharacterID, func(_ actor.Context, ch *game.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().Visit(payload.TargetCharacterID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}

@@ -198,7 +198,7 @@ func (r *ExpeditionSystem) promote(name string) {
 	spec := board.spec
 	r.mu.Unlock()
 
-	r.gw.Systems().Get[*MapSystem]().Call(reservation.field, func(actor.Context) {
+	r.gw.Systems().Get[*MapSystem]().Visit(reservation.field, func(actor.Context) {
 		leader := reservation.field.GetPlayer(reservation.member.ID)
 		if leader == nil {
 			notice := fmt.Sprintf(constant.ExpeditionSkippedMessage, reservation.member.Name)

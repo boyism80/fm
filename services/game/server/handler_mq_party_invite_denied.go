@@ -33,7 +33,7 @@ func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, raw json.RawMessage) 
 	if payload.InviterCharacterID == 0 {
 		return nil
 	}
-	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(payload.InviterCharacterID, func(_ actor.Context, ch *game.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().Visit(payload.InviterCharacterID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}

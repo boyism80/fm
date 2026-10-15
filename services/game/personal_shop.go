@@ -247,7 +247,7 @@ func (ps *PersonalShop) close(reason pconst.MiniRoomLeaveReason) {
 	}
 	ps.entries[owner.GetID()] = owner.BuildRPC(ps.GameWorld.GetWorldID())
 	m.RemovePersonalShop(ps)
-	ps.GameWorld.Systems().Get[*MapSystem]().Call(m, func(ctx actor.Context) {
+	ps.GameWorld.Systems().Get[*MapSystem]().Visit(m, func(ctx actor.Context) {
 		ps.save(ctx, true)
 	})
 }
@@ -306,7 +306,7 @@ func NewPersonalShop(owner *Character, title string, slot int16, itemID uint32) 
 func (ps *PersonalShop) Place(actx actor.Context, owner *Character) {
 	id := owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID), nil)
 	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, ps.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
-		owner.Call(func(actx actor.Context) {
+		owner.Resume(func(actx actor.Context) {
 			owner.Unsettled.Erase(id)
 			if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
 				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
@@ -327,7 +327,7 @@ func (ps *PersonalShop) Place(actx actor.Context, owner *Character) {
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("PersonalShop.Place character=%d: %v", owner.GetID(), err)
-		owner.Call(func(actx actor.Context) {
+		owner.Resume(func(actx actor.Context) {
 			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
 			if request := owner.Unsettled.Find(id); request != nil {
 				owner.StoreBank.settleShopOpen(actx, request)

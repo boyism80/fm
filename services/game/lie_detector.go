@@ -171,7 +171,7 @@ func (d *LieDetector) ask() error {
 
 	// Timer callbacks run without an actor context; time out through the character's dispatch.
 	d.owner.AddTimer(lieDetectorTimer, wait, false, func() {
-		d.owner.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(d.owner.GetID(), func(actx actor.Context, current *Character) {
+		d.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(d.owner.GetID(), func(actx actor.Context, current *Character) {
 			if current != d.owner || d.testerID == 0 || d.attempts != attempt {
 				return
 			}

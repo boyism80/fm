@@ -54,7 +54,7 @@ func (h *buddyMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 		if !gs.systems.Get[*game.DispatchSystem]().Exists(recipientID) {
 			continue
 		}
-		gs.systems.Get[*game.DispatchSystem]().CallCharacter(recipientID, func(_ actor.Context, ch *game.Character) {
+		gs.systems.Get[*game.DispatchSystem]().Visit(recipientID, func(_ actor.Context, ch *game.Character) {
 			if ch == nil {
 				return
 			}

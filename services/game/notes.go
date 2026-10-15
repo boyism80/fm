@@ -37,7 +37,7 @@ func (n *Notes) Remove(actx actor.Context, action internal.NotesAction, noteIDs 
 // relogin may have loaded the same request again, so only the holder of the request grants.
 func (n *Notes) remove(actx actor.Context, id uint64, detail noteRemoveDetail) *async.Promise[*internal.NotesReply] {
 	return n.owner.GameWorld.Systems().Get[*InternalSystem]().RemoveNotesAsync(actx, n.owner, id, detail.Action, detail.NoteIDs).Do(func(reply *internal.NotesReply) error {
-		n.owner.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(n.owner.GetID(), func(_ actor.Context, current *Character) {
+		n.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(n.owner.GetID(), func(_ actor.Context, current *Character) {
 			if current == nil || current.Unsettled.Find(id) == nil {
 				return
 			}
@@ -46,7 +46,7 @@ func (n *Notes) remove(actx actor.Context, id uint64, detail noteRemoveDetail) *
 		})
 		return nil
 	}).OnError(func(err error) {
-		n.owner.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(n.owner.GetID(), func(_ actor.Context, current *Character) {
+		n.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(n.owner.GetID(), func(_ actor.Context, current *Character) {
 			if current == nil {
 				return
 			}

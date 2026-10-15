@@ -61,7 +61,7 @@ func (h *partyMqChat) handlePartyMultiChat(gs *GameServer, memberID uint32, send
 		if cid == 0 || cid == senderCharacterID {
 			continue
 		}
-		gs.systems.Get[*game.DispatchSystem]().CallCharacter(cid, func(_ actor.Context, ch *game.Character) {
+		gs.systems.Get[*game.DispatchSystem]().Visit(cid, func(_ actor.Context, ch *game.Character) {
 			if ch == nil {
 				return
 			}

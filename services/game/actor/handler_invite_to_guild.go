@@ -28,7 +28,7 @@ func (h *InviteToGuildHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	switch ch.Guild.Invite(msg.GuildID, msg.InviterName) {
 	case game.ErrGuildAlreadyJoined:
 		if a.GameWorld != nil {
-			a.GameWorld.Systems().Get[*game.DispatchSystem]().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *game.Character) {
+			a.GameWorld.Systems().Get[*game.DispatchSystem]().Visit(msg.InviterCharacterID, func(_ actor.Context, inviter *game.Character) {
 				if inviter == nil {
 					return
 				}
@@ -37,7 +37,7 @@ func (h *InviteToGuildHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		}
 	case game.ErrGuildInviteBusy:
 		if a.GameWorld != nil {
-			a.GameWorld.Systems().Get[*game.DispatchSystem]().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *game.Character) {
+			a.GameWorld.Systems().Get[*game.DispatchSystem]().Visit(msg.InviterCharacterID, func(_ actor.Context, inviter *game.Character) {
 				if inviter == nil {
 					return
 				}

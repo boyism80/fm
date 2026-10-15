@@ -75,7 +75,7 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Notes(c, internalReq)
 		},
 		func(reply *internal.NotesReply) error {
-			h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(ch.GetID(), func(_ actor.Context, current *game.Character) {
+			h.gs.systems.Get[*game.DispatchSystem]().Visit(ch.GetID(), func(_ actor.Context, current *game.Character) {
 				switch req.Action {
 				case internal.NotesAction_NOTES_ACTION_SEND:
 					if reply.Status == internal.NoteResult_NOTE_RESULT_OK {

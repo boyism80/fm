@@ -78,7 +78,7 @@ func (s *InternalSystem) SaveAllCharactersAsync(ctx actor.Context) *async.Promis
 		root := s.gw.Systems().Get[*c_actor.ActorRegistry]().Root()
 		targets := make([]*actor.PID, 0)
 		seen := map[string]bool{}
-		s.gw.Systems().Get[*MapSystem]().Visit(func(m *Map) {
+		s.gw.Systems().Get[*MapSystem]().Each(func(m *Map) {
 			pid := m.LogicActorPID()
 			if pid == nil || seen[pid.Id] {
 				return

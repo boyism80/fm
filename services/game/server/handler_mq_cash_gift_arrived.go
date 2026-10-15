@@ -31,7 +31,7 @@ func (h *cashGiftMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 		return nil
 	}
 	message := fmt.Sprintf("%s님이 캐시샵 선물을 보냈습니다. 캐시샵 보관함을 확인하세요.", payload.SenderName)
-	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(payload.CharacterID, func(_ actor.Context, ch *game.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().Visit(payload.CharacterID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}
