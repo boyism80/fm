@@ -420,11 +420,8 @@ export class CashShopService {
         const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
             const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: 0 });
-            const serial = String(req.items[0]?.item?.uniqueId ?? 0);
-            const previous = await this.cashShopRepo.findTransferBySerial(txClient, req.accountId, serial);
-            if (previous != null) {
-                const detail = previous.detail as { recipientId: number };
-                return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: detail.recipientId };
+            if (await this.cashShopRepo.findReceipt(req.worldId, req.accountId, req.requestId, { txClient })) {
+                return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: 0 };
             }
             const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
             if (this.affordable(balance, delta) === false) {
@@ -450,6 +447,7 @@ export class CashShopService {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
+            await this.cashShopRepo.insertReceipt(txClient, req.requestId);
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
             await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, entry.account_id, "gift", {
                 accountId: entry.account_id,
@@ -457,7 +455,7 @@ export class CashShopService {
                 message: req.message,
                 recipientId: entry.character_id,
                 senderName: req.items[0]?.buyerName ?? "",
-            }, txClient, serial);
+            }, txClient);
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
                 nxCash: balance.nxCash + delta.nxCash,
@@ -479,11 +477,8 @@ export class CashShopService {
         const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
             const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: 0 });
-            const serial = String(item.item?.uniqueId ?? 0);
-            const previous = await this.cashShopRepo.findTransferBySerial(txClient, req.accountId, serial);
-            if (previous != null) {
-                const detail = previous.detail as { recipientId: number };
-                return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: detail.recipientId };
+            if (await this.cashShopRepo.findReceipt(req.worldId, req.accountId, req.requestId, { txClient })) {
+                return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: 0 };
             }
             const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
             if (this.affordable(balance, delta) === false) {
@@ -513,8 +508,10 @@ export class CashShopService {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
+            const serial = String(item.item?.uniqueId ?? 0);
             const partnerSerial = String(partnerItem.item?.uniqueId ?? 0);
             const itemId = item.item?.itemId ?? 0;
+            await this.cashShopRepo.insertReceipt(txClient, req.requestId);
             await this.cashShopRepo.insertItem(req.worldId, req.accountId, serial, CashItem.toJSON(item), { txClient });
             await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, entry.account_id, "gift", {
                 accountId: entry.account_id,
@@ -522,7 +519,7 @@ export class CashShopService {
                 message: req.message,
                 recipientId: entry.character_id,
                 senderName: req.characterName,
-            }, txClient, serial);
+            }, txClient);
             await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, req.characterId, "ring", {
                 serial,
                 partner_serial: partnerSerial,

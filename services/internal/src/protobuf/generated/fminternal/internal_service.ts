@@ -1980,6 +1980,7 @@ export interface GiftCashItemRequest {
   price: number;
   gender: number;
   items: CashItem[];
+  requestId: string;
 }
 
 export interface GiftCashItemReply {
@@ -2000,6 +2001,7 @@ export interface BuyCashRingRequest {
   price: number;
   item: CashItem | undefined;
   partnerItem: CashItem | undefined;
+  requestId: string;
 }
 
 export interface BuyCashRingReply {
@@ -5369,7 +5371,7 @@ export const ExpandCashSlotReply: MessageFns<ExpandCashSlotReply> = {
 };
 
 function createBaseGiftCashItemRequest(): GiftCashItemRequest {
-  return { worldId: 0, accountId: 0, recipientName: "", message: "", price: 0, gender: 0, items: [] };
+  return { worldId: 0, accountId: 0, recipientName: "", message: "", price: 0, gender: 0, items: [], requestId: "0" };
 }
 
 export const GiftCashItemRequest: MessageFns<GiftCashItemRequest> = {
@@ -5394,6 +5396,9 @@ export const GiftCashItemRequest: MessageFns<GiftCashItemRequest> = {
     }
     for (const v of message.items) {
       CashItem.encode(v!, writer.uint32(58).fork()).join();
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(64).uint64(message.requestId);
     }
     return writer;
   },
@@ -5461,6 +5466,14 @@ export const GiftCashItemRequest: MessageFns<GiftCashItemRequest> = {
           message.items.push(CashItem.decode(reader, reader.uint32()));
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5491,6 +5504,11 @@ export const GiftCashItemRequest: MessageFns<GiftCashItemRequest> = {
       price: isSet(object.price) ? globalThis.Number(object.price) : 0,
       gender: isSet(object.gender) ? globalThis.Number(object.gender) : 0,
       items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => CashItem.fromJSON(e)) : [],
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -5517,6 +5535,9 @@ export const GiftCashItemRequest: MessageFns<GiftCashItemRequest> = {
     if (message.items?.length) {
       obj.items = message.items.map((e) => CashItem.toJSON(e));
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -5532,6 +5553,7 @@ export const GiftCashItemRequest: MessageFns<GiftCashItemRequest> = {
     message.price = object.price ?? 0;
     message.gender = object.gender ?? 0;
     message.items = object.items?.map((e) => CashItem.fromPartial(e)) || [];
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -5649,6 +5671,7 @@ function createBaseBuyCashRingRequest(): BuyCashRingRequest {
     price: 0,
     item: undefined,
     partnerItem: undefined,
+    requestId: "0",
   };
 }
 
@@ -5686,6 +5709,9 @@ export const BuyCashRingRequest: MessageFns<BuyCashRingRequest> = {
     }
     if (message.partnerItem !== undefined) {
       CashItem.encode(message.partnerItem, writer.uint32(90).fork()).join();
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(96).uint64(message.requestId);
     }
     return writer;
   },
@@ -5785,6 +5811,14 @@ export const BuyCashRingRequest: MessageFns<BuyCashRingRequest> = {
           message.partnerItem = CashItem.decode(reader, reader.uint32());
           continue;
         }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5831,6 +5865,11 @@ export const BuyCashRingRequest: MessageFns<BuyCashRingRequest> = {
         : isSet(object.partner_item)
         ? CashItem.fromJSON(object.partner_item)
         : undefined,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -5869,6 +5908,9 @@ export const BuyCashRingRequest: MessageFns<BuyCashRingRequest> = {
     if (message.partnerItem !== undefined) {
       obj.partnerItem = CashItem.toJSON(message.partnerItem);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -5890,6 +5932,7 @@ export const BuyCashRingRequest: MessageFns<BuyCashRingRequest> = {
     message.partnerItem = (object.partnerItem !== undefined && object.partnerItem !== null)
       ? CashItem.fromPartial(object.partnerItem)
       : undefined;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };

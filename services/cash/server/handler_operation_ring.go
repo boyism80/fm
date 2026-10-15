@@ -74,6 +74,7 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *cash.Character, 
 			Price:         commodity.Price,
 			Item:          item,
 			PartnerItem:   partnerItem,
+			RequestId:     h.cs.NewUniqueID(),
 		})
 	}, func(reply *internal.BuyCashRingReply) error {
 		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())

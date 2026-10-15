@@ -247,6 +247,7 @@ message GiftCashItemRequest {
   uint32 price = 5;
   uint32 gender = 6;
   repeated CashItem items = 7;
+  uint64 request_id = 8 [jstype = JS_STRING];
 }
 
 message GiftCashItemReply {
@@ -267,6 +268,7 @@ message BuyCashRingRequest {
   uint32 price = 9;
   CashItem item = 10;
   CashItem partner_item = 11;
+  uint64 request_id = 12 [jstype = JS_STRING];
 }
 
 message BuyCashRingReply {

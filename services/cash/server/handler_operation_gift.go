@@ -61,6 +61,7 @@ func (h *Operation) gift(ctx *core.ClientContext, character *cash.Character, req
 			Price:         commodity.Price,
 			Gender:        uint32(commodity.Gender),
 			Items:         items,
+			RequestId:     h.cs.NewUniqueID(),
 		})
 	}, func(reply *internal.GiftCashItemReply) error {
 		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())

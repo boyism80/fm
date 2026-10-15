@@ -72,19 +72,11 @@ export class CashShopRepository {
         return this.ctx.withPgDataTransaction(worldId, accountId, fn, options);
     }
 
-    async queueTransfer(worldId: number, sourceId: number, targetId: number, kind: string, detail: unknown, client: PoolClient, sourceSerial: string | null = null): Promise<void> {
+    async queueTransfer(worldId: number, sourceId: number, targetId: number, kind: string, detail: unknown, client: PoolClient): Promise<void> {
         await client.query(
-            "INSERT INTO cash_transfer_requests (request_id, source_id, target_id, source_serial, kind, detail) VALUES ($1, $2, $3, $4, $5, $6)",
-            [randomUUID(), sourceId, targetId, sourceSerial, kind, JSON.stringify(detail)]
+            "INSERT INTO cash_transfer_requests (request_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5)",
+            [randomUUID(), sourceId, targetId, kind, JSON.stringify(detail)]
         );
-    }
-
-    async findTransferBySerial(client: PoolClient, sourceId: number, serial: string): Promise<CashTransferRequest | null> {
-        const res = await client.query(
-            "SELECT request_id, source_id, target_id, kind, detail FROM cash_transfer_requests WHERE source_id = $1 AND source_serial = $2",
-            [sourceId, serial]
-        );
-        return (res.rows[0] as CashTransferRequest | undefined) ?? null;
     }
 
     async pendingTransfers(worldId: number): Promise<CashTransferRequest[]> {
@@ -117,8 +109,9 @@ export class CashShopRepository {
         return (res.rowCount ?? 0) > 0;
     }
 
-    async findReceipt(worldId: number, ownerId: number, requestId: string): Promise<boolean> {
-        const res = await this.ctx.getPgDataPool(worldId, ownerId).query("SELECT 1 FROM cash_transfer_receipts WHERE request_id = $1", [requestId]);
+    async findReceipt(worldId: number, ownerId: number, requestId: string, options: RepositoryTxOptions = {}): Promise<boolean> {
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, ownerId), options);
+        const res = await client.query("SELECT 1 FROM cash_transfer_receipts WHERE request_id = $1", [requestId]);
         return (res.rowCount ?? 0) > 0;
     }
 
