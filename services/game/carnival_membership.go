@@ -38,5 +38,9 @@ func (c *CarnivalMembership) useItem(wzConsume *wz.Consume) {
 	if enemy == nil {
 		return
 	}
-	enemy.Debuff(c.owner.GetMap(), wzConsume.NuffSkillID)
+	m := c.owner.GetMap()
+	if m == nil {
+		return
+	}
+	enemy.Debuff(m, wzConsume.NuffSkillID)
 }
