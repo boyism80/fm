@@ -117,4 +117,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, FamilyUse](gs)
 	core.Bind[*GameServer, FamilyPrecept](gs)
 	core.Bind[*GameServer, FamilySummon](gs)
+	core.Bind[*GameServer, LieDetectorItem](gs)
+	core.Bind[*GameServer, LieDetectorSkill](gs)
+	core.Bind[*GameServer, LieDetectorAnswer](gs)
 }

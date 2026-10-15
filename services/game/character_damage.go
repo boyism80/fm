@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -53,6 +54,9 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 
 	attacking()
 	ch.damageTo(info.Damages)
+	if len(info.Damages) > 0 {
+		ch.LieDetector.HuntedAt = clock.Now()
+	}
 	if constant.SkillID(info.Skill) == constant.SkillMesoExplosion {
 		ch.ExplodeMesos(info.MesoOIDs)
 	}

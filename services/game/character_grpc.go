@@ -96,6 +96,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Duey = &Duey{owner: ch}
 	ch.Notes = &Notes{owner: ch}
 	ch.Dojo = &Dojo{owner: ch}
+	ch.LieDetector = &LieDetector{owner: ch}
 	ch.Carnival = &CarnivalMembership{owner: ch}
 	ch.Unsettled = NewUnsettledRequestsFromInternalProto(ch, reply.GetUnsettledRequests())
 	ch.StoreBank = &StoreBank{owner: ch}

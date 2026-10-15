@@ -1671,6 +1671,23 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["거탐정답"] = {
+		privilege = ROLE.Admin,
+		usage = "<이름> - 같은 맵 캐릭터가 받고 있는 거짓말 탐지기의 정답 조회",
+		command = function(me, args)
+			if not args[1] then
+				me:message("사용법: /거탐정답 <이름>")
+				return true
+			end
+			local answer = me:lie_detector_answer(args[1])
+			if answer == nil then
+				me:message("거탐정답: 없음")
+				return true
+			end
+			me:message("거탐정답: " .. answer)
+			return true
+		end,
+	},
 	["직업바꾸기"] = {
 		privilege = ROLE.Admin,
 		usage = "<직업코드> - 직업 변경",

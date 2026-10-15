@@ -80,6 +80,7 @@ type Character struct {
 	StateMachine   *StateMachine
 	Carnival       *CarnivalMembership
 	Dojo           *Dojo
+	LieDetector    *LieDetector
 	SavedLocations *SavedLocations
 	Records        *Records
 	session        session

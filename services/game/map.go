@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -347,6 +348,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	if character.MiniRoom != nil {
 		character.MiniRoom.Leave(character)
 	}
+	character.LieDetector.Escape()
 
 	m.callMapLifecycleScript(character, "on_map_leave")
 
@@ -394,6 +396,7 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 	if character.MiniRoom != nil {
 		character.MiniRoom.Leave(character)
 	}
+	character.LieDetector.Escape()
 	entry := character.BuildRPC(m.GameWorld.GetWorldID())
 	err := m.RemovePlayer(playerID)
 	character.ClearTimers()
@@ -443,6 +446,15 @@ func (m *Map) GetPlayer(playerID uint32) *Character {
 
 	if player, ok := m.objects[constant.ObjectTypeCharacter][playerID].(*Character); ok {
 		return player
+	}
+	return nil
+}
+
+func (m *Map) FindPlayerByName(name string) *Character {
+	for _, obj := range m.objects[constant.ObjectTypeCharacter] {
+		if player, ok := obj.(*Character); ok && strings.EqualFold(player.GetName(), name) {
+			return player
+		}
 	}
 	return nil
 }

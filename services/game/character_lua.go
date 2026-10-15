@@ -2594,6 +2594,26 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"lie_detector_answer": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			m := ch.GetMap()
+			if m == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			target := m.FindPlayerByName(L.CheckString(2))
+			if target == nil || target.LieDetector.testerID == 0 {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LString(target.LieDetector.answer))
+			return 1
+		},
 		"open_npc": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

@@ -224,6 +224,8 @@ type CharacterListener interface {
 	OnPetChat(ch *Character, typ uint8, action uint8, text string)
 	OnPetCommand(ch *Character, index uint8, success bool)
 	OnPetFood(ch *Character, success bool)
+	OnLieDetectorQuestion(ch *Character, image []byte)
+	OnLieDetectorResult(ch *Character, result pconst.LieDetectorResult)
 	OnPetUpdated(ch *Character, pet *Pet)
 	OnPetLevelUp(ch *Character)
 	OnPetExceptions(ch *Character)

@@ -54,6 +54,8 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		return
 	}
 
+	character.LieDetector.Escape()
+
 	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
 	gameClient.SetChangingChannel(true)
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
