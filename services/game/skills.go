@@ -8,14 +8,17 @@ import (
 )
 
 type Skills struct {
-	owner   *Character
-	entries map[uint32]*SkillEntry
+	owner           *Character
+	entries         map[uint32]*SkillEntry
+	Macros          *SkillMacros
+	HomingTargetOID *uint32
 }
 
 func NewSkills(owner *Character) *Skills {
 	return &Skills{
 		owner:   owner,
 		entries: make(map[uint32]*SkillEntry),
+		Macros:  NewSkillMacros(owner),
 	}
 }
 
@@ -79,7 +82,7 @@ func (sc *Skills) dojoSkill(skillID uint32) *SkillEntry {
 	if w == nil || !w.Dojo {
 		return nil
 	}
-	if sc.owner.dojoEnergy < DojoEnergyFull || !sc.owner.OnDojoField() {
+	if sc.owner.Dojo.Energy < DojoEnergyFull || !sc.owner.Dojo.onField() {
 		return nil
 	}
 	return NewSkillEntry(sc.owner, w, 1, 1)

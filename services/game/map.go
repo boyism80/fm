@@ -248,7 +248,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 
 	character.Map = m
 	if m.Wz.FieldType != wz.FieldTypeDojo {
-		character.SetDojoEnergy(0)
+		character.Dojo.SetEnergy(0)
 	}
 	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
 		character.Position = pos
@@ -289,8 +289,8 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	m.callMapLifecycleScript(character, "on_map_enter")
-	if sm := character.StateMachine(); sm != nil {
-		sm.HandlePlayerMapEnter(character, m)
+	if character.StateMachine != nil {
+		character.StateMachine.HandlePlayerMapEnter(character, m)
 	}
 	m.GameWorld.Systems().Get[*ExpeditionSystem]().SyncClock(character, m)
 

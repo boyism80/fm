@@ -32,6 +32,6 @@ func (h *RemoteEntrustedShop) Handle(ctx *core.ClientContext, req *request.Remot
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	ch.RejectMiniRoom(ch.UseRemoteEntrustedShop(ctx.ActorContext, req.Slot))
+	ch.RejectMiniRoom(ch.RemoteShops.Manage(ctx.ActorContext, req.Slot))
 	return nil
 }

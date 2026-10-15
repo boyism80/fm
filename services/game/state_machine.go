@@ -626,13 +626,6 @@ type StateMachineTimeout struct {
 	Version uint64
 }
 
-func (ch *Character) StateMachine() *StateMachine {
-	if ch == nil {
-		return nil
-	}
-	return ch.stateMachine
-}
-
 func (ch *Character) Spectating() bool {
 	m := ch.GetMap()
 	if m == nil {
@@ -644,14 +637,14 @@ func (ch *Character) Spectating() bool {
 
 func (ch *Character) bindStateMachine(sm *StateMachine) {
 	ch.GameWorld.Systems().Get[*DispatchSystem]().Call(ch.GetID(), func(actor.Context) {
-		ch.stateMachine = sm
+		ch.StateMachine = sm
 	})
 }
 
 func (ch *Character) unbindStateMachine(sm *StateMachine) {
 	ch.GameWorld.Systems().Get[*DispatchSystem]().Call(ch.GetID(), func(actor.Context) {
-		if ch.stateMachine == sm {
-			ch.stateMachine = nil
+		if ch.StateMachine == sm {
+			ch.StateMachine = nil
 		}
 	})
 }

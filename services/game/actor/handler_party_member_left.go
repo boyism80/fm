@@ -25,5 +25,5 @@ func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, ms
 	if ch == nil {
 		return
 	}
-	ch.StateMachine().RequestLeave(ch, true, game.StateMachineLeaveParty)
+	ch.StateMachine.RequestLeave(ch, true, game.StateMachineLeaveParty)
 }

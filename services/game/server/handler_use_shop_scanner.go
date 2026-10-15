@@ -33,6 +33,6 @@ func (h *UseShopScanner) Handle(ctx *core.ClientContext, req *request.UseShopSca
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	ch.UseShopScanner(ctx.ActorContext, constant.InventoryTypeConsume, req.Slot, req.ItemID, req.SearchID, req.HighFirst)
+	ch.RemoteShops.Scan(ctx.ActorContext, constant.InventoryTypeConsume, req.Slot, req.ItemID, req.SearchID, req.HighFirst)
 	return nil
 }

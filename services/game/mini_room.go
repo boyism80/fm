@@ -70,11 +70,6 @@ type ShopSale struct {
 	Buyer   string
 }
 
-type remoteShop struct {
-	sn    uint32
-	mapID uint32
-}
-
 type shopRoom struct {
 	ObjectCore
 	kind      uint8
@@ -181,7 +176,7 @@ func (r *shopRoom) list(ch *Character, invType constant.InventoryType, slot int1
 		return ErrMiniRoomOnlyHeld
 	}
 
-	listed, err := ch.takeShopItem(invType, slot, bundles, perBundle, price)
+	listed, err := ch.Inventory.takeShopItem(invType, slot, bundles, perBundle, price)
 	if err != nil {
 		return err
 	}
@@ -199,12 +194,12 @@ func (r *shopRoom) holds(itemID uint32) bool {
 	return false
 }
 
-func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) (*ShopItem, error) {
+func (inv *Inventory) takeShopItem(invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) (*ShopItem, error) {
 	if bundles == 0 || perBundle == 0 || price <= 0 {
 		return nil, ErrMiniRoomInvalid
 	}
 
-	item := ch.Inventory.GetItem(invType, slot)
+	item := inv.GetItem(invType, slot)
 	if item == nil {
 		return nil, ErrMiniRoomItemNotFound
 	}
@@ -229,7 +224,7 @@ func (ch *Character) takeShopItem(invType constant.InventoryType, slot int16, bu
 		PerBundle: perBundle,
 		Price:     price,
 	}
-	ch.Inventory.RemoveItem(invType, slot, uint16(total))
+	inv.RemoveItem(invType, slot, uint16(total))
 	return listed, nil
 }
 
@@ -364,4 +359,14 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 			})
 		})
 	})
+}
+
+func (ch *Character) RejectMiniRoom(err error) {
+	var enterErr *MiniRoomEnterError
+	switch {
+	case errors.As(err, &enterErr):
+		ch.Listener.OnMiniRoomEnterFailed(ch, enterErr.Code)
+	case err != nil:
+		ch.Listener.OnUnlockAction(ch)
+	}
 }

@@ -612,7 +612,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.PopulationHistory = PopulationHistory{Given: map[uint32]time.Time{}}
+			ch.Stats.PopulationHistory = PopulationHistory{Given: map[uint32]time.Time{}}
 			return 0
 		},
 		"exchange": func(L *lua.LState) int {
@@ -2518,10 +2518,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			switch L.GetTop() {
 			case 1:
-				L.Push(lua.LNumber(ch.DojoEnergy()))
+				L.Push(lua.LNumber(ch.Dojo.Energy))
 				return 1
 			case 2:
-				ch.SetDojoEnergy(L.CheckInt(2))
+				ch.Dojo.SetEnergy(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "dojo_energy() requires 0 or 1 arguments")
@@ -2867,7 +2867,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "homing() takes no arguments")
 				return 0
 			}
-			if ch.HomingTargetOID == nil {
+			if ch.Skills.HomingTargetOID == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -2876,7 +2876,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			mob := mapInstance.GetMob(*ch.HomingTargetOID)
+			mob := mapInstance.GetMob(*ch.Skills.HomingTargetOID)
 			if mob == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2915,12 +2915,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			sm := ch.StateMachine()
-			if sm == nil {
+			if ch.StateMachine == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, sm))
+			L.Push(luax.NewLuable(L, ch.StateMachine))
 			return 1
 		},
 		"try_party_quest": func(L *lua.LState) int {
@@ -3892,7 +3891,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.RaiseError("map: unknown map name %q", string(v))
 						return 0
 					}
-					targetMap = ch.GameWorld.Systems().Get[*MapSystem]().Find(ch.StateMachine(), mapId)
+					targetMap = ch.GameWorld.Systems().Get[*MapSystem]().Find(ch.StateMachine, mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map %q (id %d) not found", string(v), mapId)
 						return 0
@@ -3903,7 +3902,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 					mapId := uint32(v)
-					targetMap = ch.GameWorld.Systems().Get[*MapSystem]().Find(ch.StateMachine(), mapId)
+					targetMap = ch.GameWorld.Systems().Get[*MapSystem]().Find(ch.StateMachine, mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map id %d not found", mapId)
 						return 0

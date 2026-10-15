@@ -186,7 +186,7 @@ func (ch *Character) damageTo(damages []dto.AttackPair) {
 			total += uint64(damagePair.Damage)
 		}
 		if total > 0 {
-			ch.chargeDojoEnergy(mob, total)
+			ch.Dojo.charge(mob, total)
 		}
 		for _, damagePair := range damage.DamagePairs {
 			if damagePair.Damage == 0 {
@@ -344,7 +344,7 @@ func (ch *Character) block(actx actor.Context, hit Hit) {
 
 func (ch *Character) TakeDamage(damage int32) {
 	if damage > 0 {
-		ch.AddDojoEnergy(2)
+		ch.Dojo.AddEnergy(2)
 		ch.Mount.takeDamage(damage)
 	}
 
@@ -398,7 +398,7 @@ func (ch *Character) OnKill(mobs []*Mob) {
 		mapInstance.runMobLuaHook(root, scriptPath, "on_mob_kill", ch, group)
 	}
 	mapInstance.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_kill", ch, all)
-	if sm := ch.StateMachine(); sm != nil {
-		sm.CallHook("on_mob_kill", ch, all)
+	if ch.StateMachine != nil {
+		ch.StateMachine.CallHook("on_mob_kill", ch, all)
 	}
 }

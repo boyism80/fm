@@ -123,7 +123,7 @@ func (l *CharacterListenerImpl) OnKeyMap(ch *game.Character) {
 }
 
 func (l *CharacterListenerImpl) OnSkillMacros(ch *game.Character) {
-	macros := ch.SkillMacros.Entries()
+	macros := ch.Skills.Macros.Entries()
 	entries := make([]response.SkillMacroEntry, 0, len(macros))
 	for _, macro := range macros {
 		entries = append(entries, response.SkillMacroEntry{Name: macro.Name, Shout: macro.Shout, Skills: macro.Skills})

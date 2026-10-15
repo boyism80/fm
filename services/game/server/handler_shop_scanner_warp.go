@@ -28,6 +28,6 @@ func (h *ShopScannerWarp) Handle(ctx *core.ClientContext, req *request.ShopScann
 	if ch == nil {
 		return nil
 	}
-	ch.RejectMiniRoom(ch.VisitShopBySearch(ctx.ActorContext, req.SN, req.MapID))
+	ch.RejectMiniRoom(ch.RemoteShops.VisitFound(ctx.ActorContext, req.SN, req.MapID))
 	return nil
 }

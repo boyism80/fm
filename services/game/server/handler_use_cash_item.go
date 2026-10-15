@@ -37,7 +37,7 @@ func (h *UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) 
 		return nil
 	}
 	if ok && model.GetTraits()&constant.ItemTraitShopScanner != 0 {
-		ch.UseShopScanner(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.SearchID, req.HighFirst)
+		ch.RemoteShops.Scan(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.SearchID, req.HighFirst)
 		return nil
 	}
 	if req.Malformed {

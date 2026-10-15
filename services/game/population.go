@@ -40,11 +40,11 @@ func (ch *Character) GivePopulation(targetID uint32, mode pconst.PopulationMode)
 	}
 
 	now := clock.Now()
-	if now.Sub(ch.PopulationHistory.LastGivenAt) < populationDailyCooldown {
+	if now.Sub(ch.Stats.PopulationHistory.LastGivenAt) < populationDailyCooldown {
 		ch.Listener.OnPopulationFailed(ch, pconst.PopulationResultAlreadyToday)
 		return
 	}
-	if givenAt, ok := ch.PopulationHistory.Given[targetID]; ok && now.Sub(givenAt) < populationTargetCooldown {
+	if givenAt, ok := ch.Stats.PopulationHistory.Given[targetID]; ok && now.Sub(givenAt) < populationTargetCooldown {
 		ch.Listener.OnPopulationFailed(ch, pconst.PopulationResultAlreadyThisMonth)
 		return
 	}
@@ -59,7 +59,7 @@ func (ch *Character) GivePopulation(targetID uint32, mode pconst.PopulationMode)
 		return
 	}
 
-	ch.PopulationHistory.record(targetID, now)
+	ch.Stats.PopulationHistory.record(targetID, now)
 	value := target.Stats.AddPopulation(delta)
 	target.Listener.OnPopulationReceived(target, mode, ch.GetName())
 	ch.Listener.OnPopulationGiven(ch, mode, target.GetName(), value)

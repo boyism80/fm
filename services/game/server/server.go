@@ -274,8 +274,8 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 func (gs *GameServer) removeCharacter(character *game.Character, logout <-chan *internal.CharacterSaveEntry) *internal.CharacterSaveEntry {
 	charID := character.GetID()
 	gs.systems.Get[*game.ExpeditionSystem]().LeaveChannel(character)
-	if sm := character.StateMachine(); sm != nil {
-		sm.RequestLeave(character, false, game.StateMachineLeaveDisconnect)
+	if character.StateMachine != nil {
+		character.StateMachine.RequestLeave(character, false, game.StateMachineLeaveDisconnect)
 	}
 	dispatch := gs.systems.Get[*game.DispatchSystem]()
 	dispatch.Call(charID, func(ctx actor.Context) {

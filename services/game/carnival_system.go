@@ -144,7 +144,7 @@ func (r *CarnivalSystem) Enter(slotIndex int, leader *Character) bool {
 	match.mu.Unlock()
 
 	for _, ch := range members {
-		ch.BindCarnival(red)
+		ch.carnivalTeam = red
 	}
 	return true
 }

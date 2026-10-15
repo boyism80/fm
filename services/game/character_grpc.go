@@ -52,16 +52,15 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 			Face:      p.GetFace(),
 			Hair:      p.GetHair(),
 		},
-		level:             uint8(p.GetLevel()),
-		Class:             constant.ClassType(p.GetClassId()),
-		Role:              constant.CharacterRole(p.GetRole()),
-		GM:                GMMode{Hidden: p.GetHidden()},
-		exp:               p.GetExp(),
-		PopulationHistory: NewPopulationHistoryFromInternalProto(p.GetPopulationHistory()),
+		level: uint8(p.GetLevel()),
+		Class: constant.ClassType(p.GetClassId()),
+		Role:  constant.CharacterRole(p.GetRole()),
+		GM:    GMMode{Hidden: p.GetHidden()},
+		exp:   p.GetExp(),
 
 		random: [3]stream.RandomStream{stream.NewRandomStream(), stream.NewRandomStream(), stream.NewRandomStream()},
 	}
-	ch.Stats = &Stats{owner: ch, Base: BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())}, Population: int16(p.GetPopulation())}
+	ch.Stats = &Stats{owner: ch, Base: BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())}, Population: int16(p.GetPopulation()), PopulationHistory: NewPopulationHistoryFromInternalProto(p.GetPopulationHistory())}
 	ch.Points = &Points{owner: ch, AP: uint16(p.GetAbilityPoint()), SP: uint16(p.GetSkillPoint()), HPMPUsed: uint16(p.GetHpApUsed())}
 	ch.Party = &PartyMembership{owner: ch, id: partyID}
 	ch.Guild = &GuildMembership{owner: ch, id: guildID, invites: make(map[uint32]time.Time)}
@@ -75,7 +74,6 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Buffs = NewBuffs(ch)
 	ch.Debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
 	ch.Skills = NewSkills(ch)
-	ch.SkillMacros = NewSkillMacros(ch)
 	ch.Quests = NewQuests(ch)
 	ch.Summons = NewSummons(ch)
 	ch.Doors = NewDoors(ch)
@@ -96,8 +94,11 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		}
 	}
 	ch.Duey = &Duey{owner: ch}
+	ch.Notes = &Notes{owner: ch}
+	ch.Dojo = &Dojo{owner: ch}
 	ch.Unsettled = NewUnsettledRequestsFromInternalProto(ch, reply.GetUnsettledRequests())
 	ch.StoreBank = &StoreBank{owner: ch}
+	ch.RemoteShops = &RemoteShops{owner: ch}
 	ch.SavedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
 	ch.Records = NewRecordsFromInternalProto(reply.GetRecords())
 	ch.Account = NewAccountFromInternalProto(reply.GetAccount(), ch)
@@ -112,11 +113,11 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.MonsterBook = NewMonsterBookFromInternalProto(ch, p.GetMonsterBookCover(), reply.GetMonsterBook())
 	ch.LoadInventory(reply.GetInventory())
 	ch.Inventory.LoadRings(reply.GetRings())
-	ch.LoadSkills(reply.GetSkills())
-	ch.SkillMacros.Load(NewSkillMacrosFromInternalProto(reply.GetSkillMacros()))
-	ch.LoadBuffs(reply.GetBuffs())
+	ch.Skills.Load(reply.GetSkills())
+	ch.Skills.Macros.Load(NewSkillMacrosFromInternalProto(reply.GetSkillMacros()))
+	ch.Buffs.Load(reply.GetBuffs())
 	ch.Debuffs.Load(reply.GetDebuffs())
-	ch.LoadQuests(reply.GetQuests())
+	ch.Quests.Load(reply.GetQuests())
 	ch.SavedLocations.Load(reply.GetSavedLocations())
 	ch.Buddies.LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
 	return ch
@@ -157,129 +158,6 @@ func (ch *Character) LoadInventory(items []*internal.Inventory) {
 				inv.Items[slot] = item
 			}
 		}
-	}
-}
-
-func (ch *Character) LoadSkills(skills []*internal.Skill) {
-	for _, pb := range skills {
-		if pb == nil {
-			continue
-		}
-		entry, err := NewSkillEntryFromInternalProto(ch, pb, ch.GameWorld)
-		if err != nil {
-			continue
-		}
-		ch.Skills.Bind(pb.GetSkillId(), entry)
-	}
-}
-
-func (ch *Character) LoadBuffs(pbs []*internal.Buff) {
-	if ch == nil || ch.GameWorld == nil {
-		return
-	}
-	res := ch.GameWorld.GetResources()
-	if res == nil {
-		return
-	}
-	const permanentDur = 100 * 365 * 24 * time.Hour
-	for _, pb := range pbs {
-		if pb == nil {
-			continue
-		}
-		values := make(map[constant.BuffFlag]int32, len(pb.GetFlagValues()))
-		for _, fv := range pb.GetFlagValues() {
-			if fv == nil {
-				continue
-			}
-			values[constant.BuffFlag{Mask: fv.GetMask(), Position: int(fv.GetPosition())}] = fv.GetValue()
-		}
-		if len(values) == 0 {
-			continue
-		}
-		var dur time.Duration
-		if pb.RemainingDurationMs != nil {
-			if *pb.RemainingDurationMs == 0 {
-				continue
-			}
-			dur = time.Duration(*pb.RemainingDurationMs) * time.Millisecond
-		} else {
-			dur = permanentDur
-		}
-		switch pb.GetKind() {
-		case internal.BuffKind_BUFF_KIND_SKILL:
-			sid := uint32(pb.GetBuffSourceId())
-			wzSkill := res.GetSkill(sid)
-			if wzSkill == nil {
-				continue
-			}
-			ch.Buffs.AddBuff(wzSkill, dur, uint8(pb.GetSkillLevel()), pb.GetCauserId(), values, false)
-		case internal.BuffKind_BUFF_KIND_ITEM:
-			itemID := uint32(-pb.GetBuffSourceId())
-			model, ok := res.Items[itemID]
-			if !ok {
-				continue
-			}
-			cw, ok := model.(*wz.Consume)
-			if !ok || cw == nil {
-				continue
-			}
-			ch.Buffs.AddItemBuff(cw, dur, values, false, false)
-		default:
-			continue
-		}
-	}
-}
-
-func (ch *Character) LoadQuests(pbs []*internal.Quest) {
-	if ch == nil {
-		return
-	}
-	for _, pb := range pbs {
-		if pb == nil {
-			continue
-		}
-		questID := pb.GetQuestId()
-		if questID == 0 {
-			continue
-		}
-		status := QuestStatusType(pb.GetStatus())
-		hasRecordEx := len(pb.GetRecordEx()) > 0
-		if status != QuestStatusStarted && status != QuestStatusCompleted && pb.GetForfeited() == 0 && !hasRecordEx {
-			continue
-		}
-		q := ch.Quests.Get(questID)
-		if q == nil {
-			q = ch.Quests.Create(questID, status)
-		}
-		if q == nil {
-			continue
-		}
-		q.Status = status
-		q.MobKills = make(map[uint32]int, len(pb.GetMobKills()))
-		for mobID, kills := range pb.GetMobKills() {
-			q.MobKills[mobID] = int(kills)
-		}
-		q.StatusRecord.WriteString(pb.GetStatusRecord())
-		if ms := pb.GetDeadlineUnixMs(); ms > 0 {
-			q.Deadline = time.UnixMilli(ms)
-		} else {
-			q.Deadline = time.Time{}
-		}
-		if ms := pb.GetStartTimeUnixMs(); ms > 0 {
-			q.StartTime = time.UnixMilli(ms)
-		} else {
-			q.StartTime = time.Time{}
-		}
-		q.RecordEx = make(map[string]string, len(pb.GetRecordEx()))
-		for key, value := range pb.GetRecordEx() {
-			q.RecordEx[key] = value
-		}
-		if ms := pb.GetCompletionTimeUnixMs(); ms > 0 {
-			q.CompletionTime = time.UnixMilli(ms)
-		} else {
-			q.CompletionTime = time.Time{}
-		}
-		q.Forfeited = int(pb.GetForfeited())
 	}
 }
 
@@ -380,7 +258,7 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		Population:        int32(ch.Stats.Population),
 		FamilyProgress:    ch.Family.Progress,
 		FamilyReputation:  reputation,
-		PopulationHistory: ch.PopulationHistory.BuildRPC(),
+		PopulationHistory: ch.Stats.PopulationHistory.BuildRPC(),
 		HpApUsed:          uint32(ch.Points.HPMPUsed),
 		PetHpItem:         ch.Pets.HPItem,
 		PetMpItem:         ch.Pets.MPItem,
@@ -396,11 +274,11 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		BaseLooks:         baseLooks,
 		Overlays:          overlays,
 		Inventory:         ch.buildInventoryRPC(),
-		Skills:            ch.buildSkillsRPC(),
-		SkillMacros:       ch.SkillMacros.BuildRPC(),
-		Buffs:             ch.buildBuffsRPC(),
+		Skills:            ch.Skills.BuildRPC(),
+		SkillMacros:       ch.Skills.Macros.BuildRPC(),
+		Buffs:             ch.Buffs.BuildRPC(),
 		KeyLayout:         ch.KeyLayout.BuildRPC(),
-		Quests:            ch.buildQuestsRPC(),
+		Quests:            ch.Quests.BuildRPC(),
 		SavedLocations:    ch.SavedLocations.BuildRPC(),
 		MonsterBook:       ch.MonsterBook.BuildRPC(),
 		Records:           ch.Records.BuildRPC(),
@@ -426,139 +304,4 @@ func (ch *Character) buildInventoryRPC() []*internal.Inventory {
 		items = append(items, inv.BuildRPC(ownerID)...)
 	}
 	return ch.Escrow.mergeProto(items)
-}
-
-func (ch *Character) buildSkillsRPC() []*internal.Skill {
-	skills := make([]*internal.Skill, 0, 64)
-	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
-		if entry == nil {
-			return
-		}
-		if pb := entry.BuildRPC(ch.GetID(), skillID); pb != nil {
-			skills = append(skills, pb)
-		}
-	})
-	return skills
-}
-
-func (ch *Character) buildBuffsRPC() []*internal.Buff {
-	if ch == nil {
-		return nil
-	}
-	now := clock.Now()
-	out := make([]*internal.Buff, 0)
-	for _, ent := range ch.Buffs.Entities() {
-		if ent == nil {
-			continue
-		}
-		flags := ent.GetFlags()
-		values := ent.GetValues()
-		if len(flags) == 0 || len(values) == 0 {
-			continue
-		}
-		flagPB := make([]*internal.BuffFlagValue, 0, len(flags))
-		for _, f := range flags {
-			v, ok := values[f]
-			if !ok {
-				continue
-			}
-			flagPB = append(flagPB, &internal.BuffFlagValue{
-				Mask:     f.Mask,
-				Position: int32(f.Position),
-				Value:    v,
-			})
-		}
-		if len(flagPB) == 0 {
-			continue
-		}
-		var kind internal.BuffKind
-		var skillLevel uint32
-		var causerID uint32
-		var rem *uint64
-		switch b := ent.(type) {
-		case *SkillBuff:
-			kind = internal.BuffKind_BUFF_KIND_SKILL
-			skillLevel = uint32(b.SkillLevel)
-			causerID = b.CauserID
-			if b.BaseBuff != nil && b.Duration > 0 {
-				ms := uint64(ent.RemainingDuration(now) / time.Millisecond)
-				if ms == 0 {
-					continue
-				}
-				rem = &ms
-			}
-		case *ItemBuff:
-			kind = internal.BuffKind_BUFF_KIND_ITEM
-			if b.BaseBuff != nil && b.Duration > 0 {
-				ms := uint64(ent.RemainingDuration(now) / time.Millisecond)
-				if ms == 0 {
-					continue
-				}
-				rem = &ms
-			}
-		default:
-			continue
-		}
-		out = append(out, &internal.Buff{
-			CharacterId:         ch.GetID(),
-			BuffSourceId:        ent.GetBuffID(),
-			Kind:                kind,
-			FlagValues:          flagPB,
-			RemainingDurationMs: rem,
-			SkillLevel:          skillLevel,
-			CauserId:            causerID,
-		})
-	}
-	return out
-}
-
-func (ch *Character) buildQuestsRPC() []*internal.Quest {
-	if ch == nil {
-		return nil
-	}
-	out := make([]*internal.Quest, 0)
-	ch.Quests.ForEach(func(questID uint32, q *Quest) {
-		if q == nil {
-			return
-		}
-		if q.Status != QuestStatusStarted && q.Status != QuestStatusCompleted && q.Forfeited == 0 && len(q.RecordEx) == 0 {
-			return
-		}
-		mobKills := make(map[uint32]uint32, len(q.MobKills))
-		for mobID, kills := range q.MobKills {
-			if kills < 0 {
-				continue
-			}
-			mobKills[mobID] = uint32(kills)
-		}
-		recordEx := make(map[string]string, len(q.RecordEx))
-		for key, value := range q.RecordEx {
-			recordEx[key] = value
-		}
-		var completionTimeUnixMs int64
-		if !q.CompletionTime.IsZero() {
-			completionTimeUnixMs = q.CompletionTime.UnixMilli()
-		}
-		var deadlineUnixMs int64
-		if !q.Deadline.IsZero() {
-			deadlineUnixMs = q.Deadline.UnixMilli()
-		}
-		var startTimeUnixMs int64
-		if !q.StartTime.IsZero() {
-			startTimeUnixMs = q.StartTime.UnixMilli()
-		}
-		out = append(out, &internal.Quest{
-			CharacterId:          ch.GetID(),
-			QuestId:              questID,
-			Status:               uint32(q.Status),
-			MobKills:             mobKills,
-			StatusRecord:         q.StatusRecord.AsString(),
-			RecordEx:             recordEx,
-			CompletionTimeUnixMs: completionTimeUnixMs,
-			DeadlineUnixMs:       deadlineUnixMs,
-			StartTimeUnixMs:      startTimeUnixMs,
-			Forfeited:            uint32(q.Forfeited),
-		})
-	})
-	return out
 }

@@ -2,14 +2,6 @@ package game
 
 import "github.com/boyism80/fm/maple/wz"
 
-func (ch *Character) BindCarnival(team *CarnivalTeam) {
-	ch.carnivalTeam = team
-}
-
-func (ch *Character) UnbindCarnival() {
-	ch.carnivalTeam = nil
-}
-
 func (ch *Character) CarnivalMatch() *CarnivalMatch {
 	team := ch.CarnivalTeam()
 	if team == nil {

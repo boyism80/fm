@@ -125,7 +125,7 @@ func (v attackValidator) targetModifiers(modifiers damageModifiers, mob *Mob) da
 			modifiers.CriticalPercent += float64(p.Damage)
 		}
 	}
-	if v.ch.HomingTargetOID != nil && *v.ch.HomingTargetOID == mob.GetOID() {
+	if v.ch.Skills.HomingTargetOID != nil && *v.ch.Skills.HomingTargetOID == mob.GetOID() {
 		if p := v.ch.Skills.LevelData(constant.SkillAdvancedHoming); p != nil {
 			modifiers.HomingPercent = 100 + float64(p.X)
 		}

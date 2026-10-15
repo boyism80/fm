@@ -55,7 +55,7 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		for _, n := range req.Removals {
 			noteIDs = append(noteIDs, n.ID)
 		}
-		ch.RemoveNotes(ctx.ActorContext, req.Action, noteIDs)
+		ch.Notes.Remove(ctx.ActorContext, req.Action, noteIDs)
 		return nil
 	case internal.NotesAction_NOTES_ACTION_LIST:
 	default:
@@ -84,8 +84,8 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 						current.Listener.OnNoteFailed(current, reply.Status)
 					}
 				case internal.NotesAction_NOTES_ACTION_LIST:
-					current.ReceiveNotes(reply.Notes, 0)
-					current.Listener.OnNotes(current, current.Notes)
+					current.Notes.Receive(reply.Notes, 0)
+					current.Listener.OnNotes(current, current.Notes.Entries)
 				}
 			})
 			return nil

@@ -30,63 +30,59 @@ type Character struct {
 	LifeCore
 	Sendable
 
-	id                uint32
-	name              string
-	look              Look
-	level             uint8
-	Rank              Ranking
-	exp               uint32
-	Stats             *Stats
-	PopulationHistory PopulationHistory
-	Points            *Points
-	mega              bool
-	random            [3]stream.RandomStream
-	Quests            *Quests
-	Wedding           *Wedding
-	CashWishlist      []uint32
-	TeleportStones    *TeleportStones
-	MonsterBook       *MonsterBook
-	Dialog            *Dialog
-	Listener          CharacterListener
-	Class             constant.ClassType
-	Role              constant.CharacterRole
-	AccountID         uint32
-	Account           *Account
-	Inventory         *Inventory
-	Escrow            *Escrow
-	Duey              *Duey
-	Unsettled         *UnsettledRequests
-	StoreBank         *StoreBank
-	MiniRoom          MiniRoom
-	remoteShop        remoteShop
-	shopScan          shopScan
-	Skills            *Skills
-	SkillMacros       *SkillMacros
-	KeyLayout         *KeyLayout
-	ItemEffectID      uint32
-	Chalkboard        string
-	Chair             uint32
-	lastHeal          lastHeal
-	Buffs             *Buffs
-	Debuffs           *Debuffs
-	Summons           *Summons
-	Pets              *Pets
-	Mount             *Mount
-	Doors             *Doors
-	HomingTargetOID   *uint32
-	Party             *PartyMembership
-	Guild             *GuildMembership
-	Buddies           *BuddyList
-	Family            *Family
-	Messenger         *Messenger
-	Notes             []*internal.Note
-	GM                GMMode
-	stateMachine      *StateMachine
-	carnivalTeam      *CarnivalTeam
-	dojoEnergy        int
-	SavedLocations    *SavedLocations
-	Records           *Records
-	session           session
+	id             uint32
+	name           string
+	look           Look
+	level          uint8
+	Rank           Ranking
+	exp            uint32
+	Stats          *Stats
+	Points         *Points
+	mega           bool
+	random         [3]stream.RandomStream
+	Quests         *Quests
+	Wedding        *Wedding
+	CashWishlist   []uint32
+	TeleportStones *TeleportStones
+	MonsterBook    *MonsterBook
+	Dialog         *Dialog
+	Listener       CharacterListener
+	Class          constant.ClassType
+	Role           constant.CharacterRole
+	AccountID      uint32
+	Account        *Account
+	Inventory      *Inventory
+	Escrow         *Escrow
+	Duey           *Duey
+	Unsettled      *UnsettledRequests
+	StoreBank      *StoreBank
+	MiniRoom       MiniRoom
+	RemoteShops    *RemoteShops
+	Skills         *Skills
+	KeyLayout      *KeyLayout
+	ItemEffectID   uint32
+	Chalkboard     string
+	Chair          uint32
+	lastHeal       lastHeal
+	Buffs          *Buffs
+	Debuffs        *Debuffs
+	Summons        *Summons
+	Pets           *Pets
+	Mount          *Mount
+	Doors          *Doors
+	Party          *PartyMembership
+	Guild          *GuildMembership
+	Buddies        *BuddyList
+	Family         *Family
+	Messenger      *Messenger
+	Notes          *Notes
+	GM             GMMode
+	StateMachine   *StateMachine
+	carnivalTeam   *CarnivalTeam
+	Dojo           *Dojo
+	SavedLocations *SavedLocations
+	Records        *Records
+	session        session
 }
 
 type session struct {
@@ -352,8 +348,8 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 
 func (ch *Character) die() {
 	ch.Summons.Clear()
-	if sm := ch.StateMachine(); sm != nil {
-		sm.CallHook("on_player_dead", ch)
+	if ch.StateMachine != nil {
+		ch.StateMachine.CallHook("on_player_dead", ch)
 	}
 }
 
@@ -617,8 +613,8 @@ func (ch *Character) Revive(ctx actor.Context) error {
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHP: int32(ch.GetHp()),
 	}, true)
-	if sm := ch.StateMachine(); sm != nil {
-		sm.CallHook("on_player_revive", ch)
+	if ch.StateMachine != nil {
+		ch.StateMachine.CallHook("on_player_revive", ch)
 	}
 	return ch.Warp(ctx, targetMap, 0)
 }

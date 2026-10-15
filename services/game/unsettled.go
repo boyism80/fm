@@ -73,7 +73,7 @@ func (u *UnsettledRequests) Settle(actx actor.Context) {
 		case internal.UnsettledType_UNSETTLED_TYPE_PARCEL_CLAIM:
 			u.owner.Duey.settleClaim(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_NOTE_REMOVE:
-			u.owner.settleNoteRemove(actx, request)
+			u.owner.Notes.settleRemove(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_SEND:
 			u.owner.Wedding.settleGiftSend(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_CLAIM:

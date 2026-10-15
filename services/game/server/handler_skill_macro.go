@@ -31,6 +31,6 @@ func (*SkillMacro) Handle(ctx *core.ClientContext, req *request.SkillMacro) erro
 		}
 		entries = append(entries, game.SkillMacro{Name: entry.Name, Shout: entry.Shout == 1, Skills: entry.Skills})
 	}
-	ch.SkillMacros.Replace(entries)
+	ch.Skills.Macros.Replace(entries)
 	return nil
 }

@@ -318,7 +318,7 @@ func (e *Expedition) startBattle(leader *Character) (*StateMachine, []*Character
 		if member.character.GetMap() != field {
 			continue
 		}
-		if member.character.StateMachine() != nil {
+		if member.character.StateMachine != nil {
 			skipped = append(skipped, member.character)
 			continue
 		}

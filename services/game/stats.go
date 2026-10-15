@@ -32,10 +32,11 @@ type BonusStats struct {
 }
 
 type Stats struct {
-	owner      *Character
-	Base       BaseStats
-	Bonus      BonusStats
-	Population int16
+	owner             *Character
+	Base              BaseStats
+	Bonus             BonusStats
+	Population        int16
+	PopulationHistory PopulationHistory
 }
 
 func (s *Stats) canAdd(stat constant.StatType, amount uint16) bool {

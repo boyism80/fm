@@ -275,7 +275,7 @@ func (m *CarnivalMatch) admitChallengers(challenge *CarnivalChallenge) {
 
 	sm := m.StateMachine()
 	for _, ch := range members {
-		ch.BindCarnival(blue)
+		ch.carnivalTeam = blue
 		sm.EnterPlayer(ch)
 	}
 	sm.CallHook("on_challenge_accepted")

@@ -58,8 +58,8 @@ func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
 			return
 		}
 		oldCauser := m.Map.GetPlayer(causerOID)
-		if oldCauser != nil && oldCauser.HomingTargetOID != nil && *oldCauser.HomingTargetOID == m.GetOID() {
-			oldCauser.HomingTargetOID = nil
+		if oldCauser != nil && oldCauser.Skills.HomingTargetOID != nil && *oldCauser.Skills.HomingTargetOID == m.GetOID() {
+			oldCauser.Skills.HomingTargetOID = nil
 		}
 		if m.Map.listener != nil {
 			m.Map.listener.OnMobHomingRemoved(m.Map, m, before, oldCauser)
@@ -83,8 +83,8 @@ func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
 	}
 
 	causer := m.Map.GetPlayer(causerOID)
-	if causer != nil && causer.HomingTargetOID != nil {
-		prevOID := *causer.HomingTargetOID
+	if causer != nil && causer.Skills.HomingTargetOID != nil {
+		prevOID := *causer.Skills.HomingTargetOID
 		if prevOID != m.GetOID() {
 			if prevMob := m.Map.GetMob(prevOID); prevMob != nil {
 				prevMob.SetHoming(causerOID, nil)
@@ -95,8 +95,8 @@ func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
 	before, hadBefore := m.Homing[causerOID]
 	if hadBefore && before != nil {
 		oldCauser := m.Map.GetPlayer(causerOID)
-		if oldCauser != nil && oldCauser.HomingTargetOID != nil && *oldCauser.HomingTargetOID == m.GetOID() {
-			oldCauser.HomingTargetOID = nil
+		if oldCauser != nil && oldCauser.Skills.HomingTargetOID != nil && *oldCauser.Skills.HomingTargetOID == m.GetOID() {
+			oldCauser.Skills.HomingTargetOID = nil
 		}
 		if m.Map.listener != nil {
 			m.Map.listener.OnMobHomingRemoved(m.Map, m, before, oldCauser)
@@ -107,7 +107,7 @@ func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
 
 	if causer != nil {
 		oid := m.GetOID()
-		causer.HomingTargetOID = &oid
+		causer.Skills.HomingTargetOID = &oid
 	}
 	if m.Map.listener != nil {
 		m.Map.listener.OnMobHomingSet(m.Map, m, h, causer)
