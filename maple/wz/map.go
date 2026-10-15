@@ -35,6 +35,25 @@ const (
 	messageBoxBlockedRegion = 91
 )
 
+var moveBlockedMapIDs = map[uint32]bool{
+	109050000: true,
+	180000001: true,
+	180000002: true,
+	240060200: true,
+	240060201: true,
+	280030000: true,
+	280030001: true,
+	280090000: true,
+	950101010: true,
+	950101100: true,
+}
+
+var moveBlockedMapRanges = [][2]uint32{
+	{270010200, 270030500},
+	{680000210, 680000502},
+	{925020100, 925039999},
+}
+
 type FieldType int
 
 const (
@@ -57,6 +76,7 @@ type Map struct {
 	Continent         uint32
 	FreeMarket        bool
 	MessageBoxBlocked bool
+	MoveBlocked       bool
 
 	VRTop             int
 	VRLeft            int

@@ -130,7 +130,7 @@ func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint3
 		return nil
 	}
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil || m.GetLuaRoot() == nil {
+	if m == nil || m.Wz == nil || m.GetLuaRoot() == nil || m.BlocksMove() {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}

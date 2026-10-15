@@ -417,8 +417,12 @@ func (m *Map) IsInstance() bool {
 	return m != nil && m.instance != nil
 }
 
+func (m *Map) BlocksMove() bool {
+	return m.Wz.MoveBlocked || m.IsInstance() || m.StateMachine() != nil
+}
+
 func (m *Map) BlocksTeleportStone() bool {
-	return m.Wz.Limits(constant.FieldLimitTeleportStone|constant.FieldLimitMovementSkill) || m.IsInstance() || m.StateMachine() != nil
+	return m.Wz.Limits(constant.FieldLimitTeleportStone|constant.FieldLimitMovementSkill) || m.BlocksMove()
 }
 
 func (m *Map) GetObject(objectType constant.ObjectType, id uint32) Object {

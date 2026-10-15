@@ -994,6 +994,12 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		Continent:         mapId / 100000000,
 		FreeMarket:        mapId >= freeMarketFirstMapID && mapId <= freeMarketLastMapID,
 		MessageBoxBlocked: mapId/10000000 == messageBoxBlockedRegion,
+		MoveBlocked:       moveBlockedMapIDs[mapId],
+	}
+	for _, r := range moveBlockedMapRanges {
+		if mapId >= r[0] && mapId <= r[1] {
+			model.MoveBlocked = true
+		}
 	}
 
 	info := root.find("info")
