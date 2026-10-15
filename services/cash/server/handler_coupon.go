@@ -112,6 +112,7 @@ func (h *Coupon) claim(ctx *core.ClientContext, promise *async.Task, character *
 			CharacterId: character.ID(),
 			Code:        code,
 			Item:        item,
+			RequestId:   h.cs.NewUniqueID(),
 		})
 	}, func(reply *internal.RedeemCashCouponReply) error {
 		switch reply.GetResult() {

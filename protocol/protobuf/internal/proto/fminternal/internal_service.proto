@@ -333,6 +333,7 @@ message RedeemCashCouponRequest {
   uint32 character_id = 3;
   string code = 4;
   CashItem item = 5;
+  uint64 request_id = 6 [jstype = JS_STRING];
 }
 
 message RedeemCashCouponReply {

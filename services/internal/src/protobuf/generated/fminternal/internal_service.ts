@@ -2059,6 +2059,7 @@ export interface RedeemCashCouponRequest {
   characterId: number;
   code: string;
   item: CashItem | undefined;
+  requestId: string;
 }
 
 export interface RedeemCashCouponReply {
@@ -6738,7 +6739,7 @@ export const FindCashCouponReply: MessageFns<FindCashCouponReply> = {
 };
 
 function createBaseRedeemCashCouponRequest(): RedeemCashCouponRequest {
-  return { worldId: 0, accountId: 0, characterId: 0, code: "", item: undefined };
+  return { worldId: 0, accountId: 0, characterId: 0, code: "", item: undefined, requestId: "0" };
 }
 
 export const RedeemCashCouponRequest: MessageFns<RedeemCashCouponRequest> = {
@@ -6757,6 +6758,9 @@ export const RedeemCashCouponRequest: MessageFns<RedeemCashCouponRequest> = {
     }
     if (message.item !== undefined) {
       CashItem.encode(message.item, writer.uint32(42).fork()).join();
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(48).uint64(message.requestId);
     }
     return writer;
   },
@@ -6808,6 +6812,14 @@ export const RedeemCashCouponRequest: MessageFns<RedeemCashCouponRequest> = {
           message.item = CashItem.decode(reader, reader.uint32());
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6836,6 +6848,11 @@ export const RedeemCashCouponRequest: MessageFns<RedeemCashCouponRequest> = {
         : 0,
       code: isSet(object.code) ? globalThis.String(object.code) : "",
       item: isSet(object.item) ? CashItem.fromJSON(object.item) : undefined,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -6856,6 +6873,9 @@ export const RedeemCashCouponRequest: MessageFns<RedeemCashCouponRequest> = {
     if (message.item !== undefined) {
       obj.item = CashItem.toJSON(message.item);
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -6869,6 +6889,7 @@ export const RedeemCashCouponRequest: MessageFns<RedeemCashCouponRequest> = {
     message.characterId = object.characterId ?? 0;
     message.code = object.code ?? "";
     message.item = (object.item !== undefined && object.item !== null) ? CashItem.fromPartial(object.item) : undefined;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };

@@ -608,19 +608,23 @@ export class CashShopService {
         if (coupon == null) {
             return { result: CashShopResult.CASH_SHOP_RESULT_NOT_FOUND, kind: CashCouponKind.CASH_COUPON_KIND_NX_CASH, value: 0 };
         }
-        if (coupon.used_at != null && (coupon.used_by !== accountId || (await this.cashShopRepo.findCouponGrant(worldId, accountId, code)))) {
+        if (
+            coupon.used_at != null &&
+            (coupon.used_by !== accountId || coupon.request_id == null || (await this.cashShopRepo.findReceipt(worldId, accountId, coupon.request_id)))
+        ) {
             return { result: CashShopResult.CASH_SHOP_RESULT_COUPON_USED, kind: coupon.kind, value: coupon.value };
         }
         return { result: CashShopResult.CASH_SHOP_RESULT_OK, kind: coupon.kind, value: coupon.value };
     }
 
-    // The claim commits before the grant and stays with this account, so a grant that fails is taken again with the same code.
+    // The claim commits before the grant and keeps the first request id, so a retry by this account grants under that id at most once.
     async redeemCoupon(req: RedeemCashCouponRequest): Promise<RedeemCashCouponReply> {
         const used = { result: CashShopResult.CASH_SHOP_RESULT_COUPON_USED, nxCash: 0, maplePoint: 0, meso: 0 };
-        const coupon = await this.cashShopRepo.claimCoupon(req.worldId, req.code, req.accountId);
-        if (coupon == null) {
+        const coupon = await this.cashShopRepo.claimCoupon(req.worldId, req.code, req.accountId, req.requestId);
+        if (coupon == null || coupon.request_id == null) {
             return used;
         }
+        const requestId = coupon.request_id;
         const character = await this.characterRepo.get(req.worldId, req.characterId);
         if (character == null) {
             throw new Error(`character not found: ${req.characterId}`);
@@ -634,7 +638,7 @@ export class CashShopService {
                     return { result: CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL, nxCash: 0, maplePoint: 0, meso: 0 };
                 }
             }
-            if ((await this.cashShopRepo.insertCouponGrant(txClient, req.code, req.accountId)) === false) {
+            if ((await this.cashShopRepo.insertReceipt(txClient, requestId)) === false) {
                 return used;
             }
 
