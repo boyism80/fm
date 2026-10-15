@@ -9,7 +9,7 @@ import (
 	"github.com/boyism80/fm/maple/wz"
 )
 
-func (qc *Quests) requirementsMet(req wz.QuestRequirements, qp *Quest, opts QuestPhaseOpts) bool {
+func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts QuestPhaseOpts) bool {
 	if req.NPC != 0 && opts.NpcID != nil {
 		wireNPC := *opts.NpcID
 		if wireNPC != 0 && wireNPC != req.NPC {

@@ -223,7 +223,7 @@ func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
 	if def.Meta.AutoStart || def.Meta.AutoAccept {
 		checkOpts.NpcID = nil
 	}
-	if !qc.requirementsMet(def.Start.Requirements, existing, checkOpts) {
+	if !qc.passesRequirements(def.Start.Requirements, existing, checkOpts) {
 		return ErrQuestNotStartable
 	}
 	exchange := qc.buildPhaseExchange(def.Start.Actions, questActionOpts{

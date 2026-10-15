@@ -32,7 +32,7 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 		return nil, err
 	}
 
-	specs := []*CashItem{}
+	cashItems := []*CashItem{}
 	for _, v := range root.Children {
 		model := CashItem{
 			ItemCore: &ItemCore{},
@@ -125,10 +125,10 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 			model.PetFood = v.find("spec").petFood()
 		}
 
-		specs = append(specs, &model)
+		cashItems = append(cashItems, &model)
 	}
 
-	return &specs, nil
+	return &cashItems, nil
 }
 
 func loadConsumes(path string) (*[]*Consume, error) {
@@ -143,7 +143,7 @@ func loadConsumes(path string) (*[]*Consume, error) {
 		return nil, err
 	}
 
-	specs := []*Consume{}
+	consumes := []*Consume{}
 	for _, v := range root.Children {
 		model := Consume{
 			ItemCore: &ItemCore{},
@@ -488,10 +488,10 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			model.SlotMax = 100
 		}
 
-		specs = append(specs, &model)
+		consumes = append(consumes, &model)
 	}
 
-	return &specs, nil
+	return &consumes, nil
 }
 
 func consumeSpecKeyToCureDebuffFlag(specKey string) (constant.DebuffFlag, bool) {
@@ -792,7 +792,7 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 		return nil, err
 	}
 
-	specs := []*MiscItem{}
+	miscItems := []*MiscItem{}
 	for _, v := range root.Children {
 		model := MiscItem{
 			ItemCore: &ItemCore{},
@@ -881,10 +881,10 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 			model.SlotMax = 100
 		}
 
-		specs = append(specs, &model)
+		miscItems = append(miscItems, &model)
 	}
 
-	return &specs, nil
+	return &miscItems, nil
 }
 
 func loadInstallations(path string) (*[]*Installation, error) {
@@ -899,7 +899,7 @@ func loadInstallations(path string) (*[]*Installation, error) {
 		return nil, err
 	}
 
-	specs := []*Installation{}
+	installations := []*Installation{}
 	for _, v := range root.Children {
 		model := Installation{
 			ItemCore: &ItemCore{},
@@ -967,10 +967,10 @@ func loadInstallations(path string) (*[]*Installation, error) {
 			model.SlotMax = 100
 		}
 
-		specs = append(specs, &model)
+		installations = append(installations, &model)
 	}
 
-	return &specs, nil
+	return &installations, nil
 }
 
 func loadMaps(path string, mapId uint32) (*Map, error) {
@@ -1743,7 +1743,7 @@ func loadSpecialItems(path string) (*[]*SpecialItem, error) {
 		return nil, err
 	}
 
-	specs := []*SpecialItem{}
+	specialItems := []*SpecialItem{}
 	for _, v := range root.Children {
 		model := SpecialItem{
 			ItemCore: &ItemCore{
@@ -1778,10 +1778,10 @@ func loadSpecialItems(path string) (*[]*SpecialItem, error) {
 			}
 		}
 
-		specs = append(specs, &model)
+		specialItems = append(specialItems, &model)
 	}
 
-	return &specs, nil
+	return &specialItems, nil
 }
 
 func loadStringNodeRecursive(root *node) map[uint32]map[string]string {
