@@ -67,6 +67,10 @@ func (ch *Character) DropItem(actx actor.Context, invType constant.InventoryType
 	if ch.Spectating() {
 		return false
 	}
+	m := ch.GetMap()
+	if m == nil {
+		return false
+	}
 
 	var dropped Item
 	if slot < 0 {
@@ -100,12 +104,8 @@ func (ch *Character) DropItem(actx actor.Context, invType constant.InventoryType
 			return false
 		}
 	}
-	m := ch.GetMap()
 	restricted := !dropped.prepareFieldDrop()
 	if restricted && dropped.GetModel().GetTraits()&constant.ItemTraitPartyQuest == 0 {
-		return true
-	}
-	if m == nil {
 		return true
 	}
 	if err := m.SpawnItem(dropped, ItemSpawn{
@@ -128,16 +128,16 @@ func (ch *Character) DropMeso(amount int32) bool {
 	if amount < constant.DropMesoMin || amount > constant.DropMesoMax || amount > ch.Inventory.Meso {
 		return false
 	}
+	m := ch.GetMap()
+	if m == nil {
+		return false
+	}
 
 	ch.Inventory.SetMeso(ch.Inventory.Meso - amount)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatMeso: ch.Inventory.Meso,
 	}, true)
 
-	m := ch.GetMap()
-	if m == nil {
-		return true
-	}
 	if _, err := m.SpawnMeso(amount, ch.Position, ch.Position, ch.GetID(), constant.DropTypeFFA, true); err != nil {
 		log.Printf("Failed to spawn meso on map: %v", err)
 	}
