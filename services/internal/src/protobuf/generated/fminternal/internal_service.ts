@@ -394,6 +394,8 @@ export enum UnsettledType {
   UNSETTLED_TYPE_WEDDING_PROPOSAL = 12,
   UNSETTLED_TYPE_WEDDING_RESERVE = 13,
   UNSETTLED_TYPE_FAMILY_MOVE = 14,
+  UNSETTLED_TYPE_WEDDING_WISHLIST = 15,
+  UNSETTLED_TYPE_SHOP_OPEN = 16,
   UNRECOGNIZED = -1,
 }
 
@@ -444,6 +446,12 @@ export function unsettledTypeFromJSON(object: any): UnsettledType {
     case 14:
     case "UNSETTLED_TYPE_FAMILY_MOVE":
       return UnsettledType.UNSETTLED_TYPE_FAMILY_MOVE;
+    case 15:
+    case "UNSETTLED_TYPE_WEDDING_WISHLIST":
+      return UnsettledType.UNSETTLED_TYPE_WEDDING_WISHLIST;
+    case 16:
+    case "UNSETTLED_TYPE_SHOP_OPEN":
+      return UnsettledType.UNSETTLED_TYPE_SHOP_OPEN;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -483,6 +491,10 @@ export function unsettledTypeToJSON(object: UnsettledType): string {
       return "UNSETTLED_TYPE_WEDDING_RESERVE";
     case UnsettledType.UNSETTLED_TYPE_FAMILY_MOVE:
       return "UNSETTLED_TYPE_FAMILY_MOVE";
+    case UnsettledType.UNSETTLED_TYPE_WEDDING_WISHLIST:
+      return "UNSETTLED_TYPE_WEDDING_WISHLIST";
+    case UnsettledType.UNSETTLED_TYPE_SHOP_OPEN:
+      return "UNSETTLED_TYPE_SHOP_OPEN";
     case UnsettledType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -2126,6 +2138,7 @@ export interface SetWeddingWishlistRequest {
   marriageId: number;
   characterId: number;
   wishes: string[];
+  requestId: string;
 }
 
 export interface InviteWeddingGuestRequest {
@@ -2671,11 +2684,23 @@ export interface FindEntrustedShopReply {
 
 export interface OpenShopRequest {
   shop: Shop | undefined;
+  requestId: string;
 }
 
 export interface OpenShopReply {
   shopId: number;
   existing: Shop | undefined;
+  aborted: boolean;
+}
+
+export interface AbortOpenShopRequest {
+  worldId: number;
+  accountId: number;
+  requestId: string;
+}
+
+export interface AbortOpenShopReply {
+  aborted: boolean;
 }
 
 export interface SaveShopRequest {
@@ -8309,7 +8334,7 @@ export const AbortMarriageChangeReply: MessageFns<AbortMarriageChangeReply> = {
 };
 
 function createBaseSetWeddingWishlistRequest(): SetWeddingWishlistRequest {
-  return { worldId: 0, marriageId: 0, characterId: 0, wishes: [] };
+  return { worldId: 0, marriageId: 0, characterId: 0, wishes: [], requestId: "0" };
 }
 
 export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = {
@@ -8325,6 +8350,9 @@ export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = 
     }
     for (const v of message.wishes) {
       writer.uint32(34).string(v!);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(40).uint64(message.requestId);
     }
     return writer;
   },
@@ -8368,6 +8396,14 @@ export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = 
           message.wishes.push(reader.string());
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8395,6 +8431,11 @@ export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = 
         ? globalThis.Number(object.character_id)
         : 0,
       wishes: globalThis.Array.isArray(object?.wishes) ? object.wishes.map((e: any) => globalThis.String(e)) : [],
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -8412,6 +8453,9 @@ export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = 
     if (message.wishes?.length) {
       obj.wishes = message.wishes;
     }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -8424,6 +8468,7 @@ export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = 
     message.marriageId = object.marriageId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.wishes = object.wishes?.map((e) => e) || [];
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
@@ -17835,13 +17880,16 @@ export const FindEntrustedShopReply: MessageFns<FindEntrustedShopReply> = {
 };
 
 function createBaseOpenShopRequest(): OpenShopRequest {
-  return { shop: undefined };
+  return { shop: undefined, requestId: "0" };
 }
 
 export const OpenShopRequest: MessageFns<OpenShopRequest> = {
   encode(message: OpenShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.shop !== undefined) {
       Shop.encode(message.shop, writer.uint32(10).fork()).join();
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(16).uint64(message.requestId);
     }
     return writer;
   },
@@ -17861,6 +17909,14 @@ export const OpenShopRequest: MessageFns<OpenShopRequest> = {
           message.shop = Shop.decode(reader, reader.uint32());
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -17871,13 +17927,23 @@ export const OpenShopRequest: MessageFns<OpenShopRequest> = {
   },
 
   fromJSON(object: any): OpenShopRequest {
-    return { shop: isSet(object.shop) ? Shop.fromJSON(object.shop) : undefined };
+    return {
+      shop: isSet(object.shop) ? Shop.fromJSON(object.shop) : undefined,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+    };
   },
 
   toJSON(message: OpenShopRequest): unknown {
     const obj: any = {};
     if (message.shop !== undefined) {
       obj.shop = Shop.toJSON(message.shop);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
     }
     return obj;
   },
@@ -17888,12 +17954,13 @@ export const OpenShopRequest: MessageFns<OpenShopRequest> = {
   fromPartial<I extends Exact<DeepPartial<OpenShopRequest>, I>>(object: I): OpenShopRequest {
     const message = createBaseOpenShopRequest();
     message.shop = (object.shop !== undefined && object.shop !== null) ? Shop.fromPartial(object.shop) : undefined;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
 
 function createBaseOpenShopReply(): OpenShopReply {
-  return { shopId: 0, existing: undefined };
+  return { shopId: 0, existing: undefined, aborted: false };
 }
 
 export const OpenShopReply: MessageFns<OpenShopReply> = {
@@ -17903,6 +17970,9 @@ export const OpenShopReply: MessageFns<OpenShopReply> = {
     }
     if (message.existing !== undefined) {
       Shop.encode(message.existing, writer.uint32(18).fork()).join();
+    }
+    if (message.aborted !== false) {
+      writer.uint32(24).bool(message.aborted);
     }
     return writer;
   },
@@ -17930,6 +18000,14 @@ export const OpenShopReply: MessageFns<OpenShopReply> = {
           message.existing = Shop.decode(reader, reader.uint32());
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.aborted = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -17947,6 +18025,7 @@ export const OpenShopReply: MessageFns<OpenShopReply> = {
         ? globalThis.Number(object.shop_id)
         : 0,
       existing: isSet(object.existing) ? Shop.fromJSON(object.existing) : undefined,
+      aborted: isSet(object.aborted) ? globalThis.Boolean(object.aborted) : false,
     };
   },
 
@@ -17957,6 +18036,9 @@ export const OpenShopReply: MessageFns<OpenShopReply> = {
     }
     if (message.existing !== undefined) {
       obj.existing = Shop.toJSON(message.existing);
+    }
+    if (message.aborted !== false) {
+      obj.aborted = message.aborted;
     }
     return obj;
   },
@@ -17970,6 +18052,169 @@ export const OpenShopReply: MessageFns<OpenShopReply> = {
     message.existing = (object.existing !== undefined && object.existing !== null)
       ? Shop.fromPartial(object.existing)
       : undefined;
+    message.aborted = object.aborted ?? false;
+    return message;
+  },
+};
+
+function createBaseAbortOpenShopRequest(): AbortOpenShopRequest {
+  return { worldId: 0, accountId: 0, requestId: "0" };
+}
+
+export const AbortOpenShopRequest: MessageFns<AbortOpenShopRequest> = {
+  encode(message: AbortOpenShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(24).uint64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortOpenShopRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortOpenShopRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortOpenShopRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+    };
+  },
+
+  toJSON(message: AbortOpenShopRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortOpenShopRequest>, I>>(base?: I): AbortOpenShopRequest {
+    return AbortOpenShopRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortOpenShopRequest>, I>>(object: I): AbortOpenShopRequest {
+    const message = createBaseAbortOpenShopRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseAbortOpenShopReply(): AbortOpenShopReply {
+  return { aborted: false };
+}
+
+export const AbortOpenShopReply: MessageFns<AbortOpenShopReply> = {
+  encode(message: AbortOpenShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.aborted !== false) {
+      writer.uint32(8).bool(message.aborted);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AbortOpenShopReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAbortOpenShopReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.aborted = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AbortOpenShopReply {
+    return { aborted: isSet(object.aborted) ? globalThis.Boolean(object.aborted) : false };
+  },
+
+  toJSON(message: AbortOpenShopReply): unknown {
+    const obj: any = {};
+    if (message.aborted !== false) {
+      obj.aborted = message.aborted;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AbortOpenShopReply>, I>>(base?: I): AbortOpenShopReply {
+    return AbortOpenShopReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AbortOpenShopReply>, I>>(object: I): AbortOpenShopReply {
+    const message = createBaseAbortOpenShopReply();
+    message.aborted = object.aborted ?? false;
     return message;
   },
 };
@@ -38780,6 +39025,15 @@ export const InternalService = {
     responseSerialize: (value: OpenShopReply): Buffer => Buffer.from(OpenShopReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): OpenShopReply => OpenShopReply.decode(value),
   },
+  abortOpenShop: {
+    path: "/fm.internal.Internal/AbortOpenShop" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: AbortOpenShopRequest): Buffer => Buffer.from(AbortOpenShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): AbortOpenShopRequest => AbortOpenShopRequest.decode(value),
+    responseSerialize: (value: AbortOpenShopReply): Buffer => Buffer.from(AbortOpenShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): AbortOpenShopReply => AbortOpenShopReply.decode(value),
+  },
   saveShop: {
     path: "/fm.internal.Internal/SaveShop" as const,
     requestStream: false as const,
@@ -39783,6 +40037,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   checkParcelArrivals: handleUnaryCall<CheckParcelArrivalsRequest, CheckParcelArrivalsReply>;
   findEntrustedShop: handleUnaryCall<FindEntrustedShopRequest, FindEntrustedShopReply>;
   openShop: handleUnaryCall<OpenShopRequest, OpenShopReply>;
+  abortOpenShop: handleUnaryCall<AbortOpenShopRequest, AbortOpenShopReply>;
   saveShop: handleUnaryCall<SaveShopRequest, SaveShopReply>;
   closeChannelShops: handleUnaryCall<CloseChannelShopsRequest, CloseChannelShopsReply>;
   searchShops: handleUnaryCall<SearchShopsRequest, SearchShopsReply>;
@@ -40266,6 +40521,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: OpenShopReply) => void,
+  ): ClientUnaryCall;
+  abortOpenShop(
+    request: AbortOpenShopRequest,
+    callback: (error: ServiceError | null, response: AbortOpenShopReply) => void,
+  ): ClientUnaryCall;
+  abortOpenShop(
+    request: AbortOpenShopRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: AbortOpenShopReply) => void,
+  ): ClientUnaryCall;
+  abortOpenShop(
+    request: AbortOpenShopRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: AbortOpenShopReply) => void,
   ): ClientUnaryCall;
   saveShop(
     request: SaveShopRequest,

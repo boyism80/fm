@@ -5,7 +5,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 const CharacterSaveTimerName = "CharacterSave"
@@ -24,7 +24,7 @@ func (t *CharacterSaveTimer) GetInitialDelay() time.Duration {
 	return 5 * time.Minute
 }
 
-func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	if mapData == nil || mapData.GameWorld == nil {
 		return nil
 	}
@@ -36,7 +36,7 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *domain.Map) erro
 	worldID := mapData.GameWorld.GetWorldID()
 	entries := make([]*internal.CharacterSaveEntry, 0, len(allPlayers))
 	for _, obj := range allPlayers {
-		ch, ok := obj.(*domain.Character)
+		ch, ok := obj.(*game.Character)
 		if !ok || ch == nil || ch.LoggedOut() {
 			continue
 		}
@@ -48,7 +48,7 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *domain.Map) erro
 	}
 
 	if len(entries) > 0 {
-		mapData.GameWorld.Systems().Get[*domain.InternalSystem]().SaveAsync(ctx, entries)
+		mapData.GameWorld.Systems().Get[*game.InternalSystem]().SaveAsync(ctx, entries)
 	}
 	return nil
 }

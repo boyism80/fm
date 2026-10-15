@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/maple/wz"
 )
 
 func main() {

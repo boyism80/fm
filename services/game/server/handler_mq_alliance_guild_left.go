@@ -7,7 +7,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -58,12 +58,12 @@ func (h *allianceMqGuildLeft) Handle(ctx actor.Context, raw json.RawMessage) err
 		Expelled bool `json:"expelled"`
 	}
 	_ = json.Unmarshal(raw, &extra)
-	gs.systems.Get[*domain.AllianceSystem]().UpdateAsync(ctx, evt).Do(func() error {
+	gs.systems.Get[*game.AllianceSystem]().UpdateAsync(ctx, evt).Do(func() error {
 		if !removedGuildFound {
-			gs.systems.Get[*domain.AllianceSystem]().BroadcastInfoUpdate(alliancePb)
+			gs.systems.Get[*game.AllianceSystem]().BroadcastInfoUpdate(alliancePb)
 			return nil
 		}
-		gs.systems.Get[*domain.AllianceSystem]().BroadcastGuildLeft(alliancePb, removedGuildPb, extra.Expelled)
+		gs.systems.Get[*game.AllianceSystem]().BroadcastGuildLeft(alliancePb, removedGuildPb, extra.Expelled)
 		return nil
 	})
 	return nil

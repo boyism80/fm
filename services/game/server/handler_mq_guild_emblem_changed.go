@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type guildMqEmblemChanged struct{ gs *GameServer }
@@ -26,6 +26,6 @@ func (h *guildMqEmblemChanged) Handle(ctx actor.Context, raw json.RawMessage) er
 	if !ok {
 		return nil
 	}
-	gs.systems.Get[*domain.GuildSystem]().SyncGuildEventAsync(ctx, evt, gs.systems.Get[*domain.GuildSystem]().BroadcastEmblemChanged)
+	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, gs.systems.Get[*game.GuildSystem]().BroadcastEmblemChanged)
 	return nil
 }

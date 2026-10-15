@@ -5,7 +5,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type ItemExpireTimer struct{}
@@ -22,13 +22,13 @@ func (t *ItemExpireTimer) GetInitialDelay() time.Duration {
 	return 1 * time.Second
 }
 
-func (t *ItemExpireTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *ItemExpireTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}
 	now := clock.Now()
 	for _, obj := range mapData.GetAllPlayers() {
-		if ch, ok := obj.(*domain.Character); ok {
+		if ch, ok := obj.(*game.Character); ok {
 			ch.Inventory.ExpireItems(now)
 		}
 	}

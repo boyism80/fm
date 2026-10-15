@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/asynkron/protoactor-go/actor"
-	gameconst "github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	gameconst "github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/services/game"
 )
 
 type cashGiftMqArrived struct{ gs *GameServer }
@@ -31,7 +31,7 @@ func (h *cashGiftMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 		return nil
 	}
 	message := fmt.Sprintf("%s님이 캐시샵 선물을 보냈습니다. 캐시샵 보관함을 확인하세요.", payload.SenderName)
-	h.gs.systems.Get[*domain.DispatchSystem]().CallCharacter(payload.CharacterID, func(_ actor.Context, ch *domain.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(payload.CharacterID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}

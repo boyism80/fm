@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type marriageMqChanged struct{ gs *GameServer }
@@ -28,7 +28,7 @@ func (h *marriageMqChanged) Handle(_ actor.Context, raw json.RawMessage) error {
 	if payload.CharacterID == 0 {
 		return nil
 	}
-	h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, payload.CharacterID, &domain.RefreshWedding{
+	h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, payload.CharacterID, &game.RefreshWedding{
 		CharacterID: payload.CharacterID,
 		Event:       payload.Event,
 	})

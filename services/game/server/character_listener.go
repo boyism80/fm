@@ -10,14 +10,14 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/maple/wz"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
-	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
@@ -26,7 +26,7 @@ type CharacterListenerImpl struct {
 	gs *GameServer
 }
 
-func (l *CharacterListenerImpl) OnDialog(ch *domain.Character, npc uint32, message string, prev bool, next bool) {
+func (l *CharacterListenerImpl) OnDialog(ch *game.Character, npc uint32, message string, prev bool, next bool) {
 	dialogPacket := &response.Dialog{
 		NPC:  npc,
 		Type: constant.DialogTypeDefault,
@@ -37,7 +37,7 @@ func (l *CharacterListenerImpl) OnDialog(ch *domain.Character, npc uint32, messa
 	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogYesNo(ch *domain.Character, npc uint32, message string, prev bool, next bool) {
+func (l *CharacterListenerImpl) OnDialogYesNo(ch *game.Character, npc uint32, message string, prev bool, next bool) {
 	dialogPacket := &response.DialogYesNo{
 		NPC:  npc,
 		Text: message,
@@ -47,7 +47,7 @@ func (l *CharacterListenerImpl) OnDialogYesNo(ch *domain.Character, npc uint32, 
 	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogAccept(ch *domain.Character, npc uint32, message string, enableEscape bool) {
+func (l *CharacterListenerImpl) OnDialogAccept(ch *game.Character, npc uint32, message string, enableEscape bool) {
 	dialogPacket := &response.DialogAccept{
 		NPC:          npc,
 		Text:         message,
@@ -56,7 +56,7 @@ func (l *CharacterListenerImpl) OnDialogAccept(ch *domain.Character, npc uint32,
 	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogList(ch *domain.Character, npc uint32, message string, selections []string) {
+func (l *CharacterListenerImpl) OnDialogList(ch *game.Character, npc uint32, message string, selections []string) {
 	dialogPacket := &response.DialogList{
 		NPC:        npc,
 		Text:       message,
@@ -65,7 +65,7 @@ func (l *CharacterListenerImpl) OnDialogList(ch *domain.Character, npc uint32, m
 	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogStyle(ch *domain.Character, npc uint32, message string, styles []uint32) {
+func (l *CharacterListenerImpl) OnDialogStyle(ch *game.Character, npc uint32, message string, styles []uint32) {
 	ch.Send(&response.DialogStyle{
 		NPC:    npc,
 		Text:   message,
@@ -73,11 +73,11 @@ func (l *CharacterListenerImpl) OnDialogStyle(ch *domain.Character, npc uint32, 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuddyCapacity(ch *domain.Character, capacity uint8) {
+func (l *CharacterListenerImpl) OnBuddyCapacity(ch *game.Character, capacity uint8) {
 	ch.Send(&response.BuddyCapacityUpdate{Capacity: capacity}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogInput(ch *domain.Character, npc uint32, message string) {
+func (l *CharacterListenerImpl) OnDialogInput(ch *game.Character, npc uint32, message string) {
 	dialogPacket := &response.DialogInput{
 		NPC:  npc,
 		Text: message,
@@ -85,7 +85,7 @@ func (l *CharacterListenerImpl) OnDialogInput(ch *domain.Character, npc uint32, 
 	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogNumber(ch *domain.Character, npc uint32, message string, def, min, max int32) {
+func (l *CharacterListenerImpl) OnDialogNumber(ch *game.Character, npc uint32, message string, def, min, max int32) {
 	ch.Send(&response.DialogNumber{
 		NPC:     npc,
 		Text:    message,
@@ -95,7 +95,7 @@ func (l *CharacterListenerImpl) OnDialogNumber(ch *domain.Character, npc uint32,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnChat(ch *domain.Character, message string, highlight bool, dontRecordHistory bool) {
+func (l *CharacterListenerImpl) OnChat(ch *game.Character, message string, highlight bool, dontRecordHistory bool) {
 	chatPacket := &response.NormalChat{
 		CharacterId:       ch.GetID(),
 		Message:           message,
@@ -107,10 +107,10 @@ func (l *CharacterListenerImpl) OnChat(ch *domain.Character, message string, hig
 		return
 	}
 
-	ch.Broadcast(chatPacket, &domain.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(chatPacket, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnMesoChanged(ch *domain.Character, meso int32) {
+func (l *CharacterListenerImpl) OnMesoChanged(ch *game.Character, meso int32) {
 	ch.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.StatMeso: meso,
@@ -118,11 +118,11 @@ func (l *CharacterListenerImpl) OnMesoChanged(ch *domain.Character, meso int32) 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnKeyMap(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnKeyMap(ch *game.Character) {
 	ch.Send(&response.KeyMap{Slots: ch.KeyLayout.Bindings()}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnSkillMacros(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnSkillMacros(ch *game.Character) {
 	macros := ch.SkillMacros.Entries()
 	entries := make([]response.SkillMacroEntry, 0, len(macros))
 	for _, macro := range macros {
@@ -131,19 +131,19 @@ func (l *CharacterListenerImpl) OnSkillMacros(ch *domain.Character) {
 	ch.Send(&response.SkillMacro{Entries: entries}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnChalkboard(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnChalkboard(ch *game.Character) {
 	ch.Broadcast(&response.Chalkboard{CharacterID: ch.GetID(), Text: ch.Chalkboard}, nil)
 }
 
-func (l *CharacterListenerImpl) OnFaceExpression(ch *domain.Character, expression uint32) {
+func (l *CharacterListenerImpl) OnFaceExpression(ch *game.Character, expression uint32) {
 	ch.Broadcast(&response.FaceExpression{CharacterID: ch.GetID(), Expression: expression}, nil)
 }
 
-func (l *CharacterListenerImpl) OnItemEffect(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnItemEffect(ch *game.Character) {
 	ch.Broadcast(&response.ItemEffect{CharacterID: ch.GetID(), ItemID: ch.ItemEffectID}, nil)
 }
 
-func (l *CharacterListenerImpl) OnChargeSkillEffect(ch *domain.Character, skillID uint32, level, flags, speed uint8) {
+func (l *CharacterListenerImpl) OnChargeSkillEffect(ch *game.Character, skillID uint32, level, flags, speed uint8) {
 	ch.Broadcast(&response.ChargeSkillEffect{
 		CharacterID: ch.GetID(),
 		SkillID:     skillID,
@@ -153,15 +153,15 @@ func (l *CharacterListenerImpl) OnChargeSkillEffect(ch *domain.Character, skillI
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnChargeSkillCancelled(ch *domain.Character, skillID uint32) {
+func (l *CharacterListenerImpl) OnChargeSkillCancelled(ch *game.Character, skillID uint32) {
 	ch.Broadcast(&response.CancelChargeSkillEffect{CharacterID: ch.GetID(), SkillID: skillID}, nil)
 }
 
-func (l *CharacterListenerImpl) OnMessage(ch *domain.Character, messageType constant.ServerMessageType, message string) {
+func (l *CharacterListenerImpl) OnMessage(ch *game.Character, messageType constant.ServerMessageType, message string) {
 	l.OnNotice(ch, messageType, message, 0, false)
 }
 
-func (l *CharacterListenerImpl) OnNotice(ch *domain.Character, messageType constant.ServerMessageType, message string, channel int, ear bool) {
+func (l *CharacterListenerImpl) OnNotice(ch *game.Character, messageType constant.ServerMessageType, message string, channel int, ear bool) {
 	ch.Send(&response.Notice{
 		Message: message,
 		Type:    messageType,
@@ -170,15 +170,15 @@ func (l *CharacterListenerImpl) OnNotice(ch *domain.Character, messageType const
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMegaphone(ch *domain.Character, megaphone *response.Megaphone) {
+func (l *CharacterListenerImpl) OnMegaphone(ch *game.Character, megaphone *response.Megaphone) {
 	ch.Send(megaphone, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMessageBoxFailed(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnMessageBoxFailed(ch *game.Character) {
 	ch.Send(&response.MessageBoxFailed{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) Disconnect(ch *domain.Character) {
+func (l *CharacterListenerImpl) Disconnect(ch *game.Character) {
 	c, ok := ch.Sendable.(*client.GameClient)
 	if !ok {
 		return
@@ -186,23 +186,23 @@ func (l *CharacterListenerImpl) Disconnect(ch *domain.Character) {
 	_ = c.GetConnection().Close()
 }
 
-func (l *CharacterListenerImpl) OnClock(ch *domain.Character, seconds int32) {
+func (l *CharacterListenerImpl) OnClock(ch *game.Character, seconds int32) {
 	ch.Send(&response.Clock{
 		Seconds: seconds,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStopClock(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnStopClock(ch *game.Character) {
 	ch.Send(&response.StopClock{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyCreated(ch *domain.Character, partyID uint32) {
+func (l *CharacterListenerImpl) OnPartyCreated(ch *game.Character, partyID uint32) {
 	ch.Send(&response.PartyCreated{
 		PartyID: partyID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowGuildInfo(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnShowGuildInfo(ch *game.Character) {
 	if l.gs == nil {
 		return
 	}
@@ -210,7 +210,7 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *domain.Character) {
 	if !ok {
 		return
 	}
-	ent := l.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	ent := l.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if ent == nil {
 		return
 	}
@@ -223,19 +223,19 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *domain.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *game.Character) {
 	if l.gs == nil {
 		return
 	}
 	allianceID := uint32(0)
 	if guildID, ok := ch.Guild.ID(); ok {
-		if g := l.gs.systems.Get[*domain.GuildSystem]().Get(guildID); g != nil {
+		if g := l.gs.systems.Get[*game.GuildSystem]().Get(guildID); g != nil {
 			if id, inAlliance := g.GetAllianceID(); inAlliance {
 				allianceID = id
 			}
 		}
 	}
-	info, guilds := l.gs.systems.Get[*domain.AllianceSystem]().ShowData(allianceID)
+	info, guilds := l.gs.systems.Get[*game.AllianceSystem]().ShowData(allianceID)
 	_ = ch.Send(&response.AllianceShowInfo{Info: info}, types.SEND_POLICY_ENCRYPT)
 	if info == nil {
 		return
@@ -244,13 +244,13 @@ func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *domain.Character) {
 	_ = ch.Send(&response.AllianceUpdateInfo{Info: info}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *game.Character) {
 	if l.gs == nil {
 		return
 	}
 	allianceID := uint32(0)
 	if guildID, ok := ch.Guild.ID(); ok {
-		if g := l.gs.systems.Get[*domain.GuildSystem]().Get(guildID); g != nil {
+		if g := l.gs.systems.Get[*game.GuildSystem]().Get(guildID); g != nil {
 			if id, inAlliance := g.GetAllianceID(); inAlliance {
 				allianceID = id
 			}
@@ -259,24 +259,24 @@ func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *domain.Character) {
 	if allianceID == 0 {
 		return
 	}
-	info, _ := l.gs.systems.Get[*domain.AllianceSystem]().ShowData(allianceID)
+	info, _ := l.gs.systems.Get[*game.AllianceSystem]().ShowData(allianceID)
 	if info == nil {
 		return
 	}
 	_ = ch.Send(&response.AllianceUpdateInfo{Info: info}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *game.Character) {
 	guildID, ok := ch.Guild.ID()
 	if !ok || l.gs == nil {
 		return
 	}
-	ent := l.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	ent := l.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if ent == nil {
 		return
 	}
 	characterID := ch.GetID()
-	broadcastOpt := &domain.ObjectBroadcastOption{WithMe: true}
+	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
 	ch.Broadcast(&response.LoadGuildName{
 		CharacterID: characterID,
 		GuildName:   ent.Name,
@@ -294,7 +294,7 @@ func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *domain.Character)
 	ch.Broadcast(iconPkt, broadcastOpt)
 }
 
-func (l *CharacterListenerImpl) OnPartyInvite(ch *domain.Character, partyID uint32, inviterName string, partySearch bool) {
+func (l *CharacterListenerImpl) OnPartyInvite(ch *game.Character, partyID uint32, inviterName string, partySearch bool) {
 	ch.Send(&response.PartyInvite{
 		PartyID:     partyID,
 		InviterName: inviterName,
@@ -302,14 +302,14 @@ func (l *CharacterListenerImpl) OnPartyInvite(ch *domain.Character, partyID uint
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildInvite(ch *domain.Character, guildID uint32, inviterName string) {
+func (l *CharacterListenerImpl) OnGuildInvite(ch *game.Character, guildID uint32, inviterName string) {
 	_ = ch.Send(&response.GuildInvite{
 		GuildID:     guildID,
 		InviterName: inviterName,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceInvite(ch *domain.Character, inviterGuildID uint32, inviterName string, allianceName string) {
+func (l *CharacterListenerImpl) OnAllianceInvite(ch *game.Character, inviterGuildID uint32, inviterName string, allianceName string) {
 	_ = ch.Send(&response.AllianceInvite{
 		InviterGuildID: inviterGuildID,
 		InviterName:    inviterName,
@@ -317,7 +317,7 @@ func (l *CharacterListenerImpl) OnAllianceInvite(ch *domain.Character, inviterGu
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceCreate(ch *domain.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, membershipGuilds []dto.AllianceMembershipChangeGuild) {
+func (l *CharacterListenerImpl) OnAllianceCreate(ch *game.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, membershipGuilds []dto.AllianceMembershipChangeGuild) {
 	if info == nil {
 		return
 	}
@@ -338,13 +338,13 @@ func (l *CharacterListenerImpl) OnAllianceCreate(ch *domain.Character, info *dto
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceDisband(ch *domain.Character, allianceID uint32) {
+func (l *CharacterListenerImpl) OnAllianceDisband(ch *game.Character, allianceID uint32) {
 	_ = ch.Send(&response.AllianceDisband{
 		AllianceID: allianceID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceInfoBroadcast(ch *domain.Character, info *dto.AllianceInfo) {
+func (l *CharacterListenerImpl) OnAllianceInfoBroadcast(ch *game.Character, info *dto.AllianceInfo) {
 	if info == nil {
 		return
 	}
@@ -353,11 +353,11 @@ func (l *CharacterListenerImpl) OnAllianceInfoBroadcast(ch *domain.Character, in
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceNoticeChanged(ch *domain.Character, info *dto.AllianceInfo) {
+func (l *CharacterListenerImpl) OnAllianceNoticeChanged(ch *game.Character, info *dto.AllianceInfo) {
 	l.OnAllianceInfoBroadcast(ch, info)
 }
 
-func (l *CharacterListenerImpl) OnAllianceLeaderChanged(ch *domain.Character, allianceID uint32, oldLeaderID uint32, newLeaderID uint32, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
+func (l *CharacterListenerImpl) OnAllianceLeaderChanged(ch *game.Character, allianceID uint32, oldLeaderID uint32, newLeaderID uint32, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
 	if info == nil {
 		return
 	}
@@ -379,7 +379,7 @@ func (l *CharacterListenerImpl) OnAllianceLeaderChanged(ch *domain.Character, al
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *domain.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
+func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *game.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
 	if info == nil {
 		return
 	}
@@ -391,7 +391,7 @@ func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *domain.Character
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *domain.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuild *dto.AllianceMembershipChangeGuild) {
+func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *game.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuild *dto.AllianceMembershipChangeGuild) {
 	if info == nil || addedGuild == nil {
 		return
 	}
@@ -424,7 +424,7 @@ func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *domain.Character, info 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceGuildLeft(ch *domain.Character, info *dto.AllianceInfo, removedGuildID uint32, removedGuild *dto.GuildInfo, removedMembers []dto.AllianceGuildMemberRank, expelled bool, leaving bool) {
+func (l *CharacterListenerImpl) OnAllianceGuildLeft(ch *game.Character, info *dto.AllianceInfo, removedGuildID uint32, removedGuild *dto.GuildInfo, removedMembers []dto.AllianceGuildMemberRank, expelled bool, leaving bool) {
 	if info == nil || removedGuild == nil {
 		return
 	}
@@ -445,20 +445,20 @@ func (l *CharacterListenerImpl) OnAllianceGuildLeft(ch *domain.Character, info *
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildNewMember(ch *domain.Character, guildID uint32, member dto.GuildMemberStatus) {
+func (l *CharacterListenerImpl) OnGuildNewMember(ch *game.Character, guildID uint32, member dto.GuildMemberStatus) {
 	_ = ch.Send(&response.GuildNewMember{
 		GuildID: guildID,
 		Member:  member,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *game.Character) {
 	ch.Guild.SetID(nil)
 	_ = ch.Send(&response.GuildShowInfo{
 		Info: nil,
 	}, types.SEND_POLICY_ENCRYPT)
 	characterID := ch.GetID()
-	broadcastOpt := &domain.ObjectBroadcastOption{WithMe: true}
+	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
 	ch.Broadcast(&response.LoadGuildName{
 		CharacterID: characterID,
 		GuildName:   "",
@@ -468,7 +468,7 @@ func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *domain.Character) {
 	}, broadcastOpt)
 }
 
-func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *domain.Character, guildID uint32) {
+func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *game.Character, guildID uint32) {
 	ch.Guild.SetID(nil)
 	_ = ch.Send(&response.GuildMemberLeft{
 		GuildID:     guildID,
@@ -477,7 +477,7 @@ func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *domain.Character, guildI
 		WasExpelled: true,
 	}, types.SEND_POLICY_ENCRYPT)
 	characterID := ch.GetID()
-	broadcastOpt := &domain.ObjectBroadcastOption{WithMe: true}
+	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
 	ch.Broadcast(&response.LoadGuildName{
 		CharacterID: characterID,
 		GuildName:   "",
@@ -487,7 +487,7 @@ func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *domain.Character, guildI
 	}, broadcastOpt)
 }
 
-func (l *CharacterListenerImpl) OnGuildMemberLeft(ch *domain.Character, guildID uint32, targetID uint32, targetName string, wasExpelled bool) {
+func (l *CharacterListenerImpl) OnGuildMemberLeft(ch *game.Character, guildID uint32, targetID uint32, targetName string, wasExpelled bool) {
 	_ = ch.Send(&response.GuildMemberLeft{
 		GuildID:     guildID,
 		CharacterID: targetID,
@@ -496,14 +496,14 @@ func (l *CharacterListenerImpl) OnGuildMemberLeft(ch *domain.Character, guildID 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildRankTitleChange(ch *domain.Character, guildID uint32, rankTitles [5]string) {
+func (l *CharacterListenerImpl) OnGuildRankTitleChange(ch *game.Character, guildID uint32, rankTitles [5]string) {
 	_ = ch.Send(&response.GuildRankTitleChange{
 		GuildID:    guildID,
 		RankTitles: rankTitles,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildMemberRankChange(ch *domain.Character, guildID uint32, targetID uint32, guildRank uint8) {
+func (l *CharacterListenerImpl) OnGuildMemberRankChange(ch *game.Character, guildID uint32, targetID uint32, guildRank uint8) {
 	_ = ch.Send(&response.GuildChangeRank{
 		GuildID:     guildID,
 		CharacterID: targetID,
@@ -511,7 +511,7 @@ func (l *CharacterListenerImpl) OnGuildMemberRankChange(ch *domain.Character, gu
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildEmblemChange(ch *domain.Character, guildID uint32, logoBG uint16, logoBGColor uint8, logo uint16, logoColor uint8) {
+func (l *CharacterListenerImpl) OnGuildEmblemChange(ch *game.Character, guildID uint32, logoBG uint16, logoBGColor uint8, logo uint16, logoColor uint8) {
 	_ = ch.Send(&response.GuildEmblemChange{
 		GuildID:     guildID,
 		LogoBG:      logoBG,
@@ -522,21 +522,21 @@ func (l *CharacterListenerImpl) OnGuildEmblemChange(ch *domain.Character, guildI
 	l.OnBroadcastGuildAppearance(ch)
 }
 
-func (l *CharacterListenerImpl) OnGuildNoticeChange(ch *domain.Character, guildID uint32, notice string) {
+func (l *CharacterListenerImpl) OnGuildNoticeChange(ch *game.Character, guildID uint32, notice string) {
 	_ = ch.Send(&response.GuildNotice{
 		GuildID: guildID,
 		Notice:  notice,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildCapacityChange(ch *domain.Character, guildID uint32, capacity uint8) {
+func (l *CharacterListenerImpl) OnGuildCapacityChange(ch *game.Character, guildID uint32, capacity uint8) {
 	_ = ch.Send(&response.GuildCapacityChange{
 		GuildID:  guildID,
 		Capacity: capacity,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildGPChange(ch *domain.Character, guildID uint32, gp uint32, level uint32, amount int32) {
+func (l *CharacterListenerImpl) OnGuildGPChange(ch *game.Character, guildID uint32, gp uint32, level uint32, amount int32) {
 	_ = ch.Send(&response.GuildUpdateGP{
 		GuildID:    guildID,
 		GP:         gp,
@@ -547,14 +547,14 @@ func (l *CharacterListenerImpl) OnGuildGPChange(ch *domain.Character, guildID ui
 	}
 }
 
-func (l *CharacterListenerImpl) OnGuildRanking(ch *domain.Character, npcID uint32, entries []dto.GuildRankingEntry) {
+func (l *CharacterListenerImpl) OnGuildRanking(ch *game.Character, npcID uint32, entries []dto.GuildRankingEntry) {
 	_ = ch.Send(&response.GuildShowRanks{
 		NPCID:   npcID,
 		Entries: entries,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *domain.Character, guildID uint32, subjectCharacterID uint32, online bool) {
+func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *game.Character, guildID uint32, subjectCharacterID uint32, online bool) {
 	_ = ch.Send(&response.GuildMemberOnline{
 		GuildID:     guildID,
 		CharacterID: subjectCharacterID,
@@ -562,7 +562,7 @@ func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *domain.Character, 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildMemberFieldsChange(ch *domain.Character, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
+func (l *CharacterListenerImpl) OnGuildMemberFieldsChange(ch *game.Character, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
 	_ = ch.Send(&response.GuildMemberLevelClassUpdate{
 		GuildID:     guildID,
 		CharacterID: subjectCharacterID,
@@ -571,7 +571,7 @@ func (l *CharacterListenerImpl) OnGuildMemberFieldsChange(ch *domain.Character, 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *domain.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, online bool) {
+func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *game.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, online bool) {
 	_ = ch.Send(&response.AllianceMemberOnline{
 		AllianceID:  allianceID,
 		GuildID:     guildID,
@@ -580,7 +580,7 @@ func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *domain.Characte
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *domain.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
+func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *game.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
 	_ = ch.Send(&response.AllianceUpdateMember{
 		AllianceID:  allianceID,
 		GuildID:     guildID,
@@ -590,7 +590,7 @@ func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *domain.Characte
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *domain.Character, guildID uint32) {
+func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *game.Character, guildID uint32) {
 	if gid, ok := ch.Guild.ID(); ok && gid == guildID {
 		_ = ch.Send(&response.GuildDisband{
 			GuildID: guildID,
@@ -601,7 +601,7 @@ func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *domain.Character, guildID
 		Info: nil,
 	}, types.SEND_POLICY_ENCRYPT)
 	characterID := ch.GetID()
-	broadcastOpt := &domain.ObjectBroadcastOption{WithMe: true}
+	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
 	ch.Broadcast(&response.LoadGuildName{
 		CharacterID: characterID,
 		GuildName:   "",
@@ -611,7 +611,7 @@ func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *domain.Character, guildID
 	}, broadcastOpt)
 }
 
-func (l *CharacterListenerImpl) OnMultiChat(ch *domain.Character, mode pconst.MultiChatMode, senderName string, message string) {
+func (l *CharacterListenerImpl) OnMultiChat(ch *game.Character, mode pconst.MultiChatMode, senderName string, message string) {
 	_ = ch.Send(&response.MultiChat{
 		Mode:    mode,
 		Name:    senderName,
@@ -619,14 +619,14 @@ func (l *CharacterListenerImpl) OnMultiChat(ch *domain.Character, mode pconst.Mu
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *domain.Character, code pconst.PartyStatusCode, name string) {
+func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *game.Character, code pconst.PartyStatusCode, name string) {
 	ch.Send(&response.PartyStatusMessage{
 		Code: code,
 		Name: name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyUpdateJoin(ch *domain.Character, forChannel int32, partyID uint32, joinName string, leaderID uint32, members []response.PartyMemberStatus) {
+func (l *CharacterListenerImpl) OnPartyUpdateJoin(ch *game.Character, forChannel int32, partyID uint32, joinName string, leaderID uint32, members []response.PartyMemberStatus) {
 	_ = ch.Send(&response.PartyUpdateJoin{
 		ForChannel:           forChannel,
 		PartyID:              partyID,
@@ -636,7 +636,7 @@ func (l *CharacterListenerImpl) OnPartyUpdateJoin(ch *domain.Character, forChann
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyUpdateExpel(ch *domain.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
+func (l *CharacterListenerImpl) OnPartyUpdateExpel(ch *game.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
 	_ = ch.Send(&response.PartyUpdateExpel{
 		ForChannel:          forChannel,
 		PartyID:             partyID,
@@ -647,7 +647,7 @@ func (l *CharacterListenerImpl) OnPartyUpdateExpel(ch *domain.Character, forChan
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyUpdateLeave(ch *domain.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
+func (l *CharacterListenerImpl) OnPartyUpdateLeave(ch *game.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
 	_ = ch.Send(&response.PartyUpdateLeave{
 		ForChannel:          forChannel,
 		PartyID:             partyID,
@@ -658,21 +658,21 @@ func (l *CharacterListenerImpl) OnPartyUpdateLeave(ch *domain.Character, forChan
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyUpdateDisband(ch *domain.Character, partyID uint32, leaderID uint32) {
+func (l *CharacterListenerImpl) OnPartyUpdateDisband(ch *game.Character, partyID uint32, leaderID uint32) {
 	_ = ch.Send(&response.PartyUpdateDisband{
 		PartyID:           partyID,
 		LeaderCharacterID: leaderID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyUpdateLeaderChange(ch *domain.Character, newLeaderID uint32, byDisconnect bool) {
+func (l *CharacterListenerImpl) OnPartyUpdateLeaderChange(ch *game.Character, newLeaderID uint32, byDisconnect bool) {
 	_ = ch.Send(&response.PartyUpdateLeaderChange{
 		NewLeaderCharacterID: newLeaderID,
 		ByDisconnect:         byDisconnect,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyUpdateLogOnOff(ch *domain.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
+func (l *CharacterListenerImpl) OnPartyUpdateLogOnOff(ch *game.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
 	_ = ch.Send(&response.PartyUpdateLogOnOff{
 		ForChannel:        forChannel,
 		PartyID:           partyID,
@@ -681,7 +681,7 @@ func (l *CharacterListenerImpl) OnPartyUpdateLogOnOff(ch *domain.Character, forC
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyUpdateSilent(ch *domain.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
+func (l *CharacterListenerImpl) OnPartyUpdateSilent(ch *game.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
 	_ = ch.Send(&response.PartyUpdateSilent{
 		ForChannel:        forChannel,
 		PartyID:           partyID,
@@ -690,38 +690,38 @@ func (l *CharacterListenerImpl) OnPartyUpdateSilent(ch *domain.Character, forCha
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuddyStatusMessage(ch *domain.Character, code pconst.BuddyStatusCode) {
+func (l *CharacterListenerImpl) OnBuddyStatusMessage(ch *game.Character, code pconst.BuddyStatusCode) {
 	ch.Send(&response.BuddyStatus{Code: code}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuddyListUpdate(ch *domain.Character, action pconst.BuddyListSyncAction, entries []response.BuddyEntry) {
+func (l *CharacterListenerImpl) OnBuddyListUpdate(ch *game.Character, action pconst.BuddyListSyncAction, entries []response.BuddyEntry) {
 	ch.Send(&response.BuddyListUpdate{
 		Action:  action,
 		Entries: entries,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuddyChannelUpdate(ch *domain.Character, buddyCharacterID uint32, channel int32) {
+func (l *CharacterListenerImpl) OnBuddyChannelUpdate(ch *game.Character, buddyCharacterID uint32, channel int32) {
 	_ = ch.Send(&response.BuddyChannelUpdate{
 		CharacterID: buddyCharacterID,
 		Channel:     channel,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuddyAddRequest(ch *domain.Character, fromCharacterID uint32, fromName string) {
+func (l *CharacterListenerImpl) OnBuddyAddRequest(ch *game.Character, fromCharacterID uint32, fromName string) {
 	_ = ch.Send(&response.BuddyAddRequest{
 		FromCharacterID: fromCharacterID,
 		FromName:        fromName,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildMessage(ch *domain.Character, code pconst.GuildResponseCode) {
+func (l *CharacterListenerImpl) OnGuildMessage(ch *game.Character, code pconst.GuildResponseCode) {
 	_ = ch.Send(&response.GuildMessage{
 		Code: code,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnExpGain(ch *domain.Character, exp uint32) {
+func (l *CharacterListenerImpl) OnExpGain(ch *game.Character, exp uint32) {
 	expPacket := &response.GainExp{
 		Gain:  exp,
 		White: false,
@@ -729,7 +729,7 @@ func (l *CharacterListenerImpl) OnExpGain(ch *domain.Character, exp uint32) {
 	ch.Send(expPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnControlMoveMob(ch *domain.Character, mob *domain.Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnControlMoveMob(ch *game.Character, mob *game.Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
 	ch.Send(&response.ControlMoveMob{
 		OID:          mob.OID,
 		MoveId:       moveId,
@@ -740,21 +740,21 @@ func (l *CharacterListenerImpl) OnControlMoveMob(ch *domain.Character, mob *doma
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowMobHp(ch *domain.Character, mob *domain.Mob, percentage uint8) {
+func (l *CharacterListenerImpl) OnShowMobHp(ch *game.Character, mob *game.Mob, percentage uint8) {
 	ch.Send(&response.ShowMobHp{
 		OID:        mob.OID,
 		Percentage: percentage,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDojoEnergy(ch *domain.Character, energy int) {
+func (l *CharacterListenerImpl) OnDojoEnergy(ch *game.Character, energy int) {
 	ch.Send(&response.SessionValue{
 		Key:   "energy",
 		Value: strconv.Itoa(energy),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnOpenNpcShop(ch *domain.Character, shopID uint32, shop *wz.Shop) {
+func (l *CharacterListenerImpl) OnOpenNpcShop(ch *game.Character, shopID uint32, shop *wz.Shop) {
 	ch.Send(&response.OpenNpcShop{
 		ShopID: int32(shopID),
 		Shop:   shop,
@@ -762,7 +762,7 @@ func (l *CharacterListenerImpl) OnOpenNpcShop(ch *domain.Character, shopID uint3
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) storageTabs(storage *domain.Storage, invTypes ...constant.InventoryType) map[constant.InventoryType][]dto.Item {
+func (l *CharacterListenerImpl) storageTabs(storage *game.Storage, invTypes ...constant.InventoryType) map[constant.InventoryType][]dto.Item {
 	tabs := make(map[constant.InventoryType][]dto.Item, len(invTypes))
 	for _, invType := range invTypes {
 		items := make([]dto.Item, 0, len(storage.Tabs[invType]))
@@ -774,7 +774,7 @@ func (l *CharacterListenerImpl) storageTabs(storage *domain.Storage, invTypes ..
 	return tabs
 }
 
-func (l *CharacterListenerImpl) OnOpenStorage(ch *domain.Character, npcID uint32) {
+func (l *CharacterListenerImpl) OnOpenStorage(ch *game.Character, npcID uint32) {
 	meso := ch.Account.Storage.Meso
 	ch.Send(&response.Storage{
 		Result: pconst.StorageResultOpen,
@@ -791,7 +791,7 @@ func (l *CharacterListenerImpl) OnOpenStorage(ch *domain.Character, npcID uint32
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStorageTabChanged(ch *domain.Character, result pconst.StorageResult, invType constant.InventoryType) {
+func (l *CharacterListenerImpl) OnStorageTabChanged(ch *game.Character, result pconst.StorageResult, invType constant.InventoryType) {
 	ch.Send(&response.Storage{
 		Result: result,
 		Slots:  ch.Account.Storage.Slots,
@@ -799,7 +799,7 @@ func (l *CharacterListenerImpl) OnStorageTabChanged(ch *domain.Character, result
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStorageArranged(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnStorageArranged(ch *game.Character) {
 	ch.Send(&response.Storage{
 		Result: pconst.StorageResultArrange,
 		Slots:  ch.Account.Storage.Slots,
@@ -813,7 +813,7 @@ func (l *CharacterListenerImpl) OnStorageArranged(ch *domain.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStorageMesoChanged(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnStorageMesoChanged(ch *game.Character) {
 	meso := ch.Account.Storage.Meso
 	ch.Send(&response.Storage{
 		Result: pconst.StorageResultMeso,
@@ -822,13 +822,13 @@ func (l *CharacterListenerImpl) OnStorageMesoChanged(ch *domain.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStorageError(ch *domain.Character, result pconst.StorageResult) {
+func (l *CharacterListenerImpl) OnStorageError(ch *game.Character, result pconst.StorageResult) {
 	ch.Send(&response.StorageError{
 		Result: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnOpenDuey(ch *domain.Character, fromArrival bool) {
+func (l *CharacterListenerImpl) OnOpenDuey(ch *game.Character, fromArrival bool) {
 	parcels, expired := ch.Duey.BuildS2C()
 	ch.Send(&response.DueyOpen{
 		FromArrival: fromArrival,
@@ -837,20 +837,20 @@ func (l *CharacterListenerImpl) OnOpenDuey(ch *domain.Character, fromArrival boo
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDueyResult(ch *domain.Character, result pconst.DueyResult) {
+func (l *CharacterListenerImpl) OnDueyResult(ch *game.Character, result pconst.DueyResult) {
 	ch.Send(&response.Duey{
 		Result: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDueyRemoved(ch *domain.Character, parcelID uint32, reason uint8) {
+func (l *CharacterListenerImpl) OnDueyRemoved(ch *game.Character, parcelID uint32, reason uint8) {
 	ch.Send(&response.DueyRemoved{
 		ParcelID: parcelID,
 		Reason:   reason,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDueyArrival(ch *domain.Character, sender string, quick bool, count int) {
+func (l *CharacterListenerImpl) OnDueyArrival(ch *game.Character, sender string, quick bool, count int) {
 	if count > 1 {
 		ch.Send(&response.DueyArrivals{
 			Quick: quick,
@@ -863,7 +863,7 @@ func (l *CharacterListenerImpl) OnDueyArrival(ch *domain.Character, sender strin
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildBulletinThreadList(ch *domain.Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry) {
+func (l *CharacterListenerImpl) OnGuildBulletinThreadList(ch *game.Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry) {
 	entryOf := func(t *internal.GuildBulletinBoardThreadEntry) response.GuildBulletinBoardThreadEntry {
 		return response.GuildBulletinBoardThreadEntry{
 			LocalThreadID:     t.GetLocalThreadId(),
@@ -891,7 +891,7 @@ func (l *CharacterListenerImpl) OnGuildBulletinThreadList(ch *domain.Character, 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnGuildBulletinThread(ch *domain.Character, detail *internal.GuildBulletinBoardThreadDetail) {
+func (l *CharacterListenerImpl) OnGuildBulletinThread(ch *game.Character, detail *internal.GuildBulletinBoardThreadDetail) {
 	replies := make([]response.GuildBulletinBoardReplyEntry, 0, len(detail.GetReplies()))
 	for _, r := range detail.GetReplies() {
 		replies = append(replies, response.GuildBulletinBoardReplyEntry{
@@ -912,28 +912,28 @@ func (l *CharacterListenerImpl) OnGuildBulletinThread(ch *domain.Character, deta
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShipState(ch *domain.Character, state uint16) {
+func (l *CharacterListenerImpl) OnShipState(ch *game.Character, state uint16) {
 	ch.Send(&response.ShipState{State: state}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShipBalrog(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnShipBalrog(ch *game.Character) {
 	ch.Send(&response.ShipSpecialEffect{Effect: response.ShipSpecialBalrog}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnSitOnChair(ch *domain.Character, itemID uint32) {
+func (l *CharacterListenerImpl) OnSitOnChair(ch *game.Character, itemID uint32) {
 	ch.Broadcast(&response.ShowChair{
 		CharacterID: ch.GetID(),
 		ItemID:      itemID,
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnSitOnMapSeat(ch *domain.Character, seatID int16) {
+func (l *CharacterListenerImpl) OnSitOnMapSeat(ch *game.Character, seatID int16) {
 	ch.Send(&response.CancelChair{
 		ChairID: seatID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStandUp(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnStandUp(ch *game.Character) {
 	ch.Send(&response.CancelChair{
 		ChairID: -1,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -943,44 +943,44 @@ func (l *CharacterListenerImpl) OnStandUp(ch *domain.Character) {
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnUnlockAction(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnUnlockAction(ch *game.Character) {
 	ch.Send(&response.UpdateStats{
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnInspect(ch *domain.Character, profile *response.CharacterProfile) {
+func (l *CharacterListenerImpl) OnInspect(ch *game.Character, profile *response.CharacterProfile) {
 	ch.Send(profile, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMonsterBookCardRegistered(ch *domain.Character, cardID uint32, count uint32) {
+func (l *CharacterListenerImpl) OnMonsterBookCardRegistered(ch *game.Character, cardID uint32, count uint32) {
 	ch.Send(&response.MonsterBookSetCard{Success: true, CardID: cardID, Count: count}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMonsterBookCardFull(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnMonsterBookCardFull(ch *game.Character) {
 	ch.Send(&response.MonsterBookSetCard{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMonsterBookCover(ch *domain.Character, cardID uint32) {
+func (l *CharacterListenerImpl) OnMonsterBookCover(ch *game.Character, cardID uint32) {
 	ch.Send(&response.MonsterBookSetCover{CardID: cardID}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnTeleportStones(ch *domain.Character, vip bool) {
+func (l *CharacterListenerImpl) OnTeleportStones(ch *game.Character, vip bool) {
 	ch.Send(&response.TeleportStoneResult{Result: pconst.TeleportStoneResultList, VIP: vip, Maps: ch.TeleportStones.Slots(vip)}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnTeleportStoneFailed(ch *domain.Character, vip bool, result pconst.TeleportStoneResult) {
+func (l *CharacterListenerImpl) OnTeleportStoneFailed(ch *game.Character, vip bool, result pconst.TeleportStoneResult) {
 	ch.Send(&response.TeleportStoneResult{Result: result, VIP: vip}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnScriptError(ch *domain.Character, script string, err error) {
+func (l *CharacterListenerImpl) OnScriptError(ch *game.Character, script string, err error) {
 	if ch.GetRole() != constant.RoleAdmin {
 		return
 	}
 	l.OnMessage(ch, constant.MsgPinkText, fmt.Sprintf("스크립트 오류 %s: %v", script, err))
 }
 
-func (l *CharacterListenerImpl) OnQuestStarted(ch *domain.Character, qp *domain.Quest, npcID uint32) {
+func (l *CharacterListenerImpl) OnQuestStarted(ch *game.Character, qp *game.Quest, npcID uint32) {
 	if qp == nil {
 		return
 	}
@@ -1008,7 +1008,7 @@ func (l *CharacterListenerImpl) OnQuestStarted(ch *domain.Character, qp *domain.
 	l.OnUnlockAction(ch)
 }
 
-func (l *CharacterListenerImpl) OnQuestCompleted(ch *domain.Character, qp *domain.Quest, npcID uint32, nextQuestID uint32) {
+func (l *CharacterListenerImpl) OnQuestCompleted(ch *game.Character, qp *game.Quest, npcID uint32, nextQuestID uint32) {
 	if qp == nil {
 		return
 	}
@@ -1030,7 +1030,7 @@ func (l *CharacterListenerImpl) OnQuestCompleted(ch *domain.Character, qp *domai
 	l.OnUnlockAction(ch)
 }
 
-func (l *CharacterListenerImpl) OnQuestForfeited(ch *domain.Character, qp *domain.Quest) {
+func (l *CharacterListenerImpl) OnQuestForfeited(ch *game.Character, qp *game.Quest) {
 	if qp == nil {
 		return
 	}
@@ -1047,7 +1047,7 @@ func (l *CharacterListenerImpl) OnQuestForfeited(ch *domain.Character, qp *domai
 	l.OnUnlockAction(ch)
 }
 
-func (l *CharacterListenerImpl) OnShowQuestCompletion(ch *domain.Character, questID uint32) {
+func (l *CharacterListenerImpl) OnShowQuestCompletion(ch *game.Character, questID uint32) {
 	if questID == 0 || questID > 0xFFFF {
 		return
 	}
@@ -1056,7 +1056,7 @@ func (l *CharacterListenerImpl) OnShowQuestCompletion(ch *domain.Character, ques
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPlaySound(ch *domain.Character, sound string, broadcast bool) {
+func (l *CharacterListenerImpl) OnPlaySound(ch *game.Character, sound string, broadcast bool) {
 	if sound == "" {
 		return
 	}
@@ -1073,7 +1073,7 @@ func (l *CharacterListenerImpl) OnPlaySound(ch *domain.Character, sound string, 
 	ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPlayPortalSound(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnPlayPortalSound(ch *game.Character) {
 	ch.Send(&response.ShowSelfSkillEffect{
 		Type:       pconst.SkillEffectTypePortal,
 		SkillID:    0,
@@ -1081,7 +1081,7 @@ func (l *CharacterListenerImpl) OnPlayPortalSound(ch *domain.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnQuestProgress(ch *domain.Character, qp *domain.Quest) {
+func (l *CharacterListenerImpl) OnQuestProgress(ch *game.Character, qp *game.Quest) {
 	if qp == nil {
 		return
 	}
@@ -1096,14 +1096,14 @@ func (l *CharacterListenerImpl) OnQuestProgress(ch *domain.Character, qp *domain
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 
-	if qp.CanComplete(ch, domain.QuestPhaseOpts{}) == nil {
+	if qp.CanComplete(ch, game.QuestPhaseOpts{}) == nil {
 		ch.Send(&response.ShowQuestCompletion{
 			QuestID: uint16(qp.QuestID),
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 }
 
-func (l *CharacterListenerImpl) OnQuestRecordExChanged(ch *domain.Character, qp *domain.Quest) {
+func (l *CharacterListenerImpl) OnQuestRecordExChanged(ch *game.Character, qp *game.Quest) {
 	if qp == nil {
 		return
 	}
@@ -1116,13 +1116,13 @@ func (l *CharacterListenerImpl) OnQuestRecordExChanged(ch *domain.Character, qp 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnItemGainFailed(ch *domain.Character, mode constant.ItemGainFailedType) {
+func (l *CharacterListenerImpl) OnItemGainFailed(ch *game.Character, mode constant.ItemGainFailedType) {
 	ch.Send(&response.ItemGainFailed{
 		Mode: mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *domain.Character, inventoryType constant.InventoryType, slot int16, item domain.Item) {
+func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *game.Character, inventoryType constant.InventoryType, slot int16, item game.Item) {
 	var itemDTO dto.Item
 	if item != nil {
 		itemDTO = item.BuildS2C()
@@ -1134,7 +1134,7 @@ func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *domain.Character, inv
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *domain.Character, inventoryType constant.InventoryType, slot int16, item domain.Item) {
+func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *game.Character, inventoryType constant.InventoryType, slot int16, item game.Item) {
 	var itemDTO dto.Item
 	if item != nil {
 		itemDTO = item.BuildS2C()
@@ -1147,7 +1147,7 @@ func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *domain.Character, inven
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowItemGain(ch *domain.Character, itemId uint32, count uint32, mode constant.ShowItemGainType) {
+func (l *CharacterListenerImpl) OnShowItemGain(ch *game.Character, itemId uint32, count uint32, mode constant.ShowItemGainType) {
 	ch.Send(&response.ShowItemGain{
 		ItemId: itemId,
 		Count:  count,
@@ -1155,14 +1155,14 @@ func (l *CharacterListenerImpl) OnShowItemGain(ch *domain.Character, itemId uint
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowMesoGain(ch *domain.Character, count int32, mode constant.ShowMesoGainType) {
+func (l *CharacterListenerImpl) OnShowMesoGain(ch *game.Character, count int32, mode constant.ShowMesoGainType) {
 	ch.Send(&response.ShowMesoGain{
 		Count: count,
 		Mode:  mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnUpdateStats(ch *domain.Character, stats map[constant.Stat]int32, unlock bool) {
+func (l *CharacterListenerImpl) OnUpdateStats(ch *game.Character, stats map[constant.Stat]int32, unlock bool) {
 	ch.Send(&response.UpdateStats{
 		Stats:        stats,
 		UnlockAction: unlock,
@@ -1176,7 +1176,7 @@ func (l *CharacterListenerImpl) OnUpdateStats(ch *domain.Character, stats map[co
 	}
 }
 
-func (l *CharacterListenerImpl) OnShowSelfSkillEffect(ch *domain.Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8) {
+func (l *CharacterListenerImpl) OnShowSelfSkillEffect(ch *game.Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1191,7 +1191,7 @@ func (l *CharacterListenerImpl) OnShowSelfSkillEffect(ch *domain.Character, effe
 	l.OnShowSkillEffect(ch, effectType, skillID, skillLevel, additional)
 }
 
-func (l *CharacterListenerImpl) OnShowSkillEffect(ch *domain.Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8) {
+func (l *CharacterListenerImpl) OnShowSkillEffect(ch *game.Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1205,7 +1205,7 @@ func (l *CharacterListenerImpl) OnShowSkillEffect(ch *domain.Character, effectTy
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowSelfEffect(ch *domain.Character, effectType response.EffectType) {
+func (l *CharacterListenerImpl) OnShowSelfEffect(ch *game.Character, effectType response.EffectType) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1216,7 +1216,7 @@ func (l *CharacterListenerImpl) OnShowSelfEffect(ch *domain.Character, effectTyp
 	l.OnShowEffect(ch, effectType)
 }
 
-func (l *CharacterListenerImpl) OnShowEffect(ch *domain.Character, effectType response.EffectType) {
+func (l *CharacterListenerImpl) OnShowEffect(ch *game.Character, effectType response.EffectType) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1227,7 +1227,7 @@ func (l *CharacterListenerImpl) OnShowEffect(ch *domain.Character, effectType re
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowSelfDragonBloodEffect(ch *domain.Character, skillID uint32, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnShowSelfDragonBloodEffect(ch *game.Character, skillID uint32, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1239,7 +1239,7 @@ func (l *CharacterListenerImpl) OnShowSelfDragonBloodEffect(ch *domain.Character
 	l.OnShowDragonBloodEffect(ch, skillID, skillLevel)
 }
 
-func (l *CharacterListenerImpl) OnShowDragonBloodEffect(ch *domain.Character, skillID uint32, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnShowDragonBloodEffect(ch *game.Character, skillID uint32, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1251,7 +1251,7 @@ func (l *CharacterListenerImpl) OnShowDragonBloodEffect(ch *domain.Character, sk
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowSelfHPHealedEffect(ch *domain.Character, amount int32) {
+func (l *CharacterListenerImpl) OnShowSelfHPHealedEffect(ch *game.Character, amount int32) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1262,7 +1262,7 @@ func (l *CharacterListenerImpl) OnShowSelfHPHealedEffect(ch *domain.Character, a
 	l.OnShowHPHealedEffect(ch, amount)
 }
 
-func (l *CharacterListenerImpl) OnShowHPHealedEffect(ch *domain.Character, amount int32) {
+func (l *CharacterListenerImpl) OnShowHPHealedEffect(ch *game.Character, amount int32) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1273,7 +1273,7 @@ func (l *CharacterListenerImpl) OnShowHPHealedEffect(ch *domain.Character, amoun
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowSelfRewardItemAnimation(ch *domain.Character, itemID uint32, effect string) {
+func (l *CharacterListenerImpl) OnShowSelfRewardItemAnimation(ch *game.Character, itemID uint32, effect string) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1285,7 +1285,7 @@ func (l *CharacterListenerImpl) OnShowSelfRewardItemAnimation(ch *domain.Charact
 	l.OnShowRewardItemAnimation(ch, itemID, effect)
 }
 
-func (l *CharacterListenerImpl) OnShowRewardItemAnimation(ch *domain.Character, itemID uint32, effect string) {
+func (l *CharacterListenerImpl) OnShowRewardItemAnimation(ch *game.Character, itemID uint32, effect string) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1297,7 +1297,7 @@ func (l *CharacterListenerImpl) OnShowRewardItemAnimation(ch *domain.Character, 
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowSelfItemMakerSuccessEffect(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnShowSelfItemMakerSuccessEffect(ch *game.Character) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1306,7 +1306,7 @@ func (l *CharacterListenerImpl) OnShowSelfItemMakerSuccessEffect(ch *domain.Char
 	l.OnShowItemMakerSuccessEffect(ch)
 }
 
-func (l *CharacterListenerImpl) OnShowItemMakerSuccessEffect(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnShowItemMakerSuccessEffect(ch *game.Character) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1316,22 +1316,22 @@ func (l *CharacterListenerImpl) OnShowItemMakerSuccessEffect(ch *domain.Characte
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnItemMakerDestroyed(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnItemMakerDestroyed(ch *game.Character) {
 	ch.Send(&response.ShowSelfItemMakerSuccessEffect{}, types.SEND_POLICY_ENCRYPT)
 	l.OnMessage(ch, constant.MsgPopup, "아이템이 파괴되었습니다.")
 }
 
-func (l *CharacterListenerImpl) OnUseSkillBook(ch *domain.Character, skillID uint32, masterLevel int, canUse bool, success bool) {
+func (l *CharacterListenerImpl) OnUseSkillBook(ch *game.Character, skillID uint32, masterLevel int, canUse bool, success bool) {
 	ch.Broadcast(&response.UseSkillBook{
 		CharacterID: ch.GetID(),
 		SkillID:     skillID,
 		MasterLevel: uint32(masterLevel),
 		CanUse:      canUse,
 		Success:     success,
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnShowSelfCraftingEffect(ch *domain.Character, effect string, time int32, mode int32) {
+func (l *CharacterListenerImpl) OnShowSelfCraftingEffect(ch *game.Character, effect string, time int32, mode int32) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1344,7 +1344,7 @@ func (l *CharacterListenerImpl) OnShowSelfCraftingEffect(ch *domain.Character, e
 	l.OnShowCraftingEffect(ch, effect, time, mode)
 }
 
-func (l *CharacterListenerImpl) OnShowCraftingEffect(ch *domain.Character, effect string, time int32, mode int32) {
+func (l *CharacterListenerImpl) OnShowCraftingEffect(ch *game.Character, effect string, time int32, mode int32) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1357,7 +1357,7 @@ func (l *CharacterListenerImpl) OnShowCraftingEffect(ch *domain.Character, effec
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowSelfDiceEffect(ch *domain.Character, effectID int32, skillID uint32, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnShowSelfDiceEffect(ch *game.Character, effectID int32, skillID uint32, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1370,7 +1370,7 @@ func (l *CharacterListenerImpl) OnShowSelfDiceEffect(ch *domain.Character, effec
 	l.OnShowDiceEffect(ch, effectID, skillID, skillLevel)
 }
 
-func (l *CharacterListenerImpl) OnShowDiceEffect(ch *domain.Character, effectID int32, skillID uint32, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnShowDiceEffect(ch *game.Character, effectID int32, skillID uint32, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1383,7 +1383,7 @@ func (l *CharacterListenerImpl) OnShowDiceEffect(ch *domain.Character, effectID 
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowScrollEffect(ch *domain.Character, success bool, destroyedByCurse bool) {
+func (l *CharacterListenerImpl) OnShowScrollEffect(ch *game.Character, success bool, destroyedByCurse bool) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1392,12 +1392,12 @@ func (l *CharacterListenerImpl) OnShowScrollEffect(ch *domain.Character, success
 		CharacterID:      ch.GetID(),
 		Success:          success,
 		DestroyedByCurse: destroyedByCurse,
-	}, &domain.ObjectBroadcastOption{
+	}, &game.ObjectBroadcastOption{
 		WithMe: true,
 	})
 }
 
-func (l *CharacterListenerImpl) OnScrolledItem(ch *domain.Character, scrollInventoryType constant.InventoryType, scrollSlot int16, scrollCount uint16, upgradedSlot int16, destroyed bool, potential bool, upgradedItem domain.Item) {
+func (l *CharacterListenerImpl) OnScrolledItem(ch *game.Character, scrollInventoryType constant.InventoryType, scrollSlot int16, scrollCount uint16, upgradedSlot int16, destroyed bool, potential bool, upgradedItem game.Item) {
 	var upgradedItemDTO dto.Item
 	if upgradedItem != nil {
 		upgradedItemDTO = upgradedItem.BuildS2C()
@@ -1413,7 +1413,7 @@ func (l *CharacterListenerImpl) OnScrolledItem(ch *domain.Character, scrollInven
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMobMoved(ch *domain.Character, mob *domain.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+func (l *CharacterListenerImpl) OnMobMoved(ch *game.Character, mob *game.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	mapInstance := mob.GetMap()
 	if mapInstance == nil {
 		return
@@ -1435,10 +1435,10 @@ func (l *CharacterListenerImpl) OnMobMoved(ch *domain.Character, mob *domain.Mob
 	if ch != nil {
 		controllerID = ch.GetID()
 	}
-	for _, obj := range mob.Nears(constant.ObjectTypeCharacter, &domain.SearchOption{
+	for _, obj := range mob.Nears(constant.ObjectTypeCharacter, &game.SearchOption{
 		IncludeHidden: true,
 	}) {
-		peer, ok := obj.(*domain.Character)
+		peer, ok := obj.(*game.Character)
 		if !ok || peer == nil || peer.GetID() == controllerID {
 			continue
 		}
@@ -1446,7 +1446,7 @@ func (l *CharacterListenerImpl) OnMobMoved(ch *domain.Character, mob *domain.Mob
 	}
 }
 
-func (l *CharacterListenerImpl) OnPlayerMove(ch *domain.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
+func (l *CharacterListenerImpl) OnPlayerMove(ch *game.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1462,11 +1462,11 @@ func (l *CharacterListenerImpl) OnPlayerMove(ch *domain.Character, startPoint ty
 	ch.Broadcast(movePacket, nil)
 }
 
-func (l *CharacterListenerImpl) OnFieldRelocate(ch *domain.Character, spawnPoint uint8) {
+func (l *CharacterListenerImpl) OnFieldRelocate(ch *game.Character, spawnPoint uint8) {
 	ch.Send(&response.FieldRelocate{Portal: spawnPoint}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAttack(ch *domain.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnAttack(ch *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1477,7 +1477,7 @@ func (l *CharacterListenerImpl) OnAttack(ch *domain.Character, attackPayload dto
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnEnergyAttack(ch *domain.Character, attackPayload dto.AttackPayload) {
+func (l *CharacterListenerImpl) OnEnergyAttack(ch *game.Character, attackPayload dto.AttackPayload) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1489,7 +1489,7 @@ func (l *CharacterListenerImpl) OnEnergyAttack(ch *domain.Character, attackPaylo
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnRangedAttack(ch *domain.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnRangedAttack(ch *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1501,7 +1501,7 @@ func (l *CharacterListenerImpl) OnRangedAttack(ch *domain.Character, attackPaylo
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnMagicAttack(ch *domain.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnMagicAttack(ch *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1512,13 +1512,13 @@ func (l *CharacterListenerImpl) OnMagicAttack(ch *domain.Character, attackPayloa
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnEndSortInventory(ch *domain.Character, inventoryType constant.InventoryType) {
+func (l *CharacterListenerImpl) OnEndSortInventory(ch *game.Character, inventoryType constant.InventoryType) {
 	ch.Send(&response.EndSortInventory{
 		InventoryType: inventoryType,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnSwapInventorySlot(ch *domain.Character, inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8) {
+func (l *CharacterListenerImpl) OnSwapInventorySlot(ch *game.Character, inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8) {
 	ch.Send(&response.SwapInventorySlot{
 		InventoryType:   inventoryType,
 		Source:          source,
@@ -1527,14 +1527,14 @@ func (l *CharacterListenerImpl) OnSwapInventorySlot(ch *domain.Character, invent
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnRemoveInventorySlot(ch *domain.Character, inventoryType constant.InventoryType, slot int16) {
+func (l *CharacterListenerImpl) OnRemoveInventorySlot(ch *game.Character, inventoryType constant.InventoryType, slot int16) {
 	ch.Send(&response.RemoveInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnItemExpired(ch *domain.Character, items []wz.Item) {
+func (l *CharacterListenerImpl) OnItemExpired(ch *game.Character, items []wz.Item) {
 	var expired []uint32
 	for _, model := range items {
 		if model.GetTraits()&constant.ItemTraitCash != 0 {
@@ -1549,7 +1549,7 @@ func (l *CharacterListenerImpl) OnItemExpired(ch *domain.Character, items []wz.I
 	ch.Send(&response.ItemExpired{ItemIDs: expired}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFullMergeInventorySlot(ch *domain.Character, inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
+func (l *CharacterListenerImpl) OnFullMergeInventorySlot(ch *game.Character, inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
 	ch.Send(&response.FullMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
@@ -1558,7 +1558,7 @@ func (l *CharacterListenerImpl) OnFullMergeInventorySlot(ch *domain.Character, i
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(ch *domain.Character, inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16) {
+func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(ch *game.Character, inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16) {
 	ch.Send(&response.PartialMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
@@ -1568,7 +1568,7 @@ func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(ch *domain.Character
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *game.Character) {
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
@@ -1583,7 +1583,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *domain.Character) {
 
 	ch.Broadcast(lookPacket, nil)
 	if ch.Messenger.RoomID != 0 {
-		l.gs.systems.Get[*domain.DispatchSystem]().CallCharacter(ch.GetID(), func(ctx actor.Context, current *domain.Character) {
+		l.gs.systems.Get[*game.DispatchSystem]().CallCharacter(ch.GetID(), func(ctx actor.Context, current *game.Character) {
 			if current.Messenger.RoomID == 0 {
 				return
 			}
@@ -1606,13 +1606,13 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *domain.Character) {
 	}
 }
 
-func (l *CharacterListenerImpl) OnNpcAction(ch *domain.Character, bytes []byte) {
+func (l *CharacterListenerImpl) OnNpcAction(ch *game.Character, bytes []byte) {
 	ch.Send(&response.NpcAction{
 		Bytes: bytes,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnClassChange(ch *domain.Character, oldClass constant.ClassType, newClass constant.ClassType) {
+func (l *CharacterListenerImpl) OnClassChange(ch *game.Character, oldClass constant.ClassType, newClass constant.ClassType) {
 	stats := map[constant.Stat]int32{
 		constant.StatClass:       int32(newClass),
 		constant.StatAvailableSP: int32(ch.Points.SP),
@@ -1622,16 +1622,16 @@ func (l *CharacterListenerImpl) OnClassChange(ch *domain.Character, oldClass con
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
-	l.gs.systems.Get[*domain.PartySystem]().UpdateMemberAsync(nil, ch)
-	l.gs.systems.Get[*domain.AllianceSystem]().NotifyMemberFieldsChanged(ch)
+	l.gs.systems.Get[*game.PartySystem]().UpdateMemberAsync(nil, ch)
+	l.gs.systems.Get[*game.AllianceSystem]().NotifyMemberFieldsChanged(ch)
 }
 
-func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *domain.Character) {
-	l.gs.systems.Get[*domain.PartySystem]().UpdateMemberAsync(nil, ch)
-	l.gs.systems.Get[*domain.AllianceSystem]().NotifyMemberFieldsChanged(ch)
+func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *game.Character) {
+	l.gs.systems.Get[*game.PartySystem]().UpdateMemberAsync(nil, ch)
+	l.gs.systems.Get[*game.AllianceSystem]().NotifyMemberFieldsChanged(ch)
 }
 
-func (l *CharacterListenerImpl) OnPartyMemberHP(recipient *domain.Character, member *domain.Character) {
+func (l *CharacterListenerImpl) OnPartyMemberHP(recipient *game.Character, member *game.Character) {
 	_ = recipient.Send(&response.UpdatePartyMemberHP{
 		CharacterID: member.GetID(),
 		CurrentHP:   int32(member.GetHp()),
@@ -1639,7 +1639,7 @@ func (l *CharacterListenerImpl) OnPartyMemberHP(recipient *domain.Character, mem
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuffAdded(ch *domain.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {
+func (l *CharacterListenerImpl) OnBuffAdded(ch *game.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {
 	if len(values) == 0 {
 		return
 	}
@@ -1681,7 +1681,7 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *domain.Character, buffID int32, 
 	ch.Broadcast(remotePacket, nil)
 }
 
-func (l *CharacterListenerImpl) OnBuffRemoved(ch *domain.Character, flags []constant.BuffFlag) {
+func (l *CharacterListenerImpl) OnBuffRemoved(ch *game.Character, flags []constant.BuffFlag) {
 	ch.Send(&response.CancelSelfBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
 
 	ch.Broadcast(&response.CancelBuff{
@@ -1690,7 +1690,7 @@ func (l *CharacterListenerImpl) OnBuffRemoved(ch *domain.Character, flags []cons
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnDebuffAdded(ch *domain.Character, debuff constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
+func (l *CharacterListenerImpl) OnDebuffAdded(ch *game.Character, debuff constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
 	ch.Send(&response.GiveSelfDebuff{
 		Debuff:     debuff,
 		X:          x,
@@ -1708,7 +1708,7 @@ func (l *CharacterListenerImpl) OnDebuffAdded(ch *domain.Character, debuff const
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnDebuffRemoved(ch *domain.Character, flags []constant.DebuffFlag) {
+func (l *CharacterListenerImpl) OnDebuffRemoved(ch *game.Character, flags []constant.DebuffFlag) {
 	ch.Send(&response.RemoveSelfDebuff{Diseases: flags}, types.SEND_POLICY_ENCRYPT)
 
 	ch.Broadcast(&response.RemoveDebuff{
@@ -1717,7 +1717,7 @@ func (l *CharacterListenerImpl) OnDebuffRemoved(ch *domain.Character, flags []co
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnUpdateSkill(ch *domain.Character, skillID uint32, level int32, masterLevel int32) {
+func (l *CharacterListenerImpl) OnUpdateSkill(ch *game.Character, skillID uint32, level int32, masterLevel int32) {
 	ch.Send(&response.UpdateSkills{
 		SkillID:     skillID,
 		Level:       level,
@@ -1725,14 +1725,14 @@ func (l *CharacterListenerImpl) OnUpdateSkill(ch *domain.Character, skillID uint
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnSkillCooldown(ch *domain.Character, skillID uint32, remainingSec uint16) {
+func (l *CharacterListenerImpl) OnSkillCooldown(ch *game.Character, skillID uint32, remainingSec uint16) {
 	ch.Send(&response.SkillCooldown{
 		SkillID:      skillID,
 		RemainingSec: uint32(remainingSec),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnHiddenChanged(ch *domain.Character, hidden bool) {
+func (l *CharacterListenerImpl) OnHiddenChanged(ch *game.Character, hidden bool) {
 	ch.Send(&response.SuperHide{Hidden: hidden}, types.SEND_POLICY_ENCRYPT)
 
 	mapInstance := ch.GetMap()
@@ -1741,12 +1741,12 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *domain.Character, hidden boo
 	}
 
 	if hidden {
-		ch.Broadcast(&response.LeavePlayer{ID: ch.GetID()}, &domain.ObjectBroadcastOption{
+		ch.Broadcast(&response.LeavePlayer{ID: ch.GetID()}, &game.ObjectBroadcastOption{
 			RecipientsRoleBelowPivot: true,
 		})
 	} else {
-		for _, obj := range mapInstance.GetObjectsNear(ch.GetPosition(), constant.ObjectTypeCharacter, &domain.SearchOption{IncludeHidden: true}) {
-			if viewer, ok := obj.(*domain.Character); ok {
+		for _, obj := range mapInstance.GetObjectsNear(ch.GetPosition(), constant.ObjectTypeCharacter, &game.SearchOption{IncludeHidden: true}) {
+			if viewer, ok := obj.(*game.Character); ok {
 				ch.SendSpawnSyncToViewer(viewer)
 			}
 		}
@@ -1756,26 +1756,26 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *domain.Character, hidden boo
 	}
 }
 
-func (l *CharacterListenerImpl) OnPetSpawn(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnPetSpawn(ch *game.Character) {
 	ch.Broadcast(&response.SpawnPet{
 		CharacterID: ch.GetID(),
 		Pet:         ch.Pets.Active.BuildS2C(),
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 	l.OnPetExceptions(ch)
 	sn := *ch.Pets.Active.Item.UniqueId
 	ch.Send(&response.UpdateStats{Pet: &sn, UnlockAction: true}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPetRemove(ch *domain.Character, reason constant.PetRemoveReason) {
+func (l *CharacterListenerImpl) OnPetRemove(ch *game.Character, reason constant.PetRemoveReason) {
 	ch.Broadcast(&response.SpawnPet{
 		CharacterID: ch.GetID(),
 		Reason:      reason,
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 	sn := uint64(0)
 	ch.Send(&response.UpdateStats{Pet: &sn, UnlockAction: true}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPetMove(ch *domain.Character, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+func (l *CharacterListenerImpl) OnPetMove(ch *game.Character, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	ch.Broadcast(&response.MovePet{
 		CharacterID: ch.GetID(),
 		StartPoint:  startPoint,
@@ -1783,24 +1783,24 @@ func (l *CharacterListenerImpl) OnPetMove(ch *domain.Character, startPoint types
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnPetChat(ch *domain.Character, typ uint8, action uint8, text string) {
+func (l *CharacterListenerImpl) OnPetChat(ch *game.Character, typ uint8, action uint8, text string) {
 	ch.Broadcast(&response.PetChat{
 		CharacterID: ch.GetID(),
 		Type:        typ,
 		Action:      action,
 		Text:        text,
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnPetCommand(ch *domain.Character, index uint8, success bool) {
-	ch.Broadcast(&response.PetCommand{CharacterID: ch.GetID(), Index: index, Success: success}, &domain.ObjectBroadcastOption{WithMe: true})
+func (l *CharacterListenerImpl) OnPetCommand(ch *game.Character, index uint8, success bool) {
+	ch.Broadcast(&response.PetCommand{CharacterID: ch.GetID(), Index: index, Success: success}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnPetFood(ch *domain.Character, success bool) {
-	ch.Broadcast(&response.PetCommand{CharacterID: ch.GetID(), Food: true, Success: success}, &domain.ObjectBroadcastOption{WithMe: true})
+func (l *CharacterListenerImpl) OnPetFood(ch *game.Character, success bool) {
+	ch.Broadcast(&response.PetCommand{CharacterID: ch.GetID(), Food: true, Success: success}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnPetUpdated(ch *domain.Character, pet *domain.Pet) {
+func (l *CharacterListenerImpl) OnPetUpdated(ch *game.Character, pet *game.Pet) {
 	slot, ok := ch.Inventory.FindSlot(constant.InventoryTypeCash, pet)
 	if !ok {
 		return
@@ -1808,17 +1808,17 @@ func (l *CharacterListenerImpl) OnPetUpdated(ch *domain.Character, pet *domain.P
 	l.OnInventorySlotUpdated(ch, constant.InventoryTypeCash, slot, pet)
 }
 
-func (l *CharacterListenerImpl) OnMountUpdated(ch *domain.Character, levelUp bool) {
+func (l *CharacterListenerImpl) OnMountUpdated(ch *game.Character, levelUp bool) {
 	ch.Broadcast(&response.UpdateMount{
 		CharacterID: ch.GetID(),
 		Level:       ch.Mount.Level,
 		Exp:         ch.Mount.Exp,
 		Fatigue:     ch.Mount.Fatigue,
 		LevelUp:     levelUp,
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnPetExceptions(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnPetExceptions(ch *game.Character) {
 	ch.Send(&response.PetExceptions{
 		CharacterID: ch.GetID(),
 		SN:          *ch.Pets.Active.Item.UniqueId,
@@ -1826,24 +1826,24 @@ func (l *CharacterListenerImpl) OnPetExceptions(ch *domain.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPetNameChanged(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnPetNameChanged(ch *game.Character) {
 	ch.Broadcast(&response.PetNameChanged{
 		CharacterID: ch.GetID(),
 		Name:        ch.Pets.Active.Item.Name,
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnPetSkillChanged(ch *domain.Character, pet *domain.Pet, skill constant.PetSkill, add bool) {
+func (l *CharacterListenerImpl) OnPetSkillChanged(ch *game.Character, pet *game.Pet, skill constant.PetSkill, add bool) {
 	l.OnPetUpdated(ch, pet)
 	ch.Send(&response.PetSkillChanged{SN: *pet.UniqueId, Add: add, Skill: skill}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPetLevelUp(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnPetLevelUp(ch *game.Character) {
 	ch.Send(&response.ShowSelfEffect{Type: response.EffectTypePet}, types.SEND_POLICY_ENCRYPT)
 	ch.Broadcast(&response.ShowEffect{CharacterID: ch.GetID(), Type: response.EffectTypePet}, nil)
 }
 
-func (l *CharacterListenerImpl) OnSummonSpawn(ch *domain.Character, summon *domain.Summon) {
+func (l *CharacterListenerImpl) OnSummonSpawn(ch *game.Character, summon *game.Summon) {
 	if summon.GetMap() == nil {
 		return
 	}
@@ -1857,10 +1857,10 @@ func (l *CharacterListenerImpl) OnSummonSpawn(ch *domain.Character, summon *doma
 		SummonType:   summon.SummonType,
 		Animated:     true,
 	}
-	ch.Broadcast(packet, &domain.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(packet, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnSummonRemove(ch *domain.Character, summon *domain.Summon, animated bool) {
+func (l *CharacterListenerImpl) OnSummonRemove(ch *game.Character, summon *game.Summon, animated bool) {
 	if summon.GetMap() == nil {
 		return
 	}
@@ -1869,10 +1869,10 @@ func (l *CharacterListenerImpl) OnSummonRemove(ch *domain.Character, summon *dom
 		OID:      summon.OID,
 		Animated: animated,
 	}
-	ch.Broadcast(packet, &domain.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(packet, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnSummonMove(ch *domain.Character, summon *domain.Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+func (l *CharacterListenerImpl) OnSummonMove(ch *game.Character, summon *game.Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	if summon.GetMap() == nil {
 		return
 	}
@@ -1885,7 +1885,7 @@ func (l *CharacterListenerImpl) OnSummonMove(ch *domain.Character, summon *domai
 	ch.Broadcast(packet, nil)
 }
 
-func (l *CharacterListenerImpl) OnSummonAttack(ch *domain.Character, summon *domain.Summon, animation uint8, targets []domain.SummonAttackTarget) {
+func (l *CharacterListenerImpl) OnSummonAttack(ch *game.Character, summon *game.Summon, animation uint8, targets []game.SummonAttackTarget) {
 	if summon.GetMap() == nil {
 		return
 	}
@@ -1902,10 +1902,10 @@ func (l *CharacterListenerImpl) OnSummonAttack(ch *domain.Character, summon *dom
 		Animation:     animation,
 		Targets:       respTargets,
 	}
-	ch.Broadcast(packet, &domain.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(packet, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnSummonSkill(ch *domain.Character, summon *domain.Summon, newStance uint8) {
+func (l *CharacterListenerImpl) OnSummonSkill(ch *game.Character, summon *game.Summon, newStance uint8) {
 	if summon.GetMap() == nil {
 		return
 	}
@@ -1914,10 +1914,10 @@ func (l *CharacterListenerImpl) OnSummonSkill(ch *domain.Character, summon *doma
 		SummonOID:   summon.OID,
 		NewStance:   newStance,
 	}
-	ch.Broadcast(packet, &domain.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(packet, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnSummonDamaged(ch *domain.Character, summon *domain.Summon, unknown uint8, damage uint32, monsterIdFrom uint32) {
+func (l *CharacterListenerImpl) OnSummonDamaged(ch *game.Character, summon *game.Summon, unknown uint8, damage uint32, monsterIdFrom uint32) {
 	if summon.GetMap() == nil {
 		return
 	}
@@ -1928,10 +1928,10 @@ func (l *CharacterListenerImpl) OnSummonDamaged(ch *domain.Character, summon *do
 		Damage:        damage,
 		MonsterIDFrom: monsterIdFrom,
 	}
-	ch.Broadcast(packet, &domain.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(packet, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnCarnivalStart(ch *domain.Character, team constant.CarnivalTeam, persAvail, persTotal, friendAvail, friendTotal, enemyAvail, enemyTotal int) {
+func (l *CharacterListenerImpl) OnCarnivalStart(ch *game.Character, team constant.CarnivalTeam, persAvail, persTotal, friendAvail, friendTotal, enemyAvail, enemyTotal int) {
 	ch.Send(&response.CarnivalStart{
 		Team:                team,
 		PersonalAvailableCP: uint16(persAvail),
@@ -1943,14 +1943,14 @@ func (l *CharacterListenerImpl) OnCarnivalStart(ch *domain.Character, team const
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnCarnivalObtainedCP(ch *domain.Character, avail, total int) {
+func (l *CharacterListenerImpl) OnCarnivalObtainedCP(ch *game.Character, avail, total int) {
 	ch.Send(&response.CarnivalObtainedCP{
 		Avail: uint16(avail),
 		Total: uint16(total),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnCarnivalPartyCP(ch *domain.Character, team constant.CarnivalTeam, avail, total int) {
+func (l *CharacterListenerImpl) OnCarnivalPartyCP(ch *game.Character, team constant.CarnivalTeam, avail, total int) {
 	ch.Send(&response.CarnivalPartyCP{
 		Team:  team,
 		Avail: uint16(avail),
@@ -1958,15 +1958,15 @@ func (l *CharacterListenerImpl) OnCarnivalPartyCP(ch *domain.Character, team con
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnCarnivalSummon(ch *domain.Character, tab constant.CarnivalTab, num uint8, name string) {
+func (l *CharacterListenerImpl) OnCarnivalSummon(ch *game.Character, tab constant.CarnivalTab, num uint8, name string) {
 	ch.Broadcast(&response.CarnivalSummon{
 		Tab:  uint8(tab),
 		Num:  num,
 		Name: name,
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnCarnivalDied(ch *domain.Character, team constant.CarnivalTeam, name string, lostCP uint8) {
+func (l *CharacterListenerImpl) OnCarnivalDied(ch *game.Character, team constant.CarnivalTeam, name string, lostCP uint8) {
 	ch.Send(&response.CarnivalDied{
 		Team:   team,
 		Name:   name,
@@ -1974,7 +1974,7 @@ func (l *CharacterListenerImpl) OnCarnivalDied(ch *domain.Character, team consta
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnCarnivalResult(ch *domain.Character, winner bool) {
+func (l *CharacterListenerImpl) OnCarnivalResult(ch *game.Character, winner bool) {
 	message := "아쉽게도 패배하였습니다. 잠시 후 자동으로 보상 맵으로 나가집니다."
 	effect := "quest/carnival/lose"
 	sound := "MobCarnival/Lose"
@@ -1994,7 +1994,7 @@ func (l *CharacterListenerImpl) OnCarnivalResult(ch *domain.Character, winner bo
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnConfirmShopTransaction(ch *domain.Character, code uint8) {
+func (l *CharacterListenerImpl) OnConfirmShopTransaction(ch *game.Character, code uint8) {
 	_ = ch.Send(&response.ConfirmShopTransaction{
 		Code: code,
 	}, types.SEND_POLICY_ENCRYPT)

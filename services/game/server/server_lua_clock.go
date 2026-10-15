@@ -6,7 +6,7 @@ import (
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -95,7 +95,7 @@ func requestServerDateTimeFromLua(gs *GameServer, L *lua.LState, reset bool, dat
 		L.Push(lua.LString("actor context not found"))
 		return 2
 	}
-	return domain.LuaYieldPromise(L, gs, gs.systems.Get[*domain.InternalSystem]().SetServerDateTimeAsync(cfg.ActorContext, reset, datetime), func(_ *internal.SetServerDateTimeReply, err error) []lua.LValue {
+	return game.LuaYieldPromise(L, gs, gs.systems.Get[*game.InternalSystem]().SetServerDateTimeAsync(cfg.ActorContext, reset, datetime), func(_ *internal.SetServerDateTimeReply, err error) []lua.LValue {
 		if err != nil {
 			log.Printf("server datetime: %v", err)
 			return []lua.LValue{lua.LFalse, lua.LString(err.Error())}

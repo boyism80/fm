@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type guildMqCreated struct{ gs *GameServer }
@@ -26,6 +26,6 @@ func (h *guildMqCreated) Handle(ctx actor.Context, raw json.RawMessage) error {
 	if !ok {
 		return nil
 	}
-	gs.systems.Get[*domain.GuildSystem]().UpdateAsync(ctx, evt)
+	gs.systems.Get[*game.GuildSystem]().UpdateAsync(ctx, evt)
 	return nil
 }

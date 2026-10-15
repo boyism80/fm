@@ -2,8 +2,8 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/services/game"
 )
 
 type InviteToAllianceHandler struct{}
@@ -12,7 +12,7 @@ func (InviteToAllianceHandler) New() *InviteToAllianceHandler {
 	return &InviteToAllianceHandler{}
 }
 
-func (h *InviteToAllianceHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.InviteToAlliance) {
+func (h *InviteToAllianceHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.InviteToAlliance) {
 	if msg == nil || a.GameWorld == nil {
 		return
 	}
@@ -28,13 +28,13 @@ func (h *InviteToAllianceHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	if !inGuild || guildID != msg.TargetGuildID {
 		return
 	}
-	if g := a.GameWorld.Systems().Get[*domain.GuildSystem]().Get(guildID); g != nil {
+	if g := a.GameWorld.Systems().Get[*game.GuildSystem]().Get(guildID); g != nil {
 		if _, joined := g.GetAllianceID(); joined {
 			return
 		}
 	}
-	if !a.GameWorld.Systems().Get[*domain.GuildSystem]().TrySetAllianceInvite(msg.TargetGuildID, msg.AllianceID, msg.ExpiresAt) {
-		a.GameWorld.Systems().Get[*domain.DispatchSystem]().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *domain.Character) {
+	if !a.GameWorld.Systems().Get[*game.GuildSystem]().TrySetAllianceInvite(msg.TargetGuildID, msg.AllianceID, msg.ExpiresAt) {
+		a.GameWorld.Systems().Get[*game.DispatchSystem]().CallCharacter(msg.InviterCharacterID, func(_ actor.Context, inviter *game.Character) {
 			if inviter == nil {
 				return
 			}

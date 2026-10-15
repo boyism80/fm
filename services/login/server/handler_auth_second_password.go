@@ -11,7 +11,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
 
@@ -24,7 +24,7 @@ func (AuthSecondPassword) New(ls *LoginServer) *AuthSecondPassword {
 }
 
 func (h *AuthSecondPassword) Handle(ctx *core.ClientContext, req *request.AuthSecondPassword) error {
-	loginClient := ctx.Client.(*client.LoginClient)
+	loginClient := ctx.Client.(*login.LoginClient)
 	accountID := loginClient.GetAccountId()
 	if accountID == 0 {
 		return fmt.Errorf("second password: account id is missing")

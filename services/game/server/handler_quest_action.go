@@ -6,10 +6,10 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type QuestAction struct {
@@ -71,7 +71,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			return nil
 		}
 		npc := req.NPCID
-		if _, err := character.Quests.Start(uint32(req.QuestID), domain.QuestPhaseOpts{NpcID: &npc}); err != nil {
+		if _, err := character.Quests.Start(uint32(req.QuestID), game.QuestPhaseOpts{NpcID: &npc}); err != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
@@ -82,14 +82,14 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			return nil
 		}
 		npc := req.NPCID
-		if err := quest.Complete(character, domain.QuestPhaseOpts{NpcID: &npc, Selection: req.Selection}); err != nil {
+		if err := quest.Complete(character, game.QuestPhaseOpts{NpcID: &npc, Selection: req.Selection}); err != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
 
 	case request.QuestActionForfeit:
 		if err := quest.Forfeit(character); err != nil {
-			if errors.Is(err, domain.ErrQuestNotForfeitable) {
+			if errors.Is(err, game.ErrQuestNotForfeitable) {
 				character.Listener.OnMessage(character, constant.MsgPopup, "You may not forfeit this quest.")
 			}
 			character.Listener.OnUnlockAction(character)
@@ -101,7 +101,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if err := character.Quests.CanStart(uint32(req.QuestID), domain.QuestPhaseOpts{
+		if err := character.Quests.CanStart(uint32(req.QuestID), game.QuestPhaseOpts{
 			NpcID: nil,
 		}); err != nil {
 			character.Listener.OnUnlockAction(character)
@@ -117,7 +117,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if quest == nil || quest.CanComplete(character, domain.QuestPhaseOpts{}) != nil {
+		if quest == nil || quest.CanComplete(character, game.QuestPhaseOpts{}) != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/stream"
 )
 
@@ -57,9 +57,9 @@ func (h *globalMqNotice) Handle(_ actor.Context, raw json.RawMessage) error {
 		if len(payload.Item) > 0 {
 			megaphone.Item = dto.NewItemFromStream(stream.NewStreamReader(&payload.Item, stream.LittleEndian))
 		}
-		h.gs.systems.Get[*domain.NoticeSystem]().BroadcastMegaphone(megaphone)
+		h.gs.systems.Get[*game.NoticeSystem]().BroadcastMegaphone(megaphone)
 	default:
-		h.gs.systems.Get[*domain.NoticeSystem]().BroadcastNotice(messageType, payload.Message, channel, payload.MegaEar)
+		h.gs.systems.Get[*game.NoticeSystem]().BroadcastNotice(messageType, payload.Message, channel, payload.MegaEar)
 	}
 	return nil
 }

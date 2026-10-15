@@ -2,7 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type PartyMemberJoinedHandler struct{}
@@ -11,7 +11,7 @@ func (PartyMemberJoinedHandler) New() *PartyMemberJoinedHandler {
 	return &PartyMemberJoinedHandler{}
 }
 
-func (h *PartyMemberJoinedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.PartyMemberJoined) {
+func (h *PartyMemberJoinedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.PartyMemberJoined) {
 	if msg == nil {
 		return
 	}
@@ -27,5 +27,6 @@ func (h *PartyMemberJoinedHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	if ch.GetID() != msg.JoinCharacterID {
 		return
 	}
+	ch.Party.SetID(&msg.PartyID)
 	m.SyncPartyHP(ch)
 }

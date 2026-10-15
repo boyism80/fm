@@ -47,6 +47,12 @@ export type ShopUpdate = {
     sold: unknown[];
 };
 
+export type ShopOpenRequestRow = {
+    account_id: number;
+    shop_id: number | null;
+    aborted: boolean;
+};
+
 const SELECT_COLS =
     "shop_id, kind, account_id, character_id, owner_name, channel_id, map_id, sn, item_id, title, meso, items, sold, opened_at, closed_at, store_bank_id";
 
@@ -75,6 +81,42 @@ export class ShopRepository {
             [accountId]
         );
         return res.rows as ShopRow[];
+    }
+
+    async findOpenRequest(worldId: number, accountId: number, requestId: string, options: RepositoryTxOptions = {}): Promise<ShopOpenRequestRow | undefined> {
+        const client = options.txClient ?? this.pool(worldId, accountId);
+        const res = await client.query(
+            "SELECT account_id, shop_id, aborted FROM shop_open_requests WHERE request_id = $1",
+            [requestId],
+        );
+        return res.rows[0] as ShopOpenRequestRow | undefined;
+    }
+
+    async insertOpenRequest(worldId: number, accountId: number, requestId: string, shopId: number | null, aborted: boolean, options: RepositoryTxOptions = {}): Promise<void> {
+        const client = options.txClient ?? this.pool(worldId, accountId);
+        await client.query(
+            "INSERT INTO shop_open_requests (request_id, account_id, shop_id, aborted) VALUES ($1, $2, $3, $4)",
+            [requestId, accountId, shopId, aborted],
+        );
+    }
+
+    async abortOpenRequest(worldId: number, accountId: number, requestId: string, shopId: number, options: RepositoryTxOptions = {}): Promise<boolean> {
+        const client = options.txClient ?? this.pool(worldId, accountId);
+        const deleted = await client.query(
+            "DELETE FROM shops WHERE shop_id = $1 AND account_id = $2 AND closed_at IS NULL AND sn IS NULL AND meso = 0 AND items = '[]'::jsonb AND sold = '[]'::jsonb RETURNING shop_id",
+            [shopId, accountId],
+        );
+        if ((deleted.rowCount ?? 0) === 0) {
+            const active = await client.query(
+                "SELECT 1 FROM shops WHERE shop_id = $1 AND account_id = $2 AND closed_at IS NULL",
+                [shopId, accountId],
+            );
+            if ((active.rowCount ?? 0) > 0) {
+                return false;
+            }
+        }
+        await client.query("UPDATE shop_open_requests SET aborted = TRUE WHERE request_id = $1", [requestId]);
+        return true;
     }
 
     async findOpen(worldId: number): Promise<ShopRow[]> {

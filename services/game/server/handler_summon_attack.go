@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type SummonAttack struct {
@@ -36,13 +36,13 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 	}
 	CallSummonOnAttackHooks(character, character.GetMap(), req.Damages, uint32(summon.SkillID))
 
-	var targets []domain.SummonAttackTarget
+	var targets []game.SummonAttackTarget
 	for _, ap := range req.Damages {
 		for _, dp := range ap.DamagePairs {
 			if dp.Damage == 0 {
 				continue
 			}
-			targets = append(targets, domain.SummonAttackTarget{
+			targets = append(targets, game.SummonAttackTarget{
 				OID:    ap.OID,
 				Damage: dp.Damage,
 			})

@@ -11,8 +11,8 @@ import (
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type PartyOperation struct {
@@ -63,7 +63,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(create): ok but missing party_id character=%d", charID)
 					return nil
 				}
-				h.gs.systems.Get[*domain.PartySystem]().Update(reply.GetParty())
+				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
 				ch.Party.SetID(reply.PartyId)
 				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 				return nil
@@ -175,7 +175,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 							log.Printf("PartyOperation(invite pre-create): ok but missing party_id character=%d", charID)
 							return fmt.Errorf("party create before invite failed")
 						}
-						h.gs.systems.Get[*domain.PartySystem]().Update(reply.GetParty())
+						h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
 						ch.Party.SetID(reply.PartyId)
 						ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 						return nil
@@ -221,7 +221,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 			func(gp *internal.GetPartyReply) error {
 				if gp.GetFound() && gp.GetParty() != nil {
-					h.gs.systems.Get[*domain.PartySystem]().Update(gp.GetParty())
+					h.gs.systems.Get[*game.PartySystem]().Update(gp.GetParty())
 				}
 				return nil
 			},
@@ -247,7 +247,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					return nil
 				}
 				if reply.PartyId != nil {
-					h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, req.TargetCharacterID, &domain.ClearPartyByPartyID{
+					h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, req.TargetCharacterID, &game.ClearPartyByPartyID{
 						CharacterID: req.TargetCharacterID,
 						PartyID:     *reply.PartyId,
 					})

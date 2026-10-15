@@ -24,7 +24,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0generate-game-channel-
 if errorlevel 1 exit /b 1
 
 echo Starting game server channel 0 with %CH_CFG%...
-start "FM Game Ch0" cmd /k "cd /d services\game && go run . -config=%CH_CFG%"
+start "FM Game Ch0" cmd /k "cd /d services\game && go run ../../cmd/game -config=%CH_CFG%"
 
 echo.
 echo Bot servers started, including game channel 0.

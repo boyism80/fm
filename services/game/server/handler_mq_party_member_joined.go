@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type partyMqMemberJoined struct{ gs *GameServer }
@@ -21,7 +21,7 @@ func (h *partyMqMemberJoined) Handle(ctx actor.Context, raw json.RawMessage) err
 	if h.gs == nil {
 		return nil
 	}
-	pc := h.gs.systems.Get[*domain.PartySystem]()
+	pc := h.gs.systems.Get[*game.PartySystem]()
 	evt, ok := decodePartyEventEnvelope(raw)
 	if !ok {
 		return nil

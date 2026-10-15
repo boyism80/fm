@@ -3,15 +3,15 @@ package server
 import (
 	"math"
 
+	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) OnEntrustedShopCheck(ch *domain.Character, result pconst.EntrustedShopCheck, mapID uint32, channel uint8) {
+func (l *CharacterListenerImpl) OnEntrustedShopCheck(ch *game.Character, result pconst.EntrustedShopCheck, mapID uint32, channel uint8) {
 	ch.Send(&response.EntrustedShopCheckResult{
 		Result:  result,
 		MapID:   mapID,
@@ -19,14 +19,14 @@ func (l *CharacterListenerImpl) OnEntrustedShopCheck(ch *domain.Character, resul
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnEntrustedShopRemoteVisit(ch *domain.Character, sn uint32) {
+func (l *CharacterListenerImpl) OnEntrustedShopRemoteVisit(ch *game.Character, sn uint32) {
 	ch.Send(&response.EntrustedShopCheckResult{
 		Result: pconst.EntrustedShopRemoteVisit,
 		SN:     sn,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) miniRoomItems(items []*domain.ShopItem) response.MiniRoomItemList {
+func (l *CharacterListenerImpl) miniRoomItems(items []*game.ShopItem) response.MiniRoomItemList {
 	out := make(response.MiniRoomItemList, 0, len(items))
 	for _, listed := range items {
 		out = append(out, response.MiniRoomItem{
@@ -39,7 +39,7 @@ func (l *CharacterListenerImpl) miniRoomItems(items []*domain.ShopItem) response
 	return out
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *domain.Character, slot uint8, view domain.EntrustedShopView, firstTime bool) {
+func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *game.Character, slot uint8, view game.EntrustedShopView, firstTime bool) {
 	enter := &response.MiniRoomEnter{
 		MySlot:       slot,
 		PermitItemID: view.ItemID,
@@ -47,7 +47,7 @@ func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *domain.Character, slot uin
 		Elapsed:      uint32(view.Elapsed.Milliseconds()),
 		FirstTime:    firstTime,
 		Title:        view.Title,
-		MaxItems:     domain.EntrustedShopMaxItems,
+		MaxItems:     game.EntrustedShopMaxItems,
 		MiniRoomItems: response.MiniRoomItems{
 			Meso:  view.Meso,
 			Items: l.miniRoomItems(view.Items),
@@ -73,11 +73,11 @@ func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *domain.Character, slot uin
 	ch.Send(enter, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomEnterFailed(ch *domain.Character, code pconst.MiniRoomEnterError) {
+func (l *CharacterListenerImpl) OnMiniRoomEnterFailed(ch *game.Character, code pconst.MiniRoomEnterError) {
 	ch.Send(&response.MiniRoomEnterFailed{Error: code}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomVisited(ch *domain.Character, slot uint8, visitor *domain.Character) {
+func (l *CharacterListenerImpl) OnMiniRoomVisited(ch *game.Character, slot uint8, visitor *game.Character) {
 	ch.Send(&response.MiniRoomVisited{
 		MiniRoomVisitor: response.MiniRoomVisitor{
 			Slot:      slot,
@@ -86,45 +86,45 @@ func (l *CharacterListenerImpl) OnMiniRoomVisited(ch *domain.Character, slot uin
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomChat(ch *domain.Character, slot uint8, text string) {
+func (l *CharacterListenerImpl) OnMiniRoomChat(ch *game.Character, slot uint8, text string) {
 	ch.Send(&response.MiniRoomChat{
 		Slot:    slot,
 		Message: text,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomLeft(ch *domain.Character, slot uint8, reason pconst.MiniRoomLeaveReason) {
+func (l *CharacterListenerImpl) OnMiniRoomLeft(ch *game.Character, slot uint8, reason pconst.MiniRoomLeaveReason) {
 	ch.Send(&response.MiniRoomLeave{
 		Slot:   slot,
 		Reason: reason,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomItems(ch *domain.Character, view domain.EntrustedShopView) {
+func (l *CharacterListenerImpl) OnMiniRoomItems(ch *game.Character, view game.EntrustedShopView) {
 	ch.Send(&response.MiniRoomItems{
 		Meso:  view.Meso,
 		Items: l.miniRoomItems(view.Items),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomBuyFailed(ch *domain.Character, result pconst.MiniRoomBuyResult) {
+func (l *CharacterListenerImpl) OnMiniRoomBuyFailed(ch *game.Character, result pconst.MiniRoomBuyResult) {
 	ch.Send(&response.MiniRoomBuyFailed{Result: result}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomArranged(ch *domain.Character, view domain.EntrustedShopView) {
+func (l *CharacterListenerImpl) OnMiniRoomArranged(ch *game.Character, view game.EntrustedShopView) {
 	ch.Send(&response.MiniRoomArranged{Meso: view.Meso}, types.SEND_POLICY_ENCRYPT)
 	l.OnMiniRoomItems(ch, view)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomClosed(ch *domain.Character, result pconst.MiniRoomCloseResult) {
+func (l *CharacterListenerImpl) OnMiniRoomClosed(ch *game.Character, result pconst.MiniRoomCloseResult) {
 	ch.Send(&response.MiniRoomClosed{Result: result}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomMesoWithdrawn(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnMiniRoomMesoWithdrawn(ch *game.Character) {
 	ch.Send(&response.MiniRoomMesoWithdrawn{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnOpenStoreBank(ch *domain.Character, npcID uint32) {
+func (l *CharacterListenerImpl) OnOpenStoreBank(ch *game.Character, npcID uint32) {
 	meso := int32(min(ch.StoreBank.Meso, math.MaxInt32))
 	tabs := map[constant.InventoryType][]dto.Item{}
 	for invType := constant.InventoryTypeEquipment; invType <= constant.InventoryTypeCash; invType++ {
@@ -137,21 +137,21 @@ func (l *CharacterListenerImpl) OnOpenStoreBank(ch *domain.Character, npcID uint
 	ch.Send(&response.StoreBankOpen{
 		NpcID: npcID,
 		Storage: response.Storage{
-			Slots: domain.StoreBankSlots,
+			Slots: game.StoreBankSlots,
 			Meso:  &meso,
 			Tabs:  tabs,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStoreBankFee(ch *domain.Character, days uint32, fee int32) {
+func (l *CharacterListenerImpl) OnStoreBankFee(ch *game.Character, days uint32, fee int32) {
 	ch.Send(&response.StoreBankFee{
 		Days: days,
 		Fee:  fee,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStoreBankLocation(ch *domain.Character, npcID uint32, mapID uint32, channel uint8) {
+func (l *CharacterListenerImpl) OnStoreBankLocation(ch *game.Character, npcID uint32, mapID uint32, channel uint8) {
 	ch.Send(&response.StoreBankLocation{
 		NpcID:   npcID,
 		MapID:   mapID,
@@ -159,6 +159,6 @@ func (l *CharacterListenerImpl) OnStoreBankLocation(ch *domain.Character, npcID 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnStoreBankResult(ch *domain.Character, result pconst.StoreBankResult) {
+func (l *CharacterListenerImpl) OnStoreBankResult(ch *game.Character, result pconst.StoreBankResult) {
 	ch.Send(&response.StoreBankResult{Result: result}, types.SEND_POLICY_ENCRYPT)
 }

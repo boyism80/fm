@@ -6,18 +6,18 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) OnWhisperFailed(ch *domain.Character, name string) {
+func (l *CharacterListenerImpl) OnWhisperFailed(ch *game.Character, name string) {
 	ch.Send(&response.Whisper{
 		Mode: internal.WhisperMode_WHISPER_MODE_SEND_RESULT,
 		Name: name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWhisperSent(ch *domain.Character, name string) {
+func (l *CharacterListenerImpl) OnWhisperSent(ch *game.Character, name string) {
 	ch.Send(&response.Whisper{
 		Mode:    internal.WhisperMode_WHISPER_MODE_SEND_RESULT,
 		Name:    name,
@@ -25,7 +25,7 @@ func (l *CharacterListenerImpl) OnWhisperSent(ch *domain.Character, name string)
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWhisperFound(ch *domain.Character, reply *internal.WhisperReply, buddy bool) {
+func (l *CharacterListenerImpl) OnWhisperFound(ch *game.Character, reply *internal.WhisperReply, buddy bool) {
 	packet := &response.Whisper{
 		Mode:     internal.WhisperMode_WHISPER_MODE_FIND_RESULT,
 		Name:     reply.Name,
@@ -45,7 +45,7 @@ func (l *CharacterListenerImpl) OnWhisperFound(ch *domain.Character, reply *inte
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnWhisperReceived(ch *domain.Character, sender string, channel int32, message string) error {
+func (l *CharacterListenerImpl) OnWhisperReceived(ch *game.Character, sender string, channel int32, message string) error {
 	return ch.Send(&response.Whisper{
 		Mode:    internal.WhisperMode_WHISPER_MODE_RECEIVE,
 		Name:    sender,
@@ -54,7 +54,7 @@ func (l *CharacterListenerImpl) OnWhisperReceived(ch *domain.Character, sender s
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMessengerJoined(ch *domain.Character, position uint8, members []*internal.MessengerMember, queued []domain.MessengerEvent) {
+func (l *CharacterListenerImpl) OnMessengerJoined(ch *game.Character, position uint8, members []*internal.MessengerMember, queued []game.MessengerEvent) {
 	ch.Send(&response.Messenger{
 		Action:   internal.MessengerAction_MESSENGER_ACTION_SELF_ENTER,
 		Position: position,
@@ -73,7 +73,7 @@ func (l *CharacterListenerImpl) OnMessengerJoined(ch *domain.Character, position
 	}
 }
 
-func (l *CharacterListenerImpl) OnMessengerInviteResult(ch *domain.Character, name string, success bool) {
+func (l *CharacterListenerImpl) OnMessengerInviteResult(ch *game.Character, name string, success bool) {
 	ch.Send(&response.Messenger{
 		Action:  internal.MessengerAction_MESSENGER_ACTION_INVITE_RESULT,
 		Name:    name,
@@ -81,7 +81,7 @@ func (l *CharacterListenerImpl) OnMessengerInviteResult(ch *domain.Character, na
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMessengerEvent(ch *domain.Character, event domain.MessengerEvent) {
+func (l *CharacterListenerImpl) OnMessengerEvent(ch *game.Character, event game.MessengerEvent) {
 	ch.Send(&response.Messenger{
 		Action:   event.Action,
 		Position: event.Position,
@@ -93,13 +93,13 @@ func (l *CharacterListenerImpl) OnMessengerEvent(ch *domain.Character, event dom
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPopulationFailed(ch *domain.Character, result pconst.PopulationResult) {
+func (l *CharacterListenerImpl) OnPopulationFailed(ch *game.Character, result pconst.PopulationResult) {
 	ch.Send(&response.Population{
 		Status: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPopulationGiven(ch *domain.Character, mode pconst.PopulationMode, targetName string, value int32) {
+func (l *CharacterListenerImpl) OnPopulationGiven(ch *game.Character, mode pconst.PopulationMode, targetName string, value int32) {
 	ch.Send(&response.Population{
 		Status: pconst.PopulationResultGiven,
 		Mode:   mode,
@@ -108,7 +108,7 @@ func (l *CharacterListenerImpl) OnPopulationGiven(ch *domain.Character, mode pco
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPopulationReceived(ch *domain.Character, mode pconst.PopulationMode, giverName string) {
+func (l *CharacterListenerImpl) OnPopulationReceived(ch *game.Character, mode pconst.PopulationMode, giverName string) {
 	ch.Send(&response.Population{
 		Status: pconst.PopulationResultReceived,
 		Mode:   mode,
@@ -116,7 +116,7 @@ func (l *CharacterListenerImpl) OnPopulationReceived(ch *domain.Character, mode 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNotes(ch *domain.Character, notes []*internal.Note) {
+func (l *CharacterListenerImpl) OnNotes(ch *game.Character, notes []*internal.Note) {
 	packet := &response.Notes{Action: pconst.NotesPacketList}
 	for _, n := range notes {
 		packet.Notes = append(packet.Notes, response.Note{
@@ -130,30 +130,30 @@ func (l *CharacterListenerImpl) OnNotes(ch *domain.Character, notes []*internal.
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNoteSent(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnNoteSent(ch *game.Character) {
 	ch.Send(&response.Notes{
 		Action: pconst.NotesPacketSent,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNoteFailed(ch *domain.Character, result internal.NoteResult) {
+func (l *CharacterListenerImpl) OnNoteFailed(ch *game.Character, result internal.NoteResult) {
 	ch.Send(&response.Notes{
 		Action: pconst.NotesPacketFailed,
 		Status: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNoteArrived(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnNoteArrived(ch *game.Character) {
 	ch.Send(&response.Notes{
 		Action: pconst.NotesPacketRefresh,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyPrivileges(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnFamilyPrivileges(ch *game.Character) {
 	ch.Send(&response.FamilyPrivileges{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyChanged(ch *domain.Character) {
+func (l *CharacterListenerImpl) OnFamilyChanged(ch *game.Character) {
 	id := ch.GetID()
 	self := ch.Family.Self()
 	info := &response.FamilyInfo{
@@ -180,7 +180,7 @@ func (l *CharacterListenerImpl) OnFamilyChanged(ch *domain.Character) {
 	}
 }
 
-func (l *CharacterListenerImpl) OnFamilyChart(ch *domain.Character, tree domain.FamilyTree, characterID uint32) {
+func (l *CharacterListenerImpl) OnFamilyChart(ch *game.Character, tree game.FamilyTree, characterID uint32) {
 	chart := &response.FamilyChart{
 		CharacterID:  characterID,
 		Members:      tree.Pedigree(characterID),
@@ -198,33 +198,33 @@ func (l *CharacterListenerImpl) OnFamilyChart(ch *domain.Character, tree domain.
 	ch.Send(chart, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyResult(ch *domain.Character, result internal.FamilyResult) {
+func (l *CharacterListenerImpl) OnFamilyResult(ch *game.Character, result internal.FamilyResult) {
 	ch.Send(&response.FamilyResult{
 		Code: result,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyInvite(ch *domain.Character, inviterID uint32, name string) {
+func (l *CharacterListenerImpl) OnFamilyInvite(ch *game.Character, inviterID uint32, name string) {
 	ch.Send(&response.FamilyInvite{
 		InviterID: inviterID,
 		Name:      name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyInviteResult(ch *domain.Character, accepted bool, name string) {
+func (l *CharacterListenerImpl) OnFamilyInviteResult(ch *game.Character, accepted bool, name string) {
 	ch.Send(&response.FamilyInviteResult{
 		Accepted: accepted,
 		Name:     name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilyJoined(ch *domain.Character, name string) {
+func (l *CharacterListenerImpl) OnFamilyJoined(ch *game.Character, name string) {
 	ch.Send(&response.FamilyJoined{
 		Name: name,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFamilySummon(ch *domain.Character, name string, mapName string) {
+func (l *CharacterListenerImpl) OnFamilySummon(ch *game.Character, name string, mapName string) {
 	ch.Send(&response.FamilySummon{
 		Name:    name,
 		MapName: mapName,

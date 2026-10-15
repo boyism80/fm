@@ -79,9 +79,7 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
             [worldId, guildId],
             options
         );
-        if (!options.txClient) {
-            await this.invalidateCache(worldId, groupKey);
-        }
+        await this.invalidateAfterWrite(worldId, groupKey, pool, options);
     }
 
     override normalizeRow(row: GuildMemberRow): GuildMemberRow {

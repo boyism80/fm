@@ -2,7 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type AddCharacterHandler struct{}
@@ -11,7 +11,7 @@ func (AddCharacterHandler) New() *AddCharacterHandler {
 	return &AddCharacterHandler{}
 }
 
-func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.AddCharacter) {
+func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.AddCharacter) {
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}

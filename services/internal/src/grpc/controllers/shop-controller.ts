@@ -1,5 +1,7 @@
 import type { ShopService } from "../../services/shop-service";
 import type {
+    AbortOpenShopReply,
+    AbortOpenShopRequest,
     CloseChannelShopsReply,
     CloseChannelShopsRequest,
     FindEntrustedShopReply,
@@ -44,7 +46,17 @@ export class ShopGrpcController {
             if (!req.shop) {
                 throw Object.assign(new Error("shop is required"), { code: "INVALID_PAYLOAD" });
             }
-            callback(null, await this.shopService.openShop(req.shop));
+            callback(null, await this.shopService.openShop(req.shop, req.requestId));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("abortOpenShop")
+    async abortOpenShop(call: GrpcCall<AbortOpenShopRequest>, callback: GrpcCallback<AbortOpenShopReply>) {
+        try {
+            const req = call.request;
+            callback(null, { aborted: await this.shopService.abortOpenShop(req.worldId, req.accountId, req.requestId) });
         } catch (err) {
             this.grpcError(err, callback);
         }

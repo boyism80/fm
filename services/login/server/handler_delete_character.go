@@ -7,11 +7,11 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
 
@@ -29,7 +29,7 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 	log.Printf("Delete character packet received from %s - Character ID: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.ID)
 
-	accountId := ctx.Client.(*client.LoginClient).GetAccountId()
+	accountId := ctx.Client.(*login.LoginClient).GetAccountId()
 	if accountId == 0 {
 		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
 		return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)

@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type WarpCharacterHandler struct{}
@@ -13,7 +13,7 @@ func (WarpCharacterHandler) New() *WarpCharacterHandler {
 	return &WarpCharacterHandler{}
 }
 
-func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.WarpCharacter) {
+func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.WarpCharacter) {
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
@@ -35,7 +35,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		return
 	}
 	if msg.TargetMap.Closing() {
-		a.GameWorld.Systems().Get[*domain.MapSystem]().CloseInstance(msg.TargetMap)
+		a.GameWorld.Systems().Get[*game.MapSystem]().CloseInstance(msg.TargetMap)
 	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)

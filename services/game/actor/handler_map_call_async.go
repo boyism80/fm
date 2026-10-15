@@ -2,7 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -12,7 +12,7 @@ func (MapCallAsyncHandler) New() *MapCallAsyncHandler {
 	return &MapCallAsyncHandler{}
 }
 
-func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.MapCallAsync) {
+func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.MapCallAsync) {
 	if msg == nil || msg.Run == nil || msg.ReplyTo == nil {
 		return
 	}
@@ -22,7 +22,7 @@ func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	}
 	promise := msg.Run(ctx, a.Maps())
 	if promise == nil {
-		system.Root.Send(msg.ReplyTo, &domain.ResumeLua{
+		system.Root.Send(msg.ReplyTo, &game.ResumeLua{
 			Root:   msg.Root,
 			Thread: msg.Thread,
 			Args:   []lua.LValue{lua.LBool(false), lua.LNil, lua.LString("map call returned no promise")},
@@ -30,14 +30,14 @@ func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		return
 	}
 	promise.Do(func(values []lua.LValue) error {
-		system.Root.Send(msg.ReplyTo, &domain.ResumeLua{
+		system.Root.Send(msg.ReplyTo, &game.ResumeLua{
 			Root:   msg.Root,
 			Thread: msg.Thread,
 			Args:   values,
 		})
 		return nil
 	}).OnError(func(err error) {
-		system.Root.Send(msg.ReplyTo, &domain.ResumeLua{
+		system.Root.Send(msg.ReplyTo, &game.ResumeLua{
 			Root:   msg.Root,
 			Thread: msg.Thread,
 			Args:   []lua.LValue{lua.LBool(false), lua.LNil, lua.LString(err.Error())},
@@ -45,6 +45,6 @@ func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	})
 }
 
-func (a *GameLogicActor) RunMapCallAsync(ctx actor.Context, msg *domain.MapCallAsync) {
+func (a *GameLogicActor) RunMapCallAsync(ctx actor.Context, msg *game.MapCallAsync) {
 	(&MapCallAsyncHandler{}).Handle(ctx, a, msg)
 }

@@ -78,8 +78,18 @@ export class ShopService {
         };
     }
 
-    async openShop(shop: Shop): Promise<OpenShopReply> {
+    async openShop(shop: Shop, requestId: string): Promise<OpenShopReply> {
+        if (requestId === "0") {
+            throw Object.assign(new Error("request_id is required"), { code: "INVALID_PAYLOAD" });
+        }
         return this.shopRepo.withAccountLock(shop.worldId, shop.accountId, async (txClient) => {
+            const request = await this.shopRepo.findOpenRequest(shop.worldId, shop.accountId, requestId, { txClient });
+            if (request) {
+                if (request.account_id !== shop.accountId) {
+                    throw Object.assign(new Error("request_id belongs to another account"), { code: "INVALID_PAYLOAD" });
+                }
+                return { shopId: Number(request.shop_id ?? 0), existing: undefined, aborted: request.aborted };
+            }
             const rows = await this.shopRepo.findByAccount(shop.worldId, shop.accountId, { txClient });
             const existing = rows.find((row) => {
                 if (shop.kind === ShopKindEntrusted) {
@@ -88,7 +98,7 @@ export class ShopService {
                 return row.closed_at == null && row.kind === shop.kind && row.character_id === shop.characterId;
             });
             if (existing != null) {
-                return { shopId: 0, existing: this.toProto(shop.worldId, existing) };
+                return { shopId: 0, existing: this.toProto(shop.worldId, existing), aborted: false };
             }
             const row = await this.shopRepo.insert(
                 shop.worldId,
@@ -109,7 +119,34 @@ export class ShopService {
                 },
                 { txClient }
             );
-            return { shopId: row?.shop_id ?? 0, existing: undefined };
+            if (!row) {
+                throw new Error("shop insert returned no row");
+            }
+            await this.shopRepo.insertOpenRequest(shop.worldId, shop.accountId, requestId, row.shop_id, false, { txClient });
+            return { shopId: row.shop_id, existing: undefined, aborted: false };
+        });
+    }
+
+    async abortOpenShop(worldId: number, accountId: number, requestId: string): Promise<boolean> {
+        if (requestId === "0") {
+            return false;
+        }
+        return this.shopRepo.withAccountLock(worldId, accountId, async (txClient) => {
+            const request = await this.shopRepo.findOpenRequest(worldId, accountId, requestId, { txClient });
+            if (!request) {
+                await this.shopRepo.insertOpenRequest(worldId, accountId, requestId, null, true, { txClient });
+                return true;
+            }
+            if (request.account_id !== accountId) {
+                return false;
+            }
+            if (request.aborted) {
+                return true;
+            }
+            if (request.shop_id == null) {
+                return false;
+            }
+            return this.shopRepo.abortOpenRequest(worldId, accountId, requestId, Number(request.shop_id), { txClient });
         });
     }
 

@@ -104,15 +104,14 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
         values: RepositoryQueryValue[],
         options: RepositoryTxOptions = {}
     ): Promise<void> {
+        const pool = this.pool(worldId, accountId);
         await this.query(
-            this.pool(worldId, accountId),
+            pool,
             `UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`,
             [accountId, ...values],
             options
         );
-        if (!options.txClient) {
-            await this.invalidateCache(worldId, accountId);
-        }
+        await this.invalidateAfterWrite(worldId, accountId, pool, options);
     }
 
     override onDelete(row: AccountDeleteModel): RepositoryQuery {

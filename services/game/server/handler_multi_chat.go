@@ -13,8 +13,8 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type MultiChat struct {
@@ -78,7 +78,7 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 	}
 }
 
-func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
+func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *game.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("guild multi chat: actor context required")
 	}
@@ -112,7 +112,7 @@ func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *domain.Cha
 	return nil
 }
 
-func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
+func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *game.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("alliance multi chat: actor context required")
 	}
@@ -120,7 +120,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *domain.
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -154,7 +154,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *domain.
 	return nil
 }
 
-func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
+func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *game.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("party multi chat: actor context required")
 	}
@@ -192,7 +192,7 @@ func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *domain.Cha
 	return nil
 }
 
-func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *domain.Character, req *request.MultiChat) error {
+func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *game.Character, req *request.MultiChat) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("buddy multi chat: actor context required")
 	}

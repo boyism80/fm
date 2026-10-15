@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type SaveMapCharactersHandler struct{}
@@ -12,12 +12,12 @@ func (SaveMapCharactersHandler) New() *SaveMapCharactersHandler {
 	return &SaveMapCharactersHandler{}
 }
 
-func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *GameLogicActor, _ *domain.SaveMapCharacters) {
+func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *GameLogicActor, _ *game.SaveMapCharacters) {
 	sender := ctx.Sender()
 	if sender == nil {
 		return
 	}
-	ack := &domain.SaveMapCharactersAck{}
+	ack := &game.SaveMapCharactersAck{}
 	maps := a.Maps()
 	if len(maps) == 0 || a.GameWorld == nil {
 		ctx.Respond(ack)
@@ -30,7 +30,7 @@ func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	entries := make([]*internal.CharacterSaveEntry, 0)
 	for _, m := range maps {
 		for _, obj := range m.GetAllPlayers() {
-			ch, ok := obj.(*domain.Character)
+			ch, ok := obj.(*game.Character)
 			if !ok || ch == nil || ch.LoggedOut() {
 				continue
 			}
@@ -46,7 +46,7 @@ func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 		ctx.Respond(ack)
 		return
 	}
-	p := a.GameWorld.Systems().Get[*domain.InternalSystem]().SaveAsync(ctx, entries)
+	p := a.GameWorld.Systems().Get[*game.InternalSystem]().SaveAsync(ctx, entries)
 	if p == nil {
 		ack.Err = "nil save promise"
 		ctx.Respond(ack)

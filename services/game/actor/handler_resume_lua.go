@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type ResumeLuaHandler struct{}
@@ -12,7 +12,7 @@ func (ResumeLuaHandler) New() *ResumeLuaHandler {
 	return &ResumeLuaHandler{}
 }
 
-func (h *ResumeLuaHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.ResumeLua) {
+func (h *ResumeLuaHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.ResumeLua) {
 	if msg.Root == nil || msg.Thread == nil {
 		return
 	}

@@ -46,6 +46,7 @@ import { DistributedLockService } from "./distributed-lock-service";
 import { GuildService } from "./guild-service";
 import type { FamilyService } from "./family-service";
 import { PartyService } from "./party-service";
+import type { InternalContext } from "../context/internal-context";
 
 type CharacterInput = {
     worldId: number;
@@ -140,6 +141,7 @@ export class CharacterService {
     private readonly partyService: PartyService;
     private readonly shopRepo: ShopRepository;
     private readonly familyService: FamilyService;
+    private readonly ctx: InternalContext;
 
     constructor(
         characterRepository: CharacterRepository,
@@ -169,7 +171,8 @@ export class CharacterService {
         guildService: GuildService,
         partyService: PartyService,
         shopRepository: ShopRepository,
-        familyService: FamilyService
+        familyService: FamilyService,
+        internalContext: InternalContext
     ) {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -199,6 +202,7 @@ export class CharacterService {
         this.partyService = partyService;
         this.shopRepo = shopRepository;
         this.familyService = familyService;
+        this.ctx = internalContext;
     }
 
     private worldId() {
@@ -292,7 +296,15 @@ export class CharacterService {
         if (!entries || entries.length === 0) {
             return;
         }
+        const subject = JSON.stringify(entries.map(({ character }) => ({
+            worldId: character.worldId,
+            characterId: character.characterId,
+            accountId: character.accountId,
+        })));
+        return this.ctx.withDatabaseOperation("saveCharacters", subject, () => this.persistCharacters(entries));
+    }
 
+    private async persistCharacters(entries: SaveCharacterEntry[]) {
         for (const entry of entries) {
             this.assertNoNul(entry);
         }

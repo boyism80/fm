@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/maple/constant"
 )
 
 type Inventory struct {

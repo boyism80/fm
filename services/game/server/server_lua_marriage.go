@@ -9,7 +9,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -30,7 +30,7 @@ func registerMarriageLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			},
 			nil,
 		)
-		return domain.LuaYieldPromise(L, gs, promise, func(reply *internal.MarriageReply, err error) []lua.LValue {
+		return game.LuaYieldPromise(L, gs, promise, func(reply *internal.MarriageReply, err error) []lua.LValue {
 			if err != nil {
 				log.Printf("finish_wedding marriage=%d: %v", req.GetMarriageId(), err)
 				return []lua.LValue{lua.LFalse}

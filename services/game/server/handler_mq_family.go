@@ -6,7 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -36,7 +36,7 @@ func (h *familyMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	}
 
 	for _, id := range payload.CharacterIDs {
-		h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, id, &domain.SetFamily{
+		h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, id, &game.SetFamily{
 			CharacterID: id,
 			Family:      family,
 		})

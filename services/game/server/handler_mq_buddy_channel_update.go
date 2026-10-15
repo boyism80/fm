@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type buddyMqChannelUpdate struct {
@@ -41,10 +41,10 @@ func (h *buddyMqChannelUpdate) Handle(_ actor.Context, raw json.RawMessage) erro
 		if recipientID == 0 {
 			continue
 		}
-		if !gs.systems.Get[*domain.DispatchSystem]().Exists(recipientID) {
+		if !gs.systems.Get[*game.DispatchSystem]().Exists(recipientID) {
 			continue
 		}
-		gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, recipientID, &domain.SetBuddyChannel{
+		gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, recipientID, &game.SetBuddyChannel{
 			RecipientCharacterID: recipientID,
 			BuddyCharacterID:     payload.CharacterID,
 			Channel:              payload.ChannelIndex,

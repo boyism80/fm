@@ -4,14 +4,14 @@ import (
 	"slices"
 	"time"
 
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type MobListenerImpl struct{}
 
-func (l *MobListenerImpl) OnMobBuffApplied(mob *domain.Mob, ent *domain.MobBuff, addedReflections []int32, remaining time.Duration) {
+func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, addedReflections []int32, remaining time.Duration) {
 	if mob == nil || ent == nil || len(ent.Values) == 0 {
 		return
 	}
@@ -69,7 +69,7 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *domain.Mob, ent *domain.MobBuff,
 	}
 }
 
-func (l *MobListenerImpl) OnMobBuffCancelled(mob *domain.Mob, buff constant.MobBuffFlag) {
+func (l *MobListenerImpl) OnMobBuffCancelled(mob *game.Mob, buff constant.MobBuffFlag) {
 	if mob == nil {
 		return
 	}
@@ -81,7 +81,7 @@ func (l *MobListenerImpl) OnMobBuffCancelled(mob *domain.Mob, buff constant.MobB
 	mob.Broadcast(pkt, nil)
 }
 
-func (l *MobListenerImpl) OnMobDamaged(mob *domain.Mob, amount int32) {
+func (l *MobListenerImpl) OnMobDamaged(mob *game.Mob, amount int32) {
 	if mob == nil {
 		return
 	}
@@ -93,7 +93,7 @@ func (l *MobListenerImpl) OnMobDamaged(mob *domain.Mob, amount int32) {
 	mob.Broadcast(pkt, nil)
 }
 
-func (l *MobListenerImpl) OnMobAllyDamaged(mob *domain.Mob, amount int32) {
+func (l *MobListenerImpl) OnMobAllyDamaged(mob *game.Mob, amount int32) {
 	if mob == nil {
 		return
 	}
@@ -107,7 +107,7 @@ func (l *MobListenerImpl) OnMobAllyDamaged(mob *domain.Mob, amount int32) {
 	mob.Broadcast(pkt, nil)
 }
 
-func (l *MobListenerImpl) OnShowBossHp(mob *domain.Mob, clear bool) {
+func (l *MobListenerImpl) OnShowBossHp(mob *game.Mob, clear bool) {
 	if mob == nil {
 		return
 	}

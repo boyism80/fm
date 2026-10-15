@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type guildMqDisbanded struct{ gs *GameServer }
@@ -26,14 +26,14 @@ func (h *guildMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) error 
 	if !ok {
 		return nil
 	}
-	prevGuild := gs.systems.Get[*domain.GuildSystem]().Get(evt.GuildID)
+	prevGuild := gs.systems.Get[*game.GuildSystem]().Get(evt.GuildID)
 	var extra struct {
 		MemberCharacterIDs []uint32 `json:"member_character_ids"`
 	}
 	_ = json.Unmarshal(raw, &extra)
 	memberIDs := extra.MemberCharacterIDs
-	gs.systems.Get[*domain.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(uint32) {
-		gs.systems.Get[*domain.GuildSystem]().BroadcastDisbanded(prevGuild, memberIDs)
+	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(uint32) {
+		gs.systems.Get[*game.GuildSystem]().BroadcastDisbanded(prevGuild, memberIDs)
 	})
 	return nil
 }

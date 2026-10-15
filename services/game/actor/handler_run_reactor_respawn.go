@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type RunReactorRespawnHandler struct{}
@@ -16,7 +16,7 @@ func (h *RunReactorRespawnHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	if msg == nil {
 		return
 	}
-	var targetMap *domain.Map
+	var targetMap *game.Map
 	for _, m := range a.Maps() {
 		if m != nil && m.GetMapID() == msg.MapID {
 			targetMap = m

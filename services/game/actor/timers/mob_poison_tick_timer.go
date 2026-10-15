@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/services/game"
 )
 
 type MobPoisonTickTimer struct{}
@@ -22,12 +22,12 @@ func (t *MobPoisonTickTimer) GetInitialDelay() time.Duration {
 	return 1 * time.Second
 }
 
-func (t *MobPoisonTickTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *MobPoisonTickTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}
 	for _, obj := range mapData.GetMobs() {
-		mob, ok := obj.(*domain.Mob)
+		mob, ok := obj.(*game.Mob)
 		if !ok || mob == nil || !mob.IsAlive() {
 			continue
 		}
@@ -38,7 +38,7 @@ func (t *MobPoisonTickTimer) Handle(ctx actor.Context, mapData *domain.Map) erro
 	return nil
 }
 
-func tickDotDamage(mapData *domain.Map, mob *domain.Mob, status constant.MobBuffFlag) {
+func tickDotDamage(mapData *game.Map, mob *game.Mob, status constant.MobBuffFlag) {
 	if !mob.Buffs.Has(status) {
 		return
 	}

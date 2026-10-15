@@ -6,8 +6,8 @@ import (
 	"github.com/boyism80/fm/core/clock"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/services/game"
 )
 
 type ItemCleanupTimer struct{}
@@ -24,7 +24,7 @@ func (t *ItemCleanupTimer) GetInitialDelay() time.Duration {
 	return 1 * time.Second
 }
 
-func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}
@@ -33,7 +33,7 @@ func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *domain.Map) error 
 	items := mapData.GetItems()
 
 	for itemID, item := range items {
-		placeable, ok := item.(domain.FieldPlaceable)
+		placeable, ok := item.(game.FieldPlaceable)
 		if !ok {
 			continue
 		}

@@ -30,5 +30,5 @@ imgs
 docs
 
 /scripts
-services/bot/out
+bot/out
 logs/

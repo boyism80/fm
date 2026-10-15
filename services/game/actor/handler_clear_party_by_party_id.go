@@ -2,7 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type ClearPartyByPartyIDHandler struct{}
@@ -11,7 +11,7 @@ func (ClearPartyByPartyIDHandler) New() *ClearPartyByPartyIDHandler {
 	return &ClearPartyByPartyIDHandler{}
 }
 
-func (h *ClearPartyByPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.ClearPartyByPartyID) {
+func (h *ClearPartyByPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.ClearPartyByPartyID) {
 	if msg == nil {
 		return
 	}

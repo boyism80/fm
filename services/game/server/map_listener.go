@@ -3,10 +3,10 @@ package server
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/types"
 )
 
@@ -20,7 +20,7 @@ func NewGameMapListener(gs *GameServer) *MapListenerImpl {
 	}
 }
 
-func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *domain.Map, character *domain.Character, spawnPoint uint8, init bool) {
+func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map, character *game.Character, spawnPoint uint8, init bool) {
 	if mapInstance == nil {
 		return
 	}
@@ -73,8 +73,8 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *domain.M
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter, &domain.SearchOption{IncludeHidden: true}) {
-		if viewer, ok := obj.(*domain.Character); ok {
+	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter, &game.SearchOption{IncludeHidden: true}) {
+		if viewer, ok := obj.(*game.Character); ok {
 			character.SendSpawnSyncToViewer(viewer)
 		}
 	}
@@ -93,23 +93,23 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *domain.M
 	}
 
 	if character != nil {
-		_ = l.gs.systems.Get[*domain.DispatchSystem]().SetMapPID(character.GetID(), mapInstance.LogicActorPID())
+		_ = l.gs.systems.Get[*game.DispatchSystem]().SetMapPID(character.GetID(), mapInstance.LogicActorPID())
 	}
 
 	if l.gs != nil {
-		l.gs.systems.Get[*domain.PartySystem]().SendPartySilentAsync(ctx, character)
+		l.gs.systems.Get[*game.PartySystem]().SendPartySilentAsync(ctx, character)
 	}
 
 	if mapInstance != nil && character != nil && character.Quests != nil {
 		mapID := mapInstance.GetMapID()
-		character.Quests.RunAutoTriggers(ctx, domain.AutoQuestTriggerMapEnter, mapID)
+		character.Quests.RunAutoTriggers(ctx, game.AutoQuestTriggerMapEnter, mapID)
 		if init {
-			character.Quests.RunAutoTriggers(ctx, domain.AutoQuestTriggerLogin, mapID)
+			character.Quests.RunAutoTriggers(ctx, game.AutoQuestTriggerLogin, mapID)
 		}
 	}
 }
 
-func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *domain.Map, character *domain.Character) {
+func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *game.Map, character *game.Character) {
 	if mapInstance == nil {
 		return
 	}
@@ -120,18 +120,18 @@ func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *domain.Map, character *do
 	mapInstance.BroadcastNear(character.GetPosition(), leavePacket, nil)
 
 	if character != nil {
-		_ = l.gs.systems.Get[*domain.DispatchSystem]().SetMapPID(character.GetID(), nil)
+		_ = l.gs.systems.Get[*game.DispatchSystem]().SetMapPID(character.GetID(), nil)
 	}
 }
 
-func (l *MapListenerImpl) OnPlayerMoved(mapInstance *domain.Map, character *domain.Character) {
+func (l *MapListenerImpl) OnPlayerMoved(mapInstance *game.Map, character *game.Character) {
 	if mapInstance == nil {
 		return
 	}
 
 }
 
-func (l *MapListenerImpl) OnPlayerMove(mapInstance *domain.Map, character *domain.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
+func (l *MapListenerImpl) OnPlayerMove(mapInstance *game.Map, character *game.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
 	if mapInstance == nil {
 		return
 	}
@@ -147,14 +147,14 @@ func (l *MapListenerImpl) OnPlayerMove(mapInstance *domain.Map, character *domai
 	character.Broadcast(movePacket, nil)
 }
 
-func (l *MapListenerImpl) OnPlayerChat(mapInstance *domain.Map, character *domain.Character, message string) {
+func (l *MapListenerImpl) OnPlayerChat(mapInstance *game.Map, character *game.Character, message string) {
 	if mapInstance == nil {
 		return
 	}
 
 }
 
-func (l *MapListenerImpl) OnItemSpawned(mapInstance *domain.Map, item domain.Item, placement *domain.FieldPlacement) {
+func (l *MapListenerImpl) OnItemSpawned(mapInstance *game.Map, item game.Item, placement *game.FieldPlacement) {
 	if mapInstance == nil {
 		return
 	}
@@ -178,8 +178,8 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *domain.Map, item domain.Ite
 		return
 	}
 
-	for _, obj := range mapInstance.GetObjectsNear(placementObj.Position, constant.ObjectTypeCharacter, &domain.SearchOption{IncludeHidden: true}) {
-		viewer, ok := obj.(*domain.Character)
+	for _, obj := range mapInstance.GetObjectsNear(placementObj.Position, constant.ObjectTypeCharacter, &game.SearchOption{IncludeHidden: true}) {
+		viewer, ok := obj.(*game.Character)
 		if !ok {
 			continue
 		}
@@ -190,7 +190,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *domain.Map, item domain.Ite
 	}
 }
 
-func (l *MapListenerImpl) OnMesoSpawned(mapInstance *domain.Map, meso *domain.Meso) {
+func (l *MapListenerImpl) OnMesoSpawned(mapInstance *game.Map, meso *game.Meso) {
 	if mapInstance == nil {
 		return
 	}
@@ -211,7 +211,7 @@ func (l *MapListenerImpl) OnMesoSpawned(mapInstance *domain.Map, meso *domain.Me
 	mapInstance.BroadcastNear(fp.Position, spawnPacket, nil)
 }
 
-func (l *MapListenerImpl) OnItemRemoved(mapInstance *domain.Map, itemID uint32, looterID uint32, mode constant.RemoveItemType, position types.Vector2[int16]) {
+func (l *MapListenerImpl) OnItemRemoved(mapInstance *game.Map, itemID uint32, looterID uint32, mode constant.RemoveItemType, position types.Vector2[int16]) {
 	if mapInstance == nil {
 		return
 	}
@@ -225,7 +225,7 @@ func (l *MapListenerImpl) OnItemRemoved(mapInstance *domain.Map, itemID uint32, 
 	mapInstance.BroadcastNear(position, removePacket, nil)
 }
 
-func (l *MapListenerImpl) OnMobSpawned(mapInstance *domain.Map, mob *domain.Mob, spawnType constant.MobSpawnType, link uint32) {
+func (l *MapListenerImpl) OnMobSpawned(mapInstance *game.Map, mob *game.Mob, spawnType constant.MobSpawnType, link uint32) {
 	if mapInstance == nil {
 		return
 	}
@@ -241,7 +241,7 @@ func (l *MapListenerImpl) OnMobSpawned(mapInstance *domain.Map, mob *domain.Mob,
 	mob.Broadcast(spawnPacket, nil)
 }
 
-func (l *MapListenerImpl) OnMobRemoved(mapInstance *domain.Map, mob *domain.Mob, animationType constant.MobDieAnimationType) {
+func (l *MapListenerImpl) OnMobRemoved(mapInstance *game.Map, mob *game.Mob, animationType constant.MobDieAnimationType) {
 	if mapInstance == nil {
 		return
 	}
@@ -254,7 +254,7 @@ func (l *MapListenerImpl) OnMobRemoved(mapInstance *domain.Map, mob *domain.Mob,
 	mapInstance.BroadcastNear(mob.GetPosition(), removePacket, nil)
 }
 
-func (l *MapListenerImpl) OnReactorSpawned(mapInstance *domain.Map, reactor *domain.Reactor) {
+func (l *MapListenerImpl) OnReactorSpawned(mapInstance *game.Map, reactor *game.Reactor) {
 	if mapInstance == nil || reactor == nil {
 		return
 	}
@@ -264,7 +264,7 @@ func (l *MapListenerImpl) OnReactorSpawned(mapInstance *domain.Map, reactor *dom
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnReactorRemoved(mapInstance *domain.Map, reactor *domain.Reactor) {
+func (l *MapListenerImpl) OnReactorRemoved(mapInstance *game.Map, reactor *game.Reactor) {
 	if mapInstance == nil || reactor == nil {
 		return
 	}
@@ -274,7 +274,7 @@ func (l *MapListenerImpl) OnReactorRemoved(mapInstance *domain.Map, reactor *dom
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnReactorTriggered(mapInstance *domain.Map, reactor *domain.Reactor, stance int32) {
+func (l *MapListenerImpl) OnReactorTriggered(mapInstance *game.Map, reactor *game.Reactor, stance int32) {
 	if mapInstance == nil || reactor == nil {
 		return
 	}
@@ -285,7 +285,7 @@ func (l *MapListenerImpl) OnReactorTriggered(mapInstance *domain.Map, reactor *d
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnMusicChanged(mapInstance *domain.Map, song string) {
+func (l *MapListenerImpl) OnMusicChanged(mapInstance *game.Map, song string) {
 	if mapInstance == nil || song == "" {
 		return
 	}
@@ -296,7 +296,7 @@ func (l *MapListenerImpl) OnMusicChanged(mapInstance *domain.Map, song string) {
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnMapMessage(mapInstance *domain.Map, messageType constant.ServerMessageType, message string) {
+func (l *MapListenerImpl) OnMapMessage(mapInstance *game.Map, messageType constant.ServerMessageType, message string) {
 	if mapInstance == nil || message == "" {
 		return
 	}
@@ -307,20 +307,20 @@ func (l *MapListenerImpl) OnMapMessage(mapInstance *domain.Map, messageType cons
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnWeather(mapInstance *domain.Map, itemID uint32, message string) {
+func (l *MapListenerImpl) OnWeather(mapInstance *game.Map, itemID uint32, message string) {
 	mapInstance.Broadcast(&response.Weather{
 		ItemID:  itemID,
 		Message: message,
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnYellowChat(mapInstance *domain.Map, message string) {
+func (l *MapListenerImpl) OnYellowChat(mapInstance *game.Map, message string) {
 	mapInstance.Broadcast(&response.YellowChat{
 		Message: message,
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnWeddingEffect(mapInstance *domain.Map, groomID uint32, brideID uint32) {
+func (l *MapListenerImpl) OnWeddingEffect(mapInstance *game.Map, groomID uint32, brideID uint32) {
 	mapInstance.Broadcast(&response.WeddingCouple{
 		GroomID: groomID,
 		BrideID: brideID,
@@ -328,7 +328,7 @@ func (l *MapListenerImpl) OnWeddingEffect(mapInstance *domain.Map, groomID uint3
 	mapInstance.Broadcast(&response.WeddingEffect{}, nil)
 }
 
-func (l *MapListenerImpl) OnClearEffect(mapInstance *domain.Map) {
+func (l *MapListenerImpl) OnClearEffect(mapInstance *game.Map) {
 	if mapInstance == nil {
 		return
 	}
@@ -341,7 +341,7 @@ func (l *MapListenerImpl) OnClearEffect(mapInstance *domain.Map) {
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnShowEffect(mapInstance *domain.Map, path string) {
+func (l *MapListenerImpl) OnShowEffect(mapInstance *game.Map, path string) {
 	if mapInstance == nil || path == "" {
 		return
 	}
@@ -351,7 +351,7 @@ func (l *MapListenerImpl) OnShowEffect(mapInstance *domain.Map, path string) {
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnPlaySound(mapInstance *domain.Map, path string) {
+func (l *MapListenerImpl) OnPlaySound(mapInstance *game.Map, path string) {
 	if mapInstance == nil || path == "" {
 		return
 	}
@@ -361,14 +361,14 @@ func (l *MapListenerImpl) OnPlaySound(mapInstance *domain.Map, path string) {
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnTremble(mapInstance *domain.Map, typ uint8, delay int32) {
+func (l *MapListenerImpl) OnTremble(mapInstance *game.Map, typ uint8, delay int32) {
 	mapInstance.Broadcast(&response.Tremble{
 		Type:  typ,
 		Delay: delay,
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnMobControllerChange(mob *domain.Mob, before *domain.Character, after *domain.Character, aggro bool) {
+func (l *MapListenerImpl) OnMobControllerChange(mob *game.Mob, before *game.Character, after *game.Character, aggro bool) {
 	switch {
 	case before == nil && after != nil:
 		after.Send(&response.StartControlMob{Mob: mob.BuildS2C(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
@@ -380,7 +380,7 @@ func (l *MapListenerImpl) OnMobControllerChange(mob *domain.Mob, before *domain.
 	}
 }
 
-func (l *MapListenerImpl) OnMobMoved(mapInstance *domain.Map, mob *domain.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+func (l *MapListenerImpl) OnMobMoved(mapInstance *game.Map, mob *game.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	if mapInstance == nil {
 		return
 	}
@@ -400,7 +400,7 @@ func (l *MapListenerImpl) OnMobMoved(mapInstance *domain.Map, mob *domain.Mob, i
 	mob.Broadcast(movePacket, nil)
 }
 
-func (l *MapListenerImpl) OnAttack(mapInstance *domain.Map, character *domain.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *MapListenerImpl) OnAttack(mapInstance *game.Map, character *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if character == nil || character.GetMap() == nil {
 		return
 	}
@@ -411,7 +411,7 @@ func (l *MapListenerImpl) OnAttack(mapInstance *domain.Map, character *domain.Ch
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnRangedAttack(mapInstance *domain.Map, character *domain.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *MapListenerImpl) OnRangedAttack(mapInstance *game.Map, character *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if character == nil || character.GetMap() == nil {
 		return
 	}
@@ -423,7 +423,7 @@ func (l *MapListenerImpl) OnRangedAttack(mapInstance *domain.Map, character *dom
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnMagicAttack(mapInstance *domain.Map, character *domain.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *MapListenerImpl) OnMagicAttack(mapInstance *game.Map, character *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if character == nil || character.GetMap() == nil {
 		return
 	}
@@ -434,7 +434,7 @@ func (l *MapListenerImpl) OnMagicAttack(mapInstance *domain.Map, character *doma
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnMistSpawned(mapInstance *domain.Map, mist *domain.Mist) {
+func (l *MapListenerImpl) OnMistSpawned(mapInstance *game.Map, mist *game.Mist) {
 	if mapInstance == nil || mist == nil {
 		return
 	}
@@ -456,7 +456,7 @@ func (l *MapListenerImpl) OnMistSpawned(mapInstance *domain.Map, mist *domain.Mi
 	mist.Broadcast(pkt, nil)
 }
 
-func (l *MapListenerImpl) OnMistRemoved(mapInstance *domain.Map, mist *domain.Mist) {
+func (l *MapListenerImpl) OnMistRemoved(mapInstance *game.Map, mist *game.Mist) {
 	if mapInstance == nil || mist == nil {
 		return
 	}
@@ -467,7 +467,7 @@ func (l *MapListenerImpl) OnMistRemoved(mapInstance *domain.Map, mist *domain.Mi
 	mist.Broadcast(pkt, nil)
 }
 
-func (l *MapListenerImpl) OnMessageBoxSpawned(mapInstance *domain.Map, box *domain.MessageBox) {
+func (l *MapListenerImpl) OnMessageBoxSpawned(mapInstance *game.Map, box *game.MessageBox) {
 	box.Broadcast(&response.SpawnMessageBox{
 		OID:    box.OID,
 		ItemID: box.ItemID,
@@ -478,11 +478,11 @@ func (l *MapListenerImpl) OnMessageBoxSpawned(mapInstance *domain.Map, box *doma
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnMessageBoxRemoved(mapInstance *domain.Map, box *domain.MessageBox) {
+func (l *MapListenerImpl) OnMessageBoxRemoved(mapInstance *game.Map, box *game.MessageBox) {
 	box.Broadcast(&response.RemoveMessageBox{OID: box.OID, Animated: true}, nil)
 }
 
-func (l *MapListenerImpl) OnDoorRemoved(mapInstance *domain.Map, door *domain.Door, animated bool) {
+func (l *MapListenerImpl) OnDoorRemoved(mapInstance *game.Map, door *game.Door, animated bool) {
 	if mapInstance == nil || door == nil {
 		return
 	}
@@ -497,14 +497,14 @@ func (l *MapListenerImpl) OnDoorRemoved(mapInstance *domain.Map, door *domain.Do
 	}, nil)
 }
 
-func (l *MapListenerImpl) OnMobHomingRemoved(mapInstance *domain.Map, mob *domain.Mob, removed *domain.Homing, causer *domain.Character) {
+func (l *MapListenerImpl) OnMobHomingRemoved(mapInstance *game.Map, mob *game.Mob, removed *game.Homing, causer *game.Character) {
 	if causer == nil {
 		return
 	}
 	causer.Send(&response.CancelHomingBeacon{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *MapListenerImpl) OnMobHomingSet(mapInstance *domain.Map, mob *domain.Mob, homing *domain.Homing, causer *domain.Character) {
+func (l *MapListenerImpl) OnMobHomingSet(mapInstance *game.Map, mob *game.Mob, homing *game.Homing, causer *game.Character) {
 	if causer == nil {
 		return
 	}

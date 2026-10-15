@@ -10,8 +10,8 @@ import (
 	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type PartySearchStart struct {
@@ -46,7 +46,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 		return nil
 	}
 
-	cfg := &domain.PartySearchConfig{
+	cfg := &game.PartySearchConfig{
 		MinLevel:      req.MinLevel,
 		MaxLevel:      req.MaxLevel,
 		MembersNeeded: req.MembersNeeded,
@@ -54,7 +54,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 	}
 
 	if pid := ch.Party.ID(); pid != nil {
-		party := h.gs.systems.Get[*domain.PartySystem]().Get(*pid)
+		party := h.gs.systems.Get[*game.PartySystem]().Get(*pid)
 		if party == nil || party.GetLeaderCharacterId() != ch.GetID() {
 			return nil
 		}
@@ -73,7 +73,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 				if !reply.GetOk() || reply.PartyId == nil {
 					return fmt.Errorf("party create failed")
 				}
-				h.gs.systems.Get[*domain.PartySystem]().Update(reply.GetParty())
+				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
 				ch.Party.SetID(reply.PartyId)
 				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 				ch.Party.Search = cfg

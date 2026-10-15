@@ -1,0 +1,490 @@
+package bot
+
+import (
+	"errors"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/boyism80/fm/bot/conn"
+	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/protocol/response"
+)
+
+type looks struct {
+	face, hair, top, bottom, shoes, weapon uint32
+}
+
+func (b *Bot) Enter() error {
+	if err := b.login(); err != nil {
+		b.Close()
+		return err
+	}
+	if err := b.openGame(); err != nil {
+		b.Close()
+		return err
+	}
+	return b.conn.SetDeadline(time.Time{})
+}
+
+func (b *Bot) login() error {
+	addr := fmt.Sprintf("%s:%d", b.cfg.Login.Host, b.cfg.Login.Port)
+	c, err := b.dial(addr)
+	if err != nil {
+		return fmt.Errorf("login %s: %w", addr, err)
+	}
+	b.conn = c
+
+	var auth *response.Authenticate
+	for attempt := 0; attempt < 5; attempt++ {
+		if err := b.conn.Send(&request.Login{ID: b.ID, Pw: b.cfg.Password, Mac: "00-00-00-00-00-01"}); err != nil {
+			return err
+		}
+		pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+			switch pkt.(type) {
+			case *response.Authenticate, *response.LoginFailed:
+				return true
+			default:
+				return false
+			}
+		})
+		if err != nil {
+			return err
+		}
+		if failed, ok := pkt.(*response.LoginFailed); ok {
+			if failed.Reason == response.LoginFailedReasonAlreadyLoggedIn && attempt < 4 {
+				time.Sleep(time.Second)
+				continue
+			}
+			return fmt.Errorf("login failed reason %d", failed.Reason)
+		}
+		auth = pkt.(*response.Authenticate)
+		break
+	}
+	if auth == nil {
+		return fmt.Errorf("login failed")
+	}
+	b.Gender = auth.Gender
+
+	if _, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+		_, ok := pkt.(*response.EndOfServerList)
+		return ok
+	}); err != nil {
+		return err
+	}
+
+	if b.cfg.WorldID > 255 || b.cfg.Channel > 255 {
+		return fmt.Errorf("world_id and channel must fit in one byte")
+	}
+	var list *response.CharacterList
+	for attempt := 0; attempt < 20; attempt++ {
+		if err := b.conn.Send(&request.CharacterList{Server: uint8(b.cfg.WorldID), Channel: uint8(b.cfg.Channel)}); err != nil {
+			return err
+		}
+		pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+			switch pkt.(type) {
+			case *response.CharacterList, *response.LoginFailed:
+				return true
+			default:
+				return false
+			}
+		})
+		if err != nil {
+			return err
+		}
+		if failed, ok := pkt.(*response.LoginFailed); ok {
+			if failed.Reason == response.LoginFailedReasonTooManyConnections && attempt < 19 {
+				time.Sleep(time.Second)
+				continue
+			}
+			return fmt.Errorf("character list failed reason %d", failed.Reason)
+		}
+		list = pkt.(*response.CharacterList)
+		break
+	}
+	b.SecondPassword = list.HasSecondPassword
+	b.spareCharID = 0
+	if len(list.Characters) > 1 {
+		b.spareCharID = list.Characters[1].ID
+	}
+	if len(list.Characters) == 0 {
+		id, name, err := b.createCharacter(b.Name)
+		if err != nil {
+			return err
+		}
+		b.CharID = id
+		b.Name = name
+		return nil
+	}
+	b.CharID = list.Characters[0].ID
+	b.Name = list.Characters[0].Name
+	return nil
+}
+
+func (b *Bot) createCharacter(base string) (uint32, string, error) {
+	for i := 0; i < 3; i++ {
+		name := base
+		if i > 0 {
+			name = fmt.Sprintf("%s%d", base, i)
+		}
+		if len(name) > 12 {
+			return 0, "", fmt.Errorf("character name %q is longer than 12 bytes", name)
+		}
+		if err := b.conn.Send(&request.CheckName{Name: name}); err != nil {
+			return 0, "", err
+		}
+		pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+			_, ok := pkt.(*response.CheckName)
+			return ok
+		})
+		if err != nil {
+			return 0, "", err
+		}
+		if pkt.(*response.CheckName).Exists {
+			continue
+		}
+		look := maleLooks
+		if b.Gender == 1 {
+			look = femaleLooks
+		}
+		if err := b.conn.Send(&request.CreateCharacter{
+			Name: name, Face: look.face, Hair: look.hair,
+			Top: look.top, Bottom: look.bottom, Shoes: look.shoes, Weapon: look.weapon,
+		}); err != nil {
+			return 0, "", err
+		}
+		createdPkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+			_, ok := pkt.(*response.CreateCharacter)
+			return ok
+		})
+		if err != nil {
+			return 0, "", err
+		}
+		created := createdPkt.(*response.CreateCharacter)
+		if !created.Success || created.Character == nil || created.Character.ID == 0 {
+			return 0, "", fmt.Errorf("create character %s failed", name)
+		}
+		return created.Character.ID, name, nil
+	}
+	return 0, "", fmt.Errorf("character name %s is taken", base)
+}
+
+func (b *Bot) deleteSpareCharacter() (bool, string, error) {
+	if b.spareCharID == 0 {
+		base := b.Name
+		if len(base) > 9 {
+			base = base[:9]
+		}
+		id, _, err := b.createCharacter(base + "d")
+		if err != nil {
+			return false, "", err
+		}
+		b.spareCharID = id
+	}
+
+	if err := b.conn.Send(&request.DeleteCharacter{ID: b.spareCharID}); err != nil {
+		return false, "", err
+	}
+	var notice string
+	pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+		switch p := pkt.(type) {
+		case *response.Notice:
+			notice = p.Message
+			return false
+		case *response.DeleteCharacter:
+			return true
+		default:
+			return false
+		}
+	})
+	if err != nil {
+		return false, "", err
+	}
+	deleted := pkt.(*response.DeleteCharacter).Success
+	if deleted {
+		b.spareCharID = 0
+	}
+	return deleted, notice, nil
+}
+
+func (b *Bot) openGame() error {
+	transfer, err := b.selectCharacter("")
+	if err != nil {
+		return err
+	}
+	b.Close()
+	return b.joinGame(transfer.IP, transfer.Port, transfer.CharacterId)
+}
+
+func (b *Bot) selectCharacter(password string) (*response.Transfer, error) {
+	var pkt outbound = &request.SelectCharacter{CharacterId: b.CharID}
+	if password != "" {
+		pkt = &request.SelectCharacterWithSecondPassword{Password: password, CharacterID: b.CharID}
+	}
+	if err := b.conn.Send(pkt); err != nil {
+		return nil, err
+	}
+	reply, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+		switch pkt.(type) {
+		case *response.Transfer, *response.LoginFailed, *response.SecondPasswordResult:
+			return true
+		default:
+			return false
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	switch p := reply.(type) {
+	case *response.LoginFailed:
+		return nil, fmt.Errorf("select character failed reason %d", p.Reason)
+	case *response.SecondPasswordResult:
+		return nil, errSecondPasswordRejected
+	}
+	return reply.(*response.Transfer), nil
+}
+
+func (b *Bot) Relog(opts Relog) (RelogResult, error) {
+	var result RelogResult
+	b.Close()
+	if err := b.login(); err != nil {
+		b.Close()
+		return result, err
+	}
+	result.HasSecondPassword = b.SecondPassword
+
+	if opts.Set != "" {
+		code, err := b.authSecondPassword(request.SecondPasswordModeSet, opts.Set)
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		result.Set = &code
+	}
+	if opts.Remove != "" {
+		code, err := b.authSecondPassword(request.SecondPasswordModeRemove, opts.Remove)
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		result.Remove = &code
+	}
+	if opts.DeleteSpare {
+		deleted, notice, err := b.deleteSpareCharacter()
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		result.Deleted = &deleted
+		result.DeleteNotice = notice
+	}
+
+	for _, password := range opts.Passwords {
+		transfer, err := b.selectCharacter(password)
+		if errors.Is(err, errSecondPasswordRejected) {
+			result.Rejected++
+			continue
+		}
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		b.Close()
+		if err := b.joinGame(transfer.IP, transfer.Port, transfer.CharacterId); err != nil {
+			b.Close()
+			return result, err
+		}
+		return result, b.conn.SetDeadline(time.Time{})
+	}
+	b.Close()
+	return result, fmt.Errorf("no password entered the game (%d rejected)", result.Rejected)
+}
+
+func (b *Bot) authSecondPassword(mode uint8, password string) (uint8, error) {
+	if err := b.conn.Send(&request.AuthSecondPassword{Mode: mode, Password: password}); err != nil {
+		return 0, err
+	}
+	pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+		_, ok := pkt.(*response.SecondPasswordResult)
+		return ok
+	})
+	if err != nil {
+		return 0, err
+	}
+	return pkt.(*response.SecondPasswordResult).Result, nil
+}
+
+func (b *Bot) EnterChannel(ip string, port uint16) error {
+	b.Close()
+	if err := b.joinGame(ip, port, b.CharID); err != nil {
+		b.Close()
+		return err
+	}
+	return b.conn.SetDeadline(time.Time{})
+}
+
+func (b *Bot) EnterCashShop(ip string, port uint16) error {
+	b.Close()
+	host := ip
+	if host == "" || host == "0.0.0.0" {
+		host = "127.0.0.1"
+	}
+	addr := fmt.Sprintf("%s:%d", host, port)
+	c, err := b.dial(addr)
+	if err != nil {
+		return fmt.Errorf("cash shop %s: %w", addr, err)
+	}
+	b.conn = c
+	b.Gen++
+	if err := b.conn.Send(&request.LoginGame{PlayerId: b.CharID}); err != nil {
+		b.Close()
+		return err
+	}
+
+	deadline := time.Now().Add(b.wait())
+	for {
+		pkt, err := b.readUntil(time.Until(deadline), cashShopOpcodes, func(any) bool {
+			return true
+		})
+		if err != nil {
+			b.Close()
+			return fmt.Errorf("cash shop login: %w", err)
+		}
+		b.Update(pkt)
+		if result, ok := pkt.(*response.CashShopResult); ok && result.Kind == pconst.CashShopResultWishlist {
+			break
+		}
+	}
+	log.Printf("%s entered cash shop", b.Name)
+	return b.conn.SetDeadline(time.Time{})
+}
+
+func (b *Bot) joinGame(ip string, port uint16, charID uint32) error {
+	host := ip
+	if host == "" || host == "0.0.0.0" {
+		host = "127.0.0.1"
+	}
+	addr := fmt.Sprintf("%s:%d", host, port)
+	c, err := b.dial(addr)
+	if err != nil {
+		return fmt.Errorf("game %s: %w", addr, err)
+	}
+	b.conn = c
+	b.Gen++
+	if err := b.conn.Send(&request.LoginGame{PlayerId: charID}); err != nil {
+		return err
+	}
+
+	var sawLogin, sawKeys bool
+	deadline := time.Now().Add(b.wait())
+	for !sawLogin || !sawKeys {
+		pkt, err := b.readUntil(time.Until(deadline), gameOpcodes, func(pkt any) bool {
+			switch pkt.(type) {
+			case *response.Login, *response.KeyMap, *response.LoginFailed:
+				return true
+			case *response.SpawnNpc, *response.RemoveNpc, *response.SkillMacro:
+				b.Update(pkt)
+				return false
+			default:
+				return false
+			}
+		})
+		if err != nil {
+			return fmt.Errorf("game login: %w", err)
+		}
+		switch p := pkt.(type) {
+		case *response.LoginFailed:
+			return fmt.Errorf("game login failed reason %d", p.Reason)
+		case *response.Login:
+			if p.Character == nil {
+				return fmt.Errorf("game login has no character")
+			}
+			b.CharID = p.Character.ID
+			b.Name = p.Character.Name
+			b.Update(p)
+			sawLogin = true
+		case *response.KeyMap:
+			sawKeys = true
+		}
+	}
+	log.Printf("%s entered map %d", b.Name, b.Map)
+	return nil
+}
+
+func (b *Bot) readUntil(timeout time.Duration, allow []uint16, match func(any) bool) (any, error) {
+	if timeout <= 0 {
+		return nil, fmt.Errorf("timed out")
+	}
+	if err := b.conn.SetDeadline(time.Now().Add(timeout)); err != nil {
+		return nil, err
+	}
+	for {
+		opcode, body, err := b.conn.Read()
+		if err != nil {
+			return nil, err
+		}
+		keep := false
+		for _, item := range allow {
+			if item == opcode {
+				keep = true
+				break
+			}
+		}
+		if !keep {
+			continue
+		}
+		pkt, err := conn.Decode(opcode, body)
+		if err != nil {
+			continue
+		}
+		if match(pkt) {
+			return pkt, nil
+		}
+	}
+}
+
+func (b *Bot) dial(addr string) (*conn.Conn, error) {
+	delay := 200 * time.Millisecond
+	var last error
+	for attempt := 0; attempt < 3; attempt++ {
+		c, err := conn.Dial(addr)
+		if err == nil {
+			return c, nil
+		}
+		last = err
+		time.Sleep(delay)
+		delay *= 2
+	}
+	return nil, fmt.Errorf("%v: %w", last, ErrConnect)
+}
+
+var errSecondPasswordRejected = errors.New("second password rejected")
+
+var (
+	maleLooks    = looks{face: 20100, hair: 30030, top: 1040002, bottom: 1060002, shoes: 1072001, weapon: 1302000}
+	femaleLooks  = looks{face: 21700, hair: 31002, top: 1041002, bottom: 1061002, shoes: 1072001, weapon: 1302000}
+	loginOpcodes = []uint16{
+		(&response.LoginFailed{}).Opcode(),
+		(&response.ServerList{}).Opcode(),
+		(&response.CharacterList{}).Opcode(),
+		(&response.Transfer{}).Opcode(),
+		(&response.CheckName{}).Opcode(),
+		(&response.CreateCharacter{}).Opcode(),
+		(&response.DeleteCharacter{}).Opcode(),
+		(&response.Notice{}).Opcode(),
+		(&response.SecondPasswordResult{}).Opcode(),
+	}
+	gameOpcodes = []uint16{
+		(&response.Login{}).Opcode(),
+		(&response.KeyMap{}).Opcode(),
+		(&response.SpawnNpc{}).Opcode(),
+		(&response.RemoveNpc{}).Opcode(),
+		(&response.SkillMacro{}).Opcode(),
+	}
+	cashShopOpcodes = []uint16{
+		(&response.SetCashShop{}).Opcode(),
+		(&response.CashShopBalance{}).Opcode(),
+		(&response.CashShopResult{}).Opcode(),
+	}
+)

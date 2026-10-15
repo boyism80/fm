@@ -10,8 +10,8 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type Notes struct {
@@ -43,10 +43,10 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		if req.Kind != pconst.NoteKindNormal && req.Kind != pconst.NoteKindPopulation {
 			return nil
 		}
-		if !domain.ClientText(req.Message).Valid(200) {
+		if !game.ClientText(req.Message).Valid(200) {
 			return nil
 		}
-		if !domain.ClientText(req.Target).Valid(13) {
+		if !game.ClientText(req.Target).Valid(13) {
 			ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
 			return nil
 		}
@@ -75,7 +75,7 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Notes(c, internalReq)
 		},
 		func(reply *internal.NotesReply) error {
-			h.gs.systems.Get[*domain.DispatchSystem]().CallCharacter(ch.GetID(), func(_ actor.Context, current *domain.Character) {
+			h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(ch.GetID(), func(_ actor.Context, current *game.Character) {
 				switch req.Action {
 				case internal.NotesAction_NOTES_ACTION_SEND:
 					if reply.Status == internal.NoteResult_NOTE_RESULT_OK {

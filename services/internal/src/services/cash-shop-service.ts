@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type { PoolClient } from "pg";
 import {
     CashCouponKind,
     CashCurrency,
@@ -22,7 +23,7 @@ import {
     type RedeemCashCouponRequest,
 } from "../protobuf/generated/fminternal/internal_service";
 import type { AccountRepository } from "../repos/account-repository";
-import type { CashBalance, CashShopRepository, CashItemRow } from "../repos/cash-shop-repository";
+import type { CashBalance, CashShopRepository, CashItemRow, CashRingRow, CashTransferRequest } from "../repos/cash-shop-repository";
 import type { CharacterRepository } from "../repos/character-repository";
 import type { StorageRepository } from "../repos/storage-repository";
 import type { InventoryRepository, InventoryModel } from "../repos/inventory-repository";
@@ -86,6 +87,63 @@ export class CashShopService {
         return balance.nxCash + delta.nxCash >= 0 && balance.maplePoint + delta.maplePoint >= 0;
     }
 
+    async settleTransfers(worldId: number): Promise<void> {
+        for (const request of await this.cashShopRepo.pendingTransfers(worldId)) {
+            try {
+                await this.cashShopRepo.receiveTransfer(worldId, request, async (txClient) => {
+                    await this.applyTransfer(worldId, request, txClient);
+                });
+                await this.cashShopRepo.finishTransfer(worldId, request);
+                if (request.kind === "take_out") {
+                    await this.inventoryRepo.invalidateCache(worldId, String(request.target_id));
+                } else if (request.kind === "gift") {
+                    const detail = request.detail as { recipientId: number; senderName: string };
+                    await this.notifyGift(worldId, detail.recipientId, detail.senderName);
+                }
+            } catch (err) {
+                console.error(`[cash-shop] transfer pending id=${request.request_id} kind=${request.kind}`, err);
+            }
+        }
+    }
+
+    private async applyTransfer(worldId: number, request: CashTransferRequest, txClient: PoolClient): Promise<void> {
+        switch (request.kind) {
+            case "gift": {
+                const detail = request.detail as { accountId: number; items: unknown[]; message: string };
+                const items = await this.cashShopRepo.findItems(worldId, detail.accountId, { txClient });
+                if (items.length + detail.items.length > LOCKER_CAPACITY) {
+                    throw new Error("recipient locker full");
+                }
+                await this.grantGift(worldId, detail.accountId, detail.items.map((item) => CashItem.fromJSON(item)), detail.message, { txClient });
+                break;
+            }
+            case "ring": {
+                await this.cashShopRepo.insertRing(worldId, request.detail as CashRingRow, { txClient });
+                break;
+            }
+            case "take_out": {
+                const item = request.detail as InventoryModel;
+                if (item.expiration != null) {
+                    item.expiration = new Date(item.expiration);
+                }
+                const inventory = await this.inventoryRepo.getAll(worldId, String(request.target_id), { txClient });
+                await this.inventoryRepo.replaceBySnapshot(worldId, String(request.target_id), [...inventory.values(), item], { txClient });
+                break;
+            }
+            case "put_in": {
+                const detail = request.detail as { accountId: number; serial: string; item: unknown };
+                const items = await this.cashShopRepo.findItems(worldId, detail.accountId, { txClient });
+                if (items.length >= LOCKER_CAPACITY) {
+                    throw new Error("cash locker full");
+                }
+                await this.cashShopRepo.insertItem(worldId, detail.accountId, detail.serial, detail.item, { txClient });
+                break;
+            }
+            default:
+                throw new Error(`unknown cash transfer kind ${request.kind}`);
+        }
+    }
+
     async loadAccount(worldId: number, accountId: number, characterId: number) {
         const [balance, items, wishlist, account, storage, gifts] = await Promise.all([
             this.cashShopRepo.findBalance(worldId, accountId),
@@ -93,7 +151,7 @@ export class CashShopService {
             this.cashShopRepo.findWishlist(worldId, characterId),
             this.accountRepo.get(worldId, accountId),
             this.storageRepo.get(worldId, accountId),
-            this.cashShopRepo.takeGifts(worldId, accountId),
+            this.cashShopRepo.findGifts(worldId, accountId),
         ]);
         const now = Date.now();
         const locker = items.map((row) => this.toProto(row));
@@ -101,7 +159,8 @@ export class CashShopService {
             .filter((item) => (item.item?.expirationUnixMs ?? 0) > 0 && (item.item?.expirationUnixMs ?? 0) <= now)
             .map((item) => item.item?.uniqueId ?? "0");
         await this.cashShopRepo.deleteItems(worldId, accountId, expired);
-        for (const gift of gifts) {
+        const visibleGifts = gifts.filter((gift) => !expired.includes(gift.serial));
+        for (const gift of visibleGifts) {
             await this.socialService.gift(worldId, characterId, gift.sender_name, gift.serial);
         }
         return {
@@ -111,7 +170,7 @@ export class CashShopService {
             wishlist,
             characterSlotCount: account?.characterSlotCount ?? 0,
             storageSlotCount: storage?.slots ?? DEFAULT_STORAGE_SLOTS,
-            gifts: gifts.map((row) => ({
+            gifts: visibleGifts.map((row) => ({
                 serial: row.serial,
                 itemId: row.item_id,
                 senderName: row.sender_name,
@@ -148,44 +207,45 @@ export class CashShopService {
     }
 
     async takeOut(worldId: number, accountId: number, characterId: number, item: InventoryModel): Promise<CashShopResult> {
-        try {
-            return await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
-                const row = await this.cashShopRepo.deleteItem(worldId, accountId, String(item.uniqueId), { txClient });
-                if (row == null) {
-                    return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
-                }
+        const result = await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
+            const row = await this.cashShopRepo.deleteItem(worldId, accountId, String(item.uniqueId), { txClient });
+            if (row == null) {
+                return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
+            }
 
-                const inventory = await this.inventoryRepo.getAll(worldId, String(characterId), { txClient });
-                await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), [...inventory.values(), item], { txClient });
-                return CashShopResult.CASH_SHOP_RESULT_OK;
-            });
-        } finally {
-            await this.inventoryRepo.invalidateCache(worldId, String(characterId));
+            await this.cashShopRepo.deleteGift(worldId, accountId, String(item.uniqueId), { txClient });
+            await this.cashShopRepo.queueTransfer(worldId, accountId, characterId, "take_out", item, txClient);
+            return CashShopResult.CASH_SHOP_RESULT_OK;
+        });
+        if (result === CashShopResult.CASH_SHOP_RESULT_OK) {
+            await this.settleTransfers(worldId);
         }
+        return result;
     }
 
     async putIn(worldId: number, accountId: number, characterId: number, item: CashItem): Promise<CashShopResult> {
         const serial = String(item.item?.uniqueId ?? 0);
-        try {
-            return await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
-                const items = await this.cashShopRepo.findItems(worldId, accountId, { txClient });
-                if (items.length >= LOCKER_CAPACITY) {
-                    return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
-                }
+        const result = await this.cashShopRepo.withCharacterLock(worldId, characterId, async (txClient) => {
+            const items = await this.cashShopRepo.findItems(worldId, accountId);
+            if (items.length >= LOCKER_CAPACITY) {
+                return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
+            }
 
-                const inventory = [...(await this.inventoryRepo.getAll(worldId, String(characterId), { txClient })).values()];
-                const kept = inventory.filter((model) => String(model.uniqueId) !== serial || model.slot < 0);
-                if (kept.length === inventory.length) {
-                    return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
-                }
+            const inventory = [...(await this.inventoryRepo.getAll(worldId, String(characterId), { txClient })).values()];
+            const kept = inventory.filter((model) => String(model.uniqueId) !== serial || model.slot < 0);
+            if (kept.length === inventory.length) {
+                return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
+            }
 
-                await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), kept, { txClient });
-                await this.cashShopRepo.insertItem(worldId, accountId, serial, CashItem.toJSON(item), { txClient });
-                return CashShopResult.CASH_SHOP_RESULT_OK;
-            });
-        } finally {
-            await this.inventoryRepo.invalidateCache(worldId, String(characterId));
+            await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), kept, { txClient });
+            await this.cashShopRepo.queueTransfer(worldId, characterId, accountId, "put_in", { accountId, serial, item: CashItem.toJSON(item) }, txClient);
+            return CashShopResult.CASH_SHOP_RESULT_OK;
+        });
+        await this.inventoryRepo.invalidateCache(worldId, String(characterId));
+        if (result === CashShopResult.CASH_SHOP_RESULT_OK) {
+            await this.settleTransfers(worldId);
         }
+        return result;
     }
 
     async addCash(worldId: number, accountId: number, nxCash: number, maplePoint: number) {
@@ -330,6 +390,12 @@ export class CashShopService {
         const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
             const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: 0 });
+            const serial = String(req.items[0]?.item?.uniqueId ?? 0);
+            const previous = await this.cashShopRepo.findTransferBySerial(txClient, req.accountId, serial);
+            if (previous != null) {
+                const detail = previous.detail as { recipientId: number };
+                return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: detail.recipientId };
+            }
             const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
             if (this.affordable(balance, delta) === false) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH);
@@ -342,20 +408,26 @@ export class CashShopService {
             if (entry.account_id === req.accountId) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
             }
-            const recipient = await this.characterRepo.get(req.worldId, entry.character_id, { txClient });
+            const recipient = await this.characterRepo.get(req.worldId, entry.character_id);
             if (recipient == null) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
             }
             if (req.gender !== 2 && recipient.gender !== req.gender) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_GENDER);
             }
-            const lockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id, { txClient });
+            const lockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id);
             if (lockerItems.length + req.items.length > LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
-            await this.grantGift(req.worldId, entry.account_id, req.items, req.message, { txClient });
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
+            await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, entry.account_id, "gift", {
+                accountId: entry.account_id,
+                items: req.items.map((item) => CashItem.toJSON(item)),
+                message: req.message,
+                recipientId: entry.character_id,
+                senderName: req.items[0]?.buyerName ?? "",
+            }, txClient, serial);
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
                 nxCash: balance.nxCash + delta.nxCash,
@@ -367,7 +439,7 @@ export class CashShopService {
             return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
         }
 
-        await this.notifyGift(req.worldId, reply.recipientId, req.items[0]?.buyerName ?? "");
+        await this.settleTransfers(req.worldId);
         return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
     }
 
@@ -377,6 +449,12 @@ export class CashShopService {
         const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
             const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: 0 });
+            const serial = String(item.item?.uniqueId ?? 0);
+            const previous = await this.cashShopRepo.findTransferBySerial(txClient, req.accountId, serial);
+            if (previous != null) {
+                const detail = previous.detail as { recipientId: number };
+                return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: detail.recipientId };
+            }
             const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
             if (this.affordable(balance, delta) === false) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH);
@@ -389,7 +467,7 @@ export class CashShopService {
             if (entry.account_id === req.accountId) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
             }
-            const partner = await this.characterRepo.get(req.worldId, entry.character_id, { txClient });
+            const partner = await this.characterRepo.get(req.worldId, entry.character_id);
             if (partner == null) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
             }
@@ -400,32 +478,37 @@ export class CashShopService {
             if (lockerItems.length >= LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL);
             }
-            const partnerLockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id, { txClient });
+            const partnerLockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id);
             if (partnerLockerItems.length >= LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
-            const serial = String(item.item?.uniqueId ?? 0);
             const partnerSerial = String(partnerItem.item?.uniqueId ?? 0);
             const itemId = item.item?.itemId ?? 0;
-            await this.grantGift(req.worldId, entry.account_id, [partnerItem], req.message, { txClient });
             await this.cashShopRepo.insertItem(req.worldId, req.accountId, serial, CashItem.toJSON(item), { txClient });
-            await this.cashShopRepo.insertRing(req.worldId, {
+            await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, entry.account_id, "gift", {
+                accountId: entry.account_id,
+                items: [CashItem.toJSON(partnerItem)],
+                message: req.message,
+                recipientId: entry.character_id,
+                senderName: req.characterName,
+            }, txClient, serial);
+            await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, req.characterId, "ring", {
                 serial,
                 partner_serial: partnerSerial,
                 character_id: req.characterId,
                 partner_id: entry.character_id,
                 partner_name: partner.name,
                 item_id: itemId,
-            }, { txClient });
-            await this.cashShopRepo.insertRing(req.worldId, {
+            }, txClient);
+            await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, entry.character_id, "ring", {
                 serial: partnerSerial,
                 partner_serial: serial,
                 character_id: entry.character_id,
                 partner_id: req.characterId,
                 partner_name: req.characterName,
                 item_id: itemId,
-            }, { txClient });
+            }, txClient);
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
@@ -438,7 +521,7 @@ export class CashShopService {
             return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
         }
 
-        await this.notifyGift(req.worldId, reply.partnerId, req.characterName);
+        await this.settleTransfers(req.worldId);
         return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
     }
 

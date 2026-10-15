@@ -18,17 +18,17 @@ import (
 	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/core/system"
 	"github.com/boyism80/fm/core/uniqueid"
+	"github.com/boyism80/fm/maple/wz"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
-	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 	"google.golang.org/grpc"
 )
 
 const (
-	logoutWaitTimeout   = domain.EnvelopeTimeout + time.Second
+	logoutWaitTimeout   = game.EnvelopeTimeout + time.Second
 	shutdownWaitTimeout = time.Minute
 )
 
@@ -88,9 +88,9 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.systems.Add[*wz.Resources](resources)
 	gs.systems.Add[*uniqueid.Generator](uniqueid.NewForChannel(uint32(config.WorldId), uint32(config.ChannelId)))
 
-	gs.listeners.Add[domain.CharacterListener](&CharacterListenerImpl{gs: gs})
-	gs.listeners.Add[domain.MapListener](NewGameMapListener(gs))
-	gs.listeners.Add[domain.MobListener](&MobListenerImpl{})
+	gs.listeners.Add[game.CharacterListener](&CharacterListenerImpl{gs: gs})
+	gs.listeners.Add[game.MapListener](NewGameMapListener(gs))
+	gs.listeners.Add[game.MobListener](&MobListenerImpl{})
 
 	// Systems start in the order they are added and stop in reverse: the actor system stops after every
 	// system that uses it, and the MQ consumers stop first so no event arrives after the systems it uses have stopped.
@@ -103,20 +103,20 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		return nil, err
 	}
 	gs.systems.Add[*rpc.InternalConnection](conn)
-	gs.systems.Add[domain.ActorFactory](g_actor.NewFactory(gs))
-	gs.systems.Add[*domain.InternalSystem](domain.NewInternalSystem(gs, conn))
-	gs.systems.Add[*domain.DispatchSystem](domain.NewDispatchSystem(gs))
-	maps := domain.NewMapSystem(gs, server, gs.listeners.Get[domain.MapListener](), gs.listeners.Get[domain.MobListener]())
-	gs.systems.Add[*domain.MapSystem](maps)
-	gs.systems.Add[*domain.SchedulerSystem](domain.NewSchedulerSystem(gs))
-	stateMachines := domain.NewStateMachineSystem(gs)
-	gs.systems.Add[*domain.StateMachineSystem](stateMachines)
-	gs.systems.Add[*domain.PartySystem](domain.NewPartySystem(gs))
-	gs.systems.Add[*domain.GuildSystem](domain.NewGuildSystem(gs))
-	gs.systems.Add[*domain.AllianceSystem](domain.NewAllianceSystem(gs))
-	gs.systems.Add[*domain.CarnivalSystem](domain.NewCarnivalSystem())
-	gs.systems.Add[*domain.ExpeditionSystem](domain.NewExpeditionSystem(gs))
-	gs.systems.Add[*domain.NoticeSystem](domain.NewNoticeSystem(server))
+	gs.systems.Add[game.ActorFactory](g_actor.NewFactory(gs))
+	gs.systems.Add[*game.InternalSystem](game.NewInternalSystem(gs, conn))
+	gs.systems.Add[*game.DispatchSystem](game.NewDispatchSystem(gs))
+	maps := game.NewMapSystem(gs, server, gs.listeners.Get[game.MapListener](), gs.listeners.Get[game.MobListener]())
+	gs.systems.Add[*game.MapSystem](maps)
+	gs.systems.Add[*game.SchedulerSystem](game.NewSchedulerSystem(gs))
+	stateMachines := game.NewStateMachineSystem(gs)
+	gs.systems.Add[*game.StateMachineSystem](stateMachines)
+	gs.systems.Add[*game.PartySystem](game.NewPartySystem(gs))
+	gs.systems.Add[*game.GuildSystem](game.NewGuildSystem(gs))
+	gs.systems.Add[*game.AllianceSystem](game.NewAllianceSystem(gs))
+	gs.systems.Add[*game.CarnivalSystem](game.NewCarnivalSystem())
+	gs.systems.Add[*game.ExpeditionSystem](game.NewExpeditionSystem(gs))
+	gs.systems.Add[*game.NoticeSystem](game.NewNoticeSystem(server))
 	gs.systems.Add[*mq.Consumers](mq.NewConsumers(actors, config.RabbitMQ, gs.mqQueues()))
 
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
@@ -228,7 +228,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	logout := character.MarkLoggedOut()
 
 	gs.disconnects.Add(1)
-	p := async.NewTask(nil, domain.SaveCharactersPromiseTimeout)
+	p := async.NewTask(nil, game.SaveCharactersPromiseTimeout)
 	p.OnError(func(err error) {
 		log.Printf("disconnect async: %v", err)
 	}).Finally(gs.disconnects.Done)
@@ -271,13 +271,13 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 
 // removeCharacter takes a logged-out character out of this channel on whichever map actor owns it at that moment,
 // and returns the save entry built there. It blocks, so it must not run on a map actor.
-func (gs *GameServer) removeCharacter(character *domain.Character, logout <-chan *internal.CharacterSaveEntry) *internal.CharacterSaveEntry {
+func (gs *GameServer) removeCharacter(character *game.Character, logout <-chan *internal.CharacterSaveEntry) *internal.CharacterSaveEntry {
 	charID := character.GetID()
-	gs.systems.Get[*domain.ExpeditionSystem]().LeaveChannel(character)
+	gs.systems.Get[*game.ExpeditionSystem]().LeaveChannel(character)
 	if sm := character.StateMachine(); sm != nil {
-		sm.RequestLeave(character, false, domain.StateMachineLeaveDisconnect)
+		sm.RequestLeave(character, false, game.StateMachineLeaveDisconnect)
 	}
-	dispatch := gs.systems.Get[*domain.DispatchSystem]()
+	dispatch := gs.systems.Get[*game.DispatchSystem]()
 	dispatch.Call(charID, func(ctx actor.Context) {
 		if m := character.GetMap(); m != nil {
 			_ = m.LogoutPlayer(ctx, charID)

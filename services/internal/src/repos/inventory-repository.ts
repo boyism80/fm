@@ -166,8 +166,6 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
                 }
             }
         }, options);
-        if (!options.txClient) {
-            await this.invalidateCache(worldId, groupKey);
-        }
+        await this.invalidateAfterWrite(worldId, groupKey, this.pool(worldId, groupKey), options);
     }
 }

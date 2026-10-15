@@ -229,11 +229,18 @@ export class MarriageService {
         });
     }
 
-    async setWeddingWishlist(worldId: number, marriageId: number, characterId: number, wishes: string[]): Promise<MarriageReply> {
+    async setWeddingWishlist(worldId: number, marriageId: number, characterId: number, wishes: string[], requestId: string): Promise<MarriageReply> {
         const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
             const found = await this.marriageRepo.find(client, marriageId);
             if (found == null || found.ticket_item_id === 0) {
                 return null;
+            }
+            const request = await this.marriageRepo.findRequest(client, requestId);
+            if (request != null) {
+                if (request.aborted || (found.groom_id !== characterId && found.bride_id !== characterId)) {
+                    return null;
+                }
+                return found;
             }
             if (found.groom_id === characterId && found.groom_wished === false) {
                 found.groom_wished = true;
@@ -245,6 +252,7 @@ export class MarriageService {
                 return null;
             }
             await this.marriageRepo.update(client, found);
+            await this.marriageRepo.insertRequest(client, requestId);
             return found;
         });
         if (row == null) {

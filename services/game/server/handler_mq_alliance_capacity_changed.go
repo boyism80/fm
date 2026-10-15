@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type allianceMqCapacityChanged struct{ gs *GameServer }
@@ -32,7 +32,7 @@ func (h *allianceMqCapacityChanged) Handle(_ actor.Context, raw json.RawMessage)
 		log.Printf("alliance consumer: capacity_changed alliance_id=%d missing alliance_pb", evt.AllianceID)
 		return nil
 	}
-	gs.systems.Get[*domain.AllianceSystem]().Update(alliancePb)
-	gs.systems.Get[*domain.AllianceSystem]().BroadcastInfoUpdate(alliancePb)
+	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	gs.systems.Get[*game.AllianceSystem]().BroadcastInfoUpdate(alliancePb)
 	return nil
 }

@@ -7,12 +7,12 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/crypt"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type GameClient struct {
 	core.BaseClient
-	character       *domain.Character
+	character       *game.Character
 	changingChannel bool
 	loggedOut       bool
 	sessionLost     bool
@@ -32,7 +32,7 @@ func NewGameClient(conn net.Conn, clientID int) (*GameClient, error) {
 }
 
 // SetCharacter fails once the client has logged out, so a login that finishes after the disconnect never enters the game.
-func (c *GameClient) SetCharacter(character *domain.Character) bool {
+func (c *GameClient) SetCharacter(character *game.Character) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.loggedOut {
@@ -43,7 +43,7 @@ func (c *GameClient) SetCharacter(character *domain.Character) bool {
 }
 
 // Logout takes the character off the client; later packets and the disconnect find no character.
-func (c *GameClient) Logout() *domain.Character {
+func (c *GameClient) Logout() *game.Character {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.loggedOut = true
@@ -52,7 +52,7 @@ func (c *GameClient) Logout() *domain.Character {
 	return character
 }
 
-func (c *GameClient) GetCharacter() *domain.Character {
+func (c *GameClient) GetCharacter() *game.Character {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.character

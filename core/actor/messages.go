@@ -5,7 +5,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/client"
-	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/types"
 )
 

@@ -8,8 +8,8 @@ import (
 	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/stream"
 )
 
@@ -40,11 +40,11 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 	switch req.Action {
 	case internal.MessengerAction_MESSENGER_ACTION_ENTER, internal.MessengerAction_MESSENGER_ACTION_LEAVE:
 	case internal.MessengerAction_MESSENGER_ACTION_INVITE, internal.MessengerAction_MESSENGER_ACTION_DECLINE:
-		if !domain.ClientText(req.Text).Valid(13) {
+		if !game.ClientText(req.Text).Valid(13) {
 			return nil
 		}
 	case internal.MessengerAction_MESSENGER_ACTION_CHAT:
-		if !domain.ClientText(req.Text).Valid(200) {
+		if !game.ClientText(req.Text).Valid(200) {
 			return nil
 		}
 	default:

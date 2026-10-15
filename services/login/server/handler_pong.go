@@ -10,7 +10,7 @@ import (
 	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	loginclient "github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 )
 
 type Pong struct {
@@ -24,7 +24,7 @@ func (Pong) New(ls *LoginServer) *Pong {
 }
 
 func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
-	c := ctx.Client.(*loginclient.LoginClient)
+	c := ctx.Client.(*login.LoginClient)
 	c.MarkPongReceived()
 	accountId := c.GetAccountId()
 	worldId := c.GetWorldId()

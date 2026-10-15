@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type CooldownCheckTimer struct{}
@@ -22,7 +22,7 @@ func (t *CooldownCheckTimer) GetInitialDelay() time.Duration {
 	return 1 * time.Second
 }
 
-func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	_ = ctx
 	if mapData.GetPlayerCount() == 0 {
 		return nil
@@ -30,11 +30,11 @@ func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *domain.Map) erro
 	now := clock.Now()
 	players := mapData.GetAllPlayers()
 	for _, obj := range players {
-		ch, ok := obj.(*domain.Character)
+		ch, ok := obj.(*game.Character)
 		if !ok {
 			continue
 		}
-		ch.Skills.ForEach(func(_ uint32, entry *domain.SkillEntry) {
+		ch.Skills.ForEach(func(_ uint32, entry *game.SkillEntry) {
 			if entry.CooldownEnd == nil {
 				return
 			}

@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type allianceMqDisbanded struct{ gs *GameServer }
@@ -37,10 +37,10 @@ func (h *allianceMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) err
 	}
 	guildIDs := extra.GuildIDs
 	if len(guildIDs) == 0 {
-		guildIDs = gs.systems.Get[*domain.AllianceSystem]().GuildIDs(evt.AllianceID)
+		guildIDs = gs.systems.Get[*game.AllianceSystem]().GuildIDs(evt.AllianceID)
 	}
-	gs.systems.Get[*domain.AllianceSystem]().UpdateAsync(ctx, evt).Do(func() error {
-		gs.systems.Get[*domain.AllianceSystem]().DisbandAsync(ctx, evt.AllianceID, guildIDs)
+	gs.systems.Get[*game.AllianceSystem]().UpdateAsync(ctx, evt).Do(func() error {
+		gs.systems.Get[*game.AllianceSystem]().DisbandAsync(ctx, evt.AllianceID, guildIDs)
 		return nil
 	})
 	return nil

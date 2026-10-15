@@ -26,52 +26,22 @@ This server implementation uses a custom IO/Logic thread pool architecture inste
 
 ```
 fm/
-├── core/           # Core game logic and entity management
-├── entity/         # Game entities (characters, mobs, npcs, items)
-├── protocol/       # Network protocol definitions and packet structures
-├── server/         # Server implementations (login, game)
-├── common/         # Shared utilities and infrastructure
-├── login/          # Login server implementation
-├── game/           # Game server implementation
-└── legacy/         # Original actor-based implementation
+├── cmd/            # Login, game, cash, and bot entry points
+├── services/
+│   ├── login/      # Login service and its server
+│   ├── game/       # Game state and behavior, actor, client, and server
+│   ├── cash/       # Cash shop state and server
+│   └── internal/   # Internal TypeScript service
+├── bot/            # Integration client, actors, and Lua suites
+├── maple/          # Shared constants, WZ data, and item conversion
+├── protocol/       # Wire requests, responses, DTOs, and protobuf
+├── core/           # Shared server infrastructure
+└── common/         # Configuration and logging
 ```
 
 ## Import Cycle Prevention Rules
 
-**CRITICAL**: To prevent import cycles, the following rules must be strictly followed:
-
-### Package Dependency Rules
-
-1. **core package**:
-   - ✅ Can import: `common`, `protocol`
-   - ❌ **NEVER** import: `entity`, `server`
-
-2. **entity package**:
-   - ✅ Can import: `common`, `core`
-   - ❌ **NEVER** import: `protocol`, `server`
-
-3. **protocol package**:
-   - ✅ Can import: `common`
-   - ❌ **NEVER** import: `core`, `entity`, `server`
-
-4. **server package**:
-   - ✅ Can import: `common`, `core`, `entity`, `protocol`
-   - ✅ Can implement interfaces defined in other packages
-
-### Interface Design Pattern
-
-- **Listener interfaces** are defined in `entity` package
-- **Listener implementations** are implemented in `server` package
-- This prevents circular dependencies while allowing proper separation of concerns
-
-### Violation Consequences
-
-Breaking these rules will result in:
-- Import cycle compilation errors
-- Circular dependency issues
-- Build failures
-
-**Always verify package imports before committing changes!**
+`services/login`, `services/game`, and `services/cash` do not import each other. Shared game data belongs to `maple`, and wire formats belong to `protocol`. Bot uses the wire protocol and shared data without importing a server package. Service-specific actors, clients, and packet handlers stay under their owning service. Executables in `cmd` depend on service server packages, never the reverse.
 
 ## Configuration
 
@@ -214,4 +184,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 2. Add comprehensive tests
 3. Update documentation
 4. Ensure builds pass on Windows
-5. Follow Go coding conventions 
+5. Follow Go coding conventions

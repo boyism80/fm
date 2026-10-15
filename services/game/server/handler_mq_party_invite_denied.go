@@ -5,7 +5,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type partyMqPartyInviteDenied struct{ gs *GameServer }
@@ -33,7 +33,7 @@ func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, raw json.RawMessage) 
 	if payload.InviterCharacterID == 0 {
 		return nil
 	}
-	h.gs.systems.Get[*domain.DispatchSystem]().CallCharacter(payload.InviterCharacterID, func(_ actor.Context, ch *domain.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(payload.InviterCharacterID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}

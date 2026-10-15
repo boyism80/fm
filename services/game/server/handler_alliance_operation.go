@@ -10,12 +10,12 @@ import (
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/rpc"
+	gameconst "github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	gameconst "github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type AllianceOperation struct {
@@ -67,7 +67,7 @@ func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.Allianc
 	}
 }
 
-func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *domain.Character, req *request.AllianceOperation) error {
+func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
 	targetGuildID := req.TargetGuildID
 	if targetGuildID == 0 {
 		return nil
@@ -79,7 +79,7 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *domain.Char
 	if targetGuildID == guildID {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -119,7 +119,7 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *domain.Char
 	return nil
 }
 
-func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *domain.Character, req *request.AllianceOperation) error {
+func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
 	newLeaderID := req.NewLeaderID
 	if newLeaderID == 0 {
 		return nil
@@ -128,7 +128,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *doma
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -140,7 +140,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *doma
 	if !inAlliance {
 		return nil
 	}
-	a := h.gs.systems.Get[*domain.AllianceSystem]().Get(allianceID)
+	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
 	if a == nil || a.LeaderCharacterID != charID {
 		return nil
 	}
@@ -168,12 +168,12 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *doma
 	return nil
 }
 
-func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *domain.Character, req *request.AllianceOperation) error {
+func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
 	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -207,12 +207,12 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *doma
 	return nil
 }
 
-func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *domain.Character, req *request.AllianceOperation) error {
+func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
 	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -224,7 +224,7 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 	if !inAlliance {
 		return nil
 	}
-	a := h.gs.systems.Get[*domain.AllianceSystem]().Get(allianceID)
+	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
 	if a == nil || a.LeaderCharacterID != charID {
 		return nil
 	}
@@ -257,7 +257,7 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 	return nil
 }
 
-func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *domain.Character, req *request.AllianceOperation) error {
+func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
 	targetID := req.TargetCharacterID
 	if targetID == 0 {
 		return nil
@@ -266,7 +266,7 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -302,7 +302,7 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 	return nil
 }
 
-func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *domain.Character, req *request.AllianceOperation) error {
+func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
 	if h.gs == nil {
 		return nil
 	}
@@ -310,7 +310,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *domain.Cha
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -322,7 +322,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *domain.Cha
 	if !inAlliance {
 		return nil
 	}
-	a := h.gs.systems.Get[*domain.AllianceSystem]().Get(allianceID)
+	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
 	if a == nil || !a.CanSendInvite(charID) {
 		return nil
 	}
@@ -330,12 +330,12 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *domain.Cha
 	if guildName == "" {
 		return nil
 	}
-	targetGuildID, nameFound := h.gs.systems.Get[*domain.GuildSystem]().NameToGuildID(guildName)
+	targetGuildID, nameFound := h.gs.systems.Get[*game.GuildSystem]().NameToGuildID(guildName)
 	if !nameFound {
 		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
 		return nil
 	}
-	targetG := h.gs.systems.Get[*domain.GuildSystem]().Get(targetGuildID)
+	targetG := h.gs.systems.Get[*game.GuildSystem]().Get(targetGuildID)
 	if targetG == nil {
 		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
 		return nil
@@ -345,11 +345,11 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *domain.Cha
 		return nil
 	}
 	targetLeaderID := targetG.LeaderCharacterID
-	if !h.gs.systems.Get[*domain.DispatchSystem]().Exists(targetLeaderID) {
+	if !h.gs.systems.Get[*game.DispatchSystem]().Exists(targetLeaderID) {
 		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteTargetNotOnlineMessage)
 		return nil
 	}
-	h.gs.systems.Get[*domain.DispatchSystem]().SendToCharacter(nil, targetLeaderID, &domain.InviteToAlliance{
+	h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, targetLeaderID, &game.InviteToAlliance{
 		CharacterID:        targetLeaderID,
 		TargetGuildID:      targetGuildID,
 		AllianceID:         allianceID,
@@ -362,12 +362,12 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *domain.Cha
 	return nil
 }
 
-func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *domain.Character) error {
+func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *game.Character) error {
 	guildID, inGuild := ch.Guild.ID()
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -378,7 +378,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *doma
 	if _, inAlliance := g.GetAllianceID(); inAlliance {
 		return nil
 	}
-	allianceID, expiresAt, hasInvite := h.gs.systems.Get[*domain.GuildSystem]().PendingAllianceInvite(guildID)
+	allianceID, expiresAt, hasInvite := h.gs.systems.Get[*game.GuildSystem]().PendingAllianceInvite(guildID)
 	if !hasInvite || !clock.Now().Before(expiresAt) {
 		return nil
 	}
@@ -399,13 +399,13 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *doma
 			}
 			return nil
 		}
-		h.gs.systems.Get[*domain.GuildSystem]().ClearAllianceInvite(guildID, allianceID)
+		h.gs.systems.Get[*game.GuildSystem]().ClearAllianceInvite(guildID, allianceID)
 		alliancePb := reply.GetAlliance()
 		if alliancePb == nil {
 			log.Printf("AllianceOperation(accept invite): ok but missing alliance character=%d", charID)
 			return nil
 		}
-		h.gs.systems.Get[*domain.AllianceSystem]().Update(alliancePb)
+		h.gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
 		return nil
 	})
 	promise.OnError(func(err error) {
@@ -414,7 +414,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *doma
 	return nil
 }
 
-func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *domain.Character) error {
+func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *game.Character) error {
 	if h.gs == nil {
 		return nil
 	}
@@ -422,7 +422,7 @@ func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *domain
 	if !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*domain.GuildSystem]().Get(guildID)
+	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 	if g == nil {
 		return nil
 	}
@@ -433,12 +433,12 @@ func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *domain
 	if _, inAlliance := g.GetAllianceID(); inAlliance {
 		return nil
 	}
-	allianceID, _, hasInvite := h.gs.systems.Get[*domain.GuildSystem]().PendingAllianceInvite(guildID)
+	allianceID, _, hasInvite := h.gs.systems.Get[*game.GuildSystem]().PendingAllianceInvite(guildID)
 	if !hasInvite {
 		return nil
 	}
 	guildName := g.Name
-	h.gs.systems.Get[*domain.GuildSystem]().ClearAllianceInvite(guildID, allianceID)
+	h.gs.systems.Get[*game.GuildSystem]().ClearAllianceInvite(guildID, allianceID)
 	h.notifyDenied(allianceID, guildName)
 	return nil
 }
@@ -447,15 +447,15 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 	if allianceID == 0 || guildName == "" {
 		return
 	}
-	a := h.gs.systems.Get[*domain.AllianceSystem]().Get(allianceID)
+	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
 	if a == nil || a.LeaderCharacterID == 0 {
 		return
 	}
 	leaderID := a.LeaderCharacterID
-	if !h.gs.systems.Get[*domain.DispatchSystem]().Exists(leaderID) {
+	if !h.gs.systems.Get[*game.DispatchSystem]().Exists(leaderID) {
 		return
 	}
-	h.gs.systems.Get[*domain.DispatchSystem]().CallCharacter(leaderID, func(_ actor.Context, ch *domain.Character) {
+	h.gs.systems.Get[*game.DispatchSystem]().CallCharacter(leaderID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return
 		}
@@ -463,7 +463,7 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 	})
 }
 
-func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *domain.Character) error {
+func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *game.Character) error {
 	worldID := h.gs.config.WorldId
 	charID := ch.GetID()
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
@@ -481,11 +481,11 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *domain.Char
 		}
 		if reply.GetDisbanded() {
 			allianceID := reply.GetAllianceId()
-			guildIDs := h.gs.systems.Get[*domain.AllianceSystem]().GuildIDs(allianceID)
+			guildIDs := h.gs.systems.Get[*game.AllianceSystem]().GuildIDs(allianceID)
 			if len(guildIDs) == 0 && reply.GetRemovedGuildId() != 0 {
 				guildIDs = []uint32{reply.GetRemovedGuildId()}
 			}
-			h.gs.systems.Get[*domain.AllianceSystem]().DisbandAsync(ctx.ActorContext, allianceID, guildIDs)
+			h.gs.systems.Get[*game.AllianceSystem]().DisbandAsync(ctx.ActorContext, allianceID, guildIDs)
 			return nil
 		}
 		alliancePb := reply.GetAlliance()
@@ -495,15 +495,15 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *domain.Char
 		removedGuildID := reply.GetRemovedGuildId()
 		actorCtx := ctx.ActorContext
 		if removedGuildID == 0 {
-			h.gs.systems.Get[*domain.AllianceSystem]().BroadcastGuildLeft(alliancePb, nil, false)
+			h.gs.systems.Get[*game.AllianceSystem]().BroadcastGuildLeft(alliancePb, nil, false)
 			return nil
 		}
-		h.gs.systems.Get[*domain.GuildSystem]().RefreshAsync(actorCtx, []uint32{removedGuildID}).Do(func() error {
+		h.gs.systems.Get[*game.GuildSystem]().RefreshAsync(actorCtx, []uint32{removedGuildID}).Do(func() error {
 			var removedGuildPb *internal.Guild
-			if g := h.gs.systems.Get[*domain.GuildSystem]().Get(removedGuildID); g != nil {
+			if g := h.gs.systems.Get[*game.GuildSystem]().Get(removedGuildID); g != nil {
 				removedGuildPb = g.BuildRPC()
 			}
-			h.gs.systems.Get[*domain.AllianceSystem]().BroadcastGuildLeft(alliancePb, removedGuildPb, false)
+			h.gs.systems.Get[*game.AllianceSystem]().BroadcastGuildLeft(alliancePb, removedGuildPb, false)
 			return nil
 		})
 		return nil

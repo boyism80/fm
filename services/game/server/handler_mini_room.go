@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type MiniRoom struct {
@@ -50,7 +50,7 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 		case pconst.MiniRoomTypeOmok, pconst.MiniRoomTypeMatchCard:
 			err = ch.CreateMiniGame(req.Type, req.Title, req.Password, req.Piece)
 		default:
-			err = domain.ErrMiniRoomInvalid
+			err = game.ErrMiniRoomInvalid
 		}
 	case pconst.MiniRoomVisit:
 		err = ch.VisitMiniRoom(req.SN, req.Password)
@@ -64,8 +64,8 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 		err = h.handleRoom(ctx, ch, req)
 	}
 
-	var enterErr *domain.MiniRoomEnterError
-	var buyErr *domain.MiniRoomBuyError
+	var enterErr *game.MiniRoomEnterError
+	var buyErr *game.MiniRoomBuyError
 	switch {
 	case errors.As(err, &enterErr):
 		ch.Listener.OnMiniRoomEnterFailed(ch, enterErr.Code)
@@ -77,9 +77,9 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 	return nil
 }
 
-func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *domain.Character, req *request.MiniRoom) error {
+func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *game.Character, req *request.MiniRoom) error {
 	if ch.MiniRoom == nil {
-		return domain.ErrMiniRoomInvalid
+		return game.ErrMiniRoomInvalid
 	}
 
 	if req.Mode == pconst.MiniRoomChat {
@@ -87,7 +87,7 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *domain.Character, req
 	}
 
 	switch room := ch.MiniRoom.(type) {
-	case *domain.Trade:
+	case *game.Trade:
 		switch req.Mode {
 		case pconst.MiniRoomInvite:
 			return room.Invite(ch, req.TargetID)
@@ -98,7 +98,7 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *domain.Character, req
 		case pconst.MiniRoomTradeConfirm:
 			return room.Confirm(ch)
 		}
-	case *domain.EntrustedShop:
+	case *game.EntrustedShop:
 		switch req.Mode {
 		case pconst.MiniRoomOpen:
 			return room.Open(ctx.ActorContext, ch)
@@ -117,7 +117,7 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *domain.Character, req
 		case pconst.MiniRoomWithdrawMeso:
 			return room.WithdrawMeso(ctx.ActorContext, ch)
 		}
-	case *domain.PersonalShop:
+	case *game.PersonalShop:
 		switch req.Mode {
 		case pconst.MiniRoomOpen:
 			return room.Open(ctx.ActorContext, ch)
@@ -134,7 +134,7 @@ func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *domain.Character, req
 		case pconst.MiniRoomBlacklist:
 			return room.Ban(ch, req.Names)
 		}
-	case *domain.MiniGame:
+	case *game.MiniGame:
 		switch req.Mode {
 		case pconst.MiniRoomReady:
 			return room.Ready(ch, true)

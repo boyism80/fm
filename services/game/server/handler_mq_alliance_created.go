@@ -7,7 +7,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -56,7 +56,7 @@ func (h *allianceMqCreated) Handle(_ actor.Context, raw json.RawMessage) error {
 		log.Printf("alliance consumer: created alliance_id=%d missing alliance_pb", evt.AllianceID)
 		return nil
 	}
-	gs.systems.Get[*domain.AllianceSystem]().Update(alliancePb)
-	gs.systems.Get[*domain.AllianceSystem]().BroadcastCreate(alliancePb)
+	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	gs.systems.Get[*game.AllianceSystem]().BroadcastCreate(alliancePb)
 	return nil
 }

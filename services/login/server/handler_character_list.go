@@ -12,7 +12,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
 
@@ -30,7 +30,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	log.Printf("Character list packet received from %s - Server: %d, Channel: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.Server, req.Channel)
 
-	loginClient := ctx.Client.(*client.LoginClient)
+	loginClient := ctx.Client.(*login.LoginClient)
 	worldId := uint32(req.Server)
 	loginClient.SetWorldId(worldId)
 	loginClient.SetChannelId(req.Channel)

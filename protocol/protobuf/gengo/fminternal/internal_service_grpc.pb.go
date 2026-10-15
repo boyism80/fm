@@ -44,6 +44,7 @@ const (
 	Internal_CheckParcelArrivals_FullMethodName            = "/fm.internal.Internal/CheckParcelArrivals"
 	Internal_FindEntrustedShop_FullMethodName              = "/fm.internal.Internal/FindEntrustedShop"
 	Internal_OpenShop_FullMethodName                       = "/fm.internal.Internal/OpenShop"
+	Internal_AbortOpenShop_FullMethodName                  = "/fm.internal.Internal/AbortOpenShop"
 	Internal_SaveShop_FullMethodName                       = "/fm.internal.Internal/SaveShop"
 	Internal_CloseChannelShops_FullMethodName              = "/fm.internal.Internal/CloseChannelShops"
 	Internal_SearchShops_FullMethodName                    = "/fm.internal.Internal/SearchShops"
@@ -169,6 +170,7 @@ type InternalClient interface {
 	CheckParcelArrivals(ctx context.Context, in *CheckParcelArrivalsRequest, opts ...grpc.CallOption) (*CheckParcelArrivalsReply, error)
 	FindEntrustedShop(ctx context.Context, in *FindEntrustedShopRequest, opts ...grpc.CallOption) (*FindEntrustedShopReply, error)
 	OpenShop(ctx context.Context, in *OpenShopRequest, opts ...grpc.CallOption) (*OpenShopReply, error)
+	AbortOpenShop(ctx context.Context, in *AbortOpenShopRequest, opts ...grpc.CallOption) (*AbortOpenShopReply, error)
 	SaveShop(ctx context.Context, in *SaveShopRequest, opts ...grpc.CallOption) (*SaveShopReply, error)
 	CloseChannelShops(ctx context.Context, in *CloseChannelShopsRequest, opts ...grpc.CallOption) (*CloseChannelShopsReply, error)
 	SearchShops(ctx context.Context, in *SearchShopsRequest, opts ...grpc.CallOption) (*SearchShopsReply, error)
@@ -517,6 +519,16 @@ func (c *internalClient) OpenShop(ctx context.Context, in *OpenShopRequest, opts
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(OpenShopReply)
 	err := c.cc.Invoke(ctx, Internal_OpenShop_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) AbortOpenShop(ctx context.Context, in *AbortOpenShopRequest, opts ...grpc.CallOption) (*AbortOpenShopReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AbortOpenShopReply)
+	err := c.cc.Invoke(ctx, Internal_AbortOpenShop_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1492,6 +1504,7 @@ type InternalServer interface {
 	CheckParcelArrivals(context.Context, *CheckParcelArrivalsRequest) (*CheckParcelArrivalsReply, error)
 	FindEntrustedShop(context.Context, *FindEntrustedShopRequest) (*FindEntrustedShopReply, error)
 	OpenShop(context.Context, *OpenShopRequest) (*OpenShopReply, error)
+	AbortOpenShop(context.Context, *AbortOpenShopRequest) (*AbortOpenShopReply, error)
 	SaveShop(context.Context, *SaveShopRequest) (*SaveShopReply, error)
 	CloseChannelShops(context.Context, *CloseChannelShopsRequest) (*CloseChannelShopsReply, error)
 	SearchShops(context.Context, *SearchShopsRequest) (*SearchShopsReply, error)
@@ -1670,6 +1683,9 @@ func (UnimplementedInternalServer) FindEntrustedShop(context.Context, *FindEntru
 }
 func (UnimplementedInternalServer) OpenShop(context.Context, *OpenShopRequest) (*OpenShopReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OpenShop not implemented")
+}
+func (UnimplementedInternalServer) AbortOpenShop(context.Context, *AbortOpenShopRequest) (*AbortOpenShopReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AbortOpenShop not implemented")
 }
 func (UnimplementedInternalServer) SaveShop(context.Context, *SaveShopRequest) (*SaveShopReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveShop not implemented")
@@ -2420,6 +2436,24 @@ func _Internal_OpenShop_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).OpenShop(ctx, req.(*OpenShopRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_AbortOpenShop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AbortOpenShopRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AbortOpenShop(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AbortOpenShop_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AbortOpenShop(ctx, req.(*AbortOpenShopRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4222,6 +4256,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OpenShop",
 			Handler:    _Internal_OpenShop_Handler,
+		},
+		{
+			MethodName: "AbortOpenShop",
+			Handler:    _Internal_AbortOpenShop_Handler,
 		},
 		{
 			MethodName: "SaveShop",

@@ -8,11 +8,11 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -112,7 +112,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	return nil
 }
 
-func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *domain.Map, mob *domain.Mob, controller *domain.Character, skill *domain.MobSkill) {
+func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *game.Map, mob *game.Mob, controller *game.Character, skill *game.MobSkill) {
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return

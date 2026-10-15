@@ -111,7 +111,7 @@ export class MarriageGrpcController {
     async setWeddingWishlist(call: GrpcCall<SetWeddingWishlistRequest>, callback: GrpcCallback<MarriageReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.setWeddingWishlist(req.worldId, req.marriageId, req.characterId, req.wishes ?? []));
+            callback(null, await this.marriageService.setWeddingWishlist(req.worldId, req.marriageId, req.characterId, req.wishes ?? [], req.requestId));
         } catch (err) {
             this.grpcError(err, callback);
         }

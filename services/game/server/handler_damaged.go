@@ -6,8 +6,8 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type Damaged struct {
@@ -33,7 +33,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 		return fmt.Errorf("character not found")
 	}
 
-	character.TakeHit(ctx.ActorContext, domain.Hit{
+	character.TakeHit(ctx.ActorContext, game.Hit{
 		Type:       req.Type,
 		Damage:     req.Damage,
 		MobOID:     req.OID,

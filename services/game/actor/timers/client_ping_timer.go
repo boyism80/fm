@@ -7,8 +7,8 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/game"
 	gameclient "github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 	"github.com/boyism80/fm/types"
 )
 
@@ -26,7 +26,7 @@ func (t *ClientPingTimer) GetInitialDelay() time.Duration {
 	return 1 * time.Second
 }
 
-func (t *ClientPingTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *ClientPingTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	_ = ctx
 	if mapData.GetPlayerCount() == 0 {
 		return nil
@@ -34,7 +34,7 @@ func (t *ClientPingTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
 
 	now := clock.Now()
 	for _, obj := range mapData.GetAllPlayers() {
-		ch, ok := obj.(*domain.Character)
+		ch, ok := obj.(*game.Character)
 		if !ok || ch == nil || ch.Sendable == nil {
 			continue
 		}

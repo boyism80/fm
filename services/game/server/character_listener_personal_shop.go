@@ -2,11 +2,11 @@ package server
 
 import (
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/types"
 )
 
-func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *domain.Character, ps *domain.PersonalShop) {
+func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *game.Character, ps *game.PersonalShop) {
 	slot, _ := ps.SlotOf(ch)
 	enter := &response.PersonalShopEnter{
 		MySlot:   slot,
@@ -24,11 +24,11 @@ func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *domain.Character, ps *
 	ch.Send(enter, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPersonalShopItems(ch *domain.Character, ps *domain.PersonalShop) {
+func (l *CharacterListenerImpl) OnPersonalShopItems(ch *game.Character, ps *game.PersonalShop) {
 	ch.Send(&response.PersonalShopItems{Items: l.miniRoomItems(ps.Items)}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomSold(ch *domain.Character, index uint8, bundles uint16, buyer string) {
+func (l *CharacterListenerImpl) OnMiniRoomSold(ch *game.Character, index uint8, bundles uint16, buyer string) {
 	ch.Send(&response.MiniRoomSold{
 		Index:   index,
 		Bundles: bundles,
@@ -36,16 +36,16 @@ func (l *CharacterListenerImpl) OnMiniRoomSold(ch *domain.Character, index uint8
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomItemRemoved(ch *domain.Character, count uint8, index uint16) {
+func (l *CharacterListenerImpl) OnMiniRoomItemRemoved(ch *game.Character, count uint8, index uint16) {
 	ch.Send(&response.MiniRoomItemRemoved{
 		Count: count,
 		Index: index,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMiniRoomBalloon(ch *domain.Character, balloon *response.MiniRoomBalloon) {
+func (l *CharacterListenerImpl) OnMiniRoomBalloon(ch *game.Character, balloon *response.MiniRoomBalloon) {
 	ch.Broadcast(&response.UserMiniRoomBalloon{
 		CharacterID: ch.GetID(),
 		Balloon:     balloon,
-	}, &domain.ObjectBroadcastOption{WithMe: true})
+	}, &game.ObjectBroadcastOption{WithMe: true})
 }

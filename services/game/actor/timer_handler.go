@@ -4,14 +4,14 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type TimerHandler interface {
 	GetName() string
 	GetInterval() time.Duration
 	GetInitialDelay() time.Duration
-	Handle(ctx actor.Context, mapData *domain.Map) error
+	Handle(ctx actor.Context, mapData *game.Map) error
 }
 
 type TimerRegistry struct {

@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type FamilyPrecept struct {
@@ -21,7 +21,7 @@ func (h *FamilyPrecept) Handle(ctx *core.ClientContext, req *request.FamilyPrece
 		return nil
 	}
 	ch := gameClient.GetCharacter()
-	if ch == nil || (req.Precept != "" && !domain.ClientText(req.Precept).Valid(200)) {
+	if ch == nil || (req.Precept != "" && !game.ClientText(req.Precept).Valid(200)) {
 		return nil
 	}
 

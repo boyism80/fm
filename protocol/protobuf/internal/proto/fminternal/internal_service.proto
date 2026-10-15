@@ -31,6 +31,7 @@ service Internal {
   rpc CheckParcelArrivals (CheckParcelArrivalsRequest) returns (CheckParcelArrivalsReply);
   rpc FindEntrustedShop (FindEntrustedShopRequest) returns (FindEntrustedShopReply);
   rpc OpenShop (OpenShopRequest) returns (OpenShopReply);
+  rpc AbortOpenShop (AbortOpenShopRequest) returns (AbortOpenShopReply);
   rpc SaveShop (SaveShopRequest) returns (SaveShopReply);
   rpc CloseChannelShops (CloseChannelShopsRequest) returns (CloseChannelShopsReply);
   rpc SearchShops (SearchShopsRequest) returns (SearchShopsReply);
@@ -441,6 +442,7 @@ message SetWeddingWishlistRequest {
   uint32 marriage_id = 2;
   uint32 character_id = 3;
   repeated string wishes = 4;
+  uint64 request_id = 5 [jstype = JS_STRING];
 }
 
 message InviteWeddingGuestRequest {
@@ -753,6 +755,8 @@ enum UnsettledType {
   UNSETTLED_TYPE_WEDDING_PROPOSAL = 12;
   UNSETTLED_TYPE_WEDDING_RESERVE = 13;
   UNSETTLED_TYPE_FAMILY_MOVE = 14;
+  UNSETTLED_TYPE_WEDDING_WISHLIST = 15;
+  UNSETTLED_TYPE_SHOP_OPEN = 16;
 }
 
 message UnsettledRequest {
@@ -1006,11 +1010,23 @@ message FindEntrustedShopReply {
 
 message OpenShopRequest {
   Shop shop = 1;
+  uint64 request_id = 2 [jstype = JS_STRING];
 }
 
 message OpenShopReply {
   uint32 shop_id = 1;
   Shop existing = 2;
+  bool aborted = 3;
+}
+
+message AbortOpenShopRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint64 request_id = 3 [jstype = JS_STRING];
+}
+
+message AbortOpenShopReply {
+  bool aborted = 1;
 }
 
 message SaveShopRequest {

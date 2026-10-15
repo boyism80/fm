@@ -28,6 +28,7 @@ import type { GuildService } from "./services/guild-service";
 import type { GuildBulletinBoardService } from "./services/guild-bulletin-board-service";
 import type { AllianceService } from "./services/alliance-service";
 import type { FamilyService } from "./services/family-service";
+import type { CashShopService } from "./services/cash-shop-service";
 type ServerContainerCradle = {
     catalogController: CatalogGrpcController;
     authController: AuthGrpcController;
@@ -45,6 +46,7 @@ type ServerContainerCradle = {
     guildBulletinBoardService: GuildBulletinBoardService;
     allianceService: AllianceService;
     familyService: FamilyService;
+    cashShopService: CashShopService;
     grpcError: typeof grpcError;
 };
 
@@ -114,6 +116,25 @@ async function main() {
     await wzService.preload();
     await rabbitmqService.start();
 
+    const cashShopService = container.resolve("cashShopService");
+    let settlingCashTransfers = false;
+    const settleCashTransfers = async () => {
+        if (settlingCashTransfers) {
+            return;
+        }
+        settlingCashTransfers = true;
+        try {
+            await cashShopService.settleTransfers(internalConfig.app.world_id);
+        } catch (err) {
+            console.error("[cash-shop] transfer scan failed", err);
+        } finally {
+            settlingCashTransfers = false;
+        }
+    };
+    const cashTransferTimer = setInterval(settleCashTransfers, 15_000);
+    cashTransferTimer.unref();
+    void settleCashTransfers();
+
     const server = new grpc.Server();
 
     container.register({
@@ -147,7 +168,9 @@ async function main() {
                 if (typeof method !== "function") {
                     throw new Error(`gRPC method not found: ${route.resolverName}.${route.methodName}`);
                 }
-                await method.call(controller, call, callback);
+                await internalContext.withDatabaseOperation(route.grpcMethod, "", async () => {
+                    await method.call(controller, call, callback);
+                });
             } finally {
                 await scope.dispose();
             }
@@ -168,6 +191,7 @@ async function main() {
     });
 
     async function shutdown() {
+        clearInterval(cashTransferTimer);
         server.tryShutdown(async () => {
             await rabbitmqService.close().catch(() => {});
             await internalContext.close().catch(() => {});

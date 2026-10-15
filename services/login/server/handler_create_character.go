@@ -10,7 +10,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
 
@@ -28,7 +28,7 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 	log.Printf("Create character packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	loginClient := ctx.Client.(*client.LoginClient)
+	loginClient := ctx.Client.(*login.LoginClient)
 	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
 		createResp := &response.CreateCharacter{Success: false}

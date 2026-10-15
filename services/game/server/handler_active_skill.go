@@ -7,8 +7,8 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -48,7 +48,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	return nil
 }
 
-func (h *ActiveSkill) skillParams(L *lua.LState, mapInstance *domain.Map, req *request.ActiveSkill) lua.LValue {
+func (h *ActiveSkill) skillParams(L *lua.LState, mapInstance *game.Map, req *request.ActiveSkill) lua.LValue {
 	params := L.NewTable()
 	if req.MagnetMobData != nil {
 		magnet := L.NewTable()

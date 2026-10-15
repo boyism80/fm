@@ -5,10 +5,10 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type UseItem struct{}
@@ -61,7 +61,7 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	consumeEnt, ok := item.(*domain.Consume)
+	consumeEnt, ok := item.(*game.Consume)
 	if !ok || consumeEnt == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil

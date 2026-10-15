@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/services/game"
 )
 
 type PartySearchTimer struct{}
@@ -22,7 +22,7 @@ func (t *PartySearchTimer) GetInitialDelay() time.Duration {
 	return 5 * time.Second
 }
 
-func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	_ = ctx
 	if mapData == nil || mapData.GetPlayerCount() == 0 {
 		return nil
@@ -30,7 +30,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *domain.Map) error 
 
 	players := mapData.GetAllPlayers()
 	for _, src := range players {
-		ch, ok := src.(*domain.Character)
+		ch, ok := src.(*game.Character)
 		if !ok || ch == nil {
 			continue
 		}
@@ -49,7 +49,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *domain.Map) error 
 		}
 		targetIDs := make([]uint32, 0)
 		for _, dst := range players {
-			target, ok := dst.(*domain.Character)
+			target, ok := dst.(*game.Character)
 			if !ok || target == nil || target.GetID() == ch.GetID() {
 				continue
 			}
@@ -63,7 +63,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *domain.Map) error 
 			if !ch.HasRoleAtLeast(constant.RoleAdmin) && target.HasRoleAtLeast(constant.RoleAdmin) {
 				continue
 			}
-			if !domain.MatchesPartySearchClassMask(target, cfg.ClassMask) {
+			if !game.MatchesPartySearchClassMask(target, cfg.ClassMask) {
 				continue
 			}
 			targetIDs = append(targetIDs, target.GetID())
@@ -86,7 +86,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *domain.Map) error 
 	return nil
 }
 
-func reachedPartySearchTarget(mapData *domain.Map, partyID uint32, cfg *domain.PartySearchConfig) bool {
+func reachedPartySearchTarget(mapData *game.Map, partyID uint32, cfg *game.PartySearchConfig) bool {
 	if mapData == nil || cfg == nil {
 		return true
 	}

@@ -21,7 +21,7 @@ if not exist "%GAME_TEMPLATE%" (
 
 if not exist "config\dev" mkdir "config\dev"
 
-set "LOGIN_CMD=go run ./services/login/main.go"
+set "LOGIN_CMD=go run ./cmd/login"
 if not "%LOGIN_CFG%"=="" (
     set "LOGIN_CMD=!LOGIN_CMD! -config=%LOGIN_CFG%"
 )
@@ -33,7 +33,7 @@ echo Starting login server...
 start "FM Login" cmd /k !LOGIN_CMD!
 
 echo Starting cash shop server...
-start "FM CashShop" cmd /k "go run ./services/cashshop -config=config\dev\cashshop-0.yaml"
+start "FM CashShop" cmd /k "go run ./cmd/cash -config=config\dev\cashshop-0.yaml"
 
 set "IDX=0"
 for %%C in (1 2 3) do (
@@ -48,7 +48,7 @@ for %%C in (1 2 3) do (
         if errorlevel 1 exit /b 1
     )
     echo Starting game server channel %%C with !CH_CFG!...
-    start "FM Game Ch%%C" cmd /k "cd /d services\game && go run . -config=!CH_CFG!"
+    start "FM Game Ch%%C" cmd /k "cd /d services\game && go run ../../cmd/game -config=!CH_CFG!"
 )
 
 echo.

@@ -10,8 +10,8 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type GuildBulletinBoardOperation struct {
@@ -177,7 +177,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 	return nil
 }
 
-func (h *GuildBulletinBoardOperation) validateBulletinIcon(ch *domain.Character, icon int32) bool {
+func (h *GuildBulletinBoardOperation) validateBulletinIcon(ch *game.Character, icon int32) bool {
 	if icon >= pconst.GuildBulletinBoardIconCashMin && icon <= pconst.GuildBulletinBoardIconCashMax {
 		itemID := uint32(5290000 + icon - pconst.GuildBulletinBoardIconCashMin)
 		return ch.Inventory.HasItem(itemID)

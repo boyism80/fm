@@ -5,10 +5,10 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type DistributeAP struct {
@@ -40,7 +40,7 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	case constant.StatTypeHP, constant.StatTypeMP:
 		assigned = character.Points.AssignHPMP(stat)
 	default:
-		assigned = character.Points.AssignStats([]domain.APEntry{{Stat: stat, Amount: 1}})
+		assigned = character.Points.AssignStats([]game.APEntry{{Stat: stat, Amount: 1}})
 	}
 	if !assigned {
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)

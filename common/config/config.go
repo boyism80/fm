@@ -308,7 +308,7 @@ func LoadBot(path string) (*Bot, error) {
 		b.ScriptDir = "script/integration"
 	}
 	if b.GameScriptDir == "" {
-		b.GameScriptDir = "../game/script"
+		b.GameScriptDir = "../services/game/script"
 	}
 	if b.ReportDir == "" {
 		b.ReportDir = "out"

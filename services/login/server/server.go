@@ -16,8 +16,7 @@ import (
 	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/core/system"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	loginactor "github.com/boyism80/fm/services/login/actor"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 )
 
 type LoginServer struct {
@@ -27,10 +26,10 @@ type LoginServer struct {
 }
 
 func (ls *LoginServer) handleClient(c core.Client) {
-	loginClient := c.(*client.LoginClient)
+	loginClient := c.(*login.LoginClient)
 
 	props := actor.PropsFromProducer(func() actor.Actor {
-		return &loginactor.LoginLogicActor{
+		return &LoginLogicActor{
 			Client: loginClient,
 			Server: ls,
 		}
@@ -76,7 +75,7 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		Host: config.Host,
 		Port: config.Port,
 		ClientFactory: func(conn net.Conn, clientID int) (core.Client, error) {
-			return client.NewLoginClient(conn, clientID)
+			return login.NewLoginClient(conn, clientID)
 		},
 		OnClientConnect: func(c core.Client) {
 
@@ -156,7 +155,7 @@ func (ls *LoginServer) ping() *internal.PingRequest {
 }
 
 func (ls *LoginServer) handleClientDisconnect(c core.Client) {
-	loginClient := c.(*client.LoginClient)
+	loginClient := c.(*login.LoginClient)
 	ls.systems.Get[*c_actor.ActorRegistry]().StopActor(fmt.Sprintf("login_session_%d", loginClient.GetClientID()), loginClient.GetLogicActorPID())
 
 	remoteAddr := c.GetConnection().RemoteAddr().String()

@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type allianceMqNoticeChanged struct{ gs *GameServer }
@@ -36,7 +36,7 @@ func (h *allianceMqNoticeChanged) Handle(_ actor.Context, raw json.RawMessage) e
 		Notice string `json:"notice"`
 	}
 	_ = json.Unmarshal(raw, &extra)
-	gs.systems.Get[*domain.AllianceSystem]().Update(alliancePb)
-	gs.systems.Get[*domain.AllianceSystem]().BroadcastNoticeChanged(alliancePb, extra.Notice)
+	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	gs.systems.Get[*game.AllianceSystem]().BroadcastNoticeChanged(alliancePb, extra.Notice)
 	return nil
 }

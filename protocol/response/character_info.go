@@ -3,9 +3,9 @@ package response
 import (
 	"sort"
 
+	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
-	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/util"
 )

@@ -8,7 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/scheduler"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 	"github.com/robfig/cron/v3"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -29,7 +29,7 @@ type smLifecycle struct {
 
 type StateMachineActor struct {
 	GameLogicActor
-	StateMachine   *domain.StateMachine
+	StateMachine   *game.StateMachine
 	luaRoot        *lua.LState
 	timeoutVersion uint64
 	timeoutCancel  scheduler.CancelFunc
@@ -37,13 +37,13 @@ type StateMachineActor struct {
 	lc             smLifecycle
 }
 
-func NewStateMachineActor(sm *domain.StateMachine, gameWorld domain.GameWorld) *StateMachineActor {
+func NewStateMachineActor(sm *game.StateMachine, gameWorld game.GameWorld) *StateMachineActor {
 	a := &StateMachineActor{
 		StateMachine:   sm,
 		namedSchedules: make(map[string]*namedSchedule),
 	}
 	a.GameWorld = gameWorld
-	a.maps = func() []*domain.Map {
+	a.maps = func() []*game.Map {
 		if sm == nil {
 			return nil
 		}
@@ -62,42 +62,42 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	}
 
 	switch msg := ctx.Message().(type) {
-	case *domain.BootstrapStateMachine:
+	case *game.BootstrapStateMachine:
 		a.beginCreate(ctx)
-	case *domain.CreateStateMachineMaps:
+	case *game.CreateStateMachineMaps:
 		a.createMaps(ctx, msg)
-	case *domain.StateMachineMapRemoved:
+	case *game.StateMachineMapRemoved:
 		a.handleMapRemoved(msg)
-	case *domain.EnterStateMachinePlayer:
+	case *game.EnterStateMachinePlayer:
 		if a.lc.ready {
 			a.handleEnterPlayer(ctx, msg)
 		} else {
 			a.lc.deferred = append(a.lc.deferred, msg)
 		}
-	case *domain.StartStateMachine:
+	case *game.StartStateMachine:
 		if a.lc.ready {
 			a.handleStart(ctx)
 		} else {
 			a.lc.deferred = append(a.lc.deferred, msg)
 		}
-	case *domain.CallStateMachineHook:
+	case *game.CallStateMachineHook:
 		if a.lc.ready {
 			a.callHook(ctx, msg.Hook, msg.Args...)
 		} else {
 			a.lc.deferred = append(a.lc.deferred, msg)
 		}
-	case *domain.LeaveStateMachinePlayer:
+	case *game.LeaveStateMachinePlayer:
 		if msg != nil && a.StateMachine != nil {
 			finished := a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver, msg.Reason)
-			if !finished && msg.Reason == domain.StateMachineLeaveParty {
+			if !finished && msg.Reason == game.StateMachineLeaveParty {
 				a.callHook(ctx, "on_left_party", msg.Character)
 			}
 		}
-	case *domain.FinishStateMachine:
+	case *game.FinishStateMachine:
 		if a.StateMachine != nil {
 			a.StateMachine.Finish(ctx, msg.ExitMapID, msg.ExitPortal)
 		}
-	case *domain.ScheduleStateMachineTimeout:
+	case *game.ScheduleStateMachineTimeout:
 		if a.scheduler != nil && a.StateMachine != nil {
 			a.timeoutVersion++
 			if a.timeoutCancel != nil {
@@ -106,7 +106,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			ms := a.StateMachine.LimitTimer(msg.Milliseconds)
 			deadline := time.Now().Add(time.Duration(ms) * time.Millisecond)
 			a.StateMachine.SetTimeoutDeadline(deadline)
-			a.timeoutCancel = a.scheduler.SendOnce(time.Duration(ms)*time.Millisecond, ctx.Self(), &domain.StateMachineTimeout{
+			a.timeoutCancel = a.scheduler.SendOnce(time.Duration(ms)*time.Millisecond, ctx.Self(), &game.StateMachineTimeout{
 				Version: a.timeoutVersion,
 			})
 			if ms > 0 {
@@ -114,9 +114,9 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			}
 		}
 		if msg.ReplyTo != nil {
-			ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+			ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 		}
-	case *domain.CancelStateMachineTimeout:
+	case *game.CancelStateMachineTimeout:
 		a.timeoutVersion++
 		if a.timeoutCancel != nil {
 			a.timeoutCancel()
@@ -126,31 +126,31 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			a.StateMachine.SetTimeoutDeadline(time.Time{})
 		}
 		if msg.ReplyTo != nil {
-			ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+			ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 		}
-	case *domain.StateMachineTimeout:
+	case *game.StateMachineTimeout:
 		if msg.Version == a.timeoutVersion {
 			if a.StateMachine != nil {
 				a.StateMachine.SetTimeoutDeadline(time.Time{})
 			}
 			a.callHook(ctx, "on_scheduled_timeout")
 		}
-	case *domain.ScheduleStateMachineAfter:
+	case *game.ScheduleStateMachineAfter:
 		a.scheduleHook(ctx, msg)
-	case *domain.ScheduleStateMachineCron:
+	case *game.ScheduleStateMachineCron:
 		a.scheduleCron(ctx, msg)
-	case *domain.CancelStateMachineNamedSchedule:
+	case *game.CancelStateMachineNamedSchedule:
 		if msg.ID == "" {
 			a.cancelAllNamedSchedules()
 		} else {
 			a.cancelNamedSchedule(msg.ID)
 		}
 		if msg.ReplyTo != nil {
-			ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+			ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 		}
-	case *domain.StateMachineNamedTimeout:
+	case *game.StateMachineNamedTimeout:
 		a.handleNamedTimeout(ctx, msg)
-	case *domain.StopStateMachine:
+	case *game.StopStateMachine:
 		a.beginStop()
 	case *actor.Restarting:
 		a.StopTimers()
@@ -171,44 +171,44 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	}
 }
 
-func (a *StateMachineActor) scheduleHook(ctx actor.Context, msg *domain.ScheduleStateMachineAfter) {
+func (a *StateMachineActor) scheduleHook(ctx actor.Context, msg *game.ScheduleStateMachineAfter) {
 	if msg == nil {
 		return
 	}
 	if a.scheduler == nil || msg.ID == "" || msg.Hook == "" || msg.Milliseconds <= 0 {
 		if msg.ReplyTo != nil {
-			ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+			ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 		}
 		return
 	}
 	a.cancelNamedSchedule(msg.ID)
 	entry := &namedSchedule{hook: msg.Hook}
 	entry.version++
-	entry.cancel = a.scheduler.SendOnce(time.Duration(a.StateMachine.LimitTimer(msg.Milliseconds))*time.Millisecond, ctx.Self(), &domain.StateMachineNamedTimeout{
+	entry.cancel = a.scheduler.SendOnce(time.Duration(a.StateMachine.LimitTimer(msg.Milliseconds))*time.Millisecond, ctx.Self(), &game.StateMachineNamedTimeout{
 		ID:      msg.ID,
 		Version: entry.version,
 	})
 	a.namedSchedules[msg.ID] = entry
 	if msg.ReplyTo != nil {
-		ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+		ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 	}
 }
 
-func (a *StateMachineActor) scheduleCron(ctx actor.Context, msg *domain.ScheduleStateMachineCron) {
+func (a *StateMachineActor) scheduleCron(ctx actor.Context, msg *game.ScheduleStateMachineCron) {
 	if msg == nil {
 		return
 	}
 	if a.scheduler == nil || msg.ID == "" || msg.Hook == "" || msg.Expr == "" {
 		if msg.ReplyTo != nil {
-			ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+			ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 		}
 		return
 	}
-	sched, err := domain.ParseStateMachineCron(msg.Expr)
+	sched, err := game.ParseStateMachineCron(msg.Expr)
 	if err != nil {
 		fmt.Printf("state machine cron %s: %v\n", msg.Expr, err)
 		if msg.ReplyTo != nil {
-			ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+			ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 		}
 		return
 	}
@@ -217,7 +217,7 @@ func (a *StateMachineActor) scheduleCron(ctx actor.Context, msg *domain.Schedule
 	a.namedSchedules[msg.ID] = entry
 	a.scheduleNamedCron(ctx, msg.ID, entry)
 	if msg.ReplyTo != nil {
-		ctx.Send(msg.ReplyTo, &domain.StateMachineTimerAck{})
+		ctx.Send(msg.ReplyTo, &game.StateMachineTimerAck{})
 	}
 }
 
@@ -225,12 +225,12 @@ func (a *StateMachineActor) scheduleNamedCron(ctx actor.Context, id string, entr
 	if a.scheduler == nil || entry == nil || entry.cron == nil {
 		return
 	}
-	delay := domain.NextStateMachineCronDelay(entry.cron, time.Now())
+	delay := game.NextStateMachineCronDelay(entry.cron, time.Now())
 	if delay <= 0 {
 		return
 	}
 	entry.version++
-	entry.cancel = a.scheduler.SendOnce(delay, ctx.Self(), &domain.StateMachineNamedTimeout{
+	entry.cancel = a.scheduler.SendOnce(delay, ctx.Self(), &game.StateMachineNamedTimeout{
 		ID:      id,
 		Version: entry.version,
 	})
@@ -261,7 +261,7 @@ func (a *StateMachineActor) cancelAllNamedSchedules() {
 	}
 }
 
-func (a *StateMachineActor) handleNamedTimeout(ctx actor.Context, msg *domain.StateMachineNamedTimeout) {
+func (a *StateMachineActor) handleNamedTimeout(ctx actor.Context, msg *game.StateMachineNamedTimeout) {
 	if msg == nil || a.namedSchedules == nil {
 		return
 	}
@@ -304,12 +304,12 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
 	luax.CallAsync(ctx, a.luaRoot, thread, "on_create", a.StateMachine).Do(func(vals []lua.LValue) error {
-		msg := &domain.CreateStateMachineMaps{}
+		msg := &game.CreateStateMachineMaps{}
 		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
 			msg.Err = "on_create must return a non-empty map id array"
 		} else if tbl, ok := vals[0].(*lua.LTable); !ok {
 			msg.Err = "on_create must return a table"
-		} else if specs, err := domain.ParseCreateMaps(tbl); err != nil {
+		} else if specs, err := game.ParseCreateMaps(tbl); err != nil {
 			msg.Err = err.Error()
 		} else {
 			msg.Specs = specs
@@ -317,11 +317,11 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 		root.Send(self, msg)
 		return nil
 	}).OnError(func(err error) {
-		root.Send(self, &domain.CreateStateMachineMaps{Err: err.Error()})
+		root.Send(self, &game.CreateStateMachineMaps{Err: err.Error()})
 	})
 }
 
-func (a *StateMachineActor) createMaps(ctx actor.Context, msg *domain.CreateStateMachineMaps) {
+func (a *StateMachineActor) createMaps(ctx actor.Context, msg *game.CreateStateMachineMaps) {
 	if msg.Err != "" {
 		a.abortCreate(msg.Err)
 		return
@@ -341,11 +341,11 @@ func (a *StateMachineActor) createMaps(ctx actor.Context, msg *domain.CreateStat
 	a.lc.deferred = nil
 	for _, msg := range deferred {
 		switch m := msg.(type) {
-		case *domain.EnterStateMachinePlayer:
+		case *game.EnterStateMachinePlayer:
 			a.handleEnterPlayer(ctx, m)
-		case *domain.StartStateMachine:
+		case *game.StartStateMachine:
 			a.handleStart(ctx)
-		case *domain.CallStateMachineHook:
+		case *game.CallStateMachineHook:
 			a.callHook(ctx, m.Hook, m.Args...)
 		}
 	}
@@ -358,7 +358,7 @@ func (a *StateMachineActor) abortCreate(reason string) {
 	a.beginStop()
 }
 
-func (a *StateMachineActor) handleEnterPlayer(ctx actor.Context, msg *domain.EnterStateMachinePlayer) {
+func (a *StateMachineActor) handleEnterPlayer(ctx actor.Context, msg *game.EnterStateMachinePlayer) {
 	if msg == nil || msg.Character == nil || a.StateMachine == nil {
 		return
 	}
@@ -390,7 +390,7 @@ func (a *StateMachineActor) beginStop() {
 	a.StateMachine.CloseMaps()
 }
 
-func (a *StateMachineActor) handleMapRemoved(msg *domain.StateMachineMapRemoved) {
+func (a *StateMachineActor) handleMapRemoved(msg *game.StateMachineMapRemoved) {
 	if !a.StateMachine.RemoveMap(msg.Map) {
 		return
 	}
@@ -405,8 +405,8 @@ func (a *StateMachineActor) finalizeStop() {
 	}
 	a.lc.stopped = true
 	a.StateMachine.Group.RemoveMachine(a.StateMachine)
-	a.GameWorld.Systems().Get[*domain.StateMachineSystem]().StopActor(a.StateMachine)
-	a.GameWorld.Systems().Get[*domain.ExpeditionSystem]().EndBattle(a.StateMachine)
+	a.GameWorld.Systems().Get[*game.StateMachineSystem]().StopActor(a.StateMachine)
+	a.GameWorld.Systems().Get[*game.ExpeditionSystem]().EndBattle(a.StateMachine)
 }
 
 func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...interface{}) {

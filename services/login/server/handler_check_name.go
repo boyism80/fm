@@ -10,7 +10,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
 
@@ -28,7 +28,7 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 	log.Printf("Check name packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: ctx.Client.(*client.LoginClient).GetAccountId()}
+	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: ctx.Client.(*login.LoginClient).GetAccountId()}
 
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CheckCharacterNameReply, error) {
@@ -41,7 +41,7 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 			return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
 		}).OnError(func(err error) {
 		log.Printf("CheckName (async): %v", err)
-		checkResp := &response.CheckName{Name: req.Name, Exists: false}
+		checkResp := &response.CheckName{Name: req.Name, Exists: true}
 		_ = ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
 	})
 	return nil

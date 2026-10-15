@@ -5,8 +5,8 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type ChangeKeymap struct {
@@ -46,7 +46,7 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 	return nil
 }
 
-func (h *ChangeKeymap) allowBinding(ch *domain.Character, typ byte, action int32) bool {
+func (h *ChangeKeymap) allowBinding(ch *game.Character, typ byte, action int32) bool {
 	if typ != 1 || action < 1000 {
 		return true
 	}

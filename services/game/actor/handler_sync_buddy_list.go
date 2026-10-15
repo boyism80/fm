@@ -3,7 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type SyncBuddyListHandler struct{}
@@ -12,7 +12,7 @@ func (SyncBuddyListHandler) New() *SyncBuddyListHandler {
 	return &SyncBuddyListHandler{}
 }
 
-func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *domain.SyncBuddyList) {
+func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.SyncBuddyList) {
 	if msg == nil {
 		return
 	}
@@ -36,7 +36,7 @@ func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		if channel < 0 {
 			channel = -1
 		}
-		ch.Buddies.Upsert(domain.BuddyListEntry{
+		ch.Buddies.Upsert(game.BuddyListEntry{
 			CharacterID: entry.CharacterID,
 			Name:        entry.Name,
 			Group:       entry.Group,

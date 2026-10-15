@@ -2,9 +2,9 @@ package server
 
 import (
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
 )
 
 type UseTeleportStone struct{}

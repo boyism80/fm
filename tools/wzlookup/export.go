@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/maple/wz"
 	"gopkg.in/yaml.v3"
 )
 

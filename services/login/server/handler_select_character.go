@@ -11,7 +11,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
 
@@ -33,7 +33,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 
 func (h *SelectCharacter) selectCharacter(ctx *core.ClientContext, characterID uint32, secondPassword *string) error {
 	failed := &response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}
-	loginClient := ctx.Client.(*client.LoginClient)
+	loginClient := ctx.Client.(*login.LoginClient)
 	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
 		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)

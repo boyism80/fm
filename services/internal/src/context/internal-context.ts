@@ -1,4 +1,5 @@
 import { Pool, type PoolClient } from "pg";
+import { AsyncLocalStorage } from "node:async_hooks";
 import Redis, { type RedisOptions } from "ioredis";
 import { getPostgresqlWorld, getRedisWorld } from "../config";
 import type { AppConfiguration } from "../config/app-configuration";
@@ -6,6 +7,8 @@ import type { InternalConfig, PgEndpoint, RedisEndpoint } from "../types/interna
 import type { RepositoryTxOptions } from "../types/repository-contracts";
 
 type TxFn<T> = (client: PoolClient) => Promise<T>;
+type DatabaseOperation = { name: string; subject: string };
+type PoolLocation = { worldId: number; role: string };
 
 const PG_CONNECTION_TIMEOUT_MS = 10000;
 
@@ -25,11 +28,15 @@ export class InternalContext {
     private readonly config: Pick<InternalConfig, "app" | "grpc" | "postgresql" | "redis" | "cache" | "sequelize">;
     private readonly pgUnified: Pool | null;
     private readonly pgGlobal: Record<string, Pool>;
+    private readonly pgFailureLog: Record<string, Pool>;
     private readonly pgData: Record<string, Pool[]>;
     private readonly redisUnified: Redis | null;
     private readonly redisGlobal: Record<string, Redis[]>;
     private readonly redisData: Record<string, Redis[]>;
     private readonly clientPools = new WeakMap<PoolClient, Pool>();
+    private readonly poolLocations = new WeakMap<Pool, PoolLocation>();
+    private readonly afterCommit = new WeakMap<PoolClient, Map<string, () => Promise<void>>>();
+    private readonly databaseOperation = new AsyncLocalStorage<DatabaseOperation>();
 
     constructor(appConfiguration: AppConfiguration) {
         this.appConfiguration = appConfiguration;
@@ -42,8 +49,9 @@ export class InternalContext {
             cache: cfg.cache,
             sequelize: cfg.sequelize,
         };
-        this.pgUnified = this.config.postgresql.unified ? InternalContext.createPool(this.config.postgresql.unified) : null;
+        this.pgUnified = this.config.postgresql.unified ? this.createPool(this.config.postgresql.unified, -1, "unified") : null;
         this.pgGlobal = {};
+        this.pgFailureLog = {};
         this.pgData = {};
         this.redisUnified = this.config.redis.unified ? InternalContext.createRedis(this.config.redis.unified) : null;
         this.redisGlobal = {};
@@ -52,8 +60,9 @@ export class InternalContext {
         for (const worldKey of Object.keys(this.config.postgresql.worlds)) {
             const worldId = Number(worldKey);
             const worldPg = getPostgresqlWorld(this.config, worldId);
-            this.pgGlobal[worldKey] = InternalContext.createPool(worldPg.global);
-            this.pgData[worldKey] = worldPg.data.map((ep) => InternalContext.createPool(ep));
+            this.pgGlobal[worldKey] = this.createPool(worldPg.global, worldId, "global");
+            this.pgFailureLog[worldKey] = InternalContext.createFailureLogPool(worldPg.global);
+            this.pgData[worldKey] = worldPg.data.map((ep, index) => this.createPool(ep, worldId, `data-${index}`));
         }
 
         for (const worldKey of Object.keys(this.config.redis.worlds)) {
@@ -64,7 +73,7 @@ export class InternalContext {
         }
     }
 
-    private static createPool(endpoint: PgEndpoint): Pool {
+    private createPool(endpoint: PgEndpoint, worldId: number, role: string): Pool {
         const pool = new Pool({
             host: endpoint.host,
             port: endpoint.port,
@@ -79,7 +88,80 @@ export class InternalContext {
         pool.on("error", (error) => {
             console.error(`[pg] idle client error host=${endpoint.host} database=${endpoint.database}`, error);
         });
+        this.poolLocations.set(pool, { worldId, role });
+        const query = pool.query.bind(pool) as (statement: string, values?: unknown[]) => Promise<unknown>;
+        pool.query = ((statement: string, values?: unknown[]) =>
+            this.observeQuery(pool, statement, () => query(statement, values))) as Pool["query"];
         return pool;
+    }
+
+    private static createFailureLogPool(endpoint: PgEndpoint): Pool {
+        const pool = new Pool({
+            host: endpoint.host,
+            port: endpoint.port,
+            database: endpoint.database,
+            user: endpoint.username,
+            password: endpoint.password,
+            ssl: endpoint.ssl ? { rejectUnauthorized: false } : false,
+            max: 1,
+            connectionTimeoutMillis: PG_CONNECTION_TIMEOUT_MS,
+        });
+        pool.on("error", (error) => {
+            console.error("[pg] failure log idle client error", error);
+        });
+        return pool;
+    }
+
+    private async observeQuery<T>(pool: Pool, statement: string, query: () => Promise<T>): Promise<T> {
+        try {
+            return await query();
+        } catch (error) {
+            await this.recordDatabaseFailure(pool, statement, error);
+            throw error;
+        }
+    }
+
+    private async recordDatabaseFailure(pool: Pool, statement: string, error: unknown): Promise<void> {
+        const location = this.poolLocations.get(pool);
+        if (!location) {
+            return;
+        }
+        const operation = this.databaseOperation.getStore();
+        const failure = error as { code?: string; message?: string };
+        const worldId = location.worldId >= 0 ? location.worldId : this.config.app.world_id;
+        await this.insertFailure(worldId, location.role, operation?.name ?? "query", operation?.subject ?? "", statement, failure.code ?? "", String(failure.message ?? error));
+    }
+
+    async recordApplicationFailure(worldId: number, operation: string, subject: string, message: string): Promise<void> {
+        await this.insertFailure(worldId, "application", operation, subject, "", "", message);
+    }
+
+    private async insertFailure(worldId: number, role: string, operation: string, subject: string, statement: string, code: string, message: string): Promise<void> {
+        const global = this.pgFailureLog[String(worldId)];
+        if (!global) {
+            console.error(`[pg] failure log has no global pool world=${worldId} operation=${operation}`);
+            return;
+        }
+        try {
+            await global.query(
+                "INSERT INTO db_failures (world_id, database_role, operation, subject, statement, error_code, error_message) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                [worldId, role, operation, subject.slice(0, 4000), statement.slice(0, 4000), code, message.slice(0, 4000)],
+            );
+        } catch (logError) {
+            console.error("[pg] failure log write failed", logError, { worldId, role, operation, subject, message });
+        }
+    }
+
+    withDatabaseOperation<T>(name: string, subject: string, work: () => Promise<T>): Promise<T> {
+        return this.databaseOperation.run({ name, subject }, work);
+    }
+
+    deferCacheInvalidation(client: PoolClient, key: string, invalidate: () => Promise<void>): void {
+        const pending = this.afterCommit.get(client);
+        if (!pending) {
+            throw new Error("Cache invalidation requires an active transaction");
+        }
+        pending.set(key, invalidate);
     }
 
     private static createRedis(endpoint: RedisEndpoint): Redis {
@@ -113,8 +195,18 @@ export class InternalContext {
     }
 
     async withPgClient<T>(pool: Pool, fn: TxFn<T>): Promise<T> {
-        const client = await pool.connect();
+        let client: PoolClient;
+        try {
+            client = await pool.connect();
+        } catch (error) {
+            await this.recordDatabaseFailure(pool, "CONNECT", error);
+            throw error;
+        }
         this.clientPools.set(client, pool);
+        const originalQuery = client.query;
+        const query = client.query.bind(client) as (statement: string, values?: unknown[]) => Promise<unknown>;
+        client.query = ((statement: string, values?: unknown[]) =>
+            this.observeQuery(pool, statement, () => query(statement, values))) as PoolClient["query"];
         let lost: Error | undefined;
         const onError = (error: Error) => {
             lost = error;
@@ -125,21 +217,38 @@ export class InternalContext {
             return await fn(client);
         } finally {
             client.removeListener("error", onError);
+            client.query = originalQuery;
             client.release(lost);
         }
     }
 
     private async withPgTransaction<T>(pool: Pool, fn: TxFn<T>): Promise<T> {
         return this.withPgClient(pool, async (client) => {
+            this.afterCommit.set(client, new Map());
+            let result: T;
             try {
                 await client.query("BEGIN");
-                const result = await fn(client);
-                await client.query("COMMIT");
-                return result;
+                result = await fn(client);
             } catch (error) {
+                this.afterCommit.delete(client);
                 await client.query("ROLLBACK").catch(() => {});
                 throw error;
             }
+            const pending = this.afterCommit.get(client);
+            this.afterCommit.delete(client);
+            try {
+                await client.query("COMMIT");
+            } catch (error) {
+                await client.query("ROLLBACK").catch(() => {});
+                for (const invalidate of pending?.values() ?? []) {
+                    await invalidate();
+                }
+                throw error;
+            }
+            for (const invalidate of pending?.values() ?? []) {
+                await invalidate();
+            }
+            return result;
         });
     }
 
@@ -215,6 +324,10 @@ export class InternalContext {
                 pools.push(worldGlobalPool);
             }
             const worldDataPools = this.pgData[worldId] ?? [];
+            const failureLogPool = this.pgFailureLog[worldId];
+            if (failureLogPool) {
+                pools.push(failureLogPool);
+            }
             for (const pool of worldDataPools) {
                 pools.push(pool);
             }

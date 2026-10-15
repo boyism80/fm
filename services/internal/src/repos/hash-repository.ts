@@ -1,21 +1,8 @@
 import type { Pool } from "pg";
 import { Repository } from "./repository";
 import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
-import type { InternalContext } from "../context/internal-context";
 
 export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>> extends Repository<TModel, TRow, string> {
-    private readonly localGroupCache: Map<string, Map<string, TRow>>;
-
-    constructor(internalContext: InternalContext) {
-        super(internalContext);
-        this.localGroupCache = new Map();
-    }
-
-    override async invalidateCache(worldId: number, groupKey: string): Promise<void> {
-        this.localGroupCache.delete(this.getRedisHashKey(worldId, groupKey));
-        await super.invalidateCache(worldId, groupKey);
-    }
-
     override getKey(model: TModel): string {
         return this.getGroupKey(model);
     }
@@ -60,19 +47,10 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         const hashKey = this.getRedisHashKey(worldId, groupKey);
         const redis = this.redis(worldId, groupKey);
         const useCache = !options.txClient;
-        const localCached = this.localGroupCache.get(hashKey);
-        if (localCached) {
-            const result = new Map<string, TModel>();
-            for (const [itemKey, row] of localCached) {
-                result.set(itemKey, this.rowToModel(this.normalizeRow(row)));
-            }
-            return result;
-        }
 
         const fields = useCache ? await redis.hgetall(hashKey) : null;
         if (fields?._loaded) {
             const result = new Map<string, TModel>();
-            const localRows = new Map<string, TRow>();
             for (const [field, json] of Object.entries(fields)) {
                 if (field === "_loaded") {
                     continue;
@@ -80,11 +58,9 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
                 const parsed = JSON.parse(json) as TRow & { deleted?: boolean };
                 if (!parsed.deleted) {
                     const typedRow = this.normalizeRow(parsed);
-                    localRows.set(field, typedRow);
                     result.set(field, this.rowToModel(typedRow));
                 }
             }
-            this.localGroupCache.set(hashKey, localRows);
             return result;
         }
 
@@ -109,16 +85,13 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         }
 
         const result = new Map<string, TModel>();
-        const localRows = new Map<string, TRow>();
         for (const raw of rows) {
             if (!raw.deleted) {
                 const typedRow = this.normalizeRow(raw);
                 const model = this.rowToModel(typedRow);
                 result.set(this.getItemKey(model), model);
-                localRows.set(this.getItemKey(model), typedRow);
             }
         }
-        this.localGroupCache.set(hashKey, localRows);
         return result;
     }
 
@@ -163,15 +136,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
             }
 
             for (const [groupKey, groupItems] of byGroup) {
-                if (!options.txClient) {
-                    await this.invalidateCache(worldId, groupKey);
-                }
-                const localCached = this.localGroupCache.get(this.getRedisHashKey(worldId, groupKey));
-                if (localCached) {
-                    for (const { row, model } of groupItems) {
-                        localCached.set(this.getItemKey(model), row);
-                    }
-                }
+                await this.invalidateAfterWrite(worldId, groupKey, pool, options);
                 saved.push(...groupItems.map((i) => i.model));
             }
         }
@@ -196,15 +161,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         const deleteQuery = this.onBulkDelete(itemKeys.map(String), groupKey, worldId);
         await this.query(pool, deleteQuery.text, deleteQuery.values, options);
 
-        if (!options.txClient) {
-            await this.invalidateCache(worldId, groupKey);
-        }
-        const localCached = this.localGroupCache.get(this.getRedisHashKey(worldId, groupKey));
-        if (localCached) {
-            for (const itemKey of itemKeys) {
-                localCached.delete(String(itemKey));
-            }
-        }
+        await this.invalidateAfterWrite(worldId, groupKey, pool, options);
     }
 
     async del(worldId: number, groupKey: string, itemKey: string | number, options: RepositoryTxOptions = {}): Promise<void> {
@@ -231,9 +188,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
                 await txClient.query(del.text, del.values);
             }
         }, options);
-        if (!options.txClient) {
-            await this.invalidateCache(worldId, groupKey);
-        }
+        await this.invalidateAfterWrite(worldId, groupKey, this.pool(worldId, groupKey), options);
     }
 
     override async delete(row: { worldId: number } & Record<string, unknown>, options: RepositoryTxOptions = {}): Promise<boolean> {

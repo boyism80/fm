@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/domain"
+	"github.com/boyism80/fm/services/game"
 )
 
 type MobSpawnTimer struct{}
@@ -21,7 +21,7 @@ func (t *MobSpawnTimer) GetInitialDelay() time.Duration {
 	return 8 * time.Second
 }
 
-func (t *MobSpawnTimer) Handle(ctx actor.Context, mapData *domain.Map) error {
+func (t *MobSpawnTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}

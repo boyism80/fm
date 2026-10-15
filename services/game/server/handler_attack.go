@@ -8,8 +8,8 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/domain"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -49,7 +49,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return fmt.Errorf("character is not in a map")
 	}
 
-	var skill *domain.SkillEntry
+	var skill *game.SkillEntry
 	if req.Skill != 0 {
 		skill = character.Skills.Get(req.Skill)
 	}
@@ -77,7 +77,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	return nil
 }
 
-func buildDamagesTable(L *lua.LState, character *domain.Character, damages []dto.AttackPair) *lua.LTable {
+func buildDamagesTable(L *lua.LState, character *game.Character, damages []dto.AttackPair) *lua.LTable {
 	tbl := L.NewTable()
 	if character == nil {
 		return tbl
@@ -107,7 +107,7 @@ func readDamagesFromLuaTableInto(damagesTable *lua.LTable, damages []dto.AttackP
 		if !ok || ud.Value == nil {
 			return
 		}
-		mob, ok := ud.Value.(*domain.Mob)
+		mob, ok := ud.Value.(*game.Mob)
 		if !ok {
 			return
 		}

@@ -11,7 +11,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/services/login/client"
+	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
 
@@ -30,7 +30,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 		ctx.Client.GetConnection().RemoteAddr(), req.ID, req.Mac)
 
 	remoteAddr := ctx.Client.GetConnection().RemoteAddr().String()
-	loginClient := ctx.Client.(*client.LoginClient)
+	loginClient := ctx.Client.(*login.LoginClient)
 	if loginClient.GetAccountId() != 0 {
 		log.Printf("Login: packet on authenticated connection remote=%s id=%s account=%d", remoteAddr, req.ID, loginClient.GetAccountId())
 	}
@@ -55,7 +55,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 	return nil
 }
 
-func (h *Login) sendLoginAccountResult(ctx *core.ClientContext, loginClient *client.LoginClient, req *request.Login, reply *internal.LoginAccountReply) error {
+func (h *Login) sendLoginAccountResult(ctx *core.ClientContext, loginClient *login.LoginClient, req *request.Login, reply *internal.LoginAccountReply) error {
 	switch reply.Status {
 	case internal.LoginAccountReply_WRONG_PASSWORD:
 		failedResp := &response.LoginFailed{Reason: response.LoginFailedReasonIncorrectPassword}

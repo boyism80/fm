@@ -1,4 +1,5 @@
 import type { PoolClient } from "pg";
+import { randomUUID } from "node:crypto";
 import type { InternalContext } from "../context/internal-context";
 import type { RepositoryTxOptions } from "../types/repository-contracts";
 
@@ -36,6 +37,14 @@ export type CashBalance = {
     maplePoint: number;
 };
 
+export type CashTransferRequest = {
+    request_id: string;
+    source_id: number;
+    target_id: number;
+    kind: string;
+    detail: unknown;
+};
+
 export class CashShopRepository {
     private readonly ctx: InternalContext;
 
@@ -50,8 +59,64 @@ export class CashShopRepository {
         });
     }
 
+    async withCharacterLock<T>(worldId: number, characterId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+        return this.ctx.withPgDataTransaction(worldId, characterId, async (client) => {
+            await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, characterId]);
+            return fn(client);
+        });
+    }
+
     async withAccount<T>(worldId: number, accountId: number, fn: (client: PoolClient) => Promise<T>, options: RepositoryTxOptions = {}): Promise<T> {
         return this.ctx.withPgDataTransaction(worldId, accountId, fn, options);
+    }
+
+    async queueTransfer(worldId: number, sourceId: number, targetId: number, kind: string, detail: unknown, client: PoolClient, sourceSerial: string | null = null): Promise<void> {
+        await client.query(
+            "INSERT INTO cash_transfer_requests (request_id, source_id, target_id, source_serial, kind, detail) VALUES ($1, $2, $3, $4, $5, $6)",
+            [randomUUID(), sourceId, targetId, sourceSerial, kind, JSON.stringify(detail)]
+        );
+    }
+
+    async findTransferBySerial(client: PoolClient, sourceId: number, serial: string): Promise<CashTransferRequest | null> {
+        const res = await client.query(
+            "SELECT request_id, source_id, target_id, kind, detail FROM cash_transfer_requests WHERE source_id = $1 AND source_serial = $2",
+            [sourceId, serial]
+        );
+        return (res.rows[0] as CashTransferRequest | undefined) ?? null;
+    }
+
+    async pendingTransfers(worldId: number): Promise<CashTransferRequest[]> {
+        const requests: CashTransferRequest[] = [];
+        for (const pool of this.ctx.getPgDataPools(worldId)) {
+            const res = await pool.query(
+                "SELECT request_id, source_id, target_id, kind, detail FROM cash_transfer_requests WHERE completed = FALSE ORDER BY created_at LIMIT 100"
+            );
+            requests.push(...(res.rows as CashTransferRequest[]));
+        }
+        return requests;
+    }
+
+    async receiveTransfer(worldId: number, request: CashTransferRequest, fn: (client: PoolClient) => Promise<void>): Promise<void> {
+        await this.ctx.withPgDataTransaction(worldId, request.target_id, async (client) => {
+            if (request.kind === "gift" || request.kind === "put_in") {
+                await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, request.target_id]);
+            }
+            const res = await client.query(
+                "INSERT INTO cash_transfer_receipts (request_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING request_id",
+                [request.request_id]
+            );
+            if (res.rowCount === 0) {
+                return;
+            }
+            await fn(client);
+        });
+    }
+
+    async finishTransfer(worldId: number, request: CashTransferRequest): Promise<void> {
+        await this.ctx.getPgDataPool(worldId, request.source_id).query(
+            "UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1",
+            [request.request_id]
+        );
     }
 
     async findBalance(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<CashBalance> {
@@ -103,19 +168,27 @@ export class CashShopRepository {
         );
     }
 
-    async takeGifts(worldId: number, accountId: number): Promise<CashGiftRow[]> {
+    async findGifts(worldId: number, accountId: number): Promise<CashGiftRow[]> {
         const res = await this.ctx.getPgDataPool(worldId, accountId).query(
-            "DELETE FROM cash_gifts WHERE account_id = $1 RETURNING serial, item_id, sender_name, message",
+            "SELECT serial, item_id, sender_name, message FROM cash_gifts WHERE account_id = $1 ORDER BY serial",
             [accountId]
         );
         return res.rows as CashGiftRow[];
     }
 
+    async deleteGift(worldId: number, accountId: number, serial: string, options: RepositoryTxOptions = {}): Promise<void> {
+        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
+        await client.query("DELETE FROM cash_gifts WHERE account_id = $1 AND serial = $2", [accountId, serial]);
+    }
+
     async deleteItems(worldId: number, accountId: number, serials: string[]): Promise<void> {
-        await this.ctx.getPgDataPool(worldId, accountId).query(
-            "DELETE FROM cash_items WHERE account_id = $1 AND serial = ANY($2::bigint[])",
-            [accountId, serials]
-        );
+        if (serials.length === 0) {
+            return;
+        }
+        await this.withAccount(worldId, accountId, async (client) => {
+            await client.query("DELETE FROM cash_items WHERE account_id = $1 AND serial = ANY($2::bigint[])", [accountId, serials]);
+            await client.query("DELETE FROM cash_gifts WHERE account_id = $1 AND serial = ANY($2::bigint[])", [accountId, serials]);
+        });
     }
 
     async findCoupon(worldId: number, code: string): Promise<CashCouponRow | null> {

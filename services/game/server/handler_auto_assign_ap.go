@@ -5,10 +5,10 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type AutoAssignAP struct {
@@ -52,9 +52,9 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 		return nil
 	}
 
-	entries := make([]domain.APEntry, len(req.Entries))
+	entries := make([]game.APEntry, len(req.Entries))
 	for i, e := range req.Entries {
-		entries[i] = domain.APEntry{Stat: constant.StatType(e.Stat), Amount: uint16(e.Amount)}
+		entries[i] = game.APEntry{Stat: constant.StatType(e.Stat), Amount: uint16(e.Amount)}
 	}
 	if !character.Points.AssignStats(entries) {
 		character.Listener.OnUpdateStats(character, emptyStats, true)

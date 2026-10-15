@@ -115,9 +115,7 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
         const groupKey = String(characterId);
         const pool = this.pool(worldId, groupKey);
         await this.query(pool, "DELETE FROM character_buddies WHERE character_id = $1", [characterId], options);
-        if (!options.txClient) {
-            await this.invalidateCache(worldId, groupKey);
-        }
+        await this.invalidateAfterWrite(worldId, groupKey, pool, options);
     }
 
     async deleteAllReferencingBuddy(worldId: number, buddyCharacterId: number) {

@@ -122,6 +122,15 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
         }
     }
 
+    protected async invalidateAfterWrite(worldId: number, key: TKey, pool: Pool, options: RepositoryTxOptions): Promise<void> {
+        const txClient = options.txClient;
+        if (txClient && this.ctx.pgClient(pool, options) === txClient) {
+            this.ctx.deferCacheInvalidation(txClient, this.getRedisKey(worldId, key), () => this.invalidateCache(worldId, key));
+            return;
+        }
+        await this.invalidateCache(worldId, key);
+    }
+
     abstract get(worldId: number, key: TKey, options?: RepositoryTxOptions): Promise<TModel | null>;
     abstract set(worldId: number, model: TModel, options?: RepositoryTxOptions): Promise<TModel>;
     abstract getMany(worldId: number, keys: TKey[], options?: RepositoryTxOptions): Promise<Map<TKey, TModel>>;

@@ -6,10 +6,10 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/domain"
 )
 
 type MoveItem struct {
@@ -50,7 +50,7 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 		}
 	case req.Dest < 0:
 		if err := character.Equip(ctx.ActorContext, req.Source, constant.EquipmentPartsType(req.Dest)); err != nil {
-			if errors.Is(err, domain.ErrInventoryFull) {
+			if errors.Is(err, game.ErrInventoryFull) {
 				character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
 			}
 			character.Listener.OnUpdateStats(character, nil, true)
