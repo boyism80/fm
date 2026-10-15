@@ -1,31 +1,7 @@
-import { CHARACTER_MODEL, CHARACTER_PROTO } from "../character-proto";
-import { BUDDY_ENTRY, BUDDY_LIST_ENTRY } from "../buddy-proto";
-import { makeKeyLayoutProtoList } from "../key-layout-io";
-import { INVENTORY_MODEL, INVENTORY_PROTO } from "../inventory-proto";
-import { SKILL_MODEL, SKILL_PROTO } from "../skill-proto";
-import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
-import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
-import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
-import { grpcMapper } from "../mappers";
-import { SecondPasswordStatus, SessionDisconnectSource, SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import { SecondPasswordStatus, SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
 import type { AccountService } from "../../services/account-service";
-import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
 import type { CharacterService } from "../../services/character-service";
-import type { BuffService } from "../../services/buff-service";
 import type { SessionService } from "../../services/session-service";
-import type { CashShopService } from "../../services/cash-shop-service";
-import type { MarriageService } from "../../services/marriage-service";
-import type { InventoryRepository } from "../../repos/inventory-repository";
-import type { SkillRepository } from "../../repos/skill-repository";
-import type { QuestRepository } from "../../repos/quest-repository";
-import type { SavedLocationRepository } from "../../repos/saved-location-repository";
-import type { CharacterRecordRepository } from "../../repos/character-record-repository";
-import type { AccountRecordRepository } from "../../repos/account-record-repository";
-import type { MonsterBookRepository } from "../../repos/monster-book-repository";
-import type { MountRepository } from "../../repos/mount-repository";
-import type { SkillMacroRepository } from "../../repos/skill-macro-repository";
-import type { UnsettledRequestRepository } from "../../repos/unsettled-request-repository";
-import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type {
     BeginGameTransitionReply,
@@ -42,23 +18,7 @@ import type {
     RefreshSessionRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
-import type {
-    BuddyEntry,
-    Character,
-    Inventory,
-    Skill,
-    Buff,
-    Quest,
-    SavedLocation,
-} from "../../protobuf/generated/fminternal/internal_service";
 import type { CharacterModel } from "../../repos/character-repository";
-import type { InventoryModel } from "../../repos/inventory-repository";
-import type { SkillModel } from "../../repos/skill-repository";
-import type { BuffModel } from "../../repos/buff-repository";
-import type { QuestModel } from "../../repos/quest-repository";
-import type { SavedLocationModel } from "../../repos/saved-location-repository";
-import type { SocialService } from "../../services/social-service";
-import type { FamilyService } from "../../services/family-service";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type OwnedCharacterResult =
@@ -69,73 +29,22 @@ type OwnedCharacterResult =
 @Controller("sessionController")
 export class SessionGrpcController {
     private readonly characterService: CharacterService;
-    private readonly inventoryRepository: InventoryRepository;
-    private readonly skillRepository: SkillRepository;
-    private readonly buffService: BuffService;
-    private readonly questRepository: QuestRepository;
-    private readonly savedLocationRepository: SavedLocationRepository;
-    private readonly characterRecordRepository: CharacterRecordRepository;
-    private readonly accountRecordRepository: AccountRecordRepository;
-    private readonly monsterBookRepository: MonsterBookRepository;
-    private readonly mountRepository: MountRepository;
-    private readonly skillMacroRepository: SkillMacroRepository;
-    private readonly unsettledRequestRepository: UnsettledRequestRepository;
     private readonly sessionService: SessionService;
     private readonly accountService: AccountService;
-    private readonly buddyService: BuddyService;
     private readonly internalConfig: Pick<InternalConfig, "game_servers">;
-    private readonly characterRealtimeStateRepository: CharacterRealtimeStateRepository;
-    private readonly cashShopService: CashShopService;
-    private readonly marriageService: MarriageService;
-    private readonly socialService: SocialService;
-    private readonly familyService: FamilyService;
     private readonly grpcError: GrpcErrorHandler;
 
     constructor(
         characterService: CharacterService,
-        inventoryRepository: InventoryRepository,
-        skillRepository: SkillRepository,
-        buffService: BuffService,
-        questRepository: QuestRepository,
-        savedLocationRepository: SavedLocationRepository,
-        characterRecordRepository: CharacterRecordRepository,
-        accountRecordRepository: AccountRecordRepository,
-        monsterBookRepository: MonsterBookRepository,
-        mountRepository: MountRepository,
-        skillMacroRepository: SkillMacroRepository,
-        unsettledRequestRepository: UnsettledRequestRepository,
         sessionService: SessionService,
         accountService: AccountService,
-        buddyService: BuddyService,
         internalConfig: Pick<InternalConfig, "game_servers">,
-        characterRealtimeStateRepository: CharacterRealtimeStateRepository,
-        cashShopService: CashShopService,
-        marriageService: MarriageService,
-        socialService: SocialService,
-        familyService: FamilyService,
         grpcError: GrpcErrorHandler
     ) {
         this.characterService = characterService;
-        this.inventoryRepository = inventoryRepository;
-        this.skillRepository = skillRepository;
-        this.buffService = buffService;
-        this.questRepository = questRepository;
-        this.savedLocationRepository = savedLocationRepository;
-        this.characterRecordRepository = characterRecordRepository;
-        this.accountRecordRepository = accountRecordRepository;
-        this.monsterBookRepository = monsterBookRepository;
-        this.mountRepository = mountRepository;
-        this.skillMacroRepository = skillMacroRepository;
-        this.unsettledRequestRepository = unsettledRequestRepository;
         this.sessionService = sessionService;
         this.accountService = accountService;
-        this.buddyService = buddyService;
         this.internalConfig = internalConfig;
-        this.characterRealtimeStateRepository = characterRealtimeStateRepository;
-        this.cashShopService = cashShopService;
-        this.marriageService = marriageService;
-        this.socialService = socialService;
-        this.familyService = familyService;
         this.grpcError = grpcError;
     }
 
@@ -239,113 +148,6 @@ export class SessionGrpcController {
         }
     }
 
-    private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
-        const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, skillMacros, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage, unsettledRequests] = await Promise.all([
-            this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-            this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-            this.buffService.getBuffs(worldId, characterId),
-            this.questRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-            this.savedLocationRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-            this.characterService.getKeyLayoutBindings(worldId, characterId),
-            this.skillMacroRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()].sort((a, b) => a.position - b.position)),
-            this.buddyService.getAll(worldId, characterId),
-            this.marriageService.loadMarriage(worldId, characterId),
-            this.cashShopService.getWishlist(worldId, characterId),
-            this.cashShopService.getRings(worldId, characterId),
-            this.monsterBookRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-            this.characterRecordRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-            this.accountRecordRepository.getAll(worldId, String(row.accountId)).then((map) => [...map.values()]),
-            this.mountRepository.get(worldId, characterId),
-            this.characterService.loadStorage(worldId, row.accountId),
-            this.unsettledRequestRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-        ]);
-        const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
-        const family = await this.familyService.load(worldId, row);
-        const notes = await this.socialService.listNotes(worldId, characterId);
-        return {
-            family,
-            notes,
-            found: true,
-            character: grpcMapper.map<CharacterModel, Character>(
-                row,
-                CHARACTER_MODEL,
-                CHARACTER_PROTO
-            ),
-            inventory: inventoryList.map((inventory) =>
-                grpcMapper.map<InventoryModel, Inventory>(
-                    inventory,
-                    INVENTORY_MODEL,
-                    INVENTORY_PROTO
-                )
-            ),
-            skills: skillList.map((skill) =>
-                grpcMapper.map<SkillModel, Skill>(
-                    skill,
-                    SKILL_MODEL,
-                    SKILL_PROTO
-                )
-            ),
-            buffs: buffList.map((buff) =>
-                grpcMapper.map<BuffModel, Buff>(
-                    buff,
-                    BUFF_MODEL,
-                    BUFF_PROTO
-                )
-            ),
-            quests: questList.map((quest) =>
-                grpcMapper.map<QuestModel, Quest>(
-                    quest,
-                    QUEST_MODEL,
-                    QUEST_PROTO
-                )
-            ),
-            savedLocations: savedLocationList.map((loc) =>
-                grpcMapper.map<SavedLocationModel, SavedLocation>(
-                    loc,
-                    SAVED_LOCATION_MODEL,
-                    SAVED_LOCATION_PROTO
-                )
-            ),
-            keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
-            skillMacros,
-            partyId: realtime?.partyId != null ? realtime.partyId : undefined,
-            guildId: realtime?.guildId != null ? realtime.guildId : undefined,
-            buddies: buddyPack.buddies.map((buddy) =>
-                grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
-            ),
-            buddyCapacity: buddyPack.capacity >>> 0,
-            debuffs: [],
-            marriage: marriage.marriage,
-            cashWishlist: cashWishlist.filter((sn) => sn !== 0),
-            rings,
-            monsterBook: monsterBook.map((card) => ({ cardId: card.cardId >>> 0, count: card.count >>> 0 })),
-            records: records.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
-            account: {
-                storage: {
-                    accountId: storage.storage.accountId,
-                    worldId: storage.storage.worldId,
-                    slots: storage.storage.slots,
-                    meso: storage.storage.meso,
-                    items: storage.items.map((item) =>
-                        grpcMapper.map<InventoryModel, Inventory>(
-                            item,
-                            INVENTORY_MODEL,
-                            INVENTORY_PROTO
-                        )
-                    ),
-                },
-                records: accountRecords.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
-            },
-            mount: {
-                level: mount?.level ?? 1,
-                exp: mount?.exp ?? 0,
-                fatigue: mount?.fatigue ?? 0,
-            },
-            unsettledRequests: unsettledRequests.map(({ id, type, target, detail }) => ({ id, type, target, detail })),
-        };
-    }
-
     @Method("enterGame")
     async enterGame(call: GrpcCall<EnterGameRequest>, callback: GrpcCallback<EnterGameReply>) {
         try {
@@ -390,26 +192,7 @@ export class SessionGrpcController {
                 });
                 return;
             }
-            const enter = await this.sessionService.enterGame(worldId, row.accountId, row.characterId, channelId, call.request.clientIp);
-            if (!enter.ok) {
-                throw new Error(`enter game session failed: ${enter.code}`);
-            }
-
-            // The game server treats an error reply as "did not enter the game", so a failed load leaves the session.
-            try {
-                const reply = await this.loadCharacterReply(worldId, row);
-                reply.debuffs = enter.debuffs ?? [];
-                callback(null, reply);
-            } catch (err) {
-                await this.sessionService.logout(worldId, row.accountId, {
-                    disconnectSource: SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-                    characterId: row.characterId,
-                    channelId,
-                }).catch((logoutErr) => {
-                    console.log(`[session] enter_game rollback failed account=${row.accountId} character=${row.characterId}: ${logoutErr}`);
-                });
-                throw err;
-            }
+            callback(null, await this.sessionService.enterGame(worldId, row, channelId, call.request.clientIp));
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -429,26 +212,7 @@ export class SessionGrpcController {
             if (!row) {
                 throw Object.assign(new Error(`character not found: ${characterId}`), { code: "INVALID_CHARACTER_ID" });
             }
-            const enter = await this.sessionService.enterCashShop(worldId, row.accountId, characterId, cashShopId, call.request.clientIp);
-            if (!enter.ok) {
-                throw new Error(`enter cash shop session failed: ${enter.code}`);
-            }
-
-            try {
-                const game = await this.loadCharacterReply(worldId, row);
-                const account = await this.cashShopService.loadAccount(worldId, row.accountId, characterId);
-                game.debuffs = enter.debuffs ?? [];
-                callback(null, { game, returnChannelId: enter.returnChannelId ?? 0, ...account });
-            } catch (err) {
-                await this.sessionService.logout(worldId, row.accountId, {
-                    disconnectSource: SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
-                    characterId,
-                    cashShopId,
-                }).catch((logoutErr) => {
-                    console.log(`[session] enter_cash_shop rollback failed account=${row.accountId} character=${characterId}: ${logoutErr}`);
-                });
-                throw err;
-            }
+            callback(null, await this.sessionService.enterCashShop(worldId, row, cashShopId, call.request.clientIp));
         } catch (err) {
             this.grpcError(err, callback);
         }

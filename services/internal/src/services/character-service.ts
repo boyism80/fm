@@ -2,10 +2,18 @@ const DEFAULT_MAP_ID = 10000;
 const DEFAULT_SPAWN = 3;
 import { EQUIP_SLOT, LOOK_SLOT } from "../constants/equipment-slots";
 import { getDefaultKeyLayoutBindings } from "../constants/default-key-layout-bindings";
-import { bindingsToJsonString, jsonStringToBindings } from "../grpc/key-layout-io";
+import { bindingsToJsonString, jsonStringToBindings, makeKeyLayoutProtoList } from "../grpc/key-layout-io";
+import { CHARACTER_MODEL, CHARACTER_PROTO } from "../grpc/character-proto";
+import { BUDDY_ENTRY, BUDDY_LIST_ENTRY } from "../grpc/buddy-proto";
+import { INVENTORY_MODEL, INVENTORY_PROTO } from "../grpc/inventory-proto";
+import { SKILL_MODEL, SKILL_PROTO } from "../grpc/skill-proto";
+import { BUFF_MODEL, BUFF_PROTO } from "../grpc/buff-proto";
+import { QUEST_MODEL, QUEST_PROTO } from "../grpc/quest-proto";
+import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../grpc/saved-location-proto";
+import { grpcMapper } from "../grpc/mappers";
 import type { KeyLayoutBindingModel } from "../grpc/key-layout-io";
 import { AccountSessionState, GuildErrorCode, PartyErrorCode } from "../protobuf/generated/fminternal/internal_service";
-import type { CreateCharacterRequest } from "../protobuf/generated/fminternal/internal_service";
+import type { BuddyEntry, Buff, Character, CreateCharacterRequest, EnterGameReply, Inventory, Quest, SavedLocation, Skill } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
 import { AccountRepository } from "../repos/account-repository";
 import { CharacterOverviewRepository } from "../repos/character-overview-repository";
@@ -45,6 +53,10 @@ import { WzService } from "./wz-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { GuildService } from "./guild-service";
 import type { FamilyService } from "./family-service";
+import type { BuddyService, BuddyListEntry } from "./buddy-service";
+import type { MarriageService } from "./marriage-service";
+import type { CashShopService } from "./cash-shop-service";
+import type { SocialService } from "./social-service";
 import { PartyService } from "./party-service";
 import type { InternalContext } from "../context/internal-context";
 
@@ -141,6 +153,10 @@ export class CharacterService {
     private readonly partyService: PartyService;
     private readonly shopRepo: ShopRepository;
     private readonly familyService: FamilyService;
+    private readonly buddyService: BuddyService;
+    private readonly marriageService: MarriageService;
+    private readonly cashShopService: CashShopService;
+    private readonly socialService: SocialService;
     private readonly ctx: InternalContext;
 
     constructor(
@@ -172,6 +188,10 @@ export class CharacterService {
         partyService: PartyService,
         shopRepository: ShopRepository,
         familyService: FamilyService,
+        buddyService: BuddyService,
+        marriageService: MarriageService,
+        cashShopService: CashShopService,
+        socialService: SocialService,
         internalContext: InternalContext
     ) {
         this.repo = characterRepository;
@@ -202,6 +222,10 @@ export class CharacterService {
         this.partyService = partyService;
         this.shopRepo = shopRepository;
         this.familyService = familyService;
+        this.buddyService = buddyService;
+        this.marriageService = marriageService;
+        this.cashShopService = cashShopService;
+        this.socialService = socialService;
         this.ctx = internalContext;
     }
 
@@ -290,6 +314,113 @@ export class CharacterService {
 
     async saveCharacter(character: CharacterInput, baseLooks?: Record<string, number>, overlays?: Record<string, number>) {
         return this.saveCharacters([{ character, baseLooks, overlays }]);
+    }
+
+    async load(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
+        const characterId = row.characterId;
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, skillMacros, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage, unsettledRequests] = await Promise.all([
+            this.inventoryRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.skillRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.buffRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.questRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.savedLocationRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.getKeyLayoutBindings(worldId, characterId),
+            this.skillMacroRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()].sort((a, b) => a.position - b.position)),
+            this.buddyService.getAll(worldId, characterId),
+            this.marriageService.loadMarriage(worldId, characterId),
+            this.cashShopService.getWishlist(worldId, characterId),
+            this.cashShopService.getRings(worldId, characterId),
+            this.monsterBookRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.characterRecordRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.accountRecordRepo.getAll(worldId, String(row.accountId)).then((map) => [...map.values()]),
+            this.mountRepo.get(worldId, characterId),
+            this.loadStorage(worldId, row.accountId),
+            this.unsettledRequestRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+        ]);
+        const realtime = await this.realtimeStateRepo.get(worldId, characterId);
+        const family = await this.familyService.load(worldId, row);
+        const notes = await this.socialService.listNotes(worldId, characterId);
+        return {
+            family,
+            notes,
+            found: true,
+            character: grpcMapper.map<CharacterModel, Character>(
+                row,
+                CHARACTER_MODEL,
+                CHARACTER_PROTO
+            ),
+            inventory: inventoryList.map((inventory) =>
+                grpcMapper.map<InventoryModel, Inventory>(
+                    inventory,
+                    INVENTORY_MODEL,
+                    INVENTORY_PROTO
+                )
+            ),
+            skills: skillList.map((skill) =>
+                grpcMapper.map<SkillModel, Skill>(
+                    skill,
+                    SKILL_MODEL,
+                    SKILL_PROTO
+                )
+            ),
+            buffs: buffList.map((buff) =>
+                grpcMapper.map<BuffModel, Buff>(
+                    buff,
+                    BUFF_MODEL,
+                    BUFF_PROTO
+                )
+            ),
+            quests: questList.map((quest) =>
+                grpcMapper.map<QuestModel, Quest>(
+                    quest,
+                    QUEST_MODEL,
+                    QUEST_PROTO
+                )
+            ),
+            savedLocations: savedLocationList.map((loc) =>
+                grpcMapper.map<SavedLocationModel, SavedLocation>(
+                    loc,
+                    SAVED_LOCATION_MODEL,
+                    SAVED_LOCATION_PROTO
+                )
+            ),
+            keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
+            skillMacros,
+            partyId: realtime?.partyId != null ? realtime.partyId : undefined,
+            guildId: realtime?.guildId != null ? realtime.guildId : undefined,
+            buddies: buddyPack.buddies.map((buddy) =>
+                grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
+            ),
+            buddyCapacity: buddyPack.capacity >>> 0,
+            debuffs: [],
+            marriage: marriage.marriage,
+            cashWishlist: cashWishlist.filter((sn) => sn !== 0),
+            rings,
+            monsterBook: monsterBook.map((card) => ({ cardId: card.cardId >>> 0, count: card.count >>> 0 })),
+            records: records.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
+            account: {
+                storage: {
+                    accountId: storage.storage.accountId,
+                    worldId: storage.storage.worldId,
+                    slots: storage.storage.slots,
+                    meso: storage.storage.meso,
+                    items: storage.items.map((item) =>
+                        grpcMapper.map<InventoryModel, Inventory>(
+                            item,
+                            INVENTORY_MODEL,
+                            INVENTORY_PROTO
+                        )
+                    ),
+                },
+                records: accountRecords.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
+            },
+            mount: {
+                level: mount?.level ?? 1,
+                exp: mount?.exp ?? 0,
+                fatigue: mount?.fatigue ?? 0,
+            },
+            unsettledRequests: unsettledRequests.map(({ id, type, target, detail }) => ({ id, type, target, detail })),
+        };
     }
 
     async saveCharacters(entries: SaveCharacterEntry[]) {

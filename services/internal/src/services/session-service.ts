@@ -1,5 +1,5 @@
 import { AccountSessionState, SessionDisconnectSource, SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
-import type { Debuff } from "../protobuf/generated/fminternal/internal_service";
+import type { Debuff, EnterCashShopReply, EnterGameReply } from "../protobuf/generated/fminternal/internal_service";
 import { isRedisEvalArray } from "../types/redis-eval";
 import type { SessionRepository } from "../repos/session-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
@@ -8,6 +8,9 @@ import type { BuddyService } from "./buddy-service";
 import type { FamilyService } from "./family-service";
 import type { SocialService } from "./social-service";
 import type { GuildService } from "./guild-service";
+import type { CharacterService } from "./character-service";
+import type { CashShopService } from "./cash-shop-service";
+import type { CharacterModel } from "../repos/character-repository";
 
 export function formatDateTime(date = new Date()) {
     const pad = (v: number) => String(v).padStart(2, "0");
@@ -28,6 +31,8 @@ export class SessionService {
     private readonly guildService: GuildService | null;
     private readonly socialService: SocialService;
     private readonly familyService: FamilyService;
+    private readonly characterService: CharacterService;
+    private readonly cashShopService: CashShopService;
 
     constructor(
         sessionRepository: SessionRepository,
@@ -36,7 +41,9 @@ export class SessionService {
         buddyService: BuddyService | null,
         guildService: GuildService | null,
         socialService: SocialService,
-        familyService: FamilyService
+        familyService: FamilyService,
+        characterService: CharacterService,
+        cashShopService: CashShopService
     ) {
         this.repo = sessionRepository;
         this.unifiedRepo = unifiedRepository;
@@ -45,6 +52,8 @@ export class SessionService {
         this.guildService = guildService;
         this.socialService = socialService;
         this.familyService = familyService;
+        this.characterService = characterService;
+        this.cashShopService = cashShopService;
     }
 
     private now() {
@@ -141,7 +150,8 @@ export class SessionService {
         return { ok: true };
     }
 
-    async enterGame(worldId: number, accountId: number, characterId: number, channelId: number, clientIp: string) {
+    async enterGame(worldId: number, row: CharacterModel, channelId: number, clientIp: string): Promise<EnterGameReply> {
+        const { accountId, characterId } = row;
         const account = await this.repo.getAccountSession(worldId, accountId);
         const gameToGameTransfer = account?.gameToGameTransfer === true;
         const [ok, code] = this.atomicResultTuple(
@@ -157,13 +167,15 @@ export class SessionService {
         );
         if (ok !== 1) {
             console.log(`[session] enter_game failed account=${accountId} character=${characterId} channel=${channelId} code=${code}`);
-            return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
+            throw new Error(`enter game session failed: ${Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND}`);
         }
-        await this.familyService
-            .presence(worldId, characterId)
-            .catch(err => console.error("[social] family presence failed", err));
         console.log(`[session] enter_game ok account=${accountId} character=${characterId} channel=${channelId}`);
+
+        // The game server reads an error reply as "did not enter the game", so every failure after the session moved leaves it again.
         try {
+            await this.familyService
+                .presence(worldId, characterId)
+                .catch(err => console.error("[social] family presence failed", err));
             if (this.partyService) {
                 await this.partyService.publishMemberLogOnOff(worldId, characterId);
             }
@@ -173,8 +185,10 @@ export class SessionService {
             if (this.guildService && !gameToGameTransfer) {
                 await this.guildService.publishMemberOnline(worldId, characterId, true);
             }
+            const reply = await this.characterService.load(worldId, row);
+            reply.debuffs = gameToGameTransfer ? account?.debuffs ?? [] : [];
+            return reply;
         } catch (err) {
-            // The caller answers with an error, which the game server reads as "did not enter the game".
             await this.logout(worldId, accountId, {
                 disconnectSource: SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER,
                 characterId,
@@ -184,10 +198,10 @@ export class SessionService {
             });
             throw err;
         }
-        return { ok: true, debuffs: gameToGameTransfer ? account?.debuffs ?? [] : [] };
     }
 
-    async enterCashShop(worldId: number, accountId: number, characterId: number, cashShopId: number, clientIp: string) {
+    async enterCashShop(worldId: number, row: CharacterModel, cashShopId: number, clientIp: string): Promise<EnterCashShopReply> {
+        const { accountId, characterId } = row;
         const account = await this.repo.getAccountSession(worldId, accountId);
         const raw = await this.repo.enterCashShop(
             worldId,
@@ -201,19 +215,34 @@ export class SessionService {
         const [ok, code] = this.atomicResultTuple(raw);
         if (ok !== 1) {
             console.log(`[session] enter_cash_shop failed account=${accountId} character=${characterId} cash_shop=${cashShopId} code=${code}`);
-            return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
+            throw new Error(`enter cash shop session failed: ${Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND}`);
         }
-        await this.socialService
-            .leaveMessenger(worldId, characterId)
-            .catch(err => console.error("[social] messenger cleanup failed", err));
-        await this.familyService
-            .presence(worldId, characterId)
-            .catch(err => console.error("[social] family presence failed", err));
         console.log(`[session] enter_cash_shop ok account=${accountId} character=${characterId} cash_shop=${cashShopId}`);
-        if (this.partyService) {
-            await this.partyService.publishMemberLogOnOff(worldId, characterId);
+
+        try {
+            await this.socialService
+                .leaveMessenger(worldId, characterId)
+                .catch(err => console.error("[social] messenger cleanup failed", err));
+            await this.familyService
+                .presence(worldId, characterId)
+                .catch(err => console.error("[social] family presence failed", err));
+            if (this.partyService) {
+                await this.partyService.publishMemberLogOnOff(worldId, characterId);
+            }
+            const game = await this.characterService.load(worldId, row);
+            const cashShop = await this.cashShopService.loadAccount(worldId, accountId, characterId);
+            game.debuffs = account?.debuffs ?? [];
+            return { game, returnChannelId: Number(raw[2]), ...cashShop };
+        } catch (err) {
+            await this.logout(worldId, accountId, {
+                disconnectSource: SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
+                characterId,
+                cashShopId,
+            }).catch((logoutErr) => {
+                console.log(`[session] enter_cash_shop rollback failed account=${accountId} character=${characterId}: ${logoutErr}`);
+            });
+            throw err;
         }
-        return { ok: true, returnChannelId: Number(raw[2]), debuffs: account?.debuffs ?? [] };
     }
 
     async refresh(
