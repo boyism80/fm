@@ -51,6 +51,12 @@ type weddingReservationDetail struct {
 	Ticket uint32 `json:"ticket"`
 }
 
+type weddingInviteDetail struct {
+	Invitation uint32           `json:"invitation"`
+	Guest      string           `json:"guest"`
+	Parcel     *internal.Parcel `json:"parcel"`
+}
+
 type weddingWishlistDetail struct {
 	Ticket uint32   `json:"ticket"`
 	Wishes []string `json:"wishes"`
@@ -511,71 +517,82 @@ func (w *Wedding) InviteGuest(actx actor.Context, guestName string, marriageID u
 	if invitation == nil || invitation.GetModel().GetID() != ticket.Invitation {
 		return
 	}
+	invited, err := NewItem(ticket.InvitedItem, 1, w.owner.GameWorld)
+	if err != nil {
+		log.Printf("InviteWeddingGuest character=%d: %v", w.owner.GetID(), err)
+		return
+	}
+	invited.(*MiscItem).MarriageID = marriageID
+	parcel := &internal.Parcel{
+		SenderName: w.owner.GetName(),
+		Quick:      true,
+		Message:    "결혼식에 초대되었습니다. 청첩장을 확인해주세요.",
+		Item:       invited.BuildRPC(0, 0),
+	}
 
-	w.owner.GameWorld.Systems().Get[*InternalSystem]().InviteWeddingGuestAsync(actx, w.owner, marriageID, guestName).Do(func(v *internal.InviteWeddingGuestReply) error {
-		w.owner.Call(func(actx actor.Context) {
+	w.owner.Inventory.RemoveByItemIDCount(ticket.Invitation, 1)
+	id := w.owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_INVITE, uint64(marriageID), weddingInviteDetail{Invitation: ticket.Invitation, Guest: guestName, Parcel: parcel})
+	w.owner.GameWorld.Systems().Get[*InternalSystem]().InviteWeddingGuestAsync(actx, w.owner, id, marriageID, guestName, parcel).Do(func(v *internal.InviteWeddingGuestReply) error {
+		w.owner.Call(func(actor.Context) {
+			w.closeInvite(id, v.GetResult())
 			switch v.GetResult() {
 			case internal.MarriageResult_MARRIAGE_RESULT_OK:
+				w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "청첩장을 보냈습니다.")
 			case internal.MarriageResult_MARRIAGE_RESULT_GUEST_ALREADY_INVITED:
 				w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "대상은 이미 결혼식에 초대되었습니다.")
-				return
+			case internal.MarriageResult_MARRIAGE_RESULT_GUEST_FULL:
+				w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultPartnerInventory)
 			default:
 				w.owner.Listener.OnEngageResult(w.owner, pconst.EngageResultWrongName)
-				return
 			}
-
-			invited, err := NewItem(ticket.InvitedItem, 1, w.owner.GameWorld)
-			if err != nil {
-				log.Printf("InviteWeddingGuest character=%d: %v", w.owner.GetID(), err)
-				w.recordGuestInviteFailure(actx, marriageID, v.GetGuestName(), "create_item: "+err.Error())
-				return
-			}
-			w.owner.Inventory.RemoveByItemIDCount(ticket.Invitation, 1)
-			invited.(*MiscItem).MarriageID = marriageID
-			parcel := &internal.Parcel{
-				SenderName: w.owner.GetName(),
-				Quick:      true,
-				Message:    "결혼식에 초대되었습니다. 청첩장을 확인해주세요.",
-				Item:       invited.BuildRPC(0, 0),
-			}
-			w.owner.GameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, w.owner, 0, 0, v.GetGuestName(), parcel, false).Do(func(reply *internal.SendParcelReply) error {
-				w.owner.Call(func(actx actor.Context) {
-					if reply.GetResult() == internal.ParcelResult_PARCEL_RESULT_OK {
-						w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "청첩장을 보냈습니다.")
-						return
-					}
-					w.recordGuestInviteFailure(actx, marriageID, v.GetGuestName(), reply.GetResult().String())
-					w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "청첩장 발송에 실패했습니다. 운영자에게 문의해주세요.")
-				})
-				return nil
-			}).OnError(func(err error) {
-				w.owner.Call(func(actx actor.Context) {
-					w.recordGuestInviteFailure(actx, marriageID, v.GetGuestName(), "parcel_rpc: "+err.Error())
-					w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "청첩장 발송 결과를 확인할 수 없습니다. 운영자에게 문의해주세요.")
-				})
-			})
 		})
 		return nil
 	}).OnError(func(err error) {
-		w.owner.Call(func(actx actor.Context) {
-			w.recordGuestInviteFailure(actx, marriageID, guestName, "invite_rpc: "+err.Error())
-			w.owner.Listener.OnMessage(w.owner, constant.MsgPopup, "초대 결과를 확인할 수 없습니다. 운영자에게 문의해주세요.")
+		w.owner.Call(func(actor.Context) {
+			if request := w.owner.Unsettled.Find(id); request != nil {
+				request.InFlight = false
+			}
 		})
+		log.Printf("InviteWeddingGuest character=%d: %v", w.owner.GetID(), err)
 	})
 }
 
-func (w *Wedding) recordGuestInviteFailure(actx actor.Context, marriageID uint32, guestName string, reason string) {
-	detail, err := json.Marshal(struct {
-		MarriageID uint32 `json:"marriage_id"`
-		GuestName  string `json:"guest_name"`
-		Reason     string `json:"reason"`
-	}{marriageID, guestName, reason})
-	if err != nil {
-		log.Printf("InviteWeddingGuest failure detail character=%d: %v", w.owner.GetID(), err)
+func (w *Wedding) closeInvite(id uint64, result internal.MarriageResult) {
+	request := w.owner.Unsettled.Find(id)
+	if request == nil {
 		return
 	}
-	w.owner.GameWorld.Systems().Get[*InternalSystem]().RecordWeddingInviteFailureAsync(actx, w.owner, string(detail)).OnError(func(err error) {
-		log.Printf("InviteWeddingGuest failure log character=%d: %v", w.owner.GetID(), err)
+	w.owner.Unsettled.Erase(id)
+	if result == internal.MarriageResult_MARRIAGE_RESULT_OK {
+		return
+	}
+
+	var detail weddingInviteDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("Wedding.closeInvite character=%d id=%d: %v", w.owner.GetID(), id, err)
+		return
+	}
+	if item, err := NewItem(detail.Invitation, 1, w.owner.GameWorld); err == nil {
+		w.owner.Inventory.addItemUnchecked(item, true)
+	}
+}
+
+func (w *Wedding) settleInvite(actx actor.Context, request *UnsettledRequest) {
+	var detail weddingInviteDetail
+	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
+		log.Printf("Wedding.settleInvite character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
+		return
+	}
+	w.owner.GameWorld.Systems().Get[*InternalSystem]().InviteWeddingGuestAsync(actx, w.owner, request.ID, uint32(request.Target), detail.Guest, detail.Parcel).Do(func(v *internal.InviteWeddingGuestReply) error {
+		w.owner.Call(func(actor.Context) {
+			w.closeInvite(request.ID, v.GetResult())
+		})
+		return nil
+	}).OnError(func(err error) {
+		w.owner.Call(func(actor.Context) {
+			request.InFlight = false
+		})
+		log.Printf("Wedding.settleInvite character=%d id=%d: %v", w.owner.GetID(), request.ID, err)
 	})
 }
 

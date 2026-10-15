@@ -14,10 +14,6 @@ export class OperationLogService {
         if (kind.length <= 0) {
             return false;
         }
-        if (kind === "wedding_guest_invite_failure") {
-            await this.ctx.recordApplicationFailure(worldId, kind, `character=${characterId} channel=${channelId}`, detail);
-            return true;
-        }
         await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             await txClient.query(
                 "INSERT INTO operation_logs (channel_id, character_id, kind, meso, detail) VALUES ($1, $2, $3, $4, $5)",

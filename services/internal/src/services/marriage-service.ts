@@ -3,16 +3,20 @@ import {
     Inventory,
     MarriageResult,
     MarriageStatus,
+    ParcelResult,
     type ClaimWeddingGiftReply,
     type InviteWeddingGuestReply,
     type LoadWeddingGiftsReply,
     type Marriage,
     type MarriageReply,
+    type Parcel,
     WeddingGift,
 } from "../protobuf/generated/fminternal/internal_service";
 import { MarriageRepository, type MarriageRow, type WeddingGiftRow } from "../repos/marriage-repository";
+import { ParcelRepository } from "../repos/parcel-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
+import { ParcelService } from "./parcel-service";
 import { RabbitMQService } from "./rabbitmq-service";
 
 const DIVORCE_DELAY_MS = 72 * 60 * 60 * 1000;
@@ -32,17 +36,23 @@ export class MarriageService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
+    private readonly parcelRepo: ParcelRepository;
+    private readonly parcelService: ParcelService;
 
     constructor(
         marriageRepository: MarriageRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
-        rabbitmqService: RabbitMQService
+        rabbitmqService: RabbitMQService,
+        parcelRepository: ParcelRepository,
+        parcelService: ParcelService
     ) {
         this.marriageRepo = marriageRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
+        this.parcelRepo = parcelRepository;
+        this.parcelService = parcelService;
     }
 
     private toProto(row: MarriageRow): Marriage {
@@ -266,23 +276,58 @@ export class MarriageService {
         return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
     }
 
-    async inviteWeddingGuest(worldId: number, marriageId: number, guestName: string): Promise<InviteWeddingGuestReply> {
-        const entry = await this.unifiedRepo.findCharacterNameEntry(guestName);
-        if (entry == null || entry.world_id !== worldId) {
-            return { result: MarriageResult.MARRIAGE_RESULT_GUEST_NOT_FOUND, guestId: 0, guestName: "" };
-        }
-
+    // The marriage row lock serializes invites to one wedding. The invitation parcel commits on the guest's data shard
+    // before the guest and the request id commit here, so a parcel recorded under the request id means the invite went through.
+    async inviteWeddingGuest(worldId: number, marriageId: number, guestName: string, parcel: Parcel, requestId: string): Promise<InviteWeddingGuestReply> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             const row = await this.marriageRepo.find(client, marriageId);
-            if (row == null || row.ticket_item_id === 0) {
-                return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, guestId: 0, guestName: "" };
+            const request = await this.marriageRepo.findRequest(client, requestId);
+            if (request?.aborted) {
+                return { result: MarriageResult.MARRIAGE_RESULT_ABORTED };
             }
-            if (entry.character_id === row.groom_id || entry.character_id === row.bride_id || row.guests.includes(entry.character_id)) {
-                return { result: MarriageResult.MARRIAGE_RESULT_GUEST_ALREADY_INVITED, guestId: 0, guestName: "" };
+            if (request != null) {
+                return { result: MarriageResult.MARRIAGE_RESULT_OK };
             }
-            row.guests = [...row.guests, entry.character_id];
-            await this.marriageRepo.update(client, row);
-            return { result: MarriageResult.MARRIAGE_RESULT_OK, guestId: entry.character_id, guestName: entry.name };
+
+            const fail = async (result: MarriageResult): Promise<InviteWeddingGuestReply> => {
+                await this.marriageRepo.abortRequest(client, requestId);
+                return { result };
+            };
+            const entry = await this.unifiedRepo.findCharacterNameEntry(guestName);
+            if (entry == null || entry.world_id !== worldId) {
+                return fail(MarriageResult.MARRIAGE_RESULT_GUEST_NOT_FOUND);
+            }
+
+            const sent = await this.parcelRepo.findSendRequest(worldId, entry.character_id, requestId);
+            if (sent == null) {
+                if (row == null || row.ticket_item_id === 0) {
+                    return fail(MarriageResult.MARRIAGE_RESULT_INVALID_STATE);
+                }
+                if (entry.character_id === row.groom_id || entry.character_id === row.bride_id || row.guests.includes(entry.character_id)) {
+                    return fail(MarriageResult.MARRIAGE_RESULT_GUEST_ALREADY_INVITED);
+                }
+                const result = await this.parcelService.sendParcel({
+                    worldId,
+                    recipientName: "",
+                    parcel: { ...parcel, receiverId: entry.character_id },
+                    senderAccountId: 0,
+                    oneOfAKind: false,
+                    requestId,
+                });
+                if (result === ParcelResult.PARCEL_RESULT_RECIPIENT_FULL) {
+                    return fail(MarriageResult.MARRIAGE_RESULT_GUEST_FULL);
+                }
+                if (result !== ParcelResult.PARCEL_RESULT_OK) {
+                    return fail(MarriageResult.MARRIAGE_RESULT_INVALID_STATE);
+                }
+            }
+
+            if (row != null && row.ticket_item_id !== 0 && row.guests.includes(entry.character_id) === false) {
+                row.guests = [...row.guests, entry.character_id];
+                await this.marriageRepo.update(client, row);
+            }
+            await this.marriageRepo.insertRequest(client, requestId);
+            return { result: MarriageResult.MARRIAGE_RESULT_OK };
         });
     }
 

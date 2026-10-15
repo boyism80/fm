@@ -368,6 +368,7 @@ enum MarriageResult {
   MARRIAGE_RESULT_GUEST_ALREADY_INVITED = 6;
   MARRIAGE_RESULT_GIFT_NOT_FOUND = 7;
   MARRIAGE_RESULT_ABORTED = 8;
+  MARRIAGE_RESULT_GUEST_FULL = 9;
 }
 
 message Marriage {
@@ -449,12 +450,12 @@ message InviteWeddingGuestRequest {
   uint32 world_id = 1;
   uint32 marriage_id = 2;
   string guest_name = 3;
+  Parcel parcel = 4;
+  uint64 request_id = 5 [jstype = JS_STRING];
 }
 
 message InviteWeddingGuestReply {
   MarriageResult result = 1;
-  uint32 guest_id = 2;
-  string guest_name = 3;
 }
 
 message FinishWeddingRequest {
@@ -757,6 +758,7 @@ enum UnsettledType {
   UNSETTLED_TYPE_FAMILY_MOVE = 14;
   UNSETTLED_TYPE_WEDDING_WISHLIST = 15;
   UNSETTLED_TYPE_SHOP_OPEN = 16;
+  UNSETTLED_TYPE_WEDDING_INVITE = 17;
 }
 
 message UnsettledRequest {

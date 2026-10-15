@@ -678,7 +678,11 @@ local function engage_couple(ctx, groom, bride)
 	local p = bride:request_on(groom, resp.engage_result, answer(groom), function(p)
 		return p.result == ENGAGE.engaged
 	end, 5000)
-	return check(ctx, p ~= false, "약혼 결과가 오지 않음")
+	if p == false then
+		return ctx:fail("약혼 결과가 오지 않음")
+	end
+	state.marriage_id = p.marriage.id
+	return true
 end
 
 -- The fault is server wide, so it is turned off right after the one answer it targets.
@@ -984,6 +988,175 @@ local function wishlist_not_sent(ctx)
 	return has(ctx, groom, INVITATION, 5)
 end
 
+local function invite_ready(ctx)
+	local groom, bride, guest = ctx:bot(0), ctx:bot(1), ctx:bot(2)
+	if prepare_couple(ctx) == false then
+		return false
+	end
+	if groom:transfer(1) == false or bride:transfer(1) == false or groom:transfer(0) == false or bride:transfer(0) == false then
+		return ctx:fail("초대 테스트 전 약혼 상태 새로고침 실패")
+	end
+	if engage_couple(ctx, groom, bride) == false or open_reservation(ctx, groom) == false then
+		return false
+	end
+	local input = groom:request(resp.engage_request, req.dialog { dialog_type = DIALOG.normal, next = true }, function(p)
+		return p.mode == RING.wishlist
+	end, 5000)
+	if input == false then
+		return ctx:fail("위시리스트 입력창이 오지 않음")
+	end
+	groom:send(req.ring_action { mode = RING.wishlist, wishes = { "모래 주머니" } })
+	if wait_count(ctx, groom, INVITATION, 5, "초대 준비 청첩장") == false then
+		return false
+	end
+	return clear_duey(ctx, guest)
+end
+
+local function invite(groom, guest)
+	return req.ring_action { mode = RING.invite, name = guest:name(), marriage_id = state.marriage_id, slot = groom:slot(INVITATION) }
+end
+
+local function invited(ctx, guest, expected, what)
+	guest:send(req.duey { mode = DUEY.close })
+	local p = guest:request(resp.duey_open, req.normal_chat { message = "/듀이" }, nil, 5000)
+	guest:send(req.duey { mode = DUEY.close })
+	if p == false then
+		return ctx:fail(guest:name() .. " 택배 보관함이 열리지 않음")
+	end
+	return check(ctx, #p.parcels == expected, string.format("%s: 하객 택배 %d개 (기대 %d)", what, #p.parcels, expected))
+end
+
+local function invite_unknown(ctx, mode)
+	local groom, guest = ctx:bot(0), ctx:bot(2)
+	if invite_ready(ctx) == false then
+		return false
+	end
+	if fault.rpc(groom, "InviteWeddingGuest", mode) == false then
+		return ctx:fail("InviteWeddingGuest 장애 주입 실패")
+	end
+	groom:send(invite(groom, guest))
+	ctx:sleep(1000)
+	fault.rpc(groom, "InviteWeddingGuest", "off")
+	return holds(ctx, groom, INVITATION, 4, "장애 직후 청첩장 보류")
+end
+
+local function invite_lost_timer(ctx)
+	local groom, guest = ctx:bot(0), ctx:bot(2)
+	if invite_unknown(ctx, "lost") == false then
+		return false
+	end
+	ctx:sleep(SETTLE_WAIT_MS)
+	if holds(ctx, groom, INVITATION, 4, "주기 정리 뒤 (이미 초대됨)") == false or invited(ctx, guest, 1, "주기 정리 뒤") == false then
+		return false
+	end
+	local again = groom:request(resp.notice, invite(groom, guest), function(p)
+		return p.message:find("이미 결혼식에 초대", 1, true) ~= nil
+	end, 5000)
+	if again == false then
+		return ctx:fail("재초대가 이미 초대됨으로 거절되지 않음")
+	end
+	ctx:sleep(500)
+	return holds(ctx, groom, INVITATION, 4, "거절된 재초대 뒤 환불")
+end
+
+local function invite_lost_relogin(ctx)
+	local groom, guest = ctx:bot(0), ctx:bot(2)
+	if invite_unknown(ctx, "lost") == false then
+		return false
+	end
+	if groom:transfer(1) == false then
+		return ctx:fail("채널 이동 실패")
+	end
+	ctx:sleep(2000)
+	if holds(ctx, groom, INVITATION, 4, "재접속 정리 뒤 (이미 초대됨)") == false then
+		return false
+	end
+	if groom:transfer(0) == false then
+		return ctx:fail("원래 채널 복귀 실패")
+	end
+	ctx:sleep(1000)
+	if holds(ctx, groom, INVITATION, 4, "복귀 뒤") == false then
+		return false
+	end
+	return invited(ctx, guest, 1, "재접속 정리 뒤")
+end
+
+-- Settle resends the same request, so an invite that never reached internal goes through on settle.
+local function invite_not_sent(ctx)
+	local groom, guest = ctx:bot(0), ctx:bot(2)
+	if invite_unknown(ctx, "on") == false then
+		return false
+	end
+	ctx:sleep(SETTLE_WAIT_MS)
+	if holds(ctx, groom, INVITATION, 4, "재전송 뒤") == false then
+		return false
+	end
+	return invited(ctx, guest, 1, "재전송 뒤")
+end
+
+local function invite_late(ctx)
+	local groom, bride, guest = ctx:bot(0), ctx:bot(1), ctx:bot(2)
+	if invite_ready(ctx) == false then
+		return false
+	end
+	if fault.rpc_delay(groom, "InviteWeddingGuest", REPLY_DELAY_MS) == false then
+		return ctx:fail("InviteWeddingGuest 지연 주입 실패")
+	end
+	groom:send(invite(groom, guest))
+	ctx:sleep(500)
+	local moved = groom:transfer(1)
+	fault.rpc_delay(bride, "InviteWeddingGuest", 0)
+	if moved == false then
+		return ctx:fail("채널 이동 실패")
+	end
+	ctx:sleep(REPLY_DELAY_MS + 2000)
+	if holds(ctx, groom, INVITATION, 4, "늦은 요청 뒤") == false or invited(ctx, guest, 1, "늦은 요청 뒤 (중복 발송 없음)") == false then
+		return false
+	end
+	if groom:transfer(0) == false then
+		return ctx:fail("원래 채널 복귀 실패")
+	end
+	ctx:sleep(1000)
+	return holds(ctx, groom, INVITATION, 4, "복귀 뒤 (중복 환불 없음)")
+end
+
+local function invite_guest_full(ctx)
+	local groom, guest = ctx:bot(0), ctx:bot(2)
+	if invite_ready(ctx) == false then
+		return false
+	end
+	for _ = 1, 50 do
+		if command(ctx, groom, string.format("/택배 %s 시스템 - 1 1", guest:name()), "택배 발송") == false then
+			return false
+		end
+	end
+	ctx:sleep(2000)
+	if invited(ctx, guest, 50, "택배함 채운 뒤") == false then
+		return false
+	end
+
+	local full = groom:request(resp.engage_result, invite(groom, guest), function(p)
+		return p.result == 0x15
+	end, 5000)
+	if full == false then
+		return ctx:fail("택배함이 가득 찬 하객 초대가 거절되지 않음")
+	end
+	ctx:sleep(500)
+	if holds(ctx, groom, INVITATION, 5, "거절 뒤 청첩장 유지") == false then
+		return false
+	end
+
+	if clear_duey(ctx, guest) == false then
+		return false
+	end
+	groom:send(invite(groom, guest))
+	if wait_count(ctx, groom, INVITATION, 4, "택배함을 비운 뒤 재초대") == false then
+		return false
+	end
+	ctx:sleep(1000)
+	return invited(ctx, guest, 1, "택배함을 비운 뒤 재초대")
+end
+
 local function cleanup(ctx)
 	break_off(ctx, ctx:bot(0))
 	ctx:sleep(1000)
@@ -1013,6 +1186,11 @@ test_suite {
 		wishlist_lost_timer,
 		wishlist_lost_relogin,
 		wishlist_not_sent,
+		invite_lost_timer,
+		invite_lost_relogin,
+		invite_not_sent,
+		invite_late,
+		invite_guest_full,
 		cleanup,
 	},
 }

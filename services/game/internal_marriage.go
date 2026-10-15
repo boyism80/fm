@@ -113,31 +113,17 @@ func (s *InternalSystem) SetWeddingWishlistAsync(ctx actor.Context, ch *Characte
 	)
 }
 
-func (s *InternalSystem) InviteWeddingGuestAsync(ctx actor.Context, ch *Character, marriageID uint32, guestName string) *async.Promise[*internal.InviteWeddingGuestReply] {
+func (s *InternalSystem) InviteWeddingGuestAsync(ctx actor.Context, ch *Character, requestID uint64, marriageID uint32, guestName string, parcel *internal.Parcel) *async.Promise[*internal.InviteWeddingGuestReply] {
 	req := &internal.InviteWeddingGuestRequest{
 		WorldId:    s.gw.GetWorldID(),
 		MarriageId: marriageID,
 		GuestName:  guestName,
+		Parcel:     parcel,
+		RequestId:  requestID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.InviteWeddingGuestReply, error) {
 			return s.client.InviteWeddingGuest(c, req)
-		},
-		nil,
-	)
-}
-
-func (s *InternalSystem) RecordWeddingInviteFailureAsync(ctx actor.Context, ch *Character, detail string) *async.Promise[*internal.WriteOperationLogReply] {
-	req := &internal.WriteOperationLogRequest{
-		WorldId:     s.gw.GetWorldID(),
-		ChannelId:   uint32(s.gw.GetChannelID()),
-		CharacterId: ch.GetID(),
-		Kind:        "wedding_guest_invite_failure",
-		Detail:      detail,
-	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.WriteOperationLogReply, error) {
-			return s.client.WriteOperationLog(c, req)
 		},
 		nil,
 	)

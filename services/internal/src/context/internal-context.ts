@@ -132,10 +132,6 @@ export class InternalContext {
         await this.insertFailure(worldId, location.role, operation?.name ?? "query", operation?.subject ?? "", statement, failure.code ?? "", String(failure.message ?? error));
     }
 
-    async recordApplicationFailure(worldId: number, operation: string, subject: string, message: string): Promise<void> {
-        await this.insertFailure(worldId, "application", operation, subject, "", "", message);
-    }
-
     private async insertFailure(worldId: number, role: string, operation: string, subject: string, statement: string, code: string, message: string): Promise<void> {
         const global = this.pgFailureLog[String(worldId)];
         if (!global) {

@@ -313,6 +313,7 @@ export enum MarriageResult {
   MARRIAGE_RESULT_GUEST_ALREADY_INVITED = 6,
   MARRIAGE_RESULT_GIFT_NOT_FOUND = 7,
   MARRIAGE_RESULT_ABORTED = 8,
+  MARRIAGE_RESULT_GUEST_FULL = 9,
   UNRECOGNIZED = -1,
 }
 
@@ -345,6 +346,9 @@ export function marriageResultFromJSON(object: any): MarriageResult {
     case 8:
     case "MARRIAGE_RESULT_ABORTED":
       return MarriageResult.MARRIAGE_RESULT_ABORTED;
+    case 9:
+    case "MARRIAGE_RESULT_GUEST_FULL":
+      return MarriageResult.MARRIAGE_RESULT_GUEST_FULL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -372,6 +376,8 @@ export function marriageResultToJSON(object: MarriageResult): string {
       return "MARRIAGE_RESULT_GIFT_NOT_FOUND";
     case MarriageResult.MARRIAGE_RESULT_ABORTED:
       return "MARRIAGE_RESULT_ABORTED";
+    case MarriageResult.MARRIAGE_RESULT_GUEST_FULL:
+      return "MARRIAGE_RESULT_GUEST_FULL";
     case MarriageResult.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -396,6 +402,7 @@ export enum UnsettledType {
   UNSETTLED_TYPE_FAMILY_MOVE = 14,
   UNSETTLED_TYPE_WEDDING_WISHLIST = 15,
   UNSETTLED_TYPE_SHOP_OPEN = 16,
+  UNSETTLED_TYPE_WEDDING_INVITE = 17,
   UNRECOGNIZED = -1,
 }
 
@@ -452,6 +459,9 @@ export function unsettledTypeFromJSON(object: any): UnsettledType {
     case 16:
     case "UNSETTLED_TYPE_SHOP_OPEN":
       return UnsettledType.UNSETTLED_TYPE_SHOP_OPEN;
+    case 17:
+    case "UNSETTLED_TYPE_WEDDING_INVITE":
+      return UnsettledType.UNSETTLED_TYPE_WEDDING_INVITE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -495,6 +505,8 @@ export function unsettledTypeToJSON(object: UnsettledType): string {
       return "UNSETTLED_TYPE_WEDDING_WISHLIST";
     case UnsettledType.UNSETTLED_TYPE_SHOP_OPEN:
       return "UNSETTLED_TYPE_SHOP_OPEN";
+    case UnsettledType.UNSETTLED_TYPE_WEDDING_INVITE:
+      return "UNSETTLED_TYPE_WEDDING_INVITE";
     case UnsettledType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -2145,12 +2157,12 @@ export interface InviteWeddingGuestRequest {
   worldId: number;
   marriageId: number;
   guestName: string;
+  parcel: Parcel | undefined;
+  requestId: string;
 }
 
 export interface InviteWeddingGuestReply {
   result: MarriageResult;
-  guestId: number;
-  guestName: string;
 }
 
 export interface FinishWeddingRequest {
@@ -8474,7 +8486,7 @@ export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = 
 };
 
 function createBaseInviteWeddingGuestRequest(): InviteWeddingGuestRequest {
-  return { worldId: 0, marriageId: 0, guestName: "" };
+  return { worldId: 0, marriageId: 0, guestName: "", parcel: undefined, requestId: "0" };
 }
 
 export const InviteWeddingGuestRequest: MessageFns<InviteWeddingGuestRequest> = {
@@ -8487,6 +8499,12 @@ export const InviteWeddingGuestRequest: MessageFns<InviteWeddingGuestRequest> = 
     }
     if (message.guestName !== "") {
       writer.uint32(26).string(message.guestName);
+    }
+    if (message.parcel !== undefined) {
+      Parcel.encode(message.parcel, writer.uint32(34).fork()).join();
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(40).uint64(message.requestId);
     }
     return writer;
   },
@@ -8522,6 +8540,22 @@ export const InviteWeddingGuestRequest: MessageFns<InviteWeddingGuestRequest> = 
           message.guestName = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.parcel = Parcel.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8548,6 +8582,12 @@ export const InviteWeddingGuestRequest: MessageFns<InviteWeddingGuestRequest> = 
         : isSet(object.guest_name)
         ? globalThis.String(object.guest_name)
         : "",
+      parcel: isSet(object.parcel) ? Parcel.fromJSON(object.parcel) : undefined,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
     };
   },
 
@@ -8562,6 +8602,12 @@ export const InviteWeddingGuestRequest: MessageFns<InviteWeddingGuestRequest> = 
     if (message.guestName !== "") {
       obj.guestName = message.guestName;
     }
+    if (message.parcel !== undefined) {
+      obj.parcel = Parcel.toJSON(message.parcel);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
     return obj;
   },
 
@@ -8573,24 +8619,22 @@ export const InviteWeddingGuestRequest: MessageFns<InviteWeddingGuestRequest> = 
     message.worldId = object.worldId ?? 0;
     message.marriageId = object.marriageId ?? 0;
     message.guestName = object.guestName ?? "";
+    message.parcel = (object.parcel !== undefined && object.parcel !== null)
+      ? Parcel.fromPartial(object.parcel)
+      : undefined;
+    message.requestId = object.requestId ?? "0";
     return message;
   },
 };
 
 function createBaseInviteWeddingGuestReply(): InviteWeddingGuestReply {
-  return { result: 0, guestId: 0, guestName: "" };
+  return { result: 0 };
 }
 
 export const InviteWeddingGuestReply: MessageFns<InviteWeddingGuestReply> = {
   encode(message: InviteWeddingGuestReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.result !== 0) {
       writer.uint32(8).int32(message.result);
-    }
-    if (message.guestId !== 0) {
-      writer.uint32(16).uint32(message.guestId);
-    }
-    if (message.guestName !== "") {
-      writer.uint32(26).string(message.guestName);
     }
     return writer;
   },
@@ -8610,22 +8654,6 @@ export const InviteWeddingGuestReply: MessageFns<InviteWeddingGuestReply> = {
           message.result = reader.int32() as any;
           continue;
         }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.guestId = reader.uint32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.guestName = reader.string();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8636,31 +8664,13 @@ export const InviteWeddingGuestReply: MessageFns<InviteWeddingGuestReply> = {
   },
 
   fromJSON(object: any): InviteWeddingGuestReply {
-    return {
-      result: isSet(object.result) ? marriageResultFromJSON(object.result) : 0,
-      guestId: isSet(object.guestId)
-        ? globalThis.Number(object.guestId)
-        : isSet(object.guest_id)
-        ? globalThis.Number(object.guest_id)
-        : 0,
-      guestName: isSet(object.guestName)
-        ? globalThis.String(object.guestName)
-        : isSet(object.guest_name)
-        ? globalThis.String(object.guest_name)
-        : "",
-    };
+    return { result: isSet(object.result) ? marriageResultFromJSON(object.result) : 0 };
   },
 
   toJSON(message: InviteWeddingGuestReply): unknown {
     const obj: any = {};
     if (message.result !== 0) {
       obj.result = marriageResultToJSON(message.result);
-    }
-    if (message.guestId !== 0) {
-      obj.guestId = Math.round(message.guestId);
-    }
-    if (message.guestName !== "") {
-      obj.guestName = message.guestName;
     }
     return obj;
   },
@@ -8671,8 +8681,6 @@ export const InviteWeddingGuestReply: MessageFns<InviteWeddingGuestReply> = {
   fromPartial<I extends Exact<DeepPartial<InviteWeddingGuestReply>, I>>(object: I): InviteWeddingGuestReply {
     const message = createBaseInviteWeddingGuestReply();
     message.result = object.result ?? 0;
-    message.guestId = object.guestId ?? 0;
-    message.guestName = object.guestName ?? "";
     return message;
   },
 };

@@ -121,7 +121,10 @@ export class MarriageGrpcController {
     async inviteWeddingGuest(call: GrpcCall<InviteWeddingGuestRequest>, callback: GrpcCallback<InviteWeddingGuestReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.inviteWeddingGuest(req.worldId, req.marriageId, req.guestName));
+            if (!req.parcel) {
+                throw Object.assign(new Error("parcel is required"), { code: "INVALID_PAYLOAD" });
+            }
+            callback(null, await this.marriageService.inviteWeddingGuest(req.worldId, req.marriageId, req.guestName, req.parcel, req.requestId));
         } catch (err) {
             this.grpcError(err, callback);
         }

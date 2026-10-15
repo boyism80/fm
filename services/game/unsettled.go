@@ -84,6 +84,8 @@ func (u *UnsettledRequests) Settle(actx actor.Context) {
 			u.owner.Wedding.settleReservation(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_WISHLIST:
 			u.owner.Wedding.settleWishlist(actx, request)
+		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_INVITE:
+			u.owner.Wedding.settleInvite(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN:
 			u.owner.StoreBank.settleShopOpen(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_FAMILY_MOVE:
