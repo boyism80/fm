@@ -10,6 +10,7 @@ import {
     type GuildLogo,
     type GuildRankTitles,
 } from "../types/guild-json";
+import { RequestRepository } from "./request-repository";
 
 const SELECT_COLS = `world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles,
   alliance_id, disbanded_at, created_at, updated_at`;
@@ -150,30 +151,6 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
         return result.slice(0, limit);
     }
 
-    async findRequest(worldId: number, ownerId: number, requestId: string): Promise<{ resultId: number | null } | null> {
-        if (requestId === "0") {
-            return null;
-        }
-        return this.ctx.withPgDataTransaction(worldId, ownerId, async (client: PoolClient) => {
-            const res = await client.query("SELECT result_id FROM guild_requests WHERE request_id = $1", [requestId]);
-            const row = res.rows[0] as { result_id: number | null } | undefined;
-            if (row == null) {
-                return null;
-            }
-            return { resultId: toPgIntOrNull(row.result_id) };
-        });
-    }
-
-    async insertRequest(client: PoolClient, ownerId: number, requestId: string, resultId: number | null): Promise<void> {
-        if (requestId === "0") {
-            return;
-        }
-        await client.query(
-            "INSERT INTO guild_requests (request_id, owner_id, result_id) VALUES ($1, $2, $3)",
-            [requestId, ownerId, resultId]
-        );
-    }
-
     override modelToRow(model: GuildModel): GuildRow {
         return {
             world_id: model.worldId,
@@ -189,4 +166,12 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             disbanded_at: model.disbandedAt ?? null,
         };
     }
+}
+
+export class GuildCreateRequestRepository extends RequestRepository<{ guild_id: number }> {
+    protected readonly kind = "guild_create";
+}
+
+export class GuildChangeRequestRepository extends RequestRepository {
+    protected readonly kind = "guild_change";
 }

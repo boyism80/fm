@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { InternalContext } from "../context/internal-context";
 import type { CharacterRepository } from "../repos/character-repository";
+import type { NoteRemoveRequestRepository } from "../repos/note-request-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 import type { SessionRepository } from "../repos/session-repository";
 import type { DistributedLockService } from "./distributed-lock-service";
@@ -81,6 +82,7 @@ export class SocialService {
     constructor(
         private readonly internalContext: InternalContext,
         private readonly characterRepository: CharacterRepository,
+        private readonly noteRemoveRequestRepository: NoteRemoveRequestRepository,
         private readonly unifiedRepository: UnifiedRepository,
         private readonly sessionRepository: SessionRepository,
         private readonly distributedLockService: DistributedLockService,
@@ -580,12 +582,9 @@ export class SocialService {
         const population = await this.internalContext.withPgGlobalTransaction(req.worldId, async tx => {
             await tx.query("SELECT pg_advisory_xact_lock(280, $1)", [id]);
             if (req.requestId !== "0") {
-                const recorded = await tx.query<{ population: number }>(
-                    "SELECT population FROM note_remove_requests WHERE request_id=$1",
-                    [req.requestId],
-                );
-                if (recorded.rows[0] !== undefined) {
-                    return recorded.rows[0].population;
+                const recorded = await this.noteRemoveRequestRepository.find(req.worldId, id, req.requestId, { txClient: tx });
+                if (recorded?.status === "applied") {
+                    return recorded.outcome.population;
                 }
             }
 
@@ -600,10 +599,7 @@ export class SocialService {
                 );
             const count = removed.rows.filter(n => n.gift === NoteKind.POPULATION).length;
             if (req.requestId !== "0") {
-                await tx.query(
-                    "INSERT INTO note_remove_requests (request_id, character_id, population) VALUES ($1, $2, $3)",
-                    [req.requestId, id, count],
-                );
+                await this.noteRemoveRequestRepository.insert(req.worldId, id, req.requestId, { population: count }, tx);
             }
             return count;
         });

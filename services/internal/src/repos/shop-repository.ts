@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import type { InternalContext } from "../context/internal-context";
 import type { RepositoryTxOptions } from "../types/repository-contracts";
+import { RequestRepository } from "./request-repository";
 
 export type ShopRow = {
     shop_id: number;
@@ -47,12 +48,6 @@ export type ShopUpdate = {
     sold: unknown[];
 };
 
-export type ShopOpenRequestRow = {
-    account_id: number;
-    shop_id: number | null;
-    aborted: boolean;
-};
-
 const SELECT_COLS =
     "shop_id, kind, account_id, character_id, owner_name, channel_id, map_id, sn, item_id, title, meso, items, sold, opened_at, closed_at, store_bank_id";
 
@@ -83,24 +78,8 @@ export class ShopRepository {
         return res.rows as ShopRow[];
     }
 
-    async findOpenRequest(worldId: number, accountId: number, requestId: string, options: RepositoryTxOptions = {}): Promise<ShopOpenRequestRow | undefined> {
-        const client = options.txClient ?? this.pool(worldId, accountId);
-        const res = await client.query(
-            "SELECT account_id, shop_id, aborted FROM shop_open_requests WHERE request_id = $1",
-            [requestId],
-        );
-        return res.rows[0] as ShopOpenRequestRow | undefined;
-    }
-
-    async insertOpenRequest(worldId: number, accountId: number, requestId: string, shopId: number | null, aborted: boolean, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = options.txClient ?? this.pool(worldId, accountId);
-        await client.query(
-            "INSERT INTO shop_open_requests (request_id, account_id, shop_id, aborted) VALUES ($1, $2, $3, $4)",
-            [requestId, accountId, shopId, aborted],
-        );
-    }
-
-    async abortOpenRequest(worldId: number, accountId: number, requestId: string, shopId: number, options: RepositoryTxOptions = {}): Promise<boolean> {
+    // An opened shop is removed only while it is still empty; a shop already gone counts as removed.
+    async abortOpen(worldId: number, accountId: number, shopId: number, options: RepositoryTxOptions = {}): Promise<boolean> {
         const client = options.txClient ?? this.pool(worldId, accountId);
         const deleted = await client.query(
             "DELETE FROM shops WHERE shop_id = $1 AND account_id = $2 AND closed_at IS NULL AND sn IS NULL AND meso = 0 AND items = '[]'::jsonb AND sold = '[]'::jsonb RETURNING shop_id",
@@ -115,7 +94,6 @@ export class ShopRepository {
                 return false;
             }
         }
-        await client.query("UPDATE shop_open_requests SET aborted = TRUE WHERE request_id = $1", [requestId]);
         return true;
     }
 
@@ -220,4 +198,8 @@ export class ShopRepository {
         }
         return count;
     }
+}
+
+export class ShopOpenRequestRepository extends RequestRepository<{ shop_id: number }> {
+    protected readonly kind = "shop_open";
 }

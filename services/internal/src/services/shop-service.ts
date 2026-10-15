@@ -5,7 +5,7 @@ import {
     type Shop,
     type ShopSearchEntry,
 } from "../protobuf/generated/fminternal/internal_service";
-import { ShopRepository, type ShopRow } from "../repos/shop-repository";
+import { ShopOpenRequestRepository, ShopRepository, type ShopRow } from "../repos/shop-repository";
 import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
 const ShopKindEntrusted = 5;
@@ -38,11 +38,18 @@ export class ShopSearchRanking {
 
 export class ShopService {
     private readonly shopRepo: ShopRepository;
+    private readonly shopOpenRequestRepo: ShopOpenRequestRepository;
     private readonly characterService: CharacterService;
     private readonly ranking: ShopSearchRanking;
 
-    constructor(shopRepository: ShopRepository, characterService: CharacterService, shopSearchRanking: ShopSearchRanking) {
+    constructor(
+        shopRepository: ShopRepository,
+        shopOpenRequestRepository: ShopOpenRequestRepository,
+        characterService: CharacterService,
+        shopSearchRanking: ShopSearchRanking
+    ) {
         this.shopRepo = shopRepository;
+        this.shopOpenRequestRepo = shopOpenRequestRepository;
         this.characterService = characterService;
         this.ranking = shopSearchRanking;
     }
@@ -83,12 +90,12 @@ export class ShopService {
             throw Object.assign(new Error("request_id is required"), { code: "INVALID_PAYLOAD" });
         }
         return this.shopRepo.withAccountLock(shop.worldId, shop.accountId, async (txClient) => {
-            const request = await this.shopRepo.findOpenRequest(shop.worldId, shop.accountId, requestId, { txClient });
-            if (request) {
-                if (request.account_id !== shop.accountId) {
-                    throw Object.assign(new Error("request_id belongs to another account"), { code: "INVALID_PAYLOAD" });
-                }
-                return { shopId: Number(request.shop_id ?? 0), existing: undefined, aborted: request.aborted };
+            const request = await this.shopOpenRequestRepo.find(shop.worldId, shop.accountId, requestId, { txClient });
+            if (request?.status === "aborted") {
+                return { shopId: 0, existing: undefined, aborted: true };
+            }
+            if (request != null) {
+                return { shopId: request.outcome.shop_id, existing: undefined, aborted: false };
             }
             const rows = await this.shopRepo.findByAccount(shop.worldId, shop.accountId, { txClient });
             const existing = rows.find((row) => {
@@ -122,7 +129,7 @@ export class ShopService {
             if (!row) {
                 throw new Error("shop insert returned no row");
             }
-            await this.shopRepo.insertOpenRequest(shop.worldId, shop.accountId, requestId, row.shop_id, false, { txClient });
+            await this.shopOpenRequestRepo.insert(shop.worldId, shop.accountId, requestId, { shop_id: Number(row.shop_id) }, txClient);
             return { shopId: row.shop_id, existing: undefined, aborted: false };
         });
     }
@@ -132,21 +139,18 @@ export class ShopService {
             return false;
         }
         return this.shopRepo.withAccountLock(worldId, accountId, async (txClient) => {
-            const request = await this.shopRepo.findOpenRequest(worldId, accountId, requestId, { txClient });
-            if (!request) {
-                await this.shopRepo.insertOpenRequest(worldId, accountId, requestId, null, true, { txClient });
-                return true;
-            }
-            if (request.account_id !== accountId) {
+            const request = await this.shopOpenRequestRepo.abort(worldId, accountId, requestId, txClient);
+            if (request == null) {
                 return false;
             }
-            if (request.aborted) {
+            if (request.status === "aborted") {
                 return true;
             }
-            if (request.shop_id == null) {
+            if ((await this.shopRepo.abortOpen(worldId, accountId, request.outcome.shop_id, { txClient })) === false) {
                 return false;
             }
-            return this.shopRepo.abortOpenRequest(worldId, accountId, requestId, Number(request.shop_id), { txClient });
+            await this.shopOpenRequestRepo.transition(worldId, accountId, requestId, "applied", "aborted", txClient);
+            return true;
         });
     }
 

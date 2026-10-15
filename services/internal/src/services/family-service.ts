@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import type { InternalContext } from "../context/internal-context";
 import type { CharacterRepository } from "../repos/character-repository";
+import type { FamilyMoveRequestRepository } from "../repos/family-request-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 import type { SessionRepository } from "../repos/session-repository";
 import type { SocialService } from "./social-service";
@@ -45,6 +46,7 @@ export class FamilyService {
     constructor(
         private readonly internalContext: InternalContext,
         private readonly characterRepository: CharacterRepository,
+        private readonly familyMoveRequestRepository: FamilyMoveRequestRepository,
         private readonly unifiedRepository: UnifiedRepository,
         private readonly sessionRepository: SessionRepository,
         private readonly socialService: SocialService,
@@ -448,12 +450,8 @@ export class FamilyService {
 
             const operation = moving ? req.requestId : "";
             if (moving) {
-                const move = await tx.query(
-                    `INSERT INTO social_family_moves (operation_id, character_id, payer_id, feature)
-                    VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING *`,
-                    [operation, id, payer, feature],
-                );
-                if (!move.rowCount) {
+                const reserved = await this.familyMoveRequestRepository.reserve(world, id, operation, { payer_id: payer, feature }, tx);
+                if (!reserved) {
                     return FamilyResult.FAMILY_RESULT_FAILED;
                 }
             }
@@ -483,35 +481,24 @@ export class FamilyService {
 
         if (req.complete) {
             await this.internalContext.withPgGlobalTransaction(world, async tx => {
-                await tx.query(
-                    "UPDATE social_family_moves SET status='completed' WHERE operation_id=$1 AND character_id=$2 AND status='pending'",
-                    [req.requestId, id],
-                );
+                await this.familyMoveRequestRepository.transition(world, id, req.requestId, "applied", "completed", tx);
             });
             return { status: FamilyResult.FAMILY_RESULT_OK, family: undefined };
         }
 
         const payer = await this.internalContext.withPgGlobalTransaction(world, async tx => {
-            await tx.query(
-                `INSERT INTO social_family_moves (operation_id, character_id, payer_id, feature, status)
-                VALUES ($1, $2, 0, 0, 'refunded') ON CONFLICT DO NOTHING`,
-                [req.requestId, id],
-            );
-            const move = await tx.query<{ payer_id: number; feature: number }>(
-                `UPDATE social_family_moves SET status='refunded'
-                WHERE operation_id=$1 AND character_id=$2 AND status='pending' RETURNING payer_id, feature`,
-                [req.requestId, id],
-            );
-            const reservation = move.rows[0];
+            await this.familyMoveRequestRepository.abort(world, id, req.requestId, tx);
+            const reservation = await this.familyMoveRequestRepository.transition(world, id, req.requestId, "applied", "aborted", tx);
             if (!reservation) {
                 return 0;
             }
+            const payer = reservation.outcome.payer_id;
             await tx.query("DELETE FROM social_family_uses WHERE operation_id=$1", [req.requestId]);
             await tx.query(
                 "UPDATE social_family SET reputation=LEAST(2147483647, reputation::bigint+$2) WHERE character_id=$1",
-                [reservation.payer_id, COSTS[reservation.feature]],
+                [payer, COSTS[reservation.outcome.feature]],
             );
-            return reservation.payer_id;
+            return payer;
         });
         return this.reply(world, FamilyResult.FAMILY_RESULT_OK, id, payer);
     }

@@ -21,18 +21,25 @@ import { MountRepository } from "./repos/mount-repository";
 import { UnsettledRequestRepository } from "./repos/unsettled-request-repository";
 import { StorageRepository } from "./repos/storage-repository";
 import { StorageItemRepository } from "./repos/storage-item-repository";
-import { ParcelRepository } from "./repos/parcel-repository";
-import { ShopRepository } from "./repos/shop-repository";
-import { CashShopRepository } from "./repos/cash-shop-repository";
-import { MarriageRepository } from "./repos/marriage-repository";
+import { ParcelClaimRequestRepository, ParcelRepository, ParcelSendRequestRepository } from "./repos/parcel-repository";
+import { ShopOpenRequestRepository, ShopRepository } from "./repos/shop-repository";
+import { CashRequestRepository, CashShopRepository } from "./repos/cash-shop-repository";
+import {
+    MarriageRepository,
+    MarriageRequestRepository,
+    WeddingGiftClaimRequestRepository,
+    WeddingGiftSendRequestRepository,
+} from "./repos/marriage-repository";
 import { PartyRepository } from "./repos/party-repository";
 import { PartyMemberRepository } from "./repos/party-member-repository";
-import { AllianceRepository } from "./repos/alliance-repository";
-import { GuildRepository } from "./repos/guild-repository";
+import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "./repos/alliance-repository";
+import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "./repos/guild-repository";
 import { GuildMemberRepository } from "./repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "./repos/guild-bulletin-board-repository";
 import { CharacterBuddyRepository } from "./repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "./repos/character-realtime-state-repository";
+import { NoteRemoveRequestRepository } from "./repos/note-request-repository";
+import { FamilyMoveRequestRepository } from "./repos/family-request-repository";
 import { CharacterService } from "./services/character-service";
 import { WzService } from "./services/wz-service";
 import { BuffService } from "./services/buff-service";
@@ -87,17 +94,30 @@ export function createAppContainer() {
         storageRepository: awilix.asClass(StorageRepository).scoped(),
         storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),
         parcelRepository: awilix.asClass(ParcelRepository).scoped(),
+        parcelSendRequestRepository: awilix.asClass(ParcelSendRequestRepository).scoped(),
+        parcelClaimRequestRepository: awilix.asClass(ParcelClaimRequestRepository).scoped(),
         shopRepository: awilix.asClass(ShopRepository).scoped(),
+        shopOpenRequestRepository: awilix.asClass(ShopOpenRequestRepository).scoped(),
         cashShopRepository: awilix.asClass(CashShopRepository).scoped(),
+        cashRequestRepository: awilix.asClass(CashRequestRepository).scoped(),
         marriageRepository: awilix.asClass(MarriageRepository).scoped(),
+        marriageRequestRepository: awilix.asClass(MarriageRequestRepository).scoped(),
+        weddingGiftSendRequestRepository: awilix.asClass(WeddingGiftSendRequestRepository).scoped(),
+        weddingGiftClaimRequestRepository: awilix.asClass(WeddingGiftClaimRequestRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),
         partyMemberRepository: awilix.asClass(PartyMemberRepository).scoped(),
         allianceRepository: awilix.asClass(AllianceRepository).scoped(),
+        allianceCreateRequestRepository: awilix.asClass(AllianceCreateRequestRepository).scoped(),
+        allianceChangeRequestRepository: awilix.asClass(AllianceChangeRequestRepository).scoped(),
         guildRepository: awilix.asClass(GuildRepository).scoped(),
+        guildCreateRequestRepository: awilix.asClass(GuildCreateRequestRepository).scoped(),
+        guildChangeRequestRepository: awilix.asClass(GuildChangeRequestRepository).scoped(),
         guildMemberRepository: awilix.asClass(GuildMemberRepository).scoped(),
         guildBulletinBoardRepository: awilix.asClass(GuildBulletinBoardRepository).scoped(),
         characterBuddyRepository: awilix.asClass(CharacterBuddyRepository).scoped(),
         characterRealtimeStateRepository: awilix.asClass(CharacterRealtimeStateRepository).scoped(),
+        noteRemoveRequestRepository: awilix.asClass(NoteRemoveRequestRepository).scoped(),
+        familyMoveRequestRepository: awilix.asClass(FamilyMoveRequestRepository).scoped(),
         characterService: awilix.asClass(CharacterService).transient(),
         wzService: awilix.asClass(WzService).singleton(),
         buffService: awilix.asClass(BuffService).transient(),

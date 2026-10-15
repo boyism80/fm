@@ -9,7 +9,7 @@ import {
 import type { PoolClient } from "pg";
 import { AppConfiguration } from "../config/app-configuration";
 import { InternalContext } from "../context/internal-context";
-import { AllianceRepository } from "../repos/alliance-repository";
+import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "../repos/alliance-repository";
 import { GuildRepository } from "../repos/guild-repository";
 import { GuildMemberRepository } from "../repos/guild-member-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
@@ -128,6 +128,8 @@ export class AllianceService {
     private readonly app: AppConfiguration;
     private readonly allianceRepo: AllianceRepository;
     private readonly guildRepo: GuildRepository;
+    private readonly allianceCreateRequestRepo: AllianceCreateRequestRepository;
+    private readonly allianceChangeRequestRepo: AllianceChangeRequestRepository;
     private readonly guildMemberRepo: GuildMemberRepository;
     private readonly characterRealtimeStateRepo: CharacterRealtimeStateRepository;
     private readonly rabbitmqService: RabbitMQService;
@@ -140,6 +142,8 @@ export class AllianceService {
         appConfiguration: AppConfiguration,
         allianceRepository: AllianceRepository,
         guildRepository: GuildRepository,
+        allianceCreateRequestRepository: AllianceCreateRequestRepository,
+        allianceChangeRequestRepository: AllianceChangeRequestRepository,
         guildMemberRepository: GuildMemberRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         rabbitmqService: RabbitMQService,
@@ -151,6 +155,8 @@ export class AllianceService {
         this.app = appConfiguration;
         this.allianceRepo = allianceRepository;
         this.guildRepo = guildRepository;
+        this.allianceCreateRequestRepo = allianceCreateRequestRepository;
+        this.allianceChangeRequestRepo = allianceChangeRequestRepository;
         this.guildMemberRepo = guildMemberRepository;
         this.characterRealtimeStateRepo = characterRealtimeStateRepository;
         this.rabbitmqService = rabbitmqService;
@@ -320,10 +326,10 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        const recorded = await this.guildRepo.findRequest(worldId, guildId, requestId);
-        if (recorded != null) {
-            const recordedAllianceId = recorded.resultId ?? 0;
-            const recordedAlliance = recordedAllianceId > 0 ? await this.allianceRepo.get(worldId, recordedAllianceId) : null;
+        const recorded = requestId === "0" ? null : await this.allianceCreateRequestRepo.find(worldId, guildId, requestId);
+        if (recorded?.status === "applied") {
+            const recordedAllianceId = recorded.outcome.alliance_id;
+            const recordedAlliance = await this.allianceRepo.get(worldId, recordedAllianceId);
             if (!recordedAlliance) {
                 return { ok: true, allianceId: recordedAllianceId };
             }
@@ -422,7 +428,9 @@ export class AllianceService {
                     { txClient: dataTx }
                 );
                 await this.assignAllianceRanks(worldId, guildId, 1, dataTx);
-                await this.guildRepo.insertRequest(dataTx, guildId, requestId, newAllianceId);
+                if (requestId !== "0") {
+                    await this.allianceCreateRequestRepo.insert(worldId, guildId, requestId, { alliance_id: newAllianceId }, dataTx);
+                }
             });
         } catch (err: unknown) {
             const code = (err as { code?: string })?.code;
@@ -857,7 +865,7 @@ export class AllianceService {
         }
         await using _locks = locked.locks;
         const { guild, allianceId, alliance, requester: requesterMember } = locked;
-        if (await this.guildRepo.findRequest(worldId, allianceId, requestId) != null) {
+        if (requestId !== "0" && (await this.allianceChangeRequestRepo.find(worldId, allianceId, requestId)) != null) {
             return { ok: true, allianceId, alliance: await this.allianceToPb(worldId, alliance) };
         }
         if (guild.leaderCharacterId !== characterId) {
@@ -893,7 +901,9 @@ export class AllianceService {
                 },
                 { txClient: dataTx }
             );
-            await this.guildRepo.insertRequest(dataTx, allianceId, requestId, null);
+            if (requestId !== "0") {
+                await this.allianceChangeRequestRepo.insert(worldId, allianceId, requestId, {}, dataTx);
+            }
 
             return {
                 ok: true as const,

@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import type { InternalContext } from "../context/internal-context";
 import type { RepositoryTxOptions } from "../types/repository-contracts";
+import { RequestRepository } from "./request-repository";
 
 export type ParcelRow = {
     parcel_id: number;
@@ -87,34 +88,6 @@ export class ParcelRepository {
         await client.query("DELETE FROM parcels WHERE receiver_id = $1 AND parcel_id = ANY($2::int[])", [receiverId, parcelIds]);
     }
 
-    async findSendRequest(worldId: number, receiverId: number, requestId: string, options: RepositoryTxOptions = {}): Promise<{ aborted: boolean } | null> {
-        const client = options.txClient ?? this.pool(worldId, receiverId);
-        const res = await client.query("SELECT aborted FROM parcel_send_requests WHERE request_id = $1", [requestId]);
-        return (res.rows[0] as { aborted: boolean } | undefined) ?? null;
-    }
-
-    async insertSendRequest(worldId: number, receiverId: number, requestId: string, aborted: boolean, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = options.txClient ?? this.pool(worldId, receiverId);
-        await client.query(
-            "INSERT INTO parcel_send_requests (request_id, receiver_id, aborted) VALUES ($1, $2, $3)",
-            [requestId, receiverId, aborted]
-        );
-    }
-
-    async findClaimRequest(worldId: number, receiverId: number, requestId: string, options: RepositoryTxOptions = {}): Promise<unknown | null> {
-        const client = options.txClient ?? this.pool(worldId, receiverId);
-        const res = await client.query("SELECT parcel FROM parcel_claim_requests WHERE request_id = $1", [requestId]);
-        return (res.rows[0] as { parcel: unknown } | undefined)?.parcel ?? null;
-    }
-
-    async insertClaimRequest(worldId: number, receiverId: number, requestId: string, parcel: unknown, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = options.txClient ?? this.pool(worldId, receiverId);
-        await client.query(
-            "INSERT INTO parcel_claim_requests (request_id, receiver_id, parcel) VALUES ($1, $2, $3)",
-            [requestId, receiverId, JSON.stringify(parcel)]
-        );
-    }
-
     async markNotified(worldId: number, receiverId: number, parcelIds: number[], options: RepositoryTxOptions = {}): Promise<void> {
         if (parcelIds.length === 0) {
             return;
@@ -125,4 +98,12 @@ export class ParcelRepository {
             [receiverId, parcelIds]
         );
     }
+}
+
+export class ParcelSendRequestRepository extends RequestRepository {
+    protected readonly kind = "parcel_send";
+}
+
+export class ParcelClaimRequestRepository extends RequestRepository<{ parcel: unknown }> {
+    protected readonly kind = "parcel_claim";
 }

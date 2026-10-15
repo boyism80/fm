@@ -266,13 +266,16 @@ export class InternalContext {
         return this.withPgTransaction(pool, fn);
     }
 
-    async withPgGlobalTransaction<T>(worldId: number, fn: TxFn<T>): Promise<T> {
-        const worldKey = String(worldId);
-        const pool = this.pgGlobal[worldKey];
+    getPgGlobalPool(worldId: number): Pool {
+        const pool = this.pgGlobal[String(worldId)];
         if (!pool) {
-            throw new Error(`Unknown world_id for global transaction: ${worldId}`);
+            throw new Error(`Unknown world_id for global pool: ${worldId}`);
         }
-        return this.withPgTransaction(pool, fn);
+        return pool;
+    }
+
+    async withPgGlobalTransaction<T>(worldId: number, fn: TxFn<T>): Promise<T> {
+        return this.withPgTransaction(this.getPgGlobalPool(worldId), fn);
     }
 
     getPgUnifiedPool(): Pool {

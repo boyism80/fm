@@ -12,8 +12,15 @@ import {
     type Parcel,
     WeddingGift,
 } from "../protobuf/generated/fminternal/internal_service";
-import { MarriageRepository, type MarriageRow, type WeddingGiftRow } from "../repos/marriage-repository";
-import { ParcelRepository } from "../repos/parcel-repository";
+import {
+    MarriageRepository,
+    MarriageRequestRepository,
+    WeddingGiftClaimRequestRepository,
+    WeddingGiftSendRequestRepository,
+    type MarriageRow,
+    type WeddingGiftRow,
+} from "../repos/marriage-repository";
+import { ParcelSendRequestRepository } from "../repos/parcel-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { ParcelService } from "./parcel-service";
@@ -36,7 +43,10 @@ export class MarriageService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
-    private readonly parcelRepo: ParcelRepository;
+    private readonly marriageRequestRepo: MarriageRequestRepository;
+    private readonly weddingGiftSendRequestRepo: WeddingGiftSendRequestRepository;
+    private readonly weddingGiftClaimRequestRepo: WeddingGiftClaimRequestRepository;
+    private readonly parcelSendRequestRepo: ParcelSendRequestRepository;
     private readonly parcelService: ParcelService;
 
     constructor(
@@ -44,14 +54,20 @@ export class MarriageService {
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
         rabbitmqService: RabbitMQService,
-        parcelRepository: ParcelRepository,
+        marriageRequestRepository: MarriageRequestRepository,
+        weddingGiftSendRequestRepository: WeddingGiftSendRequestRepository,
+        weddingGiftClaimRequestRepository: WeddingGiftClaimRequestRepository,
+        parcelSendRequestRepository: ParcelSendRequestRepository,
         parcelService: ParcelService
     ) {
         this.marriageRepo = marriageRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
-        this.parcelRepo = parcelRepository;
+        this.marriageRequestRepo = marriageRequestRepository;
+        this.weddingGiftSendRequestRepo = weddingGiftSendRequestRepository;
+        this.weddingGiftClaimRequestRepo = weddingGiftClaimRequestRepository;
+        this.parcelSendRequestRepo = parcelSendRequestRepository;
         this.parcelService = parcelService;
     }
 
@@ -151,7 +167,7 @@ export class MarriageService {
     ): Promise<MarriageReply> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             await client.query("SELECT pg_advisory_xact_lock($1)", [0x6d617272]);
-            if (requestId !== "0" && (await this.marriageRepo.findRequest(client, requestId)) != null) {
+            if (requestId !== "0" && (await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client })) != null) {
                 return { result: MarriageResult.MARRIAGE_RESULT_ABORTED, marriage: undefined };
             }
             if ((await this.marriageRepo.findByCharacter(client, groomId)) != null) {
@@ -170,7 +186,7 @@ export class MarriageService {
                 status: MarriageStatus.MARRIAGE_STATUS_ENGAGED,
             });
             if (requestId !== "0") {
-                await this.marriageRepo.insertRequest(client, requestId);
+                await this.marriageRequestRepo.insert(worldId, 0, requestId, {}, client);
             }
             return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
         });
@@ -205,7 +221,7 @@ export class MarriageService {
         requestId: string
     ): Promise<MarriageReply> {
         const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
-            if (requestId !== "0" && (await this.marriageRepo.findRequest(client, requestId)) != null) {
+            if (requestId !== "0" && (await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client })) != null) {
                 return MarriageResult.MARRIAGE_RESULT_ABORTED;
             }
             const found = await this.marriageRepo.find(client, marriageId);
@@ -218,7 +234,7 @@ export class MarriageService {
             found.ticket_item_id = ticketItemId;
             await this.marriageRepo.update(client, found);
             if (requestId !== "0") {
-                await this.marriageRepo.insertRequest(client, requestId);
+                await this.marriageRequestRepo.insert(worldId, 0, requestId, {}, client);
             }
             return found;
         });
@@ -233,9 +249,8 @@ export class MarriageService {
 
     async abortMarriageChange(worldId: number, requestId: string): Promise<boolean> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
-            await this.marriageRepo.abortRequest(client, requestId);
-            const request = await this.marriageRepo.findRequest(client, requestId);
-            return request?.aborted === false;
+            const request = await this.marriageRequestRepo.abort(worldId, 0, requestId, client);
+            return request?.status === "applied";
         });
     }
 
@@ -245,9 +260,9 @@ export class MarriageService {
             if (found == null || found.ticket_item_id === 0) {
                 return null;
             }
-            const request = await this.marriageRepo.findRequest(client, requestId);
+            const request = await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client });
             if (request != null) {
-                if (request.aborted || (found.groom_id !== characterId && found.bride_id !== characterId)) {
+                if (request.status === "aborted" || (found.groom_id !== characterId && found.bride_id !== characterId)) {
                     return null;
                 }
                 return found;
@@ -262,7 +277,7 @@ export class MarriageService {
                 return null;
             }
             await this.marriageRepo.update(client, found);
-            await this.marriageRepo.insertRequest(client, requestId);
+            await this.marriageRequestRepo.insert(worldId, 0, requestId, {}, client);
             return found;
         });
         if (row == null) {
@@ -281,8 +296,8 @@ export class MarriageService {
     async inviteWeddingGuest(worldId: number, marriageId: number, guestName: string, parcel: Parcel, requestId: string): Promise<InviteWeddingGuestReply> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             const row = await this.marriageRepo.find(client, marriageId);
-            const request = await this.marriageRepo.findRequest(client, requestId);
-            if (request?.aborted) {
+            const request = await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client });
+            if (request?.status === "aborted") {
                 return { result: MarriageResult.MARRIAGE_RESULT_ABORTED };
             }
             if (request != null) {
@@ -290,7 +305,7 @@ export class MarriageService {
             }
 
             const fail = async (result: MarriageResult): Promise<InviteWeddingGuestReply> => {
-                await this.marriageRepo.abortRequest(client, requestId);
+                await this.marriageRequestRepo.abort(worldId, 0, requestId, client);
                 return { result };
             };
             const entry = await this.unifiedRepo.findCharacterNameEntry(guestName);
@@ -298,7 +313,7 @@ export class MarriageService {
                 return fail(MarriageResult.MARRIAGE_RESULT_GUEST_NOT_FOUND);
             }
 
-            const sent = await this.parcelRepo.findSendRequest(worldId, entry.character_id, requestId);
+            const sent = await this.parcelSendRequestRepo.find(worldId, entry.character_id, requestId);
             if (sent == null) {
                 if (row == null || row.ticket_item_id === 0) {
                     return fail(MarriageResult.MARRIAGE_RESULT_INVALID_STATE);
@@ -326,7 +341,7 @@ export class MarriageService {
                 row.guests = [...row.guests, entry.character_id];
                 await this.marriageRepo.update(client, row);
             }
-            await this.marriageRepo.insertRequest(client, requestId);
+            await this.marriageRequestRepo.insert(worldId, 0, requestId, {}, client);
             return { result: MarriageResult.MARRIAGE_RESULT_OK };
         });
     }
@@ -417,8 +432,8 @@ export class MarriageService {
     async giveWeddingGift(input: GiveWeddingGiftInput): Promise<MarriageResult> {
         return this.marriageRepo.withReceiverLock(input.worldId, input.receiverId, async (client) => {
             if (input.requestId !== "0") {
-                const request = await this.marriageRepo.findGiftSendRequest(client, input.requestId);
-                if (request?.aborted) {
+                const request = await this.weddingGiftSendRequestRepo.find(input.worldId, input.receiverId, input.requestId, { txClient: client });
+                if (request?.status === "aborted") {
                     return MarriageResult.MARRIAGE_RESULT_ABORTED;
                 }
                 if (request != null) {
@@ -434,7 +449,7 @@ export class MarriageService {
                 { txClient: client }
             );
             if (input.requestId !== "0") {
-                await this.marriageRepo.insertGiftSendRequest(client, input.receiverId, input.requestId, false);
+                await this.weddingGiftSendRequestRepo.insert(input.worldId, input.receiverId, input.requestId, {}, client);
             }
             return MarriageResult.MARRIAGE_RESULT_OK;
         });
@@ -442,13 +457,8 @@ export class MarriageService {
 
     async abortWeddingGift(worldId: number, receiverId: number, requestId: string): Promise<boolean> {
         return this.marriageRepo.withReceiverLock(worldId, receiverId, async (client) => {
-            const request = await this.marriageRepo.findGiftSendRequest(client, requestId);
-            if (request != null) {
-                return request.aborted === false;
-            }
-
-            await this.marriageRepo.insertGiftSendRequest(client, receiverId, requestId, true);
-            return false;
+            const request = await this.weddingGiftSendRequestRepo.abort(worldId, receiverId, requestId, client);
+            return request?.status === "applied";
         });
     }
 
@@ -460,9 +470,9 @@ export class MarriageService {
     async claimWeddingGift(worldId: number, characterId: number, giftId: number, requestId: string): Promise<ClaimWeddingGiftReply> {
         return this.marriageRepo.withReceiverLock(worldId, characterId, async (client) => {
             if (requestId !== "0") {
-                const claimed = await this.marriageRepo.findGiftClaimRequest(client, requestId);
-                if (claimed != null) {
-                    return { result: MarriageResult.MARRIAGE_RESULT_OK, gift: WeddingGift.fromJSON(claimed) };
+                const claimed = await this.weddingGiftClaimRequestRepo.find(worldId, characterId, requestId, { txClient: client });
+                if (claimed?.status === "applied") {
+                    return { result: MarriageResult.MARRIAGE_RESULT_OK, gift: WeddingGift.fromJSON(claimed.outcome.gift) };
                 }
             }
 
@@ -472,7 +482,7 @@ export class MarriageService {
             }
             const gift = this.giftToProto(row);
             if (requestId !== "0") {
-                await this.marriageRepo.insertGiftClaimRequest(client, characterId, requestId, WeddingGift.toJSON(gift));
+                await this.weddingGiftClaimRequestRepo.insert(worldId, characterId, requestId, { gift: WeddingGift.toJSON(gift) }, client);
             }
             return { result: MarriageResult.MARRIAGE_RESULT_OK, gift };
         });

@@ -8,6 +8,7 @@ import {
     DEFAULT_ALLIANCE_RANK_TITLES,
     type AllianceRankTitles,
 } from "../types/alliance-json";
+import { RequestRepository } from "./request-repository";
 
 const SELECT_COLS = `world_id, alliance_id, name, leader_character_id, guild_ids, rank_titles,
   capacity, notice, disbanded_at, created_at, updated_at`;
@@ -125,4 +126,12 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
             disbanded_at: model.disbandedAt ?? null,
         };
     }
+}
+
+export class AllianceCreateRequestRepository extends RequestRepository<{ alliance_id: number }> {
+    protected readonly kind = "alliance_create";
+}
+
+export class AllianceChangeRequestRepository extends RequestRepository {
+    protected readonly kind = "alliance_change";
 }

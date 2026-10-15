@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
 import type { InternalContext } from "../context/internal-context";
 import type { RepositoryTxOptions } from "../types/repository-contracts";
+import { RequestRepository } from "./request-repository";
 
 export type CashItemRow = {
     serial: string;
@@ -49,9 +50,11 @@ export type CashTransferRequest = {
 
 export class CashShopRepository {
     private readonly ctx: InternalContext;
+    private readonly cashRequestRepo: CashRequestRepository;
 
-    constructor(internalContext: InternalContext) {
+    constructor(internalContext: InternalContext, cashRequestRepository: CashRequestRepository) {
         this.ctx = internalContext;
+        this.cashRequestRepo = cashRequestRepository;
     }
 
     async withAccountLock<T>(worldId: number, accountId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -97,22 +100,11 @@ export class CashShopRepository {
             } else if (request.kind === "inventory_slot" || request.kind === "meso") {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, request.target_id]);
             }
-            if ((await this.insertReceipt(client, request.request_id)) === false) {
+            if ((await this.cashRequestRepo.reserve(worldId, request.target_id, request.request_id, {}, client)) === false) {
                 return;
             }
             await fn(client);
         });
-    }
-
-    async insertReceipt(client: PoolClient, requestId: string): Promise<boolean> {
-        const res = await client.query("INSERT INTO cash_transfer_receipts (request_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING request_id", [requestId]);
-        return (res.rowCount ?? 0) > 0;
-    }
-
-    async findReceipt(worldId: number, ownerId: number, requestId: string, options: RepositoryTxOptions = {}): Promise<boolean> {
-        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, ownerId), options);
-        const res = await client.query("SELECT 1 FROM cash_transfer_receipts WHERE request_id = $1", [requestId]);
-        return (res.rowCount ?? 0) > 0;
     }
 
     async finishTransfer(worldId: number, request: CashTransferRequest): Promise<void> {
@@ -256,4 +248,8 @@ export class CashShopRepository {
             [characterId, commoditySns]
         );
     }
+}
+
+export class CashRequestRepository extends RequestRepository {
+    protected readonly kind = "cash";
 }

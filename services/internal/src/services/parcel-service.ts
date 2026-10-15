@@ -7,7 +7,7 @@ import {
     Parcel,
 } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
-import { ParcelRepository, type ParcelRow } from "../repos/parcel-repository";
+import { ParcelClaimRequestRepository, ParcelRepository, ParcelSendRequestRepository, type ParcelRow } from "../repos/parcel-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
@@ -28,6 +28,8 @@ export type SendParcelInput = {
 export class ParcelService {
     private readonly app: AppConfiguration;
     private readonly parcelRepo: ParcelRepository;
+    private readonly parcelSendRequestRepo: ParcelSendRequestRepository;
+    private readonly parcelClaimRequestRepo: ParcelClaimRequestRepository;
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
@@ -35,12 +37,16 @@ export class ParcelService {
     constructor(
         appConfiguration: AppConfiguration,
         parcelRepository: ParcelRepository,
+        parcelSendRequestRepository: ParcelSendRequestRepository,
+        parcelClaimRequestRepository: ParcelClaimRequestRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
         rabbitmqService: RabbitMQService
     ) {
         this.app = appConfiguration;
         this.parcelRepo = parcelRepository;
+        this.parcelSendRequestRepo = parcelSendRequestRepository;
+        this.parcelClaimRequestRepo = parcelClaimRequestRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
@@ -98,8 +104,8 @@ export class ParcelService {
         const itemId = input.parcel.item?.itemId ?? 0;
         const result = await this.parcelRepo.withReceiverLock(input.worldId, receiverId, async (txClient) => {
             if (input.requestId !== "0") {
-                const request = await this.parcelRepo.findSendRequest(input.worldId, receiverId, input.requestId, { txClient });
-                if (request?.aborted) {
+                const request = await this.parcelSendRequestRepo.find(input.worldId, receiverId, input.requestId, { txClient });
+                if (request?.status === "aborted") {
                     return ParcelResult.PARCEL_RESULT_ABORTED;
                 }
                 if (request != null) {
@@ -131,7 +137,7 @@ export class ParcelService {
                 { txClient }
             );
             if (input.requestId !== "0") {
-                await this.parcelRepo.insertSendRequest(input.worldId, receiverId, input.requestId, false, { txClient });
+                await this.parcelSendRequestRepo.insert(input.worldId, receiverId, input.requestId, {}, txClient);
             }
             return ParcelResult.PARCEL_RESULT_OK;
         });
@@ -165,22 +171,17 @@ export class ParcelService {
         }
 
         return this.parcelRepo.withReceiverLock(worldId, entry.character_id, async (txClient) => {
-            const request = await this.parcelRepo.findSendRequest(worldId, entry.character_id, requestId, { txClient });
-            if (request != null) {
-                return request.aborted === false;
-            }
-
-            await this.parcelRepo.insertSendRequest(worldId, entry.character_id, requestId, true, { txClient });
-            return false;
+            const request = await this.parcelSendRequestRepo.abort(worldId, entry.character_id, requestId, txClient);
+            return request?.status === "applied";
         });
     }
 
     async claimParcel(worldId: number, characterId: number, parcelId: number, requestId: string): Promise<ClaimParcelReply> {
         return this.parcelRepo.withReceiverLock(worldId, characterId, async (txClient) => {
             if (requestId !== "0") {
-                const claimed = await this.parcelRepo.findClaimRequest(worldId, characterId, requestId, { txClient });
-                if (claimed != null) {
-                    return { result: ParcelResult.PARCEL_RESULT_OK, parcel: Parcel.fromJSON(claimed) };
+                const claimed = await this.parcelClaimRequestRepo.find(worldId, characterId, requestId, { txClient });
+                if (claimed?.status === "applied") {
+                    return { result: ParcelResult.PARCEL_RESULT_OK, parcel: Parcel.fromJSON(claimed.outcome.parcel) };
                 }
             }
 
@@ -197,7 +198,7 @@ export class ParcelService {
             await this.parcelRepo.delete(worldId, characterId, parcelId, { txClient });
             const parcel = this.toProto(row);
             if (requestId !== "0") {
-                await this.parcelRepo.insertClaimRequest(worldId, characterId, requestId, Parcel.toJSON(parcel), { txClient });
+                await this.parcelClaimRequestRepo.insert(worldId, characterId, requestId, { parcel: Parcel.toJSON(parcel) }, txClient);
             }
             return { result: ParcelResult.PARCEL_RESULT_OK, parcel };
         });

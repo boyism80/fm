@@ -10,7 +10,7 @@ import type { PoolClient } from "pg";
 import { AppConfiguration } from "../config/app-configuration";
 import { InternalContext } from "../context/internal-context";
 import { UnifiedRepository } from "../repos/unified-repository";
-import { GuildRepository } from "../repos/guild-repository";
+import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "../repos/guild-repository";
 import { GuildMemberRepository } from "../repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "../repos/guild-bulletin-board-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
@@ -168,6 +168,8 @@ export class GuildService {
     private readonly app: AppConfiguration;
     private readonly unifiedRepo: UnifiedRepository;
     private readonly guildRepo: GuildRepository;
+    private readonly guildCreateRequestRepo: GuildCreateRequestRepository;
+    private readonly guildChangeRequestRepo: GuildChangeRequestRepository;
     private readonly guildMemberRepo: GuildMemberRepository;
     private readonly guildBulletinBoardRepo: GuildBulletinBoardRepository;
     private readonly characterRealtimeStateRepo: CharacterRealtimeStateRepository;
@@ -181,6 +183,8 @@ export class GuildService {
         appConfiguration: AppConfiguration,
         unifiedRepository: UnifiedRepository,
         guildRepository: GuildRepository,
+        guildCreateRequestRepository: GuildCreateRequestRepository,
+        guildChangeRequestRepository: GuildChangeRequestRepository,
         guildMemberRepository: GuildMemberRepository,
         guildBulletinBoardRepository: GuildBulletinBoardRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
@@ -193,6 +197,8 @@ export class GuildService {
         this.app = appConfiguration;
         this.unifiedRepo = unifiedRepository;
         this.guildRepo = guildRepository;
+        this.guildCreateRequestRepo = guildCreateRequestRepository;
+        this.guildChangeRequestRepo = guildChangeRequestRepository;
         this.guildMemberRepo = guildMemberRepository;
         this.guildBulletinBoardRepo = guildBulletinBoardRepository;
         this.characterRealtimeStateRepo = characterRealtimeStateRepository;
@@ -291,10 +297,10 @@ export class GuildService {
             `character_realtime:${leaderCharacterId}`,
         );
 
-        const recorded = await this.guildRepo.findRequest(worldId, leaderCharacterId, requestId);
-        if (recorded != null) {
-            const recordedGuildId = recorded.resultId ?? 0;
-            const loaded = recordedGuildId > 0 ? await this.getGuild(worldId, recordedGuildId) : null;
+        const recorded = requestId === "0" ? null : await this.guildCreateRequestRepo.find(worldId, leaderCharacterId, requestId);
+        if (recorded?.status === "applied") {
+            const recordedGuildId = recorded.outcome.guild_id;
+            const loaded = await this.getGuild(worldId, recordedGuildId);
             if (!loaded?.guild) {
                 return { ok: true, guildId: recordedGuildId };
             }
@@ -371,7 +377,9 @@ export class GuildService {
                     },
                     { txClient: dataTx }
                 );
-                await this.guildRepo.insertRequest(dataTx, leaderCharacterId, requestId, guildId);
+                if (requestId !== "0") {
+                    await this.guildCreateRequestRepo.insert(worldId, leaderCharacterId, requestId, { guild_id: guildId }, dataTx);
+                }
             });
         } catch (err: unknown) {
             await this.rollbackCreateGuild(worldId, guildId, leaderCharacterId);
@@ -967,7 +975,7 @@ export class GuildService {
             `guild:${lockedGuildId}`,
         );
 
-        if (await this.guildRepo.findRequest(worldId, lockedGuildId, requestId) != null) {
+        if (requestId !== "0" && (await this.guildChangeRequestRepo.find(worldId, lockedGuildId, requestId)) != null) {
             return { ok: true, guildId: lockedGuildId };
         }
 
@@ -994,7 +1002,9 @@ export class GuildService {
                 { ...guild, logo: normalizedLogo },
                 { txClient }
             );
-            await this.guildRepo.insertRequest(txClient, lockedGuildId, requestId, null);
+            if (requestId !== "0") {
+                await this.guildChangeRequestRepo.insert(worldId, lockedGuildId, requestId, {}, txClient);
+            }
             return { ok: true as const, guildId: updatedGuild.guildId };
         });
 
@@ -1113,7 +1123,7 @@ export class GuildService {
             `guild:${lockedGuildId}`,
         );
 
-        if (await this.guildRepo.findRequest(worldId, lockedGuildId, requestId) != null) {
+        if (requestId !== "0" && (await this.guildChangeRequestRepo.find(worldId, lockedGuildId, requestId)) != null) {
             const guild = await this.guildRepo.get(worldId, lockedGuildId);
             return { ok: true, guildId: lockedGuildId, capacity: guild?.capacity ?? 0, gp: guild?.gp ?? 0 };
         }
@@ -1155,7 +1165,9 @@ export class GuildService {
                 },
                 { txClient }
             );
-            await this.guildRepo.insertRequest(txClient, lockedGuildId, requestId, null);
+            if (requestId !== "0") {
+                await this.guildChangeRequestRepo.insert(worldId, lockedGuildId, requestId, {}, txClient);
+            }
             return {
                 ok: true as const,
                 guildId: updatedGuild.guildId,
@@ -1198,7 +1210,7 @@ export class GuildService {
             `guild:${guildId}`,
         );
 
-        if (await this.guildRepo.findRequest(worldId, guildId, requestId) != null) {
+        if (requestId !== "0" && (await this.guildChangeRequestRepo.find(worldId, guildId, requestId)) != null) {
             const guild = await this.guildRepo.get(worldId, guildId);
             return { ok: true, guildId, gp: guild?.gp ?? 0 };
         }
@@ -1208,7 +1220,9 @@ export class GuildService {
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
-            await this.guildRepo.insertRequest(txClient, guildId, requestId, null);
+            if (requestId !== "0") {
+                await this.guildChangeRequestRepo.insert(worldId, guildId, requestId, {}, txClient);
+            }
 
             const nextGP = Math.min(GUILD_GP_MAX, Math.max(0, guild.gp + amount));
             if (nextGP === guild.gp) {

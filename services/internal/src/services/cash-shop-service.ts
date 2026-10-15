@@ -23,7 +23,7 @@ import {
     type RedeemCashCouponRequest,
 } from "../protobuf/generated/fminternal/internal_service";
 import type { AccountRepository } from "../repos/account-repository";
-import type { CashBalance, CashShopRepository, CashItemRow, CashRingRow, CashTransferRequest } from "../repos/cash-shop-repository";
+import type { CashBalance, CashRequestRepository, CashShopRepository, CashItemRow, CashRingRow, CashTransferRequest } from "../repos/cash-shop-repository";
 import type { CharacterRepository } from "../repos/character-repository";
 import type { StorageRepository } from "../repos/storage-repository";
 import type { InventoryRepository, InventoryModel } from "../repos/inventory-repository";
@@ -42,6 +42,7 @@ const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
 export class CashShopService {
     private readonly cashShopRepo: CashShopRepository;
+    private readonly cashRequestRepo: CashRequestRepository;
     private readonly accountRepo: AccountRepository;
     private readonly storageRepo: StorageRepository;
     private readonly inventoryRepo: InventoryRepository;
@@ -53,6 +54,7 @@ export class CashShopService {
 
     constructor(
         cashShopRepository: CashShopRepository,
+        cashRequestRepository: CashRequestRepository,
         accountRepository: AccountRepository,
         storageRepository: StorageRepository,
         inventoryRepository: InventoryRepository,
@@ -63,6 +65,7 @@ export class CashShopService {
         socialService: SocialService
     ) {
         this.cashShopRepo = cashShopRepository;
+        this.cashRequestRepo = cashRequestRepository;
         this.accountRepo = accountRepository;
         this.storageRepo = storageRepository;
         this.inventoryRepo = inventoryRepository;
@@ -420,7 +423,7 @@ export class CashShopService {
         const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
             const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: 0 });
-            if (await this.cashShopRepo.findReceipt(req.worldId, req.accountId, req.requestId, { txClient })) {
+            if ((await this.cashRequestRepo.find(req.worldId, req.accountId, req.requestId, { txClient })) != null) {
                 return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: 0 };
             }
             const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
@@ -447,7 +450,7 @@ export class CashShopService {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
-            await this.cashShopRepo.insertReceipt(txClient, req.requestId);
+            await this.cashRequestRepo.insert(req.worldId, req.accountId, req.requestId, {}, txClient);
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
             await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, entry.account_id, "gift", {
                 accountId: entry.account_id,
@@ -477,7 +480,7 @@ export class CashShopService {
         const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
             const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: 0 });
-            if (await this.cashShopRepo.findReceipt(req.worldId, req.accountId, req.requestId, { txClient })) {
+            if ((await this.cashRequestRepo.find(req.worldId, req.accountId, req.requestId, { txClient })) != null) {
                 return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: 0 };
             }
             const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
@@ -511,7 +514,7 @@ export class CashShopService {
             const serial = String(item.item?.uniqueId ?? 0);
             const partnerSerial = String(partnerItem.item?.uniqueId ?? 0);
             const itemId = item.item?.itemId ?? 0;
-            await this.cashShopRepo.insertReceipt(txClient, req.requestId);
+            await this.cashRequestRepo.insert(req.worldId, req.accountId, req.requestId, {}, txClient);
             await this.cashShopRepo.insertItem(req.worldId, req.accountId, serial, CashItem.toJSON(item), { txClient });
             await this.cashShopRepo.queueTransfer(req.worldId, req.accountId, entry.account_id, "gift", {
                 accountId: entry.account_id,
@@ -607,7 +610,7 @@ export class CashShopService {
         }
         if (
             coupon.used_at != null &&
-            (coupon.used_by !== accountId || coupon.request_id == null || (await this.cashShopRepo.findReceipt(worldId, accountId, coupon.request_id)))
+            (coupon.used_by !== accountId || coupon.request_id == null || (await this.cashRequestRepo.find(worldId, accountId, coupon.request_id)) != null)
         ) {
             return { result: CashShopResult.CASH_SHOP_RESULT_COUPON_USED, kind: coupon.kind, value: coupon.value };
         }
@@ -635,7 +638,7 @@ export class CashShopService {
                     return { result: CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL, nxCash: 0, maplePoint: 0, meso: 0 };
                 }
             }
-            if ((await this.cashShopRepo.insertReceipt(txClient, requestId)) === false) {
+            if ((await this.cashRequestRepo.reserve(req.worldId, req.accountId, requestId, {}, txClient)) === false) {
                 return used;
             }
 
