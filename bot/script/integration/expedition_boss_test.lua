@@ -4,6 +4,7 @@ local route = require("script/integration/lib/route")
 local ADOBIS = 2030013
 local ZAKUM_DOOR = 211042300
 local ALTAR_ENTRANCE = 211042400
+local DIALOG_YES_NO = 1
 local DIALOG_LIST = 4
 local ZAKUM_ALTAR = 280030000
 local EYE_OF_FIRE = 4001017
@@ -440,10 +441,14 @@ local function balrog_vacant(ctx)
 			return ctx:fail("무영 대화 응답 없음")
 		end
 		local dlg = bot:dialog(true)
-		bot:dialog(false)
 		if dlg ~= nil and dlg.text:find("원정대장이 되시겠습니까", 1, true) ~= nil then
+			if bot:request(resp.dialog, req.dialog { dialog_type = DIALOG_YES_NO, next = false }) == false then
+				return ctx:fail("원정대장 거절 뒤 무영 안내 없음")
+			end
+			bot:dialog(false)
 			return true
 		end
+		bot:dialog(false)
 		ctx:sleep(500)
 	end
 	return ctx:fail("이전 발록 전투가 끝나지 않아 새 원정대를 모집할 수 없음")
