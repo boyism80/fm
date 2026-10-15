@@ -14,6 +14,8 @@ import (
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameClient, character *game.Character, blocked constant.ServerBlockedReason, findRoute func(context.Context) (*response.SwitchChannel, error)) {
@@ -25,6 +27,21 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 	block := func() {
 		_ = ctx.Client.Send(&response.ServerBlocked{Reason: blocked}, types.SEND_POLICY_ENCRYPT)
 	}
+	// The character leaves this channel now, not when the client disconnects: a client that stays connected must not keep playing it,
+	// and the disconnect must neither save it over the next server nor end the moving session.
+	leave := func(then func()) {
+		left := gameClient.Logout()
+		if left == nil {
+			then()
+			return
+		}
+		logout := left.MarkLoggedOut()
+		go func() {
+			gs.removeCharacter(left, logout)
+			then()
+		}()
+	}
+	transitionPending := false
 
 	// The save below snapshots escrow as owned, so a room still open after it could hand the same goods over again.
 	if character.MiniRoom != nil {
@@ -61,6 +78,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 			block()
 			return fmt.Errorf("hand over: save failed (world=%d)", worldID)
 		}
+		transitionPending = true
 		return nil
 	})
 	accID := character.AccountID
@@ -79,27 +97,31 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 			SourceChannelId: &sourceChannel,
 		})
 	}, func(transReply *internal.BeginGameTransitionReply) error {
+		transitionPending = false
 		if transReply == nil || !transReply.GetOk() {
 			block()
 			return fmt.Errorf("hand over: begin transition failed (world=%d code=%v)", worldID, transReply.GetErrorCode())
 		}
 
-		// The character leaves this channel now, not when the client disconnects: a client that stays connected must not keep playing it,
-		// and the disconnect must neither save it over the next server nor end the moving session.
-		left := gameClient.Logout()
-		if left == nil {
+		leave(func() {
 			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
-			return nil
-		}
-		logout := left.MarkLoggedOut()
-		go func() {
-			gs.removeCharacter(left, logout)
-			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
-		}()
+		})
 		return nil
 	})
 	promise.OnError(func(err error) {
 		log.Printf("hand over (async): %v", err)
+
+		// A transition internal never answered may have committed; playing on would be dropped unsaved when the session refresh fails.
+		// A promise future timeout is not a gRPC status.
+		if transitionPending {
+			s, ok := status.FromError(err)
+			if !ok || s.Code() == codes.DeadlineExceeded || s.Code() == codes.Unavailable || s.Code() == codes.Canceled {
+				leave(func() {
+					_ = ctx.Client.GetConnection().Close()
+				})
+				return
+			}
+		}
 		gameClient.SetChangingChannel(false)
 	})
 }

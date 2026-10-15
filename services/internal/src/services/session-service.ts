@@ -127,14 +127,17 @@ export class SessionService {
             console.log(`[session] begin_transition failed account=${accountId} character=${characterId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
-        await this.socialService
-            .leaveMessenger(worldId, characterId)
-            .catch(err => console.error("[social] messenger cleanup failed", err));
-        await this.familyService
-            .presence(worldId, characterId)
-            .catch(err => console.error("[social] family presence failed", err));
         console.log(`[session] begin_transition ok account=${accountId} character=${characterId} source_channel=${sourceChannelId ?? ""} source_cash_shop=${sourceCashShopId ?? ""}`);
-        await this.releaseCharacterNameReservation(accountId);
+        // The caller treats a reply that misses its deadline as a transition that may have committed, so the reply must not wait for this cleanup.
+        void (async () => {
+            await this.socialService
+                .leaveMessenger(worldId, characterId)
+                .catch(err => console.error("[social] messenger cleanup failed", err));
+            await this.familyService
+                .presence(worldId, characterId)
+                .catch(err => console.error("[social] family presence failed", err));
+            await this.releaseCharacterNameReservation(accountId);
+        })();
         return { ok: true };
     }
 
