@@ -57,6 +57,7 @@ type LieDetector struct {
 	testerID uint32
 	answer   string
 	attempts int
+	skill    bool
 	PassedAt time.Time
 	HuntedAt time.Time
 }
@@ -67,7 +68,7 @@ func (ch *Character) UseLieDetectorItem(targetName string, slot int16, itemID ui
 		return ErrLieDetectorInvalid
 	}
 
-	if err := ch.testLieDetector(targetName, true); err != nil {
+	if err := ch.testLieDetector(targetName, false); err != nil {
 		return err
 	}
 	ch.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
@@ -78,10 +79,10 @@ func (ch *Character) UseLieDetectorSkill(targetName string) error {
 	if !ch.ActsAsGM() && ch.Class != constant.ClassMapleleafBrigadier {
 		return ErrLieDetectorInvalid
 	}
-	return ch.testLieDetector(targetName, false)
+	return ch.testLieDetector(targetName, true)
 }
 
-func (ch *Character) testLieDetector(targetName string, byItem bool) error {
+func (ch *Character) testLieDetector(targetName string, skill bool) error {
 	m := ch.GetMap()
 	if m == nil {
 		return ErrLieDetectorInvalid
@@ -92,40 +93,42 @@ func (ch *Character) testLieDetector(targetName string, byItem bool) error {
 	}
 	target := m.FindPlayerByName(targetName)
 	if target == nil || target == ch || target.Role > ch.Role {
-		ch.Listener.OnMessage(ch, constant.MsgPopup, "캐릭터를 찾을 수 없습니다.")
+		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotFound, false)
 		return ErrLieDetectorInvalid
 	}
 
-	err := target.LieDetector.Start(ch, byItem)
+	err := target.LieDetector.Start(ch, skill)
 	switch {
 	case errors.Is(err, ErrLieDetectorBusy):
-		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultBusy)
+		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultBusy, false)
 	case errors.Is(err, ErrLieDetectorTested):
-		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultTested)
+		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultTested, false)
 	case errors.Is(err, ErrLieDetectorNotHunting):
-		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotHunting)
+		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotHunting, false)
 	}
 	return err
 }
 
-func (d *LieDetector) Start(tester *Character, byItem bool) error {
+func (d *LieDetector) Start(tester *Character, skill bool) error {
 	now := clock.Now()
 	switch {
 	case d.testerID != 0:
 		return ErrLieDetectorBusy
-	case byItem && now.Sub(d.PassedAt) < lieDetectorImmunity:
+	case !skill && now.Sub(d.PassedAt) < lieDetectorImmunity:
 		return ErrLieDetectorTested
-	case byItem && now.Sub(d.HuntedAt) > lieDetectorHuntWindow:
+	case !skill && now.Sub(d.HuntedAt) > lieDetectorHuntWindow:
 		return ErrLieDetectorNotHunting
 	}
 
 	d.testerID = tester.GetID()
 	d.attempts = 0
+	d.skill = skill
 	if err := d.ask(); err != nil {
 		d.testerID = 0
 		return err
 	}
-	log.Printf("lie detector started: target=%d tester=%d item=%t", d.owner.GetID(), d.testerID, byItem)
+	log.Printf("lie detector started: target=%d tester=%d skill=%t", d.owner.GetID(), d.testerID, skill)
+	tester.Listener.OnLieDetectorStarted(tester, d.owner.GetName())
 	return nil
 }
 
@@ -159,7 +162,7 @@ func (d *LieDetector) ask() error {
 	d.answer = captcha.Answer
 	d.attempts++
 	attempt := d.attempts
-	d.owner.Listener.OnLieDetectorQuestion(d.owner, captcha.Image)
+	d.owner.Listener.OnLieDetectorQuestion(d.owner, captcha.Image, d.skill)
 
 	wait := lieDetectorAnswerTime
 	if limit := time.Duration(d.owner.GM.TimerLimit) * time.Second; limit > 0 && limit < wait {
@@ -191,7 +194,7 @@ func (d *LieDetector) pass() {
 	d.testerID = 0
 	d.PassedAt = clock.Now()
 
-	d.owner.Listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultPassed)
+	d.owner.Listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultPassed, d.skill)
 	d.owner.Inventory.GainMeso(lieDetectorRewardMeso)
 	if tester != nil {
 		tester.Listener.OnMessage(tester, constant.MsgPinkText, "해당 유저가 거짓말 탐지기를 통과했습니다.")
@@ -209,13 +212,13 @@ func (d *LieDetector) fail(actx actor.Context, failure lieDetectorFailure) {
 		taken := min(d.owner.Inventory.Meso, lieDetectorPenaltyMeso)
 		d.owner.Inventory.RemoveMeso(taken)
 		tester.Inventory.GainMeso(taken)
-		tester.Listener.OnMessage(tester, constant.MsgPinkText, fmt.Sprintf("거짓말 탐지기 테스트 결과 대상자가 매크로로 적발되었습니다. 대상자의 소지 금액 중 %d메소를 보상으로 지급받습니다.", taken))
+		tester.Listener.OnLieDetectorResult(tester, pconst.LieDetectorResultReported, false)
 	}
 	if failure == lieDetectorEscape {
 		return
 	}
 
-	d.owner.Listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultCaught)
+	d.owner.Listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultCaught, d.skill)
 	jail := d.owner.GameWorld.Systems().Get[*MapSystem]().Get(lieDetectorJailMapID)
 	if jail == nil {
 		return

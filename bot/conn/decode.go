@@ -91,6 +91,9 @@ var decoders = func() []decoder {
 		newDecoder[response.LieDetectorQuestion](func(body []byte) bool {
 			return len(body) > 0 && pconst.LieDetectorResult(body[0]) == pconst.LieDetectorResultQuestion
 		}),
+		newDecoder[response.LieDetectorStarted](func(body []byte) bool {
+			return len(body) > 0 && pconst.LieDetectorResult(body[0]) == pconst.LieDetectorResultStarted
+		}),
 		newDecoder[response.LieDetectorResult](nil),
 		newDecoder[response.Login](nil),
 		newDecoder[response.KeyMap](nil),

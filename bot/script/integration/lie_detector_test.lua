@@ -7,12 +7,37 @@ local DETECTOR = 2190000
 local QUIET_MS = 1500
 
 local RESULT = {
+	not_found = 0,
 	not_hunting = 1,
 	tested = 2,
 	busy = 3,
 	caught = 7,
 	passed = 9,
+	reported = 11,
 }
+
+local seen = {}
+
+local function watch(ctx)
+	seen = {}
+	ctx:hook("lie_detector", function(_, bot, p, name)
+		if name == "lie_detector_started" or name == "lie_detector_result" then
+			table.insert(seen, { id = bot:id(), name = name, p = p })
+		end
+	end)
+end
+
+local function received(ctx, bot, name, match)
+	for _ = 1, 30 do
+		for _, e in ipairs(seen) do
+			if e.id == bot:id() and e.name == name and match(e.p) then
+				return true
+			end
+		end
+		ctx:sleep(100)
+	end
+	return false
+end
 
 local function check(ctx, ok, message)
 	if ok == false then
@@ -102,7 +127,7 @@ local function rejections(ctx)
 	if detectors_are(ctx, tester, 3, "거부된 거짓말 탐지기가 소모됨") == false then
 		return false
 	end
-	if check(ctx, question(tester, target, req.lie_detector_item { target = "없는캐릭터", slot = tester:slot(DETECTOR) or 0, item_id = DETECTOR }) == false, "없는 대상에게 질문이 감") == false then
+	if check(ctx, result_on(tester, tester, req.lie_detector_item { target = "없는캐릭터", slot = tester:slot(DETECTOR) or 0, item_id = DETECTOR }, RESULT.not_found) ~= false, "없는 대상에게 캐릭터 없음 응답이 없음") == false then
 		return false
 	end
 	if check(ctx, target:request(resp.lie_detector_result, req.lie_detector_answer { answer = "ABCDEF" }, nil, QUIET_MS) == false, "테스트 중이 아닌데 답변이 처리됨") == false then
@@ -129,7 +154,17 @@ local function pass(ctx)
 		return false
 	end
 
-	if check(ctx, question(tester, target, use_item(tester, target)) ~= false, "사냥 중인 대상에게 질문이 가지 않음") == false then
+	watch(ctx)
+	local asked = question(tester, target, use_item(tester, target))
+	if check(ctx, asked ~= false, "사냥 중인 대상에게 질문이 가지 않음") == false then
+		return false
+	end
+	if check(ctx, asked.skill == false, "아이템 질문이 운영자 창으로 열림") == false then
+		return false
+	end
+	if check(ctx, received(ctx, tester, "lie_detector_started", function(p)
+		return p.target == target:name()
+	end), "테스터에게 사용 알림이 오지 않음") == false then
 		return false
 	end
 	if detectors_are(ctx, tester, 2, "거짓말 탐지기가 소모되지 않음") == false then
@@ -143,7 +178,8 @@ local function pass(ctx)
 	if check(ctx, answer ~= nil and #answer == 6, "정답 조회 실패") == false then
 		return false
 	end
-	if check(ctx, result_on(target, target, req.lie_detector_answer { answer = answer:lower() }, RESULT.passed) ~= false, "정답을 맞혔는데 통과하지 못함") == false then
+	local passed = result_on(target, target, req.lie_detector_answer { answer = answer:lower() }, RESULT.passed)
+	if check(ctx, passed ~= false and passed.skill == false, "정답을 맞혔는데 아이템 통과 응답이 없음") == false then
 		return false
 	end
 	if meso_is(ctx, target, 5000, "통과 보상") == false then
@@ -169,13 +205,21 @@ local function caught(ctx)
 		return false
 	end
 
-	if check(ctx, question(tester, target, req.lie_detector_skill { target = target:name() }) ~= false, "스킬로 질문이 가지 않음") == false then
+	watch(ctx)
+	local asked = question(tester, target, req.lie_detector_skill { target = target:name() })
+	if check(ctx, asked ~= false and asked.skill, "스킬 질문이 운영자 창으로 열리지 않음") == false then
 		return false
 	end
 	if check(ctx, target:request(resp.lie_detector_question, req.lie_detector_answer { answer = "WRONG1" }, nil, 3000) ~= false, "첫 오답 후 새 질문이 오지 않음") == false then
 		return false
 	end
-	if check(ctx, result_on(target, target, req.lie_detector_answer { answer = "WRONG2" }, RESULT.caught) ~= false, "두 번 틀렸는데 적발되지 않음") == false then
+	local caught = result_on(target, target, req.lie_detector_answer { answer = "WRONG2" }, RESULT.caught)
+	if check(ctx, caught ~= false and caught.skill, "두 번 틀렸는데 운영자 단속 적발 응답이 없음") == false then
+		return false
+	end
+	if check(ctx, received(ctx, tester, "lie_detector_result", function(p)
+		return p.result == RESULT.reported
+	end), "테스터에게 적발 알림이 오지 않음") == false then
 		return false
 	end
 	for _ = 1, 30 do

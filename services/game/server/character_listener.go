@@ -1800,12 +1800,16 @@ func (l *CharacterListenerImpl) OnPetFood(ch *game.Character, success bool) {
 	ch.Broadcast(&response.PetCommand{CharacterID: ch.GetID(), Food: true, Success: success}, &game.ObjectBroadcastOption{WithMe: true})
 }
 
-func (l *CharacterListenerImpl) OnLieDetectorQuestion(ch *game.Character, image []byte) {
-	ch.Send(&response.LieDetectorQuestion{Image: image}, types.SEND_POLICY_ENCRYPT)
+func (l *CharacterListenerImpl) OnLieDetectorStarted(ch *game.Character, target string) {
+	ch.Send(&response.LieDetectorStarted{Target: target}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnLieDetectorResult(ch *game.Character, result pconst.LieDetectorResult) {
-	ch.Send(&response.LieDetectorResult{Result: result}, types.SEND_POLICY_ENCRYPT)
+func (l *CharacterListenerImpl) OnLieDetectorQuestion(ch *game.Character, image []byte, skill bool) {
+	ch.Send(&response.LieDetectorQuestion{Image: image, Skill: skill}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnLieDetectorResult(ch *game.Character, result pconst.LieDetectorResult, skill bool) {
+	ch.Send(&response.LieDetectorResult{Result: result, Skill: skill}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnPetUpdated(ch *game.Character, pet *game.Pet) {
