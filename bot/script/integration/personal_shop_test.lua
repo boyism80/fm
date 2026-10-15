@@ -305,6 +305,37 @@ local function open_lost_recovery(ctx)
 	return ctx:fail("응답 유실 뒤 개인상점을 다시 열 수 없음")
 end
 
+local function open_delay_move(ctx)
+	local owner = ctx:bot(0)
+	if setup(ctx, owner, 0, PERMIT .. ":1") == false then
+		return false
+	end
+	if move_to(ctx, owner, SHOP_ROOM, SPOT) == false then
+		return false
+	end
+	if fault.rpc_delay(owner, "OpenShop", 3000) == false then
+		return ctx:fail("OpenShop 지연 주입 실패")
+	end
+	owner:send(create_request(owner, "이동 상점"))
+	local moved = owner:map_move(FREE_MARKET)
+	fault.rpc_delay(owner, "OpenShop", 0)
+	if moved == false then
+		return ctx:fail("개설 응답 대기 중 맵 이동 실패")
+	end
+	if owner:request(resp.mini_room_enter_failed, nil, nil, 8000) == false then
+		return ctx:fail("맵 이동 뒤 개설 실패 응답이 없음")
+	end
+
+	if move_to(ctx, owner, SHOP_ROOM, SPOT) == false then
+		return false
+	end
+	if entered(ctx, owner, create_request(owner, "다시 연 상점"), 0, "이동 뒤 재개설") == false then
+		return false
+	end
+	owner:send(req.mini_room { mode = MODE.exit })
+	return true
+end
+
 test_suite {
 	name = "PersonalShop: 개인상점 개설·판매·추방·종료",
 	bot_count = 3,
@@ -313,5 +344,6 @@ test_suite {
 		sell_flow,
 		kick_flow,
 		open_lost_recovery,
+		open_delay_move,
 	},
 }

@@ -69,7 +69,7 @@ func (ch *Character) Trading() bool {
 
 func (ch *Character) CreateTrade() error {
 	m := ch.GetMap()
-	if m == nil || ch.MiniRoom != nil || ch.miniRoomPending {
+	if m == nil || ch.MiniRoom != nil {
 		return ErrMiniRoomInvalid
 	}
 
@@ -94,7 +94,7 @@ func (t *Trade) Invite(ch *Character, targetID uint32) error {
 	case target == nil || target == ch:
 		ch.Listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteNotFound, "")
 		t.Leave(ch)
-	case target.MiniRoom != nil || target.miniRoomPending:
+	case target.MiniRoom != nil:
 		ch.Listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteBusy, target.GetName())
 		t.Leave(ch)
 	default:
@@ -123,7 +123,7 @@ func (ch *Character) DeclineTrade(sn uint32, reason uint8) error {
 }
 
 func (t *Trade) Visit(ch *Character) error {
-	if ch.MiniRoom != t || ch.miniRoomPending {
+	if ch.MiniRoom != t {
 		return ErrMiniRoomInvalid
 	}
 	if t.invited != ch || t.sides[1] != nil || t.sides[0].ch.GetMap() == nil || t.sides[0].ch.GetMap() != ch.GetMap() {

@@ -58,7 +58,6 @@ type Character struct {
 	Unsettled         *UnsettledRequests
 	StoreBank         *StoreBank
 	MiniRoom          MiniRoom
-	miniRoomPending   bool
 	remoteShop        remoteShop
 	shopScan          shopScan
 	Skills            *Skills

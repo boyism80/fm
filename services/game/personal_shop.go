@@ -260,7 +260,7 @@ func (ch *Character) CreatePersonalShop(actx actor.Context, title string, slot i
 	if !m.Wz.PersonalShop {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterFreeMarket}
 	}
-	if ch.miniRoomPending || ch.Unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID)) != nil {
+	if ch.Unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID)) != nil {
 		return ErrMiniRoomBusy
 	}
 	permit := ch.Inventory.GetItem(constant.InventoryTypeCash, slot)
@@ -300,27 +300,27 @@ func (ch *Character) CreatePersonalShop(actx actor.Context, title string, slot i
 	ps.Position = ch.Position
 
 	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID), nil)
-	ch.miniRoomPending = true
 	ch.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, ch, id, ps.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
-		ch.Unsettled.Erase(id)
-		ch.miniRoomPending = false
-		if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
-			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
-			return nil
-		}
+		ch.Call(func(actx actor.Context) {
+			ch.Unsettled.Erase(id)
+			if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
+				ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
+				return
+			}
 
-		ps.ID = v.GetShopId()
-		if ch.GetMap() != m || ch.MiniRoom != nil || m.checkShopSpot(ps.Position) != nil {
-			ps.GameWorld = ch.GameWorld
-			ps.home = m
-			ps.save(actx, true)
-			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
-			return nil
-		}
-		m.AddPersonalShop(ps)
-		ps.owner = ch
-		ch.MiniRoom = ps
-		ch.Listener.OnPersonalShopEntered(ch, ps)
+			ps.ID = v.GetShopId()
+			if ch.GetMap() != m || ch.MiniRoom != nil || m.checkShopSpot(ps.Position) != nil {
+				ps.GameWorld = ch.GameWorld
+				ps.home = m
+				ps.save(actx, true)
+				ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
+				return
+			}
+			m.AddPersonalShop(ps)
+			ps.owner = ch
+			ch.MiniRoom = ps
+			ch.Listener.OnPersonalShopEntered(ch, ps)
+		})
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("CreatePersonalShop character=%d: %v", ch.GetID(), err)

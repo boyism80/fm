@@ -442,6 +442,44 @@ local function open_lost_recovery(ctx)
 	return ctx:fail("응답 유실 뒤 고용상인을 다시 열 수 없음")
 end
 
+local function open_delay_move(ctx)
+	local owner = ctx:bot(0)
+	if setup(ctx, owner, 0, PERMIT .. ":1") == false then
+		return false
+	end
+	ctx:sleep(1000)
+	if clear_store_bank(ctx, owner) == false then
+		return false
+	end
+	if move_to(ctx, owner, MARKET_ROOM, SPOT) == false then
+		return false
+	end
+	if fault.rpc_delay(owner, "OpenShop", 3000) == false then
+		return ctx:fail("OpenShop 지연 주입 실패")
+	end
+	owner:send(create_request(owner, "이동 상점"))
+	local moved = owner:map_move(FREE_MARKET)
+	fault.rpc_delay(owner, "OpenShop", 0)
+	if moved == false then
+		return ctx:fail("개설 응답 대기 중 맵 이동 실패")
+	end
+	if owner:request(resp.mini_room_enter_failed, nil, nil, 8000) == false then
+		return ctx:fail("맵 이동 뒤 개설 실패 응답이 없음")
+	end
+
+	if clear_store_bank(ctx, owner) == false then
+		return false
+	end
+	if move_to(ctx, owner, MARKET_ROOM, SPOT) == false then
+		return false
+	end
+	if entered(ctx, owner, create_request(owner, "다시 연 상점"), 0, "이동 뒤 재개설") == false then
+		return false
+	end
+	owner:send(req.mini_room { mode = MODE.close })
+	return true
+end
+
 test_suite {
 	name = "EntrustedShop: 고용상인 개설·판매·관리·스토어뱅크",
 	bot_count = 2,
@@ -451,5 +489,6 @@ test_suite {
 		store_bank_flow,
 		overflow_flow,
 		open_lost_recovery,
+		open_delay_move,
 	},
 }

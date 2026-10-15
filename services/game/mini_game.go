@@ -119,7 +119,7 @@ func (g *MiniGame) updateBalloon() {
 
 func (ch *Character) CreateMiniGame(kind uint8, title string, password string, piece uint8) error {
 	m := ch.GetMap()
-	if m == nil || ch.MiniRoom != nil || ch.miniRoomPending {
+	if m == nil || ch.MiniRoom != nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
 	if m.Wz.PersonalShop || m.Wz.Limits(constant.FieldLimitMinigame) {
@@ -168,7 +168,7 @@ func (ch *Character) CreateMiniGame(kind uint8, title string, password string, p
 }
 
 func (g *MiniGame) Visit(ch *Character, password string) error {
-	if ch.MiniRoom != nil || ch.miniRoomPending {
+	if ch.MiniRoom != nil {
 		return ErrMiniRoomInvalid
 	}
 	if g.visitor != nil {

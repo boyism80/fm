@@ -524,30 +524,31 @@ func (es *EntrustedShop) close(actx actor.Context) {
 
 func (ch *Character) UseEntrustedShop(actx actor.Context) {
 	m := ch.GetMap()
-	if m == nil || !m.Wz.EntrustedShop || ch.MiniRoom != nil || ch.miniRoomPending {
+	if m == nil || !m.Wz.EntrustedShop || ch.MiniRoom != nil {
 		ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
 		return
 	}
 
-	ch.miniRoomPending = true
 	ch.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, ch).Do(func(v *internal.FindEntrustedShopReply) error {
-		ch.miniRoomPending = false
-		shop := v.GetShop()
-		switch {
-		case len(ch.StoreBank.unclaimed(v.GetStoreBank())) > 0:
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopStoreBankFull, 0, 0)
-		case shop == nil:
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopTitle, 0, 0)
-		case shop.GetCharacterId() == ch.GetID():
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAlreadyOpen, shop.GetMapId(), uint8(shop.GetChannelId()))
-		default:
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAccountBusy, 0, 0)
-		}
+		ch.Call(func(actor.Context) {
+			shop := v.GetShop()
+			switch {
+			case len(ch.StoreBank.unclaimed(v.GetStoreBank())) > 0:
+				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopStoreBankFull, 0, 0)
+			case shop == nil:
+				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopTitle, 0, 0)
+			case shop.GetCharacterId() == ch.GetID():
+				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAlreadyOpen, shop.GetMapId(), uint8(shop.GetChannelId()))
+			default:
+				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopAccountBusy, 0, 0)
+			}
+		})
 		return nil
 	}).OnError(func(err error) {
-		ch.miniRoomPending = false
-		ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
 		log.Printf("UseEntrustedShop character=%d: %v", ch.GetID(), err)
+		ch.Call(func(actor.Context) {
+			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopCannotOpen, 0, 0)
+		})
 	})
 }
 
@@ -556,7 +557,7 @@ func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot 
 	if m == nil || !m.Wz.EntrustedShop || ch.MiniRoom != nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
-	if ch.miniRoomPending || ch.Unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID)) != nil {
+	if ch.Unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID)) != nil {
 		return ErrMiniRoomBusy
 	}
 	permit := ch.Inventory.GetItem(constant.InventoryTypeCash, slot)
@@ -595,28 +596,27 @@ func (ch *Character) CreateEntrustedShop(actx actor.Context, title string, slot 
 	es.Position = ch.Position
 
 	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(ch.AccountID), nil)
-	ch.miniRoomPending = true
 	ch.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, ch, id, es.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
-		ch.Unsettled.Erase(id)
-		ch.miniRoomPending = false
-		if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
-			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
-			return nil
-		}
+		ch.Call(func(actx actor.Context) {
+			ch.Unsettled.Erase(id)
+			if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
+				ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
+				return
+			}
 
-		es.ID = v.GetShopId()
-		current := ch.GetMap()
-		if current != m || ch.MiniRoom != nil || m.checkShopSpot(es.Position) != nil {
-			es.GameWorld = ch.GameWorld
-			es.home = m
-			es.save(actx, true)
-			ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
-			return nil
-		}
-		m.AddEntrustedShop(es)
-		es.managing = true
-		ch.MiniRoom = es
-		ch.Listener.OnMiniRoomEntered(ch, 0, es.view(), true)
+			es.ID = v.GetShopId()
+			if ch.GetMap() != m || ch.MiniRoom != nil || m.checkShopSpot(es.Position) != nil {
+				es.GameWorld = ch.GameWorld
+				es.home = m
+				es.save(actx, true)
+				ch.Listener.OnMiniRoomEnterFailed(ch, pconst.MiniRoomEnterCannotOpen)
+				return
+			}
+			m.AddEntrustedShop(es)
+			es.managing = true
+			ch.MiniRoom = es
+			ch.Listener.OnMiniRoomEntered(ch, 0, es.view(), true)
+		})
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("CreateEntrustedShop character=%d: %v", ch.GetID(), err)
@@ -639,7 +639,6 @@ func (ch *Character) settleOpenShop(actx actor.Context, request *UnsettledReques
 				return
 			}
 			ch.Unsettled.Erase(request.ID)
-			ch.miniRoomPending = false
 		})
 		return nil
 	}).OnError(func(err error) {
@@ -658,43 +657,44 @@ func (ch *Character) UseRemoteEntrustedShop(actx actor.Context, slot int16) erro
 	if expiration := item.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {
 		return ErrMiniRoomInvalid
 	}
-	if ch.MiniRoom != nil || ch.miniRoomPending {
+	if ch.MiniRoom != nil {
 		return ErrMiniRoomBusy
 	}
 
-	ch.miniRoomPending = true
 	ch.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, ch).Do(func(v *internal.FindEntrustedShopReply) error {
-		ch.miniRoomPending = false
-		shop := v.GetShop()
-		target := ch.GameWorld.Systems().Get[*MapSystem]().Get(shop.GetMapId())
-		switch {
-		case shop == nil || shop.GetCharacterId() != ch.GetID():
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
-		case shop.GetChannelId() != ch.GameWorld.GetChannelID():
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopRemoteLocation, shop.GetMapId(), uint8(shop.GetChannelId()))
-		case target == nil:
-			ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
-		default:
-			ch.GameWorld.Systems().Get[*MapSystem]().Call(target, func(actor.Context) {
-				sn, ok := target.FindEntrustedShopByOwner(ch.GetID())
-				ch.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(ch.GetID(), func(ctx actor.Context, c *Character) {
-					if c == nil {
-						return
-					}
-					if !ok {
-						c.Listener.OnEntrustedShopCheck(c, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
-						return
-					}
-					c.remoteShop = remoteShop{sn: sn, mapID: target.TemplateID()}
-					c.Listener.OnEntrustedShopRemoteVisit(c, sn)
+		ch.Call(func(actor.Context) {
+			shop := v.GetShop()
+			target := ch.GameWorld.Systems().Get[*MapSystem]().Get(shop.GetMapId())
+			switch {
+			case shop == nil || shop.GetCharacterId() != ch.GetID():
+				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
+			case shop.GetChannelId() != ch.GameWorld.GetChannelID():
+				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopRemoteLocation, shop.GetMapId(), uint8(shop.GetChannelId()))
+			case target == nil:
+				ch.Listener.OnEntrustedShopCheck(ch, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
+			default:
+				ch.GameWorld.Systems().Get[*MapSystem]().Call(target, func(actor.Context) {
+					sn, ok := target.FindEntrustedShopByOwner(ch.GetID())
+					ch.GameWorld.Systems().Get[*DispatchSystem]().CallCharacter(ch.GetID(), func(ctx actor.Context, c *Character) {
+						if c == nil {
+							return
+						}
+						if !ok {
+							c.Listener.OnEntrustedShopCheck(c, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
+							return
+						}
+						c.remoteShop = remoteShop{sn: sn, mapID: target.TemplateID()}
+						c.Listener.OnEntrustedShopRemoteVisit(c, sn)
+					})
 				})
-			})
-		}
+			}
+		})
 		return nil
 	}).OnError(func(err error) {
-		ch.miniRoomPending = false
-		ch.Listener.OnUnlockAction(ch)
 		log.Printf("UseRemoteEntrustedShop character=%d: %v", ch.GetID(), err)
+		ch.Call(func(actor.Context) {
+			ch.Listener.OnUnlockAction(ch)
+		})
 	})
 	return nil
 }
