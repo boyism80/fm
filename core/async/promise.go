@@ -320,10 +320,7 @@ func (p *chain) setError(err error) {
 	bound := p.bound
 	p.done = true
 	p.mu.Unlock()
-	p.invokeOnErrors(bound, onErrors, err)
-	if finally != nil {
-		finally()
-	}
+	p.finishError(bound, onErrors, finally, err)
 }
 
 func (p *chain) isDone() bool {
@@ -345,6 +342,30 @@ func (p *chain) continueFrom(i int, value interface{}) {
 		p.ctx = actx
 		p.mu.Unlock()
 		p.driveFrom(i, value)
+	})
+}
+
+func (p *chain) finishError(bound Mailbox, onErrors []func(error), finally func(), err error) {
+	if len(onErrors) == 0 && finally == nil {
+		return
+	}
+	run := func() {
+		for _, onError := range onErrors {
+			onError(err)
+		}
+		if finally != nil {
+			finally()
+		}
+	}
+	if bound == nil {
+		run()
+		return
+	}
+	bound.Post(func(actx actor.Context) {
+		p.mu.Lock()
+		p.ctx = actx
+		p.mu.Unlock()
+		run()
 	})
 }
 
@@ -462,8 +483,5 @@ func (p *chain) completeError(err error) {
 	finally := p.finally
 	bound := p.bound
 	p.mu.Unlock()
-	p.invokeOnErrors(bound, onErrors, err)
-	if finally != nil {
-		finally()
-	}
+	p.finishError(bound, onErrors, finally, err)
 }
