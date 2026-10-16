@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -26,7 +25,6 @@ type PartySystem struct {
 	worldID       uint32
 	mu            sync.Mutex
 	parties       map[uint32]*Party
-	disbandedAt   map[uint32]time.Time
 	memberUpdates map[uint32]*PartyMember
 }
 
@@ -35,7 +33,6 @@ func NewPartySystem(gw GameWorld) *PartySystem {
 		gw:            gw,
 		worldID:       gw.GetWorldID(),
 		parties:       make(map[uint32]*Party),
-		disbandedAt:   make(map[uint32]time.Time),
 		memberUpdates: make(map[uint32]*PartyMember),
 	}
 }
@@ -43,7 +40,6 @@ func NewPartySystem(gw GameWorld) *PartySystem {
 func (s *PartySystem) Start() error { return nil }
 func (s *PartySystem) Stop()        {}
 
-// A snapshot at or before the disband time is dropped. A later party may reuse the id.
 func (s *PartySystem) store(pb *internal.Party) (*Party, bool) {
 	if s == nil || pb == nil {
 		return nil, false
@@ -54,13 +50,9 @@ func (s *PartySystem) store(pb *internal.Party) (*Party, bool) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if at, gone := s.disbandedAt[party.partyID]; gone && !party.updatedAt.After(at) {
-		return nil, false
-	}
 	if prev := s.parties[party.partyID]; prev != nil && party.updatedAt.Before(prev.updatedAt) {
 		return prev, false
 	}
-	delete(s.disbandedAt, party.partyID)
 	s.parties[party.partyID] = party
 	return party, true
 }
@@ -75,7 +67,6 @@ func (s *PartySystem) forget(partyID uint32) []uint32 {
 	if party, ok := s.parties[partyID]; ok && party != nil {
 		memberIDs = party.MemberCharacterIDs()
 	}
-	s.disbandedAt[partyID] = clock.Now()
 	delete(s.parties, partyID)
 	return memberIDs
 }
@@ -90,10 +81,8 @@ func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 	})
 
 	if evt.EventType == "disbanded" {
-		if memberIDs := s.forget(evt.PartyID); len(memberIDs) > 0 {
-			s.ClearPartyMembers(memberIDs, evt.PartyID)
-			return p
-		}
+		s.ClearPartyMembers(s.forget(evt.PartyID), evt.PartyID)
+		return p
 	}
 
 	p.ThenRPC(

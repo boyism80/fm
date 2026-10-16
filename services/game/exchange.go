@@ -61,7 +61,7 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 	if spec.Cost.isEmpty() && spec.Reward.isEmpty() {
 		return ExchangeOK
 	}
-	if ch.Trading() && (spec.Reward.Meso > 0 || !exchangeItemsEmpty(spec.Reward.Items)) {
+	if ch.Trading() && spec.Reward.Meso > 0 {
 		return ExchangeLackCapacity
 	}
 
@@ -91,7 +91,7 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 		inv := ch.inventory.tabs[invType]
 		cost := costByInv[invType]
 		reward := rewardByInv[invType]
-		if result := inv.validateItemExchange(cost, reward, spec.Reward.Period, modelOf); result != ExchangeOK {
+		if result := inv.validateItemExchange(invType, cost, reward, spec.Reward.Period, modelOf, ch.escrow); result != ExchangeOK {
 			return result
 		}
 	}

@@ -1417,10 +1417,6 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 	if m.objects[constant.ObjectTypeItem] == nil {
 		return constant.LootFailedItemNotFound
 	}
-	if character.Trading() {
-		return constant.LootFailedTrading
-	}
-
 	switch item := obj.(type) {
 	case Item:
 		fp := item.GetFieldPlacement()
@@ -1469,6 +1465,9 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		return constant.LootSuccess
 
 	case *Meso:
+		if character.Trading() {
+			return constant.LootFailedTrading
+		}
 		fp := item.GetFieldPlacement()
 		if fp == nil {
 			return constant.LootFailedInvalidItem

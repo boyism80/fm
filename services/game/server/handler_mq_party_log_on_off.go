@@ -34,7 +34,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, raw json.RawMessage) error {
 			PartyPB     string `json:"party_pb"`
 			CharacterID uint32 `json:"character_id"`
 		}
-		if err := json.Unmarshal(raw, &payload); err == nil && payload.PartyPB != "" {
+		if err := json.Unmarshal(raw, &payload); err == nil && payload.PartyPB != "" && pc.Get(evt.PartyID) != nil {
 			wire, err := base64.StdEncoding.DecodeString(payload.PartyPB)
 			if err == nil {
 				var partyPb internal.Party

@@ -81,6 +81,87 @@ func (e *Escrow) restore() {
 	})
 }
 
+func (e *Escrow) claim(invType constant.InventoryType) (blocked map[int16]struct{}, hold map[int16]uint16, ok bool) {
+	tab := e.owner.inventory.tabs[invType]
+	blocked = map[int16]struct{}{}
+	hold = map[int16]uint16{}
+	if tab == nil {
+		for _, held := range e.items {
+			if held.invType == invType {
+				return blocked, hold, false
+			}
+		}
+		return blocked, hold, true
+	}
+
+	for _, held := range e.items {
+		if held.invType != invType {
+			continue
+		}
+		exists := tab.items[held.slot]
+		kept := hold[held.slot]
+		if exists == nil {
+			if _, taken := blocked[held.slot]; !taken {
+				blocked[held.slot] = struct{}{}
+				continue
+			}
+		} else if tab.Stackable(exists, held.item) && int(exists.GetCount())+int(kept)+int(held.item.GetCount()) <= int(exists.GetModel().GetCapacity()) {
+			hold[held.slot] = kept + held.item.GetCount()
+			continue
+		}
+
+		found := false
+		for slot := int16(1); slot <= int16(tab.slotLimit); slot++ {
+			if tab.items[slot] != nil {
+				continue
+			}
+			if _, taken := blocked[slot]; taken {
+				continue
+			}
+			blocked[slot] = struct{}{}
+			found = true
+			break
+		}
+		if !found {
+			return blocked, hold, false
+		}
+	}
+	return blocked, hold, true
+}
+
+func (e *Escrow) gainSlot(invType constant.InventoryType, item Item) (int16, bool) {
+	tab := e.owner.inventory.tabs[invType]
+	if tab == nil || item == nil {
+		return 0, false
+	}
+	blocked, hold, ok := e.claim(invType)
+	if !ok {
+		return 0, false
+	}
+
+	for slot := int16(1); slot <= int16(tab.slotLimit); slot++ {
+		exists := tab.items[slot]
+		if exists == nil || !tab.Stackable(exists, item) {
+			continue
+		}
+		room := int(exists.GetModel().GetCapacity()) - int(exists.GetCount()) - int(hold[slot])
+		if room <= 0 {
+			continue
+		}
+		return slot, true
+	}
+	for slot := int16(1); slot <= int16(tab.slotLimit); slot++ {
+		if tab.items[slot] != nil {
+			continue
+		}
+		if _, taken := blocked[slot]; taken {
+			continue
+		}
+		return slot, true
+	}
+	return 0, false
+}
+
 func (e *Escrow) putBack(held escrowItem) bool {
 	ch := e.owner
 	inven := ch.inventory.tabs[held.invType]

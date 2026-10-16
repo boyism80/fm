@@ -12,6 +12,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
+	"google.golang.org/grpc"
 )
 
 func (s *InternalSystem) BroadcastNoticeAsync(ctx actor.Context, ch *Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise[*internal.BroadcastNoticeReply] {
@@ -128,7 +129,7 @@ func (s *InternalSystem) SendParcelAsync(ctx actor.Context, ch *Character, reque
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SendParcelReply, error) {
-			return s.client.SendParcel(c, req)
+			return s.client.SendParcel(c, req, grpc.WaitForReady(true))
 		},
 		nil,
 	)
@@ -143,7 +144,7 @@ func (s *InternalSystem) ReturnParcelAsync(ctx actor.Context, ch *Character, req
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.ReturnParcelReply, error) {
-			return s.client.ReturnParcel(c, req)
+			return s.client.ReturnParcel(c, req, grpc.WaitForReady(true))
 		},
 		nil,
 	)
@@ -157,7 +158,7 @@ func (s *InternalSystem) AbortParcelSendAsync(ctx actor.Context, ch *Character, 
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.AbortParcelSendReply, error) {
-			return s.client.AbortParcelSend(c, req)
+			return s.client.AbortParcelSend(c, req, grpc.WaitForReady(true))
 		},
 		nil,
 	)

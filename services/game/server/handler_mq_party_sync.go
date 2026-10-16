@@ -17,7 +17,7 @@ func (partyMqPartySync) New(gs *GameServer) *partyMqPartySync {
 	return &partyMqPartySync{gs: gs}
 }
 func (*partyMqPartySync) EventType() string { return "party_sync" }
-func (h *partyMqPartySync) Handle(_ actor.Context, raw json.RawMessage) error {
+func (h *partyMqPartySync) Handle(ctx actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil
@@ -46,6 +46,15 @@ func (h *partyMqPartySync) Handle(_ actor.Context, raw json.RawMessage) error {
 	}
 	if partyPb.GetPartyId() != evt.PartyID {
 		log.Printf("party_sync: party_id mismatch envelope=%d party=%d", evt.PartyID, partyPb.GetPartyId())
+	}
+	if pc.Get(evt.PartyID) == nil {
+		pc.UpdateAsync(ctx, evt).Do(func() error {
+			if party := pc.Get(evt.PartyID); party != nil {
+				pc.BroadcastPartySilent(party)
+			}
+			return nil
+		})
+		return nil
 	}
 	if _, err := pc.StoreSnapshot(evt, &partyPb, true); err != nil {
 	}

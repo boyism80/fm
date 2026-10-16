@@ -348,7 +348,7 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 	var addedCount uint16
 
 	for remainingCount > 0 {
-		slot, ok := inven.FindSlot(item)
+		slot, ok := inv.owner.escrow.gainSlot(invenType, item)
 		if !ok {
 			if allOrNothing && addedCount == 0 {
 				return nil, fmt.Errorf("no available slot found")
@@ -499,7 +499,7 @@ func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
-	destSlot, ok := inven.NextSlot()
+	destSlot, ok := inv.owner.escrow.gainSlot(constant.InventoryTypeEquipment, inv.equipped[parts])
 	if !ok {
 		return ErrInventoryFull
 	}
@@ -541,7 +541,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	case constant.EquipmentPartsTop:
 		if newEq.GetModel().(wz.Equipment).GetEquipmentType() == constant.EquipmentTypeLongcoat {
 			if equipments[constant.EquipmentPartsPants] != nil {
-				storageSlot, isFree := inven.NextSlot()
+				storageSlot, isFree := inv.owner.escrow.gainSlot(constant.InventoryTypeEquipment, equipments[constant.EquipmentPartsPants])
 				if !isFree {
 					return ErrInventoryFull
 				}
@@ -554,7 +554,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		topEq := equipments[constant.EquipmentPartsTop]
 		if topEq != nil {
 			if topEq.GetModel().(wz.Equipment).GetEquipmentType() == constant.EquipmentTypeLongcoat {
-				storageSlot, isFree := inven.NextSlot()
+				storageSlot, isFree := inv.owner.escrow.gainSlot(constant.InventoryTypeEquipment, topEq)
 				if swap && !isFree {
 					return ErrInventoryFull
 				}

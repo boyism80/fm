@@ -14,7 +14,7 @@ type itemSlotSnapshot struct {
 	expires bool
 }
 
-func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map[uint32]uint16, period map[uint32]time.Duration, modelOf func(uint32) wz.Item) ExchangeResult {
+func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, cost map[uint32]uint16, reward map[uint32]uint16, period map[uint32]time.Duration, modelOf func(uint32) wz.Item, escrow *Escrow) ExchangeResult {
 	if inv == nil {
 		if !exchangeItemsEmpty(cost) {
 			return ExchangeLackCost
@@ -40,6 +40,21 @@ func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map
 		id := item.GetModel().GetID()
 		slots[slot] = itemSlotSnapshot{itemID: id, count: item.GetCount(), expires: !item.GetExpiration().Equal(util.TimeMax)}
 		slotsByID[id] = append(slotsByID[id], slot)
+	}
+
+	var blocked map[int16]struct{}
+	var hold map[int16]uint16
+	if escrow != nil {
+		var ok bool
+		blocked, hold, ok = escrow.claim(invType)
+		if !ok && !exchangeItemsEmpty(reward) {
+			return ExchangeLackCapacity
+		}
+		for slot := range blocked {
+			if _, occupied := slots[slot]; !occupied && freeSlots > 0 {
+				freeSlots--
+			}
+		}
 	}
 
 	for id, costCount := range cost {
@@ -68,6 +83,18 @@ func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map
 		if remaining > 0 {
 			return ExchangeLackCost
 		}
+	}
+
+	for slot, kept := range hold {
+		snap, occupied := slots[slot]
+		if !occupied {
+			if freeSlots > 0 {
+				freeSlots--
+			}
+			continue
+		}
+		snap.count += kept
+		slots[slot] = snap
 	}
 
 	requiredSlots := 0
