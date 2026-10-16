@@ -142,7 +142,7 @@ func (member *ExpeditionMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 }
 
-func RegisterExpeditionLua(L *lua.LState, gw GameWorld) {
+func RegisterExpeditionLua(gw GameWorld, L *lua.LState) {
 	luax.RegisterLuaType[*Expedition](L)
 	luax.RegisterLuaType[*ExpeditionMember](L)
 

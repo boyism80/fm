@@ -689,7 +689,7 @@ func (member *CarnivalMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 }
 
-func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
+func RegisterCarnivalLua(gw GameWorld, L *lua.LState) {
 	registerCarnivalConstants(L)
 	luax.RegisterLuaType[*CarnivalMatch](L)
 	luax.RegisterLuaType[*CarnivalTeam](L)
