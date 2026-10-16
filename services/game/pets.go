@@ -18,17 +18,17 @@ var (
 type Pets struct {
 	owner    *Character
 	summoned uint64
-	Active   *ActivePet
-	HPItem   uint32
-	MPItem   uint32
+	active   *ActivePet
+	hpItem   uint32
+	mpItem   uint32
 }
 
 func (p *Pets) Summon(slot int16) error {
-	pet, ok := p.owner.Inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
+	pet, ok := p.owner.inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
 	if !ok {
 		return ErrPetNotFound
 	}
-	if p.Active != nil && p.Active.Item == pet {
+	if p.active != nil && p.active.item == pet {
 		p.Dismiss(constant.PetRemoveReasonNone)
 		return nil
 	}
@@ -37,31 +37,38 @@ func (p *Pets) Summon(slot int16) error {
 	}
 
 	p.Dismiss(constant.PetRemoveReasonNone)
-	p.Active = &ActivePet{owner: p.owner, Item: pet, Position: p.owner.Position, Stance: p.owner.Stance}
-	p.Active.scheduleTimers()
-	p.summoned = *pet.UniqueId
-	p.owner.Listener.OnPetSpawn(p.owner)
+	p.active = &ActivePet{owner: p.owner, item: pet, position: p.owner.position, stance: p.owner.stance}
+	p.active.scheduleTimers()
+	p.summoned = *pet.uniqueId
+	p.owner.listener.OnPetSpawn(p.owner, *pet.uniqueId)
 	return nil
 }
 
-func (p *Pets) Dismiss(reason constant.PetRemoveReason) {
-	if p.Active == nil {
+func (p *Pets) ShowExceptions() {
+	if p.active == nil || p.active.item == nil || p.active.item.uniqueId == nil {
 		return
 	}
-	p.Active.stopTimers()
-	p.Active = nil
+	p.owner.listener.OnPetExceptions(p.owner, *p.active.item.uniqueId, p.active.item.exceptions)
+}
+
+func (p *Pets) Dismiss(reason constant.PetRemoveReason) {
+	if p.active == nil {
+		return
+	}
+	p.active.stopTimers()
+	p.active = nil
 	p.summoned = 0
-	p.owner.Listener.OnPetRemove(p.owner, reason)
+	p.owner.listener.OnPetRemove(p.owner, reason)
 }
 
 func (p *Pets) ChangeSkill(sn uint64, itemID uint32) error {
-	model, ok := p.owner.GameWorld.GetResources().Items[itemID].(*wz.CashItem)
+	model, ok := p.owner.gameWorld.GetResources().Items[itemID].(*wz.CashItem)
 	if !ok || model.PetSkill == 0 {
 		return ErrPetSkillInvalid
 	}
 	var pet *Pet
-	for _, item := range p.owner.Inventory.Tabs[constant.InventoryTypeCash].Items {
-		if candidate, ok := item.(*Pet); ok && *candidate.UniqueId == sn {
+	for _, item := range p.owner.inventory.tabs[constant.InventoryTypeCash].items {
+		if candidate, ok := item.(*Pet); ok && *candidate.uniqueId == sn {
 			pet = candidate
 			break
 		}
@@ -72,30 +79,30 @@ func (p *Pets) ChangeSkill(sn uint64, itemID uint32) error {
 
 	skill := model.PetSkill
 	if model.PetSkillAdd {
-		if pet.Skills&skill != 0 {
+		if pet.skills&skill != 0 {
 			return ErrPetSkillInvalid
 		}
-		if required, ok := constant.PetSkillRequires[skill]; ok && pet.Skills&required == 0 {
+		if required, ok := constant.PetSkillRequires[skill]; ok && pet.skills&required == 0 {
 			return ErrPetSkillInvalid
 		}
-		pet.Skills |= skill
+		pet.skills |= skill
 	} else {
-		if pet.Skills&skill == 0 {
+		if pet.skills&skill == 0 {
 			return ErrPetSkillInvalid
 		}
 		for dependent, required := range constant.PetSkillRequires {
-			if required == skill && pet.Skills&dependent != 0 {
+			if required == skill && pet.skills&dependent != 0 {
 				return ErrPetSkillInvalid
 			}
 		}
-		pet.Skills &^= skill
+		pet.skills &^= skill
 	}
-	p.owner.Listener.OnPetSkillChanged(p.owner, pet, skill, model.PetSkillAdd)
+	p.owner.listener.OnPetSkillChanged(p.owner, pet, *pet.uniqueId, skill, model.PetSkillAdd)
 	return nil
 }
 
 func (p *Pets) Revive(slot int16) error {
-	pet, ok := p.owner.Inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
+	pet, ok := p.owner.inventory.GetItem(constant.InventoryTypeCash, slot).(*Pet)
 	if !ok {
 		return ErrPetNotFound
 	}
@@ -104,15 +111,15 @@ func (p *Pets) Revive(slot int16) error {
 		return ErrPetNotRevivable
 	}
 
-	pet.ItemCore.Expiration = time.Now().AddDate(0, 0, model.Life)
-	p.owner.Listener.OnPetUpdated(p.owner, pet)
+	pet.itemCore.expiration = time.Now().AddDate(0, 0, model.Life)
+	p.owner.listener.OnPetUpdated(p.owner, pet)
 	return nil
 }
 
 func (p *Pets) Expired() map[int16]*Pet {
 	now := time.Now()
 	pets := make(map[int16]*Pet)
-	for slot, item := range p.owner.Inventory.Tabs[constant.InventoryTypeCash].Items {
+	for slot, item := range p.owner.inventory.tabs[constant.InventoryTypeCash].items {
 		if pet, ok := item.(*Pet); ok && !pet.Alive(now) && !pet.GetModel().(*wz.Pet).NoRevive {
 			pets[slot] = pet
 		}
@@ -125,14 +132,14 @@ func (p *Pets) restore() {
 		return
 	}
 	now := time.Now()
-	for _, item := range p.owner.Inventory.Tabs[constant.InventoryTypeCash].Items {
+	for _, item := range p.owner.inventory.tabs[constant.InventoryTypeCash].items {
 		pet, ok := item.(*Pet)
-		if !ok || *pet.UniqueId != p.summoned {
+		if !ok || *pet.uniqueId != p.summoned {
 			continue
 		}
 		if pet.Alive(now) {
-			p.Active = &ActivePet{owner: p.owner, Item: pet, Position: p.owner.Position, Stance: p.owner.Stance}
-			p.Active.scheduleTimers()
+			p.active = &ActivePet{owner: p.owner, item: pet, position: p.owner.position, stance: p.owner.stance}
+			p.active.scheduleTimers()
 			return
 		}
 		break

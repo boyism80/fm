@@ -33,14 +33,14 @@ func (h *StoreBank) Handle(ctx *core.ClientContext, req *request.StoreBank) erro
 	var err error
 	switch req.Mode {
 	case pconst.StoreBankWithdraw:
-		err = ch.StoreBank.Withdraw()
+		err = ch.StoreBank().Withdraw()
 	case pconst.StoreBankConfirm:
-		err = ch.StoreBank.Confirm(ctx.ActorContext)
+		err = ch.StoreBank().Confirm(ctx.ActorContext)
 	case pconst.StoreBankClose:
-		ch.StoreBank.Close()
+		ch.StoreBank().Close()
 	}
 	if err != nil {
-		ch.Listener.OnUnlockAction(ch)
+		ch.Listener().OnUnlockAction(ch)
 	}
 	return nil
 }

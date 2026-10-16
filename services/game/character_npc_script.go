@@ -16,11 +16,11 @@ func (d *Dialog) Open(actx actor.Context, npc *Npc) error {
 	if d.Busy() {
 		return ErrDialogBusy
 	}
-	npcID := npc.Wz.ID
+	npcID := npc.wz.ID
 
-	if shop := d.owner.GameWorld.GetResources().GetShop(npcID); shop != nil {
+	if shop := d.owner.gameWorld.GetResources().GetShop(npcID); shop != nil {
 		d.OpenShop(npcID)
-		d.owner.Listener.OnOpenNpcShop(d.owner, npcID, shop)
+		d.owner.listener.OnOpenNpcShop(d.owner, npcID, shop)
 		return nil
 	}
 
@@ -35,7 +35,7 @@ func (d *Dialog) Open(actx actor.Context, npc *Npc) error {
 	scriptPath := fmt.Sprintf("script/npc/%d.lua", npcID)
 	luaThread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
-		d.owner.Listener.OnScriptError(d.owner, scriptPath, err)
+		d.owner.listener.OnScriptError(d.owner, scriptPath, err)
 		return err
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
@@ -45,13 +45,13 @@ func (d *Dialog) Open(actx actor.Context, npc *Npc) error {
 	d.Set(luaThread)
 	luax.CallAsync(actx, root, luaThread, "on_click", d.owner, npc).Do(func([]lua.LValue) error {
 		d.Reset()
-		d.owner.Listener.OnUnlockAction(d.owner)
+		d.owner.listener.OnUnlockAction(d.owner)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("npc script on_click npc=%d: %v", npcID, err)
-		d.owner.Listener.OnScriptError(d.owner, scriptPath, err)
+		d.owner.listener.OnScriptError(d.owner, scriptPath, err)
 		d.Reset()
-		d.owner.Listener.OnUnlockAction(d.owner)
+		d.owner.listener.OnUnlockAction(d.owner)
 	})
 	return nil
 }

@@ -23,14 +23,14 @@ func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 			if ch == nil {
 				continue
 			}
-			if ch.StateMachine == nil {
+			if ch.StateMachine() == nil {
 				continue
 			}
-			if _, ok := seen[ch.StateMachine]; ok {
+			if _, ok := seen[ch.StateMachine()]; ok {
 				continue
 			}
-			seen[ch.StateMachine] = struct{}{}
-			ch.StateMachine.CallHook("on_disband_party")
+			seen[ch.StateMachine()] = struct{}{}
+			ch.StateMachine().CallHook("on_disband_party")
 		}
 	}
 }

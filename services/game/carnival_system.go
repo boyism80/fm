@@ -52,11 +52,11 @@ func (r *CarnivalSystem) SkillHitChance(skillID uint32, fallback int) int {
 
 func (r *CarnivalSystem) registerMaps(match *CarnivalMatch) {
 	ids := []uint32{
-		match.WaitingMapID,
-		match.FieldMapID,
-		match.ReviveMapID,
-		match.WinMapID,
-		match.LoseMapID,
+		match.waitingMapID,
+		match.fieldMapID,
+		match.reviveMapID,
+		match.winMapID,
+		match.loseMapID,
 	}
 	for _, id := range ids {
 		r.mapMatches[id] = match
@@ -112,8 +112,8 @@ func (r *CarnivalSystem) Enter(slotIndex int, leader *Character) bool {
 	if match == nil {
 		return false
 	}
-	members, party := leader.Party.MembersOnMap()
-	if party == nil || len(members) > match.MaxMembers {
+	members, party := leader.party.MembersOnMap()
+	if party == nil || len(members) > match.maxMembers {
 		return false
 	}
 
@@ -124,27 +124,27 @@ func (r *CarnivalSystem) Enter(slotIndex int, leader *Character) bool {
 		personal[ch.GetID()] = &CarnivalPersonalCP{}
 	}
 	red := &CarnivalTeam{
-		Match:    match,
-		TeamID:   constant.CarnivalTeamRed,
-		LeaderID: leader.GetID(),
-		PartyID:  party.GetPartyId(),
-		Roster:   roster,
-		Personal: personal,
+		match:    match,
+		teamID:   constant.CarnivalTeamRed,
+		leaderID: leader.GetID(),
+		partyID:  party.GetPartyId(),
+		roster:   roster,
+		personal: personal,
 	}
 
-	smID := strconv.FormatUint(uint64(match.WaitingMapID), 10)
+	smID := strconv.FormatUint(uint64(match.waitingMapID), 10)
 	match.mu.Lock()
-	if match.State != CarnivalStateEmpty || match.Teams[constant.CarnivalTeamRed] != nil {
+	if match.state != CarnivalStateEmpty || match.teams[constant.CarnivalTeamRed] != nil {
 		match.mu.Unlock()
 		return false
 	}
-	match.Teams[constant.CarnivalTeamRed] = red
-	match.State = CarnivalStateWaiting
+	match.teams[constant.CarnivalTeamRed] = red
+	match.state = CarnivalStateWaiting
 	match.smID = smID
 	match.mu.Unlock()
 
 	for _, ch := range members {
-		ch.Carnival.team = red
+		ch.carnival.team = red
 	}
 	return true
 }
@@ -154,7 +154,7 @@ func (r *CarnivalSystem) Challenge(slotIndex int, leader *Character) bool {
 	if match == nil {
 		return false
 	}
-	members, party := leader.Party.MembersOnMap()
+	members, party := leader.party.MembersOnMap()
 	if party == nil {
 		return false
 	}
@@ -164,27 +164,27 @@ func (r *CarnivalSystem) Challenge(slotIndex int, leader *Character) bool {
 		roster[i] = NewCarnivalMember(ch)
 	}
 	challenge := &CarnivalChallenge{
-		LeaderID:    leader.GetID(),
-		PartyID:     party.GetPartyId(),
-		Map:         leader.GetMap(),
-		Members:     roster,
-		RequestedAt: time.Now(),
+		leaderID:    leader.GetID(),
+		partyID:     party.GetPartyId(),
+		onMap:       leader.GetMap(),
+		members:     roster,
+		requestedAt: time.Now(),
 	}
 
 	match.mu.Lock()
-	red := match.Teams[constant.CarnivalTeamRed]
-	if match.State != CarnivalStateWaiting || red == nil {
+	red := match.teams[constant.CarnivalTeamRed]
+	if match.state != CarnivalStateWaiting || red == nil {
 		match.mu.Unlock()
 		return false
 	}
-	if len(members) != len(red.Roster) {
+	if len(members) != len(red.roster) {
 		match.mu.Unlock()
 		return false
 	}
 	wasEmpty := len(match.queue) == 0
 	match.queue = append(match.queue, challenge)
 	if wasEmpty {
-		match.Pending = challenge
+		match.pending = challenge
 	}
 	match.mu.Unlock()
 

@@ -31,7 +31,7 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 		return nil
 	}
 	if character.UsingCashItem() {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
@@ -41,7 +41,7 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 		return fmt.Errorf("resources not available")
 	}
 
-	shopID := character.Dialog.Shop()
+	shopID := character.Dialog().Shop()
 	if shopID == 0 {
 		return nil
 	}
@@ -52,19 +52,19 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 	}
 
 	if req.Transaction == nil {
-		character.Dialog.CloseShop()
+		character.Dialog().CloseShop()
 		return nil
 	}
 
 	switch tx := req.Transaction.(type) {
 	case *request.BuyTransaction:
-		character.Dialog.Buy(shop, tx.ItemID, tx.Quantity)
+		character.Dialog().Buy(shop, tx.ItemID, tx.Quantity)
 	case *request.SellTransaction:
-		character.Dialog.Sell(tx.Slot, tx.ItemID, tx.Quantity)
+		character.Dialog().Sell(tx.Slot, tx.ItemID, tx.Quantity)
 	case *request.RechargeTransaction:
-		character.Dialog.Recharge(tx.Slot)
+		character.Dialog().Recharge(tx.Slot)
 	default:
-		character.Dialog.CloseShop()
+		character.Dialog().CloseShop()
 	}
 	return nil
 }

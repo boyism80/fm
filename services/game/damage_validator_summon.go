@@ -16,7 +16,7 @@ func NewSummonValidator(ch *Character, summon *Summon) *SummonValidator {
 }
 
 func (v *SummonValidator) Validate(damages []dto.AttackPair) error {
-	if v.ch.GM.InstantKill {
+	if v.ch.gm.instantKill {
 		return nil
 	}
 	bounds, err := v.maximumDamages(damages)
@@ -27,14 +27,14 @@ func (v *SummonValidator) Validate(damages []dto.AttackPair) error {
 }
 
 func (v *SummonValidator) maximumDamages(damages []dto.AttackPair) ([]dto.AttackPair, error) {
-	if v.ch.GameWorld == nil {
+	if v.ch.gameWorld == nil {
 		return nil, fmt.Errorf("no game world")
 	}
-	skill := v.ch.GameWorld.GetResources().GetSkill(uint32(v.summon.SkillID))
+	skill := v.ch.gameWorld.GetResources().GetSkill(uint32(v.summon.skillID))
 	if skill == nil {
-		return nil, fmt.Errorf("no summon skill %d", v.summon.SkillID)
+		return nil, fmt.Errorf("no summon skill %d", v.summon.skillID)
 	}
-	a, err := v.start(attackSummonPhysical, skill, int(v.summon.SkillLevel))
+	a, err := v.start(attackSummonPhysical, skill, int(v.summon.skillLevel))
 	if err != nil {
 		return nil, err
 	}

@@ -16,17 +16,17 @@ const (
 )
 
 type RecordReset struct {
-	Kind    RecordResetKind
-	At      time.Duration
-	Every   time.Duration
-	Restart bool
+	kind    RecordResetKind
+	at      time.Duration
+	every   time.Duration
+	restart bool
 }
 
 type Record struct {
-	Value      int64
-	Text       string
-	ExpiresAt  time.Time
-	RecordedAt time.Time
+	value      int64
+	text       string
+	expiresAt  time.Time
+	recordedAt time.Time
 }
 
 type Records struct {
@@ -39,31 +39,31 @@ func NewRecords() *Records {
 
 func (reset RecordReset) expiresAt(now time.Time) time.Time {
 	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	switch reset.Kind {
+	switch reset.kind {
 	case RecordResetDaily:
-		boundary := midnight.Add(reset.At)
+		boundary := midnight.Add(reset.at)
 		if !boundary.After(now) {
 			boundary = boundary.AddDate(0, 0, 1)
 		}
 		return boundary
 	case RecordResetWeekly:
 		monday := midnight.AddDate(0, 0, -((int(now.Weekday()) + 6) % 7))
-		boundary := monday.Add(reset.At)
+		boundary := monday.Add(reset.at)
 		if !boundary.After(now) {
 			boundary = boundary.AddDate(0, 0, 7)
 		}
 		return boundary
 	case RecordResetEvery:
-		return now.Add(reset.Every)
+		return now.Add(reset.every)
 	}
 	return time.Time{}
 }
 
 func (r *Record) expired(now time.Time) bool {
-	if r.ExpiresAt.IsZero() {
+	if r.expiresAt.IsZero() {
 		return false
 	}
-	return !now.Before(r.ExpiresAt)
+	return !now.Before(r.expiresAt)
 }
 
 func (r *Records) find(key string) *Record {
@@ -83,12 +83,12 @@ func (r *Records) touch(key string, reset RecordReset) *Record {
 	record := r.find(key)
 	switch {
 	case record == nil:
-		record = &Record{ExpiresAt: reset.expiresAt(now)}
+		record = &Record{expiresAt: reset.expiresAt(now)}
 		r.entries[key] = record
-	case reset.Restart:
-		record.ExpiresAt = reset.expiresAt(now)
+	case reset.restart:
+		record.expiresAt = reset.expiresAt(now)
 	}
-	record.RecordedAt = now
+	record.recordedAt = now
 	return record
 }
 
@@ -97,7 +97,7 @@ func (r *Records) Get(key string) int64 {
 	if record == nil {
 		return 0
 	}
-	return record.Value
+	return record.value
 }
 
 func (r *Records) Text(key string) string {
@@ -105,21 +105,21 @@ func (r *Records) Text(key string) string {
 	if record == nil {
 		return ""
 	}
-	return record.Text
+	return record.text
 }
 
 func (r *Records) Set(key string, value int64, reset RecordReset) {
-	r.touch(key, reset).Value = value
+	r.touch(key, reset).value = value
 }
 
 func (r *Records) SetText(key string, text string, reset RecordReset) {
-	r.touch(key, reset).Text = text
+	r.touch(key, reset).text = text
 }
 
 func (r *Records) Add(key string, n int64, reset RecordReset) int64 {
 	record := r.touch(key, reset)
-	record.Value += n
-	return record.Value
+	record.value += n
+	return record.value
 }
 
 func (r *Records) Remove(key string) {

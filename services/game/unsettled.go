@@ -15,11 +15,11 @@ const (
 )
 
 type UnsettledRequest struct {
-	ID       uint64
-	Type     internal.UnsettledType
-	Target   uint64
-	Detail   string
-	InFlight bool
+	id       uint64
+	onType   internal.UnsettledType
+	target   uint64
+	detail   string
+	inFlight bool
 }
 
 type UnsettledRequests struct {
@@ -28,7 +28,7 @@ type UnsettledRequests struct {
 }
 
 func (u *UnsettledRequests) Add(typ internal.UnsettledType, target uint64, detail any) uint64 {
-	id := u.owner.GameWorld.NewUniqueID()
+	id := u.owner.gameWorld.NewUniqueID()
 	u.add(id, typ, target, detail)
 	return id
 }
@@ -40,7 +40,15 @@ func (u *UnsettledRequests) add(id uint64, typ internal.UnsettledType, target ui
 		log.Printf("UnsettledRequests.Add character=%d type=%s: %v", u.owner.GetID(), typ, err)
 	}
 
-	u.requests[id] = &UnsettledRequest{ID: id, Type: typ, Target: target, Detail: string(data), InFlight: true}
+	u.requests[id] = &UnsettledRequest{id: id, onType: typ, target: target, detail: string(data), inFlight: true}
+}
+
+func (u *UnsettledRequests) Lost(id uint64) {
+	request := u.Find(id)
+	if request == nil {
+		return
+	}
+	request.inFlight = false
 }
 
 func (u *UnsettledRequests) Find(id uint64) *UnsettledRequest {
@@ -49,7 +57,7 @@ func (u *UnsettledRequests) Find(id uint64) *UnsettledRequest {
 
 func (u *UnsettledRequests) FindByTarget(typ internal.UnsettledType, target uint64) *UnsettledRequest {
 	for _, request := range u.requests {
-		if request.Type == typ && request.Target == target {
+		if request.onType == typ && request.target == target {
 			return request
 		}
 	}
@@ -62,48 +70,48 @@ func (u *UnsettledRequests) Erase(id uint64) {
 
 func (u *UnsettledRequests) Settle(actx actor.Context) {
 	for _, request := range u.requests {
-		if request.InFlight {
+		if request.inFlight {
 			continue
 		}
 
-		request.InFlight = true
-		switch request.Type {
+		request.inFlight = true
+		switch request.onType {
 		case internal.UnsettledType_UNSETTLED_TYPE_PARCEL_SEND:
-			u.owner.Duey.settleSend(actx, request)
+			u.owner.duey.settleSend(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_PARCEL_CLAIM:
-			u.owner.Duey.settleClaim(actx, request)
+			u.owner.duey.settleClaim(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_NOTE_REMOVE:
-			u.owner.Notes.settleRemove(actx, request)
+			u.owner.notes.settleRemove(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_SEND:
-			u.owner.Wedding.settleGiftSend(actx, request)
+			u.owner.wedding.settleGiftSend(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_CLAIM:
-			u.owner.Wedding.settleGiftClaim(actx, request)
+			u.owner.wedding.settleGiftClaim(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_PROPOSAL:
-			u.owner.Wedding.settleProposal(actx, request)
+			u.owner.wedding.settleProposal(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_RESERVE:
-			u.owner.Wedding.settleReservation(actx, request)
+			u.owner.wedding.settleReservation(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_WISHLIST:
-			u.owner.Wedding.settleWishlist(actx, request)
+			u.owner.wedding.settleWishlist(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_WEDDING_INVITE:
-			u.owner.Wedding.settleInvite(actx, request)
+			u.owner.wedding.settleInvite(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN:
-			u.owner.StoreBank.settleShopOpen(actx, request)
+			u.owner.storeBank.settleShopOpen(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_FAMILY_MOVE:
-			u.owner.Family.settleMove(actx, request)
+			u.owner.family.settleMove(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE:
-			u.owner.GameWorld.Systems().Get[*GuildSystem]().SettleCreate(actx, u.owner, request)
+			u.owner.gameWorld.Systems().Get[*GuildSystem]().SettleCreate(actx, u.owner, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_GUILD_CAPACITY:
-			u.owner.GameWorld.Systems().Get[*GuildSystem]().SettleCapacity(actx, u.owner, request)
+			u.owner.gameWorld.Systems().Get[*GuildSystem]().SettleCapacity(actx, u.owner, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM:
-			u.owner.GameWorld.Systems().Get[*GuildSystem]().SettleEmblem(actx, u.owner, request)
+			u.owner.gameWorld.Systems().Get[*GuildSystem]().SettleEmblem(actx, u.owner, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_GUILD_GP:
-			u.owner.GameWorld.Systems().Get[*GuildSystem]().SettleGP(actx, u.owner, request)
+			u.owner.gameWorld.Systems().Get[*GuildSystem]().SettleGP(actx, u.owner, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CREATE:
-			u.owner.GameWorld.Systems().Get[*GuildSystem]().SettleAllianceCreate(actx, u.owner, request)
+			u.owner.gameWorld.Systems().Get[*GuildSystem]().SettleAllianceCreate(actx, u.owner, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CAPACITY:
-			u.owner.GameWorld.Systems().Get[*AllianceSystem]().SettleCapacity(actx, u.owner, request)
+			u.owner.gameWorld.Systems().Get[*AllianceSystem]().SettleCapacity(actx, u.owner, request)
 		default:
-			log.Printf("UnsettledRequests.Settle character=%d id=%d: unknown type %s", u.owner.GetID(), request.ID, request.Type)
+			log.Printf("UnsettledRequests.Settle character=%d id=%d: unknown type %s", u.owner.GetID(), request.id, request.onType)
 		}
 	}
 }
@@ -111,7 +119,7 @@ func (u *UnsettledRequests) Settle(actx actor.Context) {
 // Timer callbacks run without an actor context; settle through the character's dispatch.
 func (u *UnsettledRequests) ScheduleSettle() {
 	u.owner.AddTimer(unsettledSettleTimer, unsettledSettleInterval, true, func() {
-		u.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(u.owner.GetID(), func(ctx actor.Context, current *Character) {
+		u.owner.gameWorld.Systems().Get[*DispatchSystem]().Visit(u.owner.GetID(), func(ctx actor.Context, current *Character) {
 			if current != u.owner {
 				return
 			}

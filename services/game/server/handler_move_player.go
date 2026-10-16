@@ -33,13 +33,13 @@ func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) er
 		return fmt.Errorf("character is nil")
 	}
 
-	beforePosition := character.Position
+	beforePosition := character.GetPosition()
 
 	for _, frag := range req.Fragments {
 		if move, ok := frag.(*dto.AbsoluteLifeMovement); ok {
-			character.Position = move.Position
+			character.Place(move.Position)
 		}
-		character.Stance = frag.GetStance()
+		character.SetStance(frag.GetStance())
 	}
 
 	mapInstance := character.GetMap()
@@ -49,7 +49,7 @@ func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) er
 	}
 
 	mapInstance.OnMoved(character, beforePosition)
-	character.Listener.OnPlayerMove(character, beforePosition, req.Fragments)
+	character.Listener().OnPlayerMove(character, beforePosition, req.Fragments)
 
 	return nil
 }

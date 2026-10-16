@@ -30,7 +30,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	}
 	c.MarkPongReceived()
 	character := c.GetCharacter()
-	if character == nil || character.AccountID == 0 {
+	if character == nil || character.AccountID() == 0 {
 		return nil
 	}
 	if ctx.ActorContext == nil {
@@ -40,7 +40,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 		func(cctx context.Context) (*internal.RefreshSessionReply, error) {
 			req := &internal.RefreshSessionRequest{
 				WorldId:   h.gs.config.WorldId,
-				AccountId: character.AccountID,
+				AccountId: character.AccountID(),
 			}
 			if cid := character.GetID(); cid != 0 {
 				v := cid

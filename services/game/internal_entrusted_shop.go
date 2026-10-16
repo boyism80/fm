@@ -12,7 +12,7 @@ import (
 func (s *InternalSystem) FindEntrustedShopAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.FindEntrustedShopReply] {
 	req := &internal.FindEntrustedShopRequest{
 		WorldId:   s.gw.GetWorldID(),
-		AccountId: ch.AccountID,
+		AccountId: ch.accountID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.FindEntrustedShopReply, error) {
@@ -37,7 +37,7 @@ func (s *InternalSystem) OpenShopAsync(ctx actor.Context, ch *Character, request
 func (s *InternalSystem) AbortOpenShopAsync(ctx actor.Context, ch *Character, requestID uint64) *async.Promise[*internal.AbortOpenShopReply] {
 	req := &internal.AbortOpenShopRequest{
 		WorldId:   s.gw.GetWorldID(),
-		AccountId: ch.AccountID,
+		AccountId: ch.accountID,
 		RequestId: requestID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(

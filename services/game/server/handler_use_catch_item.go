@@ -27,11 +27,11 @@ func (*UseCatchItem) Handle(ctx *core.ClientContext, req *request.UseCatchItem) 
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
 	ch.UseCatchItem(int16(req.Slot), req.ItemID, req.MobOID)
-	ch.Listener.OnUpdateStats(ch, nil, true)
+	ch.Listener().OnUpdateStats(ch, nil, true)
 	return nil
 }

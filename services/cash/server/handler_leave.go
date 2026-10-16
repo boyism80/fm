@@ -68,7 +68,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 			AccountId:        character.AccountID(),
 			CharacterId:      character.ID(),
 			ClientIp:         ctx.Client.GetRemoteIP(),
-			Debuffs:          character.Game.GetDebuffs(),
+			Debuffs:          character.DebuffsRPC(),
 			SourceCashShopId: &cashShopID,
 		})
 	}, func(reply *internal.BeginGameTransitionReply) error {

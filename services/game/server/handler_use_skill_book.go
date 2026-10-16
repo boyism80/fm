@@ -26,7 +26,7 @@ func (*UseSkillBook) Handle(ctx *core.ClientContext, req *request.UseSkillBook) 
 	if ch == nil {
 		return nil
 	}
-	defer ch.Listener.OnUnlockAction(ch)
+	defer ch.Listener().OnUnlockAction(ch)
 
 	ch.UseSkillBook(req.Slot, req.ItemID)
 	return nil

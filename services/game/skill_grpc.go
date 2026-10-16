@@ -14,14 +14,14 @@ func (e *SkillEntry) BuildRPC(characterID uint32, skillID uint32) *internal.Skil
 		return nil
 	}
 	cooldownEnd := int64(0)
-	if e.CooldownEnd != nil {
-		cooldownEnd = e.CooldownEnd.UnixMilli()
+	if e.cooldownEnd != nil {
+		cooldownEnd = e.cooldownEnd.UnixMilli()
 	}
 	return &internal.Skill{
 		CharacterId:       characterID,
 		SkillId:           skillID,
 		Level:             int32(e.Level()),
-		MasterLevel:       int32(e.MasterLevel),
+		MasterLevel:       int32(e.masterLevel),
 		CooldownEndUnixMs: cooldownEnd,
 	}
 }
@@ -50,7 +50,7 @@ func NewSkillEntryFromInternalProto(owner *Character, pb *internal.Skill, gw Gam
 	if cd := pb.GetCooldownEndUnixMs(); cd > 0 {
 		t := time.UnixMilli(cd)
 		if clock.Now().Before(t) {
-			entry.CooldownEnd = &t
+			entry.cooldownEnd = &t
 		}
 	}
 	return entry, nil

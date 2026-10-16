@@ -12,23 +12,23 @@ func (m *Map) AddMessageBox(box *MessageBox) error {
 	for _, typ := range []constant.ObjectType{constant.ObjectTypeNpc, constant.ObjectTypeMessageBox, constant.ObjectTypeEntrustedShop, constant.ObjectTypePersonalShop} {
 		for _, obj := range m.objects[typ] {
 			other := obj.GetPosition()
-			dx := int(box.Position.X) - int(other.X)
-			dy := int(box.Position.Y) - int(other.Y)
+			dx := int(box.position.X) - int(other.X)
+			dy := int(box.position.Y) - int(other.Y)
 			if dx*dx+dy*dy < messageBoxSpacingSq {
 				return ErrMessageBoxSpot
 			}
 		}
 	}
 
-	box.ObjectCore.self = box
-	box.GameWorld = m.GameWorld
-	box.Map = m
-	box.OID = m.allocateOID()
+	box.objectCore.self = box
+	box.gameWorld = m.gameWorld
+	box.onMap = m
+	box.oid = m.allocateOID()
 	box.initTimers()
 	if m.objects[constant.ObjectTypeMessageBox] == nil {
 		m.objects[constant.ObjectTypeMessageBox] = make(map[uint32]Object)
 	}
-	m.objects[constant.ObjectTypeMessageBox][box.OID] = box
+	m.objects[constant.ObjectTypeMessageBox][box.oid] = box
 	m.sections.add(box)
 	m.listener.OnMessageBoxSpawned(m, box)
 	box.AddTimer("expire", MessageBoxLifetime, false, func() {
@@ -38,14 +38,14 @@ func (m *Map) AddMessageBox(box *MessageBox) error {
 }
 
 func (m *Map) RemoveMessageBox(box *MessageBox) {
-	if m.objects[constant.ObjectTypeMessageBox][box.OID] != box {
+	if m.objects[constant.ObjectTypeMessageBox][box.oid] != box {
 		return
 	}
 
 	m.listener.OnMessageBoxRemoved(m, box)
 	box.ClearTimers()
 	m.sections.remove(box)
-	delete(m.objects[constant.ObjectTypeMessageBox], box.OID)
-	m.releaseOID(box.OID)
-	box.Map = nil
+	delete(m.objects[constant.ObjectTypeMessageBox], box.oid)
+	m.releaseOID(box.oid)
+	box.onMap = nil
 }

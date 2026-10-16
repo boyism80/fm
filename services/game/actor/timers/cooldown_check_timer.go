@@ -34,12 +34,12 @@ func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *game.Map) error 
 		if !ok {
 			continue
 		}
-		ch.Skills.ForEach(func(_ uint32, entry *game.SkillEntry) {
-			if entry.CooldownEnd == nil {
+		ch.Skills().ForEach(func(_ uint32, entry *game.SkillEntry) {
+			if entry.CooldownEnd() == nil {
 				return
 			}
 
-			if now.Before(*entry.CooldownEnd) {
+			if now.Before(*entry.CooldownEnd()) {
 				return
 			}
 

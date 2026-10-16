@@ -45,7 +45,7 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 		return false, err
 	}
 
-	if info.Skill != 0 && !ch.Skills.UseAttack(info.Skill, activating) {
+	if info.Skill != 0 && !ch.skills.UseAttack(info.Skill, activating) {
 		return false, nil
 	}
 	if info.Ranged && !ch.shoot(info) {
@@ -55,7 +55,7 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 	attacking()
 	ch.damageTo(info.Damages)
 	if len(info.Damages) > 0 {
-		ch.LieDetector.HuntedAt = clock.Now()
+		ch.lieDetector.huntedAt = clock.Now()
 	}
 	if constant.SkillID(info.Skill) == constant.SkillMesoExplosion {
 		ch.ExplodeMesos(info.MesoOIDs)
@@ -68,7 +68,7 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 	case constant.SkillShadowMeso, constant.SkillBarrage, constant.SkillSoulBlade, constant.SkillSpark, constant.SkillSharkWave, constant.SkillShowdown4221003:
 		return true
 	}
-	weapon := ch.Inventory.Equipped[constant.EquipmentPartsWeapon]
+	weapon := ch.inventory.equipped[constant.EquipmentPartsWeapon]
 	if weapon == nil {
 		return true
 	}
@@ -90,10 +90,10 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 	default:
 		return true
 	}
-	if ch.Buffs.Has(constant.BuffFlagSoulArrow) && (ammo == constant.ConsumeTypeArrowBow || ammo == constant.ConsumeTypeArrowCrossBow) {
+	if ch.buffs.Has(constant.BuffFlagSoulArrow) && (ammo == constant.ConsumeTypeArrowBow || ammo == constant.ConsumeTypeArrowCrossBow) {
 		return true
 	}
-	item := ch.Inventory.GetItem(constant.InventoryTypeConsume, int16(info.Slot))
+	item := ch.inventory.GetItem(constant.InventoryTypeConsume, int16(info.Slot))
 	if item == nil {
 		return false
 	}
@@ -101,25 +101,25 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 	if !ok || projectile.ConsumeType != ammo {
 		return false
 	}
-	if ch.Buffs.Has(constant.BuffFlagSpiritClaw) && ammo == constant.ConsumeTypeShuriken {
+	if ch.buffs.Has(constant.BuffFlagSpiritClaw) && ammo == constant.ConsumeTypeShuriken {
 		return true
 	}
 
 	count := 1
-	if p := ch.Skills.LevelData(constant.SkillID(info.Skill)); p != nil {
+	if p := ch.skills.LevelData(constant.SkillID(info.Skill)); p != nil {
 		count = max(1, p.BulletCount, p.AttackCount)
 		if p.BulletConsume > 0 {
 			count = p.BulletConsume
 		}
 	}
-	if ch.Buffs.Has(constant.BuffFlagShadowPartner) {
+	if ch.buffs.Has(constant.BuffFlagShadowPartner) {
 		count *= 2
 	}
-	return ch.Inventory.useAmmo(int16(info.Slot), uint16(count))
+	return ch.inventory.useAmmo(int16(info.Slot), uint16(count))
 }
 
 func (ch *Character) EnergyAttack(info dto.AttackInfo, attacking func()) (bool, error) {
-	_, energy, active := ch.Buffs.GetBuffValue(constant.BuffFlagEnergyCharge)
+	_, energy, active := ch.buffs.GetBuffValue(constant.BuffFlagEnergyCharge)
 	if !active || energy < 10000 || info.Skill != 0 {
 		return false, nil
 	}
@@ -139,8 +139,8 @@ func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {
 	if source == nil || target == nil || source == target {
 		return false
 	}
-	causerID, hypnotized := source.Buffs.Causer(constant.MobBuffHypnotize)
-	if !hypnotized || causerID != ch.GetID() || target.Wz.DamagedByMob {
+	causerID, hypnotized := source.buffs.Causer(constant.MobBuffHypnotize)
+	if !hypnotized || causerID != ch.GetID() || target.wz.DamagedByMob {
 		return false
 	}
 	if !source.canAttack(target, damage) {
@@ -149,7 +149,7 @@ func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {
 	if target.TakeDamage(ch, damage) {
 		ch.OnKill([]*Mob{target})
 	} else {
-		target.Listener.OnMobDamaged(target, int32(damage))
+		target.listener.OnMobDamaged(target, int32(damage))
 	}
 	return true
 }
@@ -175,7 +175,7 @@ func (ch *Character) damageTo(damages []dto.AttackPair) {
 			total += uint64(damagePair.Damage)
 		}
 		if total > 0 {
-			ch.Dojo.charge(mob, total)
+			ch.dojo.charge(mob, total)
 		}
 		for _, damagePair := range damage.DamagePairs {
 			if damagePair.Damage == 0 {
@@ -184,10 +184,10 @@ func (ch *Character) damageTo(damages []dto.AttackPair) {
 			if !mob.TakeDamage(ch, damagePair.Damage) {
 				continue
 			}
-			if _, ok := seen[mob.OID]; ok {
+			if _, ok := seen[mob.oid]; ok {
 				continue
 			}
-			seen[mob.OID] = struct{}{}
+			seen[mob.oid] = struct{}{}
 			killed = append(killed, mob)
 		}
 	}
@@ -225,17 +225,17 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 
 func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
 	skillID := uint32(constant.SkillMesoExplosion)
-	skill := ch.GameWorld.GetResources().GetSkill(skillID)
+	skill := ch.gameWorld.GetResources().GetSkill(skillID)
 	if skill == nil {
 		return types.Rect[int32]{}, false
 	}
-	levelData := skill.GetLevelData(ch.Skills.Level(skillID))
+	levelData := skill.GetLevelData(ch.skills.Level(skillID))
 	if levelData == nil {
 		return types.Rect[int32]{}, false
 	}
 
 	reach := max(levelData.LT.X, -levelData.LT.X, levelData.RB.X, -levelData.RB.X) + mesoExplosionMargin
-	origin := types.Point[int32]{X: int32(ch.Position.X), Y: int32(ch.Position.Y)}
+	origin := types.Point[int32]{X: int32(ch.position.X), Y: int32(ch.position.Y)}
 	return types.Rect[int32]{
 		Left:   -reach,
 		Top:    min(levelData.LT.Y, levelData.RB.Y) - mesoExplosionMargin,
@@ -252,8 +252,8 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 		damage = ch.hitDamage(hit)
 	}
 
-	if ch.Invincible {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{}, true)
+	if ch.invincible {
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{}, true)
 		return
 	}
 	ch.TakeDamage(damage)
@@ -268,7 +268,7 @@ func (ch *Character) hitDamage(hit Hit) int32 {
 	if hit.MobOID != 0 {
 		mob = m.GetMob(hit.MobOID)
 	}
-	if mob != nil && mob.Fake {
+	if mob != nil && mob.fake {
 		return 0
 	}
 	root := m.GetLuaRoot()
@@ -282,7 +282,7 @@ func (ch *Character) hitDamage(hit Hit) int32 {
 	}
 	var skillArg interface{} = lua.LNil
 	if hit.SkillID != 0 {
-		if model := ch.GameWorld.GetResources().GetSkill(hit.SkillID); model != nil {
+		if model := ch.gameWorld.GetResources().GetSkill(hit.SkillID); model != nil {
 			skillArg = NewSkillEntry(ch, model, int(hit.SkillLevel), 0)
 		}
 	}
@@ -333,8 +333,8 @@ func (ch *Character) block(actx actor.Context, hit Hit) {
 
 func (ch *Character) TakeDamage(damage int32) {
 	if damage > 0 {
-		ch.Dojo.AddEnergy(2)
-		ch.Mount.takeDamage(damage)
+		ch.dojo.AddEnergy(2)
+		ch.mount.takeDamage(damage)
 	}
 
 	hp := int(ch.GetHp()) - int(damage)
@@ -345,7 +345,7 @@ func (ch *Character) TakeDamage(damage int32) {
 		hp = maxHp
 	}
 	ch.SetHp(uint32(hp), false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHP: int32(ch.GetHp()),
 	}, true)
 }
@@ -367,10 +367,10 @@ func (ch *Character) OnKill(mobs []*Mob) {
 	order := make([]uint32, 0)
 	all := make([]luax.Luable, 0, len(mobs))
 	for _, mob := range mobs {
-		if mob == nil || mob.Wz == nil {
+		if mob == nil || mob.wz == nil {
 			continue
 		}
-		id := mob.Wz.ID
+		id := mob.wz.ID
 		if _, ok := byID[id]; !ok {
 			order = append(order, id)
 		}
@@ -387,7 +387,7 @@ func (ch *Character) OnKill(mobs []*Mob) {
 		mapInstance.runMobLuaHook(root, scriptPath, "on_mob_kill", ch, group)
 	}
 	mapInstance.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_kill", ch, all)
-	if ch.StateMachine != nil {
-		ch.StateMachine.CallHook("on_mob_kill", ch, all)
+	if ch.stateMachine != nil {
+		ch.stateMachine.CallHook("on_mob_kill", ch, all)
 	}
 }

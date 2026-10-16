@@ -35,7 +35,7 @@ func (bl *BuddyList) SetCapacity(n uint32) {
 		n = 255
 	}
 	bl.capacity = n
-	bl.owner.Listener.OnBuddyCapacity(bl.owner, uint8(bl.Capacity()))
+	bl.owner.listener.OnBuddyCapacity(bl.owner, uint8(bl.Capacity()))
 }
 
 func (bl *BuddyList) Capacity() uint32 {
@@ -105,7 +105,7 @@ func (bl *BuddyList) BuildS2C() []response.BuddyEntry {
 }
 
 func (bl *BuddyList) SyncLogin() {
-	bl.owner.Listener.OnBuddyListUpdate(bl.owner, pconst.BuddyListSyncLogin, bl.BuildS2C())
+	bl.owner.listener.OnBuddyListUpdate(bl.owner, pconst.BuddyListSyncLogin, bl.BuildS2C())
 }
 
 func BuddyListEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {

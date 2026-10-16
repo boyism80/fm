@@ -53,14 +53,18 @@ type MiniRoom interface {
 }
 
 type ShopItem struct {
-	Item      Item
-	Bundles   uint16
-	PerBundle uint16
-	Price     int32
+	item      Item
+	bundles   uint16
+	perBundle uint16
+	price     int32
 }
 
+func (r *shopRoom) Title() string { return r.title }
+
+func (r *shopRoom) Items() []*ShopItem { return r.items }
+
 func (si *ShopItem) count() uint16 {
-	return si.Bundles * si.PerBundle
+	return si.bundles * si.perBundle
 }
 
 type ShopSale struct {
@@ -70,36 +74,43 @@ type ShopSale struct {
 	Buyer   string
 }
 
+// closedShop is goods waiting in the store bank until the shop save is accepted.
+type closedShop struct {
+	id    uint64
+	meso  int32
+	items []*ShopItem
+}
+
 type shopRoom struct {
-	ObjectCore
+	objectCore
 	kind      uint8
-	ID        uint32
-	AccountID uint32
-	OwnerID   uint32
-	OwnerName string
-	MapID     uint32
-	ItemID    uint32
-	Title     string
-	Meso      int32
-	Items     []*ShopItem
-	Sold      []ShopSale
-	OpenedAt  time.Time
+	id        uint32
+	accountID uint32
+	ownerID   uint32
+	ownerName string
+	mapID     uint32
+	itemID    uint32
+	title     string
+	meso      int32
+	items     []*ShopItem
+	sold      []ShopSale
+	openedAt  time.Time
 	home      *Map
 	published bool
 	owner     *Character
-	Visitors  [ShopVisitors]*Character
+	visitors  [ShopVisitors]*Character
 	saving    bool
 	dirty     bool
 	closing   bool
 	entries   map[uint32]*internal.CharacterSaveEntry
-	storeBank []*internal.Shop
+	storeBank []closedShop
 }
 
 func (r *shopRoom) SlotOf(ch *Character) (uint8, bool) {
 	if r.owner == ch {
 		return 0, true
 	}
-	for i, visitor := range r.Visitors {
+	for i, visitor := range r.visitors {
 		if visitor == ch {
 			return uint8(i + 1), true
 		}
@@ -112,7 +123,7 @@ func (r *shopRoom) Members() []*Character {
 	if r.owner != nil {
 		members = append(members, r.owner)
 	}
-	for _, visitor := range r.Visitors {
+	for _, visitor := range r.visitors {
 		if visitor != nil {
 			members = append(members, visitor)
 		}
@@ -122,7 +133,7 @@ func (r *shopRoom) Members() []*Character {
 
 func (r *shopRoom) users() uint8 {
 	users := uint8(1)
-	for _, visitor := range r.Visitors {
+	for _, visitor := range r.visitors {
 		if visitor != nil {
 			users++
 		}
@@ -131,7 +142,7 @@ func (r *shopRoom) users() uint8 {
 }
 
 func (r *shopRoom) freeSlot() (int, bool) {
-	for i, visitor := range r.Visitors {
+	for i, visitor := range r.visitors {
 		if visitor == nil {
 			return i, true
 		}
@@ -166,27 +177,27 @@ func (r *shopRoom) Chat(ch *Character, message string) error {
 
 	text := fmt.Sprintf("%s : %s", ch.GetName(), message)
 	for _, member := range r.Members() {
-		member.Listener.OnMiniRoomChat(member, slot, text)
+		member.listener.OnMiniRoomChat(member, slot, text)
 	}
 	return nil
 }
 
 func (r *shopRoom) list(ch *Character, invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) error {
-	if item := ch.Inventory.GetItem(invType, slot); item != nil && r.holds(item.GetModel().GetID()) {
+	if item := ch.inventory.GetItem(invType, slot); item != nil && r.holds(item.GetModel().GetID()) {
 		return ErrMiniRoomOnlyHeld
 	}
 
-	listed, err := ch.Inventory.takeShopItem(invType, slot, bundles, perBundle, price)
+	listed, err := ch.inventory.takeShopItem(invType, slot, bundles, perBundle, price)
 	if err != nil {
 		return err
 	}
-	r.Items = append(r.Items, listed)
+	r.items = append(r.items, listed)
 	return nil
 }
 
 func (r *shopRoom) holds(itemID uint32) bool {
-	for _, listed := range r.Items {
-		model := listed.Item.GetModel()
+	for _, listed := range r.items {
+		model := listed.item.GetModel()
 		if model.GetTraits()&constant.ItemTraitOnly != 0 && model.GetID() == itemID {
 			return true
 		}
@@ -219,10 +230,10 @@ func (inv *Inventory) takeShopItem(invType constant.InventoryType, slot int16, b
 	}
 
 	listed := &ShopItem{
-		Item:      item.Clone(perBundle),
-		Bundles:   bundles,
-		PerBundle: perBundle,
-		Price:     price,
+		item:      item.Clone(perBundle),
+		bundles:   bundles,
+		perBundle: perBundle,
+		price:     price,
 	}
 	inv.RemoveItem(invType, slot, uint16(total))
 	return listed, nil
@@ -241,64 +252,64 @@ func (inv *Inventory) collectShopGoods(meso int32, items []*ShopItem) (int32, []
 
 	var kept []*ShopItem
 	for _, listed := range items {
-		model := listed.Item.GetModel()
+		model := listed.item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
 		if inv.hasOnlyItem(model) || spec.Valid(inv.owner) != ExchangeOK {
 			kept = append(kept, listed)
 			continue
 		}
-		inv.addItemUnchecked(listed.Item.Clone(listed.count()), true)
+		inv.addItemUnchecked(listed.item.Clone(listed.count()), true)
 	}
 	return meso, kept
 }
 
 func (r *shopRoom) unlist(ch *Character, index uint16) error {
-	if int(index) >= len(r.Items) {
+	if int(index) >= len(r.items) {
 		return ErrMiniRoomItemNotFound
 	}
 
-	listed := r.Items[index]
-	if listed.Bundles > 0 {
-		model := listed.Item.GetModel()
-		if ch.Inventory.hasOnlyItem(model) {
+	listed := r.items[index]
+	if listed.bundles > 0 {
+		model := listed.item.GetModel()
+		if ch.inventory.hasOnlyItem(model) {
 			return ErrMiniRoomOnlyHeld
 		}
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
 		if spec.Valid(ch) != ExchangeOK {
 			return ErrInventoryFull
 		}
-		ch.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
+		ch.inventory.addItemUnchecked(listed.item.Clone(listed.count()), true)
 	}
 
-	r.Items = append(r.Items[:index:index], r.Items[index+1:]...)
+	r.items = append(r.items[:index:index], r.items[index+1:]...)
 	return nil
 }
 
 func (r *shopRoom) sell(ch *Character, index uint16, bundles uint16, held int32) (*ShopItem, int32, int32, error) {
-	if int(index) >= len(r.Items) || bundles == 0 {
+	if int(index) >= len(r.items) || bundles == 0 {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyNotEnoughItem}
 	}
 
-	listed := r.Items[index]
-	if bundles > listed.Bundles {
+	listed := r.items[index]
+	if bundles > listed.bundles {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyNotEnoughItem}
 	}
-	total := int64(listed.Price) * int64(bundles)
+	total := int64(listed.price) * int64(bundles)
 	if total > math.MaxInt32 {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyUnknown}
 	}
-	if ch.Inventory.Meso < int32(total) {
+	if ch.inventory.meso < int32(total) {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyNotEnoughMeso}
 	}
 	income := int32(total) - r.tax(int32(total))
 	if income > math.MaxInt32-held {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuySellerLimit}
 	}
-	model := listed.Item.GetModel()
-	if ch.Inventory.hasOnlyItem(model) {
+	model := listed.item.GetModel()
+	if ch.inventory.hasOnlyItem(model) {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyOnlyOne}
 	}
-	count := bundles * listed.PerBundle
+	count := bundles * listed.perBundle
 	spec := ExchangeSpec{
 		Cost:   ExchangeSide{Meso: int32(total)},
 		Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): count}},
@@ -307,15 +318,15 @@ func (r *shopRoom) sell(ch *Character, index uint16, bundles uint16, held int32)
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyInventoryFull}
 	}
 
-	ch.Inventory.removeMesoUnchecked(int32(total))
-	ch.Inventory.receive(listed.Item.Clone(count))
-	listed.Bundles -= bundles
+	ch.inventory.removeMesoUnchecked(int32(total))
+	ch.inventory.receive(listed.item.Clone(count))
+	listed.bundles -= bundles
 	return listed, int32(total), income, nil
 }
 
 func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Character) {
 	for _, ch := range characters {
-		r.entries[ch.GetID()] = ch.BuildRPC(r.GameWorld.GetWorldID())
+		r.entries[ch.GetID()] = ch.BuildRPC(r.gameWorld.GetWorldID())
 	}
 	if closing {
 		r.closing = true
@@ -332,6 +343,10 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 	r.entries = make(map[uint32]*internal.CharacterSaveEntry)
 	storeBank := r.storeBank
 	r.storeBank = nil
+	banks := make([]*internal.Shop, 0, len(storeBank))
+	for _, shop := range storeBank {
+		banks = append(banks, shop.BuildRPC(r))
+	}
 	r.saving = true
 	r.dirty = false
 	done := func() {
@@ -340,11 +355,11 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 			r.save(actx, r.closing)
 		}
 	}
-	r.GameWorld.Systems().Get[*InternalSystem]().SaveShopAsync(actx, r.BuildRPC(), entries, storeBank, r.closing).Do(func(*internal.SaveShopReply) error {
+	r.gameWorld.Systems().Get[*InternalSystem]().SaveShopAsync(actx, r.BuildRPC(), entries, banks, r.closing).Do(func(*internal.SaveShopReply) error {
 		done()
 		return nil
 	}).OnError(func(err error) {
-		log.Printf("shopRoom.save shop=%d: %v", r.ID, err)
+		log.Printf("shopRoom.save shop=%d: %v", r.id, err)
 		for _, entry := range entries {
 			id := entry.GetCharacter().GetCharacterId()
 			if _, ok := r.entries[id]; !ok {
@@ -353,7 +368,7 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 		}
 		r.storeBank = append(storeBank, r.storeBank...)
 		time.AfterFunc(shopSaveRetryDelay, func() {
-			r.GameWorld.Systems().Get[*MapSystem]().Visit(r.home, func(ctx actor.Context) {
+			r.gameWorld.Systems().Get[*MapSystem]().Visit(r.home, func(ctx actor.Context) {
 				r.saving = false
 				r.save(ctx, r.closing)
 			})
@@ -362,14 +377,14 @@ func (r *shopRoom) save(actx actor.Context, closing bool, characters ...*Charact
 }
 
 func (m *Map) VisitMiniRoom(ch *Character, sn uint32, password string) error {
-	if t, ok := ch.MiniRoom.(*Trade); ok && t.invited == ch && t.sn == sn {
+	if t, ok := ch.miniRoom.(*Trade); ok && t.invited == ch && t.sn == sn {
 		return t.Visit(ch)
 	}
 	if es, ok := m.GetObject(constant.ObjectTypeEntrustedShop, sn).(*EntrustedShop); ok {
-		if ch.GetID() != es.OwnerID {
+		if ch.GetID() != es.ownerID {
 			return es.Visit(ch)
 		}
-		if ch.MiniRoom != nil {
+		if ch.miniRoom != nil {
 			return ErrMiniRoomInvalid
 		}
 		es.Manage(ch.GetID())
@@ -381,5 +396,5 @@ func (m *Map) VisitMiniRoom(ch *Character, sn uint32, password string) error {
 	if g, ok := m.GetObject(constant.ObjectTypeMiniGame, sn).(*MiniGame); ok {
 		return g.Visit(ch, password)
 	}
-	return ch.RemoteShops.visitManaged(sn)
+	return ch.remoteShops.visitManaged(sn)
 }

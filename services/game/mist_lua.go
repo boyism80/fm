@@ -30,7 +30,7 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "causer() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(m.Causer))
+			L.Push(lua.LNumber(m.causer))
 			return 1
 		},
 		"level": func(L *lua.LState) int {
@@ -44,7 +44,7 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "level() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(m.SkillLevel))
+			L.Push(lua.LNumber(m.skillLevel))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -58,19 +58,19 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			if m.MobLevelData != nil {
-				if m.MobLevelData.SkillWz != nil {
-					L.Push(luax.NewLuable(L, m.MobLevelData.SkillWz))
+			if m.mobLevelData != nil {
+				if m.mobLevelData.SkillWz != nil {
+					L.Push(luax.NewLuable(L, m.mobLevelData.SkillWz))
 					return 1
 				}
 				L.Push(lua.LNil)
 				return 1
 			}
-			if m.SkillWz == nil {
+			if m.skillWz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, m.SkillWz))
+			L.Push(luax.NewLuable(L, m.skillWz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
@@ -84,15 +84,15 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0
 			}
-			if m.MobLevelData != nil {
-				L.Push(m.MobLevelData.ToLuaTable(L))
+			if m.mobLevelData != nil {
+				L.Push(m.mobLevelData.ToLuaTable(L))
 				return 1
 			}
-			if m.SkillWz == nil {
+			if m.skillWz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			ld := m.SkillWz.GetLevelData(int(m.SkillLevel))
+			ld := m.skillWz.GetLevelData(int(m.skillLevel))
 			if ld == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -111,7 +111,7 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "from_mob() takes no arguments")
 				return 0
 			}
-			L.Push(lua.LBool(m.MobMist))
+			L.Push(lua.LBool(m.mobMist))
 			return 1
 		},
 		"poison_tick_multiplier": func(L *lua.LState) int {
@@ -125,7 +125,7 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "poison_tick_multiplier() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(m.PoisonTickMultiplier))
+			L.Push(lua.LNumber(m.poisonTickMultiplier))
 			return 1
 		},
 	}

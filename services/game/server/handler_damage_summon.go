@@ -34,7 +34,7 @@ func (h *DamageSummon) Handle(ctx *core.ClientContext, req *request.DamageSummon
 	if summon == nil {
 		return nil
 	}
-	if summon.OwnerID != character.GetID() {
+	if summon.OwnerID() != character.GetID() {
 		return nil
 	}
 

@@ -11,9 +11,9 @@ import (
 
 type StateMachineGroup struct {
 	mu          sync.Mutex
-	Name        string
-	ScriptPath  string
-	GameWorld   GameWorld
+	name        string
+	scriptPath  string
+	gameWorld   GameWorld
 	props       map[string]string
 	machines    map[string]*StateMachine
 	bootMapID   uint32
@@ -24,21 +24,21 @@ type StateMachineGroup struct {
 }
 
 type MachineCap struct {
-	Limited bool
-	Max     int
+	limited bool
+	max     int
 }
 
 var ErrStateMachineLimit = errors.New("state machine limit reached")
 
 func NewStateMachineGroup(name, scriptPath string, gw GameWorld) *StateMachineGroup {
 	return &StateMachineGroup{
-		Name:       name,
-		ScriptPath: scriptPath,
-		GameWorld:  gw,
+		name:       name,
+		scriptPath: scriptPath,
+		gameWorld:  gw,
 		props:      make(map[string]string),
 		machines:   make(map[string]*StateMachine),
 		bootMapID:  180000000,
-		machineCap: MachineCap{Limited: true, Max: 1},
+		machineCap: MachineCap{limited: true, max: 1},
 	}
 }
 
@@ -69,7 +69,7 @@ func (g *StateMachineGroup) GetProperty(key string) string {
 func (g *StateMachineGroup) SetMaxMachines(n int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.machineCap = MachineCap{Limited: true, Max: n}
+	g.machineCap = MachineCap{limited: true, max: n}
 }
 
 func (g *StateMachineGroup) RemoveMachineLimit() {
@@ -171,17 +171,17 @@ func (g *StateMachineGroup) RemoveMachine(sm *StateMachine) {
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.machines[sm.ID] != sm {
+	if g.machines[sm.id] != sm {
 		return
 	}
-	delete(g.machines, sm.ID)
+	delete(g.machines, sm.id)
 }
 
 func (g *StateMachineGroup) bootMap() *Map {
-	if g == nil || g.GameWorld == nil {
+	if g == nil || g.gameWorld == nil {
 		return nil
 	}
-	ms := g.GameWorld.Systems().Get[*MapSystem]()
+	ms := g.gameWorld.Systems().Get[*MapSystem]()
 	if ms == nil {
 		return nil
 	}
@@ -203,7 +203,7 @@ func (g *StateMachineGroup) CallGroupHook(hook string, args ...interface{}) {
 	if root == nil {
 		return
 	}
-	thread, err := luax.NewThread(root, g.ScriptPath)
+	thread, err := luax.NewThread(root, g.scriptPath)
 	if err != nil {
 		return
 	}
@@ -215,7 +215,7 @@ func (g *StateMachineGroup) CallGroupHook(hook string, args ...interface{}) {
 		ActorPID: m.LogicActorPID(),
 	})
 	luax.CallAsync(nil, root, thread, hook, args...).OnError(func(err error) {
-		fmt.Printf("state machine group %s hook %s: %v\n", g.Name, hook, err)
+		fmt.Printf("state machine group %s hook %s: %v\n", g.name, hook, err)
 	})
 }
 
@@ -234,18 +234,18 @@ func (g *StateMachineGroup) StartPersistent(id string) (*StateMachine, error) {
 	if err != nil {
 		return nil, err
 	}
-	sm.MinPlayers = 0
+	sm.minPlayers = 0
 	return sm, nil
 }
 
 type StartPartyOpts struct {
-	MaxLevel int
+	maxLevel int
 }
 
 type CreateOpts struct {
-	Leader     *Character
-	Party      *Party
-	ScaleLevel int
+	leader     *Character
+	party      *Party
+	scaleLevel int
 }
 
 func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, error) {
@@ -255,18 +255,18 @@ func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, e
 	if id == "" {
 		return nil, fmt.Errorf("state machine id is empty")
 	}
-	if g.GameWorld == nil {
+	if g.gameWorld == nil {
 		return nil, fmt.Errorf("game world is nil")
 	}
 
 	sm := NewStateMachine(id, g)
-	sm.Party = opts.Party
-	sm.Leader = opts.Leader
-	sm.ScaleLevel = opts.ScaleLevel
-	sm.MinPlayers = g.MinPlayers()
-	sm.ExitMapID = g.ExitMapID()
-	sm.ActorPID = g.GameWorld.Systems().Get[*StateMachineSystem]().StartActor(sm)
-	if sm.ActorPID == nil {
+	sm.party = opts.party
+	sm.leader = opts.leader
+	sm.scaleLevel = opts.scaleLevel
+	sm.minPlayers = g.MinPlayers()
+	sm.exitMapID = g.ExitMapID()
+	sm.actorPID = g.gameWorld.Systems().Get[*StateMachineSystem]().StartActor(sm)
+	if sm.actorPID == nil {
 		return nil, fmt.Errorf("failed to start state machine actor")
 	}
 
@@ -277,11 +277,11 @@ func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, e
 	}
 	g.mu.Unlock()
 	if err != nil {
-		g.GameWorld.Systems().Get[*StateMachineSystem]().StopActor(sm)
+		g.gameWorld.Systems().Get[*StateMachineSystem]().StopActor(sm)
 		return nil, err
 	}
 
-	g.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &BootstrapStateMachine{})
+	g.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &BootstrapStateMachine{})
 	return sm, nil
 }
 
@@ -293,7 +293,7 @@ func (g *StateMachineGroup) checkCreateLocked(id string) error {
 	if g.capOverride != nil {
 		c = *g.capOverride
 	}
-	if !c.Limited {
+	if !c.limited {
 		return nil
 	}
 	running := 0
@@ -302,7 +302,7 @@ func (g *StateMachineGroup) checkCreateLocked(id string) error {
 			running++
 		}
 	}
-	if running >= c.Max {
+	if running >= c.max {
 		return ErrStateMachineLimit
 	}
 	return nil
@@ -318,7 +318,7 @@ func (g *StateMachineGroup) Full() bool {
 	if g.capOverride != nil {
 		c = *g.capOverride
 	}
-	if !c.Limited {
+	if !c.limited {
 		return false
 	}
 	running := 0
@@ -327,7 +327,7 @@ func (g *StateMachineGroup) Full() bool {
 			running++
 		}
 	}
-	return running >= c.Max
+	return running >= c.max
 }
 
 func (g *StateMachineGroup) EnterPlayer(sm *StateMachine, ch *Character) {
@@ -378,15 +378,15 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 	}
 	avgLevel /= count
 	scale := avgLevel
-	if opts.MaxLevel > 0 && scale > opts.MaxLevel {
-		scale = opts.MaxLevel
+	if opts.maxLevel > 0 && scale > opts.maxLevel {
+		scale = opts.maxLevel
 	}
 
 	id := "p" + strconv.FormatUint(uint64(party.GetPartyId()), 10)
 	sm, err := g.Create(id, CreateOpts{
-		Leader:     leader,
-		Party:      party,
-		ScaleLevel: scale,
+		leader:     leader,
+		party:      party,
+		scaleLevel: scale,
 	})
 	if err != nil {
 		return nil, err
@@ -410,14 +410,14 @@ func (g *StateMachineGroup) StartSolo(player *Character, opts StartPartyOpts) (*
 	}
 
 	scale := int(player.GetLevel())
-	if opts.MaxLevel > 0 && scale > opts.MaxLevel {
-		scale = opts.MaxLevel
+	if opts.maxLevel > 0 && scale > opts.maxLevel {
+		scale = opts.maxLevel
 	}
 
 	id := "c" + strconv.FormatUint(uint64(player.GetID()), 10)
 	sm, err := g.Create(id, CreateOpts{
-		Leader:     player,
-		ScaleLevel: scale,
+		leader:     player,
+		scaleLevel: scale,
 	})
 	if err != nil {
 		return nil, err

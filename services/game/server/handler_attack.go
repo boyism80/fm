@@ -51,14 +51,14 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 
 	var skill *game.SkillEntry
 	if req.Skill != 0 {
-		skill = character.Skills.Get(req.Skill)
+		skill = character.Skills().Get(req.Skill)
 	}
 	var skillLevel uint8
 	attacked, err := character.Attack(req.ToAttackInfo(), false, func() bool {
-		return skill != nil && character.Skills.CallHook(ctx.ActorContext, skill, "on_activating")
+		return skill != nil && character.Skills().CallHook(ctx.ActorContext, skill, "on_activating")
 	}, func() {
 		if req.Skill != 0 {
-			skillLevel = uint8(character.Skills.Level(req.Skill))
+			skillLevel = uint8(character.Skills().Level(req.Skill))
 		}
 		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, false)
 	})
@@ -66,13 +66,13 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return err
 	}
 	if !attacked {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	character.Listener.OnAttack(character, req, skillLevel)
+	character.Listener().OnAttack(character, req, skillLevel)
 	if skill != nil {
-		character.Skills.CallHook(ctx.ActorContext, skill, "on_activated")
+		character.Skills().CallHook(ctx.ActorContext, skill, "on_activated")
 	}
 	return nil
 }

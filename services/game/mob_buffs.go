@@ -10,20 +10,20 @@ import (
 )
 
 type MobBuff struct {
-	StartTime  time.Time
-	Duration   time.Duration
-	Values     map[constant.MobBuffFlag]int32
-	Stacks     map[constant.MobBuffFlag]uint8
-	Wz         *wz.Skill
-	SkillLevel uint8
-	Causer     uint32
+	startTime  time.Time
+	duration   time.Duration
+	values     map[constant.MobBuffFlag]int32
+	stacks     map[constant.MobBuffFlag]uint8
+	wz         *wz.Skill
+	skillLevel uint8
+	causer     uint32
 }
 
 func (e *MobBuff) RemainingDuration(now time.Time) time.Duration {
-	if e == nil || e.Duration <= 0 {
+	if e == nil || e.duration <= 0 {
 		return 0
 	}
-	end := e.StartTime.Add(e.Duration)
+	end := e.startTime.Add(e.duration)
 	if !now.Before(end) {
 		return 0
 	}
@@ -39,18 +39,18 @@ func (e *MobBuff) SameSource(skillWz *wz.Skill, skillLevel uint8, causer uint32)
 		sid = skillWz.ID
 	}
 	var entSid uint32
-	if e.Wz != nil {
-		entSid = e.Wz.ID
+	if e.wz != nil {
+		entSid = e.wz.ID
 	}
-	return sid == entSid && e.SkillLevel == skillLevel && e.Causer == causer
+	return sid == entSid && e.skillLevel == skillLevel && e.causer == causer
 }
 
 func (e *MobBuff) Equal(values map[constant.MobBuffFlag]int32, stacks map[constant.MobBuffFlag]uint8) bool {
-	if e == nil || len(e.Values) != len(values) {
+	if e == nil || len(e.values) != len(values) {
 		return false
 	}
 	for f, v := range values {
-		if ev, ok := e.Values[f]; !ok || ev != v {
+		if ev, ok := e.values[f]; !ok || ev != v {
 			return false
 		}
 		wantStack := uint8(1)
@@ -59,7 +59,7 @@ func (e *MobBuff) Equal(values map[constant.MobBuffFlag]int32, stacks map[consta
 				wantStack = sv
 			}
 		}
-		got := e.Stacks[f]
+		got := e.stacks[f]
 		if got < 1 {
 			got = 1
 		}
@@ -81,7 +81,7 @@ func NewMobBuffs(owner *Mob) *MobBuffs {
 	if owner == nil {
 		panic("MobBuffs owner is nil")
 	}
-	if owner.Listener == nil {
+	if owner.listener == nil {
 		panic("MobBuffs: mob listener must not be nil")
 	}
 	return &MobBuffs{
@@ -110,8 +110,8 @@ func (bc *MobBuffs) refreshDuration(now time.Time, duration time.Duration, skill
 	if !ent.Equal(values, stacks) || !ent.SameSource(skillWz, skillLevel, causer) {
 		return false
 	}
-	ent.StartTime = now
-	ent.Duration = duration
+	ent.startTime = now
+	ent.duration = duration
 	return true
 }
 
@@ -156,25 +156,25 @@ func (bc *MobBuffs) Add(duration time.Duration, skillWz *wz.Skill, skillLevel ui
 		stackCopy[f] = s
 	}
 	ent := &MobBuff{
-		StartTime:  now,
-		Duration:   duration,
-		Values:     valCopy,
-		Stacks:     stackCopy,
-		Wz:         skillWz,
-		SkillLevel: skillLevel,
-		Causer:     causer,
+		startTime:  now,
+		duration:   duration,
+		values:     valCopy,
+		stacks:     stackCopy,
+		wz:         skillWz,
+		skillLevel: skillLevel,
+		causer:     causer,
 	}
 	for flag := range valCopy {
 		bc.Remove(flag)
 	}
 	addedReflections := bc.appendReflectionAdds(valCopy)
 	bc.entities[ent] = struct{}{}
-	for flag := range ent.Values {
+	for flag := range ent.values {
 		bc.byFlag[flag] = ent
 	}
 	mob := bc.owner
 	remaining := ent.RemainingDuration(now)
-	mob.Listener.OnMobBuffApplied(mob, ent, addedReflections, remaining)
+	mob.listener.OnMobBuffApplied(mob, ent, addedReflections, remaining)
 }
 
 func (bc *MobBuffs) Remove(flag constant.MobBuffFlag) {
@@ -186,19 +186,19 @@ func (bc *MobBuffs) Remove(flag constant.MobBuffFlag) {
 		return
 	}
 	delete(bc.entities, ent)
-	for f := range ent.Values {
+	for f := range ent.values {
 		if current := bc.byFlag[f]; current == ent {
 			delete(bc.byFlag, f)
 		}
 	}
 	mob := bc.owner
-	for f := range ent.Values {
+	for f := range ent.values {
 		if (f == constant.MobBuffWeaponDamageReflect || f == constant.MobBuffMagicDamageReflect) && len(bc.reflections) > 0 {
 			bc.reflections = bc.reflections[1:]
 		}
 	}
-	for f := range ent.Values {
-		mob.Listener.OnMobBuffCancelled(mob, f)
+	for f := range ent.values {
+		mob.listener.OnMobBuffCancelled(mob, f)
 	}
 }
 
@@ -208,13 +208,13 @@ func (bc *MobBuffs) Dispel(skillID uint32) {
 	}
 	var ents []*MobBuff
 	for ent := range bc.entities {
-		if ent == nil || ent.Wz == nil || ent.Wz.ID != skillID {
+		if ent == nil || ent.wz == nil || ent.wz.ID != skillID {
 			continue
 		}
 		ents = append(ents, ent)
 	}
 	for _, ent := range ents {
-		for flag := range ent.Values {
+		for flag := range ent.values {
 			bc.Remove(flag)
 			break
 		}
@@ -230,10 +230,10 @@ func (bc *MobBuffs) getExpired(now time.Time) []*MobBuff {
 		if ent == nil {
 			continue
 		}
-		if ent.Duration <= 0 {
+		if ent.duration <= 0 {
 			continue
 		}
-		if now.After(ent.StartTime.Add(ent.Duration)) {
+		if now.After(ent.startTime.Add(ent.duration)) {
 			out = append(out, ent)
 		}
 	}
@@ -243,7 +243,7 @@ func (bc *MobBuffs) getExpired(now time.Time) []*MobBuff {
 func (bc *MobBuffs) RemoveExpired() {
 	expired := bc.getExpired(clock.Now())
 	for _, ent := range expired {
-		for flag := range ent.Values {
+		for flag := range ent.values {
 			bc.Remove(flag)
 			break
 		}
@@ -258,7 +258,7 @@ func (bc *MobBuffs) GetValue(flag constant.MobBuffFlag) int32 {
 	if ent == nil {
 		return 0
 	}
-	return ent.Values[flag]
+	return ent.values[flag]
 }
 
 func (bc *MobBuffs) GetStack(flag constant.MobBuffFlag) uint8 {
@@ -269,7 +269,7 @@ func (bc *MobBuffs) GetStack(flag constant.MobBuffFlag) uint8 {
 	if ent == nil {
 		return 0
 	}
-	s := ent.Stacks[flag]
+	s := ent.stacks[flag]
 	if s < 1 {
 		return 1
 	}
@@ -287,7 +287,7 @@ func (bc *MobBuffs) SetStack(flag constant.MobBuffFlag, stack uint8) bool {
 	if stack < 1 {
 		stack = 1
 	}
-	ent.Stacks[flag] = stack
+	ent.stacks[flag] = stack
 	return true
 }
 
@@ -307,7 +307,7 @@ func (bc *MobBuffs) Causer(flag constant.MobBuffFlag) (uint32, bool) {
 	if ent == nil {
 		return 0, false
 	}
-	return ent.Causer, true
+	return ent.causer, true
 }
 
 func (bc *MobBuffs) Clear() {

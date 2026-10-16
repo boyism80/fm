@@ -22,7 +22,7 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 			break
 		}
 	}
-	if targetMap == nil || targetMap.Wz == nil {
+	if targetMap == nil || targetMap.Wz() == nil {
 		return
 	}
 	portalID, townPos, ok := targetMap.FindMysticReturnPortal(msg.PartyOwnerSlot)

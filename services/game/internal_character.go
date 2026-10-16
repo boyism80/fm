@@ -86,7 +86,7 @@ func (s *InternalSystem) SetAccountRoleAsync(ctx actor.Context, ch *Character, r
 		p.SetError(fmt.Errorf("set account role unavailable"))
 		return p
 	}
-	accountID := ch.AccountID
+	accountID := ch.accountID
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SetAccountRoleReply, error) {
 			return s.client.SetAccountRole(c, &internal.SetAccountRoleRequest{
@@ -150,7 +150,7 @@ func (s *InternalSystem) AbortParcelSendAsync(ctx actor.Context, ch *Character, 
 func (s *InternalSystem) AddCashAsync(ctx actor.Context, ch *Character, nxCash int32, maplePoint int32) *async.Promise[*internal.AddCashReply] {
 	req := &internal.AddCashRequest{
 		WorldId:    s.gw.GetWorldID(),
-		AccountId:  ch.AccountID,
+		AccountId:  ch.accountID,
 		NxCash:     nxCash,
 		MaplePoint: maplePoint,
 	}

@@ -22,7 +22,7 @@ func (d *Door) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "owner_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(door.OwnerID))
+			L.Push(lua.LNumber(door.ownerID))
 			return 1
 		},
 		"skill_id": func(L *lua.LState) int {
@@ -36,7 +36,7 @@ func (d *Door) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "skill_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(door.SkillID))
+			L.Push(lua.LNumber(door.skillID))
 			return 1
 		},
 		"remove": func(L *lua.LState) int {
@@ -46,8 +46,8 @@ func (d *Door) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Door expected")
 				return 0
 			}
-			if door.Map != nil && door.OID != 0 {
-				door.GameWorld.Systems().Get[*MapSystem]().DespawnDoor(door.Map, door.Key, true, true)
+			if door.onMap != nil && door.oid != 0 {
+				door.gameWorld.Systems().Get[*MapSystem]().DespawnDoor(door.onMap, door.key, true, true)
 			}
 			return 0
 		},

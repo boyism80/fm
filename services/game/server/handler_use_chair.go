@@ -38,7 +38,7 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 	if err := character.SitOnChair(req.ItemID); err != nil {
 		log.Printf("Chair %d: %v", req.ItemID, err)
 	}
-	character.Listener.OnUpdateStats(character, nil, true)
+	character.Listener().OnUpdateStats(character, nil, true)
 
 	return nil
 }

@@ -33,7 +33,7 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 	}
 
 	if !character.DropMeso(req.Count) {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 	}
 	return nil
 }

@@ -6,20 +6,20 @@ import (
 
 func (r *Ring) BuildS2C() *dto.Ring {
 	return &dto.Ring{
-		RingId:       r.RingId,
-		PartnerId:    r.PartnerId,
-		RingUniqueId: r.RingUniqueId,
-		PartnerChrId: r.PartnerChrId,
-		ItemId:       r.ItemId,
-		PartnerName:  r.PartnerName,
-		Equipped:     r.Equipped,
+		RingId:       r.ringId,
+		PartnerId:    r.partnerId,
+		RingUniqueId: r.ringUniqueId,
+		PartnerChrId: r.partnerChrId,
+		ItemId:       r.itemId,
+		PartnerName:  r.partnerName,
+		Equipped:     r.equipped,
 	}
 }
 
 func (r Rings) BuildS2C() dto.Rings {
 	return dto.Rings{
-		Left: r.buildS2C(r.Left),
-		Mid:  r.buildS2C(r.Mid),
+		Left: r.buildS2C(r.left),
+		Mid:  r.buildS2C(r.mid),
 	}
 }
 

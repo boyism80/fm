@@ -9,8 +9,10 @@ import (
 	"github.com/boyism80/fm/core/crypt"
 )
 
+type baseClient = core.BaseClient
+
 type LoginClient struct {
-	core.BaseClient
+	baseClient
 	logicActorPID      *actor.PID
 	pidMutex           sync.RWMutex
 	accountId          uint32
@@ -97,6 +99,6 @@ func NewLoginClient(conn net.Conn, clientID int) (*LoginClient, error) {
 	se := crypt.NewEncryption(ivSend, -5)
 	re := crypt.NewEncryption(ivRecv, 5)
 	return &LoginClient{
-		BaseClient: core.NewBaseClient(conn, clientID, &se, &re),
+		baseClient: core.NewBaseClient(conn, clientID, &se, &re),
 	}, nil
 }

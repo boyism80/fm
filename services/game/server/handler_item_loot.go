@@ -34,45 +34,45 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 	}
 
 	if character.Spectating() {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Map not found for character %d", character.GetID())
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return fmt.Errorf("map not found")
 	}
 
 	obj := mapInstance.GetItems()[req.OID]
 	if obj == nil {
 		log.Printf("Loot object not found for OID %d", req.OID)
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return fmt.Errorf("item not found")
 	}
 
 	reason := mapInstance.LootItem(obj, character, req.Position)
 	if reason == constant.LootPartial {
-		character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 	if reason != constant.LootSuccess {
 		log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
 		if reason == constant.LootFailedInventoryFull || reason == constant.LootFailedMesoFull {
-			character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
+			character.Listener().OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
 		}
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return fmt.Errorf("failed to loot item for OID %d", req.OID)
 	}
 
 	if err := mapInstance.RemoveItem(req.OID, constant.RemoveItemTypeAnimated, character.GetID()); err != nil {
 		log.Printf("Failed to remove item %d for character %d, reason: %v", req.OID, character.GetID(), err)
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return fmt.Errorf("failed to remove item")
 	}
 
-	character.Listener.OnUpdateStats(character, nil, true)
+	character.Listener().OnUpdateStats(character, nil, true)
 	return nil
 }

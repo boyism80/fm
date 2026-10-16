@@ -35,7 +35,7 @@ func (h *cashGiftMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 		if ch == nil {
 			return
 		}
-		ch.Listener.OnMessage(ch, gameconst.MsgNotice, message)
+		ch.Listener().OnMessage(ch, gameconst.MsgNotice, message)
 	})
 	return nil
 }

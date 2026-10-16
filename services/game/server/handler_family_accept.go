@@ -25,6 +25,6 @@ func (h *FamilyAccept) Handle(ctx *core.ClientContext, req *request.FamilyAccept
 		return nil
 	}
 
-	ch.Family.AnswerInvite(ctx.ActorContext, req.SeniorID, req.Name, req.Accepted)
+	ch.Family().AnswerInvite(ctx.ActorContext, req.SeniorID, req.Name, req.Accepted)
 	return nil
 }

@@ -10,9 +10,9 @@ func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *game.Character, ps *ga
 	slot, _ := ps.SlotOf(ch)
 	enter := &response.PersonalShopEnter{
 		MySlot:   slot,
-		Title:    ps.Title,
-		MaxItems: ps.MaxItems,
-		Items:    l.miniRoomItems(ps.Items),
+		Title:    ps.Title(),
+		MaxItems: ps.MaxItems(),
+		Items:    l.miniRoomItems(ps.Items()),
 	}
 	for _, member := range ps.Members() {
 		memberSlot, _ := ps.SlotOf(member)
@@ -25,7 +25,7 @@ func (l *CharacterListenerImpl) OnPersonalShopEntered(ch *game.Character, ps *ga
 }
 
 func (l *CharacterListenerImpl) OnPersonalShopItems(ch *game.Character, ps *game.PersonalShop) {
-	ch.Send(&response.PersonalShopItems{Items: l.miniRoomItems(ps.Items)}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.PersonalShopItems{Items: l.miniRoomItems(ps.Items())}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnMiniRoomSold(ch *game.Character, index uint8, bundles uint16, buyer string) {

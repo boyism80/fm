@@ -39,19 +39,19 @@ func (h *AllyDamage) Handle(ctx *core.ClientContext, req *request.AllyDamage) er
 
 	from := mapInstance.GetMob(req.FromOID)
 	to := mapInstance.GetMob(req.ToOID)
-	if from == nil || to == nil || to.Wz == nil || !to.Wz.DamagedByMob {
+	if from == nil || to == nil || to.Wz() == nil || !to.Wz().DamagedByMob {
 		return nil
 	}
 
-	level := int(to.Wz.Level)
+	level := int(to.Wz().Level)
 	if level <= 0 {
 		return nil
 	}
 	damage := (level * rand.Intn(level)) / 3
 	if damage > 0 {
 		killed := to.TakeDamage(ch, uint32(damage))
-		if !killed && to.Listener != nil {
-			to.Listener.OnMobAllyDamaged(to, int32(damage))
+		if !killed && to.Listener() != nil {
+			to.Listener().OnMobAllyDamaged(to, int32(damage))
 		}
 	} else {
 		to.MarkHit()

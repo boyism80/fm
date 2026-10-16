@@ -10,19 +10,19 @@ import (
 )
 
 type Mist struct {
-	ObjectCore
-	Causer               uint32
-	SkillWz              *wz.Skill
-	MobLevelData         *wz.MobSkillLevelData
-	SkillLevel           uint8
-	MistType             constant.MistType
-	MobMist              bool
-	MobSkill             bool
-	SkillDelay           uint16
-	Bounds               types.Rect[int32]
-	ExpiresAt            time.Time
-	NextPoisonTickAt     time.Time
-	PoisonTickMultiplier float64
+	objectCore
+	causer               uint32
+	skillWz              *wz.Skill
+	mobLevelData         *wz.MobSkillLevelData
+	skillLevel           uint8
+	mistType             constant.MistType
+	mobMist              bool
+	mobSkill             bool
+	skillDelay           uint16
+	bounds               types.Rect[int32]
+	expiresAt            time.Time
+	nextPoisonTickAt     time.Time
+	poisonTickMultiplier float64
 }
 
 func (mist *Mist) GetObjectType() constant.ObjectType {
@@ -33,8 +33,12 @@ func (mist *Mist) Is(typ constant.ObjectType) bool {
 	return mist.GetObjectType().Has(typ)
 }
 
+func (mist *Mist) SchedulePoison(at time.Time) {
+	mist.nextPoisonTickAt = at
+}
+
 func (mist *Mist) IsExpired(now time.Time) bool {
-	return !mist.ExpiresAt.IsZero() && !now.Before(mist.ExpiresAt)
+	return !mist.expiresAt.IsZero() && !now.Before(mist.expiresAt)
 }
 
 func (mist *Mist) SendSpawnSyncToViewer(viewer *Character) {
@@ -42,19 +46,19 @@ func (mist *Mist) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	skillID := uint32(0)
-	if mist.SkillWz != nil {
-		skillID = mist.SkillWz.ID
+	if mist.skillWz != nil {
+		skillID = mist.skillWz.ID
 	}
 	viewer.Send(&response.SpawnMist{
-		OID:        mist.OID,
-		Type:       mist.MistType,
-		MobMist:    mist.MobMist,
-		CauserID:   mist.Causer,
+		OID:        mist.oid,
+		Type:       mist.mistType,
+		MobMist:    mist.mobMist,
+		CauserID:   mist.causer,
 		SkillID:    skillID,
-		SkillLevel: mist.SkillLevel,
-		SkillDelay: mist.SkillDelay,
-		Bounds:     mist.Bounds,
-		MobSkill:   mist.MobSkill,
+		SkillLevel: mist.skillLevel,
+		SkillDelay: mist.skillDelay,
+		Bounds:     mist.bounds,
+		MobSkill:   mist.mobSkill,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -63,7 +67,7 @@ func (mist *Mist) SendDestroySyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.RemoveMist{
-		OID:      mist.OID,
+		OID:      mist.oid,
 		Eruption: false,
 	}, types.SEND_POLICY_ENCRYPT)
 }

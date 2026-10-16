@@ -37,7 +37,7 @@ func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, raw json.RawMessage) 
 		if ch == nil {
 			return
 		}
-		ch.Listener.OnPartyStatusMessage(ch, pconst.PartyStatusCode(payload.Action), payload.DeniedCharacterName)
+		ch.Listener().OnPartyStatusMessage(ch, pconst.PartyStatusCode(payload.Action), payload.DeniedCharacterName)
 	})
 	return nil
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func (bc *Buffs) Load(pbs []*internal.Buff) {
-	res := bc.owner.GameWorld.GetResources()
+	res := bc.owner.gameWorld.GetResources()
 	if res == nil {
 		return
 	}
@@ -97,9 +97,9 @@ func (bc *Buffs) BuildRPC() []*internal.Buff {
 		switch b := ent.(type) {
 		case *SkillBuff:
 			kind = internal.BuffKind_BUFF_KIND_SKILL
-			skillLevel = uint32(b.SkillLevel)
-			causerID = b.CauserID
-			if b.BaseBuff != nil && b.Duration > 0 {
+			skillLevel = uint32(b.skillLevel)
+			causerID = b.causerID
+			if b.baseBuff != nil && b.duration > 0 {
 				ms := uint64(ent.RemainingDuration(now) / time.Millisecond)
 				if ms == 0 {
 					continue
@@ -108,7 +108,7 @@ func (bc *Buffs) BuildRPC() []*internal.Buff {
 			}
 		case *ItemBuff:
 			kind = internal.BuffKind_BUFF_KIND_ITEM
-			if b.BaseBuff != nil && b.Duration > 0 {
+			if b.baseBuff != nil && b.duration > 0 {
 				ms := uint64(ent.RemainingDuration(now) / time.Millisecond)
 				if ms == 0 {
 					continue

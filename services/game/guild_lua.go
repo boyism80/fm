@@ -21,7 +21,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(guild.GuildID))
+			L.Push(lua.LNumber(guild.guildID))
 			return 1
 		},
 		"world_id": func(L *lua.LState) int {
@@ -33,7 +33,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "world_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(guild.WorldID))
+			L.Push(lua.LNumber(guild.worldID))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
@@ -45,7 +45,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "name() is read-only")
 				return 0
 			}
-			L.Push(lua.LString(guild.Name))
+			L.Push(lua.LString(guild.name))
 			return 1
 		},
 		"leader_id": func(L *lua.LState) int {
@@ -57,7 +57,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "leader_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(guild.LeaderCharacterID))
+			L.Push(lua.LNumber(guild.leaderCharacterID))
 			return 1
 		},
 		"gp": func(L *lua.LState) int {
@@ -69,7 +69,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "gp() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(guild.GP))
+			L.Push(lua.LNumber(guild.gp))
 			return 1
 		},
 		"level": func(L *lua.LState) int {
@@ -98,7 +98,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !ok || cfg.ActorContext == nil {
 				return 0
 			}
-			guild.GameWorld.Systems().Get[*GuildSystem]().SendMessageAsync(cfg.ActorContext, guild.GuildID, msgType, message)
+			guild.gameWorld.Systems().Get[*GuildSystem]().SendMessageAsync(cfg.ActorContext, guild.guildID, msgType, message)
 			return 0
 		},
 		"capacity": func(L *lua.LState) int {
@@ -110,7 +110,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "capacity() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(guild.Capacity))
+			L.Push(lua.LNumber(guild.capacity))
 			return 1
 		},
 		"alliance": func(L *lua.LState) int {
@@ -139,7 +139,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "notice() is read-only")
 				return 0
 			}
-			L.Push(lua.LString(guild.Notice))
+			L.Push(lua.LString(guild.notice))
 			return 1
 		},
 		"members": func(L *lua.LState) int {
@@ -152,7 +152,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			tbl := L.NewTable()
-			for i, m := range guild.Members {
+			for i, m := range guild.members {
 				if m == nil {
 					continue
 				}
@@ -200,7 +200,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(lua.LNumber(guildRankToUint32(m.Rank)))
+			L.Push(lua.LNumber(guildRankToUint32(m.rank)))
 			return 1
 		},
 		"disband": func(L *lua.LState) int {
@@ -225,8 +225,8 @@ func (g *Guild) findMember(characterID uint32) *GuildMember {
 	if g == nil {
 		return nil
 	}
-	for _, m := range g.Members {
-		if m == nil || m.CharacterID != characterID {
+	for _, m := range g.members {
+		if m == nil || m.characterID != characterID {
 			continue
 		}
 		return m

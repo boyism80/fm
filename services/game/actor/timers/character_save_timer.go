@@ -25,7 +25,7 @@ func (t *CharacterSaveTimer) GetInitialDelay() time.Duration {
 }
 
 func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *game.Map) error {
-	if mapData == nil || mapData.GameWorld == nil {
+	if mapData == nil || mapData.GameWorld() == nil {
 		return nil
 	}
 	allPlayers := mapData.GetAllPlayers()
@@ -33,7 +33,7 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *game.Map) error 
 		return nil
 	}
 
-	worldID := mapData.GameWorld.GetWorldID()
+	worldID := mapData.GameWorld().GetWorldID()
 	entries := make([]*internal.CharacterSaveEntry, 0, len(allPlayers))
 	for _, obj := range allPlayers {
 		ch, ok := obj.(*game.Character)
@@ -48,7 +48,7 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *game.Map) error 
 	}
 
 	if len(entries) > 0 {
-		mapData.GameWorld.Systems().Get[*game.InternalSystem]().SaveAsync(ctx, entries)
+		mapData.GameWorld().Systems().Get[*game.InternalSystem]().SaveAsync(ctx, entries)
 	}
 	return nil
 }

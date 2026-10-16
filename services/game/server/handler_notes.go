@@ -46,7 +46,7 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 			return nil
 		}
 		if !game.ClientText(req.Target).Valid(13) {
-			ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
+			ch.Listener().OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
 			return nil
 		}
 	case internal.NotesAction_NOTES_ACTION_REMOVE:
@@ -54,7 +54,7 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		for _, n := range req.Removals {
 			noteIDs = append(noteIDs, n.ID)
 		}
-		ch.Notes.Remove(ctx.ActorContext, req.Action, noteIDs)
+		ch.Notes().Remove(ctx.ActorContext, req.Action, noteIDs)
 		return nil
 	case internal.NotesAction_NOTES_ACTION_LIST:
 	default:
@@ -77,13 +77,13 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 			switch req.Action {
 			case internal.NotesAction_NOTES_ACTION_SEND:
 				if reply.Status == internal.NoteResult_NOTE_RESULT_OK {
-					ch.Listener.OnNoteSent(ch)
+					ch.Listener().OnNoteSent(ch)
 				} else {
-					ch.Listener.OnNoteFailed(ch, reply.Status)
+					ch.Listener().OnNoteFailed(ch, reply.Status)
 				}
 			case internal.NotesAction_NOTES_ACTION_LIST:
-				ch.Notes.Receive(reply.Notes, 0)
-				ch.Listener.OnNotes(ch, ch.Notes.Entries)
+				ch.Notes().Receive(reply.Notes, 0)
+				ch.Listener().OnNotes(ch, ch.Notes().Entries())
 			}
 			return nil
 		},
@@ -91,7 +91,7 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		if req.Action != internal.NotesAction_NOTES_ACTION_SEND {
 			return
 		}
-		ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_INBOX_FULL)
+		ch.Listener().OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_INBOX_FULL)
 	})
 	return nil
 }

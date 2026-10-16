@@ -22,7 +22,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(party.PartyID))
+			L.Push(lua.LNumber(party.partyID))
 			return 1
 		},
 		"world_id": func(L *lua.LState) int {
@@ -36,7 +36,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "world_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(party.WorldID))
+			L.Push(lua.LNumber(party.worldID))
 			return 1
 		},
 		"leader_id": func(L *lua.LState) int {
@@ -50,7 +50,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "leader_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(party.LeaderCharacterID))
+			L.Push(lua.LNumber(party.leaderCharacterID))
 			return 1
 		},
 		"state": func(L *lua.LState) int {
@@ -64,7 +64,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "state() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(party.State))
+			L.Push(lua.LNumber(party.state))
 			return 1
 		},
 		"members": func(L *lua.LState) int {
@@ -79,7 +79,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			tbl := L.NewTable()
-			for i, m := range party.Members {
+			for i, m := range party.members {
 				if m == nil {
 					continue
 				}

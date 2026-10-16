@@ -41,10 +41,10 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 		return nil
 	}
 	summon := mapInstance.GetSummon(req.SummonOID)
-	if summon == nil || summon.OwnerID != character.GetID() {
+	if summon == nil || summon.OwnerID() != character.GetID() {
 		return nil
 	}
-	skillEntry := character.Skills.Get(req.SubSkillID)
+	skillEntry := character.Skills().Get(req.SubSkillID)
 	if skillEntry == nil {
 		return nil
 	}

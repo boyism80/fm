@@ -29,10 +29,10 @@ func (r *Reactor) ContainsPoint(point types.Point[int16]) bool {
 		return false
 	}
 
-	left := r.Position.X + int16(event.LT.X)
-	top := r.Position.Y + int16(event.LT.Y)
-	right := r.Position.X + int16(event.RB.X)
-	bottom := r.Position.Y + int16(event.RB.Y)
+	left := r.position.X + int16(event.LT.X)
+	top := r.position.Y + int16(event.LT.Y)
+	right := r.position.X + int16(event.RB.X)
+	bottom := r.position.Y + int16(event.RB.Y)
 	if left > right {
 		left, right = right, left
 	}
@@ -51,7 +51,7 @@ func (m *Map) activateItemReactors(item Item, owner *Character) {
 	if fp == nil {
 		return
 	}
-	if m.Wz != nil && m.Wz.Everlast && fp.PlayerDrop {
+	if m.wz != nil && m.wz.Everlast && fp.playerDrop {
 		return
 	}
 	for _, obj := range m.GetReactors() {
@@ -66,7 +66,7 @@ func (m *Map) activateItemReactors(item Item, owner *Character) {
 }
 
 func (r *Reactor) Activate(item Item, owner *Character) bool {
-	if r == nil || item == nil || r.Wz == nil {
+	if r == nil || item == nil || r.wz == nil {
 		return false
 	}
 	if r.EventType() != constant.ReactorEventTypeItem {
@@ -76,7 +76,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	if fp == nil {
 		return false
 	}
-	if !r.ContainsPoint(fp.Position) {
+	if !r.ContainsPoint(fp.position) {
 		return false
 	}
 	if r.GetTimerEntry(reactorTimerItemActivateKey) != nil {
@@ -87,11 +87,11 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	}
 
 	delay := constant.ItemReactorActivateDelay
-	if owner != nil && owner.GM.InstantKill {
+	if owner != nil && owner.gm.instantKill {
 		delay = time.Millisecond
 	}
 
-	itemOID := fp.OID
+	itemOID := fp.oid
 	itemID := item.GetModel().GetID()
 	return r.AddTimer(reactorTimerItemActivateKey, delay, false, func() {
 		mapInstance := r.GetMap()
@@ -99,7 +99,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 			return
 		}
 		_ = mapInstance.RemoveItem(itemOID, constant.RemoveItemTypeExpired, 0)
-		r.ActivatedItemID = itemID
+		r.activatedItemID = itemID
 		r.Hit(owner, constant.ReactorHitAirLeft, 0)
 		r.ScheduleResetState(r.respawnDelay())
 	})

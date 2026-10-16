@@ -18,10 +18,10 @@ func (qc *Quests) RunAutoTriggers(actx actor.Context, trigger AutoQuestTrigger, 
 	if qc == nil {
 		return
 	}
-	if qc.owner == nil || qc.owner.GameWorld == nil {
+	if qc.owner == nil || qc.owner.gameWorld == nil {
 		return
 	}
-	resources := qc.owner.GameWorld.GetResources()
+	resources := qc.owner.gameWorld.GetResources()
 	if resources == nil {
 		return
 	}

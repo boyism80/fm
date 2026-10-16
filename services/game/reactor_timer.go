@@ -22,7 +22,7 @@ func (r *Reactor) ScheduleStateRevert(oldState byte, newState byte, delay time.D
 		return false
 	}
 	return r.AddTimer(reactorTimerStateRevertKey, delay, false, func() {
-		if r.State == oldState {
+		if r.state == oldState {
 			r.ForceHitState(newState)
 		}
 	})
@@ -38,10 +38,10 @@ func (r *Reactor) ScheduleResetState(delay time.Duration) bool {
 }
 
 func (r *Reactor) StateTimeOut(state byte) time.Duration {
-	if r == nil || r.Wz == nil {
+	if r == nil || r.wz == nil {
 		return 0
 	}
-	event := r.Wz.States[state]
+	event := r.wz.States[state]
 	if event == nil || event.TimeOut <= 0 {
 		return 0
 	}

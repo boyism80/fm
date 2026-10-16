@@ -27,13 +27,13 @@ func (GuildOperation) New(gs *GameServer) *GuildOperation {
 }
 
 func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *game.Character) (game.GuildEmblemDetail, bool) {
-	if ch.Inventory.HasItem(gameconst.GuildEmblemChangeCashItemID) {
-		if !ch.Inventory.RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
+	if ch.Inventory().HasItem(gameconst.GuildEmblemChangeCashItemID) {
+		if !ch.Inventory().RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
 			return game.GuildEmblemDetail{}, false
 		}
 		return game.GuildEmblemDetail{CashItem: true}, true
 	}
-	if !ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost) {
+	if !ch.Inventory().RemoveMeso(gameconst.GuildEmblemChangeMesoCost) {
 		return game.GuildEmblemDetail{}, false
 	}
 	return game.GuildEmblemDetail{Meso: gameconst.GuildEmblemChangeMesoCost}, true
@@ -58,52 +58,52 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 
 	switch req.Operation {
 	case pconst.GuildC2SCreate:
-		if _, inGuild := ch.Guild.ID(); inGuild {
-			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
+		if _, inGuild := ch.Guild().ID(); inGuild {
+			ch.Listener().OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 			return nil
 		}
 		mapInstance := ch.GetMap()
-		if mapInstance == nil || mapInstance.Wz == nil || uint32(mapInstance.Wz.ID) != gameconst.GuildEmblemMapID {
-			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateNotAllowedMessage)
+		if mapInstance == nil || mapInstance.Wz() == nil || uint32(mapInstance.Wz().ID) != gameconst.GuildEmblemMapID {
+			ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateNotAllowedMessage)
 			return nil
 		}
-		if !ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost) {
-			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateInsufficientMesoMessage)
+		if !ch.Inventory().RemoveMeso(gameconst.GuildCreateMesoCost) {
+			ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateInsufficientMesoMessage)
 			return nil
 		}
 
 		detail := game.GuildCreateDetail{Name: req.GuildName, Meso: gameconst.GuildCreateMesoCost}
-		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE, 0, detail)
+		id := ch.Unsettled().Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE, 0, detail)
 		h.gs.systems.Get[*game.GuildSystem]().CreateAsync(ctx.ActorContext, ch, id, detail.Name).Bind(ch).Do(func(reply *internal.CreateGuildReply) error {
-			ch.Unsettled.Erase(id)
+			ch.Unsettled().Erase(id)
 			if !reply.GetOk() {
 				if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
-					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
+					ch.Listener().OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 				} else {
 					log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
-					ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
+					ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 				}
-				ch.Inventory.AddMeso(detail.Meso)
+				ch.Inventory().AddMeso(detail.Meso)
 				return nil
 			}
 			guildPb := reply.GetGuild()
 			if guildPb == nil {
 				log.Printf("GuildOperation(create): ok but missing guild character=%d", charID)
-				ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
+				ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 				return nil
 			}
 			h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
-			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreatedMessage)
+			ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreatedMessage)
 			return nil
 		}).OnError(func(err error) {
-			ch.Unsettled.Find(id).InFlight = false
-			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
+			ch.Unsettled().Lost(id)
+			ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 
 			log.Printf("GuildOperation(create) character=%d id=%d: %v", charID, id, err)
 		})
 		return nil
 	case pconst.GuildC2SInvite:
-		guildID, inGuild := ch.Guild.ID()
+		guildID, inGuild := ch.Guild().ID()
 		g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
@@ -114,16 +114,16 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 		targetID, ok := h.gs.systems.Get[*game.DispatchSystem]().FindCharacterID(targetName)
 		if !ok || targetID == 0 {
-			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseNotInChannel)
+			ch.Listener().OnGuildMessage(ch, pconst.GuildResponseNotInChannel)
 			return nil
 		}
 		if mapInstance := ch.GetMap(); mapInstance != nil {
 			if target := mapInstance.GetPlayer(targetID); target != nil {
-				switch target.Guild.Invite(guildID, ch.GetName()) {
+				switch target.Guild().Invite(guildID, ch.GetName()) {
 				case game.ErrGuildAlreadyJoined:
-					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
+					ch.Listener().OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 				case game.ErrGuildInviteBusy:
-					ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.GuildInviteTargetBusyMessage)
+					ch.Listener().OnMessage(ch, gameconst.MsgPinkText, gameconst.GuildInviteTargetBusyMessage)
 				}
 				return nil
 			}
@@ -139,7 +139,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if req.GuildID == 0 || req.CharacterID != charID {
 			return nil
 		}
-		if ch.Guild.AcceptInvite(req.GuildID) != nil {
+		if ch.Guild().AcceptInvite(req.GuildID) != nil {
 			return nil
 		}
 
@@ -154,7 +154,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}, func(reply *internal.AcceptGuildInviteReply) error {
 			if !reply.GetOk() {
 				if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_GUILD_FULL {
-					ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildFullMessage)
+					ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildFullMessage)
 				} else if reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
 					log.Printf("GuildOperation(accept invite): failed character=%d guild=%d code=%v", charID, req.GuildID, reply.GetErrorCode())
 				}
@@ -179,7 +179,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if req.CharacterName != ch.GetName() {
 			return nil
 		}
-		if _, inGuild := ch.Guild.ID(); !inGuild {
+		if _, inGuild := ch.Guild().ID(); !inGuild {
 			return nil
 		}
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
@@ -207,7 +207,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if targetID == 0 {
 			return nil
 		}
-		guildID, inGuild := ch.Guild.ID()
+		guildID, inGuild := ch.Guild().ID()
 		g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
@@ -236,7 +236,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		return nil
 	case pconst.GuildC2SChangeRankTitles:
-		guildID, inGuild := ch.Guild.ID()
+		guildID, inGuild := ch.Guild().ID()
 		g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.IsGuildMaster(charID) {
 			return nil
@@ -278,7 +278,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if targetID == 0 {
 			return nil
 		}
-		guildID, inGuild := ch.Guild.ID()
+		guildID, inGuild := ch.Guild().ID()
 		g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
@@ -312,27 +312,22 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		return nil
 	case pconst.GuildC2SChangeEmblem:
-		guildID, inGuild := ch.Guild.ID()
+		guildID, inGuild := ch.Guild().ID()
 		g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 		mapInstance := ch.GetMap()
 		if !inGuild || g == nil || !g.IsGuildMaster(charID) ||
-			mapInstance == nil || mapInstance.Wz == nil || uint32(mapInstance.Wz.ID) != gameconst.GuildEmblemMapID {
+			mapInstance == nil || mapInstance.Wz() == nil || uint32(mapInstance.Wz().ID) != gameconst.GuildEmblemMapID {
 			return nil
 		}
 		detail, paid := h.chargeGuildEmblemChangeCost(ch)
 		if !paid {
-			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildEmblemChangeInsufficientCostMessage)
+			ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildEmblemChangeInsufficientCostMessage)
 			return nil
 		}
-		detail.Logo = &internal.GuildLogo{
-			Logo:        uint32(req.Logo),
-			LogoColor:   uint32(req.LogoColor),
-			LogoBg:      uint32(req.LogoBG),
-			LogoBgColor: uint32(req.LogoBGColor),
-		}
-		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM, uint64(guildID), detail)
-		h.gs.systems.Get[*game.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
-			ch.Unsettled.Erase(id)
+		detail.Logo = game.NewGuildLogo(uint32(req.Logo), uint32(req.LogoColor), uint32(req.LogoBG), uint32(req.LogoBGColor))
+		id := ch.Unsettled().Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM, uint64(guildID), detail)
+		h.gs.systems.Get[*game.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo.BuildRPC()).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
+			ch.Unsettled().Erase(id)
 			if !reply.GetOk() {
 				h.gs.systems.Get[*game.GuildSystem]().RefundEmblem(ch, detail)
 				if reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD &&
@@ -342,13 +337,13 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			}
 			return nil
 		}).OnError(func(err error) {
-			ch.Unsettled.Find(id).InFlight = false
+			ch.Unsettled().Lost(id)
 
 			log.Printf("GuildOperation(change emblem) character=%d id=%d: %v", charID, id, err)
 		})
 		return nil
 	case pconst.GuildC2SChangeNotice:
-		guildID, inGuild := ch.Guild.ID()
+		guildID, inGuild := ch.Guild().ID()
 		g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil

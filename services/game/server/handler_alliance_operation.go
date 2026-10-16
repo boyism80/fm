@@ -40,8 +40,8 @@ func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.Allianc
 
 	switch req.Operation {
 	case pconst.AllianceC2SLoadInfo:
-		if ch.Listener != nil {
-			ch.Listener.OnAllianceUpdateInfo(ch)
+		if ch.Listener() != nil {
+			ch.Listener().OnAllianceUpdateInfo(ch)
 		}
 		return nil
 	case pconst.AllianceC2SLeave:
@@ -72,7 +72,7 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *game.Charac
 	if targetGuildID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -124,7 +124,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *game
 	if newLeaderID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -141,7 +141,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *game
 		return nil
 	}
 	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
-	if a == nil || a.LeaderCharacterID != charID {
+	if a == nil || a.LeaderCharacterID() != charID {
 		return nil
 	}
 	worldID := h.gs.config.WorldId
@@ -169,7 +169,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *game
 }
 
 func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -208,7 +208,7 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *game
 }
 
 func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -225,7 +225,7 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 		return nil
 	}
 	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
-	if a == nil || a.LeaderCharacterID != charID {
+	if a == nil || a.LeaderCharacterID() != charID {
 		return nil
 	}
 	worldID := h.gs.config.WorldId
@@ -262,7 +262,7 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 	if targetID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -306,7 +306,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *game.Chara
 	if h.gs == nil {
 		return nil
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -332,21 +332,21 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *game.Chara
 	}
 	targetGuildID, nameFound := h.gs.systems.Get[*game.GuildSystem]().NameToGuildID(guildName)
 	if !nameFound {
-		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
+		ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
 		return nil
 	}
 	targetG := h.gs.systems.Get[*game.GuildSystem]().Get(targetGuildID)
 	if targetG == nil {
-		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
+		ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
 		return nil
 	}
-	if _, targetInAlliance := targetG.GetAllianceID(); targetInAlliance || targetG.LeaderCharacterID == 0 {
-		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
+	if _, targetInAlliance := targetG.GetAllianceID(); targetInAlliance || targetG.LeaderCharacterID() == 0 {
+		ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
 		return nil
 	}
-	targetLeaderID := targetG.LeaderCharacterID
+	targetLeaderID := targetG.LeaderCharacterID()
 	if !h.gs.systems.Get[*game.DispatchSystem]().Exists(targetLeaderID) {
-		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteTargetNotOnlineMessage)
+		ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteTargetNotOnlineMessage)
 		return nil
 	}
 	h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, targetLeaderID, &game.InviteToAlliance{
@@ -356,14 +356,14 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *game.Chara
 		InviterCharacterID: charID,
 		InviterGuildID:     guildID,
 		InviterName:        ch.GetName(),
-		AllianceName:       a.Name,
+		AllianceName:       a.Name(),
 		ExpiresAt:          clock.Now().Add(gameconst.GuildInviteDuration),
 	})
 	return nil
 }
 
 func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *game.Character) error {
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -418,7 +418,7 @@ func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *game.C
 	if h.gs == nil {
 		return nil
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -437,7 +437,7 @@ func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *game.C
 	if !hasInvite {
 		return nil
 	}
-	guildName := g.Name
+	guildName := g.Name()
 	h.gs.systems.Get[*game.GuildSystem]().ClearAllianceInvite(guildID, allianceID)
 	h.notifyDenied(allianceID, guildName)
 	return nil
@@ -448,10 +448,10 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 		return
 	}
 	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
-	if a == nil || a.LeaderCharacterID == 0 {
+	if a == nil || a.LeaderCharacterID() == 0 {
 		return
 	}
-	leaderID := a.LeaderCharacterID
+	leaderID := a.LeaderCharacterID()
 	if !h.gs.systems.Get[*game.DispatchSystem]().Exists(leaderID) {
 		return
 	}
@@ -459,7 +459,7 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 		if ch == nil {
 			return
 		}
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, guildName+gameconst.AllianceInviteDeniedMessageSuffix)
+		ch.Listener().OnMessage(ch, gameconst.MsgPinkText, guildName+gameconst.AllianceInviteDeniedMessageSuffix)
 	})
 }
 

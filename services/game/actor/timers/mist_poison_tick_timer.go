@@ -34,27 +34,27 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *game.Map) error
 	objects := mapData.GetObjects(constant.ObjectTypeMist)
 	for _, obj := range objects {
 		mist, ok := obj.(*game.Mist)
-		if !ok || mist == nil || mist.OID == 0 {
+		if !ok || mist == nil || mist.GetOID() == 0 {
 			continue
 		}
-		if mist.MistType != constant.MistTypePoison {
+		if mist.MistType() != constant.MistTypePoison {
 			continue
 		}
-		if mist.NextPoisonTickAt.IsZero() {
-			mist.NextPoisonTickAt = now.Add(2 * time.Second)
+		if mist.NextPoisonTickAt().IsZero() {
+			mist.SchedulePoison(now.Add(2 * time.Second))
 			continue
 		}
-		if now.Before(mist.NextPoisonTickAt) {
+		if now.Before(mist.NextPoisonTickAt()) {
 			continue
 		}
 		candidates := make([]luax.Luable, 0)
-		if mist.MobMist {
-			for _, obj := range mapData.GetObjectsIn(constant.ObjectTypeCharacter, mist.Bounds) {
+		if mist.MobMist() {
+			for _, obj := range mapData.GetObjectsIn(constant.ObjectTypeCharacter, mist.Bounds()) {
 				ch, ok := obj.(*game.Character)
 				if !ok || ch == nil || !ch.IsAlive() {
 					continue
 				}
-				if ch.Debuffs.Has(constant.DebuffFlagPoison) {
+				if ch.Debuffs().Has(constant.DebuffFlagPoison) {
 					continue
 				}
 				candidates = append(candidates, ch)
@@ -65,11 +65,11 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *game.Map) error
 				if !ok || mob == nil || !mob.IsAlive() {
 					continue
 				}
-				if mob.Buffs.Has(constant.MobBuffPoison) {
+				if mob.Buffs().Has(constant.MobBuffPoison) {
 					continue
 				}
 				pos := mob.GetPosition()
-				if !mist.Bounds.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) {
+				if !mist.Bounds().ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) {
 					continue
 				}
 				candidates = append(candidates, mob)
@@ -88,7 +88,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *game.Map) error
 				log.Printf("on_poison skipped: root Lua state not found")
 			}
 		}
-		mist.NextPoisonTickAt = now.Add(2500 * time.Millisecond)
+		mist.SchedulePoison(now.Add(2500 * time.Millisecond))
 	}
 	return nil
 }

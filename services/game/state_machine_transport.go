@@ -6,10 +6,10 @@ import (
 )
 
 func (sm *StateMachine) WarpAll(ctx actor.Context, fromMapID, toMapID uint32, spawnPoint uint8) {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil {
 		return
 	}
-	ms := sm.Group.GameWorld.Systems().Get[*MapSystem]()
+	ms := sm.group.gameWorld.Systems().Get[*MapSystem]()
 	if ms == nil {
 		return
 	}
@@ -32,8 +32,8 @@ func (sm *StateMachine) WarpAll(ctx actor.Context, fromMapID, toMapID uint32, sp
 	for _, ch := range players {
 		if ch.GetHp() == 0 {
 			returnID := uint32(0)
-			if from.Wz != nil {
-				returnID = uint32(from.Wz.ReturnMapId)
+			if from.wz != nil {
+				returnID = uint32(from.wz.ReturnMapId)
 			}
 			if returnID == 0 || returnID == fromMapID {
 				continue
@@ -50,10 +50,10 @@ func (sm *StateMachine) WarpAll(ctx actor.Context, fromMapID, toMapID uint32, sp
 }
 
 func (sm *StateMachine) BroadcastShip(mapID uint32, effect uint16) {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil {
 		return
 	}
-	ms := sm.Group.GameWorld.Systems().Get[*MapSystem]()
+	ms := sm.group.gameWorld.Systems().Get[*MapSystem]()
 	m := ms.Find(sm, mapID)
 	if m == nil {
 		return

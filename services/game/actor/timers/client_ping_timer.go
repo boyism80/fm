@@ -35,11 +35,11 @@ func (t *ClientPingTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	now := clock.Now()
 	for _, obj := range mapData.GetAllPlayers() {
 		ch, ok := obj.(*game.Character)
-		if !ok || ch == nil || ch.Sendable == nil {
+		if !ok || ch == nil || ch.Client() == nil {
 			continue
 		}
 
-		client, ok := ch.Sendable.(*gameclient.GameClient)
+		client, ok := ch.Client().(*gameclient.GameClient)
 		if !ok {
 			continue
 		}

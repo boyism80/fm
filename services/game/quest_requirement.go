@@ -22,10 +22,10 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 		found := false
 		for _, obj := range mapInst.GetNpcs() {
 			npc, ok := obj.(*Npc)
-			if !ok || npc.Wz == nil || npc.Wz.BaseSpawn == nil {
+			if !ok || npc.wz == nil || npc.wz.BaseSpawn == nil {
 				continue
 			}
-			if npc.Wz.ID == req.NPC {
+			if npc.wz.ID == req.NPC {
 				found = true
 				break
 			}
@@ -44,19 +44,19 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 	if req.Level > 0 && int(qc.owner.GetLevel()) < req.Level {
 		return false
 	}
-	if len(req.Classes) > 0 && !matchesQuestClass(qc.owner.Class, req.Classes) {
+	if len(req.Classes) > 0 && !matchesQuestClass(qc.owner.class, req.Classes) {
 		return false
 	}
 	for itemID, count := range req.Item {
-		if !qc.owner.Inventory.HasItemCount(itemID, uint16(count)) {
+		if !qc.owner.inventory.HasItemCount(itemID, uint16(count)) {
 			return false
 		}
 	}
 	if len(req.Mob) > 0 {
 		for mobID, count := range req.Mob {
 			kills := 0
-			if qp != nil && qp.MobKills != nil {
-				kills = qp.MobKills[mobID]
+			if qp != nil && qp.mobKills != nil {
+				kills = qp.mobKills[mobID]
 			}
 			if kills < count {
 				return false
@@ -68,7 +68,7 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 			return false
 		}
 	}
-	if req.Pop > 0 && int(qc.owner.Stats.Population) < req.Pop {
+	if req.Pop > 0 && int(qc.owner.stats.population) < req.Pop {
 		return false
 	}
 	if req.FieldEnter > 0 {
@@ -78,15 +78,15 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 		}
 	}
 	if req.HasInterval {
-		if qp != nil && qp.Status == QuestStatusCompleted && !qp.CompletionTime.IsZero() {
-			if req.Interval > 0 && clock.Now().Before(qp.CompletionTime.Add(time.Duration(req.Interval)*time.Minute)) {
+		if qp != nil && qp.status == QuestStatusCompleted && !qp.completionTime.IsZero() {
+			if req.Interval > 0 && clock.Now().Before(qp.completionTime.Add(time.Duration(req.Interval)*time.Minute)) {
 				return false
 			}
 		}
 	}
 	if req.DayByDay {
-		if qp != nil && qp.Status == QuestStatusCompleted && !qp.CompletionTime.IsZero() {
-			if sameCalendarDay(qp.CompletionTime, clock.Now()) {
+		if qp != nil && qp.status == QuestStatusCompleted && !qp.completionTime.IsZero() {
+			if sameCalendarDay(qp.completionTime, clock.Now()) {
 				return false
 			}
 		}
@@ -104,11 +104,11 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 		}
 		expected := req.Info
 		if len(expected) == 0 {
-			if refQP.StatusRecord.IsEmpty() {
+			if refQP.statusRecord.IsEmpty() {
 				return false
 			}
 		} else {
-			record := refQP.StatusRecord.AsString()
+			record := refQP.statusRecord.AsString()
 			matched := false
 			for _, want := range expected {
 				if want == "" {
@@ -130,18 +130,18 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 		}
 		mustAcquire := acquire > 0
 		var wzSkill *wz.Skill
-		if qc.owner.GameWorld != nil {
-			resources := qc.owner.GameWorld.GetResources()
+		if qc.owner.gameWorld != nil {
+			resources := qc.owner.gameWorld.GetResources()
 			if resources != nil {
 				wzSkill = resources.GetSkill(skillID)
 			}
 		}
-		entry := qc.owner.Skills.Learned(skillID)
+		entry := qc.owner.skills.Learned(skillID)
 		skillLevel := 0
 		masterLevel := 0
 		if entry != nil {
 			skillLevel = entry.Level()
-			masterLevel = entry.MasterLevel
+			masterLevel = entry.masterLevel
 		}
 		if mustAcquire {
 			ok := false
@@ -181,16 +181,16 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 			return false
 		}
 	}
-	if len(req.Pet) > 0 && (qc.owner.Pets.Active == nil || !slices.Contains(req.Pet, qc.owner.Pets.Active.Item.GetModel().GetID())) {
+	if len(req.Pet) > 0 && (qc.owner.pets.active == nil || !slices.Contains(req.Pet, qc.owner.pets.active.item.GetModel().GetID())) {
 		return false
 	}
-	if req.PetTamenessMin > 0 && (qc.owner.Pets.Active == nil || int(qc.owner.Pets.Active.Item.Closeness) < req.PetTamenessMin) {
+	if req.PetTamenessMin > 0 && (qc.owner.pets.active == nil || int(qc.owner.pets.active.item.closeness) < req.PetTamenessMin) {
 		return false
 	}
 	if req.MBMin > 0 || len(req.MBCard) > 0 || req.SubClassFlags != 0 {
 		return false
 	}
-	if req.TamingMobLevelMin > 0 && (qc.owner.Inventory.Equipped[constant.EquipmentPartsTamingMob] == nil || int(qc.owner.Mount.Level) < req.TamingMobLevelMin) {
+	if req.TamingMobLevelMin > 0 && (qc.owner.inventory.equipped[constant.EquipmentPartsTamingMob] == nil || int(qc.owner.mount.level) < req.TamingMobLevelMin) {
 		return false
 	}
 	if req.EndMeso > 0 || req.EquipAllNeed > 0 || req.EquipSelectNeed > 0 {

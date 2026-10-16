@@ -2,10 +2,10 @@ package game
 
 // PartyDoor is in-game party door state (not the gRPC message type).
 type PartyDoor struct {
-	Town   uint32
-	Target uint32
-	X      int32
-	Y      int32
+	town   uint32
+	target uint32
+	x      int32
+	y      int32
 }
 
 func (d *PartyDoor) Clone() *PartyDoor {
@@ -13,9 +13,9 @@ func (d *PartyDoor) Clone() *PartyDoor {
 		return nil
 	}
 	return &PartyDoor{
-		Town:   d.Town,
-		Target: d.Target,
-		X:      d.X,
-		Y:      d.Y,
+		town:   d.town,
+		target: d.target,
+		x:      d.x,
+		y:      d.y,
 	}
 }

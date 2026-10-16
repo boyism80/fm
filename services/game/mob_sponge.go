@@ -44,10 +44,10 @@ func (s *Sponge) isFinish() bool {
 		return true
 	}
 	for _, child := range s.children {
-		if child == nil || child.Wz == nil || child.GetHp() == 0 {
+		if child == nil || child.wz == nil || child.GetHp() == 0 {
 			continue
 		}
-		if child.Wz.Level > 1 {
+		if child.wz.Level > 1 {
 			return false
 		}
 	}
@@ -71,8 +71,8 @@ func (s *Sponge) damage(amount uint32) {
 		return
 	}
 
-	parent.LifeCore.AddHp(-int(spongeDamage))
-	parent.Listener.OnShowBossHp(parent, parent.GetHp() == 0)
+	parent.lifeCore.AddHp(-int(spongeDamage))
+	parent.listener.OnShowBossHp(parent, parent.GetHp() == 0)
 }
 
 func (s *Sponge) removeAllChildren() {

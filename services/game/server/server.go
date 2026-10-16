@@ -253,7 +253,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		})
 	}
 
-	if character.AccountID == 0 {
+	if character.AccountID() == 0 {
 		return
 	}
 	charID := character.GetID()
@@ -261,7 +261,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	p.ThenRPC(func(c context.Context) (*internal.LogoutSessionReply, error) {
 		return gs.systems.Get[*rpc.InternalConnection]().Client.LogoutSession(c, &internal.LogoutSessionRequest{
 			WorldId:          gs.config.WorldId,
-			AccountId:        character.AccountID,
+			AccountId:        character.AccountID(),
 			CharacterId:      &charID,
 			ChannelId:        &channelID,
 			DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
@@ -274,8 +274,8 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 func (gs *GameServer) removeCharacter(character *game.Character, logout <-chan *internal.CharacterSaveEntry) *internal.CharacterSaveEntry {
 	charID := character.GetID()
 	gs.systems.Get[*game.ExpeditionSystem]().LeaveChannel(character)
-	if character.StateMachine != nil {
-		character.StateMachine.RequestLeave(character, false, game.StateMachineLeaveDisconnect)
+	if character.StateMachine() != nil {
+		character.StateMachine().RequestLeave(character, false, game.StateMachineLeaveDisconnect)
 	}
 	dispatch := gs.systems.Get[*game.DispatchSystem]()
 	dispatch.Visit(charID, func(ctx actor.Context, _ *game.Character) {

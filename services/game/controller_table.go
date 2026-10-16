@@ -26,7 +26,7 @@ func (t *ControllerTable) EnterMob(mob *Mob) {
 	if mob == nil {
 		return
 	}
-	mobOID := mob.OID
+	mobOID := mob.oid
 	t.mobs[mobOID] = mob
 	if _, ok := t.mob2controller[mobOID]; !ok {
 		t.mob2controller[mobOID] = 0
@@ -68,7 +68,7 @@ func (t *ControllerTable) LeavePlayer(character *Character) {
 }
 
 func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
-	mobOID := mob.OID
+	mobOID := mob.oid
 	controllerID := t.mob2controller[mobOID]
 
 	var controller *Character
@@ -89,7 +89,7 @@ func (t *ControllerTable) MoveMob(mob *Mob) {
 	if mob == nil {
 		return
 	}
-	if _, exists := t.mobs[mob.OID]; !exists {
+	if _, exists := t.mobs[mob.oid]; !exists {
 		return
 	}
 	t.reassign(mob)
@@ -125,7 +125,7 @@ func (t *ControllerTable) Update(character *Character) {
 }
 
 func (t *ControllerTable) GetController(mob *Mob) (*Character, bool) {
-	mobOID := mob.OID
+	mobOID := mob.oid
 	controllerID := t.mob2controller[mobOID]
 	if controllerID == 0 {
 		return nil, false
@@ -216,7 +216,7 @@ func (t *ControllerTable) nearbyMobs(character *Character) []*Mob {
 		if !ok {
 			continue
 		}
-		if _, registered := t.mobs[mob.OID]; !registered {
+		if _, registered := t.mobs[mob.oid]; !registered {
 			continue
 		}
 		out = append(out, mob)
@@ -225,7 +225,7 @@ func (t *ControllerTable) nearbyMobs(character *Character) []*Mob {
 }
 
 func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character, aggro bool) {
-	mobOID := mob.OID
+	mobOID := mob.oid
 
 	prevControllerID := t.mob2controller[mobOID]
 	if prevControllerID != 0 {

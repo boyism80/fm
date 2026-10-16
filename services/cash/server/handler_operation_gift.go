@@ -33,7 +33,7 @@ func (h *Operation) gift(ctx *core.ClientContext, character *cash.Character, req
 		return
 	}
 
-	var items []*internal.CashItem
+	var items []*cash.LockerItem
 	if req.Action == request.CashShopActionGiftPackage {
 		packaged, err := h.packageItems(character, commodity)
 		if err != nil {
@@ -48,10 +48,14 @@ func (h *Operation) gift(ctx *core.ClientContext, character *cash.Character, req
 			fail(constant.CashShopFailureUnknown)
 			return
 		}
-		items = []*internal.CashItem{item}
+		items = []*cash.LockerItem{item}
 	}
 
 	promise := h.start(ctx, character, constant.CashShopResultGiftFailed)
+	sent := make([]*internal.CashItem, 0, len(items))
+	for _, item := range items {
+		sent = append(sent, item.BuildRPC())
+	}
 	promise.ThenRPC(func(c context.Context) (*internal.GiftCashItemReply, error) {
 		return h.cs.systems.Get[*rpc.InternalConnection]().Client.GiftCashItem(c, &internal.GiftCashItemRequest{
 			WorldId:       uint32(h.cs.config.WorldID),
@@ -60,7 +64,7 @@ func (h *Operation) gift(ctx *core.ClientContext, character *cash.Character, req
 			Message:       req.Message,
 			Price:         commodity.Price,
 			Gender:        uint32(commodity.Gender),
-			Items:         items,
+			Items:         sent,
 			RequestId:     h.cs.NewUniqueID(),
 		})
 	}, func(reply *internal.GiftCashItemReply) error {

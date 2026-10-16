@@ -11,17 +11,17 @@ import (
 
 func (ch *Character) canEquip(required wz.RequiredStats) bool {
 	return ch.GetLevel() >= required.Level &&
-		ch.Stats.TotalStr() >= required.Str &&
-		ch.Stats.TotalDex() >= required.Dex &&
-		ch.Stats.TotalInt() >= required.Int &&
-		ch.Stats.TotalLuk() >= required.Luk &&
-		ch.Stats.Population >= required.Popularity
+		ch.stats.TotalStr() >= required.Str &&
+		ch.stats.TotalDex() >= required.Dex &&
+		ch.stats.TotalInt() >= required.Int &&
+		ch.stats.TotalLuk() >= required.Luk &&
+		ch.stats.population >= required.Popularity
 }
 
 func (ch *Character) Equip(actx actor.Context, slot int16, parts constant.EquipmentPartsType) error {
-	before := ch.Inventory.Equipped[parts]
-	after, _ := ch.Inventory.GetItem(constant.InventoryTypeEquipment, slot).(Equipment)
-	if err := ch.Inventory.Equip(slot, parts); err != nil {
+	before := ch.inventory.equipped[parts]
+	after, _ := ch.inventory.GetItem(constant.InventoryTypeEquipment, slot).(Equipment)
+	if err := ch.inventory.Equip(slot, parts); err != nil {
 		return err
 	}
 	ch.onEquipmentChanged(actx, parts, before, after)
@@ -29,8 +29,8 @@ func (ch *Character) Equip(actx actor.Context, slot int16, parts constant.Equipm
 }
 
 func (ch *Character) Unequip(actx actor.Context, parts constant.EquipmentPartsType, slot int16) error {
-	before := ch.Inventory.Equipped[parts]
-	if err := ch.Inventory.UnequipToSlot(parts, slot); err != nil {
+	before := ch.inventory.equipped[parts]
+	if err := ch.inventory.UnequipToSlot(parts, slot); err != nil {
 		return err
 	}
 	ch.onEquipmentChanged(actx, parts, before, nil)
@@ -75,17 +75,17 @@ func (ch *Character) DropItem(actx actor.Context, invType constant.InventoryType
 	var dropped Item
 	if slot < 0 {
 		parts := constant.EquipmentPartsType(slot)
-		if item := ch.Inventory.Equipped[parts]; item == nil || item.GetFlags()&constant.ItemFlagLock != 0 {
+		if item := ch.inventory.equipped[parts]; item == nil || item.GetFlags()&constant.ItemFlagLock != 0 {
 			return false
 		}
-		equipment := ch.Inventory.RemoveEquipped(parts)
+		equipment := ch.inventory.RemoveEquipped(parts)
 		if equipment == nil {
 			return false
 		}
 		ch.onEquipmentChanged(actx, parts, equipment, nil)
 		dropped = equipment
 	} else {
-		item := ch.Inventory.GetItem(invType, slot)
+		item := ch.inventory.GetItem(invType, slot)
 		if item == nil {
 			return false
 		}
@@ -100,7 +100,7 @@ func (ch *Character) DropItem(actx actor.Context, invType constant.InventoryType
 			return false
 		}
 		dropped = item.Clone(count)
-		if !ch.Inventory.RemoveItem(invType, slot, count) {
+		if !ch.inventory.RemoveItem(invType, slot, count) {
 			return false
 		}
 	}
@@ -109,8 +109,8 @@ func (ch *Character) DropItem(actx actor.Context, invType constant.InventoryType
 		return true
 	}
 	if err := m.SpawnItem(dropped, ItemSpawn{
-		Position:             ch.Position,
-		From:                 ch.Position,
+		Position:             ch.position,
+		From:                 ch.position,
 		Owner:                ch.GetID(),
 		DropType:             constant.DropTypeFFA,
 		PlayerDrop:           true,
@@ -125,7 +125,7 @@ func (ch *Character) DropMeso(amount int32) bool {
 	if ch.Spectating() {
 		return false
 	}
-	if amount < constant.DropMesoMin || amount > constant.DropMesoMax || amount > ch.Inventory.Meso {
+	if amount < constant.DropMesoMin || amount > constant.DropMesoMax || amount > ch.inventory.meso {
 		return false
 	}
 	m := ch.GetMap()
@@ -133,12 +133,12 @@ func (ch *Character) DropMeso(amount int32) bool {
 		return false
 	}
 
-	ch.Inventory.SetMeso(ch.Inventory.Meso - amount)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.StatMeso: ch.Inventory.Meso,
+	ch.inventory.SetMeso(ch.inventory.meso - amount)
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatMeso: ch.inventory.meso,
 	}, true)
 
-	if _, err := m.SpawnMeso(amount, ch.Position, ch.Position, ch.GetID(), constant.DropTypeFFA, true); err != nil {
+	if _, err := m.SpawnMeso(amount, ch.position, ch.position, ch.GetID(), constant.DropTypeFFA, true); err != nil {
 		log.Printf("Failed to spawn meso on map: %v", err)
 	}
 	return true

@@ -26,6 +26,6 @@ func (h *PetReviveInquiry) Handle(ctx *core.ClientContext, req *request.PetReviv
 		return nil
 	}
 
-	character.Listener.OnUnlockAction(character)
+	character.Listener().OnUnlockAction(character)
 	return nil
 }

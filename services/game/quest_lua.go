@@ -20,9 +20,9 @@ func (qc *Quests) LuaQuest(questID uint32) *Quest {
 	}
 	return &Quest{
 		quests:  qc,
-		Wz:      def,
-		QuestID: questID,
-		Status:  QuestStatusNotStarted,
+		wz:      def,
+		questID: questID,
+		status:  QuestStatusNotStarted,
 	}
 }
 
@@ -34,7 +34,7 @@ func (qp *Quest) String() string {
 	if qp == nil {
 		return "LuaQuest(nil)"
 	}
-	return fmt.Sprintf("LuaQuest(%d)", qp.QuestID)
+	return fmt.Sprintf("LuaQuest(%d)", qp.questID)
 }
 
 func (qp *Quest) Type() lua.LValueType {
@@ -62,7 +62,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(q.QuestID))
+			L.Push(lua.LNumber(q.questID))
 			return 1
 		},
 		"status": func(L *lua.LState) int {
@@ -74,7 +74,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "status() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(q.Status))
+			L.Push(lua.LNumber(q.status))
 			return 1
 		},
 		"record": func(L *lua.LState) int {
@@ -83,18 +83,18 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				L.Push(lua.LString(q.StatusRecord.AsString()))
+				L.Push(lua.LString(q.statusRecord.AsString()))
 				return 1
 			}
 			if L.GetTop() != 2 {
 				L.ArgError(2, "record() takes 0 or 1 arguments")
 				return 0
 			}
-			if q.quests == nil || q.quests.Get(q.QuestID) == nil {
+			if q.quests == nil || q.quests.Get(q.questID) == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			q.StatusRecord.WriteString(L.CheckString(2))
+			q.statusRecord.WriteString(L.CheckString(2))
 			L.Push(lua.LBool(true))
 			return 1
 		},
@@ -119,7 +119,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "completed() takes no arguments")
 				return 0
 			}
-			L.Push(lua.LBool(q != nil && q.Status == QuestStatusCompleted))
+			L.Push(lua.LBool(q != nil && q.status == QuestStatusCompleted))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -131,7 +131,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() takes no arguments")
 				return 0
 			}
-			L.Push(luax.NewLuable(L, q.Wz))
+			L.Push(luax.NewLuable(L, q.wz))
 			return 1
 		},
 		"mob_kills": func(L *lua.LState) int {
@@ -145,8 +145,8 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			mobID := uint32(L.CheckInt(2))
 			kills := 0
-			if q.MobKills != nil {
-				kills = q.MobKills[mobID]
+			if q.mobKills != nil {
+				kills = q.mobKills[mobID]
 			}
 			L.Push(lua.LNumber(kills))
 			return 1
@@ -160,7 +160,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "set_mob_kills(mob_id, count) requires mob id and count")
 				return 0
 			}
-			if q.quests == nil || q.quests.owner == nil || q.quests.Get(q.QuestID) == nil {
+			if q.quests == nil || q.quests.owner == nil || q.quests.Get(q.questID) == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
@@ -173,10 +173,10 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if count < 0 {
 				count = 0
 			}
-			if q.MobKills == nil {
-				q.MobKills = make(map[uint32]int)
+			if q.mobKills == nil {
+				q.mobKills = make(map[uint32]int)
 			}
-			q.MobKills[mobID] = count
+			q.mobKills[mobID] = count
 			L.Push(lua.LBool(true))
 			return 1
 		},
@@ -189,12 +189,12 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "sync_progress() takes no arguments")
 				return 0
 			}
-			if q.quests == nil || q.quests.owner == nil || q.quests.Get(q.QuestID) == nil {
+			if q.quests == nil || q.quests.owner == nil || q.quests.Get(q.questID) == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			if q.quests.owner.Listener != nil {
-				q.quests.owner.Listener.OnQuestProgress(q.quests.owner, q)
+			if q.quests.owner.listener != nil {
+				q.quests.owner.listener.OnQuestProgress(q.quests.owner, q)
 			}
 			L.Push(lua.LBool(true))
 			return 1
@@ -241,10 +241,10 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				if q.StartTime.IsZero() {
+				if q.startTime.IsZero() {
 					L.Push(lua.LNumber(0))
 				} else {
-					L.Push(lua.LNumber(q.StartTime.Unix()))
+					L.Push(lua.LNumber(q.startTime.Unix()))
 				}
 				return 1
 			case 2:
@@ -291,7 +291,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 			}
-			qp, err := q.quests.Start(q.QuestID, opts)
+			qp, err := q.quests.Start(q.questID, opts)
 			if err == nil && qp != nil {
 				if ud, ok := L.Get(1).(*lua.LUserData); ok {
 					ud.Value = qp
@@ -322,7 +322,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			if stored := q.quests.Get(q.QuestID); stored != nil {
+			if stored := q.quests.Get(q.questID); stored != nil {
 				q = stored
 			}
 			err := q.Complete(q.quests.owner, opts)
@@ -346,7 +346,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			if stored := q.quests.Get(q.QuestID); stored != nil {
+			if stored := q.quests.Get(q.questID); stored != nil {
 				q = stored
 			}
 			err := q.Complete(q.quests.owner, QuestPhaseOpts{NpcID: &npcID, Force: true})
@@ -366,7 +366,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			if stored := q.quests.Get(q.QuestID); stored != nil {
+			if stored := q.quests.Get(q.questID); stored != nil {
 				q = stored
 			}
 			err := q.Forfeit(q.quests.owner)
@@ -377,7 +377,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 }
 
 func (qc *Quests) RunScript(actx actor.Context, questID uint32, npcID uint32, entry string) error {
-	if qc.owner.Dialog.Thread() != nil {
+	if qc.owner.dialog.Thread() != nil {
 		return ErrDialogBusy
 	}
 	mapInstance := qc.owner.GetMap()
@@ -391,7 +391,7 @@ func (qc *Quests) RunScript(actx actor.Context, questID uint32, npcID uint32, en
 	scriptPath := fmt.Sprintf("script/quest/%d.lua", questID)
 	luaThread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
-		qc.owner.Listener.OnScriptError(qc.owner, scriptPath, err)
+		qc.owner.listener.OnScriptError(qc.owner, scriptPath, err)
 		return err
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
@@ -399,20 +399,20 @@ func (qc *Quests) RunScript(actx actor.Context, questID uint32, npcID uint32, en
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
 	luax.CallAsync(actx, root, luaThread, entry, qc.owner, npcID).Do(func([]lua.LValue) error {
-		if qc.owner.Dialog.Thread() == nil {
-			qc.owner.Dialog.Reset()
-			if qc.owner.Listener != nil {
-				qc.owner.Listener.OnUnlockAction(qc.owner)
+		if qc.owner.dialog.Thread() == nil {
+			qc.owner.dialog.Reset()
+			if qc.owner.listener != nil {
+				qc.owner.listener.OnUnlockAction(qc.owner)
 			}
 		}
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("quest script %s quest=%d npc=%d: %v", entry, questID, npcID, err)
-		qc.owner.Listener.OnScriptError(qc.owner, scriptPath, err)
-		if qc.owner.Dialog.Thread() == nil {
-			qc.owner.Dialog.Reset()
-			if qc.owner.Listener != nil {
-				qc.owner.Listener.OnUnlockAction(qc.owner)
+		qc.owner.listener.OnScriptError(qc.owner, scriptPath, err)
+		if qc.owner.dialog.Thread() == nil {
+			qc.owner.dialog.Reset()
+			if qc.owner.listener != nil {
+				qc.owner.listener.OnUnlockAction(qc.owner)
 			}
 		}
 	})

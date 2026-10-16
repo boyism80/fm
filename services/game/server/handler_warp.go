@@ -38,8 +38,8 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 
 	if req.Target == 0xFFFFFFFF {
 		portal := currentMap.FindPortalByName(req.PortalName)
-		if portal == nil || portal.Wz == nil {
-			character.Listener.OnUpdateStats(character, nil, true)
+		if portal == nil || portal.Wz() == nil {
+			character.Listener().OnUpdateStats(character, nil, true)
 			return nil
 		}
 		return character.EnterPortal(ctx.ActorContext, portal)

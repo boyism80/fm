@@ -30,19 +30,19 @@ type CashItemInput struct {
 
 func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, input CashItemInput) {
 	if !ch.session.cashItemInUse.CompareAndSwap(false, true) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return
 	}
 	finish := func() {
 		ch.session.cashItemInUse.Store(false)
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 	}
 
-	if ch.GetHp() <= 0 || ch.Dialog.Busy() {
+	if ch.GetHp() <= 0 || ch.dialog.Busy() {
 		finish()
 		return
 	}
-	cash := ch.Inventory.Tabs[constant.InventoryTypeCash]
+	cash := ch.inventory.tabs[constant.InventoryTypeCash]
 	if cash == nil {
 		finish()
 		return
@@ -61,7 +61,7 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, i
 	scriptPath := fmt.Sprintf("script/item/%d.lua", itemID)
 	thread, err := luax.NewThread(m.GetLuaRoot(), scriptPath)
 	if err != nil {
-		ch.Listener.OnMessage(ch, constant.MsgPinkText, "지금은 사용할 수 없는 아이템입니다.")
+		ch.listener.OnMessage(ch, constant.MsgPinkText, "지금은 사용할 수 없는 아이템입니다.")
 		finish()
 		return
 	}
@@ -83,10 +83,10 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, i
 			finish()
 			return nil
 		}
-		ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
+		ch.gameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
 			item := cash.Get(uint8(slot))
 			if item != nil && item.GetModel().GetID() == itemID {
-				ch.Inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)
+				ch.inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)
 			}
 			finish()
 		})
@@ -98,7 +98,7 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, i
 }
 
 func (ch *Character) AddCash(actx actor.Context, nxCash int32, maplePoint int32) {
-	ch.GameWorld.Systems().Get[*InternalSystem]().AddCashAsync(actx, ch, nxCash, maplePoint).Do(func(v *internal.AddCashReply) error {
+	ch.gameWorld.Systems().Get[*InternalSystem]().AddCashAsync(actx, ch, nxCash, maplePoint).Do(func(v *internal.AddCashReply) error {
 		reply := v
 		ch.Message(fmt.Sprintf("캐시 잔액: NX %d, 메이플포인트 %d", reply.GetNxCash(), reply.GetMaplePoint()))
 		return nil
@@ -108,7 +108,7 @@ func (ch *Character) AddCash(actx actor.Context, nxCash int32, maplePoint int32)
 }
 
 func (ch *Character) CreateCashCoupons(actx actor.Context, kind internal.CashCouponKind, value uint32, count uint32) {
-	ch.GameWorld.Systems().Get[*InternalSystem]().CreateCashCouponsAsync(actx, ch, kind, value, count).Do(func(v *internal.CreateCashCouponsReply) error {
+	ch.gameWorld.Systems().Get[*InternalSystem]().CreateCashCouponsAsync(actx, ch, kind, value, count).Do(func(v *internal.CreateCashCouponsReply) error {
 		for _, code := range v.GetCodes() {
 			ch.Message(fmt.Sprintf("쿠폰: %s", code))
 		}

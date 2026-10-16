@@ -20,69 +20,71 @@ import (
 )
 
 type Look struct {
-	Gender    uint8
-	SkinColor uint8
-	Face      uint32
-	Hair      uint32
+	gender    uint8
+	skinColor uint8
+	face      uint32
+	hair      uint32
 }
 
+type sendable = Sendable
+
 type Character struct {
-	LifeCore
-	Sendable
+	lifeCore
+	sendable
 
 	id             uint32
 	name           string
 	look           Look
 	level          uint8
-	Rank           Ranking
+	rank           Ranking
 	exp            uint32
-	Stats          *Stats
-	Points         *Points
+	stats          *Stats
+	points         *Points
 	mega           bool
 	random         [3]stream.RandomStream
-	Quests         *Quests
-	Wedding        *Wedding
-	CashWishlist   []uint32
-	TeleportStones *TeleportStones
-	MonsterBook    *MonsterBook
-	Dialog         *Dialog
-	Listener       CharacterListener
-	Class          constant.ClassType
-	Role           constant.CharacterRole
-	AccountID      uint32
-	Account        *Account
-	Inventory      *Inventory
-	Escrow         *Escrow
-	Duey           *Duey
-	Unsettled      *UnsettledRequests
-	StoreBank      *StoreBank
-	MiniRoom       MiniRoom
-	RemoteShops    *RemoteShops
-	Skills         *Skills
-	KeyLayout      *KeyLayout
-	ItemEffectID   uint32
-	Chalkboard     string
-	Chair          uint32
+	quests         *Quests
+	wedding        *Wedding
+	cashWishlist   []uint32
+	teleportStones *TeleportStones
+	monsterBook    *MonsterBook
+	dialog         *Dialog
+	listener       CharacterListener
+	class          constant.ClassType
+	role           constant.CharacterRole
+	accountID      uint32
+	account        *Account
+	inventory      *Inventory
+	escrow         *Escrow
+	duey           *Duey
+	unsettled      *UnsettledRequests
+	storeBank      *StoreBank
+	miniRoom       MiniRoom
+	remoteShops    *RemoteShops
+	skills         *Skills
+	keyLayout      *KeyLayout
+	itemEffectID   uint32
+	chalkboard     string
+	chair          uint32
 	lastHeal       lastHeal
-	Buffs          *Buffs
-	Debuffs        *Debuffs
-	Summons        *Summons
-	Pets           *Pets
-	Mount          *Mount
-	Doors          *Doors
-	Party          *PartyMembership
-	Guild          *GuildMembership
-	Buddies        *BuddyList
-	Family         *Family
-	Messenger      *Messenger
-	Notes          *Notes
-	GM             GMMode
-	StateMachine   *StateMachine
-	Carnival       *CarnivalMembership
-	Dojo           *Dojo
-	LieDetector    *LieDetector
-	SavedLocations *SavedLocations
-	Records        *Records
+	buffs          *Buffs
+	debuffs        *Debuffs
+	summons        *Summons
+	pets           *Pets
+	mount          *Mount
+	doors          *Doors
+	party          *PartyMembership
+	guild          *GuildMembership
+	buddies        *BuddyList
+	family         *Family
+	messenger      *Messenger
+	notes          *Notes
+	gm             GMMode
+	stateMachine   *StateMachine
+	carnival       *CarnivalMembership
+	dojo           *Dojo
+	lieDetector    *LieDetector
+	savedLocations *SavedLocations
+	records        *Records
 	session        session
 }
 
@@ -120,35 +122,35 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	if ch.GetID() == viewer.GetID() {
 		return
 	}
-	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.Role) {
+	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.role) {
 		return
 	}
-	spawnBuffData := ch.Buffs.SpawnPlayerData()
+	spawnBuffData := ch.buffs.SpawnPlayerData()
 	carnivalTeam := constant.CarnivalTeamNone
-	if team := ch.Carnival.Team(); team != nil {
-		carnivalTeam = team.TeamID
+	if team := ch.carnival.Team(); team != nil {
+		carnivalTeam = team.teamID
 	}
 	spawnPacket := &response.SpawnPlayer{
 		Character:         ch.BuildS2C(),
 		BuffStates:        spawnBuffData.BuffStates,
-		Diseases:          ch.Debuffs.DiseaseMask(),
+		Diseases:          ch.debuffs.DiseaseMask(),
 		SpeedBuff:         spawnBuffData.SpeedBuff,
 		ComboCount:        spawnBuffData.ComboCount,
 		WKChargeSkillId:   spawnBuffData.WKChargeSkillID,
 		MorphId:           spawnBuffData.MorphID,
 		SpiritClawSkillId: spawnBuffData.SpiritClawSkillID,
-		ItemEffectId:      ch.ItemEffectID,
-		Chalkboard:        ch.Chalkboard,
-		MountLevel:        ch.Mount.Level,
-		MountExp:          ch.Mount.Exp,
-		MountFatigue:      ch.Mount.Fatigue,
-		CrushRing:         ch.Inventory.WornRing(ch.Inventory.Rings.Left),
-		FriendshipRing:    ch.Inventory.WornRing(ch.Inventory.Rings.Mid),
-		MarriageRing:      ch.Wedding.BuildRingS2C(),
-		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
+		ItemEffectId:      ch.itemEffectID,
+		Chalkboard:        ch.chalkboard,
+		MountLevel:        ch.mount.level,
+		MountExp:          ch.mount.exp,
+		MountFatigue:      ch.mount.fatigue,
+		CrushRing:         ch.inventory.WornRing(ch.inventory.rings.left),
+		FriendshipRing:    ch.inventory.WornRing(ch.inventory.rings.mid),
+		MarriageRing:      ch.wedding.BuildRingS2C(),
+		HasTeam:           ch.GetMap() != nil && ch.GetMap().wz.HasTeam(),
 		Team:              carnivalTeam,
 	}
-	switch room := ch.MiniRoom.(type) {
+	switch room := ch.miniRoom.(type) {
 	case *PersonalShop:
 		if room.published && room.owner == ch {
 			balloon := room.balloon()
@@ -160,23 +162,23 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 			spawnPacket.MiniRoomBalloon = &balloon
 		}
 	}
-	if ch.Pets.Active != nil {
-		spawnPacket.Pet = ch.Pets.Active.BuildS2C()
+	if ch.pets.active != nil {
+		spawnPacket.Pet = ch.pets.active.BuildS2C()
 	}
-	if guildID, ok := ch.Guild.ID(); ok && ch.GameWorld != nil {
-		if guild := ch.GameWorld.Systems().Get[*GuildSystem]().Get(guildID); guild != nil {
-			spawnPacket.GuildName = guild.Name
-			if guild.Logo != nil {
-				spawnPacket.GuildLogoBG = uint16(guild.Logo.LogoBG)
-				spawnPacket.GuildLogoBGColor = uint8(guild.Logo.LogoBGColor)
-				spawnPacket.GuildLogo = uint16(guild.Logo.Logo)
-				spawnPacket.GuildLogoColor = uint8(guild.Logo.LogoColor)
+	if guildID, ok := ch.guild.ID(); ok && ch.gameWorld != nil {
+		if guild := ch.gameWorld.Systems().Get[*GuildSystem]().Get(guildID); guild != nil {
+			spawnPacket.GuildName = guild.name
+			if guild.logo != nil {
+				spawnPacket.GuildLogoBG = uint16(guild.logo.logoBG)
+				spawnPacket.GuildLogoBGColor = uint8(guild.logo.logoBGColor)
+				spawnPacket.GuildLogo = uint16(guild.logo.logo)
+				spawnPacket.GuildLogoColor = uint8(guild.logo.logoColor)
 			}
 		}
 	}
 	viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)
 
-	if buff, mountID, active := ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding); active {
+	if buff, mountID, active := ch.buffs.GetBuffValue(constant.BuffFlagMonsterRiding); active {
 		viewer.Send(&response.UpdateRidding{
 			CharacterID: int32(ch.GetID()),
 			MountID:     mountID,
@@ -185,7 +187,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	if buff, _, active := ch.Buffs.GetBuffValue(constant.BuffFlagEnergyCharge); active {
+	if buff, _, active := ch.buffs.GetBuffValue(constant.BuffFlagEnergyCharge); active {
 		viewer.Send(&response.UpdateBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      buff.GetBuffID(),
@@ -194,9 +196,9 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	if dashBuff, dashValue, active := ch.Buffs.GetBuffValue(constant.BuffFlagDashSpeed); active {
+	if dashBuff, dashValue, active := ch.buffs.GetBuffValue(constant.BuffFlagDashSpeed); active {
 		buffs := []dto.BuffEntry{{Buff: constant.BuffFlagDashSpeed, Value: dashValue}}
-		if _, dashJumpValue, hasDashJump := ch.Buffs.GetBuffValue(constant.BuffFlagDashJump); hasDashJump {
+		if _, dashJumpValue, hasDashJump := ch.buffs.GetBuffValue(constant.BuffFlagDashJump); hasDashJump {
 			buffs = append(buffs, dto.BuffEntry{Buff: constant.BuffFlagDashJump, Value: dashJumpValue})
 		}
 		viewer.Send(&response.UpdateBuff{
@@ -215,67 +217,67 @@ func (ch *Character) SendDestroySyncToViewer(viewer *Character) {
 	if ch.GetID() == viewer.GetID() {
 		return
 	}
-	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.Role) {
+	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.role) {
 		return
 	}
 	viewer.Send(&response.LeavePlayer{ID: ch.GetID()}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
-func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
-func (ch *Character) GetInvincible() bool { return ch.Invincible }
-func (ch *Character) GetGender() uint8    { return ch.look.Gender }
-func (ch *Character) GetSkinColor() uint8 { return ch.look.SkinColor }
-func (ch *Character) GetFace() uint32     { return ch.look.Face }
-func (ch *Character) GetHair() uint32     { return ch.look.Hair }
+func (ch *Character) GetBonusHp() int32   { return ch.bonusHp }
+func (ch *Character) GetBonusMp() int32   { return ch.bonusMp }
+func (ch *Character) GetInvincible() bool { return ch.invincible }
+func (ch *Character) GetGender() uint8    { return ch.look.gender }
+func (ch *Character) GetSkinColor() uint8 { return ch.look.skinColor }
+func (ch *Character) GetFace() uint32     { return ch.look.face }
+func (ch *Character) GetHair() uint32     { return ch.look.hair }
 
 func (ch *Character) SetGender(gender uint8) {
-	if ch.look.Gender == gender {
+	if ch.look.gender == gender {
 		return
 	}
-	ch.look.Gender = gender
-	ch.Listener.OnUpdateCharacterLook(ch)
+	ch.look.gender = gender
+	ch.listener.OnUpdateCharacterLook(ch)
 }
 
 func (ch *Character) SetHair(id uint32) {
-	if ch.look.Hair == id {
+	if ch.look.hair == id {
 		return
 	}
-	ch.look.Hair = id
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.look.hair = id
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHair: int32(id),
 	}, false)
-	ch.Listener.OnUpdateCharacterLook(ch)
+	ch.listener.OnUpdateCharacterLook(ch)
 }
 
 func (ch *Character) SetFace(id uint32) {
-	if ch.look.Face == id {
+	if ch.look.face == id {
 		return
 	}
-	ch.look.Face = id
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.look.face = id
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatFace: int32(id),
 	}, false)
-	ch.Listener.OnUpdateCharacterLook(ch)
+	ch.listener.OnUpdateCharacterLook(ch)
 }
 
 func (ch *Character) SetSkin(color uint8) {
-	if ch.look.SkinColor == color {
+	if ch.look.skinColor == color {
 		return
 	}
-	ch.look.SkinColor = color
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.look.skinColor = color
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatSkin: int32(color),
 	}, false)
-	ch.Listener.OnUpdateCharacterLook(ch)
+	ch.listener.OnUpdateCharacterLook(ch)
 }
 
 func (ch *Character) GetLevel() uint8 { return ch.level }
 func (ch *Character) GetExp() uint32  { return ch.exp }
 func (ch *Character) GetSpawnPoint() uint8 {
 	mapInstance := ch.GetMap()
-	if mapInstance != nil && mapInstance.Wz != nil {
-		return mapInstance.Wz.FindClosestPortalSpawnID(ch.Position)
+	if mapInstance != nil && mapInstance.wz != nil {
+		return mapInstance.wz.FindClosestPortalSpawnID(ch.position)
 	}
 	return 0
 }
@@ -287,7 +289,7 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 	}
 	ch.hp = v
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 	}
 
 	if wasAlive && !ch.IsAlive() {
@@ -296,9 +298,9 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 }
 
 func (ch *Character) die() {
-	ch.Summons.Clear()
-	if ch.StateMachine != nil {
-		ch.StateMachine.CallHook("on_player_dead", ch)
+	ch.summons.Clear()
+	if ch.stateMachine != nil {
+		ch.stateMachine.CallHook("on_player_dead", ch)
 	}
 }
 
@@ -310,16 +312,16 @@ func (ch *Character) SetMp(v uint32, notify bool) {
 	if !notify {
 		return
 	}
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatMP: int32(ch.GetMp())}, false)
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatMP: int32(ch.GetMp())}, false)
 }
 
 func (ch *Character) SetBonusHp(v int32, notify bool) {
-	ch.BonusHp = v
+	ch.bonusHp = v
 	if ch.GetHp() > ch.GetMaxHp() {
 		ch.SetHp(ch.GetMaxHp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatHP:    int32(ch.GetHp()),
 			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
@@ -327,12 +329,12 @@ func (ch *Character) SetBonusHp(v int32, notify bool) {
 }
 
 func (ch *Character) SetBonusMp(v int32, notify bool) {
-	ch.BonusMp = v
+	ch.bonusMp = v
 	if ch.GetMp() > ch.GetMaxMp() {
 		ch.SetMp(ch.GetMaxMp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatMP:    int32(ch.GetMp()),
 			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
@@ -340,12 +342,12 @@ func (ch *Character) SetBonusMp(v int32, notify bool) {
 }
 
 func (ch *Character) SetMaxHpPercent(p int16, notify bool) {
-	ch.Stats.Bonus.MaxHpPercent = p
+	ch.stats.bonus.maxHpPercent = p
 	if ch.GetHp() > ch.GetMaxHp() {
 		ch.SetHp(ch.GetMaxHp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatHP:    int32(ch.GetHp()),
 			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
@@ -353,12 +355,12 @@ func (ch *Character) SetMaxHpPercent(p int16, notify bool) {
 }
 
 func (ch *Character) SetMaxMpPercent(p int16, notify bool) {
-	ch.Stats.Bonus.MaxMpPercent = p
+	ch.stats.bonus.maxMpPercent = p
 	if ch.GetMp() > ch.GetMaxMp() {
 		ch.SetMp(ch.GetMaxMp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatMP:    int32(ch.GetMp()),
 			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
@@ -372,7 +374,7 @@ func (ch *Character) updateMaxHpMp() {
 	if ch.GetMp() > ch.GetMaxMp() {
 		ch.SetMp(ch.GetMaxMp(), false)
 	}
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHP:    int32(ch.GetHp()),
 		constant.StatMaxHP: int32(ch.GetMaxHp()),
 		constant.StatMP:    int32(ch.GetMp()),
@@ -380,7 +382,7 @@ func (ch *Character) updateMaxHpMp() {
 	}, false)
 }
 
-func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
+func (ch *Character) SetInvincible(b bool) { ch.invincible = b }
 
 func (ch *Character) AddHp(amount int) {
 	n := int(ch.GetHp()) + amount
@@ -392,7 +394,7 @@ func (ch *Character) AddHp(amount int) {
 		n = maxHp
 	}
 	ch.SetHp(uint32(n), false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 }
 
 func (ch *Character) AddMp(amount int) {
@@ -405,7 +407,7 @@ func (ch *Character) AddMp(amount int) {
 		n = maxMp
 	}
 	ch.SetMp(uint32(n), false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatMP: int32(ch.GetMp())}, false)
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatMP: int32(ch.GetMp())}, false)
 }
 
 func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
@@ -427,7 +429,7 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 	}
 	ch.SetHp(uint32(nh), false)
 	ch.SetMp(uint32(nm), false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHP: int32(ch.GetHp()),
 		constant.StatMP: int32(ch.GetMp()),
 	}, false)
@@ -437,12 +439,12 @@ func (ch *Character) SetBaseHp(v uint32, notify bool) {
 	if v > constant.StatMaxHPMP {
 		v = constant.StatMaxHPMP
 	}
-	ch.BaseHp = v
+	ch.baseHp = v
 	if ch.GetHp() > ch.GetMaxHp() {
 		ch.SetHp(ch.GetMaxHp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatHP:    int32(ch.GetHp()),
 			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
@@ -453,12 +455,12 @@ func (ch *Character) SetBaseMp(v uint32, notify bool) {
 	if v > constant.StatMaxHPMP {
 		v = constant.StatMaxHPMP
 	}
-	ch.BaseMp = v
+	ch.baseMp = v
 	if ch.GetMp() > ch.GetMaxMp() {
 		ch.SetMp(ch.GetMaxMp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatMP:    int32(ch.GetMp()),
 			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
@@ -466,12 +468,12 @@ func (ch *Character) SetBaseMp(v uint32, notify bool) {
 }
 
 func (ch *Character) AddBaseHp(amount uint32, notify bool) {
-	ch.LifeCore.AddBaseHp(amount)
+	ch.lifeCore.AddBaseHp(amount)
 	if ch.GetHp() > ch.GetMaxHp() {
 		ch.SetHp(ch.GetMaxHp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatHP:    int32(ch.GetHp()),
 			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
@@ -479,12 +481,12 @@ func (ch *Character) AddBaseHp(amount uint32, notify bool) {
 }
 
 func (ch *Character) AddBaseMp(amount uint32, notify bool) {
-	ch.LifeCore.AddBaseMp(amount)
+	ch.lifeCore.AddBaseMp(amount)
 	if ch.GetMp() > ch.GetMaxMp() {
 		ch.SetMp(ch.GetMaxMp(), false)
 	}
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatMP:    int32(ch.GetMp()),
 			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
@@ -494,10 +496,10 @@ func (ch *Character) AddBaseMp(amount uint32, notify bool) {
 const clockTimer = "clock"
 
 func (ch *Character) Warp(ctx actor.Context, targetMap *Map, spawnPoint uint8) error {
-	if ch.GameWorld == nil {
+	if ch.gameWorld == nil {
 		return fmt.Errorf("no game world")
 	}
-	return ch.GameWorld.Systems().Get[*MapSystem]().Warp(ctx, ch, targetMap, spawnPoint, nil)
+	return ch.gameWorld.Systems().Get[*MapSystem]().Warp(ctx, ch, targetMap, spawnPoint, nil)
 }
 
 func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
@@ -509,14 +511,14 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 	if scriptName := portal.Script(); scriptName != "" {
 		root := m.GetLuaRoot()
 		if root == nil {
-			ch.Listener.OnUnlockAction(ch)
+			ch.listener.OnUnlockAction(ch)
 			return fmt.Errorf("root lua state not found")
 		}
 		scriptPath := fmt.Sprintf("script/portal/%s.lua", scriptName)
 		thread, err := luax.NewThread(root, scriptPath)
 		if err != nil {
-			ch.Listener.OnScriptError(ch, scriptPath, err)
-			ch.Listener.OnUnlockAction(ch)
+			ch.listener.OnScriptError(ch, scriptPath, err)
+			ch.listener.OnUnlockAction(ch)
 			return fmt.Errorf("portal script thread: %w", err)
 		}
 		luax.SetConfiguration(thread, luax.Configuration{
@@ -524,55 +526,55 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 			ActorPID:     m.LogicActorPID(),
 		})
 		luax.CallAsync(ctx, root, thread, "on_enter", ch, portal).Do(func([]lua.LValue) error {
-			if ch.Dialog.Thread() == nil {
-				ch.Listener.OnUnlockAction(ch)
+			if ch.dialog.Thread() == nil {
+				ch.listener.OnUnlockAction(ch)
 			}
 			return nil
 		}).OnError(func(err error) {
 			log.Printf("portal script %s failed: %v", scriptPath, err)
-			ch.Listener.OnScriptError(ch, scriptPath, err)
-			if ch.Dialog.Thread() == nil {
-				ch.Listener.OnUnlockAction(ch)
+			ch.listener.OnScriptError(ch, scriptPath, err)
+			if ch.dialog.Thread() == nil {
+				ch.listener.OnUnlockAction(ch)
 			}
 		})
 		return nil
 	}
 
-	targetMap := ch.GameWorld.Systems().Get[*MapSystem]().Find(m.StateMachine(), uint32(portal.Wz.TargetMapId))
+	targetMap := ch.gameWorld.Systems().Get[*MapSystem]().Find(m.StateMachine(), uint32(portal.wz.TargetMapId))
 	if targetMap == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	targetPortal := targetMap.FindPortalByName(portal.Wz.Target)
-	if targetPortal == nil || targetPortal.Wz == nil {
+	targetPortal := targetMap.FindPortalByName(portal.wz.Target)
+	if targetPortal == nil || targetPortal.wz == nil {
 		return ch.Warp(ctx, targetMap, 0)
 	}
-	return ch.Warp(ctx, targetMap, targetPortal.Wz.ID)
+	return ch.Warp(ctx, targetMap, targetPortal.wz.ID)
 }
 
 func (ch *Character) Revive(ctx actor.Context) error {
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return fmt.Errorf("not on a map")
 	}
 	if ch.GetHp() > 0 {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
-	targetMap := ch.GameWorld.Systems().Get[*MapSystem]().Find(m.StateMachine(), uint32(m.Wz.ReturnMapId))
+	targetMap := ch.gameWorld.Systems().Get[*MapSystem]().Find(m.StateMachine(), uint32(m.wz.ReturnMapId))
 	if targetMap == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return fmt.Errorf("return map %d not found", m.Wz.ReturnMapId)
+		ch.listener.OnUpdateStats(ch, nil, true)
+		return fmt.Errorf("return map %d not found", m.wz.ReturnMapId)
 	}
 
 	ch.SetHp(50, false)
-	ch.Stance = constant.StanceDefaultValue
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.stance = constant.StanceDefaultValue
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHP: int32(ch.GetHp()),
 	}, true)
-	if ch.StateMachine != nil {
-		ch.StateMachine.CallHook("on_player_revive", ch)
+	if ch.stateMachine != nil {
+		ch.stateMachine.CallHook("on_player_revive", ch)
 	}
 	return ch.Warp(ctx, targetMap, 0)
 }
@@ -582,27 +584,27 @@ func (ch *Character) Relocate(spawnPoint uint8) error {
 	if m == nil {
 		return fmt.Errorf("not on a map")
 	}
-	if m.Wz == nil {
+	if m.wz == nil {
 		return fmt.Errorf("map model not found")
 	}
-	pos, ok := m.Wz.GetSpawnPosition(spawnPoint)
+	pos, ok := m.wz.GetSpawnPosition(spawnPoint)
 	if !ok {
 		return fmt.Errorf("invalid spawn point %d", spawnPoint)
 	}
-	ch.Stance = constant.StanceDefaultValue
+	ch.stance = constant.StanceDefaultValue
 	beforePosition := ch.moveTo(m, pos)
-	if ch.Listener != nil {
-		ch.Listener.OnFieldRelocate(ch, spawnPoint)
-		ch.Listener.OnPlayerMove(ch, beforePosition, []dto.MoveFragment{
+	if ch.listener != nil {
+		ch.listener.OnFieldRelocate(ch, spawnPoint)
+		ch.listener.OnPlayerMove(ch, beforePosition, []dto.MoveFragment{
 			&dto.TeleportMovement{
 				BasicMovement: &dto.BasicMovement{
 					Command: 3,
-					Stance:  ch.Stance,
+					Stance:  ch.stance,
 				},
-				Position: ch.Position,
+				Position: ch.position,
 			},
 		})
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 	}
 	return nil
 }
@@ -613,10 +615,10 @@ func (ch *Character) EnterInnerPortal(portalName string, to types.Vector2[int16]
 		return fmt.Errorf("not on a map")
 	}
 	portal := m.FindPortalByName(portalName)
-	if portal == nil || portal.Wz == nil {
+	if portal == nil || portal.wz == nil {
 		return fmt.Errorf("portal %q not found", portalName)
 	}
-	if portal.Wz.Position.DistanceSq(ch.Position) > 22500 && !ch.HasRoleAtLeast(constant.RoleAdmin) {
+	if portal.wz.Position.DistanceSq(ch.position) > 22500 && !ch.HasRoleAtLeast(constant.RoleAdmin) {
 		return fmt.Errorf("portal %q is too far", portalName)
 	}
 	ch.moveTo(m, to)
@@ -624,14 +626,14 @@ func (ch *Character) EnterInnerPortal(portalName string, to types.Vector2[int16]
 }
 
 func (ch *Character) moveTo(m *Map, pos types.Vector2[int16]) types.Vector2[int16] {
-	before := ch.Position
-	ch.Position = pos
-	for _, summon := range ch.Summons.All() {
-		if summon == nil || summon.Owner != ch {
+	before := ch.position
+	ch.position = pos
+	for _, summon := range ch.summons.All() {
+		if summon == nil || summon.owner != ch {
 			continue
 		}
-		summonBefore := summon.Position
-		summon.Position = pos
+		summonBefore := summon.position
+		summon.position = pos
 		m.OnMoved(summon, summonBefore)
 	}
 	m.OnMoved(ch, before)
@@ -639,22 +641,22 @@ func (ch *Character) moveTo(m *Map, pos types.Vector2[int16]) types.Vector2[int1
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
-	if ch.Sendable == nil {
+	if ch.sendable == nil {
 		return nil
 	}
-	return ch.Sendable.Send(p, policy)
+	return ch.sendable.Send(p, policy)
 }
 
 func (ch *Character) IsHidden() bool {
-	return ch.GM.Hidden
+	return ch.gm.hidden
 }
 
 func (ch *Character) SetHidden(hidden bool) {
-	if ch.GM.Hidden == hidden {
+	if ch.gm.hidden == hidden {
 		return
 	}
-	ch.GM.Hidden = hidden
-	ch.Listener.OnHiddenChanged(ch, hidden)
+	ch.gm.hidden = hidden
+	ch.listener.OnHiddenChanged(ch, hidden)
 }
 
 func (ch *Character) GetID() uint32 {
@@ -675,7 +677,7 @@ func (ch *Character) LoggedOut() bool {
 // Post runs fn on the actor that owns the character now. It skips fn once the character has left the channel or
 // logged in again; unsettled requests are settled after that login.
 func (ch *Character) Post(fn func(actx actor.Context)) {
-	ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actx actor.Context, current *Character) {
+	ch.gameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actx actor.Context, current *Character) {
 		if current != ch {
 			return
 		}
@@ -688,7 +690,7 @@ func (ch *Character) GetPK() uint32 {
 }
 
 func (ch *Character) GetRole() constant.CharacterRole {
-	return ch.Role
+	return ch.role
 }
 
 func (ch *Character) GetName() string {
@@ -696,29 +698,29 @@ func (ch *Character) GetName() string {
 }
 
 func (ch *Character) Message(message string) {
-	ch.Listener.OnMessage(ch, constant.MsgLightBlueText, message)
+	ch.listener.OnMessage(ch, constant.MsgLightBlueText, message)
 }
 
 func (ch *Character) HasRoleAtLeast(role constant.CharacterRole) bool {
-	return ch.Role >= role
+	return ch.role >= role
 }
 
 func (inv *Inventory) SetMeso(meso int32) {
 	if meso < 0 {
-		inv.Meso = 0
+		inv.meso = 0
 		return
 	}
-	inv.Meso = meso
+	inv.meso = meso
 }
 
 func (ch *Character) remainingExpToMaxLevel() uint32 {
 	if ch == nil || ch.level >= 200 {
 		return 0
 	}
-	if ch.GameWorld == nil {
+	if ch.gameWorld == nil {
 		return ^uint32(0)
 	}
-	resources := ch.GameWorld.GetResources()
+	resources := ch.gameWorld.GetResources()
 	if resources == nil {
 		return ^uint32(0)
 	}
@@ -753,12 +755,12 @@ func (ch *Character) addExpUnchecked(exp uint32) {
 	if exp == 0 {
 		return
 	}
-	ch.Family.gainProgress(exp)
+	ch.family.gainProgress(exp)
 	ch.exp += exp
-	ch.Listener.OnExpGain(ch, exp)
+	ch.listener.OnExpGain(ch, exp)
 
 	if !ch.tryLevelUp() {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatEXP: int32(ch.exp),
 		}, false)
 	}
@@ -779,14 +781,14 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 	}
 
 	exp := raw
-	if rate := max(ch.Stats.Bonus.ExpRate, int16(ch.Family.ExpRate())); rate > 0 {
+	if rate := max(ch.stats.bonus.expRate, int16(ch.family.ExpRate())); rate > 0 {
 		exp = mulClamp(exp, uint32(rate)) / 100
 	}
-	exp = mulClamp(exp, uint32(ch.Buffs.HolySymbolExpRate())) / 100
-	if ch.Debuffs.Has(constant.DebuffFlagCurse) {
+	exp = mulClamp(exp, uint32(ch.buffs.HolySymbolExpRate())) / 100
+	if ch.debuffs.Has(constant.DebuffFlagCurse) {
 		exp /= 2
 	}
-	if gw := ch.GameWorld; gw != nil {
+	if gw := ch.gameWorld; gw != nil {
 		if r := gw.GetExpRate(); r > 0 {
 			exp = mulClamp(exp, uint32(r))
 		}
@@ -795,11 +797,11 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 }
 
 func (ch *Character) tryLevelUp() bool {
-	if ch.GameWorld == nil {
+	if ch.gameWorld == nil {
 		return false
 	}
 
-	resources := ch.GameWorld.GetResources()
+	resources := ch.gameWorld.GetResources()
 	if resources == nil {
 		return false
 	}
@@ -855,14 +857,14 @@ func (ch *Character) tryLevelUp() bool {
 			constant.StatMaxMP:       int32(ch.GetMaxMp()),
 			constant.StatHP:          int32(ch.GetHp()),
 			constant.StatMP:          int32(ch.GetMp()),
-			constant.StatAvailableAP: int32(ch.Points.AP),
-			constant.StatAvailableSP: int32(ch.Points.SP),
+			constant.StatAvailableAP: int32(ch.points.ap),
+			constant.StatAvailableSP: int32(ch.points.sp),
 		}
-		ch.Listener.OnUpdateStats(ch, stats, false)
+		ch.listener.OnUpdateStats(ch, stats, false)
 		for i := 0; i < levelDiff; i++ {
 			ch.broadcastLevelUpEffect()
 		}
-		ch.Quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
+		ch.quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
 	}
 	return true
 }
@@ -881,10 +883,10 @@ func (ch *Character) SetLevel(newLevel uint8) {
 
 	oldLevel := ch.level
 	ch.level = newLevel
-	ch.Listener.OnPartyMemberFieldsChanged(ch)
+	ch.listener.OnPartyMemberFieldsChanged(ch)
 	if newLevel < oldLevel {
-		if ch.GameWorld != nil {
-			resources := ch.GameWorld.GetResources()
+		if ch.gameWorld != nil {
+			resources := ch.gameWorld.GetResources()
 			if resources != nil {
 				if newLevel > 1 {
 					ch.exp = resources.GetExpNeededForLevel(newLevel - 1)
@@ -895,7 +897,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 		}
 	}
 
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatLevel: int32(ch.level),
 		constant.StatEXP:   int32(ch.exp),
 	}, false)

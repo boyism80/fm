@@ -9,7 +9,7 @@ import (
 )
 
 func (inv *Inventory) Make(typ uint32, itemID uint32, catalyst bool, enhancers []uint32, slot int16) {
-	if inv.owner.GetHp() == 0 || inv.owner.GameWorld == nil {
+	if inv.owner.GetHp() == 0 || inv.owner.gameWorld == nil {
 		return
 	}
 	switch typ {
@@ -23,12 +23,12 @@ func (inv *Inventory) Make(typ uint32, itemID uint32, catalyst bool, enhancers [
 }
 
 func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32) {
-	resources := inv.owner.GameWorld.GetResources()
+	resources := inv.owner.gameWorld.GetResources()
 	recipe := resources.ItemMake[itemID]
-	if recipe == nil || int(inv.owner.GetLevel()) < recipe.RequiredLevel || inv.owner.Skills.makerLevel() < recipe.RequiredSkillLevel {
+	if recipe == nil || int(inv.owner.GetLevel()) < recipe.RequiredLevel || inv.owner.skills.makerLevel() < recipe.RequiredSkillLevel {
 		return
 	}
-	if recipe.Classes != nil && !slices.ContainsFunc(recipe.Classes, inv.owner.Class.Of) {
+	if recipe.Classes != nil && !slices.ContainsFunc(recipe.Classes, inv.owner.class.Of) {
 		return
 	}
 	if recipe.RequiredItem != 0 && !inv.HasItem(recipe.RequiredItem) {
@@ -36,7 +36,7 @@ func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32)
 	}
 	if recipe.RequiredEquip != 0 {
 		owned := inv.HasItem(recipe.RequiredEquip)
-		for _, equipment := range inv.Equipped {
+		for _, equipment := range inv.equipped {
 			if equipment.GetModel().GetID() == recipe.RequiredEquip {
 				owned = true
 			}
@@ -110,7 +110,7 @@ func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32)
 
 	var made Item
 	if !destroyed {
-		item, err := NewItem(rewardID, rewardCount, inv.owner.GameWorld)
+		item, err := NewItem(rewardID, rewardCount, inv.owner.gameWorld)
 		if err != nil {
 			return
 		}
@@ -129,11 +129,11 @@ func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32)
 
 	inv.owner.payExchangeCost(spec.Cost)
 	if made == nil {
-		inv.owner.Listener.OnItemMakerDestroyed(inv.owner)
+		inv.owner.listener.OnItemMakerDestroyed(inv.owner)
 		return
 	}
 	inv.addItemUnchecked(made, true)
-	inv.owner.Listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
+	inv.owner.listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
 }
 
 func (inv *Inventory) makeCrystal(itemID uint32) {
@@ -152,7 +152,7 @@ func (inv *Inventory) makeCrystal(itemID uint32) {
 	if inv.owner.Exchange(spec) != ExchangeOK {
 		return
 	}
-	inv.owner.Listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
+	inv.owner.listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
 }
 
 func (inv *Inventory) disassemble(slot int16, itemID uint32) {
@@ -170,7 +170,7 @@ func (inv *Inventory) disassemble(slot int16, itemID uint32) {
 		return
 	}
 
-	quality := equipment.GetEquipmentCore().BonusStats.quality()
+	quality := equipment.GetEquipmentCore().bonusStats.quality()
 	count := 3 + rand.Intn(5)
 	if model.GetEquipmentType() == constant.EquipmentTypeWeapon || model.GetEquipmentType() == constant.EquipmentTypeLongcoat {
 		count = 5 + rand.Intn(7)
@@ -207,7 +207,7 @@ func (inv *Inventory) disassemble(slot int16, itemID uint32) {
 	}
 	inv.owner.payExchangeCost(spec.Cost)
 	inv.owner.grantExchangeReward(spec.Reward)
-	inv.owner.Listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
+	inv.owner.listener.OnShowSelfItemMakerSuccessEffect(inv.owner)
 }
 
 func (inv *Inventory) makerCrystalID(level int) uint32 {

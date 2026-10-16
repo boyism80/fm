@@ -19,7 +19,7 @@ const (
 
 type PersonalShop struct {
 	shopRoom
-	MaxItems uint8
+	maxItems uint8
 	banned   map[string]struct{}
 }
 
@@ -34,9 +34,9 @@ func (ps *PersonalShop) Is(typ constant.ObjectType) bool {
 func (ps *PersonalShop) balloon() response.MiniRoomBalloon {
 	return response.MiniRoomBalloon{
 		Type:     pconst.MiniRoomTypePersonalShop,
-		SN:       ps.OID,
-		Title:    ps.Title,
-		Spec:     uint8(ps.ItemID % 10),
+		SN:       ps.oid,
+		Title:    ps.title,
+		Spec:     uint8(ps.itemID % 10),
 		Users:    ps.users(),
 		MaxUsers: pconst.MiniRoomShopUsers,
 	}
@@ -47,11 +47,11 @@ func (ps *PersonalShop) updateBalloon() {
 		return
 	}
 	balloon := ps.balloon()
-	ps.owner.Listener.OnMiniRoomBalloon(ps.owner, &balloon)
+	ps.owner.listener.OnMiniRoomBalloon(ps.owner, &balloon)
 }
 
 func (ps *PersonalShop) Visit(ch *Character) error {
-	if ch.MiniRoom != nil {
+	if ch.miniRoom != nil {
 		return ErrMiniRoomInvalid
 	}
 	if !ps.published {
@@ -67,12 +67,12 @@ func (ps *PersonalShop) Visit(ch *Character) error {
 
 	slot := uint8(index + 1)
 	for _, member := range ps.Members() {
-		member.Listener.OnMiniRoomVisited(member, slot, ch)
+		member.listener.OnMiniRoomVisited(member, slot, ch)
 	}
-	ps.Visitors[index] = ch
-	ch.MiniRoom = ps
+	ps.visitors[index] = ch
+	ch.miniRoom = ps
 	ps.updateBalloon()
-	ch.Listener.OnPersonalShopEntered(ch, ps)
+	ch.listener.OnPersonalShopEntered(ch, ps)
 	return nil
 }
 
@@ -86,10 +86,10 @@ func (ps *PersonalShop) Leave(ch *Character) {
 		return
 	}
 
-	ch.MiniRoom = nil
-	ps.Visitors[slot-1] = nil
+	ch.miniRoom = nil
+	ps.visitors[slot-1] = nil
 	for _, member := range ps.Members() {
-		member.Listener.OnMiniRoomLeft(member, slot, pconst.MiniRoomLeaveExit)
+		member.listener.OnMiniRoomLeft(member, slot, pconst.MiniRoomLeaveExit)
 	}
 	ps.updateBalloon()
 }
@@ -101,14 +101,14 @@ func (ps *PersonalShop) AddItem(actx actor.Context, ch *Character, invType const
 	if ps.published {
 		return ErrMiniRoomInvalid
 	}
-	if len(ps.Items) >= int(ps.MaxItems) {
+	if len(ps.items) >= int(ps.maxItems) {
 		return ErrMiniRoomFull
 	}
 
 	if err := ps.list(ch, invType, slot, bundles, perBundle, price); err != nil {
 		return err
 	}
-	ch.Listener.OnPersonalShopItems(ch, ps)
+	ch.listener.OnPersonalShopItems(ch, ps)
 	ps.save(actx, false, ch)
 	return nil
 }
@@ -121,10 +121,10 @@ func (ps *PersonalShop) RemoveItem(actx actor.Context, ch *Character, index uint
 	if err := ps.unlist(ch, index); err != nil {
 		return err
 	}
-	ch.Listener.OnMiniRoomItemRemoved(ch, uint8(len(ps.Items)), index)
-	for _, visitor := range ps.Visitors {
+	ch.listener.OnMiniRoomItemRemoved(ch, uint8(len(ps.items)), index)
+	for _, visitor := range ps.visitors {
 		if visitor != nil {
-			visitor.Listener.OnPersonalShopItems(visitor, ps)
+			visitor.listener.OnPersonalShopItems(visitor, ps)
 		}
 	}
 	ps.save(actx, false, ch)
@@ -135,7 +135,7 @@ func (ps *PersonalShop) Open(actx actor.Context, ch *Character) error {
 	if ps.owner != ch || ps.published {
 		return ErrMiniRoomNotOwner
 	}
-	if len(ps.Items) == 0 {
+	if len(ps.items) == 0 {
 		return ErrMiniRoomInvalid
 	}
 
@@ -152,23 +152,23 @@ func (ps *PersonalShop) Buy(actx actor.Context, ch *Character, index uint16, bun
 	}
 
 	owner := ps.owner
-	_, _, income, err := ps.sell(ch, index, bundles, owner.Inventory.Meso)
+	_, _, income, err := ps.sell(ch, index, bundles, owner.inventory.meso)
 	if err != nil {
 		return err
 	}
-	owner.Inventory.addMesoUnchecked(income)
+	owner.inventory.addMesoUnchecked(income)
 	for _, member := range ps.Members() {
-		member.Listener.OnPersonalShopItems(member, ps)
+		member.listener.OnPersonalShopItems(member, ps)
 	}
-	owner.Listener.OnMiniRoomSold(owner, uint8(index), bundles, ch.GetName())
+	owner.listener.OnMiniRoomSold(owner, uint8(index), bundles, ch.GetName())
 	ps.save(actx, false, ch, owner)
 
-	for _, listed := range ps.Items {
-		if listed.Bundles > 0 {
+	for _, listed := range ps.items {
+		if listed.bundles > 0 {
 			return nil
 		}
 	}
-	owner.Listener.OnMiniRoomLeft(owner, 0, pconst.MiniRoomLeaveSoldOut)
+	owner.listener.OnMiniRoomLeft(owner, 0, pconst.MiniRoomLeaveSoldOut)
 	ps.close(pconst.MiniRoomLeaveSoldOut)
 	return nil
 }
@@ -180,17 +180,17 @@ func (ps *PersonalShop) Kick(ch *Character, slot uint8, name string, reason pcon
 	if slot == 0 || int(slot) > ShopVisitors {
 		return ErrMiniRoomInvalid
 	}
-	visitor := ps.Visitors[slot-1]
+	visitor := ps.visitors[slot-1]
 	if visitor == nil || visitor.GetName() != name {
 		return ErrMiniRoomInvalid
 	}
 
-	ps.Visitors[slot-1] = nil
-	visitor.MiniRoom = nil
+	ps.visitors[slot-1] = nil
+	visitor.miniRoom = nil
 	ps.banned[name] = struct{}{}
-	visitor.Listener.OnMiniRoomLeft(visitor, slot, reason)
+	visitor.listener.OnMiniRoomLeft(visitor, slot, reason)
 	for _, member := range ps.Members() {
-		member.Listener.OnMiniRoomLeft(member, slot, pconst.MiniRoomLeaveExit)
+		member.listener.OnMiniRoomLeft(member, slot, pconst.MiniRoomLeaveExit)
 	}
 	ps.updateBalloon()
 	return nil
@@ -208,62 +208,62 @@ func (ps *PersonalShop) Ban(ch *Character, names []string) error {
 }
 
 func (ps *PersonalShop) returnItems(ch *Character) {
-	items := ps.Items[:0]
-	for _, listed := range ps.Items {
-		if listed.Bundles == 0 {
+	items := ps.items[:0]
+	for _, listed := range ps.items {
+		if listed.bundles == 0 {
 			continue
 		}
-		model := listed.Item.GetModel()
+		model := listed.item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if ch.Inventory.hasOnlyItem(model) || spec.Valid(ch) != ExchangeOK {
+		if ch.inventory.hasOnlyItem(model) || spec.Valid(ch) != ExchangeOK {
 			items = append(items, listed)
 			continue
 		}
-		ch.Inventory.addItemUnchecked(listed.Item.Clone(listed.count()), true)
+		ch.inventory.addItemUnchecked(listed.item.Clone(listed.count()), true)
 	}
-	ps.Items = items
+	ps.items = items
 }
 
 func (ps *PersonalShop) close(reason pconst.MiniRoomLeaveReason) {
-	m := ps.Map
+	m := ps.onMap
 	if m == nil {
 		return
 	}
 
-	for i, visitor := range ps.Visitors {
+	for i, visitor := range ps.visitors {
 		if visitor == nil {
 			continue
 		}
-		ps.Visitors[i] = nil
-		visitor.MiniRoom = nil
-		visitor.Listener.OnMiniRoomLeft(visitor, uint8(i+1), reason)
+		ps.visitors[i] = nil
+		visitor.miniRoom = nil
+		visitor.listener.OnMiniRoomLeft(visitor, uint8(i+1), reason)
 	}
 	owner := ps.owner
 	ps.returnItems(owner)
 	ps.owner = nil
-	owner.MiniRoom = nil
+	owner.miniRoom = nil
 	if ps.published {
-		owner.Listener.OnMiniRoomBalloon(owner, nil)
+		owner.listener.OnMiniRoomBalloon(owner, nil)
 	}
-	ps.entries[owner.GetID()] = owner.BuildRPC(ps.GameWorld.GetWorldID())
+	ps.entries[owner.GetID()] = owner.BuildRPC(ps.gameWorld.GetWorldID())
 	m.RemovePersonalShop(ps)
-	ps.GameWorld.Systems().Get[*MapSystem]().Visit(m, func(ctx actor.Context) {
+	ps.gameWorld.Systems().Get[*MapSystem]().Visit(m, func(ctx actor.Context) {
 		ps.save(ctx, true)
 	})
 }
 
 func NewPersonalShop(owner *Character, title string, slot int16, itemID uint32) (*PersonalShop, error) {
 	m := owner.GetMap()
-	if m == nil || owner.MiniRoom != nil {
+	if m == nil || owner.miniRoom != nil {
 		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
-	if !m.Wz.PersonalShop {
+	if !m.wz.PersonalShop {
 		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterFreeMarket}
 	}
-	if owner.Unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID)) != nil {
+	if owner.unsettled.FindByTarget(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.accountID)) != nil {
 		return nil, ErrMiniRoomBusy
 	}
-	permit := owner.Inventory.GetItem(constant.InventoryTypeCash, slot)
+	permit := owner.inventory.GetItem(constant.InventoryTypeCash, slot)
 	if permit == nil || permit.GetModel().GetID() != itemID || permit.GetModel().GetTraits()&constant.ItemTraitPersonalShopPermit == 0 {
 		return nil, ErrMiniRoomInvalid
 	}
@@ -273,7 +273,7 @@ func NewPersonalShop(owner *Character, title string, slot int16, itemID uint32) 
 	if title == "" {
 		return nil, ErrMiniRoomInvalid
 	}
-	if err := m.checkShopSpot(owner.Position); err != nil {
+	if err := m.checkShopSpot(owner.position); err != nil {
 		return nil, err
 	}
 
@@ -284,50 +284,50 @@ func NewPersonalShop(owner *Character, title string, slot int16, itemID uint32) 
 	ps := &PersonalShop{
 		shopRoom: shopRoom{
 			kind:      pconst.MiniRoomTypePersonalShop,
-			AccountID: owner.AccountID,
-			OwnerID:   owner.GetID(),
-			OwnerName: owner.GetName(),
-			MapID:     m.TemplateID(),
-			ItemID:    itemID,
-			Title:     title,
-			OpenedAt:  clock.Now(),
+			accountID: owner.accountID,
+			ownerID:   owner.GetID(),
+			ownerName: owner.GetName(),
+			mapID:     m.TemplateID(),
+			itemID:    itemID,
+			title:     title,
+			openedAt:  clock.Now(),
 			entries:   make(map[uint32]*internal.CharacterSaveEntry),
 		},
-		MaxItems: maxItems,
+		maxItems: maxItems,
 		banned:   make(map[string]struct{}),
 	}
-	ps.ObjectCore.self = ps
-	ps.Position = owner.Position
-	ps.GameWorld = owner.GameWorld
+	ps.objectCore.self = ps
+	ps.position = owner.position
+	ps.gameWorld = owner.gameWorld
 	ps.home = m
 	return ps, nil
 }
 
 func (ps *PersonalShop) Place(actx actor.Context, owner *Character) {
-	id := owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID), nil)
-	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, ps.BuildRPC()).Bind(owner).Do(func(v *internal.OpenShopReply) error {
-		owner.Unsettled.Erase(id)
+	id := owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.accountID), nil)
+	owner.gameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, ps.BuildRPC()).Bind(owner).Do(func(v *internal.OpenShopReply) error {
+		owner.unsettled.Erase(id)
 		if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
-			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+			owner.listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
 			return nil
 		}
 
-		ps.ID = v.GetShopId()
-		if owner.GetMap() != ps.home || owner.MiniRoom != nil || ps.home.checkShopSpot(ps.Position) != nil {
+		ps.id = v.GetShopId()
+		if owner.GetMap() != ps.home || owner.miniRoom != nil || ps.home.checkShopSpot(ps.position) != nil {
 			ps.save(actx, true)
-			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+			owner.listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
 			return nil
 		}
 		ps.home.AddPersonalShop(ps)
 		ps.owner = owner
-		owner.MiniRoom = ps
-		owner.Listener.OnPersonalShopEntered(owner, ps)
+		owner.miniRoom = ps
+		owner.listener.OnPersonalShopEntered(owner, ps)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("PersonalShop.Place character=%d: %v", owner.GetID(), err)
-		owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
-		if request := owner.Unsettled.Find(id); request != nil {
-			owner.StoreBank.settleShopOpen(actx, request)
+		owner.listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+		if request := owner.unsettled.Find(id); request != nil {
+			owner.storeBank.settleShopOpen(actx, request)
 		}
 
 	})

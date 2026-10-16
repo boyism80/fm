@@ -37,7 +37,7 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		character.SitOnMapSeat(req.ChairID)
 	}
 
-	character.Listener.OnUpdateStats(character, nil, true)
+	character.Listener().OnUpdateStats(character, nil, true)
 
 	return nil
 }

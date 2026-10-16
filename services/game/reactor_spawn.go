@@ -7,20 +7,20 @@ import (
 )
 
 type ReactorSpawn struct {
-	ID           uint32
-	Wz           *wz.ReactorSpawn
-	Template     *wz.Reactor
-	State        byte
-	Spawned      bool
-	ActiveOID    uint32
+	id           uint32
+	wz           *wz.ReactorSpawn
+	template     *wz.Reactor
+	state        byte
+	spawned      bool
+	activeOID    uint32
 	respawnTimer *time.Timer
 }
 
 func (rs *ReactorSpawn) RespawnDelay() time.Duration {
-	if rs == nil || rs.Wz == nil {
+	if rs == nil || rs.wz == nil {
 		return 0
 	}
-	return rs.Wz.RespawnDelay
+	return rs.wz.RespawnDelay
 }
 
 func (rs *ReactorSpawn) CancelRespawnTimer() {
@@ -44,12 +44,12 @@ func (rs *ReactorSpawn) ScheduleRespawn(mapInstance *Map) {
 	rs.CancelRespawnTimer()
 
 	pid := mapInstance.LogicActorPID()
-	if pid == nil || mapInstance.GameWorld == nil {
+	if pid == nil || mapInstance.gameWorld == nil {
 		return
 	}
 
-	spawnID := rs.ID
-	gameWorld := mapInstance.GameWorld
+	spawnID := rs.id
+	gameWorld := mapInstance.gameWorld
 	rs.respawnTimer = time.AfterFunc(delay, func() {
 		if gameWorld != nil {
 			gameWorld.Systems().Get[*SchedulerSystem]().RunReactorRespawn(pid, mapInstance.GetMapID(), spawnID)

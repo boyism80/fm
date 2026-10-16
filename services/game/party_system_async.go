@@ -15,28 +15,28 @@ func (s *PartySystem) UpdateMemberAsync(ctx actor.Context, ch *Character) *async
 	if ch == nil {
 		return p
 	}
-	if ch.Party.ID() == nil {
+	if ch.party.ID() == nil {
 		return p
 	}
-	mm := PartyMemberFromCharacter(ch, uint32(s.gw.GetWorldID()), s.gw.GetChannelID(), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER).BuildRPC()
-	if mm == nil {
+	member := PartyMemberFromCharacter(ch, uint32(s.gw.GetWorldID()), s.gw.GetChannelID(), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
+	if member == nil {
 		return p
 	}
-	req := &internal.UpdatePartyMemberRequest{Member: mm}
 
 	s.mu.Lock()
 	if _, sending := s.memberUpdates[ch.GetID()]; sending {
-		s.memberUpdates[ch.GetID()] = req
+		s.memberUpdates[ch.GetID()] = member
 		s.mu.Unlock()
 		return p
 	}
 	s.memberUpdates[ch.GetID()] = nil
 	s.mu.Unlock()
-	return s.sendMemberUpdate(p, req)
+	return s.sendMemberUpdate(p, member)
 }
 
-func (s *PartySystem) sendMemberUpdate(p *async.Task, req *internal.UpdatePartyMemberRequest) *async.Task {
-	cid := req.Member.GetCharacterId()
+func (s *PartySystem) sendMemberUpdate(p *async.Task, member *PartyMember) *async.Task {
+	cid := member.GetCharacterId()
+	req := &internal.UpdatePartyMemberRequest{Member: member.BuildRPC()}
 	p.OnError(func(err error) {
 		log.Printf("UpdatePartyMember async char %d: %v", cid, err)
 	})

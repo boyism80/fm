@@ -36,7 +36,7 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 	if character == nil {
 		return fmt.Errorf("deny party request: character not found")
 	}
-	if pid := character.Party.ID(); pid != nil {
+	if pid := character.Party().ID(); pid != nil {
 		return nil
 	}
 

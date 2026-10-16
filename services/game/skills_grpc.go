@@ -9,7 +9,7 @@ func (sc *Skills) Load(skills []*internal.Skill) {
 		if pb == nil {
 			continue
 		}
-		entry, err := NewSkillEntryFromInternalProto(sc.owner, pb, sc.owner.GameWorld)
+		entry, err := NewSkillEntryFromInternalProto(sc.owner, pb, sc.owner.gameWorld)
 		if err != nil {
 			continue
 		}

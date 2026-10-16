@@ -10,9 +10,9 @@ import (
 func NewStorageFromInternalProto(pb *internal.Storage, owner *Character) *Storage {
 	storage := &Storage{
 		owner: owner,
-		Slots: uint8(pb.GetSlots()),
-		Meso:  pb.GetMeso(),
-		Tabs:  map[constant.InventoryType][]Item{},
+		slots: uint8(pb.GetSlots()),
+		meso:  pb.GetMeso(),
+		tabs:  map[constant.InventoryType][]Item{},
 	}
 
 	items := append([]*internal.Inventory(nil), pb.GetItems()...)
@@ -23,25 +23,25 @@ func NewStorageFromInternalProto(pb *internal.Storage, owner *Character) *Storag
 		return items[i].GetSlot() < items[j].GetSlot()
 	})
 	for _, itemPB := range items {
-		item, err := NewItemFromInternalProto(itemPB, owner.GameWorld)
+		item, err := NewItemFromInternalProto(itemPB, owner.gameWorld)
 		if err != nil {
 			continue
 		}
-		storage.Tabs[item.GetInventoryType()] = append(storage.Tabs[item.GetInventoryType()], item)
+		storage.tabs[item.GetInventoryType()] = append(storage.tabs[item.GetInventoryType()], item)
 	}
 	return storage
 }
 
 func (s *Storage) BuildRPC(worldID uint32) *internal.Storage {
 	pb := &internal.Storage{
-		AccountId: s.owner.AccountID,
+		AccountId: s.owner.accountID,
 		WorldId:   worldID,
-		Slots:     uint32(s.Slots),
-		Meso:      s.Meso,
+		Slots:     uint32(s.slots),
+		Meso:      s.meso,
 	}
-	for _, items := range s.Tabs {
+	for _, items := range s.tabs {
 		for index, item := range items {
-			pb.Items = append(pb.Items, item.BuildRPC(s.owner.AccountID, int32(index)))
+			pb.Items = append(pb.Items, item.BuildRPC(s.owner.accountID, int32(index)))
 		}
 	}
 	return pb

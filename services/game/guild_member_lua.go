@@ -19,7 +19,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(mm.CharacterID))
+			L.Push(lua.LNumber(mm.characterID))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
@@ -33,7 +33,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "name() is read-only")
 				return 0
 			}
-			L.Push(lua.LString(mm.CharacterName))
+			L.Push(lua.LString(mm.characterName))
 			return 1
 		},
 		"level": func(L *lua.LState) int {
@@ -47,7 +47,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "level() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(mm.Level))
+			L.Push(lua.LNumber(mm.level))
 			return 1
 		},
 		"class_id": func(L *lua.LState) int {
@@ -61,7 +61,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "class_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(mm.ClassID))
+			L.Push(lua.LNumber(mm.classID))
 			return 1
 		},
 		"rank": func(L *lua.LState) int {
@@ -75,7 +75,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "rank() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(guildRankToUint32(mm.Rank)))
+			L.Push(lua.LNumber(guildRankToUint32(mm.rank)))
 			return 1
 		},
 		"channel_index": func(L *lua.LState) int {
@@ -89,11 +89,11 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "channel_index() is read-only")
 				return 0
 			}
-			if mm.ChannelIndex == nil {
+			if mm.channelIndex == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(lua.LNumber(*mm.ChannelIndex))
+			L.Push(lua.LNumber(*mm.channelIndex))
 			return 1
 		},
 	}

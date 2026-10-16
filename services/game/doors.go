@@ -28,11 +28,11 @@ func NewDoors(owner *Character) *Doors {
 
 func (dc *Doors) Spawn(buff *SkillBuff) {
 	m := dc.owner.GetMap()
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return
 	}
 
-	skillID := constant.SkillID(buff.Wz.ID)
+	skillID := constant.SkillID(buff.wz.ID)
 	if cast := dc.casts[skillID]; cast != nil {
 		dc.despawn(skillID, cast, true)
 	}
@@ -46,7 +46,7 @@ func (dc *Doors) Spawn(buff *SkillBuff) {
 		key:  DoorKey(fmt.Sprintf("%d:%d", dc.owner.GetID(), dc.sequence)),
 	}
 	dc.casts[skillID] = cast
-	cast.town = dc.owner.GameWorld.Systems().Get[*MapSystem]().CreateReturnDoor(dc.owner, cast.key, skillID)
+	cast.town = dc.owner.gameWorld.Systems().Get[*MapSystem]().CreateReturnDoor(dc.owner, cast.key, skillID)
 }
 
 func (dc *Doors) SpawnField(key DoorKey, skillID constant.SkillID, returnEp, fieldEp DoorEndpoint) *Door {
@@ -55,7 +55,7 @@ func (dc *Doors) SpawnField(key DoorKey, skillID constant.SkillID, returnEp, fie
 		return nil
 	}
 	m := dc.owner.GetMap()
-	if m == nil || m.Wz == nil || m != fieldEp.Map {
+	if m == nil || m.wz == nil || m != fieldEp.Map {
 		return nil
 	}
 	ref, err := m.Reserve()
@@ -63,16 +63,16 @@ func (dc *Doors) SpawnField(key DoorKey, skillID constant.SkillID, returnEp, fie
 		return nil
 	}
 
-	door := NewDoor(key, dc.owner.GetID(), skillID, fieldEp, returnEp, dc.owner.Party.id)
+	door := NewDoor(key, dc.owner.GetID(), skillID, fieldEp, returnEp, dc.owner.party.id)
 	door.fieldRef = ref
 	cast.door = door
 	m.AddDoor(door)
-	dc.owner.Listener.OnPartyMemberFieldsChanged(dc.owner)
+	dc.owner.listener.OnPartyMemberFieldsChanged(dc.owner)
 	return door
 }
 
 func (dc *Doors) Remove(buff *SkillBuff, animated bool) {
-	skillID := constant.SkillID(buff.Wz.ID)
+	skillID := constant.SkillID(buff.wz.ID)
 	cast := dc.casts[skillID]
 	if cast == nil || cast.buff != buff {
 		return
@@ -82,21 +82,21 @@ func (dc *Doors) Remove(buff *SkillBuff, animated bool) {
 
 func (dc *Doors) despawn(skillID constant.SkillID, cast *doorCast, animated bool) {
 	delete(dc.casts, skillID)
-	dc.owner.GameWorld.Systems().Get[*MapSystem]().DespawnDoor(cast.town, cast.key, animated, false)
+	dc.owner.gameWorld.Systems().Get[*MapSystem]().DespawnDoor(cast.town, cast.key, animated, false)
 	if cast.door == nil {
 		return
 	}
 
-	dc.owner.GameWorld.Systems().Get[*MapSystem]().DespawnDoor(cast.door.Field.Map, cast.key, animated, false)
-	dc.owner.Listener.OnPartyMemberFieldsChanged(dc.owner)
+	dc.owner.gameWorld.Systems().Get[*MapSystem]().DespawnDoor(cast.door.field.Map, cast.key, animated, false)
+	dc.owner.listener.OnPartyMemberFieldsChanged(dc.owner)
 }
 
 func (dc *Doors) forget(door *Door) {
-	cast := dc.casts[door.SkillID]
+	cast := dc.casts[door.skillID]
 	if cast == nil || cast.door != door {
 		return
 	}
-	delete(dc.casts, door.SkillID)
+	delete(dc.casts, door.skillID)
 }
 
 func (dc *Doors) Find(skillID constant.SkillID) *Door {
@@ -110,8 +110,8 @@ func (dc *Doors) Find(skillID constant.SkillID) *Door {
 func (dc *Doors) SetPartyID(partyID *uint32) {
 	for _, cast := range dc.casts {
 		if cast.door != nil {
-			cast.door.PartyID = partyID
+			cast.door.partyID = partyID
 		}
-		dc.owner.GameWorld.Systems().Get[*MapSystem]().SetDoorPartyID(cast.town, cast.key, partyID)
+		dc.owner.gameWorld.Systems().Get[*MapSystem]().SetDoorPartyID(cast.town, cast.key, partyID)
 	}
 }

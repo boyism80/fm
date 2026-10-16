@@ -885,11 +885,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		return 1
 	})
 	luax.RegisterFunc(luaState, "set_megaphone_muted", func(L *lua.LState) int {
-		gs.systems.Get[*game.NoticeSystem]().Muted.Store(L.CheckBool(1))
+		gs.systems.Get[*game.NoticeSystem]().SetMuted(L.CheckBool(1))
 		return 0
 	})
 	luax.RegisterFunc(luaState, "get_megaphone_muted", func(L *lua.LState) int {
-		L.Push(lua.LBool(gs.systems.Get[*game.NoticeSystem]().Muted.Load()))
+		L.Push(lua.LBool(gs.systems.Get[*game.NoticeSystem]().Muted()))
 		return 1
 	})
 	luax.RegisterFunc(luaState, "set_packet_log", func(L *lua.LState) int {

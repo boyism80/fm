@@ -22,7 +22,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "owner_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(summon.OwnerID))
+			L.Push(lua.LNumber(summon.ownerID))
 			return 1
 		},
 		"skill_id": func(L *lua.LState) int {
@@ -36,7 +36,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "skill_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(summon.SkillID))
+			L.Push(lua.LNumber(summon.skillID))
 			return 1
 		},
 		"movement_type": func(L *lua.LState) int {
@@ -50,7 +50,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "movement_type() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(summon.MovementType))
+			L.Push(lua.LNumber(summon.movementType))
 			return 1
 		},
 		"attack": func(L *lua.LState) int {
@@ -78,7 +78,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					Damage: uint32(lua.LVAsNumber(dmgLV)),
 				})
 			})
-			summon.Owner.Listener.OnSummonAttack(summon.Owner, summon, animation, targets)
+			summon.owner.listener.OnSummonAttack(summon.owner, summon, animation, targets)
 			return 0
 		},
 		"move": func(L *lua.LState) int {
@@ -91,7 +91,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			x := int16(L.CheckInt(2))
 			y := int16(L.CheckInt(3))
 			start := types.Vector2[int16]{X: x, Y: y}
-			summon.Owner.Listener.OnSummonMove(summon.Owner, summon, start, nil)
+			summon.owner.listener.OnSummonMove(summon.owner, summon, start, nil)
 			return 0
 		},
 		"use_skill": func(L *lua.LState) int {
@@ -106,7 +106,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			newStance := uint8(L.CheckInt(2))
-			summon.Owner.Listener.OnSummonSkill(summon.Owner, summon, newStance)
+			summon.owner.listener.OnSummonSkill(summon.owner, summon, newStance)
 			return 0
 		},
 	}

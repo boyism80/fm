@@ -26,7 +26,7 @@ func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	}
 	action := pconst.BuddyListSyncAction(msg.SyncAction)
 	if action == pconst.BuddyListSyncDelete {
-		ch.Buddies.Clear()
+		ch.Buddies().Clear()
 	}
 	for _, entry := range msg.Entries {
 		if entry.CharacterID == 0 {
@@ -36,7 +36,7 @@ func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		if channel < 0 {
 			channel = -1
 		}
-		ch.Buddies.Upsert(game.BuddyListEntry{
+		ch.Buddies().Upsert(game.BuddyListEntry{
 			CharacterID: entry.CharacterID,
 			Name:        entry.Name,
 			Group:       entry.Group,
@@ -44,5 +44,5 @@ func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 			Channel:     channel,
 		})
 	}
-	ch.Listener.OnBuddyListUpdate(ch, action, msg.Entries)
+	ch.Listener().OnBuddyListUpdate(ch, action, msg.Entries)
 }

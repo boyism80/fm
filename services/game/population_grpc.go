@@ -8,27 +8,27 @@ import (
 )
 
 func NewPopulationHistoryFromInternalProto(pb *internal.PopulationHistory) PopulationHistory {
-	history := PopulationHistory{Given: map[uint32]time.Time{}}
+	history := PopulationHistory{given: map[uint32]time.Time{}}
 	if pb.GetLastGivenUnixMs() != 0 {
-		history.LastGivenAt = time.UnixMilli(pb.GetLastGivenUnixMs())
+		history.lastGivenAt = time.UnixMilli(pb.GetLastGivenUnixMs())
 	}
 
 	now := clock.Now()
 	for id, unixMs := range pb.GetGivenUnixMs() {
 		givenAt := time.UnixMilli(unixMs)
 		if now.Sub(givenAt) < populationTargetCooldown {
-			history.Given[id] = givenAt
+			history.given[id] = givenAt
 		}
 	}
 	return history
 }
 
 func (h *PopulationHistory) BuildRPC() *internal.PopulationHistory {
-	pb := &internal.PopulationHistory{GivenUnixMs: make(map[uint32]int64, len(h.Given))}
-	if !h.LastGivenAt.IsZero() {
-		pb.LastGivenUnixMs = h.LastGivenAt.UnixMilli()
+	pb := &internal.PopulationHistory{GivenUnixMs: make(map[uint32]int64, len(h.given))}
+	if !h.lastGivenAt.IsZero() {
+		pb.LastGivenUnixMs = h.lastGivenAt.UnixMilli()
 	}
-	for id, givenAt := range h.Given {
+	for id, givenAt := range h.given {
 		pb.GivenUnixMs[id] = givenAt.UnixMilli()
 	}
 	return pb

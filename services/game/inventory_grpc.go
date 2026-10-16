@@ -11,11 +11,11 @@ func (inv *Inventory) Load(items []*internal.Inventory) {
 		if pb == nil {
 			continue
 		}
-		item, err := NewItemFromInternalProto(pb, inv.owner.GameWorld)
+		item, err := NewItemFromInternalProto(pb, inv.owner.gameWorld)
 		if err != nil {
 			continue
 		}
-		if inv.owner.Wedding.Marriage == nil && item.GetModel().GetTraits()&(constant.ItemTraitEngagementRing|constant.ItemTraitWeddingRing) != 0 {
+		if inv.owner.wedding.marriage == nil && item.GetModel().GetTraits()&(constant.ItemTraitEngagementRing|constant.ItemTraitWeddingRing) != 0 {
 			continue
 		}
 		slot := int16(pb.GetSlot())
@@ -27,27 +27,27 @@ func (inv *Inventory) Load(items []*internal.Inventory) {
 			model := eq.GetModel().(wz.Equipment)
 			parts := constant.EquipmentPartsType(slot)
 			if !model.CanEquipAt(parts) {
-				if known := model.GetParts(); len(known) > 0 && inv.Equipped[known[0]] == nil {
+				if known := model.GetParts(); len(known) > 0 && inv.equipped[known[0]] == nil {
 					parts = known[0]
 				}
 			}
-			inv.Equipped[parts] = eq
+			inv.equipped[parts] = eq
 		} else {
 			invType := constant.InventoryType(pb.GetInventoryType())
 			if invType == 0 {
 				invType = item.GetModel().GetInventoryType()
 			}
-			if tab, ok := inv.Tabs[invType]; ok {
-				tab.Items[slot] = item
+			if tab, ok := inv.tabs[invType]; ok {
+				tab.items[slot] = item
 			}
 		}
 	}
 }
 
 func (inv *Inventory) BuildRPC() []*internal.Inventory {
-	items := make([]*internal.Inventory, 0, len(inv.Equipped)+64)
+	items := make([]*internal.Inventory, 0, len(inv.equipped)+64)
 	ownerID := inv.owner.GetID()
-	for parts, item := range inv.Equipped {
+	for parts, item := range inv.equipped {
 		if item == nil {
 			continue
 		}
@@ -55,8 +55,8 @@ func (inv *Inventory) BuildRPC() []*internal.Inventory {
 			items = append(items, pb)
 		}
 	}
-	for _, tab := range inv.Tabs {
+	for _, tab := range inv.tabs {
 		items = append(items, tab.BuildRPC(ownerID)...)
 	}
-	return inv.owner.Escrow.mergeProto(items)
+	return inv.owner.escrow.mergeProto(items)
 }

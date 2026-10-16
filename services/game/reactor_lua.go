@@ -23,11 +23,11 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
-			if reactor.Wz == nil {
+			if reactor.wz == nil {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(reactor.Wz.ID))
+			L.Push(lua.LNumber(reactor.wz.ID))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
@@ -41,11 +41,11 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "name() is read-only")
 				return 0
 			}
-			if reactor.Spawn == nil || reactor.Spawn.Wz == nil {
+			if reactor.spawn == nil || reactor.spawn.wz == nil {
 				L.Push(lua.LString(""))
 				return 1
 			}
-			L.Push(lua.LString(reactor.Spawn.Wz.Name))
+			L.Push(lua.LString(reactor.spawn.wz.Name))
 			return 1
 		},
 		"state": func(L *lua.LState) int {
@@ -59,7 +59,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "state() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(reactor.State))
+			L.Push(lua.LNumber(reactor.state))
 			return 1
 		},
 		"react_item_id": func(L *lua.LState) int {
@@ -101,7 +101,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "activated_item_id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(reactor.ActivatedItemID))
+			L.Push(lua.LNumber(reactor.activatedItemID))
 			return 1
 		},
 		"hit": func(L *lua.LState) int {
@@ -166,8 +166,8 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Reactor expected")
 				return 0
 			}
-			if reactor.Map != nil {
-				_ = reactor.Map.RemoveReactor(reactor.OID, true)
+			if reactor.onMap != nil {
+				_ = reactor.onMap.RemoveReactor(reactor.oid, true)
 			}
 			return 0
 		},

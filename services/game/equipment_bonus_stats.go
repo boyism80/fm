@@ -64,11 +64,11 @@ func (c *EquipmentCore) SetBonus(stats map[string]int16) {
 	if c == nil || len(stats) == 0 {
 		return
 	}
-	if c.BonusStats == nil {
-		c.BonusStats = &EquipmentBonusStats{}
+	if c.bonusStats == nil {
+		c.bonusStats = &EquipmentBonusStats{}
 	}
 	for key, value := range stats {
-		if stat := c.BonusStats.stat(key); stat != nil {
+		if stat := c.bonusStats.stat(key); stat != nil {
 			*stat = value
 		}
 	}
@@ -78,11 +78,11 @@ func (c *EquipmentCore) AddBonus(stats map[string]int16) {
 	if c == nil || len(stats) == 0 {
 		return
 	}
-	if c.BonusStats == nil {
-		c.BonusStats = &EquipmentBonusStats{}
+	if c.bonusStats == nil {
+		c.bonusStats = &EquipmentBonusStats{}
 	}
 	for key, value := range stats {
-		if stat := c.BonusStats.stat(key); stat != nil {
+		if stat := c.bonusStats.stat(key); stat != nil {
 			*stat += value
 		}
 	}

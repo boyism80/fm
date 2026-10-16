@@ -20,30 +20,34 @@ type DoorKey string
 
 func NewDoor(key DoorKey, ownerID uint32, skillID constant.SkillID, field, returnEp DoorEndpoint, partyID *uint32) *Door {
 	door := &Door{
-		ObjectCore: ObjectCore{
-			Map: nil,
+		objectCore: ObjectCore{
+			onMap: nil,
 		},
-		Key:     key,
-		OwnerID: ownerID,
-		SkillID: skillID,
-		Field:   field,
-		Return:  returnEp,
-		PartyID: partyID,
+		key:      key,
+		ownerID:  ownerID,
+		skillID:  skillID,
+		field:    field,
+		onReturn: returnEp,
+		partyID:  partyID,
 	}
-	door.ObjectCore.self = door
+	door.objectCore.self = door
 	return door
 }
 
 type Door struct {
-	ObjectCore
-	Key     DoorKey
-	OwnerID uint32
-	SkillID constant.SkillID
-	Field   DoorEndpoint
-	Return  DoorEndpoint
-	PartyID *uint32
+	objectCore
+	key      DoorKey
+	ownerID  uint32
+	skillID  constant.SkillID
+	field    DoorEndpoint
+	onReturn DoorEndpoint
+	partyID  *uint32
 	// fieldRef keeps an instance field open while its door stands, so the owner can come back from town.
 	fieldRef *MapRef
+}
+
+func (d *Door) SetPartyID(partyID *uint32) {
+	d.partyID = partyID
 }
 
 func (d *Door) GetObjectType() constant.ObjectType {
@@ -58,32 +62,32 @@ func (d *Door) UsableBy(ch *Character) bool {
 	if d == nil || ch == nil {
 		return false
 	}
-	if ch.GetID() == d.OwnerID {
+	if ch.GetID() == d.ownerID {
 		return true
 	}
-	if d.SkillID != constant.SkillMysticDoor {
+	if d.skillID != constant.SkillMysticDoor {
 		return false
 	}
-	return ch.Party.Is(d.PartyID)
+	return ch.party.Is(d.partyID)
 }
 
 func (d *Door) Destination(from *Map) (DoorEndpoint, bool) {
 	switch from {
-	case d.Field.Map:
-		return d.Return, true
-	case d.Return.Map:
-		return d.Field, true
+	case d.field.Map:
+		return d.onReturn, true
+	case d.onReturn.Map:
+		return d.field, true
 	}
 	return DoorEndpoint{}, false
 }
 
 func (d *Door) Use(actx actor.Context, ch *Character) bool {
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil || d.Map != m || !d.UsableBy(ch) {
+	if m == nil || m.wz == nil || d.onMap != m || !d.UsableBy(ch) {
 		return false
 	}
 	dest, ok := d.Destination(m)
-	if !ok || dest.Map == nil || dest.Map.Wz == nil {
+	if !ok || dest.Map == nil || dest.Map.wz == nil {
 		return false
 	}
 
@@ -99,46 +103,46 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	vm := viewer.GetMap()
-	if vm == nil || vm.Wz == nil {
+	if vm == nil || vm.wz == nil {
 		return
 	}
 	dm := d.GetMap()
-	if dm == nil || dm.Wz == nil {
+	if dm == nil || dm.wz == nil {
 		return
 	}
-	onFieldMap := vm == d.Field.Map
-	isOwner := viewer.GetID() == d.OwnerID
-	sameParty := viewer.Party.Is(d.PartyID)
+	onFieldMap := vm == d.field.Map
+	isOwner := viewer.GetID() == d.ownerID
+	sameParty := viewer.party.Is(d.partyID)
 	if !onFieldMap && !isOwner && !sameParty {
 		return
 	}
 	var portalPoint types.Vector2[int16]
 	if onFieldMap {
-		portalPoint = d.Field.Position
+		portalPoint = d.field.Position
 	} else {
-		portalPoint = d.Return.Position
+		portalPoint = d.onReturn.Position
 	}
-	if dm == d.Field.Map {
+	if dm == d.field.Map {
 		viewer.Send(&response.SpawnDoor{
-			OwnerID:  d.OwnerID,
+			OwnerID:  d.ownerID,
 			Position: portalPoint,
 			Animated: false,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
-	usePartyPortal := d.PartyID != nil && viewer.Party.ID() != nil && (isOwner || sameParty)
+	usePartyPortal := d.partyID != nil && viewer.party.ID() != nil && (isOwner || sameParty)
 	if usePartyPortal {
 		viewer.Send(&response.PartyPortal{
-			TownMapID:   d.Return.Map.TemplateID(),
-			TargetMapID: d.Field.Map.TemplateID(),
-			SkillID:     uint32(d.SkillID),
+			TownMapID:   d.onReturn.Map.TemplateID(),
+			TargetMapID: d.field.Map.TemplateID(),
+			SkillID:     uint32(d.skillID),
 			Position:    portalPoint,
 			Animated:    false,
 		}, types.SEND_POLICY_ENCRYPT)
 		return
 	}
 	viewer.Send(&response.SpawnPortal{
-		DestMapID:   d.Return.Map.TemplateID(),
-		SourceMapID: d.Field.Map.TemplateID(),
+		DestMapID:   d.onReturn.Map.TemplateID(),
+		SourceMapID: d.field.Map.TemplateID(),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -148,7 +152,7 @@ func (d *Door) SendDestroySyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.RemoveDoor{
-		OwnerID:  d.OwnerID,
+		OwnerID:  d.ownerID,
 		Animated: false,
 	}, types.SEND_POLICY_ENCRYPT)
 	viewer.Send(&response.SpawnPortal{
@@ -168,41 +172,41 @@ func (d *Door) Spawn(animated bool) {
 
 func (d *Door) Remove(animated bool) {
 	m := d.GetMap()
-	if m == nil || d.OID == 0 {
+	if m == nil || d.oid == 0 {
 		return
 	}
-	m.RemoveDoor(d.OID, animated)
+	m.RemoveDoor(d.oid, animated)
 }
 
 func (d *Door) SendOwnerPortalResync(viewer *Character) {
 	if d == nil || viewer == nil {
 		return
 	}
-	if viewer.GetID() != d.OwnerID {
+	if viewer.GetID() != d.ownerID {
 		return
 	}
 	vm := viewer.GetMap()
-	if vm == nil || vm.Wz == nil {
+	if vm == nil || vm.wz == nil {
 		return
 	}
 	var portalPoint types.Vector2[int16]
-	if vm == d.Field.Map {
-		portalPoint = d.Field.Position
+	if vm == d.field.Map {
+		portalPoint = d.field.Position
 	} else {
-		portalPoint = d.Return.Position
+		portalPoint = d.onReturn.Position
 	}
 	_ = viewer.Send(&response.SpawnPortal{
-		DestMapID:   d.Return.Map.TemplateID(),
-		SourceMapID: d.Field.Map.TemplateID(),
+		DestMapID:   d.onReturn.Map.TemplateID(),
+		SourceMapID: d.field.Map.TemplateID(),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (d *Door) BuildRPC() *internal.PartyDoor {
 	return &internal.PartyDoor{
-		Town:   d.Return.Map.TemplateID(),
-		Target: d.Field.Map.TemplateID(),
-		X:      int32(d.Field.Position.X),
-		Y:      int32(d.Field.Position.Y),
+		Town:   d.onReturn.Map.TemplateID(),
+		Target: d.field.Map.TemplateID(),
+		X:      int32(d.field.Position.X),
+		Y:      int32(d.field.Position.Y),
 	}
 }

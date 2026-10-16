@@ -14,19 +14,19 @@ import (
 )
 
 type Reactor struct {
-	ObjectCore
-	Wz                 *wz.Reactor
-	Spawn              *ReactorSpawn
-	State              byte
-	TriggerCharacterID uint32
-	ActivatedItemID    uint32
+	objectCore
+	wz                 *wz.Reactor
+	spawn              *ReactorSpawn
+	state              byte
+	triggerCharacterID uint32
+	activatedItemID    uint32
 }
 
 func (r *Reactor) GetTrigger() *Character {
-	if r == nil || r.Map == nil || r.TriggerCharacterID == 0 {
+	if r == nil || r.onMap == nil || r.triggerCharacterID == 0 {
 		return nil
 	}
-	return r.Map.GetPlayer(r.TriggerCharacterID)
+	return r.onMap.GetPlayer(r.triggerCharacterID)
 }
 
 func (r *Reactor) GetObjectType() constant.ObjectType {
@@ -45,19 +45,19 @@ func (r *Reactor) BuildS2C() *dto.Reactor {
 	reactorID := uint32(0)
 	facing := uint8(0)
 	name := ""
-	if r.Wz != nil {
-		reactorID = r.Wz.ID
+	if r.wz != nil {
+		reactorID = r.wz.ID
 	}
-	if r.Spawn != nil && r.Spawn.Wz != nil {
-		facing = uint8(r.Spawn.Wz.FacingDirection)
-		name = r.Spawn.Wz.Name
+	if r.spawn != nil && r.spawn.wz != nil {
+		facing = uint8(r.spawn.wz.FacingDirection)
+		name = r.spawn.wz.Name
 	}
 
 	return &dto.Reactor{
-		OID:       r.OID,
+		OID:       r.oid,
 		ReactorID: reactorID,
-		State:     r.State,
-		Position:  r.Position,
+		State:     r.state,
+		Position:  r.position,
 		Facing:    facing,
 		Name:      name,
 	}
@@ -86,14 +86,14 @@ func (r *Reactor) currentEvent() *wz.ReactorEvent {
 	if r == nil {
 		return nil
 	}
-	return r.eventAt(r.State)
+	return r.eventAt(r.state)
 }
 
 func (r *Reactor) eventAt(state byte) *wz.ReactorEvent {
-	if r == nil || r.Wz == nil {
+	if r == nil || r.wz == nil {
 		return nil
 	}
-	return r.Wz.States[state]
+	return r.wz.States[state]
 }
 
 func (r *Reactor) EventType() constant.ReactorEventType {
@@ -105,20 +105,20 @@ func (r *Reactor) EventType() constant.ReactorEventType {
 }
 
 func (r *Reactor) ForceHitState(state byte) {
-	if r == nil || r.Map == nil {
+	if r == nil || r.onMap == nil {
 		return
 	}
-	r.State = state
-	r.Map.listener.OnReactorTriggered(r.Map, r, 0)
+	r.state = state
+	r.onMap.listener.OnReactorTriggered(r.onMap, r, 0)
 }
 
 func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stance int32) {
-	if r == nil || r.Wz == nil || r.Map == nil {
+	if r == nil || r.wz == nil || r.onMap == nil {
 		return
 	}
-	r.TriggerCharacterID = 0
+	r.triggerCharacterID = 0
 	if trigger != nil {
-		r.TriggerCharacterID = trigger.GetID()
+		r.triggerCharacterID = trigger.GetID()
 	}
 	event := r.currentEvent()
 	if event == nil {
@@ -128,28 +128,28 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 		return
 	}
 
-	oldState := r.State
+	oldState := r.state
 	newState := event.NextState
-	r.State = newState
+	r.state = newState
 
 	if r.eventAt(newState) == nil {
 		if r.respawnDelay() > 0 {
-			_ = r.Map.RemoveReactor(r.OID, true)
+			_ = r.onMap.RemoveReactor(r.oid, true)
 			r.callScript("on_reactor")
 			return
 		}
 
 		// The client plays the final collapse only when DESTROY arrives without a preceding TRIGGER.
 		r.callScript("on_reactor")
-		if r.Map.GetReactor(r.OID) != r {
+		if r.onMap.GetReactor(r.oid) != r {
 			return
 		}
-		r.Map.listener.OnReactorTriggered(r.Map, r, stance)
+		r.onMap.listener.OnReactorTriggered(r.onMap, r, stance)
 		return
 	}
 
 	done := false
-	r.Map.listener.OnReactorTriggered(r.Map, r, stance)
+	r.onMap.listener.OnReactorTriggered(r.onMap, r, stance)
 	r.callScript("on_state")
 	newEvent := r.eventAt(newState)
 	if newEvent.NextState == newState {
@@ -163,7 +163,7 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 		}
 		r.ScheduleStateRevert(newState, oldState, timeout)
 	}
-	if done || timeout > 0 || trigger == nil || !trigger.GM.InstantKill || r.cycles(newState) {
+	if done || timeout > 0 || trigger == nil || !trigger.gm.instantKill || r.cycles(newState) {
 		return
 	}
 	if newEvent.Type == constant.ReactorEventTypeHit || newEvent.Type == constant.ReactorEventTypeDirectionalHit {
@@ -189,10 +189,10 @@ func (r *Reactor) cycles(state byte) bool {
 
 // A blocked map keeps a broken reactor in its final state, as if WZ gave it no respawn delay.
 func (r *Reactor) respawnDelay() time.Duration {
-	if r.Spawn == nil || r.Map.reactorGenBlocked {
+	if r.spawn == nil || r.onMap.reactorGenBlocked {
 		return 0
 	}
-	return r.Spawn.RespawnDelay()
+	return r.spawn.RespawnDelay()
 }
 
 func (r *Reactor) callScript(hook string) {
@@ -204,7 +204,7 @@ func (r *Reactor) callScript(hook string) {
 	if root == nil {
 		return
 	}
-	thread, err := luax.NewThread(root, fmt.Sprintf("script/reactor/%d.lua", r.Wz.ID))
+	thread, err := luax.NewThread(root, fmt.Sprintf("script/reactor/%d.lua", r.wz.ID))
 	if err != nil {
 		log.Printf("reactor script %s: %v", hook, err)
 		return

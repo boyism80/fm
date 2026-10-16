@@ -23,9 +23,9 @@ func (*EquipmentCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			if L.GetTop() >= 2 {
-				core.EnhanceChance = uint8(util.ClampInt32(int32(L.CheckInt(2)), 0, 255))
+				core.enhanceChance = uint8(util.ClampInt32(int32(L.CheckInt(2)), 0, 255))
 			}
-			L.Push(lua.LNumber(core.EnhanceChance))
+			L.Push(lua.LNumber(core.enhanceChance))
 			return 1
 		},
 		"enhance_count": func(L *lua.LState) int {
@@ -40,7 +40,7 @@ func (*EquipmentCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(lua.LNumber(core.EnhanceCount))
+			L.Push(lua.LNumber(core.enhanceCount))
 			return 1
 		},
 		"total_stat": func(L *lua.LState) int {
@@ -55,47 +55,47 @@ func (*EquipmentCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			model, ok := core.Wz.(wz.Equipment)
+			model, ok := core.wz.(wz.Equipment)
 			if !ok || model == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			if core.BonusStats == nil {
-				core.BonusStats = &EquipmentBonusStats{}
+			if core.bonusStats == nil {
+				core.bonusStats = &EquipmentBonusStats{}
 			}
 			ability := model.GetAbility()
 			key := L.CheckString(2)
 			switch key {
 			case "str":
-				L.Push(lua.LNumber(int32(ability.Str) + int32(core.BonusStats.Str)))
+				L.Push(lua.LNumber(int32(ability.Str) + int32(core.bonusStats.Str)))
 			case "dex":
-				L.Push(lua.LNumber(int32(ability.Dex) + int32(core.BonusStats.Dex)))
+				L.Push(lua.LNumber(int32(ability.Dex) + int32(core.bonusStats.Dex)))
 			case "int":
-				L.Push(lua.LNumber(int32(ability.Int) + int32(core.BonusStats.Int)))
+				L.Push(lua.LNumber(int32(ability.Int) + int32(core.bonusStats.Int)))
 			case "luk":
-				L.Push(lua.LNumber(int32(ability.Luk) + int32(core.BonusStats.Luk)))
+				L.Push(lua.LNumber(int32(ability.Luk) + int32(core.bonusStats.Luk)))
 			case "max_hp":
-				L.Push(lua.LNumber(int32(ability.MaxHP) + int32(core.BonusStats.MaxHP)))
+				L.Push(lua.LNumber(int32(ability.MaxHP) + int32(core.bonusStats.MaxHP)))
 			case "max_mp":
-				L.Push(lua.LNumber(int32(ability.MaxMP) + int32(core.BonusStats.MaxMP)))
+				L.Push(lua.LNumber(int32(ability.MaxMP) + int32(core.bonusStats.MaxMP)))
 			case "pad":
-				L.Push(lua.LNumber(int32(ability.PAD) + int32(core.BonusStats.PAD)))
+				L.Push(lua.LNumber(int32(ability.PAD) + int32(core.bonusStats.PAD)))
 			case "mad":
-				L.Push(lua.LNumber(int32(ability.MAD) + int32(core.BonusStats.MAD)))
+				L.Push(lua.LNumber(int32(ability.MAD) + int32(core.bonusStats.MAD)))
 			case "pdd":
-				L.Push(lua.LNumber(int32(ability.PDD) + int32(core.BonusStats.PDD)))
+				L.Push(lua.LNumber(int32(ability.PDD) + int32(core.bonusStats.PDD)))
 			case "mdd":
-				L.Push(lua.LNumber(int32(ability.MDD) + int32(core.BonusStats.MDD)))
+				L.Push(lua.LNumber(int32(ability.MDD) + int32(core.bonusStats.MDD)))
 			case "acc":
-				L.Push(lua.LNumber(int32(ability.ACC) + int32(core.BonusStats.ACC)))
+				L.Push(lua.LNumber(int32(ability.ACC) + int32(core.bonusStats.ACC)))
 			case "avoid":
-				L.Push(lua.LNumber(int32(ability.Avoid) + int32(core.BonusStats.Avoid)))
+				L.Push(lua.LNumber(int32(ability.Avoid) + int32(core.bonusStats.Avoid)))
 			case "hands":
-				L.Push(lua.LNumber(int32(ability.Hands) + int32(core.BonusStats.Hands)))
+				L.Push(lua.LNumber(int32(ability.Hands) + int32(core.bonusStats.Hands)))
 			case "speed":
-				L.Push(lua.LNumber(int32(ability.Speed) + int32(core.BonusStats.Speed)))
+				L.Push(lua.LNumber(int32(ability.Speed) + int32(core.bonusStats.Speed)))
 			case "jump":
-				L.Push(lua.LNumber(int32(ability.Jump) + int32(core.BonusStats.Jump)))
+				L.Push(lua.LNumber(int32(ability.Jump) + int32(core.bonusStats.Jump)))
 			default:
 				L.Push(lua.LNil)
 			}
@@ -113,8 +113,8 @@ func (*EquipmentCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			if core.BonusStats == nil {
-				core.BonusStats = &EquipmentBonusStats{}
+			if core.bonusStats == nil {
+				core.bonusStats = &EquipmentBonusStats{}
 			}
 			tbl := L.CheckTable(2)
 			addInt := func(key string, cur int16) int16 {
@@ -124,21 +124,21 @@ func (*EquipmentCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return cur
 			}
-			core.BonusStats.Str = addInt("str", core.BonusStats.Str)
-			core.BonusStats.Dex = addInt("dex", core.BonusStats.Dex)
-			core.BonusStats.Int = addInt("int", core.BonusStats.Int)
-			core.BonusStats.Luk = addInt("luk", core.BonusStats.Luk)
-			core.BonusStats.MaxHP = addInt("max_hp", core.BonusStats.MaxHP)
-			core.BonusStats.MaxMP = addInt("max_mp", core.BonusStats.MaxMP)
-			core.BonusStats.PAD = addInt("pad", core.BonusStats.PAD)
-			core.BonusStats.MAD = addInt("mad", core.BonusStats.MAD)
-			core.BonusStats.PDD = addInt("pdd", core.BonusStats.PDD)
-			core.BonusStats.MDD = addInt("mdd", core.BonusStats.MDD)
-			core.BonusStats.ACC = addInt("acc", core.BonusStats.ACC)
-			core.BonusStats.Avoid = addInt("avoid", core.BonusStats.Avoid)
-			core.BonusStats.Hands = addInt("hands", core.BonusStats.Hands)
-			core.BonusStats.Speed = addInt("speed", core.BonusStats.Speed)
-			core.BonusStats.Jump = addInt("jump", core.BonusStats.Jump)
+			core.bonusStats.Str = addInt("str", core.bonusStats.Str)
+			core.bonusStats.Dex = addInt("dex", core.bonusStats.Dex)
+			core.bonusStats.Int = addInt("int", core.bonusStats.Int)
+			core.bonusStats.Luk = addInt("luk", core.bonusStats.Luk)
+			core.bonusStats.MaxHP = addInt("max_hp", core.bonusStats.MaxHP)
+			core.bonusStats.MaxMP = addInt("max_mp", core.bonusStats.MaxMP)
+			core.bonusStats.PAD = addInt("pad", core.bonusStats.PAD)
+			core.bonusStats.MAD = addInt("mad", core.bonusStats.MAD)
+			core.bonusStats.PDD = addInt("pdd", core.bonusStats.PDD)
+			core.bonusStats.MDD = addInt("mdd", core.bonusStats.MDD)
+			core.bonusStats.ACC = addInt("acc", core.bonusStats.ACC)
+			core.bonusStats.Avoid = addInt("avoid", core.bonusStats.Avoid)
+			core.bonusStats.Hands = addInt("hands", core.bonusStats.Hands)
+			core.bonusStats.Speed = addInt("speed", core.bonusStats.Speed)
+			core.bonusStats.Jump = addInt("jump", core.bonusStats.Jump)
 			L.Push(lua.LBool(true))
 			return 1
 		},

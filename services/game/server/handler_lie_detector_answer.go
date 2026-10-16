@@ -26,9 +26,9 @@ func (h *LieDetectorAnswer) Handle(ctx *core.ClientContext, req *request.LieDete
 		return nil
 	}
 
-	err := character.LieDetector.Answer(ctx.ActorContext, req.Answer)
+	err := character.LieDetector().Answer(ctx.ActorContext, req.Answer)
 	if err != nil {
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 	}
 
 	return nil

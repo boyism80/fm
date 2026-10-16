@@ -12,7 +12,7 @@ import (
 type MobListenerImpl struct{}
 
 func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, addedReflections []int32, remaining time.Duration) {
-	if mob == nil || ent == nil || len(ent.Values) == 0 {
+	if mob == nil || ent == nil || len(ent.Values()) == 0 {
 		return
 	}
 	buffTime := int16(32767)
@@ -23,11 +23,11 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, add
 		}
 	}
 	skillID := uint16(0)
-	if ent.Wz != nil {
-		skillID = uint16(ent.Wz.ID)
+	if ent.Wz() != nil {
+		skillID = uint16(ent.Wz().ID)
 	}
-	flags := make([]constant.MobBuffFlag, 0, len(ent.Values))
-	for f := range ent.Values {
+	flags := make([]constant.MobBuffFlag, 0, len(ent.Values()))
+	for f := range ent.Values() {
 		flags = append(flags, f)
 	}
 	slices.Sort(flags)
@@ -37,14 +37,14 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, add
 		for _, flag := range flags {
 			mask |= int32(flag)
 			entries = append(entries, response.ApplyMobBuffReflectEntry{
-				X:          int16(ent.Values[flag]),
+				X:          int16(ent.Values()[flag]),
 				SkillID:    skillID,
-				SkillLevel: uint16(ent.SkillLevel),
+				SkillLevel: uint16(ent.SkillLevel()),
 				BuffTime:   buffTime,
 			})
 		}
 		pkt := &response.ApplyMobBuffReflect{
-			OID:         mob.OID,
+			OID:         mob.GetOID(),
 			StatusMask:  mask,
 			Entries:     entries,
 			Reflections: addedReflections,
@@ -56,11 +56,11 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, add
 	}
 	for _, flag := range flags {
 		pkt := &response.ApplyMobBuff{
-			OID:        mob.OID,
+			OID:        mob.GetOID(),
 			Status:     int32(flag),
-			X:          int16(ent.Values[flag]),
+			X:          int16(ent.Values()[flag]),
 			SkillID:    skillID,
-			SkillLevel: uint16(ent.SkillLevel),
+			SkillLevel: uint16(ent.SkillLevel()),
 			BuffTime:   buffTime,
 			Delay:      0,
 			StatusSize: 1,
@@ -74,7 +74,7 @@ func (l *MobListenerImpl) OnMobBuffCancelled(mob *game.Mob, buff constant.MobBuf
 		return
 	}
 	pkt := &response.CancelMobBuff{
-		OID:    mob.OID,
+		OID:    mob.GetOID(),
 		Status: int32(buff),
 		Size:   1,
 	}
@@ -86,7 +86,7 @@ func (l *MobListenerImpl) OnMobDamaged(mob *game.Mob, amount int32) {
 		return
 	}
 	pkt := &response.DamageMob{
-		OID:     mob.OID,
+		OID:     mob.GetOID(),
 		Display: constant.MobDamageDisplayNormal,
 		Damage:  amount,
 	}
@@ -98,7 +98,7 @@ func (l *MobListenerImpl) OnMobAllyDamaged(mob *game.Mob, amount int32) {
 		return
 	}
 	pkt := &response.DamageMob{
-		OID:     mob.OID,
+		OID:     mob.GetOID(),
 		Display: constant.MobDamageDisplayAllyShowHp,
 		Damage:  amount,
 		HP:      int32(mob.GetHp()),
@@ -119,10 +119,10 @@ func (l *MobListenerImpl) OnShowBossHp(mob *game.Mob, clear bool) {
 	mobID := uint32(0)
 	tagColor := uint8(0)
 	tagBgColor := uint8(0)
-	if mob.Wz != nil {
-		mobID = mob.Wz.ID
-		tagColor = mob.Wz.HpTagColor
-		tagBgColor = mob.Wz.HpTagBgColor
+	if mob.Wz() != nil {
+		mobID = mob.Wz().ID
+		tagColor = mob.Wz().HpTagColor
+		tagBgColor = mob.Wz().HpTagBgColor
 	}
 
 	maxHpVal := mob.GetMaxHp()

@@ -22,17 +22,17 @@ func (h *PetFood) Handle(ctx *core.ClientContext, req *request.PetFood) error {
 		return nil
 	}
 	character := gameClient.GetCharacter()
-	if character == nil || character.Pets.Active == nil {
+	if character == nil || character.Pets().Active() == nil {
 		return nil
 	}
 	if character.UsingCashItem() {
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 		return nil
 	}
 
-	err := character.Pets.Active.Feed(req.Slot, req.ItemID)
+	err := character.Pets().Active().Feed(req.Slot, req.ItemID)
 	if err != nil {
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 	}
 
 	return nil

@@ -56,17 +56,17 @@ func (m *Map) Tremble(typ uint8, delay int32) {
 }
 
 func (m *Map) PlayersInArea(index int) int {
-	if m == nil || m.Wz == nil || index < 0 || index >= len(m.Wz.Areas) {
+	if m == nil || m.wz == nil || index < 0 || index >= len(m.wz.Areas) {
 		return 0
 	}
-	area := m.Wz.Areas[index]
+	area := m.wz.Areas[index]
 	count := 0
 	for _, obj := range m.GetAllPlayers() {
 		ch, ok := obj.(*Character)
 		if !ok || ch == nil {
 			continue
 		}
-		if area.ContainsPoint(ch.Position) {
+		if area.ContainsPoint(ch.position) {
 			count++
 		}
 	}

@@ -26,7 +26,7 @@ func (*UseSummonBag) Handle(ctx *core.ClientContext, req *request.UseSummonBag) 
 	if ch == nil {
 		return nil
 	}
-	defer ch.Listener.OnUnlockAction(ch)
+	defer ch.Listener().OnUnlockAction(ch)
 
 	ch.UseSummonBag(req.Slot, req.ItemID)
 	return nil

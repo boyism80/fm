@@ -5,8 +5,8 @@ import (
 )
 
 type Installation struct {
-	*ItemCore
-	OwnerName string
+	*itemCore
+	ownerName string
 }
 
 func (item *Installation) GetInventoryType() constant.InventoryType {
@@ -17,13 +17,13 @@ func (item *Installation) Reduce(count uint16) uint16   { return 0 }
 func (item *Installation) Increase(count uint16) uint16 { return 0 }
 func (item *Installation) Clone(count uint16) Item {
 	return &Installation{
-		ItemCore: &ItemCore{
-			FieldPlacement: nil,
-			Count:          count,
-			Wz:             item.Wz,
-			Expiration:     item.Expiration,
-			Flags:          item.Flags,
+		itemCore: &ItemCore{
+			fieldPlacement: nil,
+			count:          count,
+			wz:             item.wz,
+			expiration:     item.expiration,
+			flags:          item.flags,
 		},
-		OwnerName: item.OwnerName,
+		ownerName: item.ownerName,
 	}
 }

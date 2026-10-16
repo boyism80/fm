@@ -13,7 +13,7 @@ const soloDamageBucketID int64 = -1
 // grantKillExp splits mob kill EXP among accDamage contributors on this mob's current map (alive).
 // Party groups use Maple-style pool + bonus + per-damager splits; solos use ExpForDamage per row.
 func (m *Mob) grantKillExp() {
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return
 	}
 	mapInst := m.GetMap()
@@ -22,11 +22,11 @@ func (m *Mob) grantKillExp() {
 	}
 
 	rawByChar := make(map[uint32]uint64)
-	mobExpRate := m.ExpRate
+	mobExpRate := m.expRate
 	if mobExpRate <= 0 {
 		mobExpRate = 100
 	}
-	mobExpRate += m.Buffs.GetValue(constant.MobBuffShowdown)
+	mobExpRate += m.buffs.GetValue(constant.MobBuffShowdown)
 
 	for bucketID, damagers := range m.accDamage {
 		if len(damagers) == 0 {
@@ -80,7 +80,7 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 		return map[uint32]uint64{}, nil
 	}
 
-	gw := mapInst.GameWorld
+	gw := mapInst.gameWorld
 	if gw == nil {
 		return nil, fmt.Errorf("nil GameWorld")
 	}
@@ -97,14 +97,14 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 	if poolRaw == 0 {
 		return map[uint32]uint64{}, nil
 	}
-	mobExpRate := m.ExpRate
+	mobExpRate := m.expRate
 	if mobExpRate <= 0 {
 		mobExpRate = 100
 	}
-	mobExpRate += m.Buffs.GetValue(constant.MobBuffShowdown)
+	mobExpRate += m.buffs.GetValue(constant.MobBuffShowdown)
 	poolRaw = poolRaw * uint32(mobExpRate) / 100
 
-	mobLv := int(m.Wz.Level)
+	mobLv := int(m.wz.Level)
 	expApplicable := make([]*Character, 0)
 	if party == nil {
 		// Party disbanded or snapshot unavailable: degrade to current damagers only.
@@ -116,12 +116,12 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 			expApplicable = append(expApplicable, damager)
 		}
 	} else {
-		expApplicable = make([]*Character, 0, len(party.Members))
-		for _, pm := range party.Members {
+		expApplicable = make([]*Character, 0, len(party.members))
+		for _, pm := range party.members {
 			if pm == nil {
 				continue
 			}
-			pch := mapInst.GetPlayer(pm.CharacterID)
+			pch := mapInst.GetPlayer(pm.characterID)
 			if pch == nil || pch.GetMap() != mapInst || !pch.IsAlive() {
 				continue
 			}

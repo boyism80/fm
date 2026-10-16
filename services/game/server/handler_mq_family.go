@@ -20,7 +20,6 @@ func (*familyMq) EventType() string {
 	return "family"
 }
 
-// Every member on this server shares the decoded family, so no one modifies it.
 func (h *familyMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	var payload struct {
 		CharacterIDs []uint32        `json:"character_ids"`
@@ -38,7 +37,7 @@ func (h *familyMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	for _, id := range payload.CharacterIDs {
 		h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, id, &game.SetFamily{
 			CharacterID: id,
-			Family:      family,
+			Family:      game.FamilyTreeFromProto(family),
 		})
 	}
 	return nil

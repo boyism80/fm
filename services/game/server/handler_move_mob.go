@@ -62,26 +62,26 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return nil
 	}
 
-	startPoint := mob.Position
+	startPoint := mob.GetPosition()
 
 	for _, mnt := range req.Movements {
 		if move, ok := mnt.(*dto.AbsoluteLifeMovement); ok {
-			mob.Position = move.Position
+			mob.Place(move.Position)
 		}
 
-		mob.Stance = mnt.GetStance()
+		mob.SetStance(mnt.GetStance())
 	}
 
 	selectedSkillID := uint32(0)
 	selectedSkillLevel := uint8(0)
 	needChoice := !constant.MobSkillCastActionInRange(req.Action)
 	if req.ActiveSkill && needChoice {
-		if skill := mob.Skills.Choice(ch); skill != nil {
-			selectedSkillID = skill.Slot.SkillID
-			selectedSkillLevel = skill.Slot.Level
+		if skill := mob.Skills().Choice(ch); skill != nil {
+			selectedSkillID = skill.Slot().SkillID
+			selectedSkillLevel = skill.Slot().Level
 		}
 	} else if !needChoice {
-		if skill := mob.Skills.TakePending(uint32(req.SkillId), req.SkillLevel, clock.Now()); skill != nil {
+		if skill := mob.Skills().TakePending(uint32(req.SkillId), req.SkillLevel, clock.Now()); skill != nil {
 			delay := time.Duration(int(req.SkillDelay)*100+450) * time.Millisecond
 			controllerID := ch.GetID()
 			mob.RemoveTimer(mobSkillScriptTimerKey)
@@ -94,8 +94,8 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		}
 	}
 
-	ch.Listener.OnControlMoveMob(ch, mob, req.MovementId, req.ActiveSkill, uint16(min(mob.GetMp(), 65535)), selectedSkillID, selectedSkillLevel)
-	ch.Listener.OnMobMoved(
+	ch.Listener().OnControlMoveMob(ch, mob, req.MovementId, req.ActiveSkill, uint16(min(mob.GetMp(), 65535)), selectedSkillID, selectedSkillLevel)
+	ch.Listener().OnMobMoved(
 		ch,
 		mob,
 		req.ActiveSkill,
@@ -117,7 +117,7 @@ func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *game.Map, mob 
 	if root == nil {
 		return
 	}
-	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.Slot.SkillID)
+	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.Slot().SkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("mob skill script %s: %v", scriptPath, err)

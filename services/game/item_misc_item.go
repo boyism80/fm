@@ -5,37 +5,37 @@ import (
 )
 
 type MiscItem struct {
-	*ItemCore
-	OwnerName  string
-	MarriageID uint32
+	*itemCore
+	ownerName  string
+	marriageID uint32
 }
 
 func (item *MiscItem) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeETC
 }
-func (item *MiscItem) GetCount() uint16 { return item.Count }
+func (item *MiscItem) GetCount() uint16 { return item.count }
 func (item *MiscItem) Reduce(count uint16) uint16 {
-	if count > item.Count {
-		item.Count = 0
+	if count > item.count {
+		item.count = 0
 	} else {
-		item.Count -= count
+		item.count -= count
 	}
-	return item.Count
+	return item.count
 }
 func (item *MiscItem) Increase(count uint16) uint16 {
-	item.Count += count
-	return item.Count
+	item.count += count
+	return item.count
 }
 func (item *MiscItem) Clone(count uint16) Item {
 	return &MiscItem{
-		ItemCore: &ItemCore{
-			FieldPlacement: nil,
-			Count:          count,
-			Wz:             item.Wz,
-			Expiration:     item.Expiration,
-			Flags:          item.Flags,
+		itemCore: &ItemCore{
+			fieldPlacement: nil,
+			count:          count,
+			wz:             item.wz,
+			expiration:     item.expiration,
+			flags:          item.flags,
 		},
-		OwnerName:  item.OwnerName,
-		MarriageID: item.MarriageID,
+		ownerName:  item.ownerName,
+		marriageID: item.marriageID,
 	}
 }

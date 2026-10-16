@@ -29,9 +29,9 @@ func (h *UseEntrustedShop) Handle(ctx *core.ClientContext, req *request.UseEntru
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	ch.StoreBank.CheckShopOpen(ctx.ActorContext)
+	ch.StoreBank().CheckShopOpen(ctx.ActorContext)
 	return nil
 }

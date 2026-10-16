@@ -18,7 +18,7 @@ func luaYieldGuildRPC[T any](L *lua.LState, ch *Character, failCode int, result 
 		L.Push(lua.LNumber(*result))
 		return 1
 	}
-	if ch == nil || ch.GameWorld == nil {
+	if ch == nil || ch.gameWorld == nil {
 		L.Push(lua.LNumber(failCode))
 		return 1
 	}
@@ -27,10 +27,10 @@ func luaYieldGuildRPC[T any](L *lua.LState, ch *Character, failCode int, result 
 		L.Push(lua.LNumber(failCode))
 		return 1
 	}
-	ch.Dialog.Wait(L)
+	ch.dialog.Wait(L)
 	thread := L
 	promise.Finally(func() {
-		if err := ch.Dialog.Wake(thread, lua.LNumber(*result)); err != nil {
+		if err := ch.dialog.Wake(thread, lua.LNumber(*result)); err != nil {
 			log.Printf("guild lua resume: character=%d: %v", ch.GetID(), err)
 		}
 	})
@@ -46,7 +46,7 @@ func luaGuildDisband(L *lua.LState, ch *Character) int {
 		return 0
 	}
 	result := int(constant.GuildDisbandResultFailed)
-	if ch == nil || ch.GameWorld == nil {
+	if ch == nil || ch.gameWorld == nil {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
@@ -55,7 +55,7 @@ func luaGuildDisband(L *lua.LState, ch *Character) int {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
-	promise := ch.GameWorld.Systems().Get[*GuildSystem]().DisbandAsync(cfg.ActorContext, ch, &result)
+	promise := ch.gameWorld.Systems().Get[*GuildSystem]().DisbandAsync(cfg.ActorContext, ch, &result)
 	return luaYieldGuildRPC(L, ch, result, &result, promise)
 }
 
@@ -68,7 +68,7 @@ func luaGuildIncCapacity(L *lua.LState, ch *Character, extendedCap bool) int {
 		return 0
 	}
 	result := int(constant.GuildIncreaseCapacityResultFailed)
-	if ch == nil || ch.GameWorld == nil {
+	if ch == nil || ch.gameWorld == nil {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
@@ -77,7 +77,7 @@ func luaGuildIncCapacity(L *lua.LState, ch *Character, extendedCap bool) int {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
-	promise := ch.GameWorld.Systems().Get[*GuildSystem]().IncCapacityAsync(cfg.ActorContext, ch, extendedCap, &result)
+	promise := ch.gameWorld.Systems().Get[*GuildSystem]().IncCapacityAsync(cfg.ActorContext, ch, extendedCap, &result)
 	return luaYieldGuildRPC(L, ch, result, &result, promise)
 }
 
@@ -91,7 +91,7 @@ func luaCreateAlliance(L *lua.LState, ch *Character) int {
 	}
 	allianceName := L.CheckString(2)
 	result := int(constant.AllianceCreateResultFailed)
-	if ch.GameWorld == nil {
+	if ch.gameWorld == nil {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
@@ -100,7 +100,7 @@ func luaCreateAlliance(L *lua.LState, ch *Character) int {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
-	promise := ch.GameWorld.Systems().Get[*GuildSystem]().CreateAllianceAsync(cfg.ActorContext, ch, allianceName, &result)
+	promise := ch.gameWorld.Systems().Get[*GuildSystem]().CreateAllianceAsync(cfg.ActorContext, ch, allianceName, &result)
 	return luaYieldGuildRPC(L, ch, result, &result, promise)
 }
 
@@ -113,7 +113,7 @@ func luaIncAllianceCapacity(L *lua.LState, ch *Character) int {
 		return 0
 	}
 	result := int(constant.AllianceIncreaseCapacityResultFailed)
-	if ch.GameWorld == nil {
+	if ch.gameWorld == nil {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
@@ -122,7 +122,7 @@ func luaIncAllianceCapacity(L *lua.LState, ch *Character) int {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
-	promise := ch.GameWorld.Systems().Get[*AllianceSystem]().IncCapacityAsync(cfg.ActorContext, ch, &result)
+	promise := ch.gameWorld.Systems().Get[*AllianceSystem]().IncCapacityAsync(cfg.ActorContext, ch, &result)
 	return luaYieldGuildRPC(L, ch, result, &result, promise)
 }
 
@@ -135,7 +135,7 @@ func luaDisbandAlliance(L *lua.LState, ch *Character) int {
 		return 0
 	}
 	result := int(constant.AllianceDisbandResultFailed)
-	if ch.GameWorld == nil {
+	if ch.gameWorld == nil {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
@@ -144,6 +144,6 @@ func luaDisbandAlliance(L *lua.LState, ch *Character) int {
 		L.Push(lua.LNumber(result))
 		return 1
 	}
-	promise := ch.GameWorld.Systems().Get[*GuildSystem]().DisbandAllianceAsync(cfg.ActorContext, ch, &result)
+	promise := ch.gameWorld.Systems().Get[*GuildSystem]().DisbandAllianceAsync(cfg.ActorContext, ch, &result)
 	return luaYieldGuildRPC(L, ch, result, &result, promise)
 }

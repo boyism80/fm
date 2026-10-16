@@ -65,13 +65,13 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 		return ExchangeLackCapacity
 	}
 
-	if result := ch.Inventory.validateMeso(spec.Cost.Meso, spec.Reward.Meso); result != ExchangeOK {
+	if result := ch.inventory.validateMeso(spec.Cost.Meso, spec.Reward.Meso); result != ExchangeOK {
 		return result
 	}
 	if result := ch.validateExpExchange(spec.Cost.Exp, spec.Reward.Exp); result != ExchangeOK {
 		return result
 	}
-	if result := ch.Stats.validatePopulation(spec.Cost.Population, spec.Reward.Population); result != ExchangeOK {
+	if result := ch.stats.validatePopulation(spec.Cost.Population, spec.Reward.Population); result != ExchangeOK {
 		return result
 	}
 
@@ -88,7 +88,7 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 	}
 
 	for invType := range invTypes {
-		inv := ch.Inventory.Tabs[invType]
+		inv := ch.inventory.tabs[invType]
 		cost := costByInv[invType]
 		reward := rewardByInv[invType]
 		if result := inv.validateItemExchange(cost, reward, spec.Reward.Period, modelOf); result != ExchangeOK {
@@ -127,10 +127,10 @@ func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
 	if side.isEmpty() {
 		return ExchangeOK
 	}
-	if side.Meso > 0 && ch.Inventory.Meso < side.Meso {
+	if side.Meso > 0 && ch.inventory.meso < side.Meso {
 		return ExchangeLackCost
 	}
-	if side.Population > 0 && side.Population > int32(ch.Stats.Population) {
+	if side.Population > 0 && side.Population > int32(ch.stats.population) {
 		return ExchangeLackCost
 	}
 	if side.Exp > 0 && ch.exp < side.Exp {
@@ -144,7 +144,7 @@ func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
 		if modelOf(id) == nil {
 			return ExchangeLackCost
 		}
-		if !ch.Inventory.HasItemCount(id, count) {
+		if !ch.inventory.HasItemCount(id, count) {
 			return ExchangeLackCost
 		}
 	}

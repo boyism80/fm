@@ -378,8 +378,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				oldLevel := ch.level
 				ch.SetLevel(uint8(level))
-				if ch.level > oldLevel && ch.Quests != nil {
-					ch.Quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
+				if ch.level > oldLevel && ch.quests != nil {
+					ch.quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
 				}
 				return 0
 			default:
@@ -397,7 +397,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Points.AP))
+				L.Push(lua.LNumber(ch.points.ap))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -405,7 +405,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					v = 0
 				}
 				notify := argc == 2 || L.ToBool(3)
-				ch.Points.SetAP(uint16(v), notify)
+				ch.points.SetAP(uint16(v), notify)
 				return 0
 			default:
 				L.ArgError(2, "ability_point() requires 0, 1 or 2 arguments")
@@ -422,7 +422,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Points.SP))
+				L.Push(lua.LNumber(ch.points.sp))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -430,7 +430,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					v = 0
 				}
 				notify := argc == 2 || L.ToBool(3)
-				ch.Points.SetSP(uint16(v), notify)
+				ch.points.SetSP(uint16(v), notify)
 				return 0
 			default:
 				L.ArgError(2, "skill_point() requires 0, 1 or 2 arguments")
@@ -447,7 +447,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BaseHp))
+				L.Push(lua.LNumber(ch.baseHp))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -472,7 +472,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BaseMp))
+				L.Push(lua.LNumber(ch.baseMp))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -506,7 +506,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			})
 			if len(stats) > 0 {
-				ch.Listener.OnUpdateStats(ch, stats, true)
+				ch.listener.OnUpdateStats(ch, stats, true)
 			}
 			return 0
 		},
@@ -545,7 +545,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				ch.exp = newExp
-				ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+				ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 					constant.StatEXP: int32(ch.exp),
 				}, false)
 				return 0
@@ -565,7 +565,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Inventory.Meso))
+				L.Push(lua.LNumber(ch.inventory.meso))
 				return 1
 			case 2:
 				value := L.CheckNumber(2)
@@ -574,11 +574,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				if value <= 2147483647 {
-					ch.Inventory.SetMeso(int32(value))
+					ch.inventory.SetMeso(int32(value))
 				} else {
-					ch.Inventory.SetMeso(2147483647)
+					ch.inventory.SetMeso(2147483647)
 				}
-				ch.Listener.OnMesoChanged(ch, ch.Inventory.Meso)
+				ch.listener.OnMesoChanged(ch, ch.inventory.meso)
 				return 0
 			default:
 				L.ArgError(2, "meso() getter: meso(); setter: meso(value)")
@@ -596,10 +596,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Population))
+				L.Push(lua.LNumber(ch.stats.population))
 				return 1
 			case 2:
-				ch.Stats.setPopulation(int32(L.CheckInt(2)))
+				ch.stats.setPopulation(int32(L.CheckInt(2)))
 				return 0
 			default:
 				L.ArgError(2, "population() getter: population(); setter: population(value)")
@@ -612,7 +612,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Stats.PopulationHistory = PopulationHistory{Given: map[uint32]time.Time{}}
+			ch.stats.populationHistory = PopulationHistory{given: map[uint32]time.Time{}}
 			return 0
 		},
 		"exchange": func(L *lua.LState) int {
@@ -629,8 +629,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			var nameToItem func(string) (uint32, bool)
-			if ch.GameWorld != nil {
-				if resources := ch.GameWorld.GetResources(); resources != nil {
+			if ch.gameWorld != nil {
+				if resources := ch.gameWorld.GetResources(); resources != nil {
 					nameToItem = resources.NameToItem
 				}
 			}
@@ -671,7 +671,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				highlight = L.CheckBool(3)
 			}
 
-			ch.Listener.OnChat(ch, message, highlight, dontRecordHistory)
+			ch.listener.OnChat(ch, message, highlight, dontRecordHistory)
 			return 0
 		},
 		"buff": func(L *lua.LState) int {
@@ -757,7 +757,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					Mask:     uint32(maskLV.(lua.LNumber)),
 					Position: int(posLV.(lua.LNumber)),
 				}
-				buff := ch.Buffs.GetEntity(flag)
+				buff := ch.buffs.GetEntity(flag)
 				switch entity := buff.(type) {
 				case *SkillBuff:
 					if entity == nil {
@@ -798,7 +798,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 					skillEntry = se
-					if ld := skillEntry.Wz.GetLevelData(skillEntry.Level()); ld != nil {
+					if ld := skillEntry.wz.GetLevelData(skillEntry.Level()); ld != nil {
 						baseDuration = ld.Time
 					}
 					offset++
@@ -881,9 +881,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 							}
 						}
 					}
-					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values, true)
+					ch.buffs.AddBuff(skillEntry.wz, duration, uint8(skillEntry.Level()), ch.GetID(), values, true)
 				} else {
-					ch.Buffs.AddItemBuff(consumeWz, duration, values, true, true)
+					ch.buffs.AddItemBuff(consumeWz, duration, values, true, true)
 				}
 				return 0
 			}
@@ -897,11 +897,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			skillUD := L.CheckUserData(2)
 			skillEntry, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+			if !ok || skillEntry == nil || skillEntry.wz == nil {
 				L.ArgError(2, "SkillEntry with Wz expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Mount.Ride(skillEntry, int32(L.CheckInt(3))) == nil))
+			L.Push(lua.LBool(ch.mount.Ride(skillEntry, int32(L.CheckInt(3))) == nil))
 			return 1
 		},
 		"dismount": func(L *lua.LState) int {
@@ -911,7 +911,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Mount.Dismount()
+			ch.mount.Dismount()
 			return 0
 		},
 		"show_skill_effect": func(L *lua.LState) int {
@@ -938,14 +938,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if argc >= 3 {
 				effectType := L.CheckInt(3)
 				if effectType == int(pconst.SkillEffectTypeCast) || effectType == int(pconst.SkillEffectTypeAffected) {
-					ch.Listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectType(effectType), skillEntry.Wz.ID, skillLevel, nil)
+					ch.listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectType(effectType), skillEntry.wz.ID, skillLevel, nil)
 					return 0
 				}
 				L.ArgError(3, "show_skill_effect() supports SkillEffectType.Cast or SkillEffectType.Affected")
 				return 0
 			}
 
-			ch.Listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, skillEntry.Wz.ID, skillLevel, nil)
+			ch.listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, skillEntry.wz.ID, skillLevel, nil)
 			return 0
 		},
 		"show_effect": func(L *lua.LState) int {
@@ -962,7 +962,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				response.EffectTypeQuestCompletion,
 				response.EffectTypeRegisterCard,
 				response.EffectTypeItemLevelUp:
-				ch.Listener.OnShowSelfEffect(ch, effectType)
+				ch.listener.OnShowSelfEffect(ch, effectType)
 				return 0
 			default:
 				L.ArgError(2, "show_effect() supports EffectType.LevelUp, ClassChange, QuestCompletion, RegisterCard, or ItemLevelUp")
@@ -981,8 +981,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			if ch.Listener != nil {
-				ch.Listener.OnShowQuestCompletion(ch, questID)
+			if ch.listener != nil {
+				ch.listener.OnShowQuestCompletion(ch, questID)
 			}
 			return 0
 		},
@@ -1003,8 +1003,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if argc >= 3 {
 				broadcast = L.CheckBool(3)
 			}
-			if ch.Listener != nil {
-				ch.Listener.OnPlaySound(ch, sound, broadcast)
+			if ch.listener != nil {
+				ch.listener.OnPlaySound(ch, sound, broadcast)
 			}
 			return 0
 		},
@@ -1019,8 +1019,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "play_portal_sound() takes no arguments")
 				return 0
 			}
-			if ch.Listener != nil {
-				ch.Listener.OnPlayPortalSound(ch)
+			if ch.listener != nil {
+				ch.listener.OnPlayPortalSound(ch)
 			}
 			return 0
 		},
@@ -1033,7 +1033,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			skillUD := L.CheckUserData(2)
 			skillEntry, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+			if !ok || skillEntry == nil || skillEntry.wz == nil {
 				L.ArgError(2, "SkillEntry with Wz expected")
 				return 0
 			}
@@ -1041,7 +1041,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if skillLevelInt < 0 {
 				skillLevelInt = 0
 			}
-			ch.Listener.OnShowSelfDragonBloodEffect(ch, skillEntry.Wz.ID, uint8(skillLevelInt))
+			ch.listener.OnShowSelfDragonBloodEffect(ch, skillEntry.wz.ID, uint8(skillLevelInt))
 			return 0
 		},
 		"show_hp_healed_effect": func(L *lua.LState) int {
@@ -1052,7 +1052,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			amount := int32(L.CheckInt(2))
-			ch.Listener.OnShowSelfHPHealedEffect(ch, amount)
+			ch.listener.OnShowSelfHPHealedEffect(ch, amount)
 			return 0
 		},
 		"show_reward_item_animation": func(L *lua.LState) int {
@@ -1064,7 +1064,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			itemID := uint32(L.CheckInt(2))
 			effectText := L.CheckString(3)
-			ch.Listener.OnShowSelfRewardItemAnimation(ch, itemID, effectText)
+			ch.listener.OnShowSelfRewardItemAnimation(ch, itemID, effectText)
 			return 0
 		},
 		"show_item_maker_success_effect": func(L *lua.LState) int {
@@ -1074,7 +1074,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Listener.OnShowSelfItemMakerSuccessEffect(ch)
+			ch.listener.OnShowSelfItemMakerSuccessEffect(ch)
 			return 0
 		},
 		"show_crafting_effect": func(L *lua.LState) int {
@@ -1087,7 +1087,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			effectText := L.CheckString(2)
 			timeValue := int32(L.CheckInt(3))
 			modeValue := int32(L.CheckInt(4))
-			ch.Listener.OnShowSelfCraftingEffect(ch, effectText, timeValue, modeValue)
+			ch.listener.OnShowSelfCraftingEffect(ch, effectText, timeValue, modeValue)
 			return 0
 		},
 		"show_dice_effect": func(L *lua.LState) int {
@@ -1100,7 +1100,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			effectID := int32(L.CheckInt(2))
 			skillUD := L.CheckUserData(3)
 			skillEntry, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+			if !ok || skillEntry == nil || skillEntry.wz == nil {
 				L.ArgError(3, "SkillEntry with Wz expected")
 				return 0
 			}
@@ -1108,7 +1108,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if skillLevelInt < 0 {
 				skillLevelInt = 0
 			}
-			ch.Listener.OnShowSelfDiceEffect(ch, effectID, skillEntry.Wz.ID, uint8(skillLevelInt))
+			ch.listener.OnShowSelfDiceEffect(ch, effectID, skillEntry.wz.ID, uint8(skillLevelInt))
 			return 0
 		},
 
@@ -1124,7 +1124,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				lv := L.Get(i)
 				switch v := lv.(type) {
 				case lua.LNumber:
-					ch.Buffs.CancelBySource(int32(L.CheckInt(i)))
+					ch.buffs.CancelBySource(int32(L.CheckInt(i)))
 				case *lua.LTable:
 					fields, ok := luax.ParseTable(L, v, i)
 					if !ok {
@@ -1145,7 +1145,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			if len(flags) > 0 {
-				ch.Buffs.RemoveBuff(flags)
+				ch.buffs.RemoveBuff(flags)
 			}
 			return 0
 		},
@@ -1178,7 +1178,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			tbl := L.NewTable()
 			idx := 1
-			for _, entity := range ch.Buffs.Entities() {
+			for _, entity := range ch.buffs.Entities() {
 				if entity == nil {
 					continue
 				}
@@ -1208,7 +1208,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			tbl := L.NewTable()
 			idx := 1
-			for _, s := range ch.Summons.All() {
+			for _, s := range ch.summons.All() {
 				tbl.RawSetInt(idx, luax.NewLuable(L, s))
 				idx++
 			}
@@ -1235,7 +1235,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			flag := constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))}
-			_, currentValue, ok := ch.Buffs.GetBuffValue(flag)
+			_, currentValue, ok := ch.buffs.GetBuffValue(flag)
 			if !ok {
 				L.Push(lua.LNil)
 				return 1
@@ -1247,7 +1247,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			} else if argc == 3 {
 				newValue := int32(L.CheckNumber(3))
-				_, updated := ch.Buffs.SetBuffValue(flag, newValue)
+				_, updated := ch.buffs.SetBuffValue(flag, newValue)
 				if !updated {
 					L.Push(lua.LNil)
 					return 1
@@ -1276,7 +1276,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			movType := constant.SummonMovementType(L.CheckInt(5))
 			summonType := constant.SummonType(L.CheckInt(6))
 
-			pos := ch.Position
+			pos := ch.position
 			if L.GetTop() >= 7 {
 				lv := L.Get(7)
 				if lv != lua.LNil {
@@ -1301,7 +1301,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			duration := time.Duration(durationMs) * time.Millisecond
-			s := ch.Summons.Spawn(constant.SkillID(skillID), skillLevel, movType, summonType, pos, duration)
+			s := ch.summons.Spawn(constant.SkillID(skillID), skillLevel, movType, summonType, pos, duration)
 			if s == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1321,12 +1321,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Skill expected")
 				return 0
 			}
-			ld := skill.Wz.GetLevelData(skill.Level())
+			ld := skill.wz.GetLevelData(skill.Level())
 			if ld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			area := ld.Area(int32(ch.Position.X), int32(ch.Position.Y), ch.Stance%2 != 0)
+			area := ld.Area(int32(ch.position.X), int32(ch.position.Y), ch.stance%2 != 0)
 			tbl := L.NewTable()
 			tbl.RawSetString("left", lua.LNumber(area.Left))
 			tbl.RawSetString("top", lua.LNumber(area.Top))
@@ -1379,7 +1379,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			mist := m.SpawnMist(ch, skill, ch.Position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
+			mist := m.SpawnMist(ch, skill, ch.position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
 			if mist == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1399,7 +1399,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "SkillBuff expected")
 				return 0
 			}
-			ch.Doors.Spawn(buff)
+			ch.doors.Spawn(buff)
 			return 0
 		},
 		"remove_summon": func(L *lua.LState) int {
@@ -1409,7 +1409,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Summons.Remove(ch.Summons.Get(constant.SkillID(L.CheckInt(2))), true)
+			ch.summons.Remove(ch.summons.Get(constant.SkillID(L.CheckInt(2))), true)
 			return 0
 		},
 		"remove_door": func(L *lua.LState) int {
@@ -1424,7 +1424,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "SkillBuff expected")
 				return 0
 			}
-			ch.Doors.Remove(buff, true)
+			ch.doors.Remove(buff, true)
 			return 0
 		},
 		"clear_summons": func(L *lua.LState) int {
@@ -1434,7 +1434,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Summons.Clear()
+			ch.summons.Clear()
 			return 0
 		},
 		"dialog": func(L *lua.LState) int {
@@ -1477,13 +1477,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					npc = int(npcArg)
 				case *lua.LUserData:
-					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-						npc = int(n.Wz.BaseSpawn.ID)
+					if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+						npc = int(n.wz.BaseSpawn.ID)
 					}
 				}
 			}
-			ch.Listener.OnDialog(ch, uint32(npc), message, prev, next)
-			ch.Dialog.Ask(L, constant.DialogTypeDefault, 0)
+			ch.listener.OnDialog(ch, uint32(npc), message, prev, next)
+			ch.dialog.Ask(L, constant.DialogTypeDefault, 0)
 			return L.Yield()
 		},
 		"dialog_yes_no": func(L *lua.LState) int {
@@ -1526,13 +1526,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					npc = int(npcArg)
 				case *lua.LUserData:
-					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-						npc = int(n.Wz.BaseSpawn.ID)
+					if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+						npc = int(n.wz.BaseSpawn.ID)
 					}
 				}
 			}
-			ch.Listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
-			ch.Dialog.Ask(L, constant.DialogTypeYesNo, 0)
+			ch.listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
+			ch.dialog.Ask(L, constant.DialogTypeYesNo, 0)
 			return L.Yield()
 		},
 		"dialog_list": func(L *lua.LState) int {
@@ -1564,14 +1564,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					npc = int(npcArg)
 				case *lua.LUserData:
-					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-						npc = int(n.Wz.BaseSpawn.ID)
+					if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+						npc = int(n.wz.BaseSpawn.ID)
 					}
 				}
 			}
 
-			ch.Listener.OnDialogList(ch, uint32(npc), message, selections)
-			ch.Dialog.Ask(L, constant.DialogTypeList, len(selections))
+			ch.listener.OnDialogList(ch, uint32(npc), message, selections)
+			ch.dialog.Ask(L, constant.DialogTypeList, len(selections))
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_style": func(L *lua.LState) int {
@@ -1590,8 +1590,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LNumber:
 				npc = int(npcArg)
 			case *lua.LUserData:
-				if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-					npc = int(n.Wz.BaseSpawn.ID)
+				if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+					npc = int(n.wz.BaseSpawn.ID)
 				}
 			}
 			styles := []uint32{}
@@ -1600,8 +1600,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					styles = append(styles, uint32(n))
 				}
 			})
-			ch.Listener.OnDialogStyle(ch, uint32(npc), L.CheckString(3), styles)
-			ch.Dialog.Ask(L, constant.DialogTypeStyle, len(styles))
+			ch.listener.OnDialogStyle(ch, uint32(npc), L.CheckString(3), styles)
+			ch.dialog.Ask(L, constant.DialogTypeStyle, len(styles))
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_accept": func(L *lua.LState) int {
@@ -1640,16 +1640,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					npc = int(npcArg)
 				case *lua.LUserData:
-					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-						npc = int(n.Wz.BaseSpawn.ID)
+					if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+						npc = int(n.wz.BaseSpawn.ID)
 					}
 				}
 			}
-			ch.Listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
+			ch.listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
 			if enableEscape {
-				ch.Dialog.Ask(L, constant.DialogTypeAcceptEscape, 0)
+				ch.dialog.Ask(L, constant.DialogTypeAcceptEscape, 0)
 			} else {
-				ch.Dialog.Ask(L, constant.DialogTypeAccept, 0)
+				ch.dialog.Ask(L, constant.DialogTypeAccept, 0)
 			}
 			return L.Yield()
 		},
@@ -1673,14 +1673,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					npc = int(npcArg)
 				case *lua.LUserData:
-					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-						npc = int(n.Wz.BaseSpawn.ID)
+					if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+						npc = int(n.wz.BaseSpawn.ID)
 					}
 				}
 			}
 
-			ch.Listener.OnDialogInput(ch, uint32(npc), message)
-			ch.Dialog.Ask(L, constant.DialogTypeInput, 0)
+			ch.listener.OnDialogInput(ch, uint32(npc), message)
+			ch.dialog.Ask(L, constant.DialogTypeInput, 0)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_number": func(L *lua.LState) int {
@@ -1695,8 +1695,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LNumber:
 				npc = int(npcArg)
 			case *lua.LUserData:
-				if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-					npc = int(n.Wz.BaseSpawn.ID)
+				if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+					npc = int(n.wz.BaseSpawn.ID)
 				}
 			}
 			message := L.CheckString(3)
@@ -1708,8 +1708,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			ch.Listener.OnDialogNumber(ch, uint32(npc), message, def, min, max)
-			ch.Dialog.AskNumber(L, min, max)
+			ch.listener.OnDialogNumber(ch, uint32(npc), message, def, min, max)
+			ch.dialog.AskNumber(L, min, max)
 			return L.Yield(lua.LNumber(0))
 		},
 		"message": func(L *lua.LState) int {
@@ -1739,28 +1739,28 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					m.MapMessage(msgType, text)
 				}
 			case constant.MessageScopeChannel:
-				if ch.GameWorld != nil {
-					ch.GameWorld.Systems().Get[*NoticeSystem]().BroadcastNotice(msgType, text, 0, false)
+				if ch.gameWorld != nil {
+					ch.gameWorld.Systems().Get[*NoticeSystem]().BroadcastNotice(msgType, text, 0, false)
 				}
 			case constant.MessageScopeWorld:
 				cfg, ok := luax.GetConfiguration(L)
-				if !ok || cfg.ActorContext == nil || ch.GameWorld == nil {
+				if !ok || cfg.ActorContext == nil || ch.gameWorld == nil {
 					L.Push(lua.LFalse)
 					return 1
 				}
-				promise := ch.GameWorld.Systems().Get[*InternalSystem]().BroadcastNoticeAsync(cfg.ActorContext, ch, msgType, text, ear)
+				promise := ch.gameWorld.Systems().Get[*InternalSystem]().BroadcastNoticeAsync(cfg.ActorContext, ch, msgType, text, ear)
 				if promise == nil {
 					L.Push(lua.LFalse)
 					return 1
 				}
-				return LuaYieldPromise(L, ch.GameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
+				return LuaYieldPromise(L, ch.gameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
 					if err != nil {
 						return []lua.LValue{lua.LFalse}
 					}
 					return []lua.LValue{lua.LTrue}
 				})
 			default:
-				ch.Listener.OnMessage(ch, msgType, text)
+				ch.listener.OnMessage(ch, msgType, text)
 			}
 			L.Push(lua.LTrue)
 			return 1
@@ -1783,12 +1783,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise := ch.GameWorld.Systems().Get[*InternalSystem]().BroadcastMegaphoneAsync(cfg.ActorContext, ch, &response.Megaphone{
+			promise := ch.gameWorld.Systems().Get[*InternalSystem]().BroadcastMegaphoneAsync(cfg.ActorContext, ch, &response.Megaphone{
 				Type:  constant.MsgThreeMegaphoneLines,
 				Lines: lines,
 				Ear:   ear,
 			})
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
 				return []lua.LValue{lua.LBool(err == nil)}
 			})
 		},
@@ -1811,7 +1811,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LFalse)
 					return 1
 				}
-				item := ch.Inventory.Tabs[invType].Get(uint8(slot))
+				item := ch.inventory.tabs[invType].Get(uint8(slot))
 				if item == nil {
 					L.Push(lua.LFalse)
 					return 1
@@ -1823,8 +1823,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise := ch.GameWorld.Systems().Get[*InternalSystem]().BroadcastMegaphoneAsync(cfg.ActorContext, ch, megaphone)
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
+			promise := ch.gameWorld.Systems().Get[*InternalSystem]().BroadcastMegaphoneAsync(cfg.ActorContext, ch, megaphone)
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
 				return []lua.LValue{lua.LBool(err == nil)}
 			})
 		},
@@ -1863,7 +1863,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			if !ClientText(recipient).Valid(13) {
-				ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
+				ch.listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_WRONG_NAME)
 				L.Push(lua.LFalse)
 				return 1
 			}
@@ -1872,17 +1872,17 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise := ch.GameWorld.Systems().Get[*InternalSystem]().SendNoteAsync(cfg.ActorContext, ch, recipient, message)
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(reply *internal.NotesReply, err error) []lua.LValue {
+			promise := ch.gameWorld.Systems().Get[*InternalSystem]().SendNoteAsync(cfg.ActorContext, ch, recipient, message)
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(reply *internal.NotesReply, err error) []lua.LValue {
 				if err != nil {
-					ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_INBOX_FULL)
+					ch.listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_INBOX_FULL)
 					return []lua.LValue{lua.LFalse}
 				}
 				if reply.Status != internal.NoteResult_NOTE_RESULT_OK {
-					ch.Listener.OnNoteFailed(ch, reply.Status)
+					ch.listener.OnNoteFailed(ch, reply.Status)
 					return []lua.LValue{lua.LFalse}
 				}
-				ch.Listener.OnNoteSent(ch)
+				ch.listener.OnNoteSent(ch)
 				return []lua.LValue{lua.LTrue}
 			})
 		},
@@ -1893,11 +1893,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Wedding.Marriage == nil {
+			if ch.wedding.marriage == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, ch.Wedding.Marriage))
+			L.Push(luax.NewLuable(L, ch.wedding.marriage))
 			return 1
 		},
 		"reserve_wedding": func(L *lua.LState) int {
@@ -1912,12 +1912,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise, err := ch.Wedding.Reserve(cfg.ActorContext, uint32(L.CheckNumber(2)))
+			promise, err := ch.wedding.Reserve(cfg.ActorContext, uint32(L.CheckNumber(2)))
 			if err != nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(result bool, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(result bool, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}
@@ -1936,12 +1936,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise, err := ch.Wedding.BreakEngagement(cfg.ActorContext)
+			promise, err := ch.wedding.BreakEngagement(cfg.ActorContext)
 			if err != nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(result bool, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(result bool, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}
@@ -1960,12 +1960,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			promise, err := ch.Wedding.RequestDivorce(cfg.ActorContext)
+			promise, err := ch.wedding.RequestDivorce(cfg.ActorContext)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(result string, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(result string, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LNil}
 				}
@@ -1984,12 +1984,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			promise, err := ch.Wedding.CancelDivorce(cfg.ActorContext)
+			promise, err := ch.wedding.CancelDivorce(cfg.ActorContext)
 			if err != nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(canceled bool, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(canceled bool, err error) []lua.LValue {
 				return []lua.LValue{lua.LBool(err == nil && canceled)}
 			})
 		},
@@ -2000,7 +2000,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Wedding.InvitedTo(uint32(L.CheckNumber(2)))))
+			L.Push(lua.LBool(ch.wedding.InvitedTo(uint32(L.CheckNumber(2)))))
 			return 1
 		},
 		"open_wedding_wishlist": func(L *lua.LState) int {
@@ -2010,7 +2010,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Listener.OnWeddingWishlistInput(ch)
+			ch.listener.OnWeddingWishlistInput(ch)
 			return 0
 		},
 		"open_wedding_gift": func(L *lua.LState) int {
@@ -2027,7 +2027,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					wishes = append(wishes, value.String())
 				})
 			}
-			ch.Wedding.OpenGift(receiverID, wishes)
+			ch.wedding.OpenGift(receiverID, wishes)
 			return 0
 		},
 		"open_wedding_gift_box": func(L *lua.LState) int {
@@ -2042,7 +2042,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, ch.Wedding.OpenGiftBox(cfg.ActorContext), func(result bool, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.gameWorld, ch.wedding.OpenGiftBox(cfg.ActorContext), func(result bool, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}
@@ -2059,7 +2059,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			npcID := uint32(L.CheckInt(2))
 			storeFee := int32(L.OptInt(3, 100))
 			takeOutFee := int32(L.OptInt(4, 0))
-			ch.Account.Storage.Open(npcID, storeFee, takeOutFee)
+			ch.account.storage.Open(npcID, storeFee, takeOutFee)
 			return 0
 		},
 		"open_store_bank": func(L *lua.LState) int {
@@ -2075,7 +2075,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
-			ch.StoreBank.Open(cfg.ActorContext, npcID)
+			ch.storeBank.Open(cfg.ActorContext, npcID)
 			return 0
 		},
 		"open_duey": func(L *lua.LState) int {
@@ -2090,7 +2090,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
-			ch.Duey.Open(cfg.ActorContext, false)
+			ch.duey.Open(cfg.ActorContext, false)
 			return 0
 		},
 		"pet_id": func(L *lua.LState) int {
@@ -2100,11 +2100,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(ch.Pets.Active.Item.GetModel().GetID()))
+			L.Push(lua.LNumber(ch.pets.active.item.GetModel().GetID()))
 			return 1
 		},
 		"pet_closeness": func(L *lua.LState) int {
@@ -2114,11 +2114,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(ch.Pets.Active.Item.Closeness))
+			L.Push(lua.LNumber(ch.pets.active.item.closeness))
 			return 1
 		},
 		"add_pet_closeness": func(L *lua.LState) int {
@@ -2128,11 +2128,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			ch.Pets.Active.AddCloseness(L.CheckInt(2))
+			ch.pets.active.AddCloseness(L.CheckInt(2))
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -2143,11 +2143,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			ch.Pets.Active.SetCloseness(L.CheckInt(2))
+			ch.pets.active.SetCloseness(L.CheckInt(2))
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -2158,11 +2158,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			ch.Pets.Active.SetFullness(L.CheckInt(2))
+			ch.pets.active.SetFullness(L.CheckInt(2))
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -2173,11 +2173,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			ch.Pets.Active.hunger()
+			ch.pets.active.hunger()
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -2188,11 +2188,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LNumber(ch.Mount.Level))
-			L.Push(lua.LNumber(ch.Mount.Exp))
-			L.Push(lua.LNumber(ch.Mount.Fatigue))
-			L.Push(lua.LNumber(ch.Mount.HP))
-			_, vehicle, _ := ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
+			L.Push(lua.LNumber(ch.mount.level))
+			L.Push(lua.LNumber(ch.mount.exp))
+			L.Push(lua.LNumber(ch.mount.fatigue))
+			L.Push(lua.LNumber(ch.mount.hp))
+			_, vehicle, _ := ch.buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
 			L.Push(lua.LNumber(vehicle))
 			return 5
 		},
@@ -2203,7 +2203,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Mount.SetLevel(uint32(L.CheckInt(2)))
+			ch.mount.SetLevel(uint32(L.CheckInt(2)))
 			return 0
 		},
 		"set_mount_fatigue": func(L *lua.LState) int {
@@ -2213,7 +2213,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Mount.SetFatigue(uint32(L.CheckInt(2)))
+			ch.mount.SetFatigue(uint32(L.CheckInt(2)))
 			return 0
 		},
 		"set_mount_hp": func(L *lua.LState) int {
@@ -2223,7 +2223,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Mount.HP = uint32(max(L.CheckInt(2), 0))
+			ch.mount.hp = uint32(max(L.CheckInt(2), 0))
 			return 0
 		},
 		"start_mount_fatigue": func(L *lua.LState) int {
@@ -2233,7 +2233,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Mount.startFatigue()
+			ch.mount.startFatigue()
 			return 0
 		},
 		"show_skill_cooldown": func(L *lua.LState) int {
@@ -2243,7 +2243,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Listener.OnSkillCooldown(ch, uint32(L.CheckInt(2)), uint16(L.CheckInt(3)))
+			ch.listener.OnSkillCooldown(ch, uint32(L.CheckInt(2)), uint16(L.CheckInt(3)))
 			return 0
 		},
 		"tire_mount": func(L *lua.LState) int {
@@ -2253,7 +2253,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Mount.tire()
+			ch.mount.tire()
 			return 0
 		},
 		"pet_level": func(L *lua.LState) int {
@@ -2263,11 +2263,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(ch.Pets.Active.Item.Level))
+			L.Push(lua.LNumber(ch.pets.active.item.level))
 			return 1
 		},
 		"pet_fullness": func(L *lua.LState) int {
@@ -2277,11 +2277,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(ch.Pets.Active.Item.Fullness))
+			L.Push(lua.LNumber(ch.pets.active.item.fullness))
 			return 1
 		},
 		"rename_pet": func(L *lua.LState) int {
@@ -2291,11 +2291,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			L.Push(lua.LBool(ch.Pets.Active.Rename(L.CheckString(2)) == nil))
+			L.Push(lua.LBool(ch.pets.active.Rename(L.CheckString(2)) == nil))
 			return 1
 		},
 		"feed_pet_cash": func(L *lua.LState) int {
@@ -2305,11 +2305,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Pets.Active == nil {
+			if ch.pets.active == nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			L.Push(lua.LBool(ch.Pets.Active.FeedCash(uint32(L.CheckInt(2))) == nil))
+			L.Push(lua.LBool(ch.pets.active.FeedCash(uint32(L.CheckInt(2))) == nil))
 			return 1
 		},
 		"change_pet_skill": func(L *lua.LState) int {
@@ -2320,7 +2320,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			sn := uint64(L.CheckNumber(2))
-			L.Push(lua.LBool(ch.Pets.ChangeSkill(sn, uint32(L.CheckInt(3))) == nil))
+			L.Push(lua.LBool(ch.pets.ChangeSkill(sn, uint32(L.CheckInt(3))) == nil))
 			return 1
 		},
 		"expired_pets": func(L *lua.LState) int {
@@ -2331,11 +2331,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			tbl := L.NewTable()
-			for slot, pet := range ch.Pets.Expired() {
+			for slot, pet := range ch.pets.Expired() {
 				entry := L.NewTable()
 				entry.RawSetString("slot", lua.LNumber(slot))
 				entry.RawSetString("id", lua.LNumber(pet.GetModel().GetID()))
-				entry.RawSetString("name", lua.LString(pet.Name))
+				entry.RawSetString("name", lua.LString(pet.name))
 				tbl.Append(entry)
 			}
 			L.Push(tbl)
@@ -2348,7 +2348,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Pets.Revive(int16(L.CheckInt(2))) == nil))
+			L.Push(lua.LBool(ch.pets.Revive(int16(L.CheckInt(2))) == nil))
 			return 1
 		},
 		"open_quick_parcel": func(L *lua.LState) int {
@@ -2358,7 +2358,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Duey.OpenQuick() == nil))
+			L.Push(lua.LBool(ch.duey.OpenQuick() == nil))
 			return 1
 		},
 		"send_parcel": func(L *lua.LState) int {
@@ -2379,7 +2379,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "actor context not available")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Duey.SendFromSystem(cfg.ActorContext, recipient, senderName, itemID, count, meso, message) == nil))
+			L.Push(lua.LBool(ch.duey.SendFromSystem(cfg.ActorContext, recipient, senderName, itemID, count, meso, message) == nil))
 			return 1
 		},
 		"add_cash": func(L *lua.LState) int {
@@ -2454,10 +2454,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Role))
+				L.Push(lua.LNumber(ch.role))
 				return 1
 			case 2:
-				ch.Role = constant.CharacterRole(L.CheckInt(2))
+				ch.role = constant.CharacterRole(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "role() requires 0 or 1 arguments")
@@ -2477,11 +2477,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, ch.GameWorld.Systems().Get[*InternalSystem]().SetAccountRoleAsync(cfg.ActorContext, ch, role), func(_ *internal.SetAccountRoleReply, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.gameWorld, ch.gameWorld.Systems().Get[*InternalSystem]().SetAccountRoleAsync(cfg.ActorContext, ch, role), func(_ *internal.SetAccountRoleReply, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}
-				ch.Role = role
+				ch.role = role
 				return []lua.LValue{lua.LTrue}
 			})
 		},
@@ -2492,7 +2492,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Listener.Disconnect(ch)
+			ch.listener.Disconnect(ch)
 			return 0
 		},
 		"invincible": func(L *lua.LState) int {
@@ -2524,10 +2524,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			switch L.GetTop() {
 			case 1:
-				L.Push(lua.LNumber(ch.Dojo.Energy))
+				L.Push(lua.LNumber(ch.dojo.energy))
 				return 1
 			case 2:
-				ch.Dojo.SetEnergy(L.CheckInt(2))
+				ch.dojo.SetEnergy(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "dojo_energy() requires 0 or 1 arguments")
@@ -2544,10 +2544,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LBool(ch.GM.InstantKill))
+				L.Push(lua.LBool(ch.gm.instantKill))
 				return 1
 			case 2:
-				ch.GM.InstantKill = L.CheckBool(2)
+				ch.gm.instantKill = L.CheckBool(2)
 				return 0
 			default:
 				L.ArgError(2, "instant_kill() requires 0 or 1 arguments")
@@ -2564,10 +2564,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LBool(ch.GM.PlayerMode))
+				L.Push(lua.LBool(ch.gm.playerMode))
 				return 1
 			case 2:
-				ch.GM.PlayerMode = L.CheckBool(2)
+				ch.gm.playerMode = L.CheckBool(2)
 				return 0
 			default:
 				L.ArgError(2, "player_mode() requires 0 or 1 arguments")
@@ -2584,10 +2584,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.GM.TimerLimit))
+				L.Push(lua.LNumber(ch.gm.timerLimit))
 				return 1
 			case 2:
-				ch.GM.TimerLimit = uint32(L.CheckNumber(2))
+				ch.gm.timerLimit = uint32(L.CheckNumber(2))
 				return 0
 			default:
 				L.ArgError(2, "timer_limit() requires 0 or 1 arguments")
@@ -2607,11 +2607,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			target := m.FindPlayerByName(L.CheckString(2))
-			if target == nil || target.LieDetector.testerID == 0 {
+			if target == nil || target.lieDetector.testerID == 0 {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(lua.LString(target.LieDetector.answer))
+			L.Push(lua.LString(target.lieDetector.answer))
 			return 1
 		},
 		"open_npc": func(L *lua.LState) int {
@@ -2641,11 +2641,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				npc = ch.GetMap().NpcByTemplate(npcID)
 				if npc == nil {
-					npc = &Npc{Wz: &wz.NpcSpawn{BaseSpawn: &wz.BaseSpawn{ID: npcID}}}
+					npc = &Npc{wz: &wz.NpcSpawn{BaseSpawn: &wz.BaseSpawn{ID: npcID}}}
 				}
 			}
-			ch.Dialog.Close()
-			if err := ch.Dialog.Open(cfg.ActorContext, npc); err != nil {
+			ch.dialog.Close()
+			if err := ch.dialog.Open(cfg.ActorContext, npc); err != nil {
 				L.RaiseError("open_npc: %v", err)
 				return 0
 			}
@@ -2727,7 +2727,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			skillID := uint32(L.CheckInt(2))
 
-			skillEntry := ch.Skills.Get(skillID)
+			skillEntry := ch.skills.Get(skillID)
 			if skillEntry == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2746,16 +2746,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			skillID := uint32(L.CheckInt(2))
-			if existing := ch.Skills.Learned(skillID); existing != nil {
+			if existing := ch.skills.Learned(skillID); existing != nil {
 				L.Push(luax.NewLuable(L, existing))
 				return 1
 			}
 
-			if ch.GameWorld == nil {
+			if ch.gameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			resources := ch.GameWorld.GetResources()
+			resources := ch.gameWorld.GetResources()
 			if resources == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2768,8 +2768,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			skillEntry := NewSkillEntry(ch, wzSkill, 1, wzSkill.DefaultMasterLevel())
-			skillEntry.Expiration = time.Time{}
-			ch.Skills.Register(skillID, skillEntry)
+			skillEntry.expiration = time.Time{}
+			ch.skills.Register(skillID, skillEntry)
 
 			L.Push(luax.NewLuable(L, skillEntry))
 			return 1
@@ -2790,7 +2790,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			skillsTable := L.NewTable()
-			ch.Skills.ForEach(func(skillID uint32, skillEntry *SkillEntry) {
+			ch.skills.ForEach(func(skillID uint32, skillEntry *SkillEntry) {
 				skillUD := luax.NewLuable(L, skillEntry)
 				skillsTable.RawSetInt(int(skillID), skillUD)
 			})
@@ -2808,7 +2808,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Class))
+				L.Push(lua.LNumber(ch.class))
 				return 1
 			case 2:
 				classValue := L.CheckInt(2)
@@ -2826,7 +2826,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LNumber(ch.Chair))
+			L.Push(lua.LNumber(ch.chair))
 			return 1
 		},
 		"stance": func(L *lua.LState) int {
@@ -2839,10 +2839,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stance))
+				L.Push(lua.LNumber(ch.stance))
 				return 1
 			case 2:
-				ch.Stance = uint8(L.CheckInt(2))
+				ch.stance = uint8(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "stance() requires 0 or 1 argument")
@@ -2860,7 +2860,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			members, ok := constant.StanceGroupByKind[group]
 			if ok {
 				for _, v := range members {
-					if ch.Stance == v {
+					if ch.stance == v {
 						L.Push(lua.LTrue)
 						return 1
 					}
@@ -2868,7 +2868,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			L.Push(lua.LBool(ch.Stance == uint8(group)))
+			L.Push(lua.LBool(ch.stance == uint8(group)))
 			return 1
 		},
 		"class_of": func(L *lua.LState) int {
@@ -2879,7 +2879,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			classCode := constant.ClassType(L.CheckInt(2))
-			L.Push(lua.LBool(ch.Class.Of(classCode)))
+			L.Push(lua.LBool(ch.class.Of(classCode)))
 			return 1
 		},
 		"homing": func(L *lua.LState) int {
@@ -2893,7 +2893,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "homing() takes no arguments")
 				return 0
 			}
-			if ch.Skills.HomingTargetOID == nil {
+			if ch.skills.homingTargetOID == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -2902,7 +2902,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			mob := mapInstance.GetMob(*ch.Skills.HomingTargetOID)
+			mob := mapInstance.GetMob(*ch.skills.homingTargetOID)
 			if mob == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2921,12 +2921,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "party() takes no arguments")
 				return 0
 			}
-			pid := ch.Party.ID()
-			if pid == nil || ch.GameWorld == nil {
+			pid := ch.party.ID()
+			if pid == nil || ch.gameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			p := ch.GameWorld.Systems().Get[*PartySystem]().Get(*pid)
+			p := ch.gameWorld.Systems().Get[*PartySystem]().Get(*pid)
 			if p == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2941,11 +2941,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.StateMachine == nil {
+			if ch.stateMachine == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, ch.StateMachine))
+			L.Push(luax.NewLuable(L, ch.stateMachine))
 			return 1
 		},
 		"try_party_quest": func(L *lua.LState) int {
@@ -2956,7 +2956,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			ch.Quests.RunHook(questID, "on_quest_try")
+			ch.quests.RunHook(questID, "on_quest_try")
 			return 0
 		},
 		"end_party_quest": func(L *lua.LState) int {
@@ -2967,7 +2967,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			ch.Quests.RunHook(questID, "on_quest_end")
+			ch.quests.RunHook(questID, "on_quest_end")
 			return 0
 		},
 		"carnival_team": func(L *lua.LState) int {
@@ -2977,7 +2977,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			team := ch.Carnival.Team()
+			team := ch.carnival.Team()
 			if team == nil {
 				L.Push(lua.LNil)
 			} else {
@@ -2992,7 +2992,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Listener.OnCarnivalSummon(ch, constant.CarnivalTab(L.CheckInt(2)), uint8(L.CheckInt(3)), ch.GetName())
+			ch.listener.OnCarnivalSummon(ch, constant.CarnivalTab(L.CheckInt(2)), uint8(L.CheckInt(3)), ch.GetName())
 			return 0
 		},
 		"save_location": func(L *lua.LState) int {
@@ -3002,7 +3002,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.SavedLocations.Save(L.CheckString(2))
+			ch.savedLocations.Save(L.CheckString(2))
 			return 0
 		},
 		"saved_location": func(L *lua.LState) int {
@@ -3012,7 +3012,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			mapID, ok := ch.SavedLocations.Find(L.CheckString(2))
+			mapID, ok := ch.savedLocations.Find(L.CheckString(2))
 			if !ok {
 				L.Push(lua.LNil)
 				return 1
@@ -3027,7 +3027,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.SavedLocations.Clear(L.CheckString(2))
+			ch.savedLocations.Clear(L.CheckString(2))
 			return 0
 		},
 		"records": func(L *lua.LState) int {
@@ -3037,7 +3037,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(luax.NewLuable(L, ch.Records))
+			L.Push(luax.NewLuable(L, ch.records))
 			return 1
 		},
 		"account_records": func(L *lua.LState) int {
@@ -3047,7 +3047,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(luax.NewLuable(L, ch.Account.Records))
+			L.Push(luax.NewLuable(L, ch.account.records))
 			return 1
 		},
 		"max_hp": func(L *lua.LState) int {
@@ -3090,7 +3090,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			qp := ch.Quests.LuaQuest(questID)
+			qp := ch.quests.LuaQuest(questID)
 			if qp == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -3111,7 +3111,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			questID := uint32(L.CheckInt(2))
 			hook := L.CheckString(3)
-			ch.Quests.RunHook(questID, hook)
+			ch.quests.RunHook(questID, hook)
 			return 0
 		},
 		"quests": func(L *lua.LState) int {
@@ -3126,9 +3126,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			tbl := L.NewTable()
-			if ch.Quests != nil {
-				ch.Quests.ForEach(func(questID uint32, qp *Quest) {
-					if qp == nil || qp.Status == QuestStatusNotStarted {
+			if ch.quests != nil {
+				ch.quests.ForEach(func(questID uint32, qp *Quest) {
+					if qp == nil || qp.status == QuestStatusNotStarted {
 						return
 					}
 					tbl.RawSet(lua.LNumber(questID), luax.NewLuable(L, qp))
@@ -3153,16 +3153,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !ok {
 				return 0
 			}
-			if ch.GameWorld == nil {
+			if ch.gameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			_, err := ch.Quests.Start(questID, QuestPhaseOpts{NpcID: &npcID})
+			_, err := ch.quests.Start(questID, QuestPhaseOpts{NpcID: &npcID})
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			qp := ch.Quests.Get(questID)
+			qp := ch.quests.Get(questID)
 			if qp == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -3178,13 +3178,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				L.Push(lua.LNumber(ch.Quests.ClearAll()))
+				L.Push(lua.LNumber(ch.quests.ClearAll()))
 				return 1
 			}
 			if L.GetTop() == 2 {
 				questID := uint32(L.CheckInt(2))
 				cleared := 0
-				if ch.Quests.Clear(questID) {
+				if ch.quests.Clear(questID) {
 					cleared = 1
 				}
 				L.Push(lua.LNumber(cleared))
@@ -3204,7 +3204,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "completed_quest_count() takes no arguments")
 				return 0
 			}
-			L.Push(lua.LNumber(ch.Quests.CompletedCount()))
+			L.Push(lua.LNumber(ch.quests.CompletedCount()))
 			return 1
 		},
 		"clear_inventory": func(L *lua.LState) int {
@@ -3218,7 +3218,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "clear_inventory() takes no arguments")
 				return 0
 			}
-			L.Push(lua.LNumber(ch.Inventory.ClearInventory()))
+			L.Push(lua.LNumber(ch.inventory.ClearInventory()))
 			return 1
 		},
 		"register_card": func(L *lua.LState) int {
@@ -3235,7 +3235,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			for range L.OptInt(3, 1) {
-				ch.MonsterBook.Register(cardID)
+				ch.monsterBook.Register(cardID)
 			}
 			L.Push(lua.LTrue)
 			return 1
@@ -3247,7 +3247,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.MonsterBook.Reset()
+			ch.monsterBook.Reset()
 			return 0
 		},
 		"reset_teleport_stones": func(L *lua.LState) int {
@@ -3257,7 +3257,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.TeleportStones.Reset()
+			ch.teleportStones.Reset()
 			return 0
 		},
 		"guild": func(L *lua.LState) int {
@@ -3271,12 +3271,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "guild() takes no arguments")
 				return 0
 			}
-			guildID, inGuild := ch.Guild.ID()
-			if !inGuild || ch.GameWorld == nil {
+			guildID, inGuild := ch.guild.ID()
+			if !inGuild || ch.gameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			g := ch.GameWorld.Systems().Get[*GuildSystem]().Get(guildID)
+			g := ch.gameWorld.Systems().Get[*GuildSystem]().Get(guildID)
 			if g == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -3296,15 +3296,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LNumber:
 				npc = int(npcArg)
 			case *lua.LUserData:
-				if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
-					npc = int(n.Wz.BaseSpawn.ID)
+				if n, ok := npcArg.Value.(*Npc); ok && n.wz != nil && n.wz.BaseSpawn != nil {
+					npc = int(n.wz.BaseSpawn.ID)
 				}
 			}
 			cfg, ok := luax.GetConfiguration(L)
-			if !ok || cfg.ActorContext == nil || ch.GameWorld == nil {
+			if !ok || cfg.ActorContext == nil || ch.gameWorld == nil {
 				return 0
 			}
-			ch.GameWorld.Systems().Get[*GuildSystem]().ShowRankingAsync(cfg.ActorContext, ch, uint32(npc))
+			ch.gameWorld.Systems().Get[*GuildSystem]().ShowRankingAsync(cfg.ActorContext, ch, uint32(npc))
 			return 0
 		},
 		"gain_guild_gp": func(L *lua.LState) int {
@@ -3319,7 +3319,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !ok || cfg.ActorContext == nil {
 				return 0
 			}
-			ch.GameWorld.Systems().Get[*GuildSystem]().GainGPAsync(cfg.ActorContext, ch, int32(amount))
+			ch.gameWorld.Systems().Get[*GuildSystem]().GainGPAsync(cfg.ActorContext, ch, int32(amount))
 			return 0
 		},
 		"create_alliance": func(L *lua.LState) int {
@@ -3356,7 +3356,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseCode(L.CheckInt(2)))
+			ch.listener.OnGuildMessage(ch, pconst.GuildResponseCode(L.CheckInt(2)))
 			return 0
 		},
 		"hidden": func(L *lua.LState) int {
@@ -3386,13 +3386,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			self := ch.Family.Self()
+			self := ch.family.Self()
 			table := L.NewTable()
-			table.RawSetString("leader", lua.LNumber(ch.Family.Tree.Leader().GetCharacterId()))
-			table.RawSetString("senior", lua.LNumber(self.GetSeniorId()))
-			table.RawSetString("juniors", lua.LNumber(len(ch.Family.Tree.Juniors(ch.GetID()))))
-			table.RawSetString("reputation", lua.LNumber(self.GetReputation()))
-			table.RawSetString("total_reputation", lua.LNumber(self.GetTotalReputation()))
+			table.RawSetString("leader", lua.LNumber(ch.family.tree.Leader().CharacterID()))
+			table.RawSetString("senior", lua.LNumber(self.SeniorID()))
+			table.RawSetString("juniors", lua.LNumber(len(ch.family.tree.Juniors(ch.GetID()))))
+			table.RawSetString("reputation", lua.LNumber(self.Reputation()))
+			table.RawSetString("total_reputation", lua.LNumber(self.TotalReputation()))
 			L.Push(table)
 			return 1
 		},
@@ -3403,7 +3403,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Dialog.Thread() != nil))
+			L.Push(lua.LBool(ch.dialog.Thread() != nil))
 			return 1
 		},
 		"base_str": func(L *lua.LState) int {
@@ -3416,7 +3416,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Base.Str))
+				L.Push(lua.LNumber(ch.stats.base.str))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -3426,7 +3426,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.Stats.Base.Str = uint16(v)
+				ch.stats.base.str = uint16(v)
 				ch.notifyStatChange(constant.StatStr)
 				return 0
 			default:
@@ -3444,7 +3444,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Base.Dex))
+				L.Push(lua.LNumber(ch.stats.base.dex))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -3454,7 +3454,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.Stats.Base.Dex = uint16(v)
+				ch.stats.base.dex = uint16(v)
 				ch.notifyStatChange(constant.StatDex)
 				return 0
 			default:
@@ -3472,7 +3472,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Base.Int))
+				L.Push(lua.LNumber(ch.stats.base.int))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -3482,7 +3482,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.Stats.Base.Int = uint16(v)
+				ch.stats.base.int = uint16(v)
 				ch.notifyStatChange(constant.StatInt)
 				return 0
 			default:
@@ -3500,7 +3500,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Base.Luk))
+				L.Push(lua.LNumber(ch.stats.base.luk))
 				return 1
 			case 2:
 				v := L.CheckInt(2)
@@ -3510,7 +3510,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v > int(constant.StatMaxStrDexIntLuk) {
 					v = int(constant.StatMaxStrDexIntLuk)
 				}
-				ch.Stats.Base.Luk = uint16(v)
+				ch.stats.base.luk = uint16(v)
 				ch.notifyStatChange(constant.StatLuk)
 				return 0
 			default:
@@ -3528,10 +3528,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.Str))
+				L.Push(lua.LNumber(ch.stats.bonus.str))
 				return 1
 			case 2:
-				ch.Stats.Bonus.Str = int16(L.CheckInt(2))
+				ch.stats.bonus.str = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatStr)
 				return 0
 			default:
@@ -3549,10 +3549,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.Dex))
+				L.Push(lua.LNumber(ch.stats.bonus.dex))
 				return 1
 			case 2:
-				ch.Stats.Bonus.Dex = int16(L.CheckInt(2))
+				ch.stats.bonus.dex = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatDex)
 				return 0
 			default:
@@ -3570,10 +3570,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.Int))
+				L.Push(lua.LNumber(ch.stats.bonus.int))
 				return 1
 			case 2:
-				ch.Stats.Bonus.Int = int16(L.CheckInt(2))
+				ch.stats.bonus.int = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatInt)
 				return 0
 			default:
@@ -3591,10 +3591,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.Luk))
+				L.Push(lua.LNumber(ch.stats.bonus.luk))
 				return 1
 			case 2:
-				ch.Stats.Bonus.Luk = int16(L.CheckInt(2))
+				ch.stats.bonus.luk = int16(L.CheckInt(2))
 				ch.notifyStatChange(constant.StatLuk)
 				return 0
 			default:
@@ -3612,10 +3612,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.Watk))
+				L.Push(lua.LNumber(ch.stats.bonus.watk))
 				return 1
 			case 2:
-				ch.Stats.Bonus.Watk = int16(L.CheckInt(2))
+				ch.stats.bonus.watk = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_watk() requires 0 or 1 arguments")
@@ -3633,7 +3633,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			switch argc {
 			case 1:
 				L.Push(lua.LNumber(ch.GetBonusHp()))
-				L.Push(lua.LNumber(ch.Stats.Bonus.MaxHpPercent))
+				L.Push(lua.LNumber(ch.stats.bonus.maxHpPercent))
 				return 2
 			case 2:
 				ch.SetBonusHp(int32(L.CheckInt(2)), true)
@@ -3658,7 +3658,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			switch argc {
 			case 1:
 				L.Push(lua.LNumber(ch.GetBonusMp()))
-				L.Push(lua.LNumber(ch.Stats.Bonus.MaxMpPercent))
+				L.Push(lua.LNumber(ch.stats.bonus.maxMpPercent))
 				return 2
 			case 2:
 				ch.SetBonusMp(int32(L.CheckInt(2)), true)
@@ -3704,7 +3704,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.MaxHpPercent))
+				L.Push(lua.LNumber(ch.stats.bonus.maxHpPercent))
 				return 1
 			case 2, 3:
 				p := int16(L.CheckInt(2))
@@ -3748,7 +3748,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.MaxMpPercent))
+				L.Push(lua.LNumber(ch.stats.bonus.maxMpPercent))
 				return 1
 			case 2, 3:
 				p := int16(L.CheckInt(2))
@@ -3770,10 +3770,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.MesoMultiplier))
+				L.Push(lua.LNumber(ch.stats.bonus.mesoMultiplier))
 				return 1
 			case 2:
-				ch.Stats.Bonus.MesoMultiplier = int16(L.CheckInt(2))
+				ch.stats.bonus.mesoMultiplier = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_meso_multiplier() requires 1 or 2 arguments")
@@ -3790,10 +3790,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.DropRate))
+				L.Push(lua.LNumber(ch.stats.bonus.dropRate))
 				return 1
 			case 2:
-				ch.Stats.Bonus.DropRate = int16(L.CheckInt(2))
+				ch.stats.bonus.dropRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_drop_rate() requires 1 or 2 arguments")
@@ -3807,11 +3807,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.GameWorld == nil {
+			if ch.gameWorld == nil {
 				L.Push(lua.LNumber(1))
 				return 1
 			}
-			L.Push(lua.LNumber(ch.GameWorld.GetDropRate()))
+			L.Push(lua.LNumber(ch.gameWorld.GetDropRate()))
 			return 1
 		},
 		"bonus_exp_rate": func(L *lua.LState) int {
@@ -3824,10 +3824,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.ExpRate))
+				L.Push(lua.LNumber(ch.stats.bonus.expRate))
 				return 1
 			case 2:
-				ch.Stats.Bonus.ExpRate = int16(L.CheckInt(2))
+				ch.stats.bonus.expRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "bonus_exp_rate() requires 1 or 2 arguments")
@@ -3844,10 +3844,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.PotionHealRate))
+				L.Push(lua.LNumber(ch.stats.bonus.potionHealRate))
 				return 1
 			case 2:
-				ch.Stats.Bonus.PotionHealRate = int16(L.CheckInt(2))
+				ch.stats.bonus.potionHealRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "potion_heal_rate() requires 1 or 2 arguments")
@@ -3864,10 +3864,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Stats.Bonus.PotionDurationRate))
+				L.Push(lua.LNumber(ch.stats.bonus.potionDurationRate))
 				return 1
 			case 2:
-				ch.Stats.Bonus.PotionDurationRate = int16(L.CheckInt(2))
+				ch.stats.bonus.potionDurationRate = int16(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "potion_duration_rate() requires 1 or 2 arguments")
@@ -3903,11 +3903,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 				case lua.LString:
-					if ch.GameWorld == nil {
+					if ch.gameWorld == nil {
 						L.RaiseError("map: no context to resolve map name")
 						return 0
 					}
-					resources := ch.GameWorld.GetResources()
+					resources := ch.gameWorld.GetResources()
 					if resources == nil {
 						L.RaiseError("map: no resources to resolve map name")
 						return 0
@@ -3917,18 +3917,18 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.RaiseError("map: unknown map name %q", string(v))
 						return 0
 					}
-					targetMap = ch.GameWorld.Systems().Get[*MapSystem]().Find(ch.StateMachine, mapId)
+					targetMap = ch.gameWorld.Systems().Get[*MapSystem]().Find(ch.stateMachine, mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map %q (id %d) not found", string(v), mapId)
 						return 0
 					}
 				case lua.LNumber:
-					if ch.GameWorld == nil {
+					if ch.gameWorld == nil {
 						L.RaiseError("map: no context to resolve map id")
 						return 0
 					}
 					mapId := uint32(v)
-					targetMap = ch.GameWorld.Systems().Get[*MapSystem]().Find(ch.StateMachine, mapId)
+					targetMap = ch.gameWorld.Systems().Get[*MapSystem]().Find(ch.stateMachine, mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map id %d not found", mapId)
 						return 0
@@ -3951,7 +3951,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.RaiseError("map: portal %q not found in map %d", string(v), targetMap.GetMapID())
 						return 0
 					}
-					spawnPoint = portal.Wz.ID
+					spawnPoint = portal.wz.ID
 				default:
 					L.ArgError(3, "spawn point id (number), portal name (string), or options (table) expected")
 					return 0
@@ -4000,7 +4000,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 				}
 				cfg, _ := luax.GetConfiguration(L)
-				err := ch.GameWorld.Systems().Get[*MapSystem]().Warp(cfg.ActorContext, ch, targetMap, spawnPoint, onEnter)
+				err := ch.gameWorld.Systems().Get[*MapSystem]().Warp(cfg.ActorContext, ch, targetMap, spawnPoint, onEnter)
 				if err != nil {
 					L.RaiseError("warp: %v", err)
 				}
@@ -4024,12 +4024,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			portal := m.FindPortal(spawnID)
-			if portal == nil || portal.Wz == nil {
+			if portal == nil || portal.wz == nil {
 				return 1
 			}
-			L.Push(lua.LString(portal.Wz.Name))
-			L.Push(lua.LNumber(portal.Wz.Position.X))
-			L.Push(lua.LNumber(portal.Wz.Position.Y))
+			L.Push(lua.LString(portal.wz.Name))
+			L.Push(lua.LNumber(portal.wz.Position.X))
+			L.Push(lua.LNumber(portal.wz.Position.Y))
 			return 4
 		},
 		"show_magnet": func(L *lua.LState) int {
@@ -4056,7 +4056,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			m := ch.GetMap()
 			if m != nil {
-				ch.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: successByte}, &ObjectBroadcastOption{})
+				ch.Broadcast(&response.ShowMagnet{MobID: mob.oid, Success: successByte}, &ObjectBroadcastOption{})
 			}
 			return 0
 		},
@@ -4109,7 +4109,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() >= 6 {
 				skillLevel = uint16(L.CheckNumber(6))
 			}
-			ch.Debuffs.Give(flag, time.Duration(durationMs)*time.Millisecond, x, skillID, skillLevel)
+			ch.debuffs.Give(flag, time.Duration(durationMs)*time.Millisecond, x, skillID, skillLevel)
 			return 0
 		},
 		"has_debuff": func(L *lua.LState) int {
@@ -4144,7 +4144,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !ok {
 				return 0
 			}
-			L.Push(lua.LBool(ch.Debuffs.Has(flag)))
+			L.Push(lua.LBool(ch.debuffs.Has(flag)))
 			return 1
 		},
 		"remove_debuff": func(L *lua.LState) int {
@@ -4184,7 +4184,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				flags = append(flags, flag)
 			}
 			if len(flags) > 0 {
-				ch.Debuffs.Remove(flags...)
+				ch.debuffs.Remove(flags...)
 			}
 			return 0
 		},
@@ -4201,7 +4201,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			default:
 				part := constant.EquipmentPartsType(L.CheckInt(2))
-				if eq, ok := ch.Inventory.Equipped[part]; ok && eq != nil {
+				if eq, ok := ch.inventory.equipped[part]; ok && eq != nil {
 					L.Push(luax.NewLuable(L, eq.(luax.Luable)))
 					return 1
 				}
@@ -4225,11 +4225,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LNumber:
 				slot = int16(lv)
 			case lua.LString:
-				if ch.GameWorld == nil {
+				if ch.gameWorld == nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				resources := ch.GameWorld.GetResources()
+				resources := ch.gameWorld.GetResources()
 				if resources == nil {
 					L.Push(lua.LBool(false))
 					return 1
@@ -4239,7 +4239,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				invType, slots := ch.Inventory.FindSlots(itemID)
+				invType, slots := ch.inventory.FindSlots(itemID)
 				if invType != constant.InventoryTypeEquipment || len(slots) == 0 {
 					L.Push(lua.LBool(false))
 					return 1
@@ -4249,7 +4249,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if itemUD, ok := L.Get(2).(*lua.LUserData); ok && itemUD.Value != nil {
 					if item, ok := itemUD.Value.(Item); ok {
 						var found bool
-						slot, found = ch.Inventory.FindSlot(constant.InventoryTypeEquipment, item)
+						slot, found = ch.inventory.FindSlot(constant.InventoryTypeEquipment, item)
 						if !found {
 							L.Push(lua.LBool(false))
 							return 1
@@ -4260,7 +4260,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "equip(slot | item | name): slot (number), item (equipment), or name (string) expected")
 				return 0
 			}
-			item := ch.Inventory.Tabs[constant.InventoryTypeEquipment].Items[slot]
+			item := ch.inventory.tabs[constant.InventoryTypeEquipment].items[slot]
 			if item == nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -4275,7 +4275,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			err := ch.Inventory.Equip(slot, parts[0])
+			err := ch.inventory.Equip(slot, parts[0])
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
@@ -4295,11 +4295,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LNumber:
 				parts = constant.EquipmentPartsType(lv)
 			case lua.LString:
-				if ch.GameWorld == nil {
+				if ch.gameWorld == nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				resources := ch.GameWorld.GetResources()
+				resources := ch.gameWorld.GetResources()
 				if resources == nil {
 					L.Push(lua.LBool(false))
 					return 1
@@ -4310,7 +4310,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 1
 				}
 				var found bool
-				for p, eq := range ch.Inventory.Equipped {
+				for p, eq := range ch.inventory.equipped {
 					if eq != nil && eq.GetModel().GetID() == itemID {
 						parts = p
 						found = true
@@ -4325,7 +4325,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if itemUD, ok := L.Get(2).(*lua.LUserData); ok && itemUD.Value != nil {
 					if item, ok := itemUD.Value.(Item); ok {
 						var found bool
-						for p, eq := range ch.Inventory.Equipped {
+						for p, eq := range ch.inventory.equipped {
 							if eq == item {
 								parts = p
 								found = true
@@ -4342,7 +4342,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "unequip(parts | item | name): parts (EquipmentPart), item (equipment), or name (string) expected")
 				return 0
 			}
-			err := ch.Inventory.Unequip(parts)
+			err := ch.inventory.Unequip(parts)
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
@@ -4357,7 +4357,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "empty_slots(inventory_type) requires inventory type")
 				return 0
 			}
-			inven := ch.Inventory.Tabs[constant.InventoryType(L.CheckInt(2))]
+			inven := ch.inventory.tabs[constant.InventoryType(L.CheckInt(2))]
 			if inven == nil {
 				L.Push(lua.LNumber(0))
 				return 1
@@ -4376,8 +4376,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "put_key(slot, type, action) requires slot, type, and action")
 				return 0
 			}
-			ch.KeyLayout.SetKey(L.CheckInt(2), byte(L.CheckInt(3)), int32(L.CheckInt(4)))
-			ch.Listener.OnKeyMap(ch)
+			ch.keyLayout.SetKey(L.CheckInt(2), byte(L.CheckInt(3)), int32(L.CheckInt(4)))
+			ch.listener.OnKeyMap(ch)
 			return 0
 		},
 		"morph": func(L *lua.LState) int {
@@ -4388,7 +4388,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				_, value, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMorph)
+				_, value, ok := ch.buffs.GetBuffValue(constant.BuffFlagMorph)
 				if !ok {
 					L.Push(lua.LNumber(0))
 					return 1
@@ -4400,7 +4400,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "morph() reads the morph id; morph(false) clears it")
 				return 0
 			}
-			ch.Buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagMorph})
+			ch.buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagMorph})
 			return 0
 		},
 		"use_item": func(L *lua.LState) int {
@@ -4425,10 +4425,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				L.Push(lua.LNumber(ch.Buddies.Capacity()))
+				L.Push(lua.LNumber(ch.buddies.Capacity()))
 				return 1
 			}
-			ch.Buddies.SetCapacity(uint32(L.CheckInt(2)))
+			ch.buddies.SetCapacity(uint32(L.CheckInt(2)))
 			return 0
 		},
 		"sync_item": func(L *lua.LState) int {
@@ -4444,11 +4444,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			invType := constant.InventoryType(L.CheckInt(2))
 			slot := int16(L.CheckInt(3))
-			item := ch.Inventory.GetItem(invType, slot)
+			item := ch.inventory.GetItem(invType, slot)
 			if item == nil {
 				return 0
 			}
-			ch.Listener.OnInventorySlotUpdated(ch, invType, slot, item)
+			ch.listener.OnInventorySlotUpdated(ch, invType, slot, item)
 			return 0
 		},
 		"mob_drops": func(L *lua.LState) int {
@@ -4463,11 +4463,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			t := L.NewTable()
-			if ch.GameWorld == nil {
+			if ch.gameWorld == nil {
 				L.Push(t)
 				return 1
 			}
-			resources := ch.GameWorld.GetResources()
+			resources := ch.gameWorld.GetResources()
 			if resources == nil {
 				L.Push(t)
 				return 1
@@ -4500,11 +4500,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					itemID = uint32(lv)
 				case lua.LString:
-					if ch.GameWorld == nil {
+					if ch.gameWorld == nil {
 						L.Push(L.NewTable())
 						return 1
 					}
-					resources := ch.GameWorld.GetResources()
+					resources := ch.gameWorld.GetResources()
 					if resources == nil {
 						L.Push(L.NewTable())
 						return 1
@@ -4525,8 +4525,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(slotTbl)
 					return 1
 				}
-				if inven := ch.Inventory.Tabs[model.GetInventoryType()]; inven != nil {
-					for slot, item := range inven.Items {
+				if inven := ch.inventory.tabs[model.GetInventoryType()]; inven != nil {
+					for slot, item := range inven.items {
 						if item != nil && item.GetModel().GetID() == itemID {
 							L.Push(luax.NewLuable(L, item))
 							slotTbl.RawSet(lua.LNumber(slot), L.Get(-1))
@@ -4539,7 +4539,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 3:
 				invType := constant.InventoryType(L.CheckInt(2))
 				slot := int16(L.CheckInt(3))
-				item := ch.Inventory.GetItem(invType, slot)
+				item := ch.inventory.GetItem(invType, slot)
 				if item == nil {
 					L.Push(lua.LNil)
 				} else {
@@ -4562,12 +4562,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			switch argc {
 			case 1:
 				result := L.NewTable()
-				for invType, inven := range ch.Inventory.Tabs {
+				for invType, inven := range ch.inventory.tabs {
 					if inven == nil {
 						continue
 					}
 					invTbl := L.NewTable()
-					for slot, item := range inven.Items {
+					for slot, item := range inven.items {
 						if item == nil {
 							continue
 						}
@@ -4582,8 +4582,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			default:
 				invType := constant.InventoryType(L.CheckInt(2))
 				slotTbl := L.NewTable()
-				if inven := ch.Inventory.Tabs[invType]; inven != nil {
-					for slot, item := range inven.Items {
+				if inven := ch.inventory.tabs[invType]; inven != nil {
+					for slot, item := range inven.items {
 						if item == nil {
 							continue
 						}
@@ -4603,11 +4603,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.GameWorld == nil {
+			if ch.gameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			resources := ch.GameWorld.GetResources()
+			resources := ch.gameWorld.GetResources()
 			if resources == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -4659,7 +4659,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			item, err := NewItem(itemId, count, ch.GameWorld)
+			item, err := NewItem(itemId, count, ch.gameWorld)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -4672,7 +4672,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 
-			added, err := ch.Inventory.AddItem(item, true)
+			added, err := ch.inventory.AddItem(item, true)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -4701,15 +4701,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				ok := ch.Inventory.RemoveItem(invType, slot, count)
+				ok := ch.inventory.RemoveItem(invType, slot, count)
 				L.Push(lua.LBool(ok))
 				return 1
 			case 2, 3:
-				if ch.GameWorld == nil {
+				if ch.gameWorld == nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				resources := ch.GameWorld.GetResources()
+				resources := ch.gameWorld.GetResources()
 				if resources == nil {
 					L.Push(lua.LBool(false))
 					return 1
@@ -4737,7 +4737,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					count = uint16(L.CheckInt(3))
 				}
-				removed := ch.Inventory.RemoveByItemIDCount(itemId, count)
+				removed := ch.inventory.RemoveByItemIDCount(itemId, count)
 				L.Push(lua.LBool(removed))
 				return 1
 			default:
@@ -4812,7 +4812,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			seconds := L.CheckInt(2)
 			fn := L.OptFunction(3, nil)
 			ch.RemoveTimer(clockTimer)
-			ch.Listener.OnClock(ch, int32(seconds))
+			ch.listener.OnClock(ch, int32(seconds))
 			if fn == nil {
 				return 0
 			}

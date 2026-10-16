@@ -37,7 +37,7 @@ func (h *partyMqPartyInvite) Handle(_ actor.Context, raw json.RawMessage) error 
 		if ch == nil {
 			return
 		}
-		ch.Listener.OnPartyInvite(ch, payload.PartyID, payload.InviterName, payload.PartySearch)
+		ch.Listener().OnPartyInvite(ch, payload.PartyID, payload.InviterName, payload.PartySearch)
 	})
 	return nil
 }

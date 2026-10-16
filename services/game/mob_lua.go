@@ -26,7 +26,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			argc := L.GetTop()
 			if argc == 1 {
-				L.Push(lua.LBool(mob.Fake))
+				L.Push(lua.LBool(mob.fake))
 				return 1
 			}
 			if argc == 2 {
@@ -131,7 +131,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				pos.Y = int16(L.CheckInt(4))
 			}
 			spawnType := constant.MobSpawnTypeRevive
-			link := mob.OID
+			link := mob.oid
 			if L.GetTop() >= 5 {
 				spawnType = constant.MobSpawnType(L.CheckInt(5))
 			}
@@ -197,7 +197,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			if argc == 1 {
 
-				L.Push(lua.LNumber(mob.Wz.ID))
+				L.Push(lua.LNumber(mob.wz.ID))
 				return 1
 			} else {
 				L.ArgError(2, "id() is read-only")
@@ -215,7 +215,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			if argc == 1 {
 
-				L.Push(lua.LString(fmt.Sprintf("Mob_%d", mob.Wz.ID)))
+				L.Push(lua.LString(fmt.Sprintf("Mob_%d", mob.wz.ID)))
 				return 1
 			} else {
 				L.ArgError(2, "name() is read-only")
@@ -232,7 +232,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			argc := L.GetTop()
 			if argc == 1 {
-				L.Push(lua.LNumber(mob.Wz.EXP))
+				L.Push(lua.LNumber(mob.wz.EXP))
 				return 1
 			} else {
 				L.ArgError(2, "exp() is read-only")
@@ -250,11 +250,11 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(mob.Foothold))
+				L.Push(lua.LNumber(mob.foothold))
 				return 1
 			case 2:
 				foothold := L.CheckInt(2)
-				mob.Foothold = int16(foothold)
+				mob.foothold = int16(foothold)
 				return 0
 			default:
 				L.ArgError(2, "foothold() requires 0 or 1 arguments")
@@ -268,7 +268,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			L.Push(lua.LNumber(mob.CarnivalTeam))
+			L.Push(lua.LNumber(mob.carnivalTeam))
 			return 1
 		},
 		"map_id": func(L *lua.LState) int {
@@ -321,24 +321,24 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				switch source := lv.Value.(type) {
 				case *SkillEntry:
-					if source != nil && source.Wz != nil {
-						return source.Wz, uint8(source.Level())
+					if source != nil && source.wz != nil {
+						return source.wz, uint8(source.Level())
 					}
 				case *MobSkill:
-					if source != nil && source.LevelData != nil && source.LevelData.SkillWz != nil {
-						return source.LevelData.SkillWz, source.Slot.Level
+					if source != nil && source.levelData != nil && source.levelData.SkillWz != nil {
+						return source.levelData.SkillWz, source.slot.Level
 					}
 				case *Mist:
-					if source != nil && source.SkillWz != nil {
-						return source.SkillWz, source.SkillLevel
+					if source != nil && source.skillWz != nil {
+						return source.skillWz, source.skillLevel
 					}
 				case *SkillBuff:
-					if source != nil && source.Wz != nil {
-						return source.Wz, source.SkillLevel
+					if source != nil && source.wz != nil {
+						return source.wz, source.skillLevel
 					}
 				case *MobBuff:
-					if source != nil && source.Wz != nil {
-						return source.Wz, source.SkillLevel
+					if source != nil && source.wz != nil {
+						return source.wz, source.skillLevel
 					}
 				}
 				return nil, 0
@@ -406,7 +406,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					stack = uint8(s)
 				}
-				mob.Buffs.Add(duration, skillWz, skillLevel, causerOID,
+				mob.buffs.Add(duration, skillWz, skillLevel, causerOID,
 					map[constant.MobBuffFlag]int32{buff: value},
 					map[constant.MobBuffFlag]uint8{buff: stack})
 				return 0
@@ -430,7 +430,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				values[buff] = int32(lua.LVAsNumber(value))
 			})
 			if len(values) > 0 {
-				mob.Buffs.Add(duration, skillWz, skillLevel, causerOID, values, nil)
+				mob.buffs.Add(duration, skillWz, skillLevel, causerOID, values, nil)
 			}
 			return 0
 		},
@@ -442,7 +442,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				v := mob.ExpRate
+				v := mob.expRate
 				if v <= 0 {
 					v = 100
 				}
@@ -454,7 +454,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if n < 100 {
 					n = 100
 				}
-				mob.ExpRate = n
+				mob.expRate = n
 				return 0
 			}
 			L.ArgError(2, "exp_rate() get or set one value")
@@ -468,7 +468,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				v := mob.DropRate
+				v := mob.dropRate
 				if v <= 0 {
 					v = 100
 				}
@@ -480,7 +480,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if n < 100 {
 					n = 100
 				}
-				mob.DropRate = n
+				mob.dropRate = n
 				return 0
 			}
 			L.ArgError(2, "drop_rate() get or set one value")
@@ -503,7 +503,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ownerUd, ok := L.Get(3).(*lua.LUserData); ok {
 				owner, _ = ownerUd.Value.(*Character)
 			}
-			mapInstance.dropLuaEntries(entries, mob.Position, owner, true)
+			mapInstance.dropLuaEntries(entries, mob.position, owner, true)
 			return 0
 		},
 		"drops": func(L *lua.LState) int {
@@ -514,16 +514,16 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			t := L.NewTable()
-			if mob.GameWorld == nil || mob.Wz == nil {
+			if mob.gameWorld == nil || mob.wz == nil {
 				L.Push(t)
 				return 1
 			}
-			resources := mob.GameWorld.GetResources()
+			resources := mob.gameWorld.GetResources()
 			if resources == nil {
 				L.Push(t)
 				return 1
 			}
-			mobDrops, ok := resources.MobDrops[mob.Wz.ID]
+			mobDrops, ok := resources.MobDrops[mob.wz.ID]
 			if !ok {
 				L.Push(t)
 				return 1
@@ -580,7 +580,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(3, "Skill expected or nil to clear")
 				return 0
 			}
-			if skill.Wz == nil {
+			if skill.wz == nil {
 				L.ArgError(3, "Skill has no wz data")
 				return 0
 			}
@@ -589,7 +589,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(3, "skill level out of range for homing")
 				return 0
 			}
-			h := &Homing{SkillWz: skill.Wz, SkillLevel: uint8(lv)}
+			h := &Homing{skillWz: skill.wz, skillLevel: uint8(lv)}
 			mob.SetHoming(causer.GetID(), h)
 			return 0
 		},
@@ -643,7 +643,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
-			mob.Buffs.Remove(buff)
+			mob.buffs.Remove(buff)
 			return 0
 		},
 		"dispel": func(L *lua.LState) int {
@@ -654,8 +654,8 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			skillID := uint32(L.CheckInt(2))
-			if mob.Buffs != nil {
-				mob.Buffs.Dispel(skillID)
+			if mob.buffs != nil {
+				mob.buffs.Dispel(skillID)
 			}
 			return 0
 		},
@@ -670,7 +670,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			maskLV := buffTable.RawGetString("mask")
 			if maskLV.Type() == lua.LTNumber {
 				buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
-				L.Push(lua.LBool(mob.Buffs.Has(buff)))
+				L.Push(lua.LBool(mob.buffs.Has(buff)))
 				return 1
 			}
 			hasAny := false
@@ -690,7 +690,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return
 				}
 				buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(entryMask)))
-				if mob.Buffs.Has(buff) {
+				if mob.buffs.Has(buff) {
 					hasAny = true
 				}
 			})
@@ -715,7 +715,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
-			L.Push(lua.LNumber(mob.Buffs.GetValue(buff)))
+			L.Push(lua.LNumber(mob.buffs.GetValue(buff)))
 			return 1
 		},
 
@@ -738,10 +738,10 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if stack < 1 {
 					stack = 1
 				}
-				L.Push(lua.LBool(mob.Buffs.SetStack(buff, stack)))
+				L.Push(lua.LBool(mob.buffs.SetStack(buff, stack)))
 				return 1
 			}
-			L.Push(lua.LNumber(mob.Buffs.GetStack(buff)))
+			L.Push(lua.LNumber(mob.buffs.GetStack(buff)))
 			return 1
 		},
 		"banish": func(L *lua.LState) int {
@@ -761,26 +761,26 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Character expected")
 				return 0
 			}
-			if mob.Wz == nil || mob.Wz.Banish == nil {
+			if mob.wz == nil || mob.wz.Banish == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			b := mob.Wz.Banish
-			if b.Message != "" && ch.Listener != nil {
-				ch.Listener.OnMessage(ch, constant.MsgPinkText, b.Message)
+			b := mob.wz.Banish
+			if b.Message != "" && ch.listener != nil {
+				ch.listener.OnMessage(ch, constant.MsgPinkText, b.Message)
 			}
-			if ch.GameWorld == nil {
+			if ch.gameWorld == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			targetMap := ch.GameWorld.Systems().Get[*MapSystem]().Find(mob.GetMap().StateMachine(), uint32(b.MapID))
-			if targetMap == nil || targetMap.Wz == nil {
+			targetMap := ch.gameWorld.Systems().Get[*MapSystem]().Find(mob.GetMap().StateMachine(), uint32(b.MapID))
+			if targetMap == nil || targetMap.wz == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
 			spawnPoint := uint8(0)
-			if portal := targetMap.FindPortalByName(b.Portal); portal != nil && portal.Wz != nil {
-				spawnPoint = portal.Wz.ID
+			if portal := targetMap.FindPortalByName(b.Portal); portal != nil && portal.wz != nil {
+				spawnPoint = portal.wz.ID
 			}
 			cfg, _ := luax.GetConfiguration(L)
 			if err := ch.Warp(cfg.ActorContext, targetMap, spawnPoint); err != nil {
@@ -797,11 +797,11 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			if mob.Wz == nil {
+			if mob.wz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, mob.Wz))
+			L.Push(luax.NewLuable(L, mob.wz))
 			return 1
 		},
 		"damage": func(L *lua.LState) int {
@@ -945,7 +945,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			bounds := types.Rect[int32]{Left: left, Top: top, Right: right, Bottom: bottom}
-			mist := mob.SpawnMist(skill, mob.Position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
+			mist := mob.SpawnMist(skill, mob.position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
 			if mist == nil {
 				L.Push(lua.LNil)
 				return 1

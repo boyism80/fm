@@ -7,7 +7,7 @@ import (
 )
 
 func (ch *Character) Inspect(targetID uint32) {
-	ch.Listener.OnUnlockAction(ch)
+	ch.listener.OnUnlockAction(ch)
 
 	m := ch.GetMap()
 	if m == nil {
@@ -17,56 +17,56 @@ func (ch *Character) Inspect(targetID uint32) {
 	if target == nil {
 		return
 	}
-	if target.IsHidden() && !ch.HasRoleAtLeast(target.Role) {
+	if target.IsHidden() && !ch.HasRoleAtLeast(target.role) {
 		return
 	}
 
 	profile := &response.CharacterProfile{
 		CharacterID: target.GetID(),
 		Level:       target.level,
-		Job:         uint16(target.Class),
-		Population:  target.Stats.Population,
-		Married:     target.Wedding.Marriage != nil && target.Wedding.Marriage.Status == MarriageStatusMarried,
+		Job:         uint16(target.class),
+		Population:  target.stats.population,
+		Married:     target.wedding.marriage != nil && target.wedding.marriage.status == MarriageStatusMarried,
 		GuildName:   "-",
 		Self:        target.GetID() == ch.GetID(),
-		Wishlist:    target.CashWishlist,
+		Wishlist:    target.cashWishlist,
 	}
-	if guildID, ok := target.Guild.ID(); ok {
-		if guild := target.GameWorld.Systems().Get[*GuildSystem]().Get(guildID); guild != nil {
-			profile.GuildName = guild.Name
+	if guildID, ok := target.guild.ID(); ok {
+		if guild := target.gameWorld.Systems().Get[*GuildSystem]().Get(guildID); guild != nil {
+			profile.GuildName = guild.name
 			if alliance := guild.Alliance(); alliance != nil {
-				profile.AllianceName = alliance.Name
+				profile.AllianceName = alliance.name
 			}
 		}
 	}
-	if target.Pets.Active != nil {
+	if target.pets.active != nil {
 		profile.Pet = &response.CharacterProfilePet{
-			ItemID:    target.Pets.Active.Item.GetModel().GetID(),
-			Name:      target.Pets.Active.Item.Name,
-			Level:     target.Pets.Active.Item.Level,
-			Closeness: target.Pets.Active.Item.Closeness,
-			Fullness:  target.Pets.Active.Item.Fullness,
-			Skills:    uint16(target.Pets.Active.Item.Skills),
+			ItemID:    target.pets.active.item.GetModel().GetID(),
+			Name:      target.pets.active.item.name,
+			Level:     target.pets.active.item.level,
+			Closeness: target.pets.active.item.closeness,
+			Fullness:  target.pets.active.item.fullness,
+			Skills:    uint16(target.pets.active.item.skills),
 		}
-		equip := target.Inventory.Equipped[constant.EquipmentPartsPetEquip.Cash()]
+		equip := target.inventory.equipped[constant.EquipmentPartsPetEquip.Cash()]
 		if equip == nil {
-			equip = target.Inventory.Equipped[constant.EquipmentPartsPetEquip]
+			equip = target.inventory.equipped[constant.EquipmentPartsPetEquip]
 		}
 		if equip != nil {
 			profile.Pet.EquipItemID = equip.GetModel().GetID()
 		}
 	}
-	if target.Inventory.Equipped[constant.EquipmentPartsTamingMob] != nil && target.Inventory.Equipped[constant.EquipmentPartsSaddle] != nil {
+	if target.inventory.equipped[constant.EquipmentPartsTamingMob] != nil && target.inventory.equipped[constant.EquipmentPartsSaddle] != nil {
 		profile.Mount = &response.CharacterProfileMount{
-			Level:   target.Mount.Level,
-			Exp:     target.Mount.Exp,
-			Fatigue: target.Mount.Fatigue,
+			Level:   target.mount.level,
+			Exp:     target.mount.exp,
+			Fatigue: target.mount.fatigue,
 		}
 	}
-	profile.BookLevel = target.MonsterBook.Level()
-	profile.BookNormalCards, profile.BookSpecialCards = target.MonsterBook.Count()
-	if card, ok := target.itemModel(target.MonsterBook.Cover).(*wz.Consume); ok {
+	profile.BookLevel = target.monsterBook.Level()
+	profile.BookNormalCards, profile.BookSpecialCards = target.monsterBook.Count()
+	if card, ok := target.itemModel(target.monsterBook.cover).(*wz.Consume); ok {
 		profile.BookCoverMobID = card.MobID
 	}
-	ch.Listener.OnInspect(ch, profile)
+	ch.listener.OnInspect(ch, profile)
 }

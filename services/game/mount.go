@@ -17,51 +17,51 @@ var (
 
 type Mount struct {
 	owner   *Character
-	Level   uint32
-	Exp     uint32
-	Fatigue uint32
-	HP      uint32
+	level   uint32
+	exp     uint32
+	fatigue uint32
+	hp      uint32
 }
 
 func (m *Mount) SetLevel(level uint32) {
 	level = min(max(level, 1), constant.MountMaxLevel)
-	if m.Level == level {
+	if m.level == level {
 		return
 	}
 
-	levelUp := level > m.Level
-	m.Level = level
-	m.Exp = constant.MountExpByLevel[level-1]
-	m.owner.Listener.OnMountUpdated(m.owner, levelUp)
+	levelUp := level > m.level
+	m.level = level
+	m.exp = constant.MountExpByLevel[level-1]
+	m.owner.listener.OnMountUpdated(m.owner, m.level, m.exp, m.fatigue, levelUp)
 }
 
 func (m *Mount) SetFatigue(fatigue uint32) {
 	fatigue = min(fatigue, constant.MountMaxFatigue)
-	if m.Fatigue == fatigue {
+	if m.fatigue == fatigue {
 		return
 	}
 
-	m.Fatigue = fatigue
-	m.owner.Listener.OnMountUpdated(m.owner, false)
+	m.fatigue = fatigue
+	m.owner.listener.OnMountUpdated(m.owner, m.level, m.exp, m.fatigue, false)
 }
 
 func (m *Mount) Ride(skill *SkillEntry, vehicle int32) error {
-	if field := m.owner.GetMap(); field == nil || field.Wz.Limits(constant.FieldLimitMount) {
+	if field := m.owner.GetMap(); field == nil || field.wz.Limits(constant.FieldLimitMount) {
 		return ErrCannotRide
 	}
 
-	m.owner.Buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagPowerguard, constant.BuffFlagManaReflection})
-	m.owner.Buffs.AddBuff(skill.Wz, 0, uint8(skill.Level()), m.owner.GetID(), map[constant.BuffFlag]int32{constant.BuffFlagMonsterRiding: vehicle}, true)
+	m.owner.buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagPowerguard, constant.BuffFlagManaReflection})
+	m.owner.buffs.AddBuff(skill.wz, 0, uint8(skill.Level()), m.owner.GetID(), map[constant.BuffFlag]int32{constant.BuffFlagMonsterRiding: vehicle}, true)
 	m.start()
 	return nil
 }
 
 func (m *Mount) riding() *SkillEntry {
-	buff, ok := m.owner.Buffs.GetEntity(constant.BuffFlagMonsterRiding).(*SkillBuff)
+	buff, ok := m.owner.buffs.GetEntity(constant.BuffFlagMonsterRiding).(*SkillBuff)
 	if !ok {
 		return nil
 	}
-	return m.owner.Skills.Get(buff.Wz.ID)
+	return m.owner.skills.Get(buff.wz.ID)
 }
 
 func (m *Mount) start() {
@@ -69,7 +69,7 @@ func (m *Mount) start() {
 	if skill == nil {
 		return
 	}
-	m.owner.Skills.CallHook(nil, skill, "on_ride")
+	m.owner.skills.CallHook(nil, skill, "on_ride")
 }
 
 func (m *Mount) startFatigue() {
@@ -78,7 +78,7 @@ func (m *Mount) startFatigue() {
 
 func (m *Mount) Dismount() {
 	m.owner.RemoveTimer(mountFatigueTimer)
-	m.owner.Buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagMonsterRiding})
+	m.owner.buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagMonsterRiding})
 }
 
 func (m *Mount) changeEquipment(parts constant.EquipmentPartsType) {
@@ -86,31 +86,31 @@ func (m *Mount) changeEquipment(parts constant.EquipmentPartsType) {
 	if skill == nil {
 		return
 	}
-	m.owner.Skills.CallHook(nil, skill, "on_rider_equipment_changed", int(parts))
+	m.owner.skills.CallHook(nil, skill, "on_rider_equipment_changed", int(parts))
 }
 
 func (m *Mount) tire() {
-	_, vehicle, riding := m.owner.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
+	_, vehicle, riding := m.owner.buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
 	if !riding {
 		m.owner.RemoveTimer(mountFatigueTimer)
 		return
 	}
 
 	fatigue := 1
-	if armor, ok := m.owner.GameWorld.GetResources().Items[uint32(vehicle)].(*wz.Armor); ok {
-		if tamingMob := m.owner.GameWorld.GetResources().TamingMobs[armor.TamingMob]; tamingMob != nil {
+	if armor, ok := m.owner.gameWorld.GetResources().Items[uint32(vehicle)].(*wz.Armor); ok {
+		if tamingMob := m.owner.gameWorld.GetResources().TamingMobs[armor.TamingMob]; tamingMob != nil {
 			fatigue = tamingMob.Fatigue
 		}
 	}
-	m.Fatigue = min(m.Fatigue+uint32(fatigue), constant.MountMaxFatigue)
-	m.owner.Listener.OnMountUpdated(m.owner, false)
-	if m.Fatigue >= constant.MountMaxFatigue {
+	m.fatigue = min(m.fatigue+uint32(fatigue), constant.MountMaxFatigue)
+	m.owner.listener.OnMountUpdated(m.owner, m.level, m.exp, m.fatigue, false)
+	if m.fatigue >= constant.MountMaxFatigue {
 		m.Dismount()
 	}
 }
 
 func (m *Mount) Feed(slot int16, itemID uint32) error {
-	item := m.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot)
+	item := m.owner.inventory.GetItem(constant.InventoryTypeConsume, slot)
 	if item == nil || item.GetModel().GetID() != itemID {
 		return ErrMountFoodInvalid
 	}
@@ -118,26 +118,26 @@ func (m *Mount) Feed(slot int16, itemID uint32) error {
 	if !ok || food.MountFatigue == 0 {
 		return ErrMountFoodInvalid
 	}
-	if m.owner.Inventory.Equipped[constant.EquipmentPartsTamingMob] == nil || m.owner.Inventory.Equipped[constant.EquipmentPartsSaddle] == nil {
+	if m.owner.inventory.equipped[constant.EquipmentPartsTamingMob] == nil || m.owner.inventory.equipped[constant.EquipmentPartsSaddle] == nil {
 		return ErrMountFoodInvalid
 	}
 
-	m.owner.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
+	m.owner.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
 	levelUp := false
-	if m.Fatigue > 0 {
+	if m.fatigue > 0 {
 		for _, exp := range constant.MountFoodExps {
-			if m.Level >= exp.MinLevel {
-				m.Exp += uint32(exp.Min + rand.Intn(exp.Max-exp.Min+1))
+			if m.level >= exp.MinLevel {
+				m.exp += uint32(exp.Min + rand.Intn(exp.Max-exp.Min+1))
 				break
 			}
 		}
-		for m.Level < constant.MountMaxLevel && m.Exp >= constant.MountExpByLevel[m.Level] {
-			m.Level++
+		for m.level < constant.MountMaxLevel && m.exp >= constant.MountExpByLevel[m.level] {
+			m.level++
 			levelUp = true
 		}
 	}
-	m.Fatigue = uint32(max(int(m.Fatigue)+food.MountFatigue, 0))
-	m.owner.Listener.OnMountUpdated(m.owner, levelUp)
+	m.fatigue = uint32(max(int(m.fatigue)+food.MountFatigue, 0))
+	m.owner.listener.OnMountUpdated(m.owner, m.level, m.exp, m.fatigue, levelUp)
 	return nil
 }
 
@@ -146,5 +146,5 @@ func (m *Mount) takeDamage(damage int32) {
 	if skill == nil {
 		return
 	}
-	m.owner.Skills.CallHook(nil, skill, "on_rider_damaged", int(damage))
+	m.owner.skills.CallHook(nil, skill, "on_rider_damaged", int(damage))
 }

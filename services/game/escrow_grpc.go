@@ -52,7 +52,7 @@ func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
 }
 
 func (e *Escrow) freeProtoSlot(taken map[escrowSlotKey]*internal.Inventory, invType constant.InventoryType) (escrowSlotKey, bool) {
-	for slot := int16(1); slot <= int16(e.owner.Inventory.Tabs[invType].SlotLimit); slot++ {
+	for slot := int16(1); slot <= int16(e.owner.inventory.tabs[invType].slotLimit); slot++ {
 		key := escrowSlotKey{invType: invType, slot: slot}
 		if _, ok := taken[key]; !ok {
 			return key, true
@@ -62,5 +62,5 @@ func (e *Escrow) freeProtoSlot(taken map[escrowSlotKey]*internal.Inventory, invT
 }
 
 func (e *Escrow) mergeMeso(meso int32) int32 {
-	return int32(min(int64(meso)+int64(e.Meso), math.MaxInt32))
+	return int32(min(int64(meso)+int64(e.meso), math.MaxInt32))
 }

@@ -44,17 +44,17 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 	transitionPending := false
 
 	// The save below snapshots escrow as owned, so a room still open after it could hand the same goods over again.
-	if character.MiniRoom != nil {
+	if character.MiniRoom() != nil {
 		block()
 		return
 	}
 	// A script or shop still open after the save could change the character the next server already loaded.
-	if character.Dialog.Busy() {
+	if character.Dialog().Busy() {
 		block()
 		return
 	}
 
-	character.LieDetector.Escape()
+	character.LieDetector().Escape()
 
 	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
 	gameClient.SetChangingChannel(true)
@@ -70,7 +70,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 			block()
 			return fmt.Errorf("hand over: character %d has no map to save", character.GetID())
 		}
-		debuffs = character.Debuffs.BuildRPC()
+		debuffs = character.Debuffs().BuildRPC()
 		return nil
 	})
 	promise.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {
@@ -83,7 +83,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		transitionPending = true
 		return nil
 	})
-	accID := character.AccountID
+	accID := character.AccountID()
 	charID := character.GetID()
 	sourceChannel := gs.config.ChannelId
 	promise.ThenRPC(func(c context.Context) (*internal.BeginGameTransitionReply, error) {

@@ -9,22 +9,22 @@ import (
 var ErrChairNotOwned = errors.New("chair item not owned")
 
 func (ch *Character) SitOnChair(itemID uint32) error {
-	tab := ch.Inventory.Tabs[constant.InventoryTypeInstallation]
+	tab := ch.inventory.tabs[constant.InventoryTypeInstallation]
 	if tab == nil || tab.Find(itemID) == nil {
 		return ErrChairNotOwned
 	}
 
-	ch.Chair = itemID
-	ch.Listener.OnSitOnChair(ch, itemID)
+	ch.chair = itemID
+	ch.listener.OnSitOnChair(ch, itemID)
 	return nil
 }
 
 func (ch *Character) SitOnMapSeat(seatID int16) {
-	ch.Chair = 0
-	ch.Listener.OnSitOnMapSeat(ch, seatID)
+	ch.chair = 0
+	ch.listener.OnSitOnMapSeat(ch, seatID)
 }
 
 func (ch *Character) StandUp() {
-	ch.Chair = 0
-	ch.Listener.OnStandUp(ch)
+	ch.chair = 0
+	ch.listener.OnStandUp(ch)
 }

@@ -43,42 +43,42 @@ func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64
 }
 
 func (e *EquipmentCore) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
-	pb := buildInventoryProto(e, ownerID, slot, e.UniqueId, e.OwnerName, e.Flags, e.EnhanceChance, e.EnhanceCount, e.SkillBonus)
-	if bonus := e.BonusStats.BuildRPC(); bonus != nil {
+	pb := buildInventoryProto(e, ownerID, slot, e.uniqueId, e.ownerName, e.flags, e.enhanceChance, e.enhanceCount, e.skillBonus)
+	if bonus := e.bonusStats.BuildRPC(); bonus != nil {
 		pb.EquipBonusStats = bonus
 	}
 	return pb
 }
 
 func (item *Consume) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
-	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, nil, item.ownerName, item.flags, 0, 0, 0)
 }
 
 func (item *Installation) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
-	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, nil, item.ownerName, item.flags, 0, 0, 0)
 }
 
 func (item *MiscItem) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
-	pb := buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
-	pb.MarriageId = item.MarriageID
+	pb := buildInventoryProto(item, ownerID, slot, nil, item.ownerName, item.flags, 0, 0, 0)
+	pb.MarriageId = item.marriageID
 	return pb
 }
 
 func (item *CashItem) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
-	return buildInventoryProto(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, item.uniqueId, item.ownerName, item.flags, 0, 0, 0)
 }
 
 func (item *Pet) BuildRPC(ownerID uint32, slot int32) *internal.Inventory {
-	pb := buildInventoryProto(item, ownerID, slot, item.UniqueId, "", 0, 0, 0, 0)
+	pb := buildInventoryProto(item, ownerID, slot, item.uniqueId, "", 0, 0, 0, 0)
 	pb.Pet = &internal.Pet{
-		Name:        item.Name,
-		Level:       uint32(item.Level),
-		Closeness:   uint32(item.Closeness),
-		Fullness:    uint32(item.Fullness),
-		Speed:       uint32(item.Speed),
-		Skills:      uint32(item.Skills),
-		SecondsLeft: item.SecondsLeft,
-		Exceptions:  slices.Clone(item.Exceptions),
+		Name:        item.name,
+		Level:       uint32(item.level),
+		Closeness:   uint32(item.closeness),
+		Fullness:    uint32(item.fullness),
+		Speed:       uint32(item.speed),
+		Skills:      uint32(item.skills),
+		SecondsLeft: item.secondsLeft,
+		Exceptions:  slices.Clone(item.exceptions),
 	}
 	return pb
 }
@@ -119,40 +119,40 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 			return nil, fmt.Errorf("item %d: not equippable", itemID)
 		}
 		return &EquipmentCore{
-			ItemCore: &ItemCore{
-				Wz:         m,
-				Count:      1,
-				Expiration: expiration,
-				Flags:      flag,
+			itemCore: &ItemCore{
+				wz:         m,
+				count:      1,
+				expiration: expiration,
+				flags:      flag,
 			},
-			EnhanceChance: enhanceChance,
-			EnhanceCount:  enhanceCount,
-			OwnerName:     ownerName,
-			SkillBonus:    skillBonus,
-			UniqueId:      uniqueID,
-			BonusStats:    EquipmentBonusStatsFromProto(pb.GetEquipBonusStats()),
+			enhanceChance: enhanceChance,
+			enhanceCount:  enhanceCount,
+			ownerName:     ownerName,
+			skillBonus:    skillBonus,
+			uniqueId:      uniqueID,
+			bonusStats:    EquipmentBonusStatsFromProto(pb.GetEquipBonusStats()),
 		}, nil
 	case *wz.Consume:
 		return &Consume{
-			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
-			OwnerName: ownerName,
+			itemCore:  &ItemCore{wz: m, count: count, expiration: expiration, flags: flag},
+			ownerName: ownerName,
 		}, nil
 	case *wz.Installation:
 		return &Installation{
-			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
-			OwnerName: ownerName,
+			itemCore:  &ItemCore{wz: m, count: count, expiration: expiration, flags: flag},
+			ownerName: ownerName,
 		}, nil
 	case *wz.MiscItem:
 		return &MiscItem{
-			ItemCore:   &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
-			OwnerName:  ownerName,
-			MarriageID: pb.GetMarriageId(),
+			itemCore:   &ItemCore{wz: m, count: count, expiration: expiration, flags: flag},
+			ownerName:  ownerName,
+			marriageID: pb.GetMarriageId(),
 		}, nil
 	case *wz.CashItem:
 		return &CashItem{
-			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration, Flags: flag},
-			UniqueId:  uniqueID,
-			OwnerName: ownerName,
+			itemCore:  &ItemCore{wz: m, count: count, expiration: expiration, flags: flag},
+			uniqueId:  uniqueID,
+			ownerName: ownerName,
 		}, nil
 	case *wz.Pet:
 		if uniqueID == nil {
@@ -170,16 +170,16 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 			}
 		}
 		return &Pet{
-			ItemCore:    &ItemCore{Wz: m, Count: 1, Expiration: expiration},
-			UniqueId:    uniqueID,
-			Name:        pet.GetName(),
-			Level:       uint8(pet.GetLevel()),
-			Closeness:   uint16(pet.GetCloseness()),
-			Fullness:    uint8(pet.GetFullness()),
-			Speed:       uint16(pet.GetSpeed()),
-			Skills:      constant.PetSkill(pet.GetSkills()),
-			SecondsLeft: pet.GetSecondsLeft(),
-			Exceptions:  slices.Clone(pet.GetExceptions()),
+			itemCore:    &ItemCore{wz: m, count: 1, expiration: expiration},
+			uniqueId:    uniqueID,
+			name:        pet.GetName(),
+			level:       uint8(pet.GetLevel()),
+			closeness:   uint16(pet.GetCloseness()),
+			fullness:    uint8(pet.GetFullness()),
+			speed:       uint16(pet.GetSpeed()),
+			skills:      constant.PetSkill(pet.GetSkills()),
+			secondsLeft: pet.GetSecondsLeft(),
+			exceptions:  slices.Clone(pet.GetExceptions()),
 		}, nil
 	default:
 		return nil, fmt.Errorf("item %d: unsupported item type", itemID)

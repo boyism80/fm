@@ -42,7 +42,7 @@ func (g *GuildMembership) Invite(guildID uint32, inviterName string) error {
 	}
 
 	g.invites[guildID] = now.Add(constant.GuildInviteDuration)
-	g.owner.Listener.OnGuildInvite(g.owner, guildID, inviterName)
+	g.owner.listener.OnGuildInvite(g.owner, guildID, inviterName)
 	return nil
 }
 

@@ -23,6 +23,6 @@ func (h *SetBuddyChannelHandler) Handle(ctx actor.Context, a *GameLogicActor, ms
 	if ch == nil {
 		return
 	}
-	ch.Buddies.SetChannel(msg.BuddyCharacterID, msg.Channel)
-	ch.Listener.OnBuddyChannelUpdate(ch, msg.BuddyCharacterID, msg.Channel)
+	ch.Buddies().SetChannel(msg.BuddyCharacterID, msg.Channel)
+	ch.Listener().OnBuddyChannelUpdate(ch, msg.BuddyCharacterID, msg.Channel)
 }

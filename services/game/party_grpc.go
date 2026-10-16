@@ -17,13 +17,13 @@ func PartyFromProto(gw GameWorld, pb *internal.Party) *Party {
 		}
 	}
 	return &Party{
-		GameWorld:         gw,
-		WorldID:           pb.GetWorldId(),
-		PartyID:           pb.GetPartyId(),
-		LeaderCharacterID: pb.GetLeaderCharacterId(),
-		UpdatedAt:         time.UnixMilli(pb.GetUpdatedAtUnixMs()),
-		State:             pb.GetState(),
-		Members:           members,
+		gameWorld:         gw,
+		worldID:           pb.GetWorldId(),
+		partyID:           pb.GetPartyId(),
+		leaderCharacterID: pb.GetLeaderCharacterId(),
+		updatedAt:         time.UnixMilli(pb.GetUpdatedAtUnixMs()),
+		state:             pb.GetState(),
+		members:           members,
 	}
 }
 
@@ -31,18 +31,18 @@ func (p *Party) BuildRPC() *internal.Party {
 	if p == nil {
 		return nil
 	}
-	members := make([]*internal.PartyMember, 0, len(p.Members))
-	for _, m := range p.Members {
+	members := make([]*internal.PartyMember, 0, len(p.members))
+	for _, m := range p.members {
 		if pm := m.BuildRPC(); pm != nil {
 			members = append(members, pm)
 		}
 	}
 	return &internal.Party{
-		WorldId:           p.WorldID,
-		PartyId:           p.PartyID,
-		LeaderCharacterId: p.LeaderCharacterID,
-		UpdatedAtUnixMs:   p.UpdatedAt.UnixMilli(),
-		State:             p.State,
+		WorldId:           p.worldID,
+		PartyId:           p.partyID,
+		LeaderCharacterId: p.leaderCharacterID,
+		UpdatedAtUnixMs:   p.updatedAt.UnixMilli(),
+		State:             p.state,
 		Members:           members,
 	}
 }

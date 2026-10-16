@@ -24,7 +24,7 @@ func (s *AllianceSystem) BroadcastCreate(alliancePb *internal.Alliance) {
 	}
 	for _, memberID := range s.recipientIDs(alliancePb) {
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.Listener.OnAllianceCreate(ch, info, guilds, membershipGuilds)
+			ch.listener.OnAllianceCreate(ch, info, guilds, membershipGuilds)
 		})
 	}
 }
@@ -180,7 +180,7 @@ func (s *AllianceSystem) BroadcastNoticeChanged(alliancePb *internal.Alliance, n
 	}
 	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.Listener.OnAllianceNoticeChanged(ch, info)
+			ch.listener.OnAllianceNoticeChanged(ch, info)
 		})
 	})
 	if notice == "" {
@@ -192,7 +192,7 @@ func (s *AllianceSystem) BroadcastNoticeChanged(alliancePb *internal.Alliance, n
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnMessage(ch, gameconst.MsgPopup, msg)
+			ch.listener.OnMessage(ch, gameconst.MsgPopup, msg)
 		})
 	})
 }
@@ -213,14 +213,14 @@ func (s *AllianceSystem) BroadcastLeaderChanged(alliancePb *internal.Alliance, o
 	}
 	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.Listener.OnAllianceLeaderChanged(ch, allianceID, oldLeaderID, newLeaderID, info, guilds)
+			ch.listener.OnAllianceLeaderChanged(ch, allianceID, oldLeaderID, newLeaderID, info, guilds)
 		})
 		if leaderNotice != "" {
 			s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
 				if ch == nil {
 					return
 				}
-				ch.Listener.OnMessage(ch, gameconst.MsgPinkText, leaderNotice)
+				ch.listener.OnMessage(ch, gameconst.MsgPinkText, leaderNotice)
 			})
 		}
 	})
@@ -236,7 +236,7 @@ func (s *AllianceSystem) BroadcastInfoUpdate(alliancePb *internal.Alliance) {
 	}
 	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.Listener.OnAllianceInfoBroadcast(ch, info)
+			ch.listener.OnAllianceInfoBroadcast(ch, info)
 		})
 	})
 }
@@ -252,7 +252,7 @@ func (s *AllianceSystem) broadcastAllianceStateRefresh(alliancePb *internal.Alli
 	guilds := s.guildInfos(alliancePb)
 	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.Listener.OnAllianceMemberRankChanged(ch, info, guilds)
+			ch.listener.OnAllianceMemberRankChanged(ch, info, guilds)
 		})
 	})
 }
@@ -331,7 +331,7 @@ func (s *AllianceSystem) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 		}
 		seen[memberID] = struct{}{}
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.Listener.OnAllianceGuildAdded(ch, info, guilds, newGuildID, addedInfo, members, joining, membershipGuild)
+			ch.listener.OnAllianceGuildAdded(ch, info, guilds, newGuildID, addedInfo, members, joining, membershipGuild)
 		})
 	}
 
@@ -386,7 +386,7 @@ func (s *AllianceSystem) BroadcastGuildLeft(alliancePb *internal.Alliance, remov
 		}
 		seen[memberID] = struct{}{}
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.Listener.OnAllianceGuildLeft(ch, info, removedGuildID, removedInfo, removedMembers, expelled, leaving)
+			ch.listener.OnAllianceGuildLeft(ch, info, removedGuildID, removedInfo, removedMembers, expelled, leaving)
 		})
 	}
 
@@ -443,7 +443,7 @@ func (s *AllianceSystem) broadcastDisband(allianceID uint32, guildIDs []uint32) 
 			}
 			seen[memberID] = struct{}{}
 			s.callOnlineMember(memberID, func(ch *Character) {
-				ch.Listener.OnAllianceDisband(ch, allianceID)
+				ch.listener.OnAllianceDisband(ch, allianceID)
 			})
 		}
 	}

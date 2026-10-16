@@ -30,13 +30,13 @@ func (inv *Inventory) addMesoUnchecked(amount int32) {
 		return
 	}
 
-	if inv.Meso > 0 && amount > 0 && inv.Meso+amount < inv.Meso {
-		inv.Meso = int32(^uint32(0) >> 1)
+	if inv.meso > 0 && amount > 0 && inv.meso+amount < inv.meso {
+		inv.meso = int32(^uint32(0) >> 1)
 	} else {
-		inv.Meso += amount
+		inv.meso += amount
 	}
 
-	ch.Listener.OnMesoChanged(ch, inv.Meso)
+	ch.listener.OnMesoChanged(ch, inv.meso)
 }
 
 func (inv *Inventory) RemoveMeso(amount int32) bool {
@@ -56,21 +56,21 @@ func (inv *Inventory) removeMesoUnchecked(amount int32) {
 		return
 	}
 
-	if inv.Meso < amount {
-		inv.Meso = 0
+	if inv.meso < amount {
+		inv.meso = 0
 	} else {
-		inv.Meso -= amount
+		inv.meso -= amount
 	}
 
-	ch.Listener.OnMesoChanged(ch, inv.Meso)
+	ch.listener.OnMesoChanged(ch, inv.meso)
 }
 
 func (inv *Inventory) GetItem(invType constant.InventoryType, slot int16) Item {
-	inven := inv.Tabs[invType]
+	inven := inv.tabs[invType]
 	if inven == nil {
 		return nil
 	}
-	if slot < 1 || slot > int16(inven.SlotLimit) {
+	if slot < 1 || slot > int16(inven.slotLimit) {
 		return nil
 	}
 	return inven.Get(uint8(slot))
@@ -78,11 +78,11 @@ func (inv *Inventory) GetItem(invType constant.InventoryType, slot int16) Item {
 
 func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, count uint16) bool {
 	ch := inv.owner
-	inven := inv.Tabs[invType]
+	inven := inv.tabs[invType]
 	if inven == nil {
 		return false
 	}
-	if slot < 1 || slot > int16(inven.SlotLimit) {
+	if slot < 1 || slot > int16(inven.slotLimit) {
 		return false
 	}
 	item := inven.Get(uint8(slot))
@@ -97,13 +97,13 @@ func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, cou
 		if err := inven.Remove(uint8(slot)); err != nil {
 			return false
 		}
-		ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
-		if invType == constant.InventoryTypeCash && ch.ItemEffectID == itemID && inven.Find(itemID) == nil {
+		ch.listener.OnRemoveInventorySlot(ch, invType, slot)
+		if invType == constant.InventoryTypeCash && ch.itemEffectID == itemID && inven.Find(itemID) == nil {
 			ch.clearItemEffect()
 		}
 	} else {
 		item.Reduce(count)
-		ch.Listener.OnInventorySlotUpdated(ch, invType, slot, item)
+		ch.listener.OnInventorySlotUpdated(ch, invType, slot, item)
 	}
 	return true
 }
@@ -119,7 +119,7 @@ func (inv *Inventory) useAmmo(slot int16, count uint16) bool {
 	}
 
 	item.Reduce(count)
-	inv.owner.Listener.OnInventorySlotUpdated(inv.owner, constant.InventoryTypeConsume, slot, item)
+	inv.owner.listener.OnInventorySlotUpdated(inv.owner, constant.InventoryTypeConsume, slot, item)
 	return true
 }
 
@@ -129,11 +129,11 @@ func (inv *Inventory) FindSlots(itemID uint32) (invType constant.InventoryType, 
 		return 0, nil
 	}
 	invType = model.GetInventoryType()
-	inven := inv.Tabs[invType]
+	inven := inv.tabs[invType]
 	if inven == nil {
 		return invType, nil
 	}
-	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
+	for slot := int16(1); slot <= int16(inven.slotLimit); slot++ {
 		item := inven.Get(uint8(slot))
 		if item != nil && item.GetModel().GetID() == itemID {
 			slots = append(slots, slot)
@@ -158,11 +158,11 @@ func (inv *Inventory) HasItem(itemID uint32) bool {
 	if model == nil {
 		return false
 	}
-	inven := inv.Tabs[model.GetInventoryType()]
+	inven := inv.tabs[model.GetInventoryType()]
 	if inven == nil {
 		return false
 	}
-	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
+	for slot := int16(1); slot <= int16(inven.slotLimit); slot++ {
 		item := inven.Get(uint8(slot))
 		if item != nil && item.GetModel().GetID() == itemID {
 			return true
@@ -181,7 +181,7 @@ func (inv *Inventory) hasOnlyItem(model wz.Item) bool {
 	if model.GetInventoryType() != constant.InventoryTypeEquipment {
 		return false
 	}
-	for _, eq := range inv.Equipped {
+	for _, eq := range inv.equipped {
 		if eq != nil && eq.GetModel().GetID() == model.GetID() {
 			return true
 		}
@@ -197,12 +197,12 @@ func (inv *Inventory) HasItemCount(itemID uint32, count uint16) bool {
 	if model == nil {
 		return false
 	}
-	inven := inv.Tabs[model.GetInventoryType()]
+	inven := inv.tabs[model.GetInventoryType()]
 	if inven == nil {
 		return false
 	}
 	var total uint16
-	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
+	for slot := int16(1); slot <= int16(inven.slotLimit); slot++ {
 		item := inven.Get(uint8(slot))
 		if item == nil || item.GetModel().GetID() != itemID {
 			continue
@@ -261,20 +261,20 @@ func (inv *Inventory) ClearInventory() int {
 	}
 	ch := inv.owner
 	cleared := 0
-	for invType, inven := range inv.Tabs {
-		if inven == nil || inven.Items == nil {
+	for invType, inven := range inv.tabs {
+		if inven == nil || inven.items == nil {
 			continue
 		}
-		slots := make([]int16, 0, len(inven.Items))
-		for slot, item := range inven.Items {
+		slots := make([]int16, 0, len(inven.items))
+		for slot, item := range inven.items {
 			if item == nil {
 				continue
 			}
 			slots = append(slots, slot)
 		}
 		for _, slot := range slots {
-			delete(inven.Items, slot)
-			ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
+			delete(inven.items, slot)
+			ch.listener.OnRemoveInventorySlot(ch, invType, slot)
 			cleared++
 		}
 	}
@@ -284,15 +284,15 @@ func (inv *Inventory) ClearInventory() int {
 
 func (inv *Inventory) ExpireItems(now time.Time) {
 	var expired []wz.Item
-	for parts, equipment := range inv.Equipped {
+	for parts, equipment := range inv.equipped {
 		if equipment == nil || !now.After(equipment.GetExpiration()) {
 			continue
 		}
 		inv.RemoveEquipped(parts)
 		expired = append(expired, equipment.GetModel())
 	}
-	for invType, inven := range inv.Tabs {
-		for slot, item := range inven.Items {
+	for invType, inven := range inv.tabs {
+		for slot, item := range inven.items {
 			if item == nil || !now.After(item.GetExpiration()) {
 				continue
 			}
@@ -306,7 +306,7 @@ func (inv *Inventory) ExpireItems(now time.Time) {
 	if len(expired) == 0 {
 		return
 	}
-	inv.owner.Listener.OnItemExpired(inv.owner, expired)
+	inv.owner.listener.OnItemExpired(inv.owner, expired)
 }
 
 func (inv *Inventory) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
@@ -336,7 +336,7 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 	}
 
 	invenType := item.GetInventoryType()
-	inven := inv.Tabs[invenType]
+	inven := inv.tabs[invenType]
 	if inven == nil {
 		return nil, fmt.Errorf("inventory type %d not found", invenType)
 	}
@@ -356,20 +356,20 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 			break
 		}
 
-		exists, ok := inven.Items[int16(slot)]
+		exists, ok := inven.items[int16(slot)]
 		cap := uint16(0)
 		var slotItem Item
 		if ok {
 			cap = min(model.GetCapacity()-exists.GetCount(), remainingCount)
 			exists.Increase(cap)
 			slotItem = exists
-			ch.Listener.OnInventorySlotUpdated(ch, invenType, int16(slot), exists)
+			ch.listener.OnInventorySlotUpdated(ch, invenType, int16(slot), exists)
 		} else {
 			cap = min(model.GetCapacity(), remainingCount)
 			placed := item.Clone(cap)
-			inven.Items[int16(slot)] = placed
+			inven.items[int16(slot)] = placed
 			slotItem = placed
-			ch.Listener.OnInventorySlotAdded(ch, invenType, int16(slot), placed)
+			ch.listener.OnInventorySlotAdded(ch, invenType, int16(slot), placed)
 		}
 		addedItems = append(addedItems, slotItem)
 		remainingCount -= cap
@@ -382,7 +382,7 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 
 	if addedCount > 0 {
 		inv.runGainHook(model.GetID())
-		ch.Listener.OnShowItemGain(ch, model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
+		ch.listener.OnShowItemGain(ch, model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
 	}
 
 	return addedItems, nil
@@ -430,26 +430,26 @@ func (inv *Inventory) gainMesoUnchecked(amount int32) {
 		return
 	}
 
-	if inv.Meso > 0 && amount > 0 && inv.Meso+amount < inv.Meso {
-		inv.Meso = int32(^uint32(0) >> 1)
+	if inv.meso > 0 && amount > 0 && inv.meso+amount < inv.meso {
+		inv.meso = int32(^uint32(0) >> 1)
 	} else {
-		inv.Meso += amount
+		inv.meso += amount
 	}
 
-	ch.Listener.OnMesoChanged(ch, inv.Meso)
-	ch.Listener.OnShowMesoGain(ch, amount, constant.ShowMesoGainTypeStatus)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.StatMeso: inv.Meso,
+	ch.listener.OnMesoChanged(ch, inv.meso)
+	ch.listener.OnShowMesoGain(ch, amount, constant.ShowMesoGainTypeStatus)
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatMeso: inv.meso,
 	}, false)
 }
 
 func (inv *Inventory) FindSlot(invType constant.InventoryType, item Item) (int16, bool) {
-	inven := inv.Tabs[invType]
+	inven := inv.tabs[invType]
 	if inven == nil || item == nil {
 		return 0, false
 	}
-	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
-		if inven.Items[slot] == item {
+	for slot := int16(1); slot <= int16(inven.slotLimit); slot++ {
+		if inven.items[slot] == item {
 			return slot, true
 		}
 	}
@@ -458,8 +458,8 @@ func (inv *Inventory) FindSlot(invType constant.InventoryType, item Item) (int16
 
 func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot int16) error {
 	ch := inv.owner
-	equipments := inv.Equipped
-	inventory := inv.Tabs
+	equipments := inv.equipped
+	inventory := inv.tabs
 	if equipments[parts] == nil {
 		return nil
 	}
@@ -467,35 +467,35 @@ func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot 
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
-	if destSlot < 1 || destSlot > int16(inven.SlotLimit) {
+	if destSlot < 1 || destSlot > int16(inven.slotLimit) {
 		return ErrSlotNotFound
 	}
-	if inven.Items[destSlot] != nil {
+	if inven.items[destSlot] != nil {
 		return ErrSlotAlreadyOccupied
 	}
-	inven.Items[destSlot] = equipments[parts]
+	inven.items[destSlot] = equipments[parts]
 	delete(equipments, parts)
-	ch.Listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
-	ch.Listener.OnUpdateCharacterLook(ch)
-	ch.Mount.changeEquipment(parts)
+	ch.listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
+	ch.listener.OnUpdateCharacterLook(ch)
+	ch.mount.changeEquipment(parts)
 	return nil
 }
 
 func (inv *Inventory) RemoveEquipped(parts constant.EquipmentPartsType) Equipment {
 	ch := inv.owner
-	equipment := inv.Equipped[parts]
+	equipment := inv.equipped[parts]
 	if equipment == nil {
 		return nil
 	}
-	delete(inv.Equipped, parts)
-	ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts))
-	ch.Listener.OnUpdateCharacterLook(ch)
-	ch.Mount.changeEquipment(parts)
+	delete(inv.equipped, parts)
+	ch.listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts))
+	ch.listener.OnUpdateCharacterLook(ch)
+	ch.mount.changeEquipment(parts)
 	return equipment
 }
 
 func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
-	inven := inv.Tabs[constant.InventoryTypeEquipment]
+	inven := inv.tabs[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
@@ -508,13 +508,13 @@ func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
 
 func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error {
 	ch := inv.owner
-	equipments := inv.Equipped
-	inventory := inv.Tabs
+	equipments := inv.equipped
+	inventory := inv.tabs
 	inven := inventory[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
-	item := inven.Items[slot]
+	item := inven.items[slot]
 	if item == nil {
 		return ErrSourceSlotEmpty
 	}
@@ -530,7 +530,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		return ErrEquipmentRequirements
 	}
 	if armor, ok := newEq.GetModel().(*wz.Armor); ok && armor.EquipmentType == constant.EquipmentTypePetEquip {
-		if ch.Pets.Active == nil || !slices.Contains(armor.Pets, ch.Pets.Active.Item.GetModel().GetID()) {
+		if ch.pets.active == nil || !slices.Contains(armor.Pets, ch.pets.active.item.GetModel().GetID()) {
 			return ErrInvalidEquipmentPart
 		}
 	}
@@ -566,21 +566,21 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	}
 
 	if newEq.GetEquipmentCore().bindToWearer() {
-		ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, slot)
-		ch.Listener.OnInventorySlotAdded(ch, constant.InventoryTypeEquipment, slot, newEq)
+		ch.listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, slot)
+		ch.listener.OnInventorySlotAdded(ch, constant.InventoryTypeEquipment, slot, newEq)
 	}
 
 	equipments[parts] = newEq
 	if old == nil {
-		delete(inven.Items, slot)
+		delete(inven.items, slot)
 	} else {
-		inven.Items[slot] = old
+		inven.items[slot] = old
 	}
 
-	ch.Listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
-	ch.Listener.OnUpdateCharacterLook(ch)
+	ch.listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
+	ch.listener.OnUpdateCharacterLook(ch)
 	if swap {
-		ch.Mount.changeEquipment(parts)
+		ch.mount.changeEquipment(parts)
 	}
 	return nil
 }
@@ -592,10 +592,10 @@ func (inv *Inventory) validateMeso(costMeso, rewardMeso int32) ExchangeResult {
 	if costMeso == 0 && rewardMeso == 0 {
 		return ExchangeOK
 	}
-	if inv.Meso < costMeso {
+	if inv.meso < costMeso {
 		return ExchangeLackCost
 	}
-	after := inv.Meso - costMeso
+	after := inv.meso - costMeso
 	if rewardMeso > math.MaxInt32-after {
 		return ExchangeLackCapacity
 	}
@@ -603,39 +603,39 @@ func (inv *Inventory) validateMeso(costMeso, rewardMeso int32) ExchangeResult {
 }
 
 func (inv *Inventory) Move(invType constant.InventoryType, src, dst int16) bool {
-	inven := inv.Tabs[invType]
+	inven := inv.tabs[invType]
 	if inven == nil {
 		return false
 	}
-	if dst < 1 || dst > int16(inven.SlotLimit) || src == dst {
+	if dst < 1 || dst > int16(inven.slotLimit) || src == dst {
 		return false
 	}
-	srcItem, ok := inven.Items[src]
+	srcItem, ok := inven.items[src]
 	if !ok {
 		return false
 	}
 
-	dstItem, ok := inven.Items[dst]
+	dstItem, ok := inven.items[dst]
 	if !ok {
-		inven.Items[dst] = srcItem
-		delete(inven.Items, src)
-		inv.owner.Listener.OnSwapInventorySlot(inv.owner, invType, src, dst, 0)
+		inven.items[dst] = srcItem
+		delete(inven.items, src)
+		inv.owner.listener.OnSwapInventorySlot(inv.owner, invType, src, dst, 0)
 		return true
 	}
 
 	if !inven.Stackable(srcItem, dstItem) {
-		inven.Items[src], inven.Items[dst] = dstItem, srcItem
-		inv.owner.Listener.OnSwapInventorySlot(inv.owner, invType, src, dst, 0)
+		inven.items[src], inven.items[dst] = dstItem, srcItem
+		inv.owner.listener.OnSwapInventorySlot(inv.owner, invType, src, dst, 0)
 		return true
 	}
 
 	moved := min(srcItem.GetCount(), srcItem.GetModel().GetCapacity()-dstItem.GetCount())
 	dstItem.Increase(moved)
 	if srcItem.Reduce(moved) == 0 {
-		inv.owner.Listener.OnFullMergeInventorySlot(inv.owner, invType, src, dst, dstItem.GetCount())
-		delete(inven.Items, src)
+		inv.owner.listener.OnFullMergeInventorySlot(inv.owner, invType, src, dst, dstItem.GetCount())
+		delete(inven.items, src)
 	} else {
-		inv.owner.Listener.OnPartialMergeInventorySlot(inv.owner, invType, src, dst, srcItem.GetCount(), dstItem.GetCount())
+		inv.owner.listener.OnPartialMergeInventorySlot(inv.owner, invType, src, dst, srcItem.GetCount(), dstItem.GetCount())
 	}
 	return true
 }

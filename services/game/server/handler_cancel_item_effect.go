@@ -25,6 +25,6 @@ func (h *CancelItemEffect) Handle(ctx *core.ClientContext, req *request.CancelIt
 	if character == nil {
 		return nil
 	}
-	character.Buffs.CancelBySource(req.SourceID)
+	character.Buffs().CancelBySource(req.SourceID)
 	return nil
 }

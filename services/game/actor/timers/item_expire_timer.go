@@ -29,7 +29,7 @@ func (t *ItemExpireTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	now := clock.Now()
 	for _, obj := range mapData.GetAllPlayers() {
 		if ch, ok := obj.(*game.Character); ok {
-			ch.Inventory.ExpireItems(now)
+			ch.Inventory().ExpireItems(now)
 		}
 	}
 	return nil

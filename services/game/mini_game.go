@@ -20,13 +20,13 @@ const (
 var miniGameCardPairs = []int{6, 10, 15}
 
 type MiniGame struct {
-	ObjectCore
-	Kind      uint8
-	Title     string
-	Password  string
-	Piece     uint8
-	Turn      uint8
-	Cards     []uint32
+	objectCore
+	kind      uint8
+	title     string
+	password  string
+	piece     uint8
+	turn      uint8
+	cards     []uint32
 	owner     *Character
 	visitor   *Character
 	ready     bool
@@ -76,18 +76,18 @@ func (g *MiniGame) Members() []*Character {
 }
 
 func (g *MiniGame) recordKey(stat string) string {
-	if g.Kind == pconst.MiniRoomTypeOmok {
+	if g.kind == pconst.MiniRoomTypeOmok {
 		return "omok." + stat
 	}
 	return "match_card." + stat
 }
 
 func (g *MiniGame) Record(ch *Character) response.MiniGameRecord {
-	wins := int32(ch.Records.Get(g.recordKey("wins")))
-	ties := int32(ch.Records.Get(g.recordKey("ties")))
-	losses := int32(ch.Records.Get(g.recordKey("losses")))
+	wins := int32(ch.records.Get(g.recordKey("wins")))
+	ties := int32(ch.records.Get(g.recordKey("ties")))
+	losses := int32(ch.records.Get(g.recordKey("losses")))
 	return response.MiniGameRecord{
-		Type:   uint32(g.Kind),
+		Type:   uint32(g.kind),
 		Wins:   wins,
 		Ties:   ties,
 		Losses: losses,
@@ -101,11 +101,11 @@ func (g *MiniGame) balloon() response.MiniRoomBalloon {
 		users++
 	}
 	return response.MiniRoomBalloon{
-		Type:     g.Kind,
-		SN:       g.OID,
-		Title:    g.Title,
-		Private:  g.Password != "",
-		Spec:     g.Piece,
+		Type:     g.kind,
+		SN:       g.oid,
+		Title:    g.title,
+		Private:  g.password != "",
+		Spec:     g.piece,
 		Users:    users,
 		MaxUsers: pconst.MiniRoomGameUsers,
 		Playing:  g.playing,
@@ -114,15 +114,15 @@ func (g *MiniGame) balloon() response.MiniRoomBalloon {
 
 func (g *MiniGame) updateBalloon() {
 	balloon := g.balloon()
-	g.owner.Listener.OnMiniRoomBalloon(g.owner, &balloon)
+	g.owner.listener.OnMiniRoomBalloon(g.owner, &balloon)
 }
 
 func NewMiniGame(owner *Character, kind uint8, title string, password string, piece uint8) (*MiniGame, error) {
 	m := owner.GetMap()
-	if m == nil || owner.MiniRoom != nil {
+	if m == nil || owner.miniRoom != nil {
 		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
-	if m.Wz.PersonalShop || m.Wz.Limits(constant.FieldLimitMinigame) {
+	if m.wz.PersonalShop || m.wz.Limits(constant.FieldLimitMinigame) {
 		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
 	if title == "" {
@@ -144,48 +144,48 @@ func NewMiniGame(owner *Character, kind uint8, title string, password string, pi
 	default:
 		return nil, ErrMiniRoomInvalid
 	}
-	if !owner.Inventory.HasItem(itemID) {
+	if !owner.inventory.HasItem(itemID) {
 		return nil, ErrMiniRoomInvalid
 	}
-	if err := m.checkShopSpot(owner.Position); err != nil {
+	if err := m.checkShopSpot(owner.position); err != nil {
 		return nil, err
 	}
 
 	g := &MiniGame{
-		Kind:     kind,
-		Title:    title,
-		Password: password,
-		Piece:    piece,
+		kind:     kind,
+		title:    title,
+		password: password,
+		piece:    piece,
 		owner:    owner,
 	}
-	g.ObjectCore.self = g
-	g.Position = owner.Position
+	g.objectCore.self = g
+	g.position = owner.position
 	return g, nil
 }
 
 func (g *MiniGame) Place() {
 	g.owner.GetMap().AddMiniGame(g)
-	g.owner.MiniRoom = g
-	g.owner.Listener.OnMiniGameEntered(g.owner, g)
+	g.owner.miniRoom = g
+	g.owner.listener.OnMiniGameEntered(g.owner, g)
 	g.updateBalloon()
 }
 
 func (g *MiniGame) Visit(ch *Character, password string) error {
-	if ch.MiniRoom != nil {
+	if ch.miniRoom != nil {
 		return ErrMiniRoomInvalid
 	}
 	if g.visitor != nil {
 		return &MiniRoomEnterError{Code: pconst.MiniRoomEnterFull}
 	}
-	if g.Password != "" && g.Password != password {
-		ch.Listener.OnMessage(ch, constant.MsgPopup, "입력한 비밀번호가 올바르지 않습니다.")
+	if g.password != "" && g.password != password {
+		ch.listener.OnMessage(ch, constant.MsgPopup, "입력한 비밀번호가 올바르지 않습니다.")
 		return ErrMiniRoomInvalid
 	}
 
-	g.owner.Listener.OnMiniGameVisited(g.owner, g, ch)
+	g.owner.listener.OnMiniGameVisited(g.owner, g, ch)
 	g.visitor = ch
-	ch.MiniRoom = g
-	ch.Listener.OnMiniGameEntered(ch, g)
+	ch.miniRoom = g
+	ch.listener.OnMiniGameEntered(ch, g)
 	g.updateBalloon()
 	return nil
 }
@@ -198,7 +198,7 @@ func (g *MiniGame) Chat(ch *Character, message string) error {
 
 	text := fmt.Sprintf("%s : %s", ch.GetName(), message)
 	for _, member := range g.Members() {
-		member.Listener.OnMiniRoomChat(member, slot, text)
+		member.listener.OnMiniRoomChat(member, slot, text)
 	}
 	return nil
 }
@@ -211,7 +211,7 @@ func (g *MiniGame) Leave(ch *Character) {
 	if g.playing {
 		g.finish(pconst.MiniGameGiveUp, 1-slot)
 	}
-	if ch.MiniRoom == nil {
+	if ch.miniRoom == nil {
 		return
 	}
 
@@ -223,11 +223,11 @@ func (g *MiniGame) Leave(ch *Character) {
 }
 
 func (g *MiniGame) removeVisitor() {
-	g.visitor.MiniRoom = nil
+	g.visitor.miniRoom = nil
 	g.visitor = nil
 	g.ready = false
 	g.exitAfter[1] = false
-	g.owner.Listener.OnMiniRoomLeft(g.owner, 1, pconst.MiniRoomLeaveExit)
+	g.owner.listener.OnMiniRoomLeft(g.owner, 1, pconst.MiniRoomLeaveExit)
 	g.updateBalloon()
 }
 
@@ -235,14 +235,14 @@ func (g *MiniGame) close() {
 	if g.visitor != nil {
 		visitor := g.visitor
 		g.visitor = nil
-		visitor.MiniRoom = nil
-		visitor.Listener.OnMiniRoomLeft(visitor, 1, pconst.MiniRoomLeaveShopClosed)
+		visitor.miniRoom = nil
+		visitor.listener.OnMiniRoomLeft(visitor, 1, pconst.MiniRoomLeaveShopClosed)
 	}
 	owner := g.owner
-	owner.MiniRoom = nil
-	owner.Listener.OnMiniRoomBalloon(owner, nil)
-	if g.Map != nil {
-		g.Map.RemoveMiniGame(g)
+	owner.miniRoom = nil
+	owner.listener.OnMiniRoomBalloon(owner, nil)
+	if g.onMap != nil {
+		g.onMap.RemoveMiniGame(g)
 	}
 }
 
@@ -253,7 +253,7 @@ func (g *MiniGame) Ready(ch *Character, ready bool) error {
 
 	g.ready = ready
 	for _, member := range g.Members() {
-		member.Listener.OnMiniGameReady(member, ready)
+		member.listener.OnMiniGameReady(member, ready)
 	}
 	return nil
 }
@@ -265,7 +265,7 @@ func (g *MiniGame) Expel(ch *Character) error {
 
 	visitor := g.visitor
 	g.removeVisitor()
-	visitor.Listener.OnMiniRoomLeft(visitor, 1, pconst.MiniRoomLeaveKicked)
+	visitor.listener.OnMiniRoomLeft(visitor, 1, pconst.MiniRoomLeaveKicked)
 	return nil
 }
 
@@ -282,22 +282,22 @@ func (g *MiniGame) Start(ch *Character) error {
 	g.placed = 0
 	g.points = [2]int{}
 	g.picked = false
-	g.Cards = nil
+	g.cards = nil
 
-	if g.Kind == pconst.MiniRoomTypeMatchCard {
-		pairs := miniGameCardPairs[g.Piece]
-		g.Cards = make([]uint32, 0, pairs*2)
+	if g.kind == pconst.MiniRoomTypeMatchCard {
+		pairs := miniGameCardPairs[g.piece]
+		g.cards = make([]uint32, 0, pairs*2)
 		for i := 0; i < pairs; i++ {
-			g.Cards = append(g.Cards, uint32(i), uint32(i))
+			g.cards = append(g.cards, uint32(i), uint32(i))
 		}
-		rand.Shuffle(len(g.Cards), func(i, j int) {
-			g.Cards[i], g.Cards[j] = g.Cards[j], g.Cards[i]
+		rand.Shuffle(len(g.cards), func(i, j int) {
+			g.cards[i], g.cards[j] = g.cards[j], g.cards[i]
 		})
-		g.matched = make([]bool, len(g.Cards))
+		g.matched = make([]bool, len(g.cards))
 	}
 
 	for _, member := range g.Members() {
-		member.Listener.OnMiniGameStarted(member, g)
+		member.listener.OnMiniGameStarted(member, g)
 	}
 	g.updateBalloon()
 	return nil
@@ -305,7 +305,7 @@ func (g *MiniGame) Start(ch *Character) error {
 
 func (g *MiniGame) turnOf(ch *Character) (uint8, error) {
 	slot, ok := g.SlotOf(ch)
-	if !ok || !g.playing || slot != g.Turn {
+	if !ok || !g.playing || slot != g.turn {
 		return 0, ErrMiniRoomInvalid
 	}
 	return slot, nil
@@ -316,7 +316,7 @@ func (g *MiniGame) MoveOmok(ch *Character, x int32, y int32, stone uint8) error 
 	if err != nil {
 		return err
 	}
-	if g.Kind != pconst.MiniRoomTypeOmok || x < 0 || y < 0 || x >= miniGameOmokSize || y >= miniGameOmokSize {
+	if g.kind != pconst.MiniRoomTypeOmok || x < 0 || y < 0 || x >= miniGameOmokSize || y >= miniGameOmokSize {
 		return ErrMiniRoomInvalid
 	}
 	if stone != 1 && stone != 2 {
@@ -333,7 +333,7 @@ func (g *MiniGame) MoveOmok(ch *Character, x int32, y int32, stone uint8) error 
 	g.board[x][y] = stone
 	g.placed++
 	for _, member := range g.Members() {
-		member.Listener.OnMiniGameOmokMoved(member, x, y, stone)
+		member.listener.OnMiniGameOmokMoved(member, x, y, stone)
 	}
 
 	switch {
@@ -342,7 +342,7 @@ func (g *MiniGame) MoveOmok(ch *Character, x int32, y int32, stone uint8) error 
 	case g.placed == miniGameOmokSize*miniGameOmokSize:
 		g.finish(pconst.MiniGameTie, 0)
 	default:
-		g.Turn = 1 - slot
+		g.turn = 1 - slot
 	}
 	return nil
 }
@@ -371,7 +371,7 @@ func (g *MiniGame) SelectCard(ch *Character, firstPick bool, card uint8) error {
 	if err != nil {
 		return err
 	}
-	if g.Kind != pconst.MiniRoomTypeMatchCard || int(card) >= len(g.Cards) || g.matched[card] {
+	if g.kind != pconst.MiniRoomTypeMatchCard || int(card) >= len(g.cards) || g.matched[card] {
 		return ErrMiniRoomInvalid
 	}
 	if firstPick == g.picked || (g.picked && card == g.firstCard) {
@@ -382,26 +382,26 @@ func (g *MiniGame) SelectCard(ch *Character, firstPick bool, card uint8) error {
 		g.picked = true
 		g.firstCard = card
 		opponent := g.player(1 - slot)
-		opponent.Listener.OnMiniGameCardSelected(opponent, true, card, 0, 0)
+		opponent.listener.OnMiniGameCardSelected(opponent, true, card, 0, 0)
 		return nil
 	}
 
 	first := g.firstCard
 	g.picked = false
 	result := slot
-	matched := g.Cards[first] == g.Cards[card]
+	matched := g.cards[first] == g.cards[card]
 	if matched {
 		g.matched[first] = true
 		g.matched[card] = true
 		g.points[slot]++
 		result += 2
 	} else {
-		g.Turn = 1 - slot
+		g.turn = 1 - slot
 	}
 	for _, member := range g.Members() {
-		member.Listener.OnMiniGameCardSelected(member, false, card, first, result)
+		member.listener.OnMiniGameCardSelected(member, false, card, first, result)
 	}
-	if !matched || g.points[0]+g.points[1] < len(g.Cards)/2 {
+	if !matched || g.points[0]+g.points[1] < len(g.cards)/2 {
 		return nil
 	}
 
@@ -423,9 +423,9 @@ func (g *MiniGame) Skip(ch *Character) error {
 	}
 
 	g.picked = false
-	g.Turn = 1 - slot
+	g.turn = 1 - slot
 	for _, member := range g.Members() {
-		member.Listener.OnMiniGameSkipped(member, g.Turn)
+		member.listener.OnMiniGameSkipped(member, g.turn)
 	}
 	return nil
 }
@@ -449,7 +449,7 @@ func (g *MiniGame) RequestTie(ch *Character) error {
 	g.tieAsked = true
 	g.tieSlot = slot
 	opponent := g.player(1 - slot)
-	opponent.Listener.OnMiniGameTieRequested(opponent)
+	opponent.listener.OnMiniGameTieRequested(opponent)
 	return nil
 }
 
@@ -465,7 +465,7 @@ func (g *MiniGame) AnswerTie(ch *Character, accept bool) error {
 		return nil
 	}
 	requester := g.player(g.tieSlot)
-	requester.Listener.OnMiniGameTieDenied(requester)
+	requester.listener.OnMiniGameTieDenied(requester)
 	return nil
 }
 
@@ -476,7 +476,7 @@ func (g *MiniGame) ExitAfterGame(ch *Character, reserve bool) error {
 	}
 
 	g.exitAfter[slot] = reserve
-	ch.Listener.OnMiniGameExitAfter(ch, reserve)
+	ch.listener.OnMiniGameExitAfter(ch, reserve)
 	return nil
 }
 
@@ -488,27 +488,27 @@ func (g *MiniGame) finish(outcome pconst.MiniGameOutcome, winner uint8) {
 	reset := RecordReset{}
 	switch outcome {
 	case pconst.MiniGameTie:
-		g.owner.Records.Add(g.recordKey("ties"), 1, reset)
-		g.visitor.Records.Add(g.recordKey("ties"), 1, reset)
-		g.Turn = 1 - g.Turn
+		g.owner.records.Add(g.recordKey("ties"), 1, reset)
+		g.visitor.records.Add(g.recordKey("ties"), 1, reset)
+		g.turn = 1 - g.turn
 	default:
-		g.player(winner).Records.Add(g.recordKey("wins"), 1, reset)
-		g.player(1-winner).Records.Add(g.recordKey("losses"), 1, reset)
-		g.Turn = 1 - winner
+		g.player(winner).records.Add(g.recordKey("wins"), 1, reset)
+		g.player(1-winner).records.Add(g.recordKey("losses"), 1, reset)
+		g.turn = 1 - winner
 	}
 	for _, member := range g.Members() {
-		member.Listener.OnMiniGameOver(member, g, outcome, winner)
+		member.listener.OnMiniGameOver(member, g, outcome, winner)
 	}
 	g.updateBalloon()
 
 	switch {
 	case g.exitAfter[0]:
 		g.exitAfter = [2]bool{}
-		g.owner.Listener.OnMiniRoomLeft(g.owner, 0, pconst.MiniRoomLeaveExit)
+		g.owner.listener.OnMiniRoomLeft(g.owner, 0, pconst.MiniRoomLeaveExit)
 		g.close()
 	case g.exitAfter[1]:
 		visitor := g.visitor
 		g.removeVisitor()
-		visitor.Listener.OnMiniRoomLeft(visitor, 1, pconst.MiniRoomLeaveExit)
+		visitor.listener.OnMiniRoomLeft(visitor, 1, pconst.MiniRoomLeaveExit)
 	}
 }

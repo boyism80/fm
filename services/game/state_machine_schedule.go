@@ -51,7 +51,7 @@ func NextStateMachineCronDelay(sched cron.Schedule, from time.Time) time.Duratio
 }
 
 func (sm *StateMachine) Schedule(id string, ms int64, hook string) {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
 	if id == "" {
@@ -60,7 +60,7 @@ func (sm *StateMachine) Schedule(id string, ms int64, hook string) {
 	if hook == "" || ms <= 0 {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &ScheduleStateMachineAfter{
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &ScheduleStateMachineAfter{
 		ID:           id,
 		Milliseconds: ms,
 		Hook:         hook,
@@ -68,7 +68,7 @@ func (sm *StateMachine) Schedule(id string, ms int64, hook string) {
 }
 
 func (sm *StateMachine) ScheduleAsync(ctx actor.Context, id string, ms int64, hook string) *async.Promise[interface{}] {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || ctx == nil {
 		return nil
 	}
 	if id == "" {
@@ -77,8 +77,8 @@ func (sm *StateMachine) ScheduleAsync(ctx actor.Context, id string, ms int64, ho
 	if hook == "" || ms <= 0 {
 		return nil
 	}
-	gw := sm.Group.GameWorld
-	pid := sm.ActorPID
+	gw := sm.group.gameWorld
+	pid := sm.actorPID
 	return async.Ask(ctx, pid, 10*time.Second, func(replyTo *actor.PID) {
 		gw.Systems().Get[*StateMachineSystem]().Send(pid, &ScheduleStateMachineAfter{
 			ID:           id,
@@ -90,7 +90,7 @@ func (sm *StateMachine) ScheduleAsync(ctx actor.Context, id string, ms int64, ho
 }
 
 func (sm *StateMachine) Cron(id, expr, hook string) {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
 	if id == "" {
@@ -99,7 +99,7 @@ func (sm *StateMachine) Cron(id, expr, hook string) {
 	if hook == "" || expr == "" {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &ScheduleStateMachineCron{
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &ScheduleStateMachineCron{
 		ID:   id,
 		Expr: expr,
 		Hook: hook,
@@ -107,7 +107,7 @@ func (sm *StateMachine) Cron(id, expr, hook string) {
 }
 
 func (sm *StateMachine) CronAsync(ctx actor.Context, id, expr, hook string) *async.Promise[interface{}] {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || ctx == nil {
 		return nil
 	}
 	if id == "" {
@@ -116,8 +116,8 @@ func (sm *StateMachine) CronAsync(ctx actor.Context, id, expr, hook string) *asy
 	if hook == "" || expr == "" {
 		return nil
 	}
-	gw := sm.Group.GameWorld
-	pid := sm.ActorPID
+	gw := sm.group.gameWorld
+	pid := sm.actorPID
 	return async.Ask(ctx, pid, 10*time.Second, func(replyTo *actor.PID) {
 		gw.Systems().Get[*StateMachineSystem]().Send(pid, &ScheduleStateMachineCron{
 			ID:      id,
@@ -129,18 +129,18 @@ func (sm *StateMachine) CronAsync(ctx actor.Context, id, expr, hook string) *asy
 }
 
 func (sm *StateMachine) CancelSchedule(id string) {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &CancelStateMachineNamedSchedule{ID: id})
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &CancelStateMachineNamedSchedule{ID: id})
 }
 
 func (sm *StateMachine) CancelScheduleAsync(ctx actor.Context, id string) *async.Promise[interface{}] {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || ctx == nil {
 		return nil
 	}
-	gw := sm.Group.GameWorld
-	pid := sm.ActorPID
+	gw := sm.group.gameWorld
+	pid := sm.actorPID
 	return async.Ask(ctx, pid, 10*time.Second, func(replyTo *actor.PID) {
 		gw.Systems().Get[*StateMachineSystem]().Send(pid, &CancelStateMachineNamedSchedule{
 			ID:      id,

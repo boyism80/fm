@@ -9,12 +9,12 @@ import (
 )
 
 type ObjectTimer struct {
-	Timer      *time.Timer
-	Interval   time.Duration
+	timer      *time.Timer
+	interval   time.Duration
 	Repeat     bool
 	Callback   func()
-	NextFireAt time.Time
-	Remaining  time.Duration
+	nextFireAt time.Time
+	remaining  time.Duration
 }
 
 func (obj *ObjectCore) initTimers() {
@@ -25,10 +25,10 @@ func (obj *ObjectCore) AddTimer(key string, interval time.Duration, repeat bool,
 	if _, exists := obj.timers[key]; exists {
 		obj.RemoveTimer(key)
 	}
-	if obj.GameWorld == nil || obj.self == nil {
+	if obj.gameWorld == nil || obj.self == nil {
 		return false
 	}
-	mapInstance := obj.Map
+	mapInstance := obj.onMap
 	if mapInstance == nil {
 		return false
 	}
@@ -37,7 +37,7 @@ func (obj *ObjectCore) AddTimer(key string, interval time.Duration, repeat bool,
 		return false
 	}
 	entry := &ObjectTimer{
-		Interval: interval,
+		interval: interval,
 		Repeat:   repeat,
 		Callback: callback,
 	}
@@ -47,13 +47,13 @@ func (obj *ObjectCore) AddTimer(key string, interval time.Duration, repeat bool,
 }
 
 func (obj *ObjectCore) scheduleTimer(key string, entry *ObjectTimer, delay time.Duration, pid *actor.PID) {
-	if entry == nil || obj.GameWorld == nil || obj.self == nil {
+	if entry == nil || obj.gameWorld == nil || obj.self == nil {
 		return
 	}
 	k := key
-	entry.NextFireAt = clock.Now().Add(delay)
-	entry.Timer = time.AfterFunc(delay, func() {
-		if gw := obj.GameWorld; gw != nil {
+	entry.nextFireAt = clock.Now().Add(delay)
+	entry.timer = time.AfterFunc(delay, func() {
+		if gw := obj.gameWorld; gw != nil {
 			gw.Systems().Get[*SchedulerSystem]().RunObjectTimer(pid, obj.self, k)
 		}
 	})
@@ -64,7 +64,7 @@ func (obj *ObjectCore) RescheduleTimer(key string) bool {
 	if entry == nil || !entry.Repeat {
 		return false
 	}
-	mapInstance := obj.Map
+	mapInstance := obj.onMap
 	if mapInstance == nil {
 		return false
 	}
@@ -72,11 +72,11 @@ func (obj *ObjectCore) RescheduleTimer(key string) bool {
 	if pid == nil {
 		return false
 	}
-	if entry.Timer != nil {
-		entry.Timer.Stop()
-		entry.Timer = nil
+	if entry.timer != nil {
+		entry.timer.Stop()
+		entry.timer = nil
 	}
-	obj.scheduleTimer(key, entry, entry.Interval, pid)
+	obj.scheduleTimer(key, entry, entry.interval, pid)
 	return true
 }
 
@@ -85,8 +85,8 @@ func (obj *ObjectCore) RemoveTimer(key string) bool {
 	if entry == nil {
 		return false
 	}
-	if entry.Timer != nil {
-		entry.Timer.Stop()
+	if entry.timer != nil {
+		entry.timer.Stop()
 	}
 	delete(obj.timers, key)
 	return true
@@ -98,8 +98,8 @@ func (obj *ObjectCore) GetTimerEntry(key string) *ObjectTimer {
 
 func (obj *ObjectCore) ClearTimers() {
 	for key, entry := range obj.timers {
-		if entry != nil && entry.Timer != nil {
-			entry.Timer.Stop()
+		if entry != nil && entry.timer != nil {
+			entry.timer.Stop()
 		}
 		delete(obj.timers, key)
 	}
@@ -108,31 +108,31 @@ func (obj *ObjectCore) ClearTimers() {
 func (obj *ObjectCore) SuspendTimers() {
 	now := clock.Now()
 	for _, entry := range obj.timers {
-		if entry == nil || entry.Timer == nil {
+		if entry == nil || entry.timer == nil {
 			continue
 		}
-		entry.Remaining = entry.NextFireAt.Sub(now)
-		if entry.Remaining < 0 {
-			entry.Remaining = 0
+		entry.remaining = entry.nextFireAt.Sub(now)
+		if entry.remaining < 0 {
+			entry.remaining = 0
 		}
-		entry.Timer.Stop()
-		entry.Timer = nil
+		entry.timer.Stop()
+		entry.timer = nil
 	}
 }
 
 func (obj *ObjectCore) ResumeTimers(pid *actor.PID) {
-	if pid == nil || obj.GameWorld == nil || obj.self == nil {
+	if pid == nil || obj.gameWorld == nil || obj.self == nil {
 		return
 	}
 	for key, entry := range obj.timers {
-		if entry == nil || entry.Timer != nil {
+		if entry == nil || entry.timer != nil {
 			continue
 		}
-		duration := entry.Remaining
+		duration := entry.remaining
 		if duration <= 0 && entry.Repeat {
-			duration = entry.Interval
+			duration = entry.interval
 		}
-		entry.Remaining = 0
+		entry.remaining = 0
 		obj.scheduleTimer(key, entry, duration, pid)
 	}
 }

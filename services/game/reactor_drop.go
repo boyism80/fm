@@ -16,22 +16,22 @@ type reactorDropSpawn struct {
 }
 
 func (r *Reactor) DropItems() {
-	if r == nil || r.Wz == nil || r.Map == nil || r.GameWorld == nil {
+	if r == nil || r.wz == nil || r.onMap == nil || r.gameWorld == nil {
 		return
 	}
 
-	resources := r.GameWorld.GetResources()
+	resources := r.gameWorld.GetResources()
 	if resources == nil {
 		return
 	}
 
-	reactorDrops, ok := resources.ReactorDrops[r.Wz.ID]
+	reactorDrops, ok := resources.ReactorDrops[r.wz.ID]
 	if !ok || len(reactorDrops) == 0 {
 		return
 	}
 
 	trigger := r.GetTrigger()
-	mesoRate := float32(r.GameWorld.GetMesoRate())
+	mesoRate := float32(r.gameWorld.GetMesoRate())
 	gmDrop := trigger != nil && trigger.ActsAsGM()
 	spawns := make([]reactorDropSpawn, 0, len(reactorDrops))
 
@@ -77,7 +77,7 @@ func (r *Reactor) DropItems() {
 				count = entry.Min
 			}
 
-			item, err := NewItem(entry.Item, count, r.GameWorld)
+			item, err := NewItem(entry.Item, count, r.gameWorld)
 			if err != nil {
 				continue
 			}
@@ -94,7 +94,7 @@ func (r *Reactor) DropItems() {
 		return
 	}
 
-	spawnPoint := r.Position
+	spawnPoint := r.position
 	dropX := spawnPoint.X - int16(12*len(spawns))
 	ownerID, dropType := reactorDropOwner(trigger)
 
@@ -103,11 +103,11 @@ func (r *Reactor) DropItems() {
 		dropX += 25
 
 		if spawn.isMeso {
-			if _, err := r.Map.SpawnMeso(spawn.count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
+			if _, err := r.onMap.SpawnMeso(spawn.count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
 				log.Printf("Failed to spawn reactor meso drop: %v", err)
 			}
 		} else {
-			if err := r.Map.SpawnItem(spawn.item, ItemSpawn{
+			if err := r.onMap.SpawnItem(spawn.item, ItemSpawn{
 				Position: destPoint,
 				From:     spawnPoint,
 				Owner:    ownerID,
@@ -126,14 +126,14 @@ func questInProgress(ch *Character, questID uint32) bool {
 	if ch == nil {
 		return false
 	}
-	return ch.Quests != nil && ch.Quests.Get(questID).IsStarted()
+	return ch.quests != nil && ch.quests.Get(questID).IsStarted()
 }
 
 func reactorDropOwner(trigger *Character) (uint32, constant.DropType) {
 	if trigger == nil {
 		return 0, constant.DropTypeFFA
 	}
-	if trigger.Party.ID() != nil {
+	if trigger.party.ID() != nil {
 		return trigger.GetID(), constant.DropTypeParty
 	}
 	return trigger.GetID(), constant.DropTypeOwnerOnly

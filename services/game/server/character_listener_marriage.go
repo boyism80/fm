@@ -26,7 +26,7 @@ func (l *CharacterListenerImpl) OnWeddingWishlistInput(ch *game.Character) {
 func (l *CharacterListenerImpl) OnEngageResult(ch *game.Character, result pconst.EngageResult) {
 	packet := &response.EngageResult{Result: result}
 	if result == pconst.EngageResultEngaged || result == pconst.EngageResultMarried {
-		packet.Marriage = ch.Wedding.Marriage.BuildS2C()
+		packet.Marriage = ch.Wedding().Marriage().BuildS2C()
 	}
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
 }

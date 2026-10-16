@@ -9,16 +9,16 @@ import (
 )
 
 type Pet struct {
-	*ItemCore
-	UniqueId    *uint64
-	Name        string
-	Level       uint8
-	Closeness   uint16
-	Fullness    uint8
-	Speed       uint16
-	Skills      constant.PetSkill
-	SecondsLeft uint32
-	Exceptions  []uint32
+	*itemCore
+	uniqueId    *uint64
+	name        string
+	level       uint8
+	closeness   uint16
+	fullness    uint8
+	speed       uint16
+	skills      constant.PetSkill
+	secondsLeft uint32
+	exceptions  []uint32
 }
 
 func (item *Pet) GetInventoryType() constant.InventoryType { return constant.InventoryTypeCash }
@@ -29,35 +29,35 @@ func (item *Pet) Alive(now time.Time) bool {
 	if now.After(item.GetExpiration()) {
 		return false
 	}
-	return item.GetModel().(*wz.Pet).LimitedLife == 0 || item.SecondsLeft > 0
+	return item.GetModel().(*wz.Pet).LimitedLife == 0 || item.secondsLeft > 0
 }
 
 func (item *Pet) SetCloseness(n int) bool {
-	level := item.Level
-	item.Closeness = uint16(min(max(n, 0), constant.PetMaxCloseness))
-	item.Level = 1
-	for item.Level < constant.PetMaxLevel && item.Closeness >= constant.PetClosenessByLevel[item.Level] {
-		item.Level++
+	level := item.level
+	item.closeness = uint16(min(max(n, 0), constant.PetMaxCloseness))
+	item.level = 1
+	for item.level < constant.PetMaxLevel && item.closeness >= constant.PetClosenessByLevel[item.level] {
+		item.level++
 	}
-	return item.Level > level
+	return item.level > level
 }
 
 func (item *Pet) Clone(count uint16) Item {
 	return &Pet{
-		ItemCore: &ItemCore{
-			FieldPlacement: nil,
-			Count:          count,
-			Wz:             item.Wz,
-			Expiration:     item.ItemCore.Expiration,
+		itemCore: &ItemCore{
+			fieldPlacement: nil,
+			count:          count,
+			wz:             item.wz,
+			expiration:     item.itemCore.expiration,
 		},
-		UniqueId:    copyUint64Ptr(item.UniqueId),
-		Name:        item.Name,
-		Level:       item.Level,
-		Closeness:   item.Closeness,
-		Fullness:    item.Fullness,
-		Speed:       item.Speed,
-		Skills:      item.Skills,
-		SecondsLeft: item.SecondsLeft,
-		Exceptions:  slices.Clone(item.Exceptions),
+		uniqueId:    copyUint64Ptr(item.uniqueId),
+		name:        item.name,
+		level:       item.level,
+		closeness:   item.closeness,
+		fullness:    item.fullness,
+		speed:       item.speed,
+		skills:      item.skills,
+		secondsLeft: item.secondsLeft,
+		exceptions:  slices.Clone(item.exceptions),
 	}
 }

@@ -24,7 +24,7 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 			o.SendSpawnSyncToViewer(mover)
 			if peer, ok := o.(*Character); ok {
 				mover.SendSpawnSyncToViewer(peer)
-				mover.Party.syncHP(peer)
+				mover.party.syncHP(peer)
 			}
 		}
 		for _, o := range beforeNear {
@@ -59,26 +59,26 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 
 func (m *Map) BroadcastPartyHP(ch *Character) {
 	for _, peer := range m.partyPeers(ch) {
-		peer.Listener.OnPartyMemberHP(peer, ch)
+		peer.listener.OnPartyMemberHP(peer, ch)
 	}
 }
 
 func (m *Map) SyncPartyHP(ch *Character) {
 	for _, peer := range m.partyPeers(ch) {
-		peer.Listener.OnPartyMemberHP(peer, ch)
-		ch.Listener.OnPartyMemberHP(ch, peer)
+		peer.listener.OnPartyMemberHP(peer, ch)
+		ch.listener.OnPartyMemberHP(ch, peer)
 	}
 }
 
 func (m *Map) partyPeers(ch *Character) []*Character {
-	partyID := ch.Party.ID()
+	partyID := ch.party.ID()
 	if partyID == nil {
 		return nil
 	}
 	var peers []*Character
 	for _, obj := range m.GetObjects(constant.ObjectTypeCharacter) {
 		peer, ok := obj.(*Character)
-		if !ok || peer == ch || !peer.Party.Is(partyID) {
+		if !ok || peer == ch || !peer.party.Is(partyID) {
 			continue
 		}
 		peers = append(peers, peer)

@@ -52,12 +52,12 @@ func (h *ShipObject) Handle(ctx *core.ClientContext, req *request.ShipObject) er
 	switch {
 	case wantBalrog:
 		if prop("haveBalrog") == "true" {
-			ch.Listener.OnShipBalrog(ch)
+			ch.Listener().OnShipBalrog(ch)
 		}
 	case prop("docked") == "true":
-		ch.Listener.OnShipState(ch, response.ShipStateDocked)
+		ch.Listener().OnShipState(ch, response.ShipStateDocked)
 	default:
-		ch.Listener.OnShipState(ch, response.ShipStateLeaving)
+		ch.Listener().OnShipState(ch, response.ShipStateLeaving)
 	}
 	return nil
 }

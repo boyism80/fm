@@ -33,12 +33,12 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 
 	m := character.GetMap()
 	if m == nil {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 	door := m.FindDoorOwner(req.OwnerCharacterID)
 	if door == nil || !door.Use(ctx.ActorContext, character) {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 	}
 	return nil
 }

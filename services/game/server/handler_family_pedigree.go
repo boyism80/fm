@@ -25,6 +25,6 @@ func (h *FamilyPedigree) Handle(ctx *core.ClientContext, req *request.FamilyPedi
 		return nil
 	}
 
-	ch.Family.ShowPedigree(ctx.ActorContext, req.Name)
+	ch.Family().ShowPedigree(ctx.ActorContext, req.Name)
 	return nil
 }

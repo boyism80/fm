@@ -10,44 +10,44 @@ const (
 )
 
 type Marriage struct {
-	ID                 uint32
-	GroomID            uint32
-	BrideID            uint32
-	GroomName          string
-	BrideName          string
-	GroomItemID        uint32
-	BrideItemID        uint32
-	Status             MarriageStatus
-	TicketItemID       uint32
-	GroomWished        bool
-	BrideWished        bool
-	GroomWishes        []string
-	BrideWishes        []string
-	DivorceRequesterID uint32
-	DivorceRequestedAt time.Time
+	id                 uint32
+	groomID            uint32
+	brideID            uint32
+	groomName          string
+	brideName          string
+	groomItemID        uint32
+	brideItemID        uint32
+	status             MarriageStatus
+	ticketItemID       uint32
+	groomWished        bool
+	brideWished        bool
+	groomWishes        []string
+	brideWishes        []string
+	divorceRequesterID uint32
+	divorceRequestedAt time.Time
 }
 
 func (m *Marriage) PartnerID(characterID uint32) uint32 {
-	if m.GroomID == characterID {
-		return m.BrideID
+	if m.groomID == characterID {
+		return m.brideID
 	}
-	return m.GroomID
+	return m.groomID
 }
 
 func (m *Marriage) PartnerName(characterID uint32) string {
-	if m.GroomID == characterID {
-		return m.BrideName
+	if m.groomID == characterID {
+		return m.brideName
 	}
-	return m.GroomName
+	return m.groomName
 }
 
 func (m *Marriage) Wished(characterID uint32) bool {
-	if m.GroomID == characterID {
-		return m.GroomWished
+	if m.groomID == characterID {
+		return m.groomWished
 	}
-	return m.BrideWished
+	return m.brideWished
 }
 
 func (m *Marriage) Reserved() bool {
-	return m.TicketItemID != 0 && m.GroomWished && m.BrideWished
+	return m.ticketItemID != 0 && m.groomWished && m.brideWished
 }

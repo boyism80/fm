@@ -28,42 +28,42 @@ const (
 )
 
 type CarnivalMember struct {
-	ID    uint32
-	Name  string
-	Level uint8
-	Class constant.ClassType
+	id    uint32
+	name  string
+	level uint8
+	class constant.ClassType
 }
 
 type CarnivalChallenge struct {
-	LeaderID    uint32
-	PartyID     uint32
-	Map         *Map
-	Members     []*CarnivalMember
-	RequestedAt time.Time
+	leaderID    uint32
+	partyID     uint32
+	onMap       *Map
+	members     []*CarnivalMember
+	requestedAt time.Time
 }
 
 func (m *CarnivalMatch) PendingChallengeMembers() []*CarnivalMember {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.Pending == nil {
+	if m.pending == nil {
 		return nil
 	}
-	return m.Pending.Members
+	return m.pending.members
 }
 
 type CarnivalMatch struct {
 	mu sync.Mutex
 
-	SlotIndex    int
-	WaitingMapID uint32
-	FieldMapID   uint32
-	ReviveMapID  uint32
-	WinMapID     uint32
-	LoseMapID    uint32
-	MaxMembers   int
-	State        CarnivalState
-	Teams        map[constant.CarnivalTeam]*CarnivalTeam
-	Pending      *CarnivalChallenge
+	slotIndex    int
+	waitingMapID uint32
+	fieldMapID   uint32
+	reviveMapID  uint32
+	winMapID     uint32
+	loseMapID    uint32
+	maxMembers   int
+	state        CarnivalState
+	teams        map[constant.CarnivalTeam]*CarnivalTeam
+	pending      *CarnivalChallenge
 	queue        []*CarnivalChallenge
 	smID         string
 	registry     *CarnivalSystem
@@ -71,15 +71,15 @@ type CarnivalMatch struct {
 
 func NewCarnivalMatch(slotIndex int, waitingMapID, fieldMapID, reviveMapID, winMapID, loseMapID uint32, maxMembers int) *CarnivalMatch {
 	return &CarnivalMatch{
-		SlotIndex:    slotIndex,
-		WaitingMapID: waitingMapID,
-		FieldMapID:   fieldMapID,
-		ReviveMapID:  reviveMapID,
-		WinMapID:     winMapID,
-		LoseMapID:    loseMapID,
-		MaxMembers:   maxMembers,
-		State:        CarnivalStateEmpty,
-		Teams:        make(map[constant.CarnivalTeam]*CarnivalTeam),
+		slotIndex:    slotIndex,
+		waitingMapID: waitingMapID,
+		fieldMapID:   fieldMapID,
+		reviveMapID:  reviveMapID,
+		winMapID:     winMapID,
+		loseMapID:    loseMapID,
+		maxMembers:   maxMembers,
+		state:        CarnivalStateEmpty,
+		teams:        make(map[constant.CarnivalTeam]*CarnivalTeam),
 	}
 }
 
@@ -99,19 +99,19 @@ func (m *CarnivalMatch) gameWorld() GameWorld {
 	if group == nil {
 		return nil
 	}
-	return group.GameWorld
+	return group.gameWorld
 }
 
 func (m *CarnivalMatch) Team(teamID constant.CarnivalTeam) *CarnivalTeam {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.Teams[teamID]
+	return m.teams[teamID]
 }
 
 func (m *CarnivalMatch) FindTeam(ch *Character) *CarnivalTeam {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	for _, team := range m.Teams {
+	for _, team := range m.teams {
 		if team != nil && team.HasMember(ch.GetID()) {
 			return team
 		}
@@ -122,24 +122,24 @@ func (m *CarnivalMatch) FindTeam(ch *Character) *CarnivalTeam {
 func (m *CarnivalMatch) HasPendingChallenge() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.Pending != nil
+	return m.pending != nil
 }
 
 func (m *CarnivalMatch) Result() CarnivalResult {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	red := m.Teams[constant.CarnivalTeamRed]
-	blue := m.Teams[constant.CarnivalTeamBlue]
+	red := m.teams[constant.CarnivalTeamRed]
+	blue := m.teams[constant.CarnivalTeamBlue]
 	if red == nil || blue == nil {
 		return CarnivalResultUndecided
 	}
-	if m.State != CarnivalStateBattle && m.State != CarnivalStateReward {
+	if m.state != CarnivalStateBattle && m.state != CarnivalStateReward {
 		return CarnivalResultUndecided
 	}
-	if red.TotalCP > blue.TotalCP {
+	if red.totalCP > blue.totalCP {
 		return CarnivalResultRedWin
 	}
-	if blue.TotalCP > red.TotalCP {
+	if blue.totalCP > red.totalCP {
 		return CarnivalResultBlueWin
 	}
 	return CarnivalResultDraw
@@ -147,14 +147,14 @@ func (m *CarnivalMatch) Result() CarnivalResult {
 
 func (m *CarnivalMatch) SetState(state CarnivalState) {
 	m.mu.Lock()
-	m.State = state
+	m.state = state
 	m.mu.Unlock()
 }
 
 func (m *CarnivalMatch) GetState() CarnivalState {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.State
+	return m.state
 }
 
 func (m *CarnivalMatch) ShowResult() {
@@ -166,10 +166,10 @@ func (m *CarnivalMatch) ShowResult() {
 }
 
 func (m *CarnivalMatch) OnMobSpawn(mob *Mob) {
-	if mob.CarnivalTeam == constant.CarnivalTeamNone {
+	if mob.carnivalTeam == constant.CarnivalTeamNone {
 		return
 	}
-	team := m.Team(mob.CarnivalTeam)
+	team := m.Team(mob.carnivalTeam)
 	if team == nil {
 		return
 	}
@@ -186,7 +186,7 @@ func (m *CarnivalMatch) DestroyGuardian(reactor *Reactor) {
 
 func (m *CarnivalMatch) Finish(gw GameWorld) bool {
 	m.mu.Lock()
-	for _, team := range m.Teams {
+	for _, team := range m.teams {
 		if team != nil {
 			team.Clear()
 		}
@@ -198,15 +198,15 @@ func (m *CarnivalMatch) Finish(gw GameWorld) bool {
 // Conclude frees the slot but leaves each member bound to its detached team for the reward NPC.
 func (m *CarnivalMatch) Conclude(gw GameWorld) bool {
 	m.mu.Lock()
-	for id, team := range m.Teams {
+	for id, team := range m.teams {
 		if team != nil {
-			team.Match = nil
+			team.match = nil
 		}
-		delete(m.Teams, id)
+		delete(m.teams, id)
 	}
-	m.Pending = nil
+	m.pending = nil
 	m.queue = nil
-	m.State = CarnivalStateEmpty
+	m.state = CarnivalStateEmpty
 	smID := m.smID
 	m.smID = ""
 	m.mu.Unlock()
@@ -216,7 +216,7 @@ func (m *CarnivalMatch) Conclude(gw GameWorld) bool {
 		if group != nil {
 			if sm := group.Get(smID); sm != nil && !sm.Disposed() {
 				sm.AbortStart()
-				group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &StopStateMachine{})
+				group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &StopStateMachine{})
 			}
 		}
 	}
@@ -225,23 +225,23 @@ func (m *CarnivalMatch) Conclude(gw GameWorld) bool {
 
 func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld) bool {
 	m.mu.Lock()
-	challenge := m.Pending
-	if challenge == nil || m.Teams[constant.CarnivalTeamRed] == nil || m.State != CarnivalStateWaiting {
+	challenge := m.pending
+	if challenge == nil || m.teams[constant.CarnivalTeamRed] == nil || m.state != CarnivalStateWaiting {
 		m.mu.Unlock()
 		return false
 	}
 	m.mu.Unlock()
 
-	gw.Systems().Get[*MapSystem]().Visit(challenge.Map, func(actor.Context) {
+	gw.Systems().Get[*MapSystem]().Visit(challenge.onMap, func(actor.Context) {
 		m.admitChallengers(challenge)
 	})
 	return true
 }
 
 func (m *CarnivalMatch) admitChallengers(challenge *CarnivalChallenge) {
-	members := make([]*Character, 0, len(challenge.Members))
-	for _, member := range challenge.Members {
-		ch := challenge.Map.GetPlayer(member.ID)
+	members := make([]*Character, 0, len(challenge.members))
+	for _, member := range challenge.members {
+		ch := challenge.onMap.GetPlayer(member.id)
 		if ch == nil {
 			m.dropChallenge(challenge)
 			return
@@ -249,33 +249,33 @@ func (m *CarnivalMatch) admitChallengers(challenge *CarnivalChallenge) {
 		members = append(members, ch)
 	}
 
-	personal := make(map[uint32]*CarnivalPersonalCP, len(challenge.Members))
-	for _, member := range challenge.Members {
-		personal[member.ID] = &CarnivalPersonalCP{}
+	personal := make(map[uint32]*CarnivalPersonalCP, len(challenge.members))
+	for _, member := range challenge.members {
+		personal[member.id] = &CarnivalPersonalCP{}
 	}
 	blue := &CarnivalTeam{
-		Match:    m,
-		TeamID:   constant.CarnivalTeamBlue,
-		LeaderID: challenge.LeaderID,
-		PartyID:  challenge.PartyID,
-		Roster:   challenge.Members,
-		Personal: personal,
+		match:    m,
+		teamID:   constant.CarnivalTeamBlue,
+		leaderID: challenge.leaderID,
+		partyID:  challenge.partyID,
+		roster:   challenge.members,
+		personal: personal,
 	}
 
 	m.mu.Lock()
-	if m.Pending != challenge || m.State != CarnivalStateWaiting {
+	if m.pending != challenge || m.state != CarnivalStateWaiting {
 		m.mu.Unlock()
 		return
 	}
-	m.Pending = nil
+	m.pending = nil
 	m.queue = nil
-	m.Teams[constant.CarnivalTeamBlue] = blue
-	m.State = CarnivalStateReady
+	m.teams[constant.CarnivalTeamBlue] = blue
+	m.state = CarnivalStateReady
 	m.mu.Unlock()
 
 	sm := m.StateMachine()
 	for _, ch := range members {
-		ch.Carnival.team = blue
+		ch.carnival.team = blue
 		sm.EnterPlayer(ch)
 	}
 	sm.CallHook("on_challenge_accepted")
@@ -283,14 +283,14 @@ func (m *CarnivalMatch) admitChallengers(challenge *CarnivalChallenge) {
 
 func (m *CarnivalMatch) dropChallenge(challenge *CarnivalChallenge) {
 	m.mu.Lock()
-	if m.Pending != challenge {
+	if m.pending != challenge {
 		m.mu.Unlock()
 		return
 	}
 	m.queue = m.queue[1:]
-	m.Pending = nil
+	m.pending = nil
 	if len(m.queue) > 0 {
-		m.Pending = m.queue[0]
+		m.pending = m.queue[0]
 	}
 	m.mu.Unlock()
 
@@ -301,13 +301,13 @@ func (m *CarnivalMatch) RejectPendingChallenge() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.Pending == nil || len(m.queue) == 0 {
+	if m.pending == nil || len(m.queue) == 0 {
 		return
 	}
 	m.queue = m.queue[1:]
-	m.Pending = nil
+	m.pending = nil
 	if len(m.queue) > 0 {
-		m.Pending = m.queue[0]
+		m.pending = m.queue[0]
 	}
 }
 
@@ -327,15 +327,15 @@ func (m *CarnivalMatch) NotifyCarnivalStart(ch *Character) {
 	if personal == nil {
 		return
 	}
-	enemy := m.enemyTeam(team.TeamID)
+	enemy := m.enemyTeam(team.teamID)
 	enemyAvail, enemyTotal := 0, 0
 	if enemy != nil {
-		enemyAvail = enemy.AvailableCP
-		enemyTotal = enemy.TotalCP
+		enemyAvail = enemy.availableCP
+		enemyTotal = enemy.totalCP
 	}
-	ch.Listener.OnCarnivalStart(ch, team.TeamID,
-		personal.AvailableCP, personal.TotalCP,
-		team.AvailableCP, team.TotalCP,
+	ch.listener.OnCarnivalStart(ch, team.teamID,
+		personal.availableCP, personal.totalCP,
+		team.availableCP, team.totalCP,
 		enemyAvail, enemyTotal)
 }
 
@@ -355,14 +355,14 @@ func (m *CarnivalMatch) OnPlayerDied(ch *Character) {
 	if team == nil {
 		return
 	}
-	ch.Listener.OnCarnivalDied(ch, team.TeamID, ch.GetName(), 0)
+	ch.listener.OnCarnivalDied(ch, team.teamID, ch.GetName(), 0)
 }
 
 func NewCarnivalMember(ch *Character) *CarnivalMember {
 	return &CarnivalMember{
-		ID:    ch.GetID(),
-		Name:  ch.GetName(),
-		Level: ch.GetLevel(),
-		Class: ch.Class,
+		id:    ch.GetID(),
+		name:  ch.GetName(),
+		level: ch.GetLevel(),
+		class: ch.class,
 	}
 }

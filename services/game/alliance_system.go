@@ -15,8 +15,6 @@ import (
 
 type allianceStored struct {
 	alliance  *Alliance
-	info      *dto.AllianceInfo
-	guilds    []*dto.GuildInfo
 	guildIDs  []uint32
 	updatedAt time.Time
 }
@@ -97,24 +95,16 @@ func (s *AllianceSystem) Update(alliancePb *internal.Alliance) {
 			continue
 		}
 		aid := allianceID
-		cloned.AllianceID = &aid
+		cloned.allianceID = &aid
 		s.gw.Systems().Get[*GuildSystem]().Update(cloned.BuildRPC())
 	}
-	info := AllianceInfoFromProto(alliancePb)
-	if info == nil {
-		return
-	}
-	guilds := AllianceCreateGuildsFromProto(alliancePb)
-	guildIDs := append([]uint32(nil), alliancePb.GetGuildIds()...)
-	ent := AllianceFromInfo(s.gw, info)
+	ent := allianceFromProto(s.gw, alliancePb)
 	if ent == nil {
 		return
 	}
-	ent.LeaderCharacterID = alliancePb.GetLeaderCharacterId()
+	guildIDs := append([]uint32(nil), alliancePb.GetGuildIds()...)
 	stored := &allianceStored{
 		alliance:  ent,
-		info:      info,
-		guilds:    guilds,
 		guildIDs:  guildIDs,
 		updatedAt: time.UnixMilli(alliancePb.GetUpdatedAtUnixMs()),
 	}
@@ -142,27 +132,28 @@ func (s *AllianceSystem) Get(allianceID uint32) *Alliance {
 	s.mu.Lock()
 	stored := s.alliances[allianceID]
 	s.mu.Unlock()
-	if stored == nil || stored.info == nil {
-		return nil
-	}
-	if stored.alliance == nil {
+	if stored == nil || stored.alliance == nil {
 		return nil
 	}
 	return stored.alliance.Clone()
 }
 
 func (s *AllianceSystem) ShowData(allianceID uint32) (*dto.AllianceInfo, []*dto.GuildInfo) {
-	s.mu.Lock()
-	stored := s.alliances[allianceID]
-	s.mu.Unlock()
-	if stored == nil || stored.info == nil {
+	alliance := s.Get(allianceID)
+	if alliance == nil {
 		return nil, nil
 	}
 	var guilds []*dto.GuildInfo
-	if len(stored.guilds) > 0 {
-		guilds = append([]*dto.GuildInfo(nil), stored.guilds...)
+	for _, guildID := range s.GuildIDs(allianceID) {
+		guild := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
+		if guild == nil {
+			continue
+		}
+		if info := guild.BuildS2C(); info != nil {
+			guilds = append(guilds, info)
+		}
 	}
-	return stored.info, guilds
+	return alliance.BuildS2C(), guilds
 }
 
 func (s *AllianceSystem) GuildIDs(allianceID uint32) []uint32 {
@@ -180,7 +171,7 @@ func (s *AllianceSystem) NotifyMemberFieldsChanged(ch *Character) {
 		return
 	}
 	s.gw.Systems().Get[*GuildSystem]().NotifyMemberFieldsChanged(ch)
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.guild.ID()
 	if !inGuild {
 		return
 	}
@@ -194,7 +185,7 @@ func (s *AllianceSystem) NotifyMemberFieldsChanged(ch *Character) {
 	}
 	subjectID := ch.GetID()
 	level := uint32(ch.GetLevel())
-	classID := uint32(ch.Class)
+	classID := uint32(ch.class)
 	s.broadcastMemberFieldsChanged(allianceID, guildID, subjectID, level, classID)
 }
 
@@ -226,7 +217,7 @@ func (s *AllianceSystem) broadcastMemberFieldsChanged(allianceID uint32, subject
 				if ch == nil {
 					return
 				}
-				ch.Listener.OnAllianceMemberFieldsChange(ch, allianceID, subjectGuildID, subjectID, level, classID)
+				ch.listener.OnAllianceMemberFieldsChange(ch, allianceID, subjectGuildID, subjectID, level, classID)
 			})
 		}
 	}
@@ -263,7 +254,7 @@ func (s *AllianceSystem) BroadcastMemberOnlineChanged(allianceID uint32, subject
 				if ch == nil {
 					return
 				}
-				ch.Listener.OnAllianceMemberOnlineChange(ch, allianceID, subjectGuildID, subjectID, online)
+				ch.listener.OnAllianceMemberOnlineChange(ch, allianceID, subjectGuildID, subjectID, online)
 			})
 		}
 	}
@@ -274,7 +265,7 @@ func (s *AllianceSystem) ValidateCreateAlliance(ch *Character) (uint32, bool) {
 		return 0, false
 	}
 	leaderID := ch.GetID()
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.guild.ID()
 	if !inGuild {
 		return 0, false
 	}
@@ -289,7 +280,7 @@ func (s *AllianceSystem) ValidateCreateAlliance(ch *Character) (uint32, bool) {
 		return 0, false
 	}
 
-	partyID := ch.Party.ID()
+	partyID := ch.party.ID()
 	if partyID == nil {
 		return 0, false
 	}
@@ -303,10 +294,10 @@ func (s *AllianceSystem) ValidateCreateAlliance(ch *Character) (uint32, bool) {
 	}
 	var partnerID uint32
 	for _, pm := range members {
-		if pm == nil || pm.CharacterID == 0 || pm.CharacterID == leaderID {
+		if pm == nil || pm.characterID == 0 || pm.characterID == leaderID {
 			continue
 		}
-		partnerID = pm.CharacterID
+		partnerID = pm.characterID
 		break
 	}
 	if partnerID == 0 {

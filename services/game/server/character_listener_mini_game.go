@@ -10,10 +10,10 @@ import (
 func (l *CharacterListenerImpl) OnMiniGameEntered(ch *game.Character, g *game.MiniGame) {
 	slot, _ := g.SlotOf(ch)
 	enter := &response.MiniGameEnter{
-		Type:   g.Kind,
+		Type:   g.Kind(),
 		MySlot: slot,
-		Title:  g.Title,
-		Piece:  g.Piece,
+		Title:  g.Title(),
+		Piece:  g.Piece(),
 	}
 	for _, member := range g.Members() {
 		memberSlot, _ := g.SlotOf(member)
@@ -41,7 +41,7 @@ func (l *CharacterListenerImpl) OnMiniGameExitAfter(ch *game.Character, reserved
 }
 
 func (l *CharacterListenerImpl) OnMiniGameStarted(ch *game.Character, g *game.MiniGame) {
-	ch.Send(&response.MiniGameStart{Loser: 1 - g.Turn, Cards: g.Cards}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.MiniGameStart{Loser: 1 - g.Turn(), Cards: g.Cards()}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnMiniGameSkipped(ch *game.Character, slot uint8) {

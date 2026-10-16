@@ -18,7 +18,7 @@ func (ch *Character) UseItemEffect(itemID uint32) bool {
 	if !ok || consume == nil {
 		return false
 	}
-	ch.Buffs.addConsumeBuff(consume)
+	ch.buffs.addConsumeBuff(consume)
 	ch.recover(consume)
 	return true
 }
@@ -42,18 +42,18 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 	}
 
 	if wzConsume.MonsterBook {
-		ch.MonsterBook.Register(wzConsume.ID)
+		ch.monsterBook.Register(wzConsume.ID)
 	}
 
 	if applyWZ {
 		if wzConsume.CP > 0 || wzConsume.NuffSkillID > 0 {
-			ch.Carnival.useItem(wzConsume)
+			ch.carnival.useItem(wzConsume)
 			return true
 		}
 
 		var targets []*Character
 		if wzConsume.Party {
-			if pid := ch.Party.ID(); pid != nil {
+			if pid := ch.party.ID(); pid != nil {
 				if m := ch.GetMap(); m != nil {
 					if members := m.GetPartyMembers(*pid); len(members) > 0 {
 						targets = members
@@ -70,9 +70,9 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 				continue
 			}
 			if len(wzConsume.CureDebuffs) > 0 {
-				character.Debuffs.Remove(wzConsume.CureDebuffs...)
+				character.debuffs.Remove(wzConsume.CureDebuffs...)
 			}
-			character.Buffs.addConsumeBuff(wzConsume)
+			character.buffs.addConsumeBuff(wzConsume)
 			character.recover(wzConsume)
 			if wzConsume.ExpInc > 0 {
 				character.AddExp(uint32(wzConsume.ExpInc))
@@ -84,7 +84,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 }
 
 func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
-	item := ch.Inventory.Tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+	item := ch.inventory.tabs[constant.InventoryTypeConsume].Get(uint8(slot))
 	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&constant.ItemTraitCatchItem == 0 {
 		return
 	}
@@ -97,12 +97,12 @@ func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
 		return
 	}
 	mob := mapInstance.GetMob(mobOID)
-	if mob == nil || mob.Wz == nil || mob.Wz.ID != consume.MobID {
+	if mob == nil || mob.wz == nil || mob.wz.ID != consume.MobID {
 		return
 	}
 
 	if consume.MobHP > 0 && mob.GetHp() > mob.GetMaxHp()/2 {
-		ch.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: 0}, &ObjectBroadcastOption{})
+		ch.Broadcast(&response.ShowMagnet{MobID: mob.oid, Success: 0}, &ObjectBroadcastOption{})
 		return
 	}
 
@@ -114,61 +114,61 @@ func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
 		return
 	}
 
-	ch.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: 1}, &ObjectBroadcastOption{})
+	ch.Broadcast(&response.ShowMagnet{MobID: mob.oid, Success: 1}, &ObjectBroadcastOption{})
 	mob.Kill(ch, constant.MobDieAnimationTypeFadeOut)
 }
 
 func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint32) error {
-	item := ch.Inventory.Tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+	item := ch.inventory.tabs[constant.InventoryTypeConsume].Get(uint8(slot))
 	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 	consume, ok := item.GetModel().(*wz.Consume)
 	if !ok || consume.MoveTo <= 0 {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil || m.GetLuaRoot() == nil || m.BlocksMove() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+	if m == nil || m.wz == nil || m.GetLuaRoot() == nil || m.BlocksMove() {
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
 	thread, err := luax.NewThread(m.GetLuaRoot(), constant.CharacterQueryScriptPath)
 	if err != nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return err
 	}
 	allowed, err := luax.Call(thread, "can_use_return_scroll", ch, itemID, consume.MoveTo)
 	if err != nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return err
 	}
 	if allowed != lua.LTrue {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
 	targetID := uint32(consume.MoveTo)
 	if consume.MoveTo == wz.ConsumeMoveToReturnMap {
-		targetID = uint32(m.Wz.ReturnMapId)
+		targetID = uint32(m.wz.ReturnMapId)
 	}
-	target := ch.GameWorld.Systems().Get[*MapSystem]().Find(m.StateMachine(), targetID)
+	target := ch.gameWorld.Systems().Get[*MapSystem]().Find(m.StateMachine(), targetID)
 	if target == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
-	err = ch.GameWorld.Systems().Get[*MapSystem]().Warp(ctx, ch, target, 0, func(actor.Context) {
-		item := ch.Inventory.Tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+	err = ch.gameWorld.Systems().Get[*MapSystem]().Warp(ctx, ch, target, 0, func(actor.Context) {
+		item := ch.inventory.tabs[constant.InventoryTypeConsume].Get(uint8(slot))
 		if item != nil && item.GetModel().GetID() == itemID {
-			ch.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
+			ch.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
 		}
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 	})
 	if err != nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.listener.OnUpdateStats(ch, nil, true)
 	}
 	return err
 }
@@ -177,7 +177,7 @@ func (ch *Character) recover(consumeItem *wz.Consume) bool {
 	if ch == nil || consumeItem == nil {
 		return false
 	}
-	healMul := ch.Stats.PotionHealMultiplierPercent()
+	healMul := ch.stats.PotionHealMultiplierPercent()
 	hpChange := int(consumeItem.ActiveEffect.HP) * healMul / 100
 	mpChange := int(consumeItem.ActiveEffect.MP) * healMul / 100
 	hpRate := int(consumeItem.ActiveEffect.HPRate)
@@ -224,7 +224,7 @@ func (ch *Character) recover(consumeItem *wz.Consume) bool {
 	if len(stats) == 0 {
 		return false
 	}
-	ch.Listener.OnUpdateStats(ch, stats, false)
+	ch.listener.OnUpdateStats(ch, stats, false)
 	return true
 }
 

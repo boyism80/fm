@@ -25,6 +25,6 @@ func (h *FamilySummon) Handle(ctx *core.ClientContext, req *request.FamilySummon
 		return nil
 	}
 
-	ch.Family.AnswerSummon(req.Name, req.Accepted)
+	ch.Family().AnswerSummon(req.Name, req.Accepted)
 	return nil
 }

@@ -15,7 +15,7 @@ type characterClient interface {
 
 type NoticeSystem struct {
 	server *core.ServerCore
-	Muted  atomic.Bool
+	muted  atomic.Bool
 }
 
 func NewNoticeSystem(server *core.ServerCore) *NoticeSystem {
@@ -35,7 +35,7 @@ func (s *NoticeSystem) BroadcastNotice(messageType constant.ServerMessageType, m
 		if ch == nil {
 			continue
 		}
-		ch.Listener.OnNotice(ch, messageType, message, channel, ear)
+		ch.listener.OnNotice(ch, messageType, message, channel, ear)
 	}
 }
 
@@ -49,6 +49,6 @@ func (s *NoticeSystem) BroadcastMegaphone(megaphone *response.Megaphone) {
 		if ch == nil {
 			continue
 		}
-		ch.Listener.OnMegaphone(ch, megaphone)
+		ch.listener.OnMegaphone(ch, megaphone)
 	}
 }

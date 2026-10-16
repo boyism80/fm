@@ -30,10 +30,10 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 	}
 	switch req.Mode {
 	case 1:
-		ch.Pets.HPItem = uint32(req.Data)
+		ch.Pets().SetHPItem(uint32(req.Data))
 		return nil
 	case 2:
-		ch.Pets.MPItem = uint32(req.Data)
+		ch.Pets().SetMPItem(uint32(req.Data))
 		return nil
 	}
 
@@ -41,7 +41,7 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 		if !h.allowBinding(ch, c.Type, c.Action) {
 			continue
 		}
-		ch.KeyLayout.SetKey(int(c.Key), c.Type, c.Action)
+		ch.KeyLayout().SetKey(int(c.Key), c.Type, c.Action)
 	}
 	return nil
 }
@@ -53,7 +53,7 @@ func (h *ChangeKeymap) allowBinding(ch *game.Character, typ byte, action int32) 
 	if ch == nil {
 		return true
 	}
-	res := ch.GameWorld.GetResources()
+	res := ch.GetGameWorld().GetResources()
 	if res == nil {
 		return true
 	}
@@ -65,6 +65,6 @@ func (h *ChangeKeymap) allowBinding(ch *game.Character, typ byte, action int32) 
 	if !skill.Invisible {
 		return true
 	}
-	ent := ch.Skills.Get(skillID)
+	ent := ch.Skills().Get(skillID)
 	return ent != nil && ent.Level() > 0
 }

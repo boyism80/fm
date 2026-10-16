@@ -22,11 +22,11 @@ func (v attackValidator) skill(id uint32) (*wz.Skill, int, error) {
 	if id == 0 {
 		return nil, 0, nil
 	}
-	entry := v.ch.Skills.Get(id)
+	entry := v.ch.skills.Get(id)
 	if entry == nil || entry.Level() <= 0 {
 		return nil, 0, fmt.Errorf("skill %d not learned", id)
 	}
-	return entry.Wz, entry.Level(), nil
+	return entry.wz, entry.Level(), nil
 }
 
 // start snapshots the attacker for one attack. A nil skill is the basic attack.
@@ -119,14 +119,14 @@ func (v attackValidator) checkDamage(damages, bounds []dto.AttackPair) error {
 }
 
 func (v attackValidator) targetModifiers(modifiers damageModifiers, mob *Mob) damageModifiers {
-	if mob.Buffs.GetValue(constant.MobBuffStun) > 0 {
-		if p := v.ch.Skills.LevelData(constant.SkillStunMastery); p != nil {
+	if mob.buffs.GetValue(constant.MobBuffStun) > 0 {
+		if p := v.ch.skills.LevelData(constant.SkillStunMastery); p != nil {
 			modifiers.CriticalChance += float64(p.Prop)
 			modifiers.CriticalPercent += float64(p.Damage)
 		}
 	}
-	if v.ch.Skills.HomingTargetOID != nil && *v.ch.Skills.HomingTargetOID == mob.GetOID() {
-		if p := v.ch.Skills.LevelData(constant.SkillAdvancedHoming); p != nil {
+	if v.ch.skills.homingTargetOID != nil && *v.ch.skills.homingTargetOID == mob.GetOID() {
+		if p := v.ch.skills.LevelData(constant.SkillAdvancedHoming); p != nil {
 			modifiers.HomingPercent = 100 + float64(p.X)
 		}
 	}

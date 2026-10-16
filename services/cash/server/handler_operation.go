@@ -19,7 +19,6 @@ import (
 	"github.com/boyism80/fm/services/cash"
 	"github.com/boyism80/fm/services/cash/client"
 	"github.com/boyism80/fm/types"
-	"google.golang.org/protobuf/proto"
 )
 
 type Operation struct {
@@ -110,7 +109,7 @@ func (h *Operation) buy(ctx *core.ClientContext, character *cash.Character, req 
 		return
 	}
 
-	h.purchase(ctx, character, req.Currency, commodity.Price, []*internal.CashItem{cashItem}, constant.CashShopResultBuyFailed, func() {
+	h.purchase(ctx, character, req.Currency, commodity.Price, []*cash.LockerItem{cashItem}, constant.CashShopResultBuyFailed, func() {
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultBought, Item: character.BuildLockerItemS2C(cashItem)}, types.SEND_POLICY_ENCRYPT)
 	})
 }
@@ -145,12 +144,12 @@ func (h *Operation) buyPackage(ctx *core.ClientContext, character *cash.Characte
 	})
 }
 
-func (h *Operation) packageItems(character *cash.Character, commodity *wz.Commodity) ([]*internal.CashItem, error) {
+func (h *Operation) packageItems(character *cash.Character, commodity *wz.Commodity) ([]*cash.LockerItem, error) {
 	if len(commodity.Package) == 0 {
 		return nil, fmt.Errorf("commodity %d is not a package", commodity.SN)
 	}
 
-	items := make([]*internal.CashItem, 0, len(commodity.Package))
+	items := make([]*cash.LockerItem, 0, len(commodity.Package))
 	for _, sn := range commodity.Package {
 		content := h.cs.GetResources().Commodities[sn]
 		if content == nil {
@@ -165,7 +164,7 @@ func (h *Operation) packageItems(character *cash.Character, commodity *wz.Commod
 	return items, nil
 }
 
-func (h *Operation) purchase(ctx *core.ClientContext, character *cash.Character, currency uint8, price uint32, items []*internal.CashItem, failed constant.CashShopResultKind, bought func()) {
+func (h *Operation) purchase(ctx *core.ClientContext, character *cash.Character, currency uint8, price uint32, items []*cash.LockerItem, failed constant.CashShopResultKind, bought func()) {
 	fail := func(failure constant.CashShopFailure) {
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: failed, Failure: failure}, types.SEND_POLICY_ENCRYPT)
 	}
@@ -177,13 +176,17 @@ func (h *Operation) purchase(ctx *core.ClientContext, character *cash.Character,
 	}
 
 	promise := h.start(ctx, character, failed)
+	boughtItems := make([]*internal.CashItem, 0, len(items))
+	for _, item := range items {
+		boughtItems = append(boughtItems, item.BuildRPC())
+	}
 	promise.ThenRPC(func(c context.Context) (*internal.BuyCashItemReply, error) {
 		return h.cs.systems.Get[*rpc.InternalConnection]().Client.BuyCashItem(c, &internal.BuyCashItemRequest{
 			WorldId:   uint32(h.cs.config.WorldID),
 			AccountId: character.AccountID(),
 			Currency:  pay,
 			Price:     price,
-			Items:     items,
+			Items:     boughtItems,
 		})
 	}, func(reply *internal.BuyCashItemReply) error {
 		character.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
@@ -256,7 +259,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *cash.Charac
 		switch reply.GetResult() {
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 			character.SetMeso(reply.GetMeso())
-			character.AddInventory(pb)
+			character.AddInventory(cash.ItemFromProto(pb))
 			_ = ctx.Client.Send(&response.AddInventorySlot{InventoryType: invType, Slot: int16(slot), Item: shown}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.UpdateStats{Stats: map[gconstant.Stat]int32{gconstant.StatMeso: reply.GetMeso()}}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.CashShopResult{
@@ -282,12 +285,12 @@ func (h *Operation) payBack(ctx *core.ClientContext, character *cash.Character, 
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	model := h.cs.GetResources().Items[cashItem.GetItem().GetItemId()]
-	if model == nil || model.GetInventoryType() != gconstant.InventoryTypeEquipment || cashItem.GetItem().GetExpirationUnixMs() > 0 {
+	model := h.cs.GetResources().Items[cashItem.ItemID()]
+	if model == nil || model.GetInventoryType() != gconstant.InventoryTypeEquipment || cashItem.Expiration() > 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	commodity := h.cs.GetResources().Commodities[cashItem.GetCommoditySn()]
+	commodity := h.cs.GetResources().Commodities[cashItem.CommoditySN()]
 	if commodity == nil || commodity.PayBackRate == 0 {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -347,7 +350,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *cash.Character, 
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	model := h.cs.GetResources().Items[cashItem.GetItem().GetItemId()]
+	model := h.cs.GetResources().Items[cashItem.ItemID()]
 	if model == nil {
 		fail(constant.CashShopFailureUnknown)
 		return
@@ -358,31 +361,12 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *cash.Character, 
 		fail(constant.CashShopFailureNotEnoughSlots)
 		return
 	}
-	pb := proto.Clone(cashItem.GetItem()).(*internal.Inventory)
-	pb.OwnerId = character.ID()
-	pb.Slot = int32(slot)
-	pb.InventoryType = uint32(invType)
-	switch m := model.(type) {
-	case wz.Equipment, *wz.Installation:
-		pb.Count = 1
-	case *wz.Pet:
-		pb.Count = 1
-		pb.Flag = 0
-		pb.OwnerName = ""
-		if pb.UniqueId == nil {
-			serial := h.cs.NewUniqueID()
-			pb.UniqueId = &serial
-		}
-		if pb.Pet == nil {
-			pb.Pet = &internal.Pet{
-				Name:        h.cs.GetResources().GetItemName(pb.GetItemId()),
-				Level:       1,
-				Fullness:    gconstant.PetMaxFullness,
-				Skills:      uint32(m.Skills),
-				SecondsLeft: uint32(m.LimitedLife),
-			}
-		}
+	record, ok := character.PrepareTakeOut(req.Serial, slot, invType, h.cs)
+	if !ok {
+		fail(constant.CashShopFailureUnknown)
+		return
 	}
+	pb := record.BuildRPC()
 	shown, err := item.BuildS2C(pb, h.cs.GetResources(), h.cs.NewUniqueID)
 	if err != nil {
 		fail(constant.CashShopFailureUnknown)
@@ -402,7 +386,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *cash.Character, 
 			fail(constant.CashShopFailureUnknown)
 			return nil
 		}
-		character.TakeOut(req.Serial, pb)
+		character.TakeOut(req.Serial, record)
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultTakenOut, Slot: slot, TakenOut: shown}, types.SEND_POLICY_ENCRYPT)
 		return nil
 	})
@@ -413,14 +397,11 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *cash.Character, re
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultPutInFailed, Failure: failure}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	pb := character.FindInventory(req.Serial, gconstant.InventoryType(req.InventoryType))
-	if pb == nil {
+	cashItem := character.PreparePutIn(req.Serial, gconstant.InventoryType(req.InventoryType))
+	if cashItem == nil {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	stored := proto.Clone(pb).(*internal.Inventory)
-	stored.Slot = 0
-	cashItem := &internal.CashItem{BuyerName: character.Name(), Item: stored}
 
 	promise := h.start(ctx, character, constant.CashShopResultPutInFailed)
 	promise.ThenRPC(func(c context.Context) (*internal.PutInCashItemReply, error) {
@@ -428,7 +409,7 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *cash.Character, re
 			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),
-			Item:        cashItem,
+			Item:        cashItem.BuildRPC(),
 		})
 	}, func(reply *internal.PutInCashItemReply) error {
 		switch reply.GetResult() {

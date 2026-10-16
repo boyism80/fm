@@ -22,11 +22,11 @@ func (h *MovePet) Handle(ctx *core.ClientContext, req *request.MovePet) error {
 		return nil
 	}
 	character := gameClient.GetCharacter()
-	if character == nil || character.Pets.Active == nil {
+	if character == nil || character.Pets().Active() == nil {
 		return nil
 	}
 
-	character.Pets.Active.Move(req.Position, req.Fragments)
+	character.Pets().Active().Move(req.Position, req.Fragments)
 
 	return nil
 }

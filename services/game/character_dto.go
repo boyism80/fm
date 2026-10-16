@@ -10,7 +10,7 @@ func (ch *Character) BuildS2C() *dto.Character {
 	equipments := make(map[int8]uint32)
 	overlays := make(map[int8]uint32)
 
-	for parts, equipment := range ch.Inventory.Equipped {
+	for parts, equipment := range ch.inventory.equipped {
 		if equipment == nil {
 			continue
 		}
@@ -41,7 +41,7 @@ func (ch *Character) BuildS2C() *dto.Character {
 	}
 
 	var weapon uint32
-	if weaponEquip := ch.Inventory.Equipped[constant.EquipmentPartsWeapon]; weaponEquip != nil {
+	if weaponEquip := ch.inventory.equipped[constant.EquipmentPartsWeapon]; weaponEquip != nil {
 		weapon = weaponEquip.GetModel().GetID()
 	}
 
@@ -50,60 +50,60 @@ func (ch *Character) BuildS2C() *dto.Character {
 		mapID = m.TemplateID()
 	}
 	var pet uint64
-	if ch.Pets.Active != nil {
-		pet = *ch.Pets.Active.Item.UniqueId
+	if ch.pets.active != nil {
+		pet = *ch.pets.active.item.uniqueId
 	}
 	return &dto.Character{
 		ID:            ch.GetID(),
 		Pet:           pet,
 		Name:          ch.name,
-		Gender:        ch.look.Gender,
-		SkinColor:     ch.look.SkinColor,
-		Face:          ch.look.Face,
-		Hair:          ch.look.Hair,
+		Gender:        ch.look.gender,
+		SkinColor:     ch.look.skinColor,
+		Face:          ch.look.face,
+		Hair:          ch.look.hair,
 		Level:         ch.level,
-		Class:         uint16(ch.Class),
-		Str:           ch.Stats.TotalStr(),
-		Dex:           ch.Stats.TotalDex(),
-		Int:           ch.Stats.TotalInt(),
-		Luk:           ch.Stats.TotalLuk(),
+		Class:         uint16(ch.class),
+		Str:           ch.stats.TotalStr(),
+		Dex:           ch.stats.TotalDex(),
+		Int:           ch.stats.TotalInt(),
+		Luk:           ch.stats.TotalLuk(),
 		Hp:            uint16(ch.GetHp()),
 		MaxHp:         uint16(ch.GetMaxHp()),
 		Mp:            uint16(ch.GetMp()),
 		MaxMp:         uint16(ch.GetMaxMp()),
-		AbilityPoint:  ch.Points.AP,
+		AbilityPoint:  ch.points.ap,
 		Exp:           ch.exp,
-		Population:    ch.Stats.Population,
+		Population:    ch.stats.population,
 		Map:           mapID,
 		SpawnPoint:    ch.GetSpawnPoint(),
-		Rank:          ch.Rank.World,
-		RankDiff:      ch.Rank.WorldDiff,
-		ClassRank:     ch.Rank.Class,
-		ClassRankDiff: ch.Rank.ClassDiff,
+		Rank:          ch.rank.world,
+		RankDiff:      ch.rank.worldDiff,
+		ClassRank:     ch.rank.class,
+		ClassRankDiff: ch.rank.classDiff,
 		Mega:          ch.mega,
 		BaseLooks:     equipments,
 		Overlays:      overlays,
 		Weapon:        weapon,
-		Position:      ch.Position,
-		Stance:        ch.Stance,
+		Position:      ch.position,
+		Stance:        ch.stance,
 	}
 }
 
 func (ch *Character) BuildFullS2C() *dto.Character {
 	charDTO := ch.BuildS2C()
 
-	charDTO.SkillPoint = ch.Points.SP
-	if ch.Wedding.Marriage != nil {
-		charDTO.Marriage = ch.Wedding.Marriage.BuildS2C()
+	charDTO.SkillPoint = ch.points.sp
+	if ch.wedding.marriage != nil {
+		charDTO.Marriage = ch.wedding.marriage.BuildS2C()
 	}
-	charDTO.TeleportStones = ch.TeleportStones.regular
-	charDTO.VipTeleportStones = ch.TeleportStones.vip
-	charDTO.MonsterBookCover = ch.MonsterBook.Cover
-	charDTO.MonsterBookCards = ch.MonsterBook.Cards
-	if ch.Quests != nil {
-		charDTO.RecordExByQuest = ch.Quests.RecordExWireMap()
+	charDTO.TeleportStones = ch.teleportStones.regular
+	charDTO.VipTeleportStones = ch.teleportStones.vip
+	charDTO.MonsterBookCover = ch.monsterBook.cover
+	charDTO.MonsterBookCards = ch.monsterBook.cards
+	if ch.quests != nil {
+		charDTO.RecordExByQuest = ch.quests.RecordExWireMap()
 	}
-	if capacity := ch.Buddies.Capacity(); capacity > 255 {
+	if capacity := ch.buddies.Capacity(); capacity > 255 {
 		charDTO.BuddyCapacity = 255
 	} else {
 		charDTO.BuddyCapacity = uint8(capacity)
@@ -116,20 +116,20 @@ func (ch *Character) BuildFullS2C() *dto.Character {
 	charDTO.Inventory = &dto.Inventory{
 		Tabs:     make(map[constant.InventoryType]*dto.InventoryTab),
 		Equipped: make(map[constant.EquipmentPartsType]*dto.Equipment),
-		Rings:    ch.Inventory.Rings.BuildS2C(),
-		Meso:     ch.Inventory.Meso,
+		Rings:    ch.inventory.rings.BuildS2C(),
+		Meso:     ch.inventory.meso,
 	}
-	for invType, inv := range ch.Inventory.Tabs {
+	for invType, inv := range ch.inventory.tabs {
 		if inv == nil {
 			continue
 		}
 		invDTO := &dto.InventoryTab{
 			Type:      invType,
-			SlotLimit: inv.SlotLimit,
+			SlotLimit: inv.slotLimit,
 		}
 
 		invDTO.Items = make(map[int16]dto.Item)
-		for slot, item := range inv.Items {
+		for slot, item := range inv.items {
 			if item == nil {
 				continue
 			}
@@ -138,7 +138,7 @@ func (ch *Character) BuildFullS2C() *dto.Character {
 		charDTO.Inventory.Tabs[invType] = invDTO
 	}
 
-	for parts, equipment := range ch.Inventory.Equipped {
+	for parts, equipment := range ch.inventory.equipped {
 		if equipment == nil {
 			continue
 		}
@@ -149,17 +149,17 @@ func (ch *Character) BuildFullS2C() *dto.Character {
 	}
 
 	charDTO.Skills = make([]*dto.Skill, 0)
-	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
+	ch.skills.ForEach(func(skillID uint32, entry *SkillEntry) {
 		skillDTO := &dto.Skill{
 			ID:          skillID,
 			SkillLevel:  uint32(entry.Level()),
-			MasterLevel: uint32(entry.MasterLevel),
+			MasterLevel: uint32(entry.masterLevel),
 		}
 		charDTO.Skills = append(charDTO.Skills, skillDTO)
 	})
 
 	charDTO.Cooldowns = make(map[uint32]uint16)
-	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
+	ch.skills.ForEach(func(skillID uint32, entry *SkillEntry) {
 		if !entry.IsCooling() {
 			return
 		}
@@ -170,26 +170,17 @@ func (ch *Character) BuildFullS2C() *dto.Character {
 
 	charDTO.QuestsStarted = make([]*dto.QuestStatus, 0)
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)
-	if ch.Quests != nil {
-		ch.Quests.ForEach(func(questID uint32, qp *Quest) {
-			if questID > 0xFFFF {
+	if ch.quests != nil {
+		ch.quests.ForEach(func(questID uint32, qp *Quest) {
+			questDTO, ok := qp.BuildS2C()
+			if !ok {
 				return
 			}
-			questDTO := &dto.QuestStatus{
-				QuestID:        uint16(questID),
-				Status:         uint8(qp.Status),
-				Deadline:       qp.Deadline,
-				StatusRecord:   qp.StatusRecord.AsString(),
-				CompletionTime: qp.CompletionTime,
-			}
-			if len(qp.Wz.MobIDs) > 0 {
-				questDTO.MobKills = qp.MobKillCountsOrdered()
-			}
-			switch qp.Status {
+			switch qp.status {
 			case QuestStatusStarted:
-				charDTO.QuestsStarted = append(charDTO.QuestsStarted, questDTO)
+				charDTO.QuestsStarted = append(charDTO.QuestsStarted, &questDTO)
 			case QuestStatusCompleted:
-				charDTO.QuestsCompleted = append(charDTO.QuestsCompleted, questDTO)
+				charDTO.QuestsCompleted = append(charDTO.QuestsCompleted, &questDTO)
 			}
 		})
 	}

@@ -33,37 +33,37 @@ func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
 	var err error
 	switch req.Mode {
 	case pconst.StorageTakeOut:
-		err = ch.Account.Storage.TakeOut(constant.InventoryType(req.InventoryType), req.Index)
+		err = ch.Account().Storage().TakeOut(constant.InventoryType(req.InventoryType), req.Index)
 	case pconst.StorageStore:
-		err = ch.Account.Storage.Store(req.Slot, req.ItemID, req.Count)
+		err = ch.Account().Storage().Store(req.Slot, req.ItemID, req.Count)
 	case pconst.StorageArrange:
-		err = ch.Account.Storage.Arrange()
+		err = ch.Account().Storage().Arrange()
 	case pconst.StorageMeso:
 		if req.Meso > 0 {
-			err = ch.Account.Storage.WithdrawMeso(req.Meso)
+			err = ch.Account().Storage().WithdrawMeso(req.Meso)
 		} else {
-			err = ch.Account.Storage.DepositMeso(-req.Meso)
+			err = ch.Account().Storage().DepositMeso(-req.Meso)
 		}
 	case pconst.StorageClose:
-		ch.Account.Storage.Close()
+		ch.Account().Storage().Close()
 	}
 
 	switch {
 	case errors.Is(err, game.ErrStorageFull):
-		ch.Listener.OnStorageError(ch, pconst.StorageResultFull)
+		ch.Listener().OnStorageError(ch, pconst.StorageResultFull)
 	case errors.Is(err, game.ErrStorageNotEnoughMeso):
-		ch.Listener.OnStorageError(ch, pconst.StorageResultNotEnoughMeso)
+		ch.Listener().OnStorageError(ch, pconst.StorageResultNotEnoughMeso)
 	case errors.Is(err, game.ErrInventoryFull):
-		ch.Listener.OnStorageError(ch, pconst.StorageResultInventoryFull)
+		ch.Listener().OnStorageError(ch, pconst.StorageResultInventoryFull)
 	case err != nil:
-		ch.Listener.OnUnlockAction(ch)
+		ch.Listener().OnUnlockAction(ch)
 	}
 	return nil
 }

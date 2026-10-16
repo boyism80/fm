@@ -31,7 +31,7 @@ func (h *RunReactorRespawnHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 		return
 	}
 	reactorSpawn := targetMap.GetReactorSpawn(msg.SpawnID)
-	if reactorSpawn == nil || reactorSpawn.Spawned {
+	if reactorSpawn == nil || reactorSpawn.Spawned() {
 		return
 	}
 	_, _ = targetMap.SpawnReactor(reactorSpawn)

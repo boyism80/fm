@@ -33,10 +33,10 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 			CharacterInfo: response.CharacterInfo{Character: characterDTO},
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
-		character.Listener.OnShowGuildInfo(character)
-		character.Listener.OnShowAllianceInfo(character)
-		character.Buffs.ShowAll()
-		character.Listener.OnSkillMacros(character)
+		character.Listener().OnShowGuildInfo(character)
+		character.Listener().OnShowAllianceInfo(character)
+		character.Buffs().ShowAll()
+		character.Listener().OnSkillMacros(character)
 	} else {
 		characterDTO := character.BuildS2C()
 		characterDTO.SpawnPoint = spawnPoint
@@ -49,22 +49,22 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 	if character.IsHidden() {
 		character.Send(&response.SuperHide{Hidden: true}, types.SEND_POLICY_ENCRYPT)
 	}
-	if character.Pets.Active != nil {
-		character.Send(&response.SpawnPet{CharacterID: character.GetID(), Pet: character.Pets.Active.BuildS2C()}, types.SEND_POLICY_ENCRYPT)
+	if character.Pets().Active() != nil {
+		character.Send(&response.SpawnPet{CharacterID: character.GetID(), Pet: character.Pets().Active().BuildS2C()}, types.SEND_POLICY_ENCRYPT)
 		if init {
-			character.Listener.OnPetExceptions(character)
+			character.Pets().ShowExceptions()
 		}
 	}
 
-	character.Send(&response.KeyMap{Slots: character.KeyLayout.Bindings()}, types.SEND_POLICY_ENCRYPT)
-	if init && character.Pets.HPItem != 0 {
-		character.Send(&response.PetAutoHP{ItemID: character.Pets.HPItem}, types.SEND_POLICY_ENCRYPT)
+	character.Send(&response.KeyMap{Slots: character.KeyLayout().Bindings()}, types.SEND_POLICY_ENCRYPT)
+	if init && character.Pets().HPItem() != 0 {
+		character.Send(&response.PetAutoHP{ItemID: character.Pets().HPItem()}, types.SEND_POLICY_ENCRYPT)
 	}
-	if init && character.Pets.MPItem != 0 {
-		character.Send(&response.PetAutoMP{ItemID: character.Pets.MPItem}, types.SEND_POLICY_ENCRYPT)
+	if init && character.Pets().MPItem() != 0 {
+		character.Send(&response.PetAutoMP{ItemID: character.Pets().MPItem()}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	if mapInstance.Wz != nil && mapInstance.Wz.HasClock {
+	if mapInstance.Wz() != nil && mapInstance.Wz().HasClock {
 		_, _, _, hour, minute, second := clock.DateTimeTable(clock.Now())
 		character.Send(&response.ClockTime{
 			Hour:   uint8(hour),
@@ -85,9 +85,9 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 
 	mapInstance.SyncPartyHP(character)
 
-	if match := character.Carnival.Match(); match != nil {
+	if match := character.Carnival().Match(); match != nil {
 		mapID := mapInstance.GetMapID()
-		if mapID == match.FieldMapID || mapID == match.ReviveMapID {
+		if mapID == match.FieldMapID() || mapID == match.ReviveMapID() {
 			match.NotifyCarnivalStart(character)
 		}
 	}
@@ -100,11 +100,11 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 		l.gs.systems.Get[*game.PartySystem]().SendPartySilentAsync(ctx, character)
 	}
 
-	if mapInstance != nil && character != nil && character.Quests != nil {
+	if mapInstance != nil && character != nil && character.Quests() != nil {
 		mapID := mapInstance.GetMapID()
-		character.Quests.RunAutoTriggers(ctx, game.AutoQuestTriggerMapEnter, mapID)
+		character.Quests().RunAutoTriggers(ctx, game.AutoQuestTriggerMapEnter, mapID)
 		if init {
-			character.Quests.RunAutoTriggers(ctx, game.AutoQuestTriggerLogin, mapID)
+			character.Quests().RunAutoTriggers(ctx, game.AutoQuestTriggerLogin, mapID)
 		}
 	}
 }
@@ -162,28 +162,28 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *game.Map, item game.Item, p
 	placementObj := item.GetFieldPlacement()
 
 	spawnPacket := &response.SpawnItem{
-		ID:           placement.OID,
+		ID:           placement.GetOID(),
 		Animation:    constant.DropItemAnimationTypeLooting,
-		DropType:     placement.DropType,
+		DropType:     placement.DropType(),
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
-		Position:     placementObj.Position,
-		OwnerID:      placement.Owner,
-		SpawnedPoint: placement.SpawnedPoint,
-		IsPlayerDrop: placement.PlayerDrop,
+		Position:     placementObj.GetPosition(),
+		OwnerID:      placement.Owner(),
+		SpawnedPoint: placement.SpawnedPoint(),
+		IsPlayerDrop: placement.PlayerDrop(),
 	}
 
-	if placement.Quest == 0 {
-		mapInstance.BroadcastNear(placementObj.Position, spawnPacket, nil)
+	if placement.Quest() == 0 {
+		mapInstance.BroadcastNear(placementObj.GetPosition(), spawnPacket, nil)
 		return
 	}
 
-	for _, obj := range mapInstance.GetObjectsNear(placementObj.Position, constant.ObjectTypeCharacter, &game.SearchOption{IncludeHidden: true}) {
+	for _, obj := range mapInstance.GetObjectsNear(placementObj.GetPosition(), constant.ObjectTypeCharacter, &game.SearchOption{IncludeHidden: true}) {
 		viewer, ok := obj.(*game.Character)
 		if !ok {
 			continue
 		}
-		if !viewer.Quests.NeedsItem(placement.Quest, item.GetModel().GetID()) {
+		if !viewer.Quests().NeedsItem(placement.Quest(), item.GetModel().GetID()) {
 			continue
 		}
 		viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)
@@ -198,17 +198,17 @@ func (l *MapListenerImpl) OnMesoSpawned(mapInstance *game.Map, meso *game.Meso) 
 	fp := meso.GetFieldPlacement()
 
 	spawnPacket := &response.SpawnMeso{
-		ID:           fp.OID,
+		ID:           fp.GetOID(),
 		Animation:    constant.DropItemAnimationTypeLooting,
-		DropType:     fp.DropType,
-		Count:        meso.Count,
-		OwnerID:      fp.Owner,
-		Position:     fp.Position,
-		SpawnedPoint: fp.SpawnedPoint,
-		IsPlayerDrop: fp.PlayerDrop,
+		DropType:     fp.DropType(),
+		Count:        meso.Count(),
+		OwnerID:      fp.Owner(),
+		Position:     fp.GetPosition(),
+		SpawnedPoint: fp.SpawnedPoint(),
+		IsPlayerDrop: fp.PlayerDrop(),
 	}
 
-	mapInstance.BroadcastNear(fp.Position, spawnPacket, nil)
+	mapInstance.BroadcastNear(fp.GetPosition(), spawnPacket, nil)
 }
 
 func (l *MapListenerImpl) OnItemRemoved(mapInstance *game.Map, itemID uint32, looterID uint32, mode constant.RemoveItemType, position types.Vector2[int16]) {
@@ -247,7 +247,7 @@ func (l *MapListenerImpl) OnMobRemoved(mapInstance *game.Map, mob *game.Mob, ani
 	}
 
 	removePacket := &response.DieMob{
-		OID:           mob.OID,
+		OID:           mob.GetOID(),
 		AnimationType: animationType,
 	}
 
@@ -373,9 +373,9 @@ func (l *MapListenerImpl) OnMobControllerChange(mob *game.Mob, before *game.Char
 	case before == nil && after != nil:
 		after.Send(&response.StartControlMob{Mob: mob.BuildS2C(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
 	case before != nil && after == nil:
-		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
+		before.Send(&response.StopControlMob{OID: mob.GetOID()}, types.SEND_POLICY_ENCRYPT)
 	case before != nil && after != nil:
-		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
+		before.Send(&response.StopControlMob{OID: mob.GetOID()}, types.SEND_POLICY_ENCRYPT)
 		after.Send(&response.StartControlMob{Mob: mob.BuildS2C(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
 	}
 }
@@ -392,7 +392,7 @@ func (l *MapListenerImpl) OnMobMoved(mapInstance *game.Map, mob *game.Mob, isAgg
 		Skill2:      skill2,
 		Skill3:      skill3,
 		Skill4:      skill4,
-		OID:         mob.OID,
+		OID:         mob.GetOID(),
 		StartPoint:  startPoint,
 		Movements:   movements,
 	}
@@ -439,19 +439,19 @@ func (l *MapListenerImpl) OnMistSpawned(mapInstance *game.Map, mist *game.Mist) 
 		return
 	}
 	skillID := uint32(0)
-	if mist.SkillWz != nil {
-		skillID = mist.SkillWz.ID
+	if mist.SkillWz() != nil {
+		skillID = mist.SkillWz().ID
 	}
 	pkt := &response.SpawnMist{
-		OID:        mist.OID,
-		Type:       mist.MistType,
-		MobMist:    mist.MobMist,
-		CauserID:   mist.Causer,
+		OID:        mist.GetOID(),
+		Type:       mist.MistType(),
+		MobMist:    mist.MobMist(),
+		CauserID:   mist.Causer(),
 		SkillID:    skillID,
-		SkillLevel: mist.SkillLevel,
-		SkillDelay: mist.SkillDelay,
-		Bounds:     mist.Bounds,
-		MobSkill:   mist.MobSkill,
+		SkillLevel: mist.SkillLevel(),
+		SkillDelay: mist.SkillDelay(),
+		Bounds:     mist.Bounds(),
+		MobSkill:   mist.MobSkill(),
 	}
 	mist.Broadcast(pkt, nil)
 }
@@ -461,7 +461,7 @@ func (l *MapListenerImpl) OnMistRemoved(mapInstance *game.Map, mist *game.Mist) 
 		return
 	}
 	pkt := &response.RemoveMist{
-		OID:      mist.OID,
+		OID:      mist.GetOID(),
 		Eruption: false,
 	}
 	mist.Broadcast(pkt, nil)
@@ -469,17 +469,17 @@ func (l *MapListenerImpl) OnMistRemoved(mapInstance *game.Map, mist *game.Mist) 
 
 func (l *MapListenerImpl) OnMessageBoxSpawned(mapInstance *game.Map, box *game.MessageBox) {
 	box.Broadcast(&response.SpawnMessageBox{
-		OID:    box.OID,
-		ItemID: box.ItemID,
-		Text:   box.Text,
-		Owner:  box.Owner,
-		X:      box.Position.X,
-		Y:      box.Position.Y,
+		OID:    box.GetOID(),
+		ItemID: box.ItemID(),
+		Text:   box.Text(),
+		Owner:  box.Owner(),
+		X:      box.GetPosition().X,
+		Y:      box.GetPosition().Y,
 	}, nil)
 }
 
 func (l *MapListenerImpl) OnMessageBoxRemoved(mapInstance *game.Map, box *game.MessageBox) {
-	box.Broadcast(&response.RemoveMessageBox{OID: box.OID, Animated: true}, nil)
+	box.Broadcast(&response.RemoveMessageBox{OID: box.GetOID(), Animated: true}, nil)
 }
 
 func (l *MapListenerImpl) OnDoorRemoved(mapInstance *game.Map, door *game.Door, animated bool) {
@@ -487,7 +487,7 @@ func (l *MapListenerImpl) OnDoorRemoved(mapInstance *game.Map, door *game.Door, 
 		return
 	}
 	door.Broadcast(&response.RemoveDoor{
-		OwnerID:  door.OwnerID,
+		OwnerID:  door.OwnerID(),
 		Animated: animated,
 	}, nil)
 	door.Broadcast(&response.SpawnPortal{
@@ -509,12 +509,12 @@ func (l *MapListenerImpl) OnMobHomingSet(mapInstance *game.Map, mob *game.Mob, h
 		return
 	}
 	x := int32(1)
-	if ld := homing.SkillWz.GetLevelData(int(homing.SkillLevel)); ld != nil && ld.X > 0 {
+	if ld := homing.SkillWz().GetLevelData(int(homing.SkillLevel())); ld != nil && ld.X > 0 {
 		x = int32(ld.X)
 	}
 	causer.Send(&response.CancelHomingBeacon{}, types.SEND_POLICY_ENCRYPT)
 	causer.Send(&response.GiveHomingBeacon{
-		SkillID: homing.SkillWz.ID,
+		SkillID: homing.SkillWz().ID,
 		MobOID:  mob.GetOID(),
 		X:       x,
 	}, types.SEND_POLICY_ENCRYPT)

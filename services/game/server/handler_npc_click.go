@@ -35,7 +35,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	}
 
 	if character.Spectating() || character.UsingCashItem() {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
@@ -51,12 +51,12 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
-	if err := character.Dialog.Open(ctx.ActorContext, npc); err != nil {
+	if err := character.Dialog().Open(ctx.ActorContext, npc); err != nil {
 		if errors.Is(err, game.ErrDialogBusy) {
-			character.Listener.OnUpdateStats(character, nil, true)
+			character.Listener().OnUpdateStats(character, nil, true)
 			return nil
 		}
-		log.Printf("Failed to open NPC %d: %v", npc.Wz.ID, err)
+		log.Printf("Failed to open NPC %d: %v", npc.Wz().ID, err)
 		return err
 	}
 	return nil

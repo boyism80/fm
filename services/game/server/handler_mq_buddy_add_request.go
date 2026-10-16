@@ -52,7 +52,7 @@ func (h *buddyMqAddRequest) Handle(_ actor.Context, raw json.RawMessage) error {
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnBuddyAddRequest(ch, payload.FromCharacterID, payload.FromName)
+			ch.Listener().OnBuddyAddRequest(ch, payload.FromCharacterID, payload.FromName)
 		})
 	}
 	return nil

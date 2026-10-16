@@ -84,7 +84,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *cash.Character, req 
 			return nil
 		}
 
-		var item *internal.CashItem
+		var item *cash.LockerItem
 		if reply.GetKind() == internal.CashCouponKind_CASH_COUPON_KIND_ITEM {
 			commodity := h.cs.GetResources().Commodities[reply.GetValue()]
 			if commodity == nil {
@@ -104,14 +104,14 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *cash.Character, req 
 }
 
 // claim continues the task redeem started, so Busy stays set until the coupon is spent.
-func (h *Coupon) claim(ctx *core.ClientContext, promise *async.Task, character *cash.Character, code string, kind internal.CashCouponKind, value uint32, item *internal.CashItem) {
+func (h *Coupon) claim(ctx *core.ClientContext, promise *async.Task, character *cash.Character, code string, kind internal.CashCouponKind, value uint32, item *cash.LockerItem) {
 	promise.ThenRPC(func(c context.Context) (*internal.RedeemCashCouponReply, error) {
 		return h.cs.systems.Get[*rpc.InternalConnection]().Client.RedeemCashCoupon(c, &internal.RedeemCashCouponRequest{
 			WorldId:     uint32(h.cs.config.WorldID),
 			AccountId:   character.AccountID(),
 			CharacterId: character.ID(),
 			Code:        code,
-			Item:        item,
+			Item:        item.BuildRPC(),
 			RequestId:   h.cs.NewUniqueID(),
 		})
 	}, func(reply *internal.RedeemCashCouponReply) error {

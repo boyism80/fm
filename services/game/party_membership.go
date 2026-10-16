@@ -3,7 +3,7 @@ package game
 type PartyMembership struct {
 	owner  *Character
 	id     *uint32
-	Search *PartySearchConfig
+	search *PartySearchConfig
 }
 
 func (p *PartyMembership) ID() *uint32 {
@@ -20,15 +20,15 @@ func (p *PartyMembership) Is(partyID *uint32) bool {
 
 func (p *PartyMembership) SetID(id *uint32) {
 	p.id = id
-	p.owner.Doors.SetPartyID(id)
+	p.owner.doors.SetPartyID(id)
 }
 
 func (p *PartyMembership) MembersOnMap() ([]*Character, *Party) {
 	partyID := p.ID()
-	if partyID == nil || p.owner.GameWorld == nil {
+	if partyID == nil || p.owner.gameWorld == nil {
 		return nil, nil
 	}
-	party := p.owner.GameWorld.Systems().Get[*PartySystem]().Get(*partyID)
+	party := p.owner.gameWorld.Systems().Get[*PartySystem]().Get(*partyID)
 	leaderMap := p.owner.GetMap()
 	if party == nil || party.GetLeaderCharacterId() != p.owner.GetID() || leaderMap == nil {
 		return nil, nil
@@ -51,9 +51,9 @@ func (p *PartyMembership) MembersOnMap() ([]*Character, *Party) {
 }
 
 func (p *PartyMembership) syncHP(peer *Character) {
-	if !p.Is(peer.Party.ID()) {
+	if !p.Is(peer.party.ID()) {
 		return
 	}
-	p.owner.Listener.OnPartyMemberHP(p.owner, peer)
-	peer.Listener.OnPartyMemberHP(peer, p.owner)
+	p.owner.listener.OnPartyMemberHP(p.owner, peer)
+	peer.listener.OnPartyMemberHP(peer, p.owner)
 }

@@ -25,7 +25,7 @@ func CallOnAttackHooks(ctx actor.Context, character *game.Character, damages []d
 	attackInfoTable := root.NewTable()
 	attackInfoTable.RawSetString("magic", lua.LBool(magicAttack))
 	attackInfoTable.RawSetString("ranged", lua.LBool(ranged))
-	character.Skills.CallHook(ctx, skill, "on_attack", damagesTable, attackInfoTable)
+	character.Skills().CallHook(ctx, skill, "on_attack", damagesTable, attackInfoTable)
 	readDamagesFromLuaTableInto(damagesTable, damages)
 }
 
@@ -37,7 +37,7 @@ func CallSummonOnAttackHooks(character *game.Character, mapInstance *game.Map, d
 	if root == nil {
 		return
 	}
-	skillEntry := character.Skills.Get(skillID)
+	skillEntry := character.Skills().Get(skillID)
 	if skillEntry == nil {
 		return
 	}

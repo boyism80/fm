@@ -58,14 +58,14 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 			},
 			func(reply *internal.RequestBuddyReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnBuddyStatusMessage(ch, pconst.BuddyStatusForInternalError(int32(reply.GetErrorCode())))
+					ch.Listener().OnBuddyStatusMessage(ch, pconst.BuddyStatusForInternalError(int32(reply.GetErrorCode())))
 					log.Printf("Buddy(add): failed requester=%d target=%q code=%v", charID, targetName, reply.GetErrorCode())
 					return nil
 				}
 				if view := reply.GetRequesterView(); view != nil {
 					entry := game.BuddyListEntryFromProto(view)
-					ch.Buddies.Upsert(entry)
-					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
+					ch.Buddies().Upsert(entry)
+					ch.Listener().OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
 				}
 				return nil
 			},
@@ -86,14 +86,14 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 			},
 			func(reply *internal.AcceptBuddyReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnBuddyStatusMessage(ch, pconst.BuddyStatusForInternalError(int32(reply.GetErrorCode())))
+					ch.Listener().OnBuddyStatusMessage(ch, pconst.BuddyStatusForInternalError(int32(reply.GetErrorCode())))
 					log.Printf("Buddy(accept): failed accepter=%d requester=%d code=%v", charID, requesterID, reply.GetErrorCode())
 					return nil
 				}
 				if view := reply.GetAccepterView(); view != nil {
 					entry := game.BuddyListEntryFromProto(view)
-					ch.Buddies.Upsert(entry)
-					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
+					ch.Buddies().Upsert(entry)
+					ch.Listener().OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
 				}
 				return nil
 			},
@@ -114,12 +114,12 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 			},
 			func(reply *internal.RemoveBuddyReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnBuddyStatusMessage(ch, pconst.BuddyStatusForInternalError(int32(reply.GetErrorCode())))
+					ch.Listener().OnBuddyStatusMessage(ch, pconst.BuddyStatusForInternalError(int32(reply.GetErrorCode())))
 					log.Printf("Buddy(delete): failed character=%d buddy=%d code=%v", charID, buddyID, reply.GetErrorCode())
 					return nil
 				}
-				ch.Buddies.Remove(buddyID)
-				ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncDelete, ch.Buddies.BuildS2C())
+				ch.Buddies().Remove(buddyID)
+				ch.Listener().OnBuddyListUpdate(ch, pconst.BuddyListSyncDelete, ch.Buddies().BuildS2C())
 				return nil
 			},
 		).OnError(func(err error) {

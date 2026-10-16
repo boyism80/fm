@@ -28,7 +28,7 @@ func (h *LieDetectorItem) Handle(ctx *core.ClientContext, req *request.LieDetect
 
 	err := character.UseLieDetectorItem(req.Target, req.Slot, req.ItemID)
 	if err != nil {
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 	}
 
 	return nil

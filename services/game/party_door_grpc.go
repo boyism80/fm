@@ -7,10 +7,10 @@ func PartyDoorFromProto(pb *internal.PartyDoor) *PartyDoor {
 		return nil
 	}
 	return &PartyDoor{
-		Town:   pb.GetTown(),
-		Target: pb.GetTarget(),
-		X:      pb.GetX(),
-		Y:      pb.GetY(),
+		town:   pb.GetTown(),
+		target: pb.GetTarget(),
+		x:      pb.GetX(),
+		y:      pb.GetY(),
 	}
 }
 
@@ -19,9 +19,9 @@ func (d *PartyDoor) BuildRPC() *internal.PartyDoor {
 		return nil
 	}
 	return &internal.PartyDoor{
-		Town:   d.Town,
-		Target: d.Target,
-		X:      d.X,
-		Y:      d.Y,
+		Town:   d.town,
+		Target: d.target,
+		X:      d.x,
+		Y:      d.y,
 	}
 }

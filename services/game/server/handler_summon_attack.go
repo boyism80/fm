@@ -27,14 +27,14 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 		return nil
 	}
 
-	summon, err := character.Summons.Attack(req.SummonOID, req.Damages)
+	summon, err := character.Summons().Attack(req.SummonOID, req.Damages)
 	if err != nil {
 		return err
 	}
 	if summon == nil {
 		return nil
 	}
-	CallSummonOnAttackHooks(character, character.GetMap(), req.Damages, uint32(summon.SkillID))
+	CallSummonOnAttackHooks(character, character.GetMap(), req.Damages, uint32(summon.SkillID()))
 
 	var targets []game.SummonAttackTarget
 	for _, ap := range req.Damages {
@@ -49,7 +49,7 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 		}
 	}
 	if len(targets) > 0 {
-		character.Listener.OnSummonAttack(character, summon, req.Animation, targets)
+		character.Listener().OnSummonAttack(character, summon, req.Animation, targets)
 	}
 	return nil
 }

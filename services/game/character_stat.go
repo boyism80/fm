@@ -3,9 +3,9 @@ package game
 import "github.com/boyism80/fm/maple/constant"
 
 func (ch *Character) GetMaxHp() uint32 {
-	base := int32(ch.BaseHp) + ch.BonusHp
-	percent := int32(ch.Stats.Bonus.MaxHpPercent)
-	if _, v, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMaxHp); ok {
+	base := int32(ch.baseHp) + ch.bonusHp
+	percent := int32(ch.stats.bonus.maxHpPercent)
+	if _, v, ok := ch.buffs.GetBuffValue(constant.BuffFlagMaxHp); ok {
 		percent += v
 	}
 	total := base + (base*percent)/100
@@ -19,9 +19,9 @@ func (ch *Character) GetMaxHp() uint32 {
 }
 
 func (ch *Character) GetMaxMp() uint32 {
-	base := int32(ch.BaseMp) + ch.BonusMp
-	percent := int32(ch.Stats.Bonus.MaxMpPercent)
-	if _, v, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMaxMp); ok {
+	base := int32(ch.baseMp) + ch.bonusMp
+	percent := int32(ch.stats.bonus.maxMpPercent)
+	if _, v, ok := ch.buffs.GetBuffValue(constant.BuffFlagMaxMp); ok {
 		percent += v
 	}
 	total := base + (base*percent)/100
@@ -41,15 +41,15 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	case constant.StatEXP:
 		return int32(ch.exp), true
 	case constant.StatClass:
-		return int32(ch.Class), true
+		return int32(ch.class), true
 	case constant.StatStr:
-		return int32(ch.Stats.TotalStr()), true
+		return int32(ch.stats.TotalStr()), true
 	case constant.StatDex:
-		return int32(ch.Stats.TotalDex()), true
+		return int32(ch.stats.TotalDex()), true
 	case constant.StatInt:
-		return int32(ch.Stats.TotalInt()), true
+		return int32(ch.stats.TotalInt()), true
 	case constant.StatLuk:
-		return int32(ch.Stats.TotalLuk()), true
+		return int32(ch.stats.TotalLuk()), true
 	case constant.StatHP:
 		return int32(ch.GetHp()), true
 	case constant.StatMaxHP:
@@ -59,13 +59,13 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	case constant.StatMaxMP:
 		return int32(ch.GetMaxMp()), true
 	case constant.StatAvailableAP:
-		return int32(ch.Points.AP), true
+		return int32(ch.points.ap), true
 	case constant.StatAvailableSP:
-		return int32(ch.Points.SP), true
+		return int32(ch.points.sp), true
 	case constant.StatPopulation:
-		return int32(ch.Stats.Population), true
+		return int32(ch.stats.population), true
 	case constant.StatMeso:
-		return ch.Inventory.Meso, true
+		return ch.inventory.meso, true
 	default:
 		return 0, false
 	}
@@ -75,20 +75,20 @@ func (ch *Character) notifyStatChange(stat constant.Stat) {
 	stats := make(map[constant.Stat]int32)
 	switch stat {
 	case constant.StatStr:
-		stats[constant.StatStr] = int32(ch.Stats.TotalStr())
+		stats[constant.StatStr] = int32(ch.stats.TotalStr())
 	case constant.StatDex:
-		stats[constant.StatDex] = int32(ch.Stats.TotalDex())
+		stats[constant.StatDex] = int32(ch.stats.TotalDex())
 	case constant.StatInt:
-		stats[constant.StatInt] = int32(ch.Stats.TotalInt())
+		stats[constant.StatInt] = int32(ch.stats.TotalInt())
 	case constant.StatLuk:
-		stats[constant.StatLuk] = int32(ch.Stats.TotalLuk())
+		stats[constant.StatLuk] = int32(ch.stats.TotalLuk())
 	case constant.StatMaxHP:
 		stats[constant.StatMaxHP] = int32(ch.GetMaxHp())
 	case constant.StatMaxMP:
 		stats[constant.StatMaxMP] = int32(ch.GetMaxMp())
 	}
 
-	ch.Listener.OnUpdateStats(ch, stats, false)
+	ch.listener.OnUpdateStats(ch, stats, false)
 }
 
 func (ch *Character) ConsumeMP(amount uint32) bool {
@@ -96,7 +96,7 @@ func (ch *Character) ConsumeMP(amount uint32) bool {
 		return false
 	}
 	ch.SetMp(ch.GetMp()-amount, false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatMP: int32(ch.GetMp()),
 	}, false)
 	return true
@@ -107,7 +107,7 @@ func (ch *Character) ConsumeHP(amount uint32) bool {
 		return false
 	}
 	ch.SetHp(ch.GetHp()-amount, false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHP: int32(ch.GetHp()),
 	}, false)
 	return true

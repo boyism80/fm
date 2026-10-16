@@ -31,7 +31,7 @@ func (h *noteMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 		if ch == nil || ch.LoggedOut() {
 			return
 		}
-		ch.Listener.OnNoteArrived(ch)
+		ch.Listener().OnNoteArrived(ch)
 	})
 	return nil
 }

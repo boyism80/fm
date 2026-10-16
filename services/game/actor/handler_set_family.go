@@ -21,5 +21,5 @@ func (h *SetFamilyHandler) Handle(_ actor.Context, a *GameLogicActor, msg *game.
 		return
 	}
 
-	ch.Family.Set(msg.Family)
+	ch.Family().Set(msg.Family)
 }

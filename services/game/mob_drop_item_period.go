@@ -24,10 +24,10 @@ func (m *Mob) MarkHit() {
 }
 
 func (m *Mob) startTimedDrop() {
-	if m == nil || m.Wz == nil || m.Fake {
+	if m == nil || m.wz == nil || m.fake {
 		return
 	}
-	period := m.Wz.DropItemPeriod
+	period := m.wz.DropItemPeriod
 	if period <= 0 {
 		return
 	}
@@ -40,11 +40,11 @@ func (m *Mob) startTimedDrop() {
 }
 
 func (m *Mob) dropTimedItem() {
-	if m == nil || m.Wz == nil || m.GetHp() == 0 {
+	if m == nil || m.wz == nil || m.GetHp() == 0 {
 		return
 	}
 	mapInstance := m.GetMap()
-	if mapInstance == nil || m.GameWorld == nil {
+	if mapInstance == nil || m.gameWorld == nil {
 		return
 	}
 	if !m.lastHitAt.IsZero() && clock.Now().Before(m.lastHitAt.Add(mobDropItemHitCooldown)) {
@@ -55,7 +55,7 @@ func (m *Mob) dropTimedItem() {
 	if root == nil {
 		return
 	}
-	mobID := m.Wz.ID
+	mobID := m.wz.ID
 	thread, err := luax.NewThread(root, fmt.Sprintf("script/mob/%d.lua", mobID))
 	if err != nil {
 		return
@@ -74,7 +74,7 @@ func (m *Mob) dropTimedItem() {
 	if itemID == 0 {
 		return
 	}
-	item, err := NewItem(itemID, 1, m.GameWorld)
+	item, err := NewItem(itemID, 1, m.gameWorld)
 	if err != nil {
 		return
 	}

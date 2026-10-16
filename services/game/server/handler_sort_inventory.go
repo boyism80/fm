@@ -32,15 +32,15 @@ func (h *SortInventory) Handle(ctx *core.ClientContext, req *request.SortInvento
 		return fmt.Errorf("character is nil")
 	}
 	if character.Trading() || character.UsingCashItem() {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	character.Inventory.Merge(req.InventoryType)
-	character.Inventory.Sort(req.InventoryType)
+	character.Inventory().Merge(req.InventoryType)
+	character.Inventory().Sort(req.InventoryType)
 
-	character.Listener.OnEndSortInventory(character, req.InventoryType)
-	character.Listener.OnUpdateStats(character, nil, true)
+	character.Listener().OnEndSortInventory(character, req.InventoryType)
+	character.Listener().OnUpdateStats(character, nil, true)
 
 	return nil
 }

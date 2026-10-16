@@ -145,7 +145,7 @@ func (a attack) limits() (targets, hits int) {
 }
 
 func (a attack) element(d damageRange, attr string, strength float64) damageRange {
-	switch a.mob.Wz.ElemResist[attr] {
+	switch a.mob.wz.ElemResist[attr] {
 	case 1:
 		return damageRange{}
 	case 2:
@@ -234,11 +234,11 @@ func (a attack) maximum() (uint32, error) {
 		return 0, fmt.Errorf("invalid attack shape")
 	}
 
-	if a.mob.Wz.OnlyNormalAttack && a.skill != 0 {
+	if a.mob.wz.OnlyNormalAttack && a.skill != 0 {
 		return 0, nil
 	}
 
-	if len(a.mob.Wz.DamagedBySkills) > 0 && !slices.Contains(a.mob.Wz.DamagedBySkills, uint32(a.skill)) {
+	if len(a.mob.wz.DamagedBySkills) > 0 && !slices.Contains(a.mob.wz.DamagedBySkills, uint32(a.skill)) {
 		return 0, nil
 	}
 
@@ -247,7 +247,7 @@ func (a attack) maximum() (uint32, error) {
 		return a.mob.GetMaxHp(), nil
 	}
 
-	if a.mob.Wz.Invincible && !a.modifiers.GM {
+	if a.mob.wz.Invincible && !a.modifiers.GM {
 		return 0, nil
 	}
 
@@ -281,9 +281,9 @@ func (a attack) ordinary() (float64, error) {
 	if magical && a.modifiers.Sealed {
 		return 0, nil
 	}
-	immune := a.mob.Buffs.GetValue(constant.MobBuffWeaponImmunity) > 0
+	immune := a.mob.buffs.GetValue(constant.MobBuffWeaponImmunity) > 0
 	if magical {
-		immune = a.mob.Buffs.GetValue(constant.MobBuffMagicImmunity) > 0
+		immune = a.mob.buffs.GetValue(constant.MobBuffMagicImmunity) > 0
 	}
 	immunityDamage := 0.0
 	if immune {
@@ -292,7 +292,7 @@ func (a attack) ordinary() (float64, error) {
 
 	// r%100 > penetration is the immunity branch. Even penetration zero can
 	// reach the ordinary branch (r%100 == 0), so immunity cannot cap it at one.
-	gap := max(0, int(a.mob.Wz.Level)-a.stats.Level)
+	gap := max(0, int(a.mob.wz.Level)-a.stats.Level)
 	d := damageRange{}
 	hit := true
 	var err error
@@ -327,7 +327,7 @@ func (a attack) ordinary() (float64, error) {
 			maxHit = 1.3 * 100 * float64(a.stats.Level) / float64(255+150*gap)
 		}
 
-		eva := min(999, max(0, float64(a.mob.Wz.EVA)+float64(a.mob.Buffs.GetValue(constant.MobBuffAvoid))))
+		eva := min(999, max(0, float64(a.mob.wz.EVA)+float64(a.mob.buffs.GetValue(constant.MobBuffAvoid))))
 		if maxHit < eva {
 			return immunityDamage, nil
 		}
@@ -426,7 +426,7 @@ func (a attack) physical(gap int) (damageRange, bool, error) {
 	switch a.skill {
 	case constant.SkillSacrifice, constant.SkillShadowMeso, constant.SkillAssaulter, constant.SkillSuperTransformation:
 	default:
-		pdd := min(1999, max(0, float64(a.mob.Wz.PDDamage)+float64(a.mob.Buffs.GetValue(constant.MobBuffWdef))))
+		pdd := min(1999, max(0, float64(a.mob.wz.PDDamage)+float64(a.mob.buffs.GetValue(constant.MobBuffWdef))))
 		d = d.add(newDamageRange(-.6*pdd, -.5*pdd))
 	}
 	captured := d.trunc()
@@ -466,7 +466,7 @@ func (a attack) physical(gap int) (damageRange, bool, error) {
 	}
 
 	crit := d.add(captured.scale((percent - 100) / 100))
-	if a.mob.Buffs.GetValue(constant.MobBuffDamageImmunity) > 0 {
+	if a.mob.buffs.GetValue(constant.MobBuffDamageImmunity) > 0 {
 		if chance <= 0 {
 			return damageRange{}, false, nil
 		}
@@ -475,7 +475,7 @@ func (a attack) physical(gap int) (damageRange, bool, error) {
 		d = d.union(crit)
 	}
 
-	defense := float64(a.mob.Buffs.GetValue(constant.MobBuffWeaponDefenseUp))
+	defense := float64(a.mob.buffs.GetValue(constant.MobBuffWeaponDefenseUp))
 	if a.skill != constant.SkillSacrifice && defense != 0 {
 		d = d.scale(defense / 100)
 	}
@@ -516,15 +516,15 @@ func (a attack) magic() (damageRange, bool) {
 	}
 	d = a.skillElement(d, 1-a.modifiers.ElementReset*clientPercent)
 
-	mdd := min(1999, max(0, float64(a.mob.Wz.MDDamage)+float64(a.mob.Buffs.GetValue(constant.MobBuffMdef))))
+	mdd := min(1999, max(0, float64(a.mob.wz.MDDamage)+float64(a.mob.buffs.GetValue(constant.MobBuffMdef))))
 	d = d.add(newDamageRange(-.6*mdd, -.5*mdd))
-	if defense := float64(a.mob.Buffs.GetValue(constant.MobBuffMagicDefenseUp)); defense != 0 {
+	if defense := float64(a.mob.buffs.GetValue(constant.MobBuffMagicDefenseUp)); defense != 0 {
 		d = d.scale(defense / 100)
 	}
 
 	chance := min(100, max(0, math.Floor(a.modifiers.SharpEyes/256)))
 	crit := d.scale(float64(uint32(a.modifiers.SharpEyes)&255) / 100)
-	if a.mob.Buffs.GetValue(constant.MobBuffDamageImmunity) > 0 {
+	if a.mob.buffs.GetValue(constant.MobBuffDamageImmunity) > 0 {
 		if chance <= 0 {
 			return damageRange{}, false
 		}
@@ -569,8 +569,8 @@ func (a attack) mesoExplosion() (damageRange, error) {
 // wraparound intermediate can exceed this conservative bound.
 func (a attack) limit(value float64) (uint32, error) {
 	value = damageRange{0, value * a.targetFactor()}.upper()
-	if value > 0 && a.mob.Wz.FixedDamage > 0 {
-		value = float64(a.mob.Wz.FixedDamage)
+	if value > 0 && a.mob.wz.FixedDamage > 0 {
+		value = float64(a.mob.wz.FixedDamage)
 	}
 
 	if math.IsNaN(value) || math.IsInf(value, 0) {

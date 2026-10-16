@@ -31,24 +31,24 @@ func (sc *Summons) Spawn(skillID constant.SkillID, skillLevel uint8, movementTyp
 	}
 
 	s := &Summon{
-		LifeCore: LifeCore{
-			ObjectCore: ObjectCore{
-				Position:  position,
-				GameWorld: m.GameWorld,
-				Map:       nil,
+		lifeCore: LifeCore{
+			objectCore: ObjectCore{
+				position:  position,
+				gameWorld: m.gameWorld,
+				onMap:     nil,
 			},
 			hp:     1,
-			BaseHp: 1,
-			BaseMp: 1,
+			baseHp: 1,
+			baseMp: 1,
 		},
-		Owner:        sc.owner,
-		OwnerID:      sc.owner.GetID(),
-		SkillID:      skillID,
-		SkillLevel:   skillLevel,
-		MovementType: movementType,
-		SummonType:   summonType,
+		owner:        sc.owner,
+		ownerID:      sc.owner.GetID(),
+		skillID:      skillID,
+		skillLevel:   skillLevel,
+		movementType: movementType,
+		summonType:   summonType,
 	}
-	s.LifeCore.ObjectCore.self = s
+	s.lifeCore.objectCore.self = s
 	sc.entries[skillID] = s
 	m.AddSummon(s)
 	if duration > 0 {
@@ -63,11 +63,11 @@ func (sc *Summons) Remove(s *Summon, animated bool) {
 	if s == nil {
 		return
 	}
-	_ = sc.owner.RemoveTimer(sc.timerKey(s.SkillID))
-	if m := s.GetMap(); m != nil && s.OID != 0 {
-		m.RemoveSummon(s.OID, animated)
+	_ = sc.owner.RemoveTimer(sc.timerKey(s.skillID))
+	if m := s.GetMap(); m != nil && s.oid != 0 {
+		m.RemoveSummon(s.oid, animated)
 	}
-	delete(sc.entries, s.SkillID)
+	delete(sc.entries, s.skillID)
 }
 
 func (sc *Summons) Attack(oid uint32, damages []dto.AttackPair) (*Summon, error) {
@@ -79,7 +79,7 @@ func (sc *Summons) Attack(oid uint32, damages []dto.AttackPair) (*Summon, error)
 	}
 	var summon *Summon
 	for _, s := range sc.entries {
-		if s.OID == oid {
+		if s.oid == oid {
 			summon = s
 			break
 		}

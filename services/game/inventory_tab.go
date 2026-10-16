@@ -17,20 +17,20 @@ var (
 )
 
 type InventoryTab struct {
-	Items     map[int16]Item
-	SlotLimit uint8
+	items     map[int16]Item
+	slotLimit uint8
 }
 
 func NewInventoryTab() *InventoryTab {
 	return &InventoryTab{
-		SlotLimit: 32,
-		Items:     map[int16]Item{},
+		slotLimit: 32,
+		items:     map[int16]Item{},
 	}
 }
 
 func (m *InventoryTab) NextSlot() (uint8, bool) {
-	for i := 1; i <= int(m.SlotLimit); i++ {
-		item := m.Items[int16(i)]
+	for i := 1; i <= int(m.slotLimit); i++ {
+		item := m.items[int16(i)]
 		if item == nil {
 			return uint8(i), true
 		}
@@ -48,8 +48,8 @@ func (m *InventoryTab) Stackable(a, b Item) bool {
 }
 
 func (m *InventoryTab) FindSlot(incoming Item) (uint8, bool) {
-	for i := 1; i <= int(m.SlotLimit); i++ {
-		item := m.Items[int16(i)]
+	for i := 1; i <= int(m.slotLimit); i++ {
+		item := m.items[int16(i)]
 		if item == nil || !m.Stackable(item, incoming) {
 			continue
 		}
@@ -65,8 +65,8 @@ func (m *InventoryTab) FindSlot(incoming Item) (uint8, bool) {
 
 func (m *InventoryTab) EmptySlotCount() uint16 {
 	count := uint16(0)
-	for i := 1; i <= int(m.SlotLimit); i++ {
-		if _, ok := m.Items[int16(i)]; !ok {
+	for i := 1; i <= int(m.slotLimit); i++ {
+		if _, ok := m.items[int16(i)]; !ok {
 			count += 1
 		}
 	}
@@ -75,37 +75,37 @@ func (m *InventoryTab) EmptySlotCount() uint16 {
 }
 
 func (m *InventoryTab) Get(slot uint8) Item {
-	return m.Items[int16(slot)]
+	return m.items[int16(slot)]
 }
 
 func (m *InventoryTab) Add(slot uint8, item Item) error {
-	if slot < 1 || slot > m.SlotLimit {
+	if slot < 1 || slot > m.slotLimit {
 		return ErrSlotNotFound
 	}
 
-	if m.Items[int16(slot)] != nil {
+	if m.items[int16(slot)] != nil {
 		return ErrSlotAlreadyOccupied
 	}
 
-	m.Items[int16(slot)] = item
+	m.items[int16(slot)] = item
 	return nil
 }
 
 func (m *InventoryTab) Remove(slot uint8) error {
-	if slot < 1 || slot > m.SlotLimit {
+	if slot < 1 || slot > m.slotLimit {
 		return ErrSlotNotFound
 	}
 
-	if m.Items[int16(slot)] == nil {
+	if m.items[int16(slot)] == nil {
 		return ErrSourceSlotEmpty
 	}
 
-	delete(m.Items, int16(slot))
+	delete(m.items, int16(slot))
 	return nil
 }
 
 func (m *InventoryTab) Find(itemID uint32) Item {
-	for _, item := range m.Items {
+	for _, item := range m.items {
 		if item != nil && item.GetModel().GetID() == itemID {
 			return item
 		}

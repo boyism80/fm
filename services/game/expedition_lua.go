@@ -41,11 +41,11 @@ func (e *Expedition) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 	return map[string]lua.LGFunction{
 		"name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).Name))
+			L.Push(lua.LString(check(L).name))
 			return 1
 		},
 		"leader": func(L *lua.LState) int {
-			L.Push(luax.NewLuable(L, check(L).Leader))
+			L.Push(luax.NewLuable(L, check(L).leader))
 			return 1
 		},
 		"members": func(L *lua.LState) int {
@@ -128,15 +128,15 @@ func (member *ExpeditionMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).ID))
+			L.Push(lua.LNumber(check(L).id))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).Name))
+			L.Push(lua.LString(check(L).name))
 			return 1
 		},
 		"class": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).Class))
+			L.Push(lua.LNumber(check(L).class))
 			return 1
 		},
 	}
@@ -179,14 +179,14 @@ func RegisterExpeditionLua(gw GameWorld, L *lua.LState) {
 		}
 		opts := L.CheckTable(3)
 		spec := ExpeditionSpec{
-			Group:      lua.LVAsString(opts.RawGetString("group")),
-			MinMembers: int(lua.LVAsNumber(opts.RawGetString("min_members"))),
-			MaxMembers: int(lua.LVAsNumber(opts.RawGetString("max_members"))),
-			MaxBattles: int(lua.LVAsNumber(opts.RawGetString("max_battles"))),
-			RecruitMs:  int64(lua.LVAsNumber(opts.RawGetString("recruit_ms"))),
-			Notice:     lua.LVAsString(opts.RawGetString("notice")),
+			group:      lua.LVAsString(opts.RawGetString("group")),
+			minMembers: int(lua.LVAsNumber(opts.RawGetString("min_members"))),
+			maxMembers: int(lua.LVAsNumber(opts.RawGetString("max_members"))),
+			maxBattles: int(lua.LVAsNumber(opts.RawGetString("max_battles"))),
+			recruitMs:  int64(lua.LVAsNumber(opts.RawGetString("recruit_ms"))),
+			notice:     lua.LVAsString(opts.RawGetString("notice")),
 		}
-		if spec.Group == "" || spec.MaxMembers <= 0 || spec.MaxBattles <= 0 || spec.RecruitMs <= 0 {
+		if spec.group == "" || spec.maxMembers <= 0 || spec.maxBattles <= 0 || spec.recruitMs <= 0 {
 			L.ArgError(3, "expedition spec needs group, max_members, max_battles, recruit_ms")
 			return 0
 		}

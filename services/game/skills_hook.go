@@ -27,7 +27,7 @@ func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, dir
 	if entry == nil || entry.Level() <= 0 || entry.Level() != int(level) {
 		return false
 	}
-	levelData := entry.Wz.GetLevelData(entry.Level())
+	levelData := entry.wz.GetLevelData(entry.Level())
 	if levelData == nil {
 		return false
 	}
@@ -43,7 +43,7 @@ func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, dir
 		return false
 	}
 	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
-		if !sc.owner.Inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+		if !sc.owner.inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
 			return false
 		}
 	}
@@ -51,11 +51,11 @@ func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, dir
 		return false
 	}
 
-	if levelData.Cooldown > 0 && !entry.Wz.ManualCooldown {
+	if levelData.Cooldown > 0 && !entry.wz.ManualCooldown {
 		entry.StartCooldown(levelData.Cooldown)
 	}
-	sc.owner.Listener.OnShowSkillEffect(sc.owner, pconst.SkillEffectTypeCast, skillID, level, direction)
-	sc.owner.Listener.OnUpdateStats(sc.owner, nil, true)
+	sc.owner.listener.OnShowSkillEffect(sc.owner, pconst.SkillEffectTypeCast, skillID, level, direction)
+	sc.owner.listener.OnUpdateStats(sc.owner, nil, true)
 	return true
 }
 
@@ -73,7 +73,7 @@ func (sc *Skills) CallHook(ctx actor.Context, skill *SkillEntry, hook string, ar
 	paths := []string{constant.SkillHookScriptPath}
 	if skill != nil {
 		skillArg = skill
-		paths = append(paths, fmt.Sprintf("script/skill/%d.lua", skill.Wz.ID))
+		paths = append(paths, fmt.Sprintf("script/skill/%d.lua", skill.wz.ID))
 	}
 	callArgs := append([]interface{}{sc.owner, skillArg}, args...)
 	for _, path := range paths {

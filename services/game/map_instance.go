@@ -129,6 +129,6 @@ func (m *Map) release() {
 	m.instance.mu.Unlock()
 
 	if closed {
-		m.GameWorld.Systems().Get[*MapSystem]().RemoveInstanceMap(m.GetMapID())
+		m.gameWorld.Systems().Get[*MapSystem]().RemoveInstanceMap(m.GetMapID())
 	}
 }

@@ -5,16 +5,18 @@ import (
 )
 
 type LifeCore struct {
-	ObjectCore
+	objectCore
 	hp         uint32
 	mp         uint32
-	BaseHp     uint32
-	BaseMp     uint32
-	BonusHp    int32
-	BonusMp    int32
-	Stance     uint8
-	Invincible bool
+	baseHp     uint32
+	baseMp     uint32
+	bonusHp    int32
+	bonusMp    int32
+	stance     uint8
+	invincible bool
 }
+
+type lifeCore = LifeCore
 
 type Life interface {
 	GetHp() uint32
@@ -52,7 +54,7 @@ func (life *LifeCore) SendSpawnSyncToViewer(viewer *Character) {}
 func (life *LifeCore) SendDestroySyncToViewer(viewer *Character) {}
 
 func (life *LifeCore) GetMaxHp() uint32 {
-	t := int64(life.BaseHp) + int64(life.BonusHp)
+	t := int64(life.baseHp) + int64(life.bonusHp)
 	if t < 1 {
 		return 1
 	}
@@ -63,7 +65,7 @@ func (life *LifeCore) GetMaxHp() uint32 {
 }
 
 func (life *LifeCore) GetMaxMp() uint32 {
-	t := int64(life.BaseMp) + int64(life.BonusMp)
+	t := int64(life.baseMp) + int64(life.bonusMp)
 	if t < 0 {
 		return 0
 	}
@@ -74,22 +76,22 @@ func (life *LifeCore) GetMaxMp() uint32 {
 }
 
 func (life *LifeCore) AddBaseHp(amount uint32) {
-	life.BaseHp += amount
+	life.baseHp += amount
 }
 
 func (life *LifeCore) AddBonusHp(amount int32) {
-	life.BonusHp += amount
+	life.bonusHp += amount
 	if life.GetHp() > life.GetMaxHp() {
 		life.setHp(life.GetMaxHp())
 	}
 }
 
 func (life *LifeCore) AddBaseMp(amount uint32) {
-	life.BaseMp += amount
+	life.baseMp += amount
 }
 
 func (life *LifeCore) AddBonusMp(amount int32) {
-	life.BonusMp += amount
+	life.bonusMp += amount
 	if life.GetMp() > life.GetMaxMp() {
 		life.setMp(life.GetMaxMp())
 	}
@@ -97,17 +99,17 @@ func (life *LifeCore) AddBonusMp(amount int32) {
 
 func (life *LifeCore) GetHp() uint32       { return life.hp }
 func (life *LifeCore) GetMp() uint32       { return life.mp }
-func (life *LifeCore) GetBonusHp() int32   { return life.BonusHp }
-func (life *LifeCore) GetBonusMp() int32   { return life.BonusMp }
-func (life *LifeCore) GetInvincible() bool { return life.Invincible }
+func (life *LifeCore) GetBonusHp() int32   { return life.bonusHp }
+func (life *LifeCore) GetBonusMp() int32   { return life.bonusMp }
+func (life *LifeCore) GetInvincible() bool { return life.invincible }
 func (life *LifeCore) IsAlive() bool       { return life.hp > 0 }
 
 func (life *LifeCore) GetStance() uint8 {
-	return life.Stance
+	return life.stance
 }
 
 func (life *LifeCore) SetStance(v uint8) {
-	life.Stance = v
+	life.stance = v
 }
 
 func (life *LifeCore) setHp(v uint32) {
@@ -135,34 +137,34 @@ func (life *LifeCore) SetMp(v uint32, _ bool) {
 }
 
 func (life *LifeCore) SetBaseHp(v uint32, _ bool) {
-	life.BaseHp = v
+	life.baseHp = v
 	if life.GetHp() > life.GetMaxHp() {
 		life.setHp(life.GetMaxHp())
 	}
 }
 
 func (life *LifeCore) SetBaseMp(v uint32, _ bool) {
-	life.BaseMp = v
+	life.baseMp = v
 	if life.GetMp() > life.GetMaxMp() {
 		life.setMp(life.GetMaxMp())
 	}
 }
 
 func (life *LifeCore) SetBonusHp(v int32, _ bool) {
-	life.BonusHp = v
+	life.bonusHp = v
 	if life.GetHp() > life.GetMaxHp() {
 		life.setHp(life.GetMaxHp())
 	}
 }
 
 func (life *LifeCore) SetBonusMp(v int32, _ bool) {
-	life.BonusMp = v
+	life.bonusMp = v
 	if life.GetMp() > life.GetMaxMp() {
 		life.setMp(life.GetMaxMp())
 	}
 }
 
-func (life *LifeCore) SetInvincible(b bool) { life.Invincible = b }
+func (life *LifeCore) SetInvincible(b bool) { life.invincible = b }
 
 func (life *LifeCore) AddHp(amount int) {
 	n := int(life.GetHp()) + amount

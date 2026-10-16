@@ -3,40 +3,40 @@ package game
 import "github.com/boyism80/fm/maple/constant"
 
 type BaseStats struct {
-	Str uint16
-	Dex uint16
-	Int uint16
-	Luk uint16
+	str uint16
+	dex uint16
+	int uint16
+	luk uint16
 }
 
 type BonusStats struct {
-	Str                int16
-	Dex                int16
-	Int                int16
-	Luk                int16
-	Watk               int16
-	Matk               int16
-	Wdef               int16
-	Mdef               int16
-	Acc                int16
-	Avoid              int16
-	Speed              int16
-	Jump               int16
-	MaxHpPercent       int16
-	MaxMpPercent       int16
-	MesoMultiplier     int16
-	DropRate           int16
-	ExpRate            int16
-	PotionHealRate     int16
-	PotionDurationRate int16
+	str                int16
+	dex                int16
+	int                int16
+	luk                int16
+	watk               int16
+	matk               int16
+	wdef               int16
+	mdef               int16
+	acc                int16
+	avoid              int16
+	speed              int16
+	jump               int16
+	maxHpPercent       int16
+	maxMpPercent       int16
+	mesoMultiplier     int16
+	dropRate           int16
+	expRate            int16
+	potionHealRate     int16
+	potionDurationRate int16
 }
 
 type Stats struct {
 	owner             *Character
-	Base              BaseStats
-	Bonus             BonusStats
-	Population        int16
-	PopulationHistory PopulationHistory
+	base              BaseStats
+	bonus             BonusStats
+	population        int16
+	populationHistory PopulationHistory
 }
 
 func (s *Stats) canAdd(stat constant.StatType, amount uint16) bool {
@@ -57,38 +57,38 @@ func (s *Stats) canAdd(stat constant.StatType, amount uint16) bool {
 func (s *Stats) add(stat constant.StatType, amount uint16, statUpdate map[constant.Stat]int32) {
 	switch stat {
 	case constant.StatTypeStr:
-		newStr := s.Base.Str + amount
+		newStr := s.base.str + amount
 		if newStr > constant.StatMaxStrDexIntLuk {
 			newStr = constant.StatMaxStrDexIntLuk
 		}
-		s.Base.Str = newStr
+		s.base.str = newStr
 		statUpdate[constant.StatStr] = int32(s.TotalStr())
 	case constant.StatTypeDex:
-		newDex := s.Base.Dex + amount
+		newDex := s.base.dex + amount
 		if newDex > constant.StatMaxStrDexIntLuk {
 			newDex = constant.StatMaxStrDexIntLuk
 		}
-		s.Base.Dex = newDex
+		s.base.dex = newDex
 		statUpdate[constant.StatDex] = int32(s.TotalDex())
 	case constant.StatTypeInt:
-		newInt := s.Base.Int + amount
+		newInt := s.base.int + amount
 		if newInt > constant.StatMaxStrDexIntLuk {
 			newInt = constant.StatMaxStrDexIntLuk
 		}
-		s.Base.Int = newInt
+		s.base.int = newInt
 		statUpdate[constant.StatInt] = int32(s.TotalInt())
 	case constant.StatTypeLuk:
-		newLuk := s.Base.Luk + amount
+		newLuk := s.base.luk + amount
 		if newLuk > constant.StatMaxStrDexIntLuk {
 			newLuk = constant.StatMaxStrDexIntLuk
 		}
-		s.Base.Luk = newLuk
+		s.base.luk = newLuk
 		statUpdate[constant.StatLuk] = int32(s.TotalLuk())
 	}
 }
 
 func (s *Stats) TotalStr() uint16 {
-	total := int32(s.Base.Str) + int32(s.Bonus.Str)
+	total := int32(s.base.str) + int32(s.bonus.str)
 	if total < 0 {
 		return 0
 	}
@@ -99,7 +99,7 @@ func (s *Stats) TotalStr() uint16 {
 }
 
 func (s *Stats) TotalDex() uint16 {
-	total := int32(s.Base.Dex) + int32(s.Bonus.Dex)
+	total := int32(s.base.dex) + int32(s.bonus.dex)
 	if total < 0 {
 		return 0
 	}
@@ -110,7 +110,7 @@ func (s *Stats) TotalDex() uint16 {
 }
 
 func (s *Stats) TotalInt() uint16 {
-	total := int32(s.Base.Int) + int32(s.Bonus.Int)
+	total := int32(s.base.int) + int32(s.bonus.int)
 	if total < 0 {
 		return 0
 	}
@@ -121,7 +121,7 @@ func (s *Stats) TotalInt() uint16 {
 }
 
 func (s *Stats) TotalLuk() uint16 {
-	total := int32(s.Base.Luk) + int32(s.Bonus.Luk)
+	total := int32(s.base.luk) + int32(s.bonus.luk)
 	if total < 0 {
 		return 0
 	}
@@ -132,7 +132,7 @@ func (s *Stats) TotalLuk() uint16 {
 }
 
 func (s *Stats) PotionHealMultiplierPercent() int {
-	r := s.Bonus.PotionHealRate
+	r := s.bonus.potionHealRate
 	if r <= 0 {
 		return 100
 	}
@@ -140,7 +140,7 @@ func (s *Stats) PotionHealMultiplierPercent() int {
 }
 
 func (s *Stats) PotionDurationMultiplierPercent() int {
-	r := s.Bonus.PotionDurationRate
+	r := s.bonus.potionDurationRate
 	if r <= 0 {
 		return 100
 	}
@@ -149,19 +149,19 @@ func (s *Stats) PotionDurationMultiplierPercent() int {
 
 func (s *Stats) setPopulation(value int32) {
 	value = max(-populationLimit, min(populationLimit, value))
-	if int16(value) == s.Population {
+	if int16(value) == s.population {
 		return
 	}
 
-	s.Population = int16(value)
-	s.owner.Listener.OnUpdateStats(s.owner, map[constant.Stat]int32{
+	s.population = int16(value)
+	s.owner.listener.OnUpdateStats(s.owner, map[constant.Stat]int32{
 		constant.StatPopulation: value,
 	}, false)
 }
 
 func (s *Stats) AddPopulation(delta int32) int32 {
-	s.setPopulation(int32(s.Population) + delta)
-	return int32(s.Population)
+	s.setPopulation(int32(s.population) + delta)
+	return int32(s.population)
 }
 
 func (s *Stats) validatePopulation(costPopulation, rewardPopulation int32) ExchangeResult {
@@ -171,7 +171,7 @@ func (s *Stats) validatePopulation(costPopulation, rewardPopulation int32) Excha
 	if costPopulation == 0 && rewardPopulation == 0 {
 		return ExchangeOK
 	}
-	current := int32(s.Population)
+	current := int32(s.population)
 	if costPopulation > current {
 		return ExchangeLackCost
 	}

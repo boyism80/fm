@@ -72,8 +72,8 @@ func (h *Operation) buyRing(ctx *core.ClientContext, character *cash.Character, 
 			PartnerName:   req.Recipient,
 			Message:       req.Message,
 			Price:         commodity.Price,
-			Item:          item,
-			PartnerItem:   partnerItem,
+			Item:          item.BuildRPC(),
+			PartnerItem:   partnerItem.BuildRPC(),
 			RequestId:     h.cs.NewUniqueID(),
 		})
 	}, func(reply *internal.BuyCashRingReply) error {

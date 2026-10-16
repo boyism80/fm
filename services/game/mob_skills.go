@@ -11,26 +11,26 @@ import (
 )
 
 type MobSkill struct {
-	Slot       wz.MobSkillSlot
-	LevelData  *wz.MobSkillLevelData
-	LastUsedAt time.Time
+	slot       wz.MobSkillSlot
+	levelData  *wz.MobSkillLevelData
+	lastUsedAt time.Time
 }
 
 func (s *MobSkill) IsOnCooldown(now time.Time) bool {
-	if s == nil || s.LevelData == nil {
+	if s == nil || s.levelData == nil {
 		return true
 	}
-	if s.LastUsedAt.IsZero() {
+	if s.lastUsedAt.IsZero() {
 		return false
 	}
-	if s.LevelData.SummonOnce {
+	if s.levelData.SummonOnce {
 		return true
 	}
-	if s.LevelData.CooltimeMs <= 0 {
+	if s.levelData.CooltimeMs <= 0 {
 		return false
 	}
-	cooldown := time.Duration(s.LevelData.CooltimeMs) * time.Millisecond
-	return now.Sub(s.LastUsedAt) < cooldown
+	cooldown := time.Duration(s.levelData.CooltimeMs) * time.Millisecond
+	return now.Sub(s.lastUsedAt) < cooldown
 }
 
 const mobSkillCastWindow = 5 * time.Second
@@ -47,23 +47,23 @@ func NewMobSkills(owner *Mob) *MobSkills {
 	if owner == nil {
 		panic("MobSkills owner is nil")
 	}
-	if owner.Wz == nil {
+	if owner.wz == nil {
 		panic("MobSkills: mob model is nil")
 	}
-	if owner.GameWorld == nil {
+	if owner.gameWorld == nil {
 		panic("MobSkills: game world is nil")
 	}
-	resources := owner.GameWorld.GetResources()
+	resources := owner.gameWorld.GetResources()
 	if resources == nil {
 		panic("MobSkills: resources are nil")
 	}
 	skills := &MobSkills{
 		owner:   owner,
-		ordered: make([]*MobSkill, 0, len(owner.Wz.Skills)),
-		byID:    make(map[uint32]*MobSkill, len(owner.Wz.Skills)),
+		ordered: make([]*MobSkill, 0, len(owner.wz.Skills)),
+		byID:    make(map[uint32]*MobSkill, len(owner.wz.Skills)),
 	}
-	for _, slot := range owner.Wz.Skills {
-		if !owner.Wz.HasSkill(slot.SkillID, slot.Level) {
+	for _, slot := range owner.wz.Skills {
+		if !owner.wz.HasSkill(slot.SkillID, slot.Level) {
 			continue
 		}
 		levelData := resources.GetMobSkill(slot.SkillID, slot.Level)
@@ -71,8 +71,8 @@ func NewMobSkills(owner *Mob) *MobSkills {
 			continue
 		}
 		entity := &MobSkill{
-			Slot:      slot,
-			LevelData: levelData,
+			slot:      slot,
+			levelData: levelData,
 		}
 		skills.ordered = append(skills.ordered, entity)
 		skills.byID[slot.SkillID] = entity
@@ -92,7 +92,7 @@ func (sc *MobSkills) Get(skillID uint32, level uint8) *MobSkill {
 		return nil
 	}
 	entity := sc.byID[skillID]
-	if entity == nil || entity.Slot.Level != level {
+	if entity == nil || entity.slot.Level != level {
 		return nil
 	}
 	return entity
@@ -106,14 +106,14 @@ func (sc *MobSkills) MarkUsed(skillID uint32, now time.Time) {
 	if entity == nil {
 		return
 	}
-	entity.LastUsedAt = now
+	entity.lastUsedAt = now
 	if skillID == 140 || skillID == 141 {
 		other := uint32(141)
 		if skillID == 141 {
 			other = 140
 		}
 		if sibling := sc.byID[other]; sibling != nil {
-			sibling.LastUsedAt = now
+			sibling.lastUsedAt = now
 		}
 	}
 }
@@ -124,7 +124,7 @@ func (sc *MobSkills) Choice(controller *Character) *MobSkill {
 	}
 	now := clock.Now()
 	for _, skill := range sc.ordered {
-		if skill == nil || skill.LevelData == nil {
+		if skill == nil || skill.levelData == nil {
 			continue
 		}
 		if skill.IsOnCooldown(now) {
@@ -135,22 +135,22 @@ func (sc *MobSkills) Choice(controller *Character) *MobSkill {
 			continue
 		}
 		currentPercent := int((uint64(sc.owner.GetHp()) * 100) / uint64(maxHP))
-		if currentPercent > skill.LevelData.HpPercent {
+		if currentPercent > skill.levelData.HpPercent {
 			continue
 		}
-		if skill.LevelData.Limit > 0 {
+		if skill.levelData.Limit > 0 {
 			mapInstance := sc.owner.GetMap()
 			if mapInstance == nil {
 				continue
 			}
-			if len(mapInstance.GetMobs()) >= int(skill.LevelData.Limit) {
+			if len(mapInstance.GetMobs()) >= int(skill.levelData.Limit) {
 				continue
 			}
 		}
 		if !sc.chooseByScript(controller, skill) {
 			continue
 		}
-		sc.MarkUsed(skill.Slot.SkillID, now)
+		sc.MarkUsed(skill.slot.SkillID, now)
 		sc.pending = skill
 		sc.pendingAt = now
 		return skill
@@ -165,14 +165,14 @@ func (sc *MobSkills) TakePending(skillID uint32, level uint8, now time.Time) *Mo
 		return nil
 	}
 	skill := sc.pending
-	if skill == nil || skill.Slot.SkillID != skillID || skill.Slot.Level != level || now.Sub(sc.pendingAt) > mobSkillCastWindow {
+	if skill == nil || skill.slot.SkillID != skillID || skill.slot.Level != level || now.Sub(sc.pendingAt) > mobSkillCastWindow {
 		return nil
 	}
 	sc.pending = nil
 
-	if skill.LevelData.Limit > 0 {
+	if skill.levelData.Limit > 0 {
 		mapInstance := sc.owner.GetMap()
-		if mapInstance == nil || len(mapInstance.GetMobs()) >= int(skill.LevelData.Limit) {
+		if mapInstance == nil || len(mapInstance.GetMobs()) >= int(skill.levelData.Limit) {
 			return nil
 		}
 	}
@@ -180,7 +180,7 @@ func (sc *MobSkills) TakePending(skillID uint32, level uint8, now time.Time) *Mo
 }
 
 func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool {
-	if sc == nil || sc.owner == nil || skill == nil || skill.LevelData == nil {
+	if sc == nil || sc.owner == nil || skill == nil || skill.levelData == nil {
 		return false
 	}
 	mapInstance := sc.owner.GetMap()
@@ -191,7 +191,7 @@ func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool
 	if root == nil {
 		return true
 	}
-	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.Slot.SkillID)
+	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.slot.SkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		return true
@@ -204,10 +204,10 @@ func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool
 }
 
 func (m *Mob) ConsumeSkillMP(skill *MobSkill) {
-	if skill.LevelData == nil || skill.LevelData.MpCon <= 0 {
+	if skill.levelData == nil || skill.levelData.MpCon <= 0 {
 		return
 	}
-	cost := uint32(skill.LevelData.MpCon)
+	cost := uint32(skill.levelData.MpCon)
 	next := uint32(0)
 	if current := m.GetMp(); current > cost {
 		next = current - cost

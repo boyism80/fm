@@ -38,18 +38,18 @@ func guildRankToUint32(rank internal.GuildMemberRank) uint32 {
 }
 
 func (m *GuildMember) RankWire() uint8 {
-	return uint8(guildRankToUint32(m.Rank))
+	return uint8(guildRankToUint32(m.rank))
 }
 
 func (m *GuildMember) BuildS2C() dto.GuildMemberStatus {
 	return dto.GuildMemberStatus{
-		CharacterID:  m.CharacterID,
-		Name:         m.CharacterName,
-		ClassID:      m.ClassID,
-		Level:        m.Level,
-		GuildRank:    guildRankToUint32(m.Rank),
-		Online:       guildMemberOnline(m.ChannelIndex),
-		AllianceRank: cloneU32Ptr(m.AllianceRank),
+		CharacterID:  m.characterID,
+		Name:         m.characterName,
+		ClassID:      m.classID,
+		Level:        m.level,
+		GuildRank:    guildRankToUint32(m.rank),
+		Online:       guildMemberOnline(m.channelIndex),
+		AllianceRank: cloneU32Ptr(m.allianceRank),
 	}
 }
 
@@ -128,31 +128,31 @@ func (g *Guild) BuildS2C() *dto.GuildInfo {
 	logoBGColor := uint8(0)
 	logo := uint16(0)
 	logoColor := uint8(0)
-	if g.Logo != nil {
-		logoBG = uint16(g.Logo.LogoBG)
-		logoBGColor = uint8(g.Logo.LogoBGColor)
-		logo = uint16(g.Logo.Logo)
-		logoColor = uint8(g.Logo.LogoColor)
+	if g.logo != nil {
+		logoBG = uint16(g.logo.logoBG)
+		logoBGColor = uint8(g.logo.logoBGColor)
+		logo = uint16(g.logo.logo)
+		logoColor = uint8(g.logo.logoColor)
 	}
-	members := make([]dto.GuildMemberStatus, 0, len(g.Members))
-	for _, m := range g.Members {
+	members := make([]dto.GuildMemberStatus, 0, len(g.members))
+	for _, m := range g.members {
 		if m == nil {
 			continue
 		}
 		members = append(members, m.BuildS2C())
 	}
 	return &dto.GuildInfo{
-		GuildID:     g.GuildID,
-		Name:        g.Name,
-		RankTitles:  g.RankTitles,
+		GuildID:     g.guildID,
+		Name:        g.name,
+		RankTitles:  g.rankTitles,
 		Members:     members,
-		Capacity:    g.Capacity,
+		Capacity:    g.capacity,
 		LogoBG:      logoBG,
 		LogoBGColor: logoBGColor,
 		Logo:        logo,
 		LogoColor:   logoColor,
-		Notice:      g.Notice,
-		GP:          g.GP,
-		AllianceID:  cloneU32Ptr(g.AllianceID),
+		Notice:      g.notice,
+		GP:          g.gp,
+		AllianceID:  cloneU32Ptr(g.allianceID),
 	}
 }

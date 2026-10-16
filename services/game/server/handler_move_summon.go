@@ -35,19 +35,19 @@ func (h *MoveSummon) Handle(ctx *core.ClientContext, req *request.MoveSummon) er
 	if summon == nil {
 		return nil
 	}
-	if summon.OwnerID != character.GetID() {
+	if summon.OwnerID() != character.GetID() {
 		return nil
 	}
 
-	start := summon.Position
+	start := summon.GetPosition()
 	for _, m := range req.Fragments {
 		if move, ok := m.(*dto.AbsoluteLifeMovement); ok {
-			summon.Position = move.Position
+			summon.Place(move.Position)
 		}
-		summon.Stance = m.GetStance()
+		summon.SetStance(m.GetStance())
 	}
 
 	mapInstance.OnMoved(summon, start)
-	character.Listener.OnSummonMove(character, summon, start, req.Fragments)
+	character.Listener().OnSummonMove(character, summon, start, req.Fragments)
 	return nil
 }

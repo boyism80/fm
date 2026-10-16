@@ -5,35 +5,35 @@ import (
 )
 
 type CashItem struct {
-	*ItemCore
-	UniqueId  *uint64
-	OwnerName string
+	*itemCore
+	uniqueId  *uint64
+	ownerName string
 }
 
 func (item *CashItem) GetInventoryType() constant.InventoryType { return constant.InventoryTypeCash }
-func (item *CashItem) GetCount() uint16                         { return item.Count }
+func (item *CashItem) GetCount() uint16                         { return item.count }
 func (item *CashItem) Reduce(count uint16) uint16 {
-	if count > item.Count {
-		item.Count = 0
+	if count > item.count {
+		item.count = 0
 	} else {
-		item.Count -= count
+		item.count -= count
 	}
-	return item.Count
+	return item.count
 }
 func (item *CashItem) Increase(count uint16) uint16 {
-	item.Count += count
-	return item.Count
+	item.count += count
+	return item.count
 }
 func (item *CashItem) Clone(count uint16) Item {
 	return &CashItem{
-		ItemCore: &ItemCore{
-			FieldPlacement: nil,
-			Count:          count,
-			Wz:             item.Wz,
-			Expiration:     item.Expiration,
-			Flags:          item.Flags,
+		itemCore: &ItemCore{
+			fieldPlacement: nil,
+			count:          count,
+			wz:             item.wz,
+			expiration:     item.expiration,
+			flags:          item.flags,
 		},
-		UniqueId:  copyUint64Ptr(item.UniqueId),
-		OwnerName: item.OwnerName,
+		uniqueId:  copyUint64Ptr(item.uniqueId),
+		ownerName: item.ownerName,
 	}
 }

@@ -25,6 +25,6 @@ func (h *FamilyUse) Handle(ctx *core.ClientContext, req *request.FamilyUse) erro
 		return nil
 	}
 
-	ch.Family.Use(ctx.ActorContext, req.Feature, req.Name)
+	ch.Family().Use(ctx.ActorContext, req.Feature, req.Name)
 	return nil
 }

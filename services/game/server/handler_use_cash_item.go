@@ -33,15 +33,15 @@ func (h *UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) 
 
 	model, ok := h.gs.GetResources().Items[req.ItemID]
 	if ok && model.GetTraits()&constant.ItemTraitCashTeleportStone != 0 {
-		ch.TeleportStones.Use(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.Target.MapID, req.Target.Name)
+		ch.TeleportStones().Use(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.Target.MapID, req.Target.Name)
 		return nil
 	}
 	if ok && model.GetTraits()&constant.ItemTraitShopScanner != 0 {
-		ch.RemoteShops.Scan(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.SearchID, req.HighFirst)
+		ch.RemoteShops().Scan(ctx.ActorContext, constant.InventoryTypeCash, int16(req.Slot), req.ItemID, req.SearchID, req.HighFirst)
 		return nil
 	}
 	if req.Malformed {
-		ch.Listener.OnUnlockAction(ch)
+		ch.Listener().OnUnlockAction(ch)
 		return nil
 	}
 	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, game.CashItemInput{

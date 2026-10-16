@@ -35,9 +35,9 @@ func (h *PassiveEnergyAttack) Handle(ctx *core.ClientContext, req *request.Passi
 		return err
 	}
 	if !attacked {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
-	character.Listener.OnEnergyAttack(character, req)
+	character.Listener().OnEnergyAttack(character, req)
 	return nil
 }

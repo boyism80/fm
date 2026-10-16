@@ -19,7 +19,7 @@ func (m *Meso) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "count() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(meso.Count))
+			L.Push(lua.LNumber(meso.count))
 			return 1
 		},
 	}

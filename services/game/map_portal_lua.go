@@ -21,41 +21,41 @@ func (p *Portal) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"name": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.Wz == nil {
+			if !ok || portal == nil || portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
-			L.Push(lua.LString(portal.Wz.Name))
+			L.Push(lua.LString(portal.wz.Name))
 			return 1
 		},
 		"id": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.Wz == nil {
+			if !ok || portal == nil || portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
-			L.Push(lua.LNumber(portal.Wz.ID))
+			L.Push(lua.LNumber(portal.wz.ID))
 			return 1
 		},
 		"target": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.Wz == nil {
+			if !ok || portal == nil || portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
-			L.Push(lua.LString(portal.Wz.Target))
+			L.Push(lua.LString(portal.wz.Target))
 			return 1
 		},
 		"target_map": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.Wz == nil {
+			if !ok || portal == nil || portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
-			L.Push(lua.LNumber(portal.Wz.TargetMapId))
+			L.Push(lua.LNumber(portal.wz.TargetMapId))
 			return 1
 		},
 		"script": func(L *lua.LState) int {

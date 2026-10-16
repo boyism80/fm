@@ -20,65 +20,65 @@ const (
 
 type Quest struct {
 	quests         *Quests
-	Wz             *wz.Quest
-	QuestID        uint32
-	Status         QuestStatusType
-	MobKills       map[uint32]int
-	Deadline       time.Time
-	StartTime      time.Time
-	StatusRecord   StatusRecord
-	RecordEx       map[string]string
-	CompletionTime time.Time
-	Forfeited      int
+	wz             *wz.Quest
+	questID        uint32
+	status         QuestStatusType
+	mobKills       map[uint32]int
+	deadline       time.Time
+	startTime      time.Time
+	statusRecord   StatusRecord
+	recordEx       map[string]string
+	completionTime time.Time
+	forfeited      int
 }
 
 func (qp *Quest) IsStarted() bool {
 	if qp == nil {
 		return false
 	}
-	return qp.Status == QuestStatusStarted
+	return qp.status == QuestStatusStarted
 }
 
 func (qp *Quest) Expired() bool {
-	if qp == nil || qp.Deadline.IsZero() {
+	if qp == nil || qp.deadline.IsZero() {
 		return false
 	}
-	return !clock.Now().Before(qp.Deadline)
+	return !clock.Now().Before(qp.deadline)
 }
 
 func (qp *Quest) SetDeadline(t time.Time) {
 	if qp == nil {
 		return
 	}
-	qp.Deadline = t
+	qp.deadline = t
 }
 
 func (qp *Quest) ResetDeadline() {
 	if qp == nil {
 		return
 	}
-	qp.Deadline = time.Time{}
+	qp.deadline = time.Time{}
 }
 
 func (qp *Quest) SetStartTime(t time.Time) {
 	if qp == nil {
 		return
 	}
-	qp.StartTime = t
+	qp.startTime = t
 }
 
 func (qp *Quest) ResetStartTime() {
 	if qp == nil {
 		return
 	}
-	qp.StartTime = time.Time{}
+	qp.startTime = time.Time{}
 }
 
 func (qp *Quest) MatchesState(state wz.QuestStatus) bool {
 	if qp == nil {
 		return state == wz.QuestStatusNotStarted
 	}
-	return qp.Status == QuestStatusType(state)
+	return qp.status == QuestStatusType(state)
 }
 
 func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
@@ -91,19 +91,19 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 	if qp.Expired() {
 		return ErrQuestExpired
 	}
-	if qp.Wz.Meta.Blocked {
+	if qp.wz.Meta.Blocked {
 		return ErrQuestNotCompletable
 	}
 	checkOpts := opts
-	if qp.Wz.Meta.AutoPreComplete || qp.Wz.Meta.AutoComplete {
+	if qp.wz.Meta.AutoPreComplete || qp.wz.Meta.AutoComplete {
 		checkOpts.NpcID = nil
 	}
-	if !qp.quests.passesRequirements(qp.Wz.Complete.Requirements, qp, checkOpts) {
+	if !qp.quests.passesRequirements(qp.wz.Complete.Requirements, qp, checkOpts) {
 		return ErrQuestNotCompletable
 	}
-	exchange := ch.Quests.buildPhaseExchange(qp.Wz.Complete.Actions, questActionOpts{
-		ClassID:   ch.Class,
-		Selection: opts.Selection,
+	exchange := ch.quests.buildPhaseExchange(qp.wz.Complete.Actions, questActionOpts{
+		classID:   ch.class,
+		selection: opts.Selection,
 	})
 	if exchange.Cost.ValidCost(ch) != ExchangeOK {
 		return ErrQuestNotCompletable
@@ -112,7 +112,7 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 }
 
 func (qp *Quest) StartedMobKills() []uint16 {
-	if qp == nil || len(qp.Wz.MobIDs) == 0 {
+	if qp == nil || len(qp.wz.MobIDs) == 0 {
 		return nil
 	}
 	return qp.MobKillCountsOrdered()
@@ -122,18 +122,18 @@ func (qp *Quest) RecordMobKill(mobID uint32) bool {
 	if qp == nil || !qp.IsStarted() || mobID == 0 {
 		return false
 	}
-	required := qp.Wz.RelevantMobs()
+	required := qp.wz.RelevantMobs()
 	need, ok := required[mobID]
 	if !ok || need <= 0 {
 		return false
 	}
-	if qp.MobKills == nil {
-		qp.MobKills = make(map[uint32]int)
+	if qp.mobKills == nil {
+		qp.mobKills = make(map[uint32]int)
 	}
-	if qp.MobKills[mobID] >= need {
+	if qp.mobKills[mobID] >= need {
 		return false
 	}
-	qp.MobKills[mobID]++
+	qp.mobKills[mobID]++
 	return true
 }
 
@@ -141,14 +141,14 @@ func (qp *Quest) MobKillCountsOrdered() []uint16 {
 	if qp == nil {
 		return nil
 	}
-	if len(qp.Wz.MobIDs) == 0 {
+	if len(qp.wz.MobIDs) == 0 {
 		return nil
 	}
-	out := make([]uint16, len(qp.Wz.MobIDs))
-	for i, id := range qp.Wz.MobIDs {
+	out := make([]uint16, len(qp.wz.MobIDs))
+	for i, id := range qp.wz.MobIDs {
 		kills := 0
-		if qp.MobKills != nil {
-			kills = qp.MobKills[id]
+		if qp.mobKills != nil {
+			kills = qp.mobKills[id]
 		}
 		out[i] = uint16(kills)
 	}
@@ -163,7 +163,7 @@ func (qc *Quests) RecordMobKill(mobID uint32) {
 		if qp == nil || !qp.RecordMobKill(mobID) {
 			return
 		}
-		qc.owner.Listener.OnQuestProgress(qc.owner, qp)
+		qc.owner.listener.OnQuestProgress(qc.owner, qp)
 	})
 }
 
@@ -171,16 +171,16 @@ func (qp *Quest) InitMobKillCounters() {
 	if qp == nil {
 		return
 	}
-	mobs := qp.Wz.RelevantMobs()
+	mobs := qp.wz.RelevantMobs()
 	if len(mobs) == 0 {
 		return
 	}
-	if qp.MobKills == nil {
-		qp.MobKills = make(map[uint32]int)
+	if qp.mobKills == nil {
+		qp.mobKills = make(map[uint32]int)
 	}
 	for mobID := range mobs {
-		if _, ok := qp.MobKills[mobID]; !ok {
-			qp.MobKills[mobID] = 0
+		if _, ok := qp.mobKills[mobID]; !ok {
+			qp.mobKills[mobID] = 0
 		}
 	}
 }
@@ -189,7 +189,7 @@ func (qp *Quest) CanForfeit() bool {
 	if qp == nil || !qp.IsStarted() {
 		return false
 	}
-	switch qp.QuestID {
+	switch qp.questID {
 	case 20000, 20010, 20015, 20020:
 		return false
 	default:
@@ -204,10 +204,10 @@ func (qp *Quest) CanRestoreLostItem(ch *Character, itemID uint32) bool {
 	if !qp.IsStarted() {
 		return false
 	}
-	if ch.Inventory.HasItem(itemID) {
+	if ch.inventory.HasItem(itemID) {
 		return false
 	}
-	for _, item := range qp.Wz.Start.Actions.Item {
+	for _, item := range qp.wz.Start.Actions.Item {
 		if item.ItemID == itemID && item.Count > 0 {
 			return true
 		}
@@ -224,7 +224,7 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 	}
 	var count uint16
 	found := false
-	for _, item := range qp.Wz.Start.Actions.Item {
+	for _, item := range qp.wz.Start.Actions.Item {
 		if item.ItemID == itemID && item.Count > 0 {
 			count = uint16(item.Count)
 			found = true
@@ -260,19 +260,19 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 		if err := qp.CanComplete(ch, opts); err != nil {
 			return err
 		}
-		if err := ch.Quests.grant(qp, qp.Wz.Complete.Actions, questActionOpts{
-			ClassID:   ch.Class,
-			Selection: opts.Selection,
-			NpcID:     wireNPC,
+		if err := ch.quests.grant(qp, qp.wz.Complete.Actions, questActionOpts{
+			classID:   ch.class,
+			selection: opts.Selection,
+			npcID:     wireNPC,
 		}); err != nil {
 			return err
 		}
 	} else if !qp.IsStarted() {
 		return ErrQuestNotCompletable
 	}
-	qp.Status = QuestStatusCompleted
-	qp.CompletionTime = clock.Now()
-	ch.Listener.OnQuestCompleted(ch, qp, wireNPC, qp.Wz.NextQuestID())
+	qp.status = QuestStatusCompleted
+	qp.completionTime = clock.Now()
+	ch.listener.OnQuestCompleted(ch, qp, wireNPC, qp.wz.NextQuestID())
 	return nil
 }
 
@@ -283,12 +283,12 @@ func (qp *Quest) Forfeit(ch *Character) error {
 	if !qp.CanForfeit() {
 		return ErrQuestNotForfeitable
 	}
-	qp.Status = QuestStatusNotStarted
-	qp.Forfeited++
-	qp.StatusRecord.WriteString("")
-	qp.MobKills = make(map[uint32]int)
+	qp.status = QuestStatusNotStarted
+	qp.forfeited++
+	qp.statusRecord.WriteString("")
+	qp.mobKills = make(map[uint32]int)
 	qp.ResetDeadline()
-	ch.Listener.OnQuestForfeited(ch, qp)
+	ch.listener.OnQuestForfeited(ch, qp)
 	return nil
 }
 
@@ -312,10 +312,10 @@ func (qc *Quests) Get(questID uint32) *Quest {
 }
 
 func (qc *Quests) wzDef(questID uint32) *wz.Quest {
-	if qc == nil || qc.owner == nil || qc.owner.GameWorld == nil {
+	if qc == nil || qc.owner == nil || qc.owner.gameWorld == nil {
 		return nil
 	}
-	resources := qc.owner.GameWorld.GetResources()
+	resources := qc.owner.gameWorld.GetResources()
 	if resources == nil {
 		return nil
 	}
@@ -335,11 +335,11 @@ func (qc *Quests) Create(questID uint32, status QuestStatusType) *Quest {
 	}
 	qp := &Quest{
 		quests:   qc,
-		Wz:       def,
-		QuestID:  questID,
-		Status:   status,
-		MobKills: make(map[uint32]int),
-		RecordEx: make(map[string]string),
+		wz:       def,
+		questID:  questID,
+		status:   status,
+		mobKills: make(map[uint32]int),
+		recordEx: make(map[string]string),
 	}
 	qc.progress[questID] = qp
 	return qp
@@ -362,9 +362,9 @@ func (qc *Quests) Clear(questID uint32) bool {
 	}
 	delete(qc.progress, questID)
 	if qc.owner != nil {
-		qc.owner.Listener.OnQuestForfeited(qc.owner, &Quest{
-			QuestID: questID,
-			Status:  QuestStatusNotStarted,
+		qc.owner.listener.OnQuestForfeited(qc.owner, &Quest{
+			questID: questID,
+			status:  QuestStatusNotStarted,
 		})
 	}
 	return true
@@ -380,8 +380,8 @@ func (qc *Quests) ClearAll() int {
 			continue
 		}
 		snapshots = append(snapshots, &Quest{
-			QuestID: id,
-			Status:  QuestStatusNotStarted,
+			questID: id,
+			status:  QuestStatusNotStarted,
 		})
 	}
 	count := len(snapshots)
@@ -390,7 +390,7 @@ func (qc *Quests) ClearAll() int {
 		return count
 	}
 	for _, snap := range snapshots {
-		qc.owner.Listener.OnQuestForfeited(qc.owner, snap)
+		qc.owner.listener.OnQuestForfeited(qc.owner, snap)
 	}
 	return count
 }
@@ -413,7 +413,7 @@ func (qc *Quests) CompletedCount() int {
 	}
 	n := 0
 	qc.ForEach(func(_ uint32, qp *Quest) {
-		if qp != nil && qp.Status == QuestStatusCompleted {
+		if qp != nil && qp.status == QuestStatusCompleted {
 			n++
 		}
 	})
@@ -423,13 +423,13 @@ func (qc *Quests) CompletedCount() int {
 func (qc *Quests) RecordExWireMap() map[uint16]string {
 	result := make(map[uint16]string)
 	qc.ForEach(func(questID uint32, qp *Quest) {
-		if len(qp.RecordEx) == 0 {
+		if len(qp.recordEx) == 0 {
 			return
 		}
 		if questID > 0xFFFF {
 			return
 		}
-		result[uint16(questID)] = formatRecordEx(qp.RecordEx)
+		result[uint16(questID)] = formatRecordEx(qp.recordEx)
 	})
 	return result
 }
@@ -459,17 +459,17 @@ func (qp *Quest) RecordExWire() string {
 	if qp == nil {
 		return ""
 	}
-	return formatRecordEx(qp.RecordEx)
+	return formatRecordEx(qp.recordEx)
 }
 
 func (qp *Quest) RecordExField(key string) (string, bool) {
 	if qp == nil || key == "" {
 		return "", false
 	}
-	if len(qp.RecordEx) == 0 {
+	if len(qp.recordEx) == 0 {
 		return "", false
 	}
-	value, ok := qp.RecordEx[key]
+	value, ok := qp.recordEx[key]
 	return value, ok
 }
 
@@ -477,17 +477,17 @@ func (qp *Quest) SetRecordExField(key, value string) bool {
 	if qp == nil || key == "" || value == "" {
 		return false
 	}
-	if qp.quests == nil || qp.quests.Get(qp.QuestID) == nil {
+	if qp.quests == nil || qp.quests.Get(qp.questID) == nil {
 		return false
 	}
-	if qp.RecordEx == nil {
-		qp.RecordEx = make(map[string]string)
+	if qp.recordEx == nil {
+		qp.recordEx = make(map[string]string)
 	}
-	qp.RecordEx[key] = value
+	qp.recordEx[key] = value
 	if qp.quests != nil {
 		ch := qp.quests.owner
-		if ch != nil && ch.Listener != nil {
-			ch.Listener.OnQuestRecordExChanged(ch, qp)
+		if ch != nil && ch.listener != nil {
+			ch.listener.OnQuestRecordExChanged(ch, qp)
 		}
 	}
 	return true
@@ -498,9 +498,9 @@ func (qc *Quests) NeedsItem(questID uint32, itemID uint32) bool {
 	if !qp.IsStarted() {
 		return false
 	}
-	for _, act := range qp.Wz.Complete.Actions.Item {
+	for _, act := range qp.wz.Complete.Actions.Item {
 		if act.ItemID == itemID && act.Count < 0 {
-			return !qc.owner.Inventory.HasItemCount(itemID, uint16(-act.Count))
+			return !qc.owner.inventory.HasItemCount(itemID, uint16(-act.Count))
 		}
 	}
 	return true

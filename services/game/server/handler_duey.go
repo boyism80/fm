@@ -33,39 +33,39 @@ func (h *Duey) Handle(ctx *core.ClientContext, req *request.Duey) error {
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
 	var err error
 	switch req.Mode {
 	case pconst.DueyOpenFromArrival:
-		ch.Duey.Open(ctx.ActorContext, true)
+		ch.Duey().Open(ctx.ActorContext, true)
 	case pconst.DueyIdentity:
-		err = ch.Duey.ConfirmIdentity()
+		err = ch.Duey().ConfirmIdentity()
 	case pconst.DueySend:
-		err = ch.Duey.Send(ctx.ActorContext, constant.InventoryType(req.InventoryType), req.Slot, req.Count, req.Meso, req.Recipient, req.Quick, req.Message)
+		err = ch.Duey().Send(ctx.ActorContext, constant.InventoryType(req.InventoryType), req.Slot, req.Count, req.Meso, req.Recipient, req.Quick, req.Message)
 	case pconst.DueyReceive:
-		err = ch.Duey.Receive(ctx.ActorContext, req.ParcelID)
+		err = ch.Duey().Receive(ctx.ActorContext, req.ParcelID)
 	case pconst.DueyDelete:
-		err = ch.Duey.Delete(ctx.ActorContext, req.ParcelID)
+		err = ch.Duey().Delete(ctx.ActorContext, req.ParcelID)
 	case pconst.DueyClose:
-		ch.Duey.Close()
+		ch.Duey().Close()
 	}
 
 	switch {
 	case errors.Is(err, game.ErrDueyNotEnoughMeso):
-		ch.Listener.OnDueyResult(ch, pconst.DueyResultNotEnoughMeso)
+		ch.Listener().OnDueyResult(ch, pconst.DueyResultNotEnoughMeso)
 	case errors.Is(err, game.ErrDueyOnlyHeld):
-		ch.Listener.OnDueyResult(ch, pconst.DueyResultOnlyHeld)
+		ch.Listener().OnDueyResult(ch, pconst.DueyResultOnlyHeld)
 	case errors.Is(err, game.ErrInventoryFull):
-		ch.Listener.OnDueyResult(ch, pconst.DueyResultInventoryFull)
+		ch.Listener().OnDueyResult(ch, pconst.DueyResultInventoryFull)
 	case errors.Is(err, game.ErrDueyCannotReceive):
-		ch.Listener.OnDueyResult(ch, pconst.DueyResultCannotReceive)
+		ch.Listener().OnDueyResult(ch, pconst.DueyResultCannotReceive)
 	case errors.Is(err, game.ErrDueyNotSendable), errors.Is(err, game.ErrDueyInvalid), errors.Is(err, game.ErrDueyParcelNotFound):
-		ch.Listener.OnDueyResult(ch, pconst.DueyResultInvalid)
+		ch.Listener().OnDueyResult(ch, pconst.DueyResultInvalid)
 	case err != nil:
-		ch.Listener.OnUnlockAction(ch)
+		ch.Listener().OnUnlockAction(ch)
 	}
 	return nil
 }

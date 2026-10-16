@@ -53,14 +53,14 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 		ClassMask:     req.ClassMask,
 	}
 
-	if pid := ch.Party.ID(); pid != nil {
+	if pid := ch.Party().ID(); pid != nil {
 		party := h.gs.systems.Get[*game.PartySystem]().Get(*pid)
 		if party == nil || party.GetLeaderCharacterId() != ch.GetID() {
 			return nil
 		}
 	}
 
-	if ch.Party.ID() == nil {
+	if ch.Party().ID() == nil {
 		leader := game.PartyMemberFromCharacter(ch, h.gs.config.WorldId, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER).BuildRPC()
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 			func(c context.Context) (*internal.CreatePartyReply, error) {
@@ -74,15 +74,15 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 					return fmt.Errorf("party create failed")
 				}
 				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
-				ch.Party.SetID(reply.PartyId)
-				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
-				ch.Party.Search = cfg
+				ch.Party().SetID(reply.PartyId)
+				ch.Listener().OnPartyCreated(ch, *reply.PartyId)
+				ch.Party().SetSearch(cfg)
 				return nil
 			},
 		)
 
 	} else {
-		ch.Party.Search = cfg
+		ch.Party().SetSearch(cfg)
 	}
 	return nil
 }

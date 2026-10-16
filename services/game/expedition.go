@@ -25,12 +25,12 @@ var (
 )
 
 type ExpeditionSpec struct {
-	Group      string
-	MinMembers int
-	MaxMembers int
-	MaxBattles int
-	RecruitMs  int64
-	Notice     string
+	group      string
+	minMembers int
+	maxMembers int
+	maxBattles int
+	recruitMs  int64
+	notice     string
 }
 
 type ExpeditionRole int
@@ -43,18 +43,18 @@ const (
 )
 
 type ExpeditionMember struct {
-	ID        uint32
-	Name      string
-	Class     constant.ClassType
+	id        uint32
+	name      string
+	class     constant.ClassType
 	character *Character
 }
 
 type Expedition struct {
-	Name     string
-	Spec     ExpeditionSpec
-	Leader   *Character
-	BeginMap *Map
-	Deadline time.Time
+	name     string
+	spec     ExpeditionSpec
+	leader   *Character
+	beginMap *Map
+	deadline time.Time
 	members  []*ExpeditionMember
 	banned   []*ExpeditionMember
 	sm       *StateMachine
@@ -64,21 +64,21 @@ type Expedition struct {
 
 func NewExpeditionMember(ch *Character) *ExpeditionMember {
 	return &ExpeditionMember{
-		ID:        ch.GetID(),
-		Name:      ch.GetName(),
-		Class:     ch.Class,
+		id:        ch.GetID(),
+		name:      ch.GetName(),
+		class:     ch.class,
 		character: ch,
 	}
 }
 
 func (e *Expedition) openLocked() bool {
-	board := e.registry.boards[e.Name]
+	board := e.registry.boards[e.name]
 	return board != nil && board.recruiting == e
 }
 
 func (e *Expedition) memberIndex(id uint32) int {
 	for i, member := range e.members {
-		if member.ID == id {
+		if member.id == id {
 			return i
 		}
 	}
@@ -87,7 +87,7 @@ func (e *Expedition) memberIndex(id uint32) int {
 
 func (e *Expedition) bannedIndex(id uint32) int {
 	for i, member := range e.banned {
-		if member.ID == id {
+		if member.id == id {
 			return i
 		}
 	}
@@ -100,7 +100,7 @@ func (e *Expedition) Join(ch *Character) error {
 		return err
 	}
 
-	e.Leader.Listener.OnMessage(e.Leader, constant.MsgPinkText, fmt.Sprintf(constant.ExpeditionJoinedMessage, ch.GetName()))
+	e.leader.listener.OnMessage(e.leader, constant.MsgPinkText, fmt.Sprintf(constant.ExpeditionJoinedMessage, ch.GetName()))
 	return nil
 }
 
@@ -117,10 +117,10 @@ func (e *Expedition) addMember(ch *Character) error {
 		e.banned[i].character = ch
 		return ErrExpeditionBanned
 	}
-	if e.registry.boards[e.Name].reservationIndex(ch.GetID()) >= 0 {
+	if e.registry.boards[e.name].reservationIndex(ch.GetID()) >= 0 {
 		return ErrExpeditionReserved
 	}
-	if len(e.members) >= e.Spec.MaxMembers {
+	if len(e.members) >= e.spec.maxMembers {
 		return ErrExpeditionFull
 	}
 
@@ -129,7 +129,7 @@ func (e *Expedition) addMember(ch *Character) error {
 }
 
 func (e *Expedition) Leave(ch *Character) error {
-	if ch.GetID() == e.Leader.GetID() {
+	if ch.GetID() == e.leader.GetID() {
 		return e.registry.disband(e)
 	}
 
@@ -138,7 +138,7 @@ func (e *Expedition) Leave(ch *Character) error {
 		return err
 	}
 
-	e.Leader.Listener.OnMessage(e.Leader, constant.MsgPinkText, fmt.Sprintf(constant.ExpeditionLeftMessage, ch.GetName()))
+	e.leader.listener.OnMessage(e.leader, constant.MsgPinkText, fmt.Sprintf(constant.ExpeditionLeftMessage, ch.GetName()))
 	return nil
 }
 
@@ -163,7 +163,7 @@ func (e *Expedition) Kick(leader *Character, memberID uint32) error {
 		return err
 	}
 
-	kicked.Listener.OnMessage(kicked, constant.MsgPinkText, constant.ExpeditionKickedMessage)
+	kicked.listener.OnMessage(kicked, constant.MsgPinkText, constant.ExpeditionKickedMessage)
 	return nil
 }
 
@@ -173,10 +173,10 @@ func (e *Expedition) ban(leader *Character, memberID uint32) (*Character, error)
 	if !e.openLocked() {
 		return nil, ErrExpeditionClosed
 	}
-	if leader.GetID() != e.Leader.GetID() {
+	if leader.GetID() != e.leader.GetID() {
 		return nil, ErrExpeditionNotLeader
 	}
-	if memberID == e.Leader.GetID() {
+	if memberID == e.leader.GetID() {
 		return nil, ErrExpeditionNotMember
 	}
 	i := e.memberIndex(memberID)
@@ -196,7 +196,7 @@ func (e *Expedition) Allow(leader *Character, memberID uint32) error {
 		return err
 	}
 
-	allowed.Listener.OnMessage(allowed, constant.MsgPinkText, constant.ExpeditionAllowedMessage)
+	allowed.listener.OnMessage(allowed, constant.MsgPinkText, constant.ExpeditionAllowedMessage)
 	return nil
 }
 
@@ -206,7 +206,7 @@ func (e *Expedition) unban(leader *Character, memberID uint32) (*Character, erro
 	if !e.openLocked() {
 		return nil, ErrExpeditionClosed
 	}
-	if leader.GetID() != e.Leader.GetID() {
+	if leader.GetID() != e.leader.GetID() {
 		return nil, ErrExpeditionNotLeader
 	}
 	i := e.bannedIndex(memberID)
@@ -217,7 +217,7 @@ func (e *Expedition) unban(leader *Character, memberID uint32) (*Character, erro
 	if member.character == nil {
 		return nil, ErrExpeditionAway
 	}
-	if len(e.members) >= e.Spec.MaxMembers {
+	if len(e.members) >= e.spec.maxMembers {
 		return nil, ErrExpeditionFull
 	}
 
@@ -234,7 +234,7 @@ func (e *Expedition) Role(ch *Character) ExpeditionRole {
 	}
 
 	switch {
-	case ch.GetID() == e.Leader.GetID():
+	case ch.GetID() == e.leader.GetID():
 		return ExpeditionRoleLeader
 	case e.memberIndex(ch.GetID()) >= 0:
 		return ExpeditionRoleMember
@@ -266,7 +266,7 @@ func (e *Expedition) Banned() []ExpeditionMember {
 }
 
 func (e *Expedition) TimeLeft() int64 {
-	left := time.Until(e.Deadline).Milliseconds()
+	left := time.Until(e.deadline).Milliseconds()
 	if left < 0 {
 		return 0
 	}
@@ -288,10 +288,10 @@ func (e *Expedition) Start(leader *Character) (*StateMachine, []*Character, erro
 }
 
 func (e *Expedition) stopClock() {
-	e.registry.gw.Systems().Get[*MapSystem]().Visit(e.BeginMap, func(actor.Context) {
-		for _, obj := range e.BeginMap.GetAllPlayers() {
+	e.registry.gw.Systems().Get[*MapSystem]().Visit(e.beginMap, func(actor.Context) {
+		for _, obj := range e.beginMap.GetAllPlayers() {
 			if ch, ok := obj.(*Character); ok {
-				ch.Listener.OnStopClock(ch)
+				ch.listener.OnStopClock(ch)
 			}
 		}
 	})
@@ -303,11 +303,11 @@ func (e *Expedition) startBattle(leader *Character) (*StateMachine, []*Character
 	if !e.openLocked() {
 		return nil, nil, nil, ErrExpeditionClosed
 	}
-	if leader.GetID() != e.Leader.GetID() {
+	if leader.GetID() != e.leader.GetID() {
 		return nil, nil, nil, ErrExpeditionNotLeader
 	}
-	board := e.registry.boards[e.Name]
-	if len(board.battles) >= e.Spec.MaxBattles {
+	board := e.registry.boards[e.name]
+	if len(board.battles) >= e.spec.maxBattles {
 		return nil, nil, nil, ErrExpeditionBattling
 	}
 
@@ -318,23 +318,23 @@ func (e *Expedition) startBattle(leader *Character) (*StateMachine, []*Character
 		if member.character.GetMap() != field {
 			continue
 		}
-		if member.character.StateMachine != nil {
+		if member.character.stateMachine != nil {
 			skipped = append(skipped, member.character)
 			continue
 		}
 		entrants = append(entrants, member.character)
 	}
 	exempt := leader.ActsAsGM()
-	if len(entrants) < e.Spec.MinMembers && !exempt {
+	if len(entrants) < e.spec.minMembers && !exempt {
 		return nil, nil, nil, ErrExpeditionTooFew
 	}
 
-	group := e.registry.gw.Systems().Get[*StateMachineSystem]().Get(e.Spec.Group)
+	group := e.registry.gw.Systems().Get[*StateMachineSystem]().Get(e.spec.group)
 	if group == nil {
-		return nil, nil, nil, fmt.Errorf("state machine group %s not found", e.Spec.Group)
+		return nil, nil, nil, fmt.Errorf("state machine group %s not found", e.spec.group)
 	}
 	sm, err := group.Create(strconv.FormatUint(uint64(leader.GetID()), 10), CreateOpts{
-		Leader: leader,
+		leader: leader,
 	})
 	if err != nil {
 		return nil, nil, nil, err

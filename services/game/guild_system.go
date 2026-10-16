@@ -81,15 +81,15 @@ func (s *GuildSystem) Update(guildPb *internal.Guild) {
 	if stored == nil {
 		return
 	}
-	guildID := stored.GuildID
+	guildID := stored.guildID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if prev := s.guilds[guildID]; prev != nil {
-		if stored.UpdatedAt.Before(prev.UpdatedAt) {
+		if stored.updatedAt.Before(prev.updatedAt) {
 			return
 		}
 		if _, inAlliance := stored.GetAllianceID(); !inAlliance {
-			stored.AllianceInvites = prev.CloneAllianceInvites()
+			stored.allianceInvites = prev.CloneAllianceInvites()
 		}
 	}
 	s.guilds[guildID] = stored
@@ -105,8 +105,8 @@ func (s *GuildSystem) NameToGuildID(guildName string) (uint32, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, g := range s.guilds {
-		if g != nil && strings.EqualFold(g.Name, guildName) {
-			return g.GuildID, true
+		if g != nil && strings.EqualFold(g.name, guildName) {
+			return g.guildID, true
 		}
 	}
 	return 0, false
@@ -181,8 +181,8 @@ func (s *GuildSystem) GuildIDForCharacter(characterID uint32) (uint32, bool) {
 		if g == nil {
 			continue
 		}
-		for _, m := range g.Members {
-			if m != nil && m.CharacterID == characterID {
+		for _, m := range g.members {
+			if m != nil && m.characterID == characterID {
 				return guildID, true
 			}
 		}

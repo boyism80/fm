@@ -11,9 +11,9 @@ import (
 
 type Points struct {
 	owner    *Character
-	AP       uint16
-	SP       uint16
-	HPMPUsed uint16
+	ap       uint16
+	sp       uint16
+	hpmpUsed uint16
 }
 
 type APEntry struct {
@@ -22,38 +22,49 @@ type APEntry struct {
 }
 
 func (p *Points) SetAP(v uint16, notify bool) {
-	p.AP = v
+	p.ap = v
 	if notify {
-		p.owner.Listener.OnUpdateStats(p.owner, map[constant.Stat]int32{
-			constant.StatAvailableAP: int32(p.AP),
+		p.owner.listener.OnUpdateStats(p.owner, map[constant.Stat]int32{
+			constant.StatAvailableAP: int32(p.ap),
 		}, false)
 	}
+}
+
+func (p *Points) AssignAll(entries []APEntry) bool {
+	total := uint32(0)
+	for _, e := range entries {
+		total += uint32(e.Amount)
+	}
+	if total != uint32(p.ap) {
+		return false
+	}
+	return p.AssignStats(entries)
 }
 
 func (p *Points) AssignStats(entries []APEntry) bool {
 	total := uint32(0)
 	for _, e := range entries {
-		if !p.owner.Stats.canAdd(e.Stat, e.Amount) {
+		if !p.owner.stats.canAdd(e.Stat, e.Amount) {
 			return false
 		}
 		total += uint32(e.Amount)
 	}
-	if total > uint32(p.AP) {
+	if total > uint32(p.ap) {
 		return false
 	}
 
 	statUpdate := map[constant.Stat]int32{}
 	for _, e := range entries {
-		p.owner.Stats.add(e.Stat, e.Amount, statUpdate)
+		p.owner.stats.add(e.Stat, e.Amount, statUpdate)
 	}
-	p.AP -= uint16(total)
-	statUpdate[constant.StatAvailableAP] = int32(p.AP)
-	p.owner.Listener.OnUpdateStats(p.owner, statUpdate, true)
+	p.ap -= uint16(total)
+	statUpdate[constant.StatAvailableAP] = int32(p.ap)
+	p.owner.listener.OnUpdateStats(p.owner, statUpdate, true)
 	return true
 }
 
 func (p *Points) AssignHPMP(stat constant.StatType) bool {
-	if p.AP == 0 || p.HPMPUsed >= constant.HpAPUsedMax {
+	if p.ap == 0 || p.hpmpUsed >= constant.HpAPUsedMax {
 		return false
 	}
 
@@ -77,10 +88,10 @@ func (p *Points) AssignHPMP(stat constant.StatType) bool {
 		return false
 	}
 
-	p.HPMPUsed++
-	p.AP--
-	statUpdate[constant.StatAvailableAP] = int32(p.AP)
-	p.owner.Listener.OnUpdateStats(p.owner, statUpdate, true)
+	p.hpmpUsed++
+	p.ap--
+	statUpdate[constant.StatAvailableAP] = int32(p.ap)
+	p.owner.listener.OnUpdateStats(p.owner, statUpdate, true)
 	return true
 }
 
@@ -113,44 +124,44 @@ func (p *Points) hpmpIncrease(query string, fallback uint32) uint32 {
 }
 
 func (p *Points) SetSP(v uint16, notify bool) {
-	p.SP = v
+	p.sp = v
 	if notify {
-		p.owner.Listener.OnUpdateStats(p.owner, map[constant.Stat]int32{
-			constant.StatAvailableSP: int32(p.SP),
+		p.owner.listener.OnUpdateStats(p.owner, map[constant.Stat]int32{
+			constant.StatAvailableSP: int32(p.sp),
 		}, false)
 	}
 }
 
 func (p *Points) DistributeSkill(skillID uint32) bool {
-	if p.SP == 0 {
+	if p.sp == 0 {
 		return false
 	}
-	wzSkill := p.owner.GameWorld.GetResources().GetSkill(skillID)
-	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.Class) {
+	wzSkill := p.owner.gameWorld.GetResources().GetSkill(skillID)
+	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.class) {
 		return false
 	}
 
-	skillEntry := p.owner.Skills.Learned(skillID)
+	skillEntry := p.owner.skills.Learned(skillID)
 	if skillEntry == nil {
 		skillEntry = NewSkillEntry(p.owner, wzSkill, 0, wzSkill.DefaultMasterLevel())
 	}
 
-	if !skillEntry.Wz.Distributable {
+	if !skillEntry.wz.Distributable {
 		return false
 	}
-	if skillEntry.Level() >= min(skillEntry.MasterLevel, skillEntry.Wz.MaxLevel) {
+	if skillEntry.Level() >= min(skillEntry.masterLevel, skillEntry.wz.MaxLevel) {
 		return false
 	}
 
-	p.SP--
+	p.sp--
 	if skillEntry.Level() == 0 {
 		skillEntry.SetLevel(1)
-		p.owner.Skills.Bind(skillID, skillEntry)
+		p.owner.skills.Bind(skillID, skillEntry)
 	} else {
 		skillEntry.SetLevel(skillEntry.Level() + 1)
 	}
-	p.owner.Listener.OnUpdateStats(p.owner, map[constant.Stat]int32{
-		constant.StatAvailableSP: int32(p.SP),
+	p.owner.listener.OnUpdateStats(p.owner, map[constant.Stat]int32{
+		constant.StatAvailableSP: int32(p.sp),
 	}, false)
 	return true
 }

@@ -7,10 +7,10 @@ import (
 )
 
 func (m *Map) registerFieldDropTimers(fp *FieldPlacement, dropType constant.DropType) {
-	if fp == nil || m == nil || m.Wz == nil {
+	if fp == nil || m == nil || m.wz == nil {
 		return
 	}
-	if m.Wz.Everlast && fp.PlayerDrop {
+	if m.wz.Everlast && fp.playerDrop {
 		return
 	}
 
@@ -21,18 +21,18 @@ func (m *Map) registerFieldDropTimers(fp *FieldPlacement, dropType constant.Drop
 }
 
 func (m *Map) canLootFieldDrop(fp *FieldPlacement, character *Character) bool {
-	if fp == nil || character == nil || m == nil || m.Wz == nil {
+	if fp == nil || character == nil || m == nil || m.wz == nil {
 		return false
 	}
-	if fp.restrictedPlayerDrop && fp.Owner != character.GetID() {
+	if fp.restrictedPlayerDrop && fp.owner != character.GetID() {
 		return false
 	}
-	if fp.Owner != character.GetID() {
-		if (!fp.PlayerDrop && fp.DropType == constant.DropTypeOwnerOnly) ||
-			(fp.PlayerDrop && m.Wz.Everlast) {
+	if fp.owner != character.GetID() {
+		if (!fp.playerDrop && fp.dropType == constant.DropTypeOwnerOnly) ||
+			(fp.playerDrop && m.wz.Everlast) {
 			return false
 		}
-		if !fp.PlayerDrop && fp.DropType == constant.DropTypeParty && !m.isDropOwnerInParty(character, fp.Owner) {
+		if !fp.playerDrop && fp.dropType == constant.DropTypeParty && !m.isDropOwnerInParty(character, fp.owner) {
 			return false
 		}
 	}
@@ -46,16 +46,16 @@ func (m *Map) isDropOwnerInParty(character *Character, ownerID uint32) bool {
 	if character.GetID() == ownerID {
 		return true
 	}
-	partyID := character.Party.ID()
-	if partyID == nil || m.GameWorld == nil {
+	partyID := character.party.ID()
+	if partyID == nil || m.gameWorld == nil {
 		return false
 	}
-	party := m.GameWorld.Systems().Get[*PartySystem]().Get(*partyID)
+	party := m.gameWorld.Systems().Get[*PartySystem]().Get(*partyID)
 	if party == nil {
 		return false
 	}
-	for _, member := range party.Members {
-		if member != nil && member.CharacterID == ownerID {
+	for _, member := range party.members {
+		if member != nil && member.characterID == ownerID {
 			return true
 		}
 	}
@@ -63,7 +63,7 @@ func (m *Map) isDropOwnerInParty(character *Character, ownerID uint32) bool {
 }
 
 func (m *Map) collectOwnedFieldDrops(character *Character) {
-	if m == nil || character == nil || m.Wz == nil || !m.Wz.Everlast {
+	if m == nil || character == nil || m.wz == nil || !m.wz.Everlast {
 		return
 	}
 	if m.objects[constant.ObjectTypeItem] == nil {
@@ -76,22 +76,22 @@ func (m *Map) collectOwnedFieldDrops(character *Character) {
 		switch drop := obj.(type) {
 		case Item:
 			fp := drop.GetFieldPlacement()
-			if fp == nil || fp.Owner != character.GetID() {
+			if fp == nil || fp.owner != character.GetID() {
 				continue
 			}
-			if _, err := character.Inventory.AddItem(drop, true); err != nil {
+			if _, err := character.inventory.AddItem(drop, true); err != nil {
 				log.Printf("collectOwnedFieldDrops: inventory full, leaving drop %d on map: %v", oid, err)
 				continue
 			}
 			removeIDs = append(removeIDs, oid)
 		case *Meso:
 			fp := drop.GetFieldPlacement()
-			if fp == nil || fp.Owner != character.GetID() {
+			if fp == nil || fp.owner != character.GetID() {
 				continue
 			}
-			before := character.Inventory.Meso
-			character.Inventory.GainMeso(drop.GetCount32())
-			if character.Inventory.Meso == before {
+			before := character.inventory.meso
+			character.inventory.GainMeso(drop.GetCount32())
+			if character.inventory.meso == before {
 				log.Printf("collectOwnedFieldDrops: meso full, leaving drop %d on map", oid)
 				continue
 			}

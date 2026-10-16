@@ -4,13 +4,13 @@ import "github.com/boyism80/fm/protocol/dto"
 
 func (m *Marriage) BuildS2C() *dto.Marriage {
 	return &dto.Marriage{
-		ID:          m.ID,
-		GroomID:     m.GroomID,
-		BrideID:     m.BrideID,
-		Status:      uint16(m.Status),
-		GroomItemID: m.GroomItemID,
-		BrideItemID: m.BrideItemID,
-		GroomName:   m.GroomName,
-		BrideName:   m.BrideName,
+		ID:          m.id,
+		GroomID:     m.groomID,
+		BrideID:     m.brideID,
+		Status:      uint16(m.status),
+		GroomItemID: m.groomItemID,
+		BrideItemID: m.brideItemID,
+		GroomName:   m.groomName,
+		BrideName:   m.brideName,
 	}
 }

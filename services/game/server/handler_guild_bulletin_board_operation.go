@@ -33,7 +33,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 	if ch == nil {
 		return nil
 	}
-	_, inGuild := ch.Guild.ID()
+	_, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -60,7 +60,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 			if !reply.GetOk() {
 				return nil
 			}
-			ch.Listener.OnGuildBulletinThreadList(ch, reply.GetThreads(), int(reply.GetListStart()), int(reply.GetThreadCount()), reply.GetNotice())
+			ch.Listener().OnGuildBulletinThreadList(ch, reply.GetThreads(), int(reply.GetListStart()), int(reply.GetThreadCount()), reply.GetNotice())
 			return nil
 		})
 	case pconst.GuildBulletinBoardC2SShowThread:
@@ -75,7 +75,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 				return nil
 			}
 			if detail := reply.GetThread(); detail != nil {
-				ch.Listener.OnGuildBulletinThread(ch, detail)
+				ch.Listener().OnGuildBulletinThread(ch, detail)
 			}
 			return nil
 		})
@@ -95,7 +95,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 					return nil
 				}
 				if detail := reply.GetThread(); detail != nil {
-					ch.Listener.OnGuildBulletinThread(ch, detail)
+					ch.Listener().OnGuildBulletinThread(ch, detail)
 				}
 				return nil
 			})
@@ -114,10 +114,10 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 					return nil
 				}
 				if detail := reply.GetThread(); detail != nil {
-					ch.Listener.OnGuildBulletinThread(ch, detail)
+					ch.Listener().OnGuildBulletinThread(ch, detail)
 				}
 				if len(reply.GetThreads()) > 0 {
-					ch.Listener.OnGuildBulletinThreadList(ch, reply.GetThreads(), int(reply.GetListStart()), int(reply.GetThreadCount()), reply.GetNotice())
+					ch.Listener().OnGuildBulletinThreadList(ch, reply.GetThreads(), int(reply.GetListStart()), int(reply.GetThreadCount()), reply.GetNotice())
 				}
 				return nil
 			})
@@ -146,7 +146,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 				return nil
 			}
 			if detail := reply.GetThread(); detail != nil {
-				ch.Listener.OnGuildBulletinThread(ch, detail)
+				ch.Listener().OnGuildBulletinThread(ch, detail)
 			}
 			return nil
 		})
@@ -163,7 +163,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 				return nil
 			}
 			if detail := reply.GetThread(); detail != nil {
-				ch.Listener.OnGuildBulletinThread(ch, detail)
+				ch.Listener().OnGuildBulletinThread(ch, detail)
 			}
 			return nil
 		})
@@ -180,7 +180,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 func (h *GuildBulletinBoardOperation) validateBulletinIcon(ch *game.Character, icon int32) bool {
 	if icon >= pconst.GuildBulletinBoardIconCashMin && icon <= pconst.GuildBulletinBoardIconCashMax {
 		itemID := uint32(5290000 + icon - pconst.GuildBulletinBoardIconCashMin)
-		return ch.Inventory.HasItem(itemID)
+		return ch.Inventory().HasItem(itemID)
 	}
 	return icon >= 0 && icon <= 2
 }

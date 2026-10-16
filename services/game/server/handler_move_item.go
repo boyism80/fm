@@ -35,29 +35,29 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 		return fmt.Errorf("character is nil")
 	}
 	if character.Trading() || character.UsingCashItem() {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	switch {
 	case req.Dest == 0:
 		if !character.DropItem(ctx.ActorContext, req.InventoryType, req.Source, req.Count) {
-			character.Listener.OnUpdateStats(character, nil, true)
+			character.Listener().OnUpdateStats(character, nil, true)
 		}
 	case req.Source < 0:
 		if err := character.Unequip(ctx.ActorContext, constant.EquipmentPartsType(req.Source), req.Dest); err != nil {
-			character.Listener.OnUpdateStats(character, nil, true)
+			character.Listener().OnUpdateStats(character, nil, true)
 		}
 	case req.Dest < 0:
 		if err := character.Equip(ctx.ActorContext, req.Source, constant.EquipmentPartsType(req.Dest)); err != nil {
 			if errors.Is(err, game.ErrInventoryFull) {
-				character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
+				character.Listener().OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
 			}
-			character.Listener.OnUpdateStats(character, nil, true)
+			character.Listener().OnUpdateStats(character, nil, true)
 		}
 	default:
-		if !character.Inventory.Move(req.InventoryType, req.Source, req.Dest) {
-			character.Listener.OnUpdateStats(character, nil, true)
+		if !character.Inventory().Move(req.InventoryType, req.Source, req.Dest) {
+			character.Listener().OnUpdateStats(character, nil, true)
 		}
 	}
 	return nil

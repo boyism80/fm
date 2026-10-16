@@ -3,23 +3,23 @@ package game
 import "github.com/boyism80/fm/maple/constant"
 
 func (ch *Character) ChangeClass(newClass constant.ClassType) {
-	oldClass := ch.Class
-	ch.Class = newClass
+	oldClass := ch.class
+	ch.class = newClass
 
 	ch.grantClassChangeSP(newClass)
 
-	ch.Listener.OnClassChange(ch, oldClass, newClass)
+	ch.listener.OnClassChange(ch, oldClass, newClass, ch.points.sp)
 }
 
 func (ch *Character) grantClassChangeSP(newClass constant.ClassType) {
-	if ch.Class == constant.ClassBeginner {
+	if ch.class == constant.ClassBeginner {
 		return
 	}
 
-	ch.Points.SP++
+	ch.points.sp++
 
 	if newClass%10 >= 2 {
-		ch.Points.SP += 2
+		ch.points.sp += 2
 	}
 
 	if newClass%100 == 0 {
@@ -30,7 +30,7 @@ func (ch *Character) grantClassChangeSP(newClass constant.ClassType) {
 
 		if ch.level > minLevel {
 			spToGrant := uint16(3 * (int(ch.level) - int(minLevel)))
-			ch.Points.SP += spToGrant
+			ch.points.sp += spToGrant
 		}
 	}
 }

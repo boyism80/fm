@@ -28,6 +28,6 @@ func (h *ShopScannerOpen) Handle(ctx *core.ClientContext, req *request.ShopScann
 	if ch == nil {
 		return nil
 	}
-	ch.RemoteShops.FindPopularSearches(ctx.ActorContext)
+	ch.RemoteShops().FindPopularSearches(ctx.ActorContext)
 	return nil
 }

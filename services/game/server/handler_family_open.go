@@ -24,6 +24,6 @@ func (h *FamilyOpen) Handle(ctx *core.ClientContext, req *request.FamilyOpen) er
 		return nil
 	}
 
-	ch.Family.Open()
+	ch.Family().Open()
 	return nil
 }

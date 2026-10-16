@@ -16,7 +16,7 @@ func NewMagicValidator(ch *Character) *MagicValidator {
 }
 
 func (v *MagicValidator) Validate(info dto.AttackInfo) error {
-	if v.ch.GM.InstantKill {
+	if v.ch.gm.instantKill {
 		return nil
 	}
 	bounds, err := v.maximumDamages(info)
@@ -49,7 +49,7 @@ func (v *MagicValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPair, 
 	if constant.SkillID(info.Skill) == constant.SkillHeal {
 		for _, ap := range info.Damages {
 			mob := v.ch.GetMap().GetMob(ap.OID)
-			if mob != nil && mob.IsAlive() && !mob.Wz.Undead {
+			if mob != nil && mob.IsAlive() && !mob.wz.Undead {
 				return nil, fmt.Errorf("heal hit non-undead mob %d", ap.OID)
 			}
 		}

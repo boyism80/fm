@@ -19,33 +19,33 @@ import (
 )
 
 type Homing struct {
-	SkillWz    *wz.Skill
-	SkillLevel uint8
+	skillWz    *wz.Skill
+	skillLevel uint8
 }
 
 type Mob struct {
-	LifeCore
-	Listener      MobListener
-	Wz            *wz.Mob
-	Fake          bool
-	Foothold      int16
-	Spawn         *MobSpawn
-	Buffs         *MobBuffs
-	Skills        *MobSkills
-	ExpRate       int32
-	DropRate      int32
+	lifeCore
+	listener      MobListener
+	wz            *wz.Mob
+	fake          bool
+	foothold      int16
+	spawn         *MobSpawn
+	buffs         *MobBuffs
+	skills        *MobSkills
+	expRate       int32
+	dropRate      int32
 	stealOutcome  *uint32
-	Homing        map[uint32]*Homing
+	homing        map[uint32]*Homing
 	accDamage     map[int64]map[uint32]uint64
 	sponge        Sponge
 	lastHitAt     time.Time
 	dropItemCount int
 	deathStarted  bool
-	CarnivalTeam  constant.CarnivalTeam
+	carnivalTeam  constant.CarnivalTeam
 }
 
 func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
-	if m == nil || m.Map == nil {
+	if m == nil || m.onMap == nil {
 		return
 	}
 	if causerOID == 0 {
@@ -53,73 +53,73 @@ func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
 	}
 
 	if h == nil {
-		before, ok := m.Homing[causerOID]
+		before, ok := m.homing[causerOID]
 		if !ok || before == nil {
 			return
 		}
-		oldCauser := m.Map.GetPlayer(causerOID)
-		if oldCauser != nil && oldCauser.Skills.HomingTargetOID != nil && *oldCauser.Skills.HomingTargetOID == m.GetOID() {
-			oldCauser.Skills.HomingTargetOID = nil
+		oldCauser := m.onMap.GetPlayer(causerOID)
+		if oldCauser != nil && oldCauser.skills.homingTargetOID != nil && *oldCauser.skills.homingTargetOID == m.GetOID() {
+			oldCauser.skills.homingTargetOID = nil
 		}
-		if m.Map.listener != nil {
-			m.Map.listener.OnMobHomingRemoved(m.Map, m, before, oldCauser)
+		if m.onMap.listener != nil {
+			m.onMap.listener.OnMobHomingRemoved(m.onMap, m, before, oldCauser)
 		}
-		delete(m.Homing, causerOID)
+		delete(m.homing, causerOID)
 		return
 	}
 
-	if h.SkillWz == nil {
+	if h.skillWz == nil {
 		return
 	}
-	lv := int(h.SkillLevel)
+	lv := int(h.skillLevel)
 	if lv < 1 {
 		return
 	}
-	if h.SkillWz.MaxLevel > 0 && lv > h.SkillWz.MaxLevel {
+	if h.skillWz.MaxLevel > 0 && lv > h.skillWz.MaxLevel {
 		return
 	}
-	if h.SkillWz.GetLevelData(lv) == nil {
+	if h.skillWz.GetLevelData(lv) == nil {
 		return
 	}
 
-	causer := m.Map.GetPlayer(causerOID)
-	if causer != nil && causer.Skills.HomingTargetOID != nil {
-		prevOID := *causer.Skills.HomingTargetOID
+	causer := m.onMap.GetPlayer(causerOID)
+	if causer != nil && causer.skills.homingTargetOID != nil {
+		prevOID := *causer.skills.homingTargetOID
 		if prevOID != m.GetOID() {
-			if prevMob := m.Map.GetMob(prevOID); prevMob != nil {
+			if prevMob := m.onMap.GetMob(prevOID); prevMob != nil {
 				prevMob.SetHoming(causerOID, nil)
 			}
 		}
 	}
 
-	before, hadBefore := m.Homing[causerOID]
+	before, hadBefore := m.homing[causerOID]
 	if hadBefore && before != nil {
-		oldCauser := m.Map.GetPlayer(causerOID)
-		if oldCauser != nil && oldCauser.Skills.HomingTargetOID != nil && *oldCauser.Skills.HomingTargetOID == m.GetOID() {
-			oldCauser.Skills.HomingTargetOID = nil
+		oldCauser := m.onMap.GetPlayer(causerOID)
+		if oldCauser != nil && oldCauser.skills.homingTargetOID != nil && *oldCauser.skills.homingTargetOID == m.GetOID() {
+			oldCauser.skills.homingTargetOID = nil
 		}
-		if m.Map.listener != nil {
-			m.Map.listener.OnMobHomingRemoved(m.Map, m, before, oldCauser)
+		if m.onMap.listener != nil {
+			m.onMap.listener.OnMobHomingRemoved(m.onMap, m, before, oldCauser)
 		}
 	}
 
-	m.Homing[causerOID] = h
+	m.homing[causerOID] = h
 
 	if causer != nil {
 		oid := m.GetOID()
-		causer.Skills.HomingTargetOID = &oid
+		causer.skills.homingTargetOID = &oid
 	}
-	if m.Map.listener != nil {
-		m.Map.listener.OnMobHomingSet(m.Map, m, h, causer)
+	if m.onMap.listener != nil {
+		m.onMap.listener.OnMobHomingSet(m.onMap, m, h, causer)
 	}
 }
 
 func (m *Mob) ClearAllHoming() {
-	if m == nil || len(m.Homing) == 0 {
+	if m == nil || len(m.homing) == 0 {
 		return
 	}
-	causerOIDs := make([]uint32, 0, len(m.Homing))
-	for id := range m.Homing {
+	causerOIDs := make([]uint32, 0, len(m.homing))
+	for id := range m.homing {
 		causerOIDs = append(causerOIDs, id)
 	}
 	for _, id := range causerOIDs {
@@ -136,16 +136,16 @@ func (m *Mob) Is(typ constant.ObjectType) bool {
 }
 
 func (m *Mob) SetScaleLevel(scale int) {
-	if m == nil || m.Wz == nil || scale <= 0 {
+	if m == nil || m.wz == nil || scale <= 0 {
 		return
 	}
-	base := int(m.Wz.Level)
+	base := int(m.wz.Level)
 	if base <= 0 || scale == base {
 		return
 	}
 	ratio := float64(scale) / float64(base)
-	hp := uint32(math.Max(1, math.Ceil(float64(m.BaseHp)*ratio)))
-	mp := uint32(math.Ceil(float64(m.BaseMp) * ratio))
+	hp := uint32(math.Max(1, math.Ceil(float64(m.baseHp)*ratio)))
+	mp := uint32(math.Ceil(float64(m.baseMp) * ratio))
 	m.SetBaseHp(hp, false)
 	m.SetHp(hp, false)
 	m.SetBaseMp(mp, false)
@@ -153,10 +153,10 @@ func (m *Mob) SetScaleLevel(scale int) {
 }
 
 func (m *Mob) SetFake(fake bool) {
-	if m == nil || m.Fake == fake {
+	if m == nil || m.fake == fake {
 		return
 	}
-	m.Fake = fake
+	m.fake = fake
 	if !fake {
 		return
 	}
@@ -171,22 +171,22 @@ func (m *Mob) canReceiveMobBuff(flag constant.MobBuffFlag, skillWz *wz.Skill) bo
 	if skillWz != nil && skillWz.MobSkill {
 		return true
 	}
-	if m.Fake {
+	if m.fake {
 		switch flag {
 		case constant.MobBuffStun, constant.MobBuffSpeed, constant.MobBuffPoison, constant.MobBuffVenom:
 			return false
 		}
 	}
-	if m.Wz == nil {
+	if m.wz == nil {
 		return true
 	}
 	if skillWz != nil && m.resistsElement(skillWz) {
 		return false
 	}
-	if flag == constant.MobBuffDoom && m.Wz.NoDoom {
+	if flag == constant.MobBuffDoom && m.wz.NoDoom {
 		return false
 	}
-	if m.Wz.Boss {
+	if m.wz.Boss {
 		switch flag {
 		case constant.MobBuffSpeed, constant.MobBuffWatk, constant.MobBuffBlind:
 			return true
@@ -206,7 +206,7 @@ func (m *Mob) resistsElement(skillWz *wz.Skill) bool {
 		elements = append(elements, skillWz.ExtraElement)
 	}
 	for _, element := range elements {
-		switch m.Wz.ElemResist[element] {
+		switch m.wz.ElemResist[element] {
 		case 1, 2:
 			return true
 		}
@@ -229,7 +229,7 @@ func (m *Mob) SendDestroySyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.DieMob{
-		OID:           m.OID,
+		OID:           m.oid,
 		AnimationType: constant.MobDieAnimationTypeDisappear,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -247,7 +247,7 @@ func (m *Mob) Relink(spawnType constant.MobSpawnType, link uint32) bool {
 }
 
 func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
-	if m == nil || m.GameWorld == nil || skill == nil || skill.LevelData == nil || skill.LevelData.SkillWz == nil {
+	if m == nil || m.gameWorld == nil || skill == nil || skill.levelData == nil || skill.levelData.SkillWz == nil {
 		return nil
 	}
 	mapInstance := m.GetMap()
@@ -257,37 +257,37 @@ func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType c
 	b := bounds
 	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
 		pos := m.GetPosition()
-		b = skill.LevelData.Bounds.AtOrigin(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
+		b = skill.levelData.Bounds.AtOrigin(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
 	}
 	if poisonTickMultiplier <= 0 {
 		poisonTickMultiplier = 1.0
 	}
 	causer := uint32(0)
-	if m.Wz != nil {
-		causer = m.Wz.ID
+	if m.wz != nil {
+		causer = m.wz.ID
 	}
 	mist := &Mist{
-		Position:             position,
-		GameWorld:            mapInstance.GameWorld,
-		Map:                  nil,
-		Causer:               causer,
-		SkillWz:              skill.LevelData.SkillWz,
-		MobLevelData:         skill.LevelData,
-		SkillLevel:           skill.Slot.Level,
-		MistType:             mistType,
-		MobMist:              true,
-		MobSkill:             true,
-		SkillDelay:           0,
-		Bounds:               b,
-		ExpiresAt:            time.Time{},
-		PoisonTickMultiplier: poisonTickMultiplier,
+		position:             position,
+		gameWorld:            mapInstance.gameWorld,
+		onMap:                nil,
+		causer:               causer,
+		skillWz:              skill.levelData.SkillWz,
+		mobLevelData:         skill.levelData,
+		skillLevel:           skill.slot.Level,
+		mistType:             mistType,
+		mobMist:              true,
+		mobSkill:             true,
+		skillDelay:           0,
+		bounds:               b,
+		expiresAt:            time.Time{},
+		poisonTickMultiplier: poisonTickMultiplier,
 	}
-	mist.ObjectCore.self = mist
+	mist.objectCore.self = mist
 	if initialDelay > 0 {
-		mist.NextPoisonTickAt = clock.Now().Add(initialDelay)
+		mist.nextPoisonTickAt = clock.Now().Add(initialDelay)
 	}
 	if duration > 0 {
-		mist.ExpiresAt = clock.Now().Add(duration)
+		mist.expiresAt = clock.Now().Add(duration)
 	}
 	mapInstance.AddMist(mist)
 	return mist
@@ -331,16 +331,16 @@ func (m *Mob) highestDamageCharacter() *Character {
 }
 
 func (m *Mob) mobDropType(dropChar *Character) constant.DropType {
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return constant.DropTypeOwnerOnly
 	}
-	if m.Wz.ExplosiveReward {
+	if m.wz.ExplosiveReward {
 		return constant.DropTypeExplosive
 	}
-	if m.Wz.FfaLoot {
+	if m.wz.FfaLoot {
 		return constant.DropTypeFFA
 	}
-	if dropChar != nil && dropChar.Party.ID() != nil {
+	if dropChar != nil && dropChar.party.ID() != nil {
 		return constant.DropTypeParty
 	}
 	return constant.DropTypeOwnerOnly
@@ -352,8 +352,8 @@ func (m *Mob) dropItems(attacker *Character) {
 		return
 	}
 
-	resources := m.GameWorld.GetResources()
-	mobDrops := resources.MobDrops[m.Wz.ID]
+	resources := m.gameWorld.GetResources()
+	mobDrops := resources.MobDrops[m.wz.ID]
 	if len(mobDrops) == 0 && len(resources.GlobalDrops) == 0 {
 		return
 	}
@@ -376,33 +376,33 @@ func (m *Mob) dropItems(attacker *Character) {
 		entries = append(entries, dropRule{Drop: entry})
 	}
 	for _, entry := range resources.GlobalDrops {
-		if !entry.IsAvailableAt(mapInstance.TemplateID()) || !entry.IsAvailableFor(m.Wz) {
+		if !entry.IsAvailableAt(mapInstance.TemplateID()) || !entry.IsAvailableFor(m.wz) {
 			continue
 		}
-		if entry.Quest != 0 && !attacker.Quests.NeedsItem(entry.Quest, entry.Item) {
+		if entry.Quest != 0 && !attacker.quests.NeedsItem(entry.Quest, entry.Item) {
 			continue
 		}
 		entries = append(entries, dropRule{Drop: entry.Drop, quest: entry.Quest, global: true})
 	}
 
-	dropRate := float32(m.GameWorld.GetDropRate())
-	mesoRate := float32(m.GameWorld.GetMesoRate())
-	dropRateMul := max(int16(attacker.Family.DropRate()), attacker.Stats.Bonus.DropRate)
+	dropRate := float32(m.gameWorld.GetDropRate())
+	mesoRate := float32(m.gameWorld.GetMesoRate())
+	dropRateMul := max(int16(attacker.family.DropRate()), attacker.stats.bonus.dropRate)
 	mesoAmountMul := int16(100)
-	if attacker.Stats.Bonus.MesoMultiplier > 0 {
-		mesoAmountMul = attacker.Stats.Bonus.MesoMultiplier
+	if attacker.stats.bonus.mesoMultiplier > 0 {
+		mesoAmountMul = attacker.stats.bonus.mesoMultiplier
 	}
-	if _, v, ok := attacker.Buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
+	if _, v, ok := attacker.buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
 		mesoAmountMul += int16(v - 100)
 	}
 	dropRateMulF := float32(dropRateMul) / 100.0
 	mesoAmountMulF := float32(mesoAmountMul) / 100.0
 
-	mobDrop := m.DropRate
+	mobDrop := m.dropRate
 	if mobDrop <= 0 {
 		mobDrop = 100
 	}
-	mobDrop += m.Buffs.GetValue(constant.MobBuffShowdown)
+	mobDrop += m.buffs.GetValue(constant.MobBuffShowdown)
 	mobDropF := float32(mobDrop) / 100.0
 
 	for _, entry := range entries {
@@ -441,7 +441,7 @@ func (m *Mob) dropItems(attacker *Character) {
 				count = uint16(rand.Intn(int(entry.Max-entry.Min)+1) + int(entry.Min))
 			}
 
-			item, err := NewItem(entry.Item, count, m.GameWorld)
+			item, err := NewItem(entry.Item, count, m.gameWorld)
 			if err != nil {
 				continue
 			}
@@ -454,7 +454,7 @@ func (m *Mob) dropItems(attacker *Character) {
 		}
 	}
 
-	spawnPoint := m.Position
+	spawnPoint := m.position
 
 	dropOwner := m.highestDamageCharacter()
 	if dropOwner == nil {
@@ -503,13 +503,13 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 	if amount == 0 || m.GetHp() == 0 {
 		return false
 	}
-	if attacker != nil && m.CarnivalTeam != constant.CarnivalTeamNone {
-		if team := attacker.Carnival.Team(); team != nil && team.TeamID == m.CarnivalTeam {
+	if attacker != nil && m.carnivalTeam != constant.CarnivalTeamNone {
+		if team := attacker.carnival.Team(); team != nil && team.teamID == m.carnivalTeam {
 			return false
 		}
 	}
 
-	if attacker != nil && attacker.GM.InstantKill {
+	if attacker != nil && attacker.gm.instantKill {
 		amount = m.GetHp()
 	}
 
@@ -520,7 +520,7 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 
 	if attacker != nil {
 		bucketID := int64(-1)
-		if pid := attacker.Party.ID(); pid != nil {
+		if pid := attacker.party.ID(); pid != nil {
 			bucketID = int64(*pid)
 		}
 		bucket := m.accDamage[bucketID]
@@ -542,7 +542,7 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 
 	if !killed {
 		if attacker != nil && spongeParent == nil {
-			if m.Wz == nil || !m.Wz.DamagedByMob {
+			if m.wz == nil || !m.wz.DamagedByMob {
 				maxHp := m.GetMaxHp()
 				if maxHp == 0 {
 					return false
@@ -559,8 +559,8 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 
 func (m *Mob) showHp(attacker *Character, percent uint8) {
 	mapInstance := m.GetMap()
-	if mapInstance == nil || mapInstance.Wz.FieldType != wz.FieldTypeDojo {
-		attacker.Listener.OnShowMobHp(attacker, m, percent)
+	if mapInstance == nil || mapInstance.wz.FieldType != wz.FieldTypeDojo {
+		attacker.listener.OnShowMobHp(attacker, m, percent)
 		return
 	}
 	for _, player := range mapInstance.GetAllPlayers() {
@@ -568,12 +568,12 @@ func (m *Mob) showHp(attacker *Character, percent uint8) {
 		if !ok {
 			continue
 		}
-		ch.Listener.OnShowMobHp(ch, m, percent)
+		ch.listener.OnShowMobHp(ch, m, percent)
 	}
 }
 
 func (m *Mob) runDieScript(attacker *Character) {
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return
 	}
 	mapInstance := m.GetMap()
@@ -590,7 +590,7 @@ func (m *Mob) runDieScript(attacker *Character) {
 		attackerArg = attacker
 	}
 
-	mobID := m.Wz.ID
+	mobID := m.wz.ID
 	scriptPath := fmt.Sprintf("script/mob/%d.lua", mobID)
 	mapInstance.runMobLuaHook(root, scriptPath, "on_mob_die", m, attackerArg, mapInstance)
 }
@@ -605,12 +605,12 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 		m.grantKillExp()
 	}
 	if reward && attacker != nil {
-		if m.Wz != nil {
-			attacker.Quests.RecordMobKill(m.Wz.ID)
-			if match := attacker.Carnival.Match(); match != nil && m.Wz != nil {
-				cpAmount := m.Wz.CP
+		if m.wz != nil {
+			attacker.quests.RecordMobKill(m.wz.ID)
+			if match := attacker.carnival.Match(); match != nil && m.wz != nil {
+				cpAmount := m.wz.CP
 				if cpAmount <= 0 {
-					cpAmount = m.Wz.Point
+					cpAmount = m.wz.Point
 				}
 				if cpAmount > 0 {
 					match.OnMobKilled(attacker, cpAmount)
@@ -620,10 +620,10 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 		m.dropItems(attacker)
 	}
 
-	pos := m.Position
+	pos := m.position
 	revives := []uint32(nil)
-	if !m.Fake && m.Wz != nil && len(m.Wz.Revives) > 0 {
-		revives = m.Wz.Revives
+	if !m.fake && m.wz != nil && len(m.wz.Revives) > 0 {
+		revives = m.wz.Revives
 	}
 
 	m.runDieScript(attacker)
@@ -633,7 +633,7 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 	m.sponge.onDead(attacker)
 
 	sm := mapInstance.StateMachine()
-	mapInstance.RemoveMob(m.OID, dieAnim)
+	mapInstance.RemoveMob(m.oid, dieAnim)
 	if sm != nil {
 		sm.CallHook("on_mob_die", m)
 	}
@@ -655,7 +655,7 @@ func (m *Mob) Kill(attacker *Character, dieAnim constant.MobDieAnimationType) bo
 	if mapInstance == nil {
 		return false
 	}
-	if mapInstance.GetMob(m.OID) == nil {
+	if mapInstance.GetMob(m.oid) == nil {
 		return false
 	}
 	if m.deathStarted {
@@ -663,22 +663,22 @@ func (m *Mob) Kill(attacker *Character, dieAnim constant.MobDieAnimationType) bo
 	}
 	m.deathStarted = true
 	if hp := m.GetHp(); hp > 0 {
-		m.LifeCore.AddHp(-int(hp))
+		m.lifeCore.AddHp(-int(hp))
 	}
 	return m.onDead(attacker, dieAnim, true)
 }
 
 func (m *Mob) SelfDestruct(attacker *Character) bool {
-	if !m.Wz.HasSelfDestruction || attacker.Spectating() || attacker.IsHidden() || !attacker.IsAlive() {
+	if !m.wz.HasSelfDestruction || attacker.Spectating() || attacker.IsHidden() || !attacker.IsAlive() {
 		return false
 	}
 	mapInstance := m.GetMap()
-	if mapInstance == nil || mapInstance.GetMob(m.OID) == nil || m.deathStarted || !m.IsAlive() {
+	if mapInstance == nil || mapInstance.GetMob(m.oid) == nil || m.deathStarted || !m.IsAlive() {
 		return false
 	}
 	m.deathStarted = true
-	m.LifeCore.AddHp(-int(m.GetHp()))
-	return m.onDead(attacker, constant.MobDieAnimationType(m.Wz.SelfDestructionAction), false)
+	m.lifeCore.AddHp(-int(m.GetHp()))
+	return m.onDead(attacker, constant.MobDieAnimationType(m.wz.SelfDestructionAction), false)
 }
 
 // Mob bodies have no hitbox in WZ, so a body attack reaches only targets this close.
@@ -692,28 +692,28 @@ func (m *Mob) canAttack(target *Mob, damage uint32) bool {
 	targetPosition := target.GetPosition()
 	dx := int64(targetPosition.X) - int64(sourcePosition.X)
 	dy := int64(targetPosition.Y) - int64(sourcePosition.Y)
-	for _, attack := range m.Wz.Attacks {
+	for _, attack := range m.wz.Attacks {
 		maxDamage := attack.PADamage
 		if attack.Magic {
 			maxDamage = attack.MADamage
 		}
 		if maxDamage <= 0 {
 			if attack.Magic {
-				maxDamage = m.Wz.MADamage
+				maxDamage = m.wz.MADamage
 			} else {
-				maxDamage = m.Wz.PADamage
+				maxDamage = m.wz.PADamage
 			}
 		}
 		if attack.Magic {
-			maxDamage += int(m.Buffs.GetValue(constant.MobBuffMatk))
-			maxDamage += int(m.Buffs.GetValue(constant.MobBuffMagicAttackUp))
-			if target.Wz.Invincible || target.Buffs.Has(constant.MobBuffMagicImmunity) || target.Buffs.Has(constant.MobBuffDamageImmunity) {
+			maxDamage += int(m.buffs.GetValue(constant.MobBuffMatk))
+			maxDamage += int(m.buffs.GetValue(constant.MobBuffMagicAttackUp))
+			if target.wz.Invincible || target.buffs.Has(constant.MobBuffMagicImmunity) || target.buffs.Has(constant.MobBuffDamageImmunity) {
 				continue
 			}
 		} else {
-			maxDamage += int(m.Buffs.GetValue(constant.MobBuffWatk))
-			maxDamage += int(m.Buffs.GetValue(constant.MobBuffWeaponAttackUp))
-			if target.Wz.Invincible || target.Buffs.Has(constant.MobBuffWeaponImmunity) || target.Buffs.Has(constant.MobBuffDamageImmunity) {
+			maxDamage += int(m.buffs.GetValue(constant.MobBuffWatk))
+			maxDamage += int(m.buffs.GetValue(constant.MobBuffWeaponAttackUp))
+			if target.wz.Invincible || target.buffs.Has(constant.MobBuffWeaponImmunity) || target.buffs.Has(constant.MobBuffDamageImmunity) {
 				continue
 			}
 		}
@@ -734,13 +734,13 @@ func (m *Mob) canAttack(target *Mob, damage uint32) bool {
 		}
 	}
 
-	if m.Wz.BodyAttack == 0 || dx*dx+dy*dy > mobTouchRange*mobTouchRange {
+	if m.wz.BodyAttack == 0 || dx*dx+dy*dy > mobTouchRange*mobTouchRange {
 		return false
 	}
-	if target.Wz.Invincible || target.Buffs.Has(constant.MobBuffWeaponImmunity) || target.Buffs.Has(constant.MobBuffDamageImmunity) {
+	if target.wz.Invincible || target.buffs.Has(constant.MobBuffWeaponImmunity) || target.buffs.Has(constant.MobBuffDamageImmunity) {
 		return false
 	}
-	maxDamage := m.Wz.PADamage + int(m.Buffs.GetValue(constant.MobBuffWatk)) + int(m.Buffs.GetValue(constant.MobBuffWeaponAttackUp))
+	maxDamage := m.wz.PADamage + int(m.buffs.GetValue(constant.MobBuffWatk)) + int(m.buffs.GetValue(constant.MobBuffWeaponAttackUp))
 	return maxDamage > 0 && uint64(damage) <= uint64(maxDamage)
 }
 
@@ -757,7 +757,7 @@ func (m *Mob) SpawnRevives(reviveIDs []uint32, pos types.Point[int16], spawnType
 		if reviveID == 0 {
 			continue
 		}
-		mob, err := mapInstance.SpawnMob(reviveID, pos, nil, spawnType, link, m.CarnivalTeam)
+		mob, err := mapInstance.SpawnMob(reviveID, pos, nil, spawnType, link, m.carnivalTeam)
 		if err != nil {
 			continue
 		}
@@ -767,7 +767,7 @@ func (m *Mob) SpawnRevives(reviveIDs []uint32, pos types.Point[int16], spawnType
 }
 
 func (m *Mob) runReviveScript(pos types.Point[int16], revives []uint32) bool {
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return false
 	}
 	mapInstance := m.GetMap()
@@ -779,7 +779,7 @@ func (m *Mob) runReviveScript(pos types.Point[int16], revives []uint32) bool {
 		return false
 	}
 
-	mobID := m.Wz.ID
+	mobID := m.wz.ID
 	scriptPath := fmt.Sprintf("script/mob/%d.lua", mobID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
@@ -806,7 +806,7 @@ func (m *Mob) runReviveScript(pos types.Point[int16], revives []uint32) bool {
 }
 
 func (m *Mob) revive(pos types.Point[int16], revives []uint32) {
-	if m == nil || m.Wz == nil || len(revives) == 0 {
+	if m == nil || m.wz == nil || len(revives) == 0 {
 		return
 	}
 	mapInstance := m.GetMap()
@@ -822,9 +822,9 @@ func (m *Mob) revive(pos types.Point[int16], revives []uint32) {
 		if reviveID == 0 {
 			continue
 		}
-		_, err := mapInstance.SpawnMob(reviveID, pos, nil, constant.MobSpawnTypeRevive, m.OID, m.CarnivalTeam)
+		_, err := mapInstance.SpawnMob(reviveID, pos, nil, constant.MobSpawnTypeRevive, m.oid, m.carnivalTeam)
 		if err != nil {
-			log.Printf("Failed to spawn revive mob %d from mob %d: %v", reviveID, m.Wz.ID, err)
+			log.Printf("Failed to spawn revive mob %d from mob %d: %v", reviveID, m.wz.ID, err)
 		}
 	}
 }
@@ -834,7 +834,7 @@ func (m *Mob) SetHp(v uint32, notify bool) {
 		return
 	}
 	m.setHp(v)
-	if !notify || m.Map == nil {
+	if !notify || m.onMap == nil {
 		return
 	}
 	maxHp := m.GetMaxHp()
@@ -842,8 +842,8 @@ func (m *Mob) SetHp(v uint32, notify bool) {
 	if maxHp > 0 {
 		percent = uint8(uint64(m.GetHp()) * 100 / uint64(maxHp))
 	}
-	packet := &response.ShowMobHp{OID: m.OID, Percentage: percent}
-	for _, player := range m.Map.GetAllPlayers() {
+	packet := &response.ShowMobHp{OID: m.oid, Percentage: percent}
+	for _, player := range m.onMap.GetAllPlayers() {
 		ch, ok := player.(*Character)
 		if !ok {
 			continue
@@ -858,7 +858,7 @@ func (m *Mob) AddHp(amount int) {
 	}
 
 	before := m.GetHp()
-	m.LifeCore.AddHp(amount)
+	m.lifeCore.AddHp(amount)
 	after := m.GetHp()
 	if after <= before {
 		return
@@ -868,11 +868,11 @@ func (m *Mob) AddHp(amount int) {
 	if recovered > uint32(2147483647) {
 		recovered = uint32(2147483647)
 	}
-	m.Listener.OnMobDamaged(m, -int32(recovered))
+	m.listener.OnMobDamaged(m, -int32(recovered))
 }
 
 func (m *Mob) ExpForDamage(damage uint64) uint32 {
-	if m == nil || m.Wz == nil || damage == 0 {
+	if m == nil || m.wz == nil || damage == 0 {
 		return 0
 	}
 	maxHp := uint64(m.GetMaxHp())
@@ -882,7 +882,7 @@ func (m *Mob) ExpForDamage(damage uint64) uint32 {
 	if damage > maxHp {
 		damage = maxHp
 	}
-	base := uint64(m.Wz.EXP)
+	base := uint64(m.wz.EXP)
 	num := base * damage
 	den := maxHp
 	exp := (num + den - 1) / den

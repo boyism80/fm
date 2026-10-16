@@ -15,7 +15,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	if scrollSlot <= 0 {
 		return ErrCannotScroll
 	}
-	useInventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
+	useInventory := ch.inventory.tabs[constant.InventoryTypeConsume]
 	scrollItem, ok := useInventory.Get(uint8(scrollSlot)).(*Consume)
 	if !ok {
 		return ErrCannotScroll
@@ -25,10 +25,10 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 		return ErrCannotScroll
 	}
 
-	equipInventory := ch.Inventory.Tabs[constant.InventoryTypeEquipment]
+	equipInventory := ch.inventory.tabs[constant.InventoryTypeEquipment]
 	var target Equipment
 	if targetSlot < 0 {
-		target = ch.Inventory.Equipped[constant.EquipmentPartsType(targetSlot)]
+		target = ch.inventory.equipped[constant.EquipmentPartsType(targetSlot)]
 	} else {
 		target, _ = equipInventory.Get(uint8(targetSlot)).(Equipment)
 	}
@@ -44,7 +44,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	recovery := scroll.ScrollRecover > 0
 	chaos := scroll.ScrollRandStat > 0
 	special := scroll.ScrollFlag != 0
-	if !recovery && !special && core.EnhanceChance < 1 {
+	if !recovery && !special && core.enhanceChance < 1 {
 		return ErrCannotScroll
 	}
 	if (recovery || chaos || special) && model.GetTraits()&constant.ItemTraitCash != 0 {
@@ -60,35 +60,35 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	if !recovery && !chaos && !special && scroll.GetID()/100%100 != model.GetID()/10000%100 {
 		return ErrCannotScroll
 	}
-	if scroll.ScrollReqRUC > 0 && int32(model.GetEnhanceChance())-int32(core.EnhanceCount) < scroll.ScrollReqRUC {
+	if scroll.ScrollReqRUC > 0 && int32(model.GetEnhanceChance())-int32(core.enhanceCount) < scroll.ScrollReqRUC {
 		return ErrCannotScroll
 	}
 
-	if core.BonusStats == nil {
-		core.BonusStats = &EquipmentBonusStats{}
+	if core.bonusStats == nil {
+		core.bonusStats = &EquipmentBonusStats{}
 	}
 	success := special || rand.Intn(100) < int(scroll.ScrollSuccess)
 	destroyed := false
 	switch {
 	case success && recovery:
-		if core.EnhanceCount+core.EnhanceChance < model.GetEnhanceChance() {
-			core.EnhanceChance += uint8(scroll.ScrollRecover)
+		if core.enhanceCount+core.enhanceChance < model.GetEnhanceChance() {
+			core.enhanceChance += uint8(scroll.ScrollRecover)
 		} else {
 			success = false
 		}
 	case success && special:
-		core.Flags |= uint16(scroll.ScrollFlag)
+		core.flags |= uint16(scroll.ScrollFlag)
 	case success:
 		if chaos {
 			core.rollChaosStats()
 		} else {
 			core.addScrollStats(scroll)
 		}
-		core.EnhanceChance--
-		core.EnhanceCount++
+		core.enhanceChance--
+		core.enhanceCount++
 	default:
 		if !recovery {
-			core.EnhanceChance--
+			core.enhanceChance--
 		}
 		destroyed = rand.Intn(100) < int(scroll.ScrollCursed)
 	}
@@ -98,57 +98,57 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	}
 	if destroyed {
 		if targetSlot < 0 {
-			delete(ch.Inventory.Equipped, constant.EquipmentPartsType(targetSlot))
-			ch.Listener.OnUpdateCharacterLook(ch)
+			delete(ch.inventory.equipped, constant.EquipmentPartsType(targetSlot))
+			ch.listener.OnUpdateCharacterLook(ch)
 		} else {
 			equipInventory.Remove(uint8(targetSlot))
 		}
 	}
 
-	ch.Listener.OnScrolledItem(ch, scrollItem.GetInventoryType(), scrollSlot, scrollItem.GetCount(), targetSlot, destroyed, false, target)
-	ch.Listener.OnShowScrollEffect(ch, success, destroyed)
-	ch.Listener.OnUpdateStats(ch, nil, true)
+	ch.listener.OnScrolledItem(ch, scrollItem.GetInventoryType(), scrollSlot, scrollItem.GetCount(), targetSlot, destroyed, false, target)
+	ch.listener.OnShowScrollEffect(ch, success, destroyed)
+	ch.listener.OnUpdateStats(ch, nil, true)
 	return nil
 }
 
 func (c *EquipmentCore) addScrollStats(scroll *wz.Consume) {
-	c.BonusStats.Str += scroll.ScrollIncStr
-	c.BonusStats.Dex += scroll.ScrollIncDex
-	c.BonusStats.Int += scroll.ScrollIncInt
-	c.BonusStats.Luk += scroll.ScrollIncLuk
-	c.BonusStats.MaxHP += scroll.ScrollIncMaxHP
-	c.BonusStats.MaxMP += scroll.ScrollIncMaxMP
-	c.BonusStats.PAD += scroll.ScrollIncPAD
-	c.BonusStats.MAD += scroll.ScrollIncMAD
-	c.BonusStats.PDD += scroll.ScrollIncPDD
-	c.BonusStats.MDD += scroll.ScrollIncMDD
-	c.BonusStats.ACC += scroll.ScrollIncACC
-	c.BonusStats.Avoid += scroll.ScrollIncAvoid
-	c.BonusStats.Hands += scroll.ScrollIncHands
-	c.BonusStats.Speed += scroll.ScrollIncSpeed
-	c.BonusStats.Jump += scroll.ScrollIncJump
+	c.bonusStats.Str += scroll.ScrollIncStr
+	c.bonusStats.Dex += scroll.ScrollIncDex
+	c.bonusStats.Int += scroll.ScrollIncInt
+	c.bonusStats.Luk += scroll.ScrollIncLuk
+	c.bonusStats.MaxHP += scroll.ScrollIncMaxHP
+	c.bonusStats.MaxMP += scroll.ScrollIncMaxMP
+	c.bonusStats.PAD += scroll.ScrollIncPAD
+	c.bonusStats.MAD += scroll.ScrollIncMAD
+	c.bonusStats.PDD += scroll.ScrollIncPDD
+	c.bonusStats.MDD += scroll.ScrollIncMDD
+	c.bonusStats.ACC += scroll.ScrollIncACC
+	c.bonusStats.Avoid += scroll.ScrollIncAvoid
+	c.bonusStats.Hands += scroll.ScrollIncHands
+	c.bonusStats.Speed += scroll.ScrollIncSpeed
+	c.bonusStats.Jump += scroll.ScrollIncJump
 }
 
 func (c *EquipmentCore) rollChaosStats() {
-	ability := c.Wz.(wz.Equipment).GetAbility()
+	ability := c.wz.(wz.Equipment).GetAbility()
 	stats := []struct {
 		base  uint16
 		bonus *int16
 	}{
-		{ability.Str, &c.BonusStats.Str},
-		{ability.Dex, &c.BonusStats.Dex},
-		{ability.Int, &c.BonusStats.Int},
-		{ability.Luk, &c.BonusStats.Luk},
-		{ability.PAD, &c.BonusStats.PAD},
-		{ability.PDD, &c.BonusStats.PDD},
-		{ability.MAD, &c.BonusStats.MAD},
-		{ability.MDD, &c.BonusStats.MDD},
-		{ability.ACC, &c.BonusStats.ACC},
-		{ability.Avoid, &c.BonusStats.Avoid},
-		{ability.Speed, &c.BonusStats.Speed},
-		{ability.Jump, &c.BonusStats.Jump},
-		{ability.MaxHP, &c.BonusStats.MaxHP},
-		{ability.MaxMP, &c.BonusStats.MaxMP},
+		{ability.Str, &c.bonusStats.Str},
+		{ability.Dex, &c.bonusStats.Dex},
+		{ability.Int, &c.bonusStats.Int},
+		{ability.Luk, &c.bonusStats.Luk},
+		{ability.PAD, &c.bonusStats.PAD},
+		{ability.PDD, &c.bonusStats.PDD},
+		{ability.MAD, &c.bonusStats.MAD},
+		{ability.MDD, &c.bonusStats.MDD},
+		{ability.ACC, &c.bonusStats.ACC},
+		{ability.Avoid, &c.bonusStats.Avoid},
+		{ability.Speed, &c.bonusStats.Speed},
+		{ability.Jump, &c.bonusStats.Jump},
+		{ability.MaxHP, &c.bonusStats.MaxHP},
+		{ability.MaxMP, &c.bonusStats.MaxMP},
 	}
 	for _, stat := range stats {
 		if int32(stat.base)+int32(*stat.bonus) <= 0 {

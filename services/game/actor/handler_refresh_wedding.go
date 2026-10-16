@@ -20,5 +20,5 @@ func (h *RefreshWeddingHandler) Handle(ctx actor.Context, a *GameLogicActor, msg
 	if ch == nil {
 		return
 	}
-	ch.Wedding.Refresh(ctx, msg.Event)
+	ch.Wedding().Refresh(ctx, msg.Event)
 }

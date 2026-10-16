@@ -82,7 +82,7 @@ func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *game.Chara
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("guild multi chat: actor context required")
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -116,7 +116,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *game.Ch
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("alliance multi chat: actor context required")
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil
 	}
@@ -158,7 +158,7 @@ func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *game.Chara
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("party multi chat: actor context required")
 	}
-	pid := ch.Party.ID()
+	pid := ch.Party().ID()
 	if pid == nil {
 		return nil
 	}

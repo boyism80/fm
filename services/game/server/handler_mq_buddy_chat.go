@@ -58,7 +58,7 @@ func (h *buddyMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnMultiChat(ch, mode, payload.SenderName, payload.Message)
+			ch.Listener().OnMultiChat(ch, mode, payload.SenderName, payload.Message)
 		})
 	}
 	return nil

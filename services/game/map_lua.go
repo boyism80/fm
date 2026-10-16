@@ -55,7 +55,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			tbl := L.NewTable()
 			for _, npc := range npcs {
 				if npcObj, ok := npc.(*Npc); ok {
-					tbl.RawSetInt(int(npcObj.OID), luax.NewLuable(L, npcObj))
+					tbl.RawSetInt(int(npcObj.oid), luax.NewLuable(L, npcObj))
 				}
 			}
 			L.Push(tbl)
@@ -71,7 +71,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			tbl := L.NewTable()
 			for _, reactor := range mapInstance.GetReactors() {
 				if reactorObj, ok := reactor.(*Reactor); ok {
-					tbl.RawSetInt(int(reactorObj.OID), luax.NewLuable(L, reactorObj))
+					tbl.RawSetInt(int(reactorObj.oid), luax.NewLuable(L, reactorObj))
 				}
 			}
 			L.Push(tbl)
@@ -92,12 +92,12 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					limit = int(v)
 				}
 				for _, mob := range mapInstance.TemplateMobs(mobWZID, limit) {
-					tbl.RawSetInt(int(mob.OID), luax.NewLuable(L, mob))
+					tbl.RawSetInt(int(mob.oid), luax.NewLuable(L, mob))
 				}
 			} else {
 				for _, mob := range mapInstance.GetMobs() {
 					if mobObj, ok := mob.(*Mob); ok {
-						tbl.RawSetInt(int(mobObj.OID), luax.NewLuable(L, mobObj))
+						tbl.RawSetInt(int(mobObj.oid), luax.NewLuable(L, mobObj))
 					}
 				}
 			}
@@ -189,7 +189,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if itemObj, ok := item.(Item); ok {
 					fp := itemObj.GetFieldPlacement()
 					if fp != nil && fp.ObjectCore != nil {
-						tbl.RawSetInt(int(fp.OID), luax.NewLuable(L, itemObj))
+						tbl.RawSetInt(int(fp.oid), luax.NewLuable(L, itemObj))
 					}
 				}
 			}
@@ -203,7 +203,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			wzMap := mapInstance.Wz
+			wzMap := mapInstance.wz
 			if wzMap == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -222,7 +222,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			mapInstance.GameWorld.Systems().Get[*MapSystem]().CloseInstance(mapInstance)
+			mapInstance.gameWorld.Systems().Get[*MapSystem]().CloseInstance(mapInstance)
 			L.Push(lua.LBool(true))
 			return 1
 		},
@@ -320,7 +320,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				if owner.Party.ID() != nil {
+				if owner.party.ID() != nil {
 					dropType = constant.DropTypeParty
 				} else {
 					dropType = constant.DropTypeOwnerOnly
@@ -342,10 +342,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.GameWorld == nil {
+			if mapInstance.gameWorld == nil {
 				return 0
 			}
-			resources := mapInstance.GameWorld.GetResources()
+			resources := mapInstance.gameWorld.GetResources()
 			if resources == nil {
 				return 0
 			}
@@ -407,7 +407,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				isRandomizeStats = lua.LVAsBool(L.Get(6))
 			}
 
-			item, err := NewItem(itemId, count, mapInstance.GameWorld)
+			item, err := NewItem(itemId, count, mapInstance.gameWorld)
 			if err != nil {
 				return 0
 			}
@@ -421,7 +421,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				if owner.Party.ID() != nil {
+				if owner.party.ID() != nil {
 					dropType = constant.DropTypeParty
 				} else {
 					dropType = constant.DropTypeOwnerOnly
@@ -481,11 +481,11 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.GameWorld == nil {
+			if mapInstance.gameWorld == nil {
 				L.RaiseError("spawn_mob: map has no context")
 				return 0
 			}
-			resources := mapInstance.GameWorld.GetResources()
+			resources := mapInstance.gameWorld.GetResources()
 			if resources == nil {
 				L.RaiseError("spawn_mob: no resources")
 				return 0
@@ -531,11 +531,11 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.GameWorld == nil {
+			if mapInstance.gameWorld == nil {
 				L.RaiseError("spawn_npc: map has no context")
 				return 0
 			}
-			resources := mapInstance.GameWorld.GetResources()
+			resources := mapInstance.gameWorld.GetResources()
 			if resources == nil {
 				L.RaiseError("spawn_npc: no resources")
 				return 0
@@ -623,7 +623,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.GameWorld == nil {
+			if mapInstance.gameWorld == nil {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
@@ -632,7 +632,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				includeOneTime = lua.LVAsBool(opts.RawGetString("include_one_time"))
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			return mapInstance.GameWorld.Systems().Get[*MapSystem]().Respawn(L, mapInstance, cfg.ActorContext, includeOneTime)
+			return mapInstance.gameWorld.Systems().Get[*MapSystem]().Respawn(L, mapInstance, cfg.ActorContext, includeOneTime)
 		},
 		"set_respawn": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -685,7 +685,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(2, "Npc or npc OID expected")
 					return 0
 				}
-				oid = npc.OID
+				oid = npc.oid
 			case lua.LNumber:
 				oid = uint32(v)
 			default:
@@ -920,12 +920,12 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.GameWorld == nil {
+			if mapInstance.gameWorld == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			return mapInstance.GameWorld.Systems().Get[*MapSystem]().Reset(L, mapInstance, cfg.ActorContext)
+			return mapInstance.gameWorld.Systems().Get[*MapSystem]().Reset(L, mapInstance, cfg.ActorContext)
 		},
 		"portal": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -966,10 +966,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(2, "Mist or mist OID expected")
 					return 0
 				}
-				if mist.GetMap() != mapInstance || mist.OID == 0 {
+				if mist.GetMap() != mapInstance || mist.oid == 0 {
 					return 0
 				}
-				mapInstance.RemoveMist(mist.OID)
+				mapInstance.RemoveMist(mist.oid)
 			case lua.LNumber:
 				oid := uint32(v)
 				if oid == 0 {
@@ -986,10 +986,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 }
 
 func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16], owner *Character, questTagged bool) {
-	if m.GameWorld == nil {
+	if m.gameWorld == nil {
 		return
 	}
-	resources := m.GameWorld.GetResources()
+	resources := m.gameWorld.GetResources()
 	if resources == nil {
 		return
 	}
@@ -997,7 +997,7 @@ func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16],
 	dropType := constant.DropTypeFFA
 	ownerID := uint32(0)
 	if owner != nil {
-		if owner.Party.ID() != nil {
+		if owner.party.ID() != nil {
 			dropType = constant.DropTypeParty
 		} else {
 			dropType = constant.DropTypeOwnerOnly
@@ -1051,7 +1051,7 @@ func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16],
 							count = uint16(n)
 						}
 					}
-					item, err := NewItem(itemID, count, m.GameWorld)
+					item, err := NewItem(itemID, count, m.gameWorld)
 					if err == nil {
 						if err := m.SpawnItem(item, ItemSpawn{
 							Position:    destPoint,

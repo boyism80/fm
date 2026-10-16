@@ -8,8 +8,8 @@ func (m *InventoryTab) BuildRPC(ownerID uint32) []*internal.Inventory {
 	if m == nil {
 		return nil
 	}
-	out := make([]*internal.Inventory, 0, len(m.Items))
-	for slot, item := range m.Items {
+	out := make([]*internal.Inventory, 0, len(m.items))
+	for slot, item := range m.items {
 		if item == nil {
 			continue
 		}

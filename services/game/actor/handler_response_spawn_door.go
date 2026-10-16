@@ -22,12 +22,12 @@ func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	}
 	if !msg.Ok {
 		if ch != nil {
-			ch.Listener.OnMessage(ch, constant.MsgPinkText, constant.DoorNoTownPortalMessage)
+			ch.Listener().OnMessage(ch, constant.MsgPinkText, constant.DoorNoTownPortalMessage)
 		}
 		return
 	}
 
-	if ch == nil || ch.Doors.SpawnField(msg.Key, msg.SkillID, msg.Return, msg.Field) == nil {
-		msg.Return.Map.GameWorld.Systems().Get[*game.MapSystem]().DespawnDoor(msg.Return.Map, msg.Key, true, false)
+	if ch == nil || ch.Doors().SpawnField(msg.Key, msg.SkillID, msg.Return, msg.Field) == nil {
+		msg.Return.Map.GameWorld().Systems().Get[*game.MapSystem]().DespawnDoor(msg.Return.Map, msg.Key, true, false)
 	}
 }

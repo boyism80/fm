@@ -15,11 +15,11 @@ type escrowItem struct {
 type Escrow struct {
 	owner *Character
 	items []escrowItem
-	Meso  int32
+	meso  int32
 }
 
 func (e *Escrow) hold(invType constant.InventoryType, slot int16, count uint16) (Item, error) {
-	item := e.owner.Inventory.GetItem(invType, slot)
+	item := e.owner.inventory.GetItem(invType, slot)
 	if item == nil {
 		return nil, ErrMiniRoomItemNotFound
 	}
@@ -28,47 +28,47 @@ func (e *Escrow) hold(invType constant.InventoryType, slot int16, count uint16) 
 	}
 
 	held := item.Clone(count)
-	e.owner.Inventory.RemoveItem(invType, slot, count)
+	e.owner.inventory.RemoveItem(invType, slot, count)
 	e.items = append(e.items, escrowItem{invType: invType, slot: slot, item: held})
 	return held, nil
 }
 
 func (e *Escrow) holdMeso(amount int32) error {
-	if amount <= 0 || !e.owner.Inventory.RemoveMeso(amount) {
+	if amount <= 0 || !e.owner.inventory.RemoveMeso(amount) {
 		return ErrMiniRoomInvalid
 	}
-	e.Meso += amount
+	e.meso += amount
 	return nil
 }
 
 func (e *Escrow) restore() {
 	ch := e.owner
 	for _, held := range e.items {
-		inven := ch.Inventory.Tabs[held.invType]
+		inven := ch.inventory.tabs[held.invType]
 		model := held.item.GetModel()
-		exists := inven.Items[held.slot]
+		exists := inven.items[held.slot]
 		switch {
 		case exists == nil:
-			inven.Items[held.slot] = held.item
-			ch.Listener.OnInventorySlotAdded(ch, held.invType, held.slot, held.item)
+			inven.items[held.slot] = held.item
+			ch.listener.OnInventorySlotAdded(ch, held.invType, held.slot, held.item)
 		case exists.GetModel() == model && exists.GetCount()+held.item.GetCount() <= model.GetCapacity():
 			exists.Increase(held.item.GetCount())
-			ch.Listener.OnInventorySlotUpdated(ch, held.invType, held.slot, exists)
+			ch.listener.OnInventorySlotUpdated(ch, held.invType, held.slot, exists)
 		default:
 			slot, ok := inven.NextSlot()
 			if !ok {
 				log.Printf("Escrow.restore character=%d: no slot for item %d x%d", ch.GetID(), model.GetID(), held.item.GetCount())
 				continue
 			}
-			inven.Items[int16(slot)] = held.item
-			ch.Listener.OnInventorySlotAdded(ch, held.invType, int16(slot), held.item)
+			inven.items[int16(slot)] = held.item
+			ch.listener.OnInventorySlotAdded(ch, held.invType, int16(slot), held.item)
 		}
 	}
 	e.items = nil
 
-	if e.Meso > 0 {
-		ch.Inventory.addMesoUnchecked(e.Meso)
-		e.Meso = 0
+	if e.meso > 0 {
+		ch.inventory.addMesoUnchecked(e.meso)
+		e.meso = 0
 	}
 }
 
@@ -77,8 +77,8 @@ func (e *Escrow) release() ([]Item, int32) {
 	for _, held := range e.items {
 		items = append(items, held.item)
 	}
-	meso := e.Meso
+	meso := e.meso
 	e.items = nil
-	e.Meso = 0
+	e.meso = 0
 	return items, meso
 }

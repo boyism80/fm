@@ -25,31 +25,31 @@ func (m *Marriage) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).ID))
+			L.Push(lua.LNumber(check(L).id))
 			return 1
 		},
 		"status": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).Status))
+			L.Push(lua.LNumber(check(L).status))
 			return 1
 		},
 		"married": func(L *lua.LState) int {
-			L.Push(lua.LBool(check(L).Status == MarriageStatusMarried))
+			L.Push(lua.LBool(check(L).status == MarriageStatusMarried))
 			return 1
 		},
 		"groom_id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).GroomID))
+			L.Push(lua.LNumber(check(L).groomID))
 			return 1
 		},
 		"bride_id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).BrideID))
+			L.Push(lua.LNumber(check(L).brideID))
 			return 1
 		},
 		"groom_name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).GroomName))
+			L.Push(lua.LString(check(L).groomName))
 			return 1
 		},
 		"bride_name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).BrideName))
+			L.Push(lua.LString(check(L).brideName))
 			return 1
 		},
 		"partner_id": func(L *lua.LState) int {
@@ -57,7 +57,7 @@ func (m *Marriage) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"ticket": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).TicketItemID))
+			L.Push(lua.LNumber(check(L).ticketItemID))
 			return 1
 		},
 		"wished": func(L *lua.LState) int {
@@ -69,20 +69,20 @@ func (m *Marriage) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"groom_wishes": func(L *lua.LState) int {
-			L.Push(wishes(L, check(L).GroomWishes))
+			L.Push(wishes(L, check(L).groomWishes))
 			return 1
 		},
 		"bride_wishes": func(L *lua.LState) int {
-			L.Push(wishes(L, check(L).BrideWishes))
+			L.Push(wishes(L, check(L).brideWishes))
 			return 1
 		},
 		"divorce_requested_at": func(L *lua.LState) int {
 			marriage := check(L)
-			if marriage.DivorceRequestedAt.IsZero() {
+			if marriage.divorceRequestedAt.IsZero() {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(marriage.DivorceRequestedAt.Unix()))
+			L.Push(lua.LNumber(marriage.divorceRequestedAt.Unix()))
 			return 1
 		},
 	}

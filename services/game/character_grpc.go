@@ -29,99 +29,95 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		guildID = &v
 	}
 	ch := &Character{
-		Sendable: sender,
-		Listener: listener,
-		LifeCore: LifeCore{
-			ObjectCore: ObjectCore{
-				GameWorld: gw,
-				Position: types.Vector2[int16]{
-					X: int16(p.GetPositionX()),
-					Y: int16(p.GetPositionY()),
-				},
-			},
-			BaseHp: p.GetMaxHp(),
-			BaseMp: p.GetMaxMp(),
-			Stance: uint8(p.GetStance()),
+		sendable:  sender,
+		listener:  listener,
+		gameWorld: gw,
+		position: types.Vector2[int16]{
+			X: int16(p.GetPositionX()),
+			Y: int16(p.GetPositionY()),
 		},
+		baseHp:    p.GetMaxHp(),
+		baseMp:    p.GetMaxMp(),
+		stance:    uint8(p.GetStance()),
 		id:        p.GetCharacterId(),
-		AccountID: p.GetAccountId(),
+		accountID: p.GetAccountId(),
 		name:      p.GetName(),
 		look: Look{
-			Gender:    uint8(p.GetGender()),
-			SkinColor: uint8(p.GetSkinColor()),
-			Face:      p.GetFace(),
-			Hair:      p.GetHair(),
+			gender:    uint8(p.GetGender()),
+			skinColor: uint8(p.GetSkinColor()),
+			face:      p.GetFace(),
+			hair:      p.GetHair(),
 		},
 		level: uint8(p.GetLevel()),
-		Class: constant.ClassType(p.GetClassId()),
-		Role:  constant.CharacterRole(p.GetRole()),
-		GM:    GMMode{Hidden: p.GetHidden()},
+		class: constant.ClassType(p.GetClassId()),
+		role:  constant.CharacterRole(p.GetRole()),
+		gm:    GMMode{hidden: p.GetHidden()},
 		exp:   p.GetExp(),
 
 		random: [3]stream.RandomStream{stream.NewRandomStream(), stream.NewRandomStream(), stream.NewRandomStream()},
 	}
-	ch.Stats = &Stats{owner: ch, Base: BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())}, Population: int16(p.GetPopulation()), PopulationHistory: NewPopulationHistoryFromInternalProto(p.GetPopulationHistory())}
-	ch.Points = &Points{owner: ch, AP: uint16(p.GetAbilityPoint()), SP: uint16(p.GetSkillPoint()), HPMPUsed: uint16(p.GetHpApUsed())}
-	ch.Party = &PartyMembership{owner: ch, id: partyID}
-	ch.Guild = &GuildMembership{owner: ch, id: guildID, invites: make(map[uint32]time.Time)}
-	ch.Buddies = NewBuddyList(ch)
-	ch.Family = &Family{owner: ch, Tree: FamilyTree{family: reply.GetFamily()}, Progress: p.GetFamilyProgress(), Reputation: make(map[uint32]uint64)}
+	ch.stats = &Stats{owner: ch, base: BaseStats{str: uint16(p.GetStr()), dex: uint16(p.GetDex()), int: uint16(p.GetIntStat()), luk: uint16(p.GetLuk())}, population: int16(p.GetPopulation()), populationHistory: NewPopulationHistoryFromInternalProto(p.GetPopulationHistory())}
+	ch.points = &Points{owner: ch, ap: uint16(p.GetAbilityPoint()), sp: uint16(p.GetSkillPoint()), hpmpUsed: uint16(p.GetHpApUsed())}
+	ch.party = &PartyMembership{owner: ch, id: partyID}
+	ch.guild = &GuildMembership{owner: ch, id: guildID, invites: make(map[uint32]time.Time)}
+	ch.buddies = NewBuddyList(ch)
+	ch.family = &Family{owner: ch, tree: FamilyTreeFromProto(reply.GetFamily()), progress: p.GetFamilyProgress(), reputation: make(map[uint32]uint64)}
 	for id, amount := range p.GetFamilyReputation() {
-		ch.Family.Reputation[id], _ = strconv.ParseUint(amount, 10, 64)
+		ch.family.reputation[id], _ = strconv.ParseUint(amount, 10, 64)
 	}
-	ch.Messenger = &Messenger{owner: ch}
-	ch.Dialog = NewDialog(ch)
-	ch.Buffs = NewBuffs(ch)
-	ch.Debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
-	ch.Skills = NewSkills(ch)
-	ch.Quests = NewQuests(ch)
-	ch.Summons = NewSummons(ch)
-	ch.Doors = NewDoors(ch)
-	ch.TeleportStones = &TeleportStones{
+	ch.messenger = &Messenger{owner: ch}
+	ch.dialog = NewDialog(ch)
+	ch.buffs = NewBuffs(ch)
+	ch.debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
+	ch.skills = NewSkills(ch)
+	ch.quests = NewQuests(ch)
+	ch.summons = NewSummons(ch)
+	ch.doors = NewDoors(ch)
+	ch.teleportStones = &TeleportStones{
 		owner:   ch,
 		regular: constant.NewTeleportStoneSlots(p.GetTeleportStones(), constant.TeleportStoneCount),
 		vip:     constant.NewTeleportStoneSlots(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
 	}
-	ch.Wedding = &Wedding{owner: ch, Marriage: NewMarriageFromInternalProto(reply.GetMarriage())}
-	ch.Pets = &Pets{owner: ch, summoned: p.GetSummonedPet(), HPItem: p.GetPetHpItem(), MPItem: p.GetPetMpItem()}
-	ch.Mount = &Mount{owner: ch, Level: max(reply.GetMount().GetLevel(), 1), Exp: reply.GetMount().GetExp(), Fatigue: reply.GetMount().GetFatigue()}
-	ch.Inventory = NewInventory(ch)
-	ch.Inventory.Meso = p.GetMeso()
-	ch.Escrow = &Escrow{owner: ch}
+	ch.wedding = &Wedding{owner: ch, marriage: NewMarriageFromInternalProto(reply.GetMarriage())}
+	ch.pets = &Pets{owner: ch, summoned: p.GetSummonedPet(), hpItem: p.GetPetHpItem(), mpItem: p.GetPetMpItem()}
+	ch.mount = &Mount{owner: ch, level: max(reply.GetMount().GetLevel(), 1), exp: reply.GetMount().GetExp(), fatigue: reply.GetMount().GetFatigue()}
+	ch.inventory = NewInventory(ch)
+	ch.inventory.meso = p.GetMeso()
+	ch.escrow = &Escrow{owner: ch}
 	for i, limit := range p.GetSlotLimits() {
-		if tab := ch.Inventory.Tabs[constant.InventoryType(i+1)]; tab != nil {
-			tab.SlotLimit = uint8(limit)
+		if tab := ch.inventory.tabs[constant.InventoryType(i+1)]; tab != nil {
+			tab.slotLimit = uint8(limit)
 		}
 	}
-	ch.Duey = &Duey{owner: ch}
-	ch.Notes = &Notes{owner: ch}
-	ch.Dojo = &Dojo{owner: ch}
-	ch.LieDetector = &LieDetector{owner: ch}
-	ch.Carnival = &CarnivalMembership{owner: ch}
-	ch.Unsettled = NewUnsettledRequestsFromInternalProto(ch, reply.GetUnsettledRequests())
-	ch.StoreBank = &StoreBank{owner: ch}
-	ch.RemoteShops = &RemoteShops{owner: ch}
-	ch.SavedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
-	ch.Records = NewRecordsFromInternalProto(reply.GetRecords())
-	ch.Account = NewAccountFromInternalProto(reply.GetAccount(), ch)
-	ch.KeyLayout = NewKeyLayout()
-	ch.LifeCore.ObjectCore.self = ch
-	ch.LifeCore.ObjectCore.initTimers()
+	ch.duey = &Duey{owner: ch}
+	ch.notes = &Notes{owner: ch}
+	ch.dojo = &Dojo{owner: ch}
+	ch.lieDetector = &LieDetector{owner: ch}
+	ch.carnival = &CarnivalMembership{owner: ch}
+	ch.unsettled = NewUnsettledRequestsFromInternalProto(ch, reply.GetUnsettledRequests())
+	ch.storeBank = &StoreBank{owner: ch}
+	ch.remoteShops = &RemoteShops{owner: ch}
+	ch.savedLocations = &SavedLocations{owner: ch, entries: make(map[string]uint32)}
+	ch.records = NewRecordsFromInternalProto(reply.GetRecords())
+	ch.account = NewAccountFromInternalProto(reply.GetAccount(), ch)
+	ch.keyLayout = NewKeyLayout()
+	ch.lifeCore.objectCore.self = ch
+	ch.lifeCore.objectCore.initTimers()
 
-	ch.KeyLayout.LoadKeyLayoutProto(reply.GetKeyLayout())
-	ch.CashWishlist = reply.GetCashWishlist()
-	ch.MonsterBook = NewMonsterBookFromInternalProto(ch, p.GetMonsterBookCover(), reply.GetMonsterBook())
-	ch.Inventory.Load(reply.GetInventory())
-	ch.Inventory.LoadRings(reply.GetRings())
-	ch.Skills.Load(reply.GetSkills())
-	ch.Skills.Macros.Load(NewSkillMacrosFromInternalProto(reply.GetSkillMacros()))
-	ch.Buffs.Load(reply.GetBuffs())
-	ch.Debuffs.Load(reply.GetDebuffs())
+	ch.keyLayout.LoadKeyLayoutProto(reply.GetKeyLayout())
+	ch.cashWishlist = reply.GetCashWishlist()
+	ch.monsterBook = NewMonsterBookFromInternalProto(ch, p.GetMonsterBookCover(), reply.GetMonsterBook())
+	ch.inventory.Load(reply.GetInventory())
+	ch.inventory.LoadRings(reply.GetRings())
+	ch.skills.Load(reply.GetSkills())
+	ch.skills.macros.Load(NewSkillMacrosFromInternalProto(reply.GetSkillMacros()))
+	ch.buffs.Load(reply.GetBuffs())
+	ch.debuffs.Load(reply.GetDebuffs())
 	ch.SetHp(p.GetHp(), false)
 	ch.SetMp(p.GetMp(), false)
-	ch.Quests.Load(reply.GetQuests())
-	ch.SavedLocations.Load(reply.GetSavedLocations())
-	ch.Buddies.LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
+	ch.quests.Load(reply.GetQuests())
+	ch.savedLocations.Load(reply.GetSavedLocations())
+	ch.buddies.LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
 	return ch
 }
 
@@ -131,7 +127,7 @@ func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint
 	if ch == nil {
 		return
 	}
-	for parts, equipment := range ch.Inventory.Equipped {
+	for parts, equipment := range ch.inventory.equipped {
 		if equipment == nil || parts < -127 {
 			continue
 		}
@@ -162,14 +158,14 @@ func (ch *Character) PersistMapID() uint32 {
 		return 0
 	}
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return 0
 	}
-	if m.Wz.ForcedReturn != 0 {
-		return m.Wz.ForcedReturn
+	if m.wz.ForcedReturn != 0 {
+		return m.wz.ForcedReturn
 	}
-	if ch.GetHp() < 1 && m.Wz.ReturnMapId > 0 {
-		return uint32(m.Wz.ReturnMapId)
+	if ch.GetHp() < 1 && m.wz.ReturnMapId > 0 {
+		return uint32(m.wz.ReturnMapId)
 	}
 	return m.TemplateID()
 }
@@ -182,16 +178,16 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 	baseLooks, overlays := equipmentLooksForPersist(ch)
 	slotLimits := make([]uint32, 0, constant.InventoryTypeCash)
 	for typ := constant.InventoryTypeEquipment; typ <= constant.InventoryTypeCash; typ++ {
-		slotLimits = append(slotLimits, uint32(ch.Inventory.Tabs[typ].SlotLimit))
+		slotLimits = append(slotLimits, uint32(ch.inventory.tabs[typ].slotLimit))
 	}
-	reputation := make(map[uint32]string, len(ch.Family.Reputation))
-	for id, amount := range ch.Family.Reputation {
+	reputation := make(map[uint32]string, len(ch.family.reputation))
+	for id, amount := range ch.family.reputation {
 		reputation[id] = strconv.FormatUint(amount, 10)
 	}
 
 	pb := &internal.Character{
 		CharacterId:       ch.GetID(),
-		AccountId:         ch.AccountID,
+		AccountId:         ch.accountID,
 		WorldId:           worldID,
 		Name:              ch.GetName(),
 		Gender:            uint32(ch.GetGender()),
@@ -199,56 +195,56 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		Face:              ch.GetFace(),
 		Hair:              ch.GetHair(),
 		Level:             uint32(ch.GetLevel()),
-		ClassId:           uint32(ch.Class),
-		Role:              uint32(ch.Role),
+		ClassId:           uint32(ch.class),
+		Role:              uint32(ch.role),
 		Hidden:            ch.IsHidden(),
-		Str:               uint32(ch.Stats.Base.Str),
-		Dex:               uint32(ch.Stats.Base.Dex),
-		IntStat:           uint32(ch.Stats.Base.Int),
-		Luk:               uint32(ch.Stats.Base.Luk),
+		Str:               uint32(ch.stats.base.str),
+		Dex:               uint32(ch.stats.base.dex),
+		IntStat:           uint32(ch.stats.base.int),
+		Luk:               uint32(ch.stats.base.luk),
 		Hp:                ch.GetHp(),
-		MaxHp:             ch.BaseHp,
+		MaxHp:             ch.baseHp,
 		Mp:                ch.GetMp(),
-		MaxMp:             ch.BaseMp,
-		AbilityPoint:      uint32(ch.Points.AP),
+		MaxMp:             ch.baseMp,
+		AbilityPoint:      uint32(ch.points.ap),
 		Exp:               ch.GetExp(),
 		MapId:             mapID,
 		SpawnPoint:        uint32(ch.GetSpawnPoint()),
-		PositionX:         int32(ch.Position.X),
-		PositionY:         int32(ch.Position.Y),
-		Stance:            uint32(ch.Stance),
-		Meso:              ch.Escrow.mergeMeso(ch.Inventory.Meso),
-		SkillPoint:        uint32(ch.Points.SP),
-		Population:        int32(ch.Stats.Population),
-		FamilyProgress:    ch.Family.Progress,
+		PositionX:         int32(ch.position.X),
+		PositionY:         int32(ch.position.Y),
+		Stance:            uint32(ch.stance),
+		Meso:              ch.escrow.mergeMeso(ch.inventory.meso),
+		SkillPoint:        uint32(ch.points.sp),
+		Population:        int32(ch.stats.population),
+		FamilyProgress:    ch.family.progress,
 		FamilyReputation:  reputation,
-		PopulationHistory: ch.Stats.PopulationHistory.BuildRPC(),
-		HpApUsed:          uint32(ch.Points.HPMPUsed),
-		PetHpItem:         ch.Pets.HPItem,
-		PetMpItem:         ch.Pets.MPItem,
-		SummonedPet:       ch.Pets.summoned,
+		PopulationHistory: ch.stats.populationHistory.BuildRPC(),
+		HpApUsed:          uint32(ch.points.hpmpUsed),
+		PetHpItem:         ch.pets.hpItem,
+		PetMpItem:         ch.pets.mpItem,
+		SummonedPet:       ch.pets.summoned,
 		SlotLimits:        slotLimits,
-		MonsterBookCover:  ch.MonsterBook.Cover,
-		TeleportStones:    ch.TeleportStones.regular.Registered(),
-		VipTeleportStones: ch.TeleportStones.vip.Registered(),
+		MonsterBookCover:  ch.monsterBook.cover,
+		TeleportStones:    ch.teleportStones.regular.Registered(),
+		VipTeleportStones: ch.teleportStones.vip.Registered(),
 		SavedAtUnixMs:     clock.Now().UnixMilli(),
 	}
 	return &internal.CharacterSaveEntry{
 		Character:         pb,
 		BaseLooks:         baseLooks,
 		Overlays:          overlays,
-		Inventory:         ch.Inventory.BuildRPC(),
-		Skills:            ch.Skills.BuildRPC(),
-		SkillMacros:       ch.Skills.Macros.BuildRPC(),
-		Buffs:             ch.Buffs.BuildRPC(),
-		KeyLayout:         ch.KeyLayout.BuildRPC(),
-		Quests:            ch.Quests.BuildRPC(),
-		SavedLocations:    ch.SavedLocations.BuildRPC(),
-		MonsterBook:       ch.MonsterBook.BuildRPC(),
-		Records:           ch.Records.BuildRPC(),
-		Account:           ch.Account.BuildRPC(worldID),
-		ClaimedShops:      slices.Clone(ch.StoreBank.claimed),
-		Mount:             &internal.Mount{Level: ch.Mount.Level, Exp: ch.Mount.Exp, Fatigue: ch.Mount.Fatigue},
-		UnsettledRequests: ch.Unsettled.BuildRPC(),
+		Inventory:         ch.inventory.BuildRPC(),
+		Skills:            ch.skills.BuildRPC(),
+		SkillMacros:       ch.skills.macros.BuildRPC(),
+		Buffs:             ch.buffs.BuildRPC(),
+		KeyLayout:         ch.keyLayout.BuildRPC(),
+		Quests:            ch.quests.BuildRPC(),
+		SavedLocations:    ch.savedLocations.BuildRPC(),
+		MonsterBook:       ch.monsterBook.BuildRPC(),
+		Records:           ch.records.BuildRPC(),
+		Account:           ch.account.BuildRPC(worldID),
+		ClaimedShops:      slices.Clone(ch.storeBank.claimed),
+		Mount:             &internal.Mount{Level: ch.mount.level, Exp: ch.mount.exp, Fatigue: ch.mount.fatigue},
+		UnsettledRequests: ch.unsettled.BuildRPC(),
 	}
 }

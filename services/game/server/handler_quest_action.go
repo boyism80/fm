@@ -35,11 +35,11 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		return fmt.Errorf("character is nil")
 	}
 	if character.UsingCashItem() {
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 		return nil
 	}
 
-	resources := character.GameWorld.GetResources()
+	resources := character.GetGameWorld().GetResources()
 	if resources == nil {
 		return fmt.Errorf("resources unavailable")
 	}
@@ -47,87 +47,87 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 	questDef := resources.GetQuest(uint32(req.QuestID))
 	if questDef == nil {
 		log.Printf("Quest definition not found: %d", req.QuestID)
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 		return nil
 	}
 
-	quest := character.Quests.Get(questDef.ID)
+	quest := character.Quests().Get(questDef.ID)
 
 	switch req.Mode {
 	case request.QuestActionRestoreLostItem:
 		if !quest.CanRestoreLostItem(character, req.ItemID) {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
 		if err := quest.RestoreLostItem(character, req.ItemID); err != nil {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 
 	case request.QuestActionStart:
 		if questDef.HasStartScript() {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
 		npc := req.NPCID
-		if _, err := character.Quests.Start(uint32(req.QuestID), game.QuestPhaseOpts{NpcID: &npc}); err != nil {
-			character.Listener.OnUnlockAction(character)
+		if _, err := character.Quests().Start(uint32(req.QuestID), game.QuestPhaseOpts{NpcID: &npc}); err != nil {
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
 
 	case request.QuestActionComplete:
 		if questDef.HasEndScript() {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
 		npc := req.NPCID
 		if err := quest.Complete(character, game.QuestPhaseOpts{NpcID: &npc, Selection: req.Selection}); err != nil {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
 
 	case request.QuestActionForfeit:
 		if err := quest.Forfeit(character); err != nil {
 			if errors.Is(err, game.ErrQuestNotForfeitable) {
-				character.Listener.OnMessage(character, constant.MsgPopup, "You may not forfeit this quest.")
+				character.Listener().OnMessage(character, constant.MsgPopup, "You may not forfeit this quest.")
 			}
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
 
 	case request.QuestActionScriptedStart:
 		if !questDef.HasStartScript() {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
-		if err := character.Quests.CanStart(uint32(req.QuestID), game.QuestPhaseOpts{
+		if err := character.Quests().CanStart(uint32(req.QuestID), game.QuestPhaseOpts{
 			NpcID: nil,
 		}); err != nil {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
-		if err := character.Quests.RunScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_start"); err != nil {
+		if err := character.Quests().RunScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_start"); err != nil {
 			log.Printf("scripted quest start %d: %v", questDef.ID, err)
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 		}
 
 	case request.QuestActionScriptedEnd:
 		if !questDef.HasEndScript() {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
 		if quest == nil || quest.CanComplete(character, game.QuestPhaseOpts{}) != nil {
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 			return nil
 		}
-		if err := character.Quests.RunScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_end"); err != nil {
+		if err := character.Quests().RunScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_end"); err != nil {
 			log.Printf("scripted quest end %d: %v", questDef.ID, err)
-			character.Listener.OnUnlockAction(character)
+			character.Listener().OnUnlockAction(character)
 		}
 
 	default:
-		character.Listener.OnUnlockAction(character)
+		character.Listener().OnUnlockAction(character)
 	}
 
 	return nil

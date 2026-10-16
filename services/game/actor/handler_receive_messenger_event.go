@@ -20,5 +20,5 @@ func (h *ReceiveMessengerEventHandler) Handle(_ actor.Context, a *GameLogicActor
 	if ch == nil || ch.LoggedOut() {
 		return
 	}
-	ch.Messenger.Receive(msg.Event)
+	ch.Messenger().Receive(msg.Event)
 }

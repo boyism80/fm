@@ -30,53 +30,53 @@ func (c *EquipmentCore) RandomizeStats(model wz.Equipment) {
 	if c == nil || model == nil {
 		return
 	}
-	c.BonusStats = &EquipmentBonusStats{}
+	c.bonusStats = &EquipmentBonusStats{}
 	ab := model.GetAbility()
 	const rMain = 5
 	const rDefHPMP = 10
 	if ab.Str != 0 {
-		c.BonusStats.Str = c.rollBonusDelta(ab.Str, rMain)
+		c.bonusStats.Str = c.rollBonusDelta(ab.Str, rMain)
 	}
 	if ab.Dex != 0 {
-		c.BonusStats.Dex = c.rollBonusDelta(ab.Dex, rMain)
+		c.bonusStats.Dex = c.rollBonusDelta(ab.Dex, rMain)
 	}
 	if ab.Int != 0 {
-		c.BonusStats.Int = c.rollBonusDelta(ab.Int, rMain)
+		c.bonusStats.Int = c.rollBonusDelta(ab.Int, rMain)
 	}
 	if ab.Luk != 0 {
-		c.BonusStats.Luk = c.rollBonusDelta(ab.Luk, rMain)
+		c.bonusStats.Luk = c.rollBonusDelta(ab.Luk, rMain)
 	}
 	if ab.PAD != 0 {
-		c.BonusStats.PAD = c.rollBonusDelta(ab.PAD, rMain)
+		c.bonusStats.PAD = c.rollBonusDelta(ab.PAD, rMain)
 	}
 	if ab.MAD != 0 {
-		c.BonusStats.MAD = c.rollBonusDelta(ab.MAD, rMain)
+		c.bonusStats.MAD = c.rollBonusDelta(ab.MAD, rMain)
 	}
 	if ab.ACC != 0 {
-		c.BonusStats.ACC = c.rollBonusDelta(ab.ACC, rMain)
+		c.bonusStats.ACC = c.rollBonusDelta(ab.ACC, rMain)
 	}
 	if ab.Avoid != 0 {
-		c.BonusStats.Avoid = c.rollBonusDelta(ab.Avoid, rMain)
+		c.bonusStats.Avoid = c.rollBonusDelta(ab.Avoid, rMain)
 	}
 	if ab.Jump != 0 {
-		c.BonusStats.Jump = c.rollBonusDelta(ab.Jump, rMain)
+		c.bonusStats.Jump = c.rollBonusDelta(ab.Jump, rMain)
 	}
 	if ab.Hands != 0 {
-		c.BonusStats.Hands = c.rollBonusDelta(ab.Hands, rMain)
+		c.bonusStats.Hands = c.rollBonusDelta(ab.Hands, rMain)
 	}
 	if ab.Speed != 0 {
-		c.BonusStats.Speed = c.rollBonusDelta(ab.Speed, rMain)
+		c.bonusStats.Speed = c.rollBonusDelta(ab.Speed, rMain)
 	}
 	if ab.PDD != 0 {
-		c.BonusStats.PDD = c.rollBonusDelta(ab.PDD, rDefHPMP)
+		c.bonusStats.PDD = c.rollBonusDelta(ab.PDD, rDefHPMP)
 	}
 	if ab.MDD != 0 {
-		c.BonusStats.MDD = c.rollBonusDelta(ab.MDD, rDefHPMP)
+		c.bonusStats.MDD = c.rollBonusDelta(ab.MDD, rDefHPMP)
 	}
 	if ab.MaxHP != 0 {
-		c.BonusStats.MaxHP = c.rollBonusDelta(ab.MaxHP, rDefHPMP)
+		c.bonusStats.MaxHP = c.rollBonusDelta(ab.MaxHP, rDefHPMP)
 	}
 	if ab.MaxMP != 0 {
-		c.BonusStats.MaxMP = c.rollBonusDelta(ab.MaxMP, rDefHPMP)
+		c.bonusStats.MaxMP = c.rollBonusDelta(ab.MaxMP, rDefHPMP)
 	}
 }

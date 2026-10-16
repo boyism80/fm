@@ -20,7 +20,7 @@ func NewMesoExplosionValidator(ch *Character) *MesoExplosionValidator {
 }
 
 func (v *MesoExplosionValidator) Validate(info dto.AttackInfo) error {
-	if v.ch.GM.InstantKill {
+	if v.ch.gm.instantKill {
 		return nil
 	}
 	bounds, err := v.maximumDamages(info)
@@ -89,11 +89,11 @@ func (v *MesoExplosionValidator) amounts(oids []uint32) ([]int32, error) {
 	amounts := make([]int32, 0, len(oids))
 	for _, oid := range oids {
 		meso, ok := items[oid].(*Meso)
-		if !ok || meso.Count <= 0 || seen[oid] || !meso.inArea(area) {
+		if !ok || meso.count <= 0 || seen[oid] || !meso.inArea(area) {
 			return nil, fmt.Errorf("invalid explosion meso %d", oid)
 		}
 		seen[oid] = true
-		amounts = append(amounts, meso.Count)
+		amounts = append(amounts, meso.count)
 	}
 	slices.Sort(amounts)
 	slices.Reverse(amounts)

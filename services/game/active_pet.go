@@ -29,51 +29,51 @@ var (
 
 type ActivePet struct {
 	owner    *Character
-	Item     *Pet
-	Position types.Vector2[int16]
-	Foothold int16
-	Stance   uint8
+	item     *Pet
+	position types.Vector2[int16]
+	foothold int16
+	stance   uint8
 }
 
 func (p *ActivePet) BuildS2C() *dto.ActivePet {
 	return &dto.ActivePet{
-		ItemID:   p.Item.GetModel().GetID(),
-		Name:     p.Item.Name,
-		SN:       *p.Item.UniqueId,
-		Position: p.Position,
-		Stance:   p.Stance,
-		Foothold: p.Foothold,
+		ItemID:   p.item.GetModel().GetID(),
+		Name:     p.item.name,
+		SN:       *p.item.uniqueId,
+		Position: p.position,
+		Stance:   p.stance,
+		Foothold: p.foothold,
 	}
 }
 
 func (p *ActivePet) Move(start types.Vector2[int16], fragments []dto.MoveFragment) {
 	for _, m := range fragments {
 		if move, ok := m.(*dto.AbsoluteLifeMovement); ok {
-			p.Position = move.Position
-			p.Foothold = move.Foothold
+			p.position = move.Position
+			p.foothold = move.Foothold
 		}
-		p.Stance = m.GetStance()
+		p.stance = m.GetStance()
 	}
-	p.owner.Listener.OnPetMove(p.owner, start, fragments)
+	p.owner.listener.OnPetMove(p.owner, start, fragments)
 }
 
 func (p *ActivePet) Chat(typ uint8, action uint8, text string) {
 	if text == "" {
 		return
 	}
-	p.owner.Listener.OnPetChat(p.owner, typ, action, text)
+	p.owner.listener.OnPetChat(p.owner, typ, action, text)
 }
 
 func (p *ActivePet) Command(index uint8, calledByName bool) {
-	commands := p.Item.GetModel().(*wz.Pet).Commands
+	commands := p.item.GetModel().(*wz.Pet).Commands
 	if int(index) >= len(commands) {
-		p.owner.Listener.OnPetCommand(p.owner, index, false)
+		p.owner.listener.OnPetCommand(p.owner, index, false)
 		return
 	}
 	command := commands[index]
-	level := int(p.Item.Level)
+	level := int(p.item.level)
 	if level < command.MinLevel || level > command.MaxLevel {
-		p.owner.Listener.OnPetCommand(p.owner, index, false)
+		p.owner.listener.OnPetCommand(p.owner, index, false)
 		return
 	}
 
@@ -85,31 +85,31 @@ func (p *ActivePet) Command(index uint8, calledByName bool) {
 	if success {
 		p.AddCloseness(command.Inc)
 	}
-	p.owner.Listener.OnPetCommand(p.owner, index, success)
+	p.owner.listener.OnPetCommand(p.owner, index, success)
 }
 
 func (p *ActivePet) Feed(slot int16, itemID uint32) error {
-	consume, ok := p.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot).(*Consume)
+	consume, ok := p.owner.inventory.GetItem(constant.InventoryTypeConsume, slot).(*Consume)
 	if !ok || consume.GetModel().GetID() != itemID {
 		return ErrPetFoodInvalid
 	}
 	food := consume.GetModel().(*wz.Consume).PetFood
-	if food == nil || !food.Feeds(p.Item.GetModel().GetID()) {
+	if food == nil || !food.Feeds(p.item.GetModel().GetID()) {
 		return ErrPetFoodInvalid
 	}
-	if p.Item.Fullness >= constant.PetMaxFullness {
-		p.owner.Listener.OnPetFood(p.owner, false)
+	if p.item.fullness >= constant.PetMaxFullness {
+		p.owner.listener.OnPetFood(p.owner, false)
 		return ErrPetFull
 	}
 
-	p.owner.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
-	p.Item.Fullness = uint8(min(int(p.Item.Fullness)+food.Fullness, constant.PetMaxFullness))
+	p.owner.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
+	p.item.fullness = uint8(min(int(p.item.fullness)+food.Fullness, constant.PetMaxFullness))
 	if rand.Intn(100) < constant.PetFoodClosenessRate {
 		p.AddCloseness(1)
 	} else {
-		p.owner.Listener.OnPetUpdated(p.owner, p.Item)
+		p.owner.listener.OnPetUpdated(p.owner, p.item)
 	}
-	p.owner.Listener.OnPetFood(p.owner, true)
+	p.owner.listener.OnPetFood(p.owner, true)
 	return nil
 }
 
@@ -123,14 +123,14 @@ func (p *ActivePet) Loot(oid uint32, position types.Vector2[int16]) error {
 		return ErrPetLootRefused
 	}
 	if item, ok := obj.(Item); ok {
-		if p.Item.Skills&constant.PetSkillPickupItem == 0 || slices.Contains(p.Item.Exceptions, item.GetModel().GetID()) {
+		if p.item.skills&constant.PetSkillPickupItem == 0 || slices.Contains(p.item.exceptions, item.GetModel().GetID()) {
 			return ErrPetLootRefused
 		}
 	}
 	if position.DistanceSq(obj.GetPosition()) > constant.PetLootClientRange*constant.PetLootClientRange {
 		return ErrPetLootRefused
 	}
-	if p.Position.DistanceSq(obj.GetPosition()) > constant.PetLootRange*constant.PetLootRange {
+	if p.position.DistanceSq(obj.GetPosition()) > constant.PetLootRange*constant.PetLootRange {
 		return ErrPetLootRefused
 	}
 
@@ -138,10 +138,10 @@ func (p *ActivePet) Loot(oid uint32, position types.Vector2[int16]) error {
 	case constant.LootSuccess:
 		return m.RemoveItem(oid, constant.RemoveItemTypeLootByPet, p.owner.GetID())
 	case constant.LootPartial:
-		p.owner.Listener.OnItemGainFailed(p.owner, constant.ItemGainFailedTypeFull)
+		p.owner.listener.OnItemGainFailed(p.owner, constant.ItemGainFailedTypeFull)
 		return nil
 	case constant.LootFailedInventoryFull, constant.LootFailedMesoFull:
-		p.owner.Listener.OnItemGainFailed(p.owner, constant.ItemGainFailedTypeFull)
+		p.owner.listener.OnItemGainFailed(p.owner, constant.ItemGainFailedTypeFull)
 		return ErrPetLootRefused
 	default:
 		return ErrPetLootRefused
@@ -150,22 +150,22 @@ func (p *ActivePet) Loot(oid uint32, position types.Vector2[int16]) error {
 
 func (p *ActivePet) UsePotion(slot int16, itemID uint32) error {
 	var skill constant.PetSkill
-	if itemID == p.owner.Pets.HPItem {
+	if itemID == p.owner.pets.hpItem {
 		skill |= constant.PetSkillConsumeHP
 	}
-	if itemID == p.owner.Pets.MPItem {
+	if itemID == p.owner.pets.mpItem {
 		skill |= constant.PetSkillConsumeMP
 	}
-	if p.Item.Skills&skill == 0 {
+	if p.item.skills&skill == 0 {
 		return ErrPetPotionRefused
 	}
 	if !p.owner.IsAlive() {
 		return ErrPetPotionRefused
 	}
-	if m := p.owner.GetMap(); m == nil || m.Wz.Limits(constant.FieldLimitPotion) {
+	if m := p.owner.GetMap(); m == nil || m.wz.Limits(constant.FieldLimitPotion) {
 		return ErrPetPotionRefused
 	}
-	consume, ok := p.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot).(*Consume)
+	consume, ok := p.owner.inventory.GetItem(constant.InventoryTypeConsume, slot).(*Consume)
 	if !ok || consume.GetModel().GetID() != itemID {
 		return ErrPetPotionRefused
 	}
@@ -173,19 +173,19 @@ func (p *ActivePet) UsePotion(slot int16, itemID uint32) error {
 	if !p.owner.UseConsume(consume) {
 		return ErrPetPotionRefused
 	}
-	p.owner.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
+	p.owner.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
 	return nil
 }
 
 func (p *ActivePet) FeedCash(itemID uint32) error {
-	model, ok := p.owner.GameWorld.GetResources().Items[itemID].(*wz.CashItem)
-	if !ok || model.PetFood == nil || !model.PetFood.Feeds(p.Item.GetModel().GetID()) {
+	model, ok := p.owner.gameWorld.GetResources().Items[itemID].(*wz.CashItem)
+	if !ok || model.PetFood == nil || !model.PetFood.Feeds(p.item.GetModel().GetID()) {
 		return ErrPetFoodInvalid
 	}
 
-	p.Item.Fullness = constant.PetMaxFullness
+	p.item.fullness = constant.PetMaxFullness
 	p.AddCloseness(model.PetFood.Fullness)
-	p.owner.Listener.OnPetFood(p.owner, true)
+	p.owner.listener.OnPetFood(p.owner, true)
 	return nil
 }
 
@@ -200,37 +200,37 @@ func (p *ActivePet) Rename(name string) error {
 		}
 	}
 
-	p.Item.Name = name
-	p.owner.Listener.OnPetNameChanged(p.owner)
-	p.owner.Listener.OnPetUpdated(p.owner, p.Item)
+	p.item.name = name
+	p.owner.listener.OnPetNameChanged(p.owner, name)
+	p.owner.listener.OnPetUpdated(p.owner, p.item)
 	return nil
 }
 
 func (p *ActivePet) SetExceptions(itemIDs []uint32) {
-	p.Item.Exceptions = itemIDs
-	p.owner.Listener.OnPetExceptions(p.owner)
+	p.item.exceptions = itemIDs
+	p.owner.listener.OnPetExceptions(p.owner, *p.item.uniqueId, itemIDs)
 }
 
 func (p *ActivePet) AddCloseness(n int) {
-	p.SetCloseness(int(p.Item.Closeness) + n)
+	p.SetCloseness(int(p.item.closeness) + n)
 }
 
 func (p *ActivePet) SetCloseness(n int) {
-	levelUp := p.Item.SetCloseness(n)
-	p.owner.Listener.OnPetUpdated(p.owner, p.Item)
+	levelUp := p.item.SetCloseness(n)
+	p.owner.listener.OnPetUpdated(p.owner, p.item)
 	if levelUp {
-		p.owner.Listener.OnPetLevelUp(p.owner)
+		p.owner.listener.OnPetLevelUp(p.owner)
 	}
 }
 
 func (p *ActivePet) SetFullness(n int) {
-	p.Item.Fullness = uint8(min(max(n, 0), constant.PetMaxFullness))
-	p.owner.Listener.OnPetUpdated(p.owner, p.Item)
+	p.item.fullness = uint8(min(max(n, 0), constant.PetMaxFullness))
+	p.owner.listener.OnPetUpdated(p.owner, p.item)
 }
 
 func (p *ActivePet) scheduleTimers() {
 	p.owner.AddTimer(petHungerTimer, constant.PetHungerInterval, true, p.hunger)
-	if p.Item.GetModel().(*wz.Pet).LimitedLife > 0 {
+	if p.item.GetModel().(*wz.Pet).LimitedLife > 0 {
 		p.owner.AddTimer(petLifeTimer, time.Second, true, p.age)
 	}
 }
@@ -241,31 +241,31 @@ func (p *ActivePet) stopTimers() {
 }
 
 func (p *ActivePet) hunger() {
-	if !p.Item.Alive(time.Now()) {
-		p.owner.Pets.Dismiss(constant.PetRemoveReasonExpired)
+	if !p.item.Alive(time.Now()) {
+		p.owner.pets.Dismiss(constant.PetRemoveReasonExpired)
 		return
 	}
 
-	fullness := int(p.Item.Fullness) - p.Item.GetModel().(*wz.Pet).Hungry
+	fullness := int(p.item.fullness) - p.item.GetModel().(*wz.Pet).Hungry
 	if fullness <= constant.PetStarveFullness {
-		p.Item.Fullness = constant.PetStarvedFullness
-		p.owner.Pets.Dismiss(constant.PetRemoveReasonHungry)
+		p.item.fullness = constant.PetStarvedFullness
+		p.owner.pets.Dismiss(constant.PetRemoveReasonHungry)
 		return
 	}
-	p.Item.Fullness = uint8(fullness)
-	p.owner.Listener.OnPetUpdated(p.owner, p.Item)
+	p.item.fullness = uint8(fullness)
+	p.owner.listener.OnPetUpdated(p.owner, p.item)
 }
 
 func (p *ActivePet) age() {
-	if p.Item.SecondsLeft > 0 {
-		p.Item.SecondsLeft--
+	if p.item.secondsLeft > 0 {
+		p.item.secondsLeft--
 	}
-	if p.Item.SecondsLeft > 0 {
+	if p.item.secondsLeft > 0 {
 		return
 	}
 
-	p.owner.Pets.Dismiss(constant.PetRemoveReasonExpired)
-	if slot, ok := p.owner.Inventory.FindSlot(constant.InventoryTypeCash, p.Item); ok {
-		p.owner.Inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)
+	p.owner.pets.Dismiss(constant.PetRemoveReasonExpired)
+	if slot, ok := p.owner.inventory.FindSlot(constant.InventoryTypeCash, p.item); ok {
+		p.owner.inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)
 	}
 }

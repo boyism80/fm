@@ -33,7 +33,7 @@ func (h *parcelMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 		if ch == nil {
 			return
 		}
-		ch.Listener.OnDueyArrival(ch, payload.SenderName, payload.Quick, 1)
+		ch.Listener().OnDueyArrival(ch, payload.SenderName, payload.Quick, 1)
 	})
 	return nil
 }

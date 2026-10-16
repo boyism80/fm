@@ -23,8 +23,8 @@ func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 		ctx.Respond(ack)
 		return
 	}
-	if len(maps) == 1 && maps[0].Wz != nil {
-		ack.MapID = uint32(maps[0].Wz.ID)
+	if len(maps) == 1 && maps[0].Wz() != nil {
+		ack.MapID = uint32(maps[0].Wz().ID)
 	}
 	worldID := a.GameWorld.GetWorldID()
 	entries := make([]*internal.CharacterSaveEntry, 0)

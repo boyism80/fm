@@ -11,23 +11,23 @@ func NewMarriageFromInternalProto(pb *internal.Marriage) *Marriage {
 		return nil
 	}
 	m := &Marriage{
-		ID:                 pb.GetMarriageId(),
-		GroomID:            pb.GetGroomId(),
-		BrideID:            pb.GetBrideId(),
-		GroomName:          pb.GetGroomName(),
-		BrideName:          pb.GetBrideName(),
-		GroomItemID:        pb.GetGroomItemId(),
-		BrideItemID:        pb.GetBrideItemId(),
-		Status:             MarriageStatus(pb.GetStatus()),
-		TicketItemID:       pb.GetTicketItemId(),
-		GroomWished:        pb.GetGroomWished(),
-		BrideWished:        pb.GetBrideWished(),
-		GroomWishes:        pb.GetGroomWishes(),
-		BrideWishes:        pb.GetBrideWishes(),
-		DivorceRequesterID: pb.GetDivorceRequesterId(),
+		id:                 pb.GetMarriageId(),
+		groomID:            pb.GetGroomId(),
+		brideID:            pb.GetBrideId(),
+		groomName:          pb.GetGroomName(),
+		brideName:          pb.GetBrideName(),
+		groomItemID:        pb.GetGroomItemId(),
+		brideItemID:        pb.GetBrideItemId(),
+		status:             MarriageStatus(pb.GetStatus()),
+		ticketItemID:       pb.GetTicketItemId(),
+		groomWished:        pb.GetGroomWished(),
+		brideWished:        pb.GetBrideWished(),
+		groomWishes:        pb.GetGroomWishes(),
+		brideWishes:        pb.GetBrideWishes(),
+		divorceRequesterID: pb.GetDivorceRequesterId(),
 	}
 	if ms := pb.GetDivorceRequestedAtUnixMs(); ms > 0 {
-		m.DivorceRequestedAt = time.UnixMilli(ms)
+		m.divorceRequestedAt = time.UnixMilli(ms)
 	}
 	return m
 }

@@ -30,9 +30,9 @@ func (h *UseShopScanner) Handle(ctx *core.ClientContext, req *request.UseShopSca
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	ch.RemoteShops.Scan(ctx.ActorContext, constant.InventoryTypeConsume, req.Slot, req.ItemID, req.SearchID, req.HighFirst)
+	ch.RemoteShops().Scan(ctx.ActorContext, constant.InventoryTypeConsume, req.Slot, req.ItemID, req.SearchID, req.HighFirst)
 	return nil
 }

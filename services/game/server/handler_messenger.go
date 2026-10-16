@@ -50,7 +50,7 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 	default:
 		return nil
 	}
-	if err := ch.Messenger.Begin(req.Action, req.RoomID); err != nil {
+	if err := ch.Messenger().Begin(req.Action, req.RoomID); err != nil {
 		return nil
 	}
 
@@ -74,14 +74,14 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 				return nil
 			}
 			if !reply.Ok {
-				ch.Messenger.Fail(req.Action, req.Text)
+				ch.Messenger().Fail(req.Action, req.Text)
 				return nil
 			}
-			ch.Messenger.Finish(req.Action, req.Text, reply)
+			ch.Messenger().Finish(req.Action, req.Text, reply)
 			return nil
 		},
 	).OnError(func(error) {
-		ch.Messenger.Fail(req.Action, req.Text)
+		ch.Messenger().Fail(req.Action, req.Text)
 
 	})
 	return nil

@@ -14,20 +14,20 @@ import (
 
 type StateMachine struct {
 	mu              sync.Mutex
-	ID              string
-	Group           *StateMachineGroup
-	Party           *Party
-	Leader          *Character
-	ScaleLevel      int
-	MinPlayers      int
-	ExitMapID       uint32
+	id              string
+	group           *StateMachineGroup
+	party           *Party
+	leader          *Character
+	scaleLevel      int
+	minPlayers      int
+	exitMapID       uint32
 	players         []*Character
 	playerSet       map[uint32]*Character
 	props           map[string]string
 	kills           map[uint32]int
 	disposed        bool
-	ActorPID        *actor.PID
-	Maps            map[uint32]*Map
+	actorPID        *actor.PID
+	maps            map[uint32]*Map
 	mapRefs         map[*Map]*MapRef
 	timeoutDeadline time.Time
 }
@@ -35,19 +35,19 @@ type StateMachine struct {
 var ErrStateMachineEntryDenied = errors.New("state machine map entry denied")
 
 type StateMachineMapSpec struct {
-	TemplateID uint32
-	Opts       MapInitOpts
+	templateID uint32
+	opts       MapInitOpts
 }
 
 func NewStateMachine(id string, group *StateMachineGroup) *StateMachine {
 	return &StateMachine{
-		ID:        id,
-		Group:     group,
+		id:        id,
+		group:     group,
 		players:   make([]*Character, 0),
 		playerSet: make(map[uint32]*Character),
 		props:     make(map[string]string),
 		kills:     make(map[uint32]int),
-		Maps:      make(map[uint32]*Map),
+		maps:      make(map[uint32]*Map),
 		mapRefs:   make(map[*Map]*MapRef),
 	}
 }
@@ -107,20 +107,20 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 		return false
 	}
 	count := len(sm.players)
-	minPlayers := sm.MinPlayers
-	exitMapID := sm.ExitMapID
-	group := sm.Group
+	minPlayers := sm.minPlayers
+	exitMapID := sm.exitMapID
+	group := sm.group
 	belowMin := minPlayers > 0 && count < minPlayers
 	sm.mu.Unlock()
 
-	if warpLeaver && exitMapID > 0 && group != nil && group.GameWorld != nil {
-		if exitMap := group.GameWorld.Systems().Get[*MapSystem]().Get(exitMapID); exitMap != nil {
+	if warpLeaver && exitMapID > 0 && group != nil && group.gameWorld != nil {
+		if exitMap := group.gameWorld.Systems().Get[*MapSystem]().Get(exitMapID); exitMap != nil {
 			_ = ch.Warp(ctx, exitMap, 0)
 		}
 	}
 	if belowMin {
 		if group != nil {
-			sm.callHookNow(ctx, group.ScriptPath, "on_player_leave", ch, string(reason))
+			sm.callHookNow(ctx, group.scriptPath, "on_player_leave", ch, string(reason))
 		}
 		sm.Finish(ctx, exitMapID, 0)
 		return true
@@ -130,10 +130,10 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 }
 
 func (sm *StateMachine) RequestLeave(ch *Character, warpLeaver bool, reason StateMachineLeaveReason) {
-	if sm == nil || ch == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || ch == nil || sm.Disposed() || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &LeaveStateMachinePlayer{
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &LeaveStateMachinePlayer{
 		Character:  ch,
 		WarpLeaver: warpLeaver,
 		Reason:     reason,
@@ -141,30 +141,30 @@ func (sm *StateMachine) RequestLeave(ch *Character, warpLeaver bool, reason Stat
 }
 
 func (sm *StateMachine) RequestFinish(exitMapID uint32, exitPortal uint8) {
-	if sm == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || sm.Disposed() || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &FinishStateMachine{
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &FinishStateMachine{
 		ExitMapID:  exitMapID,
 		ExitPortal: exitPortal,
 	})
 }
 
 func (sm *StateMachine) EnterPlayer(ch *Character, args ...interface{}) {
-	if sm == nil || ch == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || ch == nil || sm.Disposed() || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &EnterStateMachinePlayer{
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &EnterStateMachinePlayer{
 		Character: ch,
 		Args:      args,
 	})
 }
 
 func (sm *StateMachine) Start() {
-	if sm == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || sm.Disposed() || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &StartStateMachine{})
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &StartStateMachine{})
 }
 
 func (sm *StateMachine) unregisterLocked(ch *Character) bool {
@@ -238,11 +238,11 @@ func (sm *StateMachine) AddKill(ch *Character, n int) {
 }
 
 func (sm *StateMachine) LimitTimer(ms int64) int64 {
-	for _, ch := range append(sm.Players(), sm.Leader) {
-		if ch == nil || ch.GM.TimerLimit == 0 {
+	for _, ch := range append(sm.Players(), sm.leader) {
+		if ch == nil || ch.gm.timerLimit == 0 {
 			continue
 		}
-		if limit := int64(ch.GM.TimerLimit) * 1000; limit < ms {
+		if limit := int64(ch.gm.timerLimit) * 1000; limit < ms {
 			ms = limit
 		}
 	}
@@ -250,18 +250,18 @@ func (sm *StateMachine) LimitTimer(ms int64) int64 {
 }
 
 func (sm *StateMachine) StartTimer(ms int64) {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ms <= 0 {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || ms <= 0 {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &ScheduleStateMachineTimeout{Milliseconds: ms})
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &ScheduleStateMachineTimeout{Milliseconds: ms})
 }
 
 func (sm *StateMachine) StartTimerAsync(ctx actor.Context, ms int64) *async.Promise[interface{}] {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ms <= 0 || ctx == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || ms <= 0 || ctx == nil {
 		return nil
 	}
-	gw := sm.Group.GameWorld
-	pid := sm.ActorPID
+	gw := sm.group.gameWorld
+	pid := sm.actorPID
 	return async.Ask(ctx, pid, 10*time.Second, func(replyTo *actor.PID) {
 		gw.Systems().Get[*StateMachineSystem]().Send(pid, &ScheduleStateMachineTimeout{
 			Milliseconds: ms,
@@ -271,18 +271,18 @@ func (sm *StateMachine) StartTimerAsync(ctx actor.Context, ms int64) *async.Prom
 }
 
 func (sm *StateMachine) StopTimer() {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &CancelStateMachineTimeout{})
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &CancelStateMachineTimeout{})
 }
 
 func (sm *StateMachine) StopTimerAsync(ctx actor.Context) *async.Promise[interface{}] {
-	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
+	if sm == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || ctx == nil {
 		return nil
 	}
-	gw := sm.Group.GameWorld
-	pid := sm.ActorPID
+	gw := sm.group.gameWorld
+	pid := sm.actorPID
 	return async.Ask(ctx, pid, 10*time.Second, func(replyTo *actor.PID) {
 		gw.Systems().Get[*StateMachineSystem]().Send(pid, &CancelStateMachineTimeout{ReplyTo: replyTo})
 	})
@@ -315,7 +315,7 @@ func (sm *StateMachine) BroadcastClock(seconds int32) {
 		if !sm.OwnsMap(ch.GetMap()) {
 			continue
 		}
-		ch.Listener.OnClock(ch, seconds)
+		ch.listener.OnClock(ch, seconds)
 	}
 }
 
@@ -330,7 +330,7 @@ func (sm *StateMachine) SyncClock(ch *Character) {
 	if left <= 0 {
 		return
 	}
-	ch.Listener.OnClock(ch, int32(left/1000))
+	ch.listener.OnClock(ch, int32(left/1000))
 }
 
 func (sm *StateMachine) SetTimeoutDeadline(deadline time.Time) {
@@ -343,12 +343,12 @@ func (sm *StateMachine) SetTimeoutDeadline(deadline time.Time) {
 }
 
 func (sm *StateMachine) CreateMaps(specs []StateMachineMapSpec) error {
-	ms := sm.Group.GameWorld.Systems().Get[*MapSystem]()
+	ms := sm.group.gameWorld.Systems().Get[*MapSystem]()
 	for _, spec := range specs {
-		if sm.Map(spec.TemplateID) != nil {
+		if sm.Map(spec.templateID) != nil {
 			continue
 		}
-		m, err := ms.CreateStateMachineMap(spec.TemplateID, sm, spec.Opts)
+		m, err := ms.CreateStateMachineMap(spec.templateID, sm, spec.opts)
 		if err != nil {
 			return err
 		}
@@ -357,7 +357,7 @@ func (sm *StateMachine) CreateMaps(specs []StateMachineMapSpec) error {
 			return err
 		}
 		sm.mu.Lock()
-		sm.Maps[spec.TemplateID] = m
+		sm.maps[spec.templateID] = m
 		sm.mapRefs[m] = ref
 		sm.mu.Unlock()
 	}
@@ -370,11 +370,11 @@ func (sm *StateMachine) Map(templateID uint32) *Map {
 	}
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	return sm.Maps[templateID]
+	return sm.maps[templateID]
 }
 
 func (sm *StateMachine) CloseMaps() {
-	ms := sm.Group.GameWorld.Systems().Get[*MapSystem]()
+	ms := sm.group.gameWorld.Systems().Get[*MapSystem]()
 	sm.mu.Lock()
 	refs := sm.mapRefs
 	sm.mapRefs = make(map[*Map]*MapRef)
@@ -389,10 +389,10 @@ func (sm *StateMachine) CloseMaps() {
 func (sm *StateMachine) RemoveMap(m *Map) (empty bool) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	if sm.Maps[m.TemplateID()] == m {
-		delete(sm.Maps, m.TemplateID())
+	if sm.maps[m.TemplateID()] == m {
+		delete(sm.maps, m.TemplateID())
 	}
-	return len(sm.Maps) == 0
+	return len(sm.maps) == 0
 }
 
 func (sm *StateMachine) OwnsMap(m *Map) bool {
@@ -440,14 +440,14 @@ func ParseCreateMaps(tbl *lua.LTable) ([]StateMachineMapSpec, error) {
 		}
 		switch v := value.(type) {
 		case lua.LNumber:
-			out = append(out, StateMachineMapSpec{TemplateID: uint32(v), Opts: DefaultMapInitOpts()})
+			out = append(out, StateMachineMapSpec{templateID: uint32(v), opts: DefaultMapInitOpts()})
 		case *lua.LTable:
 			id, ok := v.RawGetString("id").(lua.LNumber)
 			if !ok {
 				parseErr = fmt.Errorf("on_create map entry table needs a numeric id")
 				return
 			}
-			out = append(out, StateMachineMapSpec{TemplateID: uint32(id), Opts: ParseMapInitOptsLua(v)})
+			out = append(out, StateMachineMapSpec{templateID: uint32(id), opts: ParseMapInitOptsLua(v)})
 		default:
 			parseErr = fmt.Errorf("on_create map entry must be a map id")
 		}
@@ -467,8 +467,8 @@ func (sm *StateMachine) MapList() []*Map {
 	}
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	maps := make([]*Map, 0, len(sm.Maps))
-	for _, m := range sm.Maps {
+	maps := make([]*Map, 0, len(sm.maps))
+	for _, m := range sm.maps {
 		maps = append(maps, m)
 	}
 	return maps
@@ -508,11 +508,11 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal u
 	sm.disposed = true
 	players := make([]*Character, len(sm.players))
 	copy(players, sm.players)
-	group := sm.Group
-	pid := sm.ActorPID
+	group := sm.group
+	pid := sm.actorPID
 	scriptPath := ""
 	if group != nil {
-		scriptPath = group.ScriptPath
+		scriptPath = group.scriptPath
 	}
 	sm.players = nil
 	sm.playerSet = make(map[uint32]*Character)
@@ -521,8 +521,8 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal u
 	sm.callHookNow(ctx, scriptPath, "on_finish")
 
 	var exitMap *Map
-	if exitMapID > 0 && group != nil && group.GameWorld != nil {
-		exitMap = group.GameWorld.Systems().Get[*MapSystem]().Get(exitMapID)
+	if exitMapID > 0 && group != nil && group.gameWorld != nil {
+		exitMap = group.gameWorld.Systems().Get[*MapSystem]().Get(exitMapID)
 	}
 	for _, ch := range players {
 		if ch == nil {
@@ -533,8 +533,8 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal u
 			_ = ch.Warp(ctx, exitMap, exitPortal)
 		}
 	}
-	if group != nil && group.GameWorld != nil && pid != nil {
-		group.GameWorld.Systems().Get[*StateMachineSystem]().Send(pid, &StopStateMachine{})
+	if group != nil && group.gameWorld != nil && pid != nil {
+		group.gameWorld.Systems().Get[*StateMachineSystem]().Send(pid, &StopStateMachine{})
 	}
 }
 
@@ -554,22 +554,22 @@ func (sm *StateMachine) callHookNow(ctx actor.Context, scriptPath string, hook s
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx,
-		ActorPID:     sm.ActorPID,
+		ActorPID:     sm.actorPID,
 	})
 	if _, err := luax.Call(thread, hook, append([]interface{}{sm}, args...)...); err != nil {
 		name := ""
-		if sm.Group != nil {
-			name = sm.Group.Name
+		if sm.group != nil {
+			name = sm.group.name
 		}
 		fmt.Printf("state machine %s hook %s: %v\n", name, hook, err)
 	}
 }
 
 func (sm *StateMachine) CallHook(hook string, args ...interface{}) {
-	if sm == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || hook == "" {
+	if sm == nil || sm.Disposed() || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || hook == "" {
 		return
 	}
-	sm.Group.GameWorld.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &CallStateMachineHook{
+	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &CallStateMachineHook{
 		Hook: hook,
 		Args: args,
 	})
@@ -636,15 +636,15 @@ func (ch *Character) Spectating() bool {
 }
 
 func (sm *StateMachine) bind(ch *Character) {
-	ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
-		ch.StateMachine = sm
+	ch.gameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
+		ch.stateMachine = sm
 	})
 }
 
 func (sm *StateMachine) unbind(ch *Character) {
-	ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
-		if ch.StateMachine == sm {
-			ch.StateMachine = nil
+	ch.gameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
+		if ch.stateMachine == sm {
+			ch.stateMachine = nil
 		}
 	})
 }

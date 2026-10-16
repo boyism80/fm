@@ -27,7 +27,7 @@ func (*UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnSc
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
 

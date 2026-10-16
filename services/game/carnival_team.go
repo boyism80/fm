@@ -38,26 +38,26 @@ var carnivalGuardianBuffs = map[uint32]constant.MobBuffFlag{
 }
 
 type CarnivalPersonalCP struct {
-	AvailableCP int
-	TotalCP     int
+	availableCP int
+	totalCP     int
 }
 
 type CarnivalTeam struct {
-	Match       *CarnivalMatch
-	TeamID      constant.CarnivalTeam
-	LeaderID    uint32
-	PartyID     uint32
-	Roster      []*CarnivalMember
-	AvailableCP int
-	TotalCP     int
-	Personal    map[uint32]*CarnivalPersonalCP
-	Winner      bool
+	match       *CarnivalMatch
+	teamID      constant.CarnivalTeam
+	leaderID    uint32
+	partyID     uint32
+	roster      []*CarnivalMember
+	availableCP int
+	totalCP     int
+	personal    map[uint32]*CarnivalPersonalCP
+	winner      bool
 	guardians   map[uint32]*Reactor
 }
 
 func (t *CarnivalTeam) HasMember(characterID uint32) bool {
-	for _, member := range t.Roster {
-		if member.ID == characterID {
+	for _, member := range t.roster {
+		if member.id == characterID {
 			return true
 		}
 	}
@@ -65,11 +65,11 @@ func (t *CarnivalTeam) HasMember(characterID uint32) bool {
 }
 
 func (t *CarnivalTeam) Members() []*Character {
-	if t.Match == nil {
+	if t.match == nil {
 		return nil
 	}
-	out := make([]*Character, 0, len(t.Roster))
-	for _, ch := range t.Match.StateMachine().Players() {
+	out := make([]*Character, 0, len(t.roster))
+	for _, ch := range t.match.StateMachine().Players() {
 		if t.HasMember(ch.GetID()) {
 			out = append(out, ch)
 		}
@@ -79,7 +79,7 @@ func (t *CarnivalTeam) Members() []*Character {
 
 func (t *CarnivalTeam) Leader() *Character {
 	for _, ch := range t.Members() {
-		if ch.GetID() == t.LeaderID {
+		if ch.GetID() == t.leaderID {
 			return ch
 		}
 	}
@@ -87,51 +87,51 @@ func (t *CarnivalTeam) Leader() *Character {
 }
 
 func (t *CarnivalTeam) PersonalCP(characterID uint32) *CarnivalPersonalCP {
-	if t.Personal == nil {
+	if t.personal == nil {
 		return nil
 	}
-	return t.Personal[characterID]
+	return t.personal[characterID]
 }
 
 func (t *CarnivalTeam) AddCP(ch *Character, amount int) bool {
 	if amount <= 0 {
 		return false
 	}
-	if t.Match == nil || t.Match.GetState() != CarnivalStateBattle {
+	if t.match == nil || t.match.GetState() != CarnivalStateBattle {
 		return false
 	}
 	personal := t.PersonalCP(ch.GetID())
 	if personal == nil {
 		return false
 	}
-	personal.AvailableCP += amount
-	personal.TotalCP += amount
-	t.AvailableCP += amount
-	t.TotalCP += amount
-	ch.Listener.OnCarnivalObtainedCP(ch, personal.AvailableCP, personal.TotalCP)
-	ch.Listener.OnCarnivalPartyCP(ch, t.TeamID, t.AvailableCP, t.TotalCP)
+	personal.availableCP += amount
+	personal.totalCP += amount
+	t.availableCP += amount
+	t.totalCP += amount
+	ch.listener.OnCarnivalObtainedCP(ch, personal.availableCP, personal.totalCP)
+	ch.listener.OnCarnivalPartyCP(ch, t.teamID, t.availableCP, t.totalCP)
 	t.broadcastPartyCP(ch)
 	return true
 }
 
 func (t *CarnivalTeam) payableCP(ch *Character, amount int) *CarnivalPersonalCP {
 	personal := t.PersonalCP(ch.GetID())
-	if personal == nil || personal.AvailableCP < amount || t.AvailableCP < amount {
+	if personal == nil || personal.availableCP < amount || t.availableCP < amount {
 		return nil
 	}
 	return personal
 }
 
 func (t *CarnivalTeam) payCP(ch *Character, personal *CarnivalPersonalCP, amount int) {
-	personal.AvailableCP -= amount
-	t.AvailableCP -= amount
-	ch.Listener.OnCarnivalObtainedCP(ch, personal.AvailableCP, personal.TotalCP)
-	ch.Listener.OnCarnivalPartyCP(ch, t.TeamID, t.AvailableCP, t.TotalCP)
+	personal.availableCP -= amount
+	t.availableCP -= amount
+	ch.listener.OnCarnivalObtainedCP(ch, personal.availableCP, personal.totalCP)
+	ch.listener.OnCarnivalPartyCP(ch, t.teamID, t.availableCP, t.totalCP)
 	t.broadcastPartyCP(ch)
 }
 
 func (t *CarnivalTeam) SummonMob(ch *Character, field *Map, num int) CarnivalSummonResult {
-	carnival := field.Wz.Carnival
+	carnival := field.wz.Carnival
 	if carnival == nil || num < 0 || num >= len(carnival.Mobs) {
 		return CarnivalSummonFailed
 	}
@@ -145,7 +145,7 @@ func (t *CarnivalTeam) SummonMob(ch *Character, field *Map, num int) CarnivalSum
 	if !ok {
 		return CarnivalSummonNoSlot
 	}
-	if field.SummonMob(entry.ID, gen.Pos, t.TeamID) != nil {
+	if field.SummonMob(entry.ID, gen.Pos, t.teamID) != nil {
 		return CarnivalSummonNoSlot
 	}
 
@@ -154,11 +154,11 @@ func (t *CarnivalTeam) SummonMob(ch *Character, field *Map, num int) CarnivalSum
 }
 
 func (t *CarnivalTeam) freeMobGenPos(field *Map) (wz.CarnivalGenPos, bool) {
-	for _, gen := range field.Wz.Carnival.MobGenPos {
-		if gen.Team != int(t.TeamID) && gen.Team != int(constant.CarnivalTeamNone) {
+	for _, gen := range field.wz.Carnival.MobGenPos {
+		if gen.Team != int(t.teamID) && gen.Team != int(constant.CarnivalTeamNone) {
 			continue
 		}
-		used := slices.ContainsFunc(field.SummonedMobSpawns, func(spawn *MobSpawn) bool {
+		used := slices.ContainsFunc(field.summonedMobSpawns, func(spawn *MobSpawn) bool {
 			pos := spawn.Wz.Position
 			return pos.X == gen.Pos.X && pos.Y == gen.Pos.Y && (gen.Team == int(constant.CarnivalTeamNone) || spawn.Wz.Team == gen.Team)
 		})
@@ -170,12 +170,12 @@ func (t *CarnivalTeam) freeMobGenPos(field *Map) (wz.CarnivalGenPos, bool) {
 }
 
 func (t *CarnivalTeam) UseSkill(ch *Character, field *Map, num int) CarnivalSummonResult {
-	carnival := field.Wz.Carnival
-	if carnival == nil || t.Match == nil || num < 0 || num >= len(carnival.Skills) {
+	carnival := field.wz.Carnival
+	if carnival == nil || t.match == nil || num < 0 || num >= len(carnival.Skills) {
 		return CarnivalSummonFailed
 	}
 	skillID := carnival.Skills[num]
-	skillDef := field.GameWorld.GetResources().GetCarnivalSkill(skillID)
+	skillDef := field.gameWorld.GetResources().GetCarnivalSkill(skillID)
 	if skillDef == nil {
 		return CarnivalSummonFailed
 	}
@@ -184,7 +184,7 @@ func (t *CarnivalTeam) UseSkill(ch *Character, field *Map, num int) CarnivalSumm
 		return CarnivalSummonLackCP
 	}
 
-	enemy := t.Match.enemyTeam(t.TeamID)
+	enemy := t.match.enemyTeam(t.teamID)
 	if enemy == nil || !enemy.Debuff(field, skillID) {
 		return CarnivalSummonFailed
 	}
@@ -194,11 +194,11 @@ func (t *CarnivalTeam) UseSkill(ch *Character, field *Map, num int) CarnivalSumm
 }
 
 func (t *CarnivalTeam) SummonGuardian(ch *Character, field *Map, num uint32) CarnivalSummonResult {
-	carnival := field.Wz.Carnival
+	carnival := field.wz.Carnival
 	if carnival == nil {
 		return CarnivalSummonFailed
 	}
-	guardian := field.GameWorld.GetResources().GetCarnivalGuardian(num)
+	guardian := field.gameWorld.GetResources().GetCarnivalGuardian(num)
 	if guardian == nil {
 		return CarnivalSummonFailed
 	}
@@ -215,10 +215,10 @@ func (t *CarnivalTeam) SummonGuardian(ch *Character, field *Map, num uint32) Car
 		return CarnivalSummonNoSlot
 	}
 	reactorID := carnival.ReactorBlue
-	if t.TeamID == constant.CarnivalTeamRed {
+	if t.teamID == constant.CarnivalTeamRed {
 		reactorID = carnival.ReactorRed
 	}
-	reactor, err := field.SpawnReactorTemplate(reactorID, gen.Pos, fmt.Sprintf("%d%d", t.TeamID, num), carnivalGuardianSpawnState)
+	reactor, err := field.SpawnReactorTemplate(reactorID, gen.Pos, fmt.Sprintf("%d%d", t.teamID, num), carnivalGuardianSpawnState)
 	if err != nil {
 		return CarnivalSummonNoSlot
 	}
@@ -229,7 +229,7 @@ func (t *CarnivalTeam) SummonGuardian(ch *Character, field *Map, num uint32) Car
 
 	for _, obj := range field.GetMobs() {
 		mob, ok := obj.(*Mob)
-		if ok && mob.CarnivalTeam == t.TeamID {
+		if ok && mob.carnivalTeam == t.teamID {
 			t.buffGuardian(mob, guardian)
 		}
 	}
@@ -239,21 +239,21 @@ func (t *CarnivalTeam) SummonGuardian(ch *Character, field *Map, num uint32) Car
 }
 
 func (t *CarnivalTeam) isGuardianAlive(reactor *Reactor) bool {
-	if reactor == nil || reactor.Map == nil {
+	if reactor == nil || reactor.onMap == nil {
 		return false
 	}
-	return reactor.Map.GetReactor(reactor.OID) == reactor && reactor.State < carnivalGuardianDestroyedState
+	return reactor.onMap.GetReactor(reactor.oid) == reactor && reactor.state < carnivalGuardianDestroyedState
 }
 
 func (t *CarnivalTeam) freeGuardianGenPos(field *Map) (wz.CarnivalGenPos, bool) {
-	for _, gen := range field.Wz.Carnival.GuardianGenPos {
-		if gen.Team != int(t.TeamID) && gen.Team != int(constant.CarnivalTeamNone) {
+	for _, gen := range field.wz.Carnival.GuardianGenPos {
+		if gen.Team != int(t.teamID) && gen.Team != int(constant.CarnivalTeamNone) {
 			continue
 		}
 		used := false
 		for _, obj := range field.GetReactors() {
 			reactor, ok := obj.(*Reactor)
-			if ok && reactor.Position.X == gen.Pos.X && reactor.Position.Y == gen.Pos.Y && reactor.State < carnivalGuardianDestroyedState {
+			if ok && reactor.position.X == gen.Pos.X && reactor.position.Y == gen.Pos.Y && reactor.state < carnivalGuardianDestroyedState {
 				used = true
 				break
 			}
@@ -270,11 +270,11 @@ func (t *CarnivalTeam) buffGuardian(mob *Mob, guardian *wz.CarnivalGuardian) {
 	if !ok {
 		return
 	}
-	levelData := mob.GameWorld.GetResources().GetMobSkill(guardian.MobSkillID, guardian.Level)
+	levelData := mob.gameWorld.GetResources().GetMobSkill(guardian.MobSkillID, guardian.Level)
 	if levelData == nil {
 		return
 	}
-	mob.Buffs.Add(time.Duration(levelData.DurationMs)*time.Millisecond, levelData.SkillWz, guardian.Level, 0,
+	mob.buffs.Add(time.Duration(levelData.DurationMs)*time.Millisecond, levelData.SkillWz, guardian.Level, 0,
 		map[constant.MobBuffFlag]int32{flag: int32(levelData.X)}, nil)
 }
 
@@ -283,7 +283,7 @@ func (t *CarnivalTeam) buffGuardians(mob *Mob) {
 		if !t.isGuardianAlive(reactor) {
 			continue
 		}
-		guardian := mob.GameWorld.GetResources().GetCarnivalGuardian(num)
+		guardian := mob.gameWorld.GetResources().GetCarnivalGuardian(num)
 		if guardian != nil {
 			t.buffGuardian(mob, guardian)
 		}
@@ -296,14 +296,14 @@ func (t *CarnivalTeam) destroyGuardian(reactor *Reactor) bool {
 			continue
 		}
 		delete(t.guardians, num)
-		guardian := reactor.GameWorld.GetResources().GetCarnivalGuardian(num)
-		if guardian == nil || reactor.Map == nil {
+		guardian := reactor.gameWorld.GetResources().GetCarnivalGuardian(num)
+		if guardian == nil || reactor.onMap == nil {
 			return true
 		}
-		for _, obj := range reactor.Map.GetMobs() {
+		for _, obj := range reactor.onMap.GetMobs() {
 			mob, ok := obj.(*Mob)
-			if ok && mob.CarnivalTeam == t.TeamID {
-				mob.Buffs.Dispel(guardian.MobSkillID)
+			if ok && mob.carnivalTeam == t.teamID {
+				mob.buffs.Dispel(guardian.MobSkillID)
 			}
 		}
 		return true
@@ -313,15 +313,15 @@ func (t *CarnivalTeam) destroyGuardian(reactor *Reactor) bool {
 
 func (t *CarnivalTeam) ShowResult() {
 	for _, ch := range t.Members() {
-		ch.Listener.OnCarnivalResult(ch, t.Winner)
+		ch.listener.OnCarnivalResult(ch, t.winner)
 	}
 }
 
 func (t *CarnivalTeam) broadcastPartyCP(origin *Character) {
-	if t.Match == nil {
+	if t.match == nil {
 		return
 	}
-	sm := t.Match.StateMachine()
+	sm := t.match.StateMachine()
 	if sm == nil {
 		return
 	}
@@ -329,21 +329,21 @@ func (t *CarnivalTeam) broadcastPartyCP(origin *Character) {
 		if p == nil || p.GetID() == origin.GetID() {
 			continue
 		}
-		p.Listener.OnCarnivalPartyCP(p, t.TeamID, t.AvailableCP, t.TotalCP)
+		p.listener.OnCarnivalPartyCP(p, t.teamID, t.availableCP, t.totalCP)
 	}
 }
 
 // Only members standing on field can be hit; a skill that targets all still misses each one by chance.
 func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
-	if t.Match == nil || t.Match.GetState() != CarnivalStateBattle {
+	if t.match == nil || t.match.GetState() != CarnivalStateBattle {
 		return false
 	}
-	skillDef := field.GameWorld.GetResources().GetCarnivalSkill(skillID)
+	skillDef := field.gameWorld.GetResources().GetCarnivalSkill(skillID)
 	if skillDef == nil {
 		return false
 	}
 
-	targets := make([]*Character, 0, len(t.Roster))
+	targets := make([]*Character, 0, len(t.roster))
 	for _, member := range t.Members() {
 		if member.GetMap() == field {
 			targets = append(targets, member)
@@ -359,33 +359,33 @@ func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
 		targets = targets[:1]
 	}
 
-	chance := t.Match.registry.SkillHitChance(skillID, skillDef.HitChance)
+	chance := t.match.registry.SkillHitChance(skillID, skillDef.HitChance)
 	for _, target := range targets {
 		if skillDef.TargetsAll && rand.Intn(100) >= chance {
 			continue
 		}
-		if !target.Debuffs.GiveMobSkill(skillDef.MobSkillID, skillDef.Level) {
-			target.Buffs.Dispel()
+		if !target.debuffs.GiveMobSkill(skillDef.MobSkillID, skillDef.Level) {
+			target.buffs.Dispel()
 		}
 	}
 	return true
 }
 
 func (t *CarnivalTeam) Warp(ctx actor.Context, mapID uint32, portalName string) bool {
-	if t.Match == nil {
+	if t.match == nil {
 		return false
 	}
-	gw := t.Match.gameWorld()
+	gw := t.match.gameWorld()
 	if gw == nil {
 		return false
 	}
-	dest := gw.Systems().Get[*MapSystem]().Find(t.Match.StateMachine(), mapID)
+	dest := gw.Systems().Get[*MapSystem]().Find(t.match.StateMachine(), mapID)
 	if dest == nil {
 		return false
 	}
 	spawn := uint8(0)
-	if portalName != "" && dest.Wz != nil {
-		for _, p := range dest.Wz.Portals {
+	if portalName != "" && dest.wz != nil {
+		for _, p := range dest.wz.Portals {
 			if p.Name == portalName {
 				spawn = p.ID
 				break
@@ -399,20 +399,20 @@ func (t *CarnivalTeam) Warp(ctx actor.Context, mapID uint32, portalName string) 
 }
 
 func (t *CarnivalTeam) RemoveMember(ch *Character) {
-	t.Roster = slices.DeleteFunc(t.Roster, func(member *CarnivalMember) bool {
-		return member.ID == ch.GetID()
+	t.roster = slices.DeleteFunc(t.roster, func(member *CarnivalMember) bool {
+		return member.id == ch.GetID()
 	})
-	ch.Carnival.team = nil
+	ch.carnival.team = nil
 }
 
 func (t *CarnivalTeam) Clear() {
 	for _, ch := range t.Members() {
-		ch.Carnival.team = nil
+		ch.carnival.team = nil
 	}
-	t.Roster = nil
-	t.LeaderID = 0
-	t.AvailableCP = 0
-	t.TotalCP = 0
-	t.Personal = nil
-	t.Winner = false
+	t.roster = nil
+	t.leaderID = 0
+	t.availableCP = 0
+	t.totalCP = 0
+	t.personal = nil
+	t.winner = false
 }

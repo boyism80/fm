@@ -10,11 +10,11 @@ type PartySearchConfig struct {
 }
 
 func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32) bool {
-	if accepter == nil || accepter.GameWorld == nil {
+	if accepter == nil || accepter.gameWorld == nil {
 		return false
 	}
 	var p *Party
-	if gw := accepter.GameWorld; gw != nil {
+	if gw := accepter.gameWorld; gw != nil {
 		p = gw.Systems().Get[*PartySystem]().Get(partyID)
 	}
 	if p == nil {
@@ -32,15 +32,15 @@ func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32)
 	if leader == nil {
 		return false
 	}
-	lpid := leader.Party.ID()
+	lpid := leader.party.ID()
 	if lpid == nil || *lpid != partyID {
 		return false
 	}
-	cfg := leader.Party.Search
+	cfg := leader.party.search
 	if cfg == nil {
 		return false
 	}
-	if accepter.Party.ID() != nil {
+	if accepter.party.ID() != nil {
 		return false
 	}
 	lvl := int32(accepter.GetLevel())
@@ -83,7 +83,7 @@ func MatchesPartySearchClassMask(ch *Character, classMask int32) bool {
 		0x40000: constant.ClassCrossbowman,
 	}
 	if (classMask & 0x2) != 0 {
-		if ch.Class == constant.ClassBeginner {
+		if ch.class == constant.ClassBeginner {
 			return true
 		}
 	}
@@ -91,7 +91,7 @@ func MatchesPartySearchClassMask(ch *Character, classMask int32) bool {
 		if (classMask & bit) == 0 {
 			continue
 		}
-		if ch.Class.Of(classCode) {
+		if ch.class.Of(classCode) {
 			return true
 		}
 	}

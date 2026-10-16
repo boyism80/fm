@@ -31,7 +31,7 @@ func (d *Dialog) Buy(shop *wz.Shop, itemID uint32, count uint16) {
 	}
 	switch d.owner.Exchange(spec) {
 	case ExchangeOK:
-		d.owner.Listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionBuyOK)
+		d.owner.listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionBuyOK)
 	case ExchangeLackCapacity:
 		d.owner.Message("인벤토리 공간이 부족합니다.")
 	}
@@ -46,7 +46,7 @@ func (d *Dialog) Sell(slot int16, itemID uint32, count uint16) {
 		return
 	}
 	invType := model.GetInventoryType()
-	item := d.owner.Inventory.GetItem(invType, slot)
+	item := d.owner.inventory.GetItem(invType, slot)
 	if item == nil || item.GetModel().GetID() != itemID {
 		return
 	}
@@ -61,19 +61,19 @@ func (d *Dialog) Sell(slot int16, itemID uint32, count uint16) {
 		return
 	}
 	meso := model.SellPrice(count)
-	if meso <= 0 || meso > math.MaxInt32-int(d.owner.Inventory.Meso) {
+	if meso <= 0 || meso > math.MaxInt32-int(d.owner.inventory.meso) {
 		return
 	}
 
-	if !d.owner.Inventory.RemoveItem(invType, slot, count) {
+	if !d.owner.inventory.RemoveItem(invType, slot, count) {
 		return
 	}
-	d.owner.Inventory.GainMeso(int32(meso))
-	d.owner.Listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionUpdateOK)
+	d.owner.inventory.GainMeso(int32(meso))
+	d.owner.listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionUpdateOK)
 }
 
 func (d *Dialog) Recharge(slot int16) {
-	item := d.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot)
+	item := d.owner.inventory.GetItem(constant.InventoryTypeConsume, slot)
 	if item == nil {
 		return
 	}
@@ -87,10 +87,10 @@ func (d *Dialog) Recharge(slot int16) {
 	}
 
 	price := int32(model.RechargePrice(capacity - item.GetCount()))
-	if price > 0 && !d.owner.Inventory.RemoveMeso(price) {
+	if price > 0 && !d.owner.inventory.RemoveMeso(price) {
 		return
 	}
 	item.SetCount(capacity)
-	d.owner.Listener.OnInventorySlotUpdated(d.owner, constant.InventoryTypeConsume, slot, item)
-	d.owner.Listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionUpdateOK)
+	d.owner.listener.OnInventorySlotUpdated(d.owner, constant.InventoryTypeConsume, slot, item)
+	d.owner.listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionUpdateOK)
 }

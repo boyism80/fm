@@ -25,6 +25,6 @@ func (h *FamilyInvite) Handle(ctx *core.ClientContext, req *request.FamilyInvite
 		return nil
 	}
 
-	ch.Family.Invite(req.Name)
+	ch.Family().Invite(req.Name)
 	return nil
 }

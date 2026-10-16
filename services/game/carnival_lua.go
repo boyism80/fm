@@ -57,7 +57,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.WaitingMapID))
+			L.Push(lua.LNumber(match.waitingMapID))
 			return 1
 		},
 		"slot": func(L *lua.LState) int {
@@ -67,7 +67,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.SlotIndex))
+			L.Push(lua.LNumber(match.slotIndex))
 			return 1
 		},
 		"state": func(L *lua.LState) int {
@@ -87,7 +87,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.MaxMembers))
+			L.Push(lua.LNumber(match.maxMembers))
 			return 1
 		},
 		"waiting_map_id": func(L *lua.LState) int {
@@ -97,7 +97,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.WaitingMapID))
+			L.Push(lua.LNumber(match.waitingMapID))
 			return 1
 		},
 		"field_map_id": func(L *lua.LState) int {
@@ -107,7 +107,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.FieldMapID))
+			L.Push(lua.LNumber(match.fieldMapID))
 			return 1
 		},
 		"revive_map_id": func(L *lua.LState) int {
@@ -117,7 +117,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.ReviveMapID))
+			L.Push(lua.LNumber(match.reviveMapID))
 			return 1
 		},
 		"win_map_id": func(L *lua.LState) int {
@@ -127,7 +127,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.WinMapID))
+			L.Push(lua.LNumber(match.winMapID))
 			return 1
 		},
 		"lose_map_id": func(L *lua.LState) int {
@@ -137,7 +137,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			L.Push(lua.LNumber(match.LoseMapID))
+			L.Push(lua.LNumber(match.loseMapID))
 			return 1
 		},
 		"red_team": func(L *lua.LState) int {
@@ -373,13 +373,13 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			L.Push(lua.LNumber(team.TeamID))
+			L.Push(lua.LNumber(team.teamID))
 			return 1
 		},
 		"leader": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			team, ok := ud.Value.(*CarnivalTeam)
-			if !ok || team == nil || team.Match == nil {
+			if !ok || team == nil || team.match == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -394,7 +394,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"members": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			team, ok := ud.Value.(*CarnivalTeam)
-			if !ok || team == nil || team.Match == nil {
+			if !ok || team == nil || team.match == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -413,7 +413,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			tbl := L.NewTable()
-			for i, member := range team.Roster {
+			for i, member := range team.roster {
 				tbl.RawSetInt(i+1, luax.NewLuable(L, member))
 			}
 			L.Push(tbl)
@@ -426,7 +426,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			L.Push(lua.LNumber(len(team.Roster)))
+			L.Push(lua.LNumber(len(team.roster)))
 			return 1
 		},
 		"available_cp": func(L *lua.LState) int {
@@ -436,7 +436,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			L.Push(lua.LNumber(team.AvailableCP))
+			L.Push(lua.LNumber(team.availableCP))
 			return 1
 		},
 		"total_cp": func(L *lua.LState) int {
@@ -446,7 +446,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			L.Push(lua.LNumber(team.TotalCP))
+			L.Push(lua.LNumber(team.totalCP))
 			return 1
 		},
 		"personal_cp": func(L *lua.LState) int {
@@ -560,7 +560,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			L.Push(lua.LBool(team.Winner))
+			L.Push(lua.LBool(team.winner))
 			return 1
 		},
 		"set_winner": func(L *lua.LState) int {
@@ -570,7 +570,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			team.Winner = lua.LVAsBool(L.Get(2))
+			team.winner = lua.LVAsBool(L.Get(2))
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -637,7 +637,7 @@ func (p *CarnivalPersonalCP) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalPersonalCP expected")
 				return 0
 			}
-			L.Push(lua.LNumber(personal.AvailableCP))
+			L.Push(lua.LNumber(personal.availableCP))
 			return 1
 		},
 		"total_cp": func(L *lua.LState) int {
@@ -647,7 +647,7 @@ func (p *CarnivalPersonalCP) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalPersonalCP expected")
 				return 0
 			}
-			L.Push(lua.LNumber(personal.TotalCP))
+			L.Push(lua.LNumber(personal.totalCP))
 			return 1
 		},
 	}
@@ -671,19 +671,19 @@ func (member *CarnivalMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).ID))
+			L.Push(lua.LNumber(check(L).id))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).Name))
+			L.Push(lua.LString(check(L).name))
 			return 1
 		},
 		"level": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).Level))
+			L.Push(lua.LNumber(check(L).level))
 			return 1
 		},
 		"class": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).Class))
+			L.Push(lua.LNumber(check(L).class))
 			return 1
 		},
 	}

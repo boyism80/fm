@@ -48,7 +48,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(skill.MasterLevel))
+				L.Push(lua.LNumber(skill.masterLevel))
 				return 1
 			case 2:
 				skill.SetMasterLevel(L.CheckInt(2))
@@ -65,11 +65,11 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Skill expected")
 				return 0
 			}
-			if skill.Wz == nil {
+			if skill.wz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, skill.Wz))
+			L.Push(luax.NewLuable(L, skill.wz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
@@ -83,7 +83,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0
 			}
-			ld := skill.Wz.GetLevelData(skill.Level())
+			ld := skill.wz.GetLevelData(skill.Level())
 			if ld == nil {
 				L.Push(lua.LNil)
 				return 1

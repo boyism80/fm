@@ -96,15 +96,15 @@ func ParseMapInitOptsLua(tbl *lua.LTable) MapInitOpts {
 }
 
 type Map struct {
-	Wz                *wz.Map
+	wz                *wz.Map
 	id                uint32
 	instance          *instanceState
 	objects           map[constant.ObjectType]map[uint32]Object
 	sections          *sectionGrid
 	controllerTable   *ControllerTable
-	MobSpawns         map[uint32]*MobSpawn
-	SummonedMobSpawns []*MobSpawn
-	ReactorSpawns     map[uint32]*ReactorSpawn
+	mobSpawns         map[uint32]*MobSpawn
+	summonedMobSpawns []*MobSpawn
+	reactorSpawns     map[uint32]*ReactorSpawn
 	blockedMobGen     map[uint32]struct{}
 	mobGenBlockedAll  bool
 	reactorGenBlocked bool
@@ -112,7 +112,7 @@ type Map struct {
 	mobListener       MobListener
 	sequence          uint32
 	availableOIDs     []uint32
-	GameWorld         GameWorld
+	gameWorld         GameWorld
 	actorPID          *actor.PID
 	stateMachine      *StateMachine
 	luaRoot           *lua.LState
@@ -154,14 +154,14 @@ func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, ma
 		objects:         make(map[constant.ObjectType]map[uint32]Object),
 		sections:        newSectionGrid(),
 		controllerTable: nil,
-		MobSpawns:       make(map[uint32]*MobSpawn),
+		mobSpawns:       make(map[uint32]*MobSpawn),
 		blockedMobGen:   make(map[uint32]struct{}),
 		listener:        listener,
 		mobListener:     mobListener,
-		Wz:              wz,
+		wz:              wz,
 		sequence:        0,
 		availableOIDs:   make([]uint32, 0),
-		GameWorld:       gw,
+		gameWorld:       gw,
 		actorPID:        actorPID,
 		stateMachine:    opts.StateMachine,
 	}
@@ -237,8 +237,8 @@ func (m *Map) releaseOID(oid uint32) {
 }
 
 func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
-	if character.Map != nil {
-		return fmt.Errorf("character %d is still on map %d", playerID, character.Map.GetMapID())
+	if character.onMap != nil {
+		return fmt.Errorf("character %d is still on map %d", playerID, character.onMap.GetMapID())
 	}
 	if err := m.enter(); err != nil {
 		return err
@@ -248,20 +248,20 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 		m.objects[constant.ObjectTypeCharacter] = make(map[uint32]Object)
 	}
 
-	character.Map = m
-	if m.Wz.FieldType != wz.FieldTypeDojo {
-		character.Dojo.SetEnergy(0)
+	character.onMap = m
+	if m.wz.FieldType != wz.FieldTypeDojo {
+		character.dojo.SetEnergy(0)
 	}
-	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
-		character.Position = pos
+	if pos, ok := m.wz.GetSpawnPosition(spawnPoint); ok {
+		character.position = pos
 	}
-	character.Stance = constant.StanceDefaultValue
+	character.stance = constant.StanceDefaultValue
 	if init {
-		character.Pets.restore()
+		character.pets.restore()
 	}
-	if character.Pets.Active != nil {
-		character.Pets.Active.Position = character.Position
-		character.Pets.Active.Stance = character.Stance
+	if character.pets.active != nil {
+		character.pets.active.position = character.position
+		character.pets.active.stance = character.stance
 	}
 
 	m.objects[constant.ObjectTypeCharacter][playerID] = character
@@ -271,36 +271,36 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	m.listener.OnPlayerAdded(ctx, m, character, spawnPoint, init)
 	m.controllerTable.EnterPlayer(character)
 	if init {
-		character.Skills.RestorePassives()
-		character.Debuffs.restore()
-		character.Buffs.restoreEffects()
+		character.skills.RestorePassives()
+		character.debuffs.restore()
+		character.buffs.restoreEffects()
 	}
-	character.Buffs.scheduleExpires()
-	if m.Wz.Limits(constant.FieldLimitMount) {
-		character.Mount.Dismount()
+	character.buffs.scheduleExpires()
+	if m.wz.Limits(constant.FieldLimitMount) {
+		character.mount.Dismount()
 	} else if init {
-		character.Mount.start()
+		character.mount.start()
 	}
 
-	for _, summon := range character.Summons.All() {
-		if summon == nil || summon.Owner != character {
+	for _, summon := range character.summons.All() {
+		if summon == nil || summon.owner != character {
 			continue
 		}
-		summon.Position = character.Position
+		summon.position = character.position
 		m.AddSummon(summon)
 	}
 
 	m.callMapLifecycleScript(character, "on_map_enter")
-	if character.StateMachine != nil {
-		character.StateMachine.HandlePlayerMapEnter(character, m)
+	if character.stateMachine != nil {
+		character.stateMachine.HandlePlayerMapEnter(character, m)
 	}
-	m.GameWorld.Systems().Get[*ExpeditionSystem]().SyncClock(character, m)
+	m.gameWorld.Systems().Get[*ExpeditionSystem]().SyncClock(character, m)
 
 	return nil
 }
 
 func (m *Map) callMapLifecycleScript(character *Character, hook string) {
-	if m == nil || character == nil || character.GameWorld == nil {
+	if m == nil || character == nil || character.gameWorld == nil {
 		return
 	}
 	if character.GetMap() != m {
@@ -342,32 +342,32 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 
 	character := m.objects[constant.ObjectTypeCharacter][playerID].(*Character)
 	m.collectOwnedFieldDrops(character)
-	if es, ok := character.MiniRoom.(*EntrustedShop); ok && es.OwnerID == character.GetID() {
-		character.Listener.OnMiniRoomLeft(character, 0, pconst.MiniRoomLeaveMapMoved)
+	if es, ok := character.miniRoom.(*EntrustedShop); ok && es.ownerID == character.GetID() {
+		character.listener.OnMiniRoomLeft(character, 0, pconst.MiniRoomLeaveMapMoved)
 	}
-	if character.MiniRoom != nil {
-		character.MiniRoom.Leave(character)
+	if character.miniRoom != nil {
+		character.miniRoom.Leave(character)
 	}
-	character.LieDetector.Escape()
+	character.lieDetector.Escape()
 
 	m.callMapLifecycleScript(character, "on_map_leave")
 
-	for _, summon := range character.Summons.All() {
-		if summon == nil || summon.Map != m || summon.OID == 0 {
+	for _, summon := range character.summons.All() {
+		if summon == nil || summon.onMap != m || summon.oid == 0 {
 			continue
 		}
-		m.RemoveSummon(summon.OID, false)
+		m.RemoveSummon(summon.oid, false)
 	}
 
 	delete(m.objects[constant.ObjectTypeCharacter], playerID)
 	m.sections.remove(character)
 
-	character.Dialog.Close()
+	character.dialog.Close()
 	character.RemoveTimer(clockTimer)
 	character.SuspendTimers()
-	character.Party.Search = nil
+	character.party.search = nil
 	m.controllerTable.LeavePlayer(character)
-	character.Map = nil
+	character.onMap = nil
 
 	m.listener.OnPlayerRemoved(m, character)
 	m.release()
@@ -380,7 +380,7 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 	if character == nil {
 		return fmt.Errorf("player %d not found on map", playerID)
 	}
-	character.Wedding.HideFromSpouse(ctx)
+	character.wedding.HideFromSpouse(ctx)
 
 	if root := m.GetLuaRoot(); root != nil {
 		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
@@ -393,11 +393,11 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 		}
 	}
 
-	if character.MiniRoom != nil {
-		character.MiniRoom.Leave(character)
+	if character.miniRoom != nil {
+		character.miniRoom.Leave(character)
 	}
-	character.LieDetector.Escape()
-	entry := character.BuildRPC(m.GameWorld.GetWorldID())
+	character.lieDetector.Escape()
+	entry := character.BuildRPC(m.gameWorld.GetWorldID())
 	err := m.RemovePlayer(playerID)
 	character.ClearTimers()
 	select {
@@ -410,10 +410,10 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 func (m *Map) GetMapID() uint32 { return m.id }
 
 func (m *Map) TemplateID() uint32 {
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return 0
 	}
-	return uint32(m.Wz.ID)
+	return uint32(m.wz.ID)
 }
 
 func (m *Map) IsInstance() bool {
@@ -421,11 +421,11 @@ func (m *Map) IsInstance() bool {
 }
 
 func (m *Map) BlocksMove() bool {
-	return m.Wz.MoveBlocked || m.IsInstance() || m.StateMachine() != nil
+	return m.wz.MoveBlocked || m.IsInstance() || m.StateMachine() != nil
 }
 
 func (m *Map) BlocksTeleportStone() bool {
-	return m.Wz.Limits(constant.FieldLimitTeleportStone|constant.FieldLimitMovementSkill) || m.BlocksMove()
+	return m.wz.Limits(constant.FieldLimitTeleportStone|constant.FieldLimitMovementSkill) || m.BlocksMove()
 }
 
 func (m *Map) GetObject(objectType constant.ObjectType, id uint32) Object {
@@ -487,7 +487,7 @@ func (m *Map) GetPartyMembers(partyID uint32) []*Character {
 		if !ok || ch == nil {
 			continue
 		}
-		pid := ch.Party.ID()
+		pid := ch.party.ID()
 		if pid != nil && *pid == partyID {
 			out = append(out, ch)
 		}
@@ -503,20 +503,20 @@ func (m *Map) GetControllerTable() *ControllerTable {
 }
 
 func (m *Map) GetRecoveryRate() float32 {
-	if m.Wz == nil {
+	if m.wz == nil {
 		return 1.0
 	}
-	if m.Wz.RecoveryRate <= 0 {
+	if m.wz.RecoveryRate <= 0 {
 		return 1.0
 	}
-	return m.Wz.RecoveryRate
+	return m.wz.RecoveryRate
 }
 
 func (m *Map) PointBelow(point types.Point[int16]) *types.Point[int16] {
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return nil
 	}
-	return m.Wz.PointBelow(point)
+	return m.wz.PointBelow(point)
 }
 
 func (m *Map) initNpcs() {
@@ -524,18 +524,18 @@ func (m *Map) initNpcs() {
 		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
 	}
 
-	for _, wz := range m.Wz.NpcSpawns {
+	for _, wz := range m.wz.NpcSpawns {
 		oid := m.allocateOID()
 		npc := &Npc{
-			ObjectCore: ObjectCore{
-				OID:       oid,
-				Position:  types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
-				GameWorld: m.GameWorld,
-				Map:       m,
+			objectCore: ObjectCore{
+				oid:       oid,
+				position:  types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
+				gameWorld: m.gameWorld,
+				onMap:     m,
 			},
-			Wz: &wz,
+			wz: &wz,
 		}
-		npc.ObjectCore.self = npc
+		npc.objectCore.self = npc
 		npc.initTimers()
 		m.objects[constant.ObjectTypeNpc][oid] = npc
 		m.sections.add(npc)
@@ -563,35 +563,35 @@ func (m *Map) AddSummon(s *Summon) {
 	if s == nil {
 		return
 	}
-	if s.Owner == nil {
+	if s.owner == nil {
 		panic("AddSummon: summon.Owner must not be nil")
 	}
-	if s.LifeCore.ObjectCore.self == nil {
-		s.LifeCore.ObjectCore.self = s
+	if s.lifeCore.objectCore.self == nil {
+		s.lifeCore.objectCore.self = s
 	}
-	if s.Map == m && m.objects[constant.ObjectTypeSummon] != nil {
-		if existing, ok := m.objects[constant.ObjectTypeSummon][s.OID]; ok && existing == s {
+	if s.onMap == m && m.objects[constant.ObjectTypeSummon] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeSummon][s.oid]; ok && existing == s {
 			return
 		}
 	}
-	if s.Map != nil && s.Map != m {
+	if s.onMap != nil && s.onMap != m {
 		return
 	}
-	s.ObjectCore.GameWorld = m.GameWorld
+	s.objectCore.gameWorld = m.gameWorld
 	if m.objects[constant.ObjectTypeSummon] == nil {
 		m.objects[constant.ObjectTypeSummon] = make(map[uint32]Object)
 	}
-	if s.OID == 0 {
-		s.OID = m.allocateOID()
+	if s.oid == 0 {
+		s.oid = m.allocateOID()
 	}
-	if s.Map == nil {
-		s.Map = m
+	if s.onMap == nil {
+		s.onMap = m
 	}
 	s.initTimers()
-	m.objects[constant.ObjectTypeSummon][s.OID] = s
+	m.objects[constant.ObjectTypeSummon][s.oid] = s
 	m.sections.add(s)
 
-	s.Owner.Listener.OnSummonSpawn(s.Owner, s)
+	s.owner.listener.OnSummonSpawn(s.owner, s)
 }
 
 func (m *Map) RemoveSummon(oid uint32, animated bool) {
@@ -611,14 +611,14 @@ func (m *Map) RemoveSummon(oid uint32, animated bool) {
 		return
 	}
 
-	s.Owner.Listener.OnSummonRemove(s.Owner, s, animated)
+	s.owner.listener.OnSummonRemove(s.owner, s, animated)
 
 	m.sections.remove(s)
 	delete(m.objects[constant.ObjectTypeSummon], oid)
 	m.releaseOID(oid)
-	if s.Map == m {
-		s.Map = nil
-		s.OID = 0
+	if s.onMap == m {
+		s.onMap = nil
+		s.oid = 0
 	}
 }
 
@@ -636,29 +636,29 @@ func (m *Map) AddMist(mist *Mist) {
 	if mist == nil {
 		return
 	}
-	if mist.ObjectCore.self == nil {
-		mist.ObjectCore.self = mist
+	if mist.objectCore.self == nil {
+		mist.objectCore.self = mist
 	}
-	if mist.Map == m && m.objects[constant.ObjectTypeMist] != nil {
-		if existing, ok := m.objects[constant.ObjectTypeMist][mist.OID]; ok && existing == mist {
+	if mist.onMap == m && m.objects[constant.ObjectTypeMist] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeMist][mist.oid]; ok && existing == mist {
 			return
 		}
 	}
-	if mist.Map != nil && mist.Map != m {
+	if mist.onMap != nil && mist.onMap != m {
 		return
 	}
-	mist.ObjectCore.GameWorld = m.GameWorld
+	mist.objectCore.gameWorld = m.gameWorld
 	if m.objects[constant.ObjectTypeMist] == nil {
 		m.objects[constant.ObjectTypeMist] = make(map[uint32]Object)
 	}
-	if mist.OID == 0 {
-		mist.OID = m.allocateOID()
+	if mist.oid == 0 {
+		mist.oid = m.allocateOID()
 	}
-	if mist.Map == nil {
-		mist.Map = m
+	if mist.onMap == nil {
+		mist.onMap = m
 	}
 	mist.initTimers()
-	m.objects[constant.ObjectTypeMist][mist.OID] = mist
+	m.objects[constant.ObjectTypeMist][mist.oid] = mist
 	m.sections.add(mist)
 	m.listener.OnMistSpawned(m, mist)
 }
@@ -685,9 +685,9 @@ func (m *Map) RemoveMist(oid uint32) {
 	m.sections.remove(mi)
 	delete(m.objects[constant.ObjectTypeMist], oid)
 	m.releaseOID(oid)
-	if mi.Map == m {
-		mi.Map = nil
-		mi.OID = 0
+	if mi.onMap == m {
+		mi.onMap = nil
+		mi.oid = 0
 	}
 }
 
@@ -705,35 +705,35 @@ func (m *Map) AddDoor(door *Door) {
 	if door == nil {
 		return
 	}
-	if door.ObjectCore.self == nil {
-		door.ObjectCore.self = door
+	if door.objectCore.self == nil {
+		door.objectCore.self = door
 	}
-	if door.Map == m && m.objects[constant.ObjectTypeDoor] != nil {
-		if existing, ok := m.objects[constant.ObjectTypeDoor][door.OID]; ok && existing == door {
+	if door.onMap == m && m.objects[constant.ObjectTypeDoor] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeDoor][door.oid]; ok && existing == door {
 			return
 		}
 	}
-	if door.Map != nil && door.Map != m {
+	if door.onMap != nil && door.onMap != m {
 		return
 	}
-	door.ObjectCore.GameWorld = m.GameWorld
+	door.objectCore.gameWorld = m.gameWorld
 	if m.objects[constant.ObjectTypeDoor] == nil {
 		m.objects[constant.ObjectTypeDoor] = make(map[uint32]Object)
 	}
-	if door.OID == 0 {
-		door.OID = m.allocateOID()
+	if door.oid == 0 {
+		door.oid = m.allocateOID()
 	}
-	if door.Map == nil {
-		door.Map = m
+	if door.onMap == nil {
+		door.onMap = m
 	}
 	switch m {
-	case door.Field.Map:
-		door.Position = door.Field.Position
-	case door.Return.Map:
-		door.Position = door.Return.Position
+	case door.field.Map:
+		door.position = door.field.Position
+	case door.onReturn.Map:
+		door.position = door.onReturn.Position
 	}
 	door.initTimers()
-	m.objects[constant.ObjectTypeDoor][door.OID] = door
+	m.objects[constant.ObjectTypeDoor][door.oid] = door
 	m.sections.add(door)
 	door.BroadcastCall(func(obj Object) {
 		ch, ok := obj.(*Character)
@@ -753,13 +753,13 @@ func (m *Map) RemoveDoorByKey(key DoorKey, animated bool, notifyCounterpart bool
 	if door == nil {
 		return
 	}
-	m.removeDoorInternal(door.OID, animated, notifyCounterpart)
+	m.removeDoorInternal(door.oid, animated, notifyCounterpart)
 }
 
 func (m *Map) FindDoorByKey(key DoorKey) *Door {
 	for _, object := range m.GetObjects(constant.ObjectTypeDoor) {
 		door, ok := object.(*Door)
-		if !ok || door.OID == 0 || door.Key != key {
+		if !ok || door.oid == 0 || door.key != key {
 			continue
 		}
 		return door
@@ -784,33 +784,33 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 		return
 	}
 
-	if ch := m.GetPlayer(door.OwnerID); ch != nil {
-		ch.Doors.forget(door)
+	if ch := m.GetPlayer(door.ownerID); ch != nil {
+		ch.doors.forget(door)
 	}
 
 	var counterpart *Map
 	switch m {
-	case door.Field.Map:
-		counterpart = door.Return.Map
-	case door.Return.Map:
-		counterpart = door.Field.Map
+	case door.field.Map:
+		counterpart = door.onReturn.Map
+	case door.onReturn.Map:
+		counterpart = door.field.Map
 	}
-	skillID := door.SkillID
+	skillID := door.skillID
 
 	m.listener.OnDoorRemoved(m, door, animated)
 
 	delete(m.objects[constant.ObjectTypeDoor], oid)
 	m.sections.remove(door)
 	m.releaseOID(oid)
-	if door.Map == m {
-		door.Map = nil
-		door.OID = 0
+	if door.onMap == m {
+		door.onMap = nil
+		door.oid = 0
 	}
 
-	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpart != nil && m.GameWorld != nil {
-		m.GameWorld.Systems().Get[*MapSystem]().DespawnDoor(counterpart, door.Key, animated, false)
+	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpart != nil && m.gameWorld != nil {
+		m.gameWorld.Systems().Get[*MapSystem]().DespawnDoor(counterpart, door.key, animated, false)
 	}
-	if m == door.Field.Map {
+	if m == door.field.Map {
 		door.fieldRef.Release()
 	}
 }
@@ -834,7 +834,7 @@ func (m *Map) FindDoorOwner(ownerID uint32) *Door {
 		if !ok || d == nil {
 			continue
 		}
-		if d.OwnerID == ownerID {
+		if d.ownerID == ownerID {
 			return d
 		}
 	}
@@ -873,7 +873,7 @@ func (m *Map) resyncOwnerDoorPortals(owner *Character) {
 	oid := owner.GetID()
 	for _, obj := range m.GetObjects(constant.ObjectTypeDoor) {
 		d, ok := obj.(*Door)
-		if !ok || d == nil || d.OwnerID != oid {
+		if !ok || d == nil || d.ownerID != oid {
 			continue
 		}
 		d.SendOwnerPortalResync(owner)
@@ -881,8 +881,8 @@ func (m *Map) resyncOwnerDoorPortals(owner *Character) {
 }
 
 func (m *Map) initMobs() {
-	for spawnId, spawnWz := range m.Wz.MobSpawns {
-		m.MobSpawns[spawnId] = &MobSpawn{
+	for spawnId, spawnWz := range m.wz.MobSpawns {
+		m.mobSpawns[spawnId] = &MobSpawn{
 			Wz:            &spawnWz,
 			Spawned:       false,
 			LastSpawnedAt: time.Time{},
@@ -902,7 +902,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 
 	footholdID := int16(0)
 	spawnPosition := position
-	if foothold, y, ok := m.Wz.FootholdBelow(position); ok {
+	if foothold, y, ok := m.wz.FootholdBelow(position); ok {
 		footholdID = foothold.ID
 		spawnPosition.Y = y
 	}
@@ -929,16 +929,16 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	}
 
 	npc := &Npc{
-		ObjectCore: ObjectCore{
-			OID:       oid,
-			Position:  spawnPosition,
-			GameWorld: m.GameWorld,
-			Map:       m,
+		objectCore: ObjectCore{
+			oid:       oid,
+			position:  spawnPosition,
+			gameWorld: m.gameWorld,
+			onMap:     m,
 		},
-		Wz:           &npcSpawn,
-		RuntimeSpawn: true,
+		wz:           &npcSpawn,
+		runtimeSpawn: true,
 	}
-	npc.ObjectCore.self = npc
+	npc.objectCore.self = npc
 	npc.initTimers()
 
 	if m.objects[constant.ObjectTypeNpc] == nil {
@@ -963,7 +963,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn, spawnType constant.MobSpawnType, link uint32, team constant.CarnivalTeam) (*Mob, error) {
 	oid := m.allocateOID()
 
-	mobWz, ok := m.GameWorld.GetResources().Monsters[mobId]
+	mobWz, ok := m.gameWorld.GetResources().Monsters[mobId]
 	if !ok {
 		return nil, fmt.Errorf("mob model not found for ID: %d", mobId)
 	}
@@ -975,7 +975,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 
 	position.Y = position.Y - 1
 	spawnPoint := position
-	if foothold, y, ok := m.Wz.FootholdBelow(position); ok {
+	if foothold, y, ok := m.wz.FootholdBelow(position); ok {
 		if footholdID == 0 {
 			footholdID = foothold.ID
 		}
@@ -983,40 +983,40 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	}
 
 	mob := &Mob{
-		Listener: m.mobListener,
-		LifeCore: LifeCore{
-			ObjectCore: ObjectCore{
-				OID:       oid,
-				Position:  spawnPoint,
-				GameWorld: m.GameWorld,
-				Map:       m,
+		listener: m.mobListener,
+		lifeCore: LifeCore{
+			objectCore: ObjectCore{
+				oid:       oid,
+				position:  spawnPoint,
+				gameWorld: m.gameWorld,
+				onMap:     m,
 			},
 			hp:     uint32(max(0, mobWz.MaxHP)),
 			mp:     uint32(max(0, mobWz.MaxMP)),
-			BaseHp: uint32(max(0, mobWz.MaxHP)),
-			BaseMp: uint32(max(0, mobWz.MaxMP)),
-			Stance: 5,
+			baseHp: uint32(max(0, mobWz.MaxHP)),
+			baseMp: uint32(max(0, mobWz.MaxMP)),
+			stance: 5,
 		},
-		Foothold:     footholdID,
-		Wz:           mobWz,
-		Spawn:        mobSpawn,
-		ExpRate:      100,
-		DropRate:     100,
-		Homing:       make(map[uint32]*Homing),
+		foothold:     footholdID,
+		wz:           mobWz,
+		spawn:        mobSpawn,
+		expRate:      100,
+		dropRate:     100,
+		homing:       make(map[uint32]*Homing),
 		accDamage:    make(map[int64]map[uint32]uint64),
-		CarnivalTeam: team,
+		carnivalTeam: team,
 	}
 	mob.sponge.me = mob
 	mob.sponge.children = make([]*Mob, 0)
-	if mob.Listener == nil {
+	if mob.listener == nil {
 		panic("SpawnMob: mob listener must not be nil")
 	}
-	mob.Skills = NewMobSkills(mob)
-	mob.Buffs = NewMobBuffs(mob)
-	mob.LifeCore.ObjectCore.self = mob
+	mob.skills = NewMobSkills(mob)
+	mob.buffs = NewMobBuffs(mob)
+	mob.lifeCore.objectCore.self = mob
 	mob.initTimers()
 	if spawnType == constant.MobSpawnTypeFake {
-		mob.Fake = true
+		mob.fake = true
 	}
 
 	if m.objects[constant.ObjectTypeMob] == nil {
@@ -1031,8 +1031,8 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	mob.startTimedDrop()
 
 	if sm := m.StateMachine(); sm != nil {
-		if sm.ScaleLevel > 0 {
-			mob.SetScaleLevel(sm.ScaleLevel)
+		if sm.scaleLevel > 0 {
+			mob.SetScaleLevel(sm.scaleLevel)
 		}
 		sm.CallHook("on_mob_spawn", mob)
 	}
@@ -1056,9 +1056,9 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	m.sections.remove(mob)
 	delete(m.objects[constant.ObjectTypeMob], mobID)
 
-	mob.Buffs.Clear()
-	if mob.Spawn != nil {
-		mob.Spawn.Spawned = false
+	mob.buffs.Clear()
+	if mob.spawn != nil {
+		mob.spawn.Spawned = false
 	}
 
 	m.releaseOID(mobID)
@@ -1097,10 +1097,10 @@ func (m *Map) TemplateMobs(mobWZID uint32, limit int) []*Mob {
 	out := make([]*Mob, 0)
 	for _, obj := range m.GetMobs() {
 		mob, ok := obj.(*Mob)
-		if !ok || mob.Wz == nil || !mob.IsAlive() {
+		if !ok || mob.wz == nil || !mob.IsAlive() {
 			continue
 		}
-		if mob.Wz.ID != mobWZID {
+		if mob.wz.ID != mobWZID {
 			continue
 		}
 		out = append(out, mob)
@@ -1259,7 +1259,7 @@ func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
 		return fmt.Errorf("item must implement Object")
 	}
 
-	dropPoint, ok := m.Wz.DropPoint(spawn.Position)
+	dropPoint, ok := m.wz.DropPoint(spawn.Position)
 	if !ok {
 		dropPoint = spawn.From
 	}
@@ -1267,21 +1267,21 @@ func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
 	fp := &FieldPlacement{
 		ObjectCore: &ObjectCore{
 			self:      mapObj,
-			OID:       m.allocateOID(),
-			Position:  dropPoint,
-			GameWorld: m.GameWorld,
-			Map:       m,
+			oid:       m.allocateOID(),
+			position:  dropPoint,
+			gameWorld: m.gameWorld,
+			onMap:     m,
 		},
-		Owner:                spawn.Owner,
-		SpawnedPoint:         spawn.From,
-		DropType:             spawn.DropType,
-		PlayerDrop:           spawn.PlayerDrop,
+		owner:                spawn.Owner,
+		spawnedPoint:         spawn.From,
+		dropType:             spawn.DropType,
+		playerDrop:           spawn.PlayerDrop,
 		restrictedPlayerDrop: spawn.RestrictedPlayerDrop,
 	}
 	if spawn.Quest != 0 {
-		fp.Quest = spawn.Quest
+		fp.quest = spawn.Quest
 	} else if spawn.QuestTagged {
-		fp.Quest = m.GameWorld.GetResources().QuestItems[item.GetModel().GetID()]
+		fp.quest = m.gameWorld.GetResources().QuestItems[item.GetModel().GetID()]
 	}
 	fp.initTimers()
 	item.BindFieldPlacement(fp)
@@ -1290,7 +1290,7 @@ func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
 	if m.objects[constant.ObjectTypeItem] == nil {
 		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
 	}
-	m.objects[constant.ObjectTypeItem][fp.OID] = mapObj
+	m.objects[constant.ObjectTypeItem][fp.oid] = mapObj
 	m.sections.add(mapObj)
 	m.listener.OnItemSpawned(m, item, fp)
 
@@ -1303,17 +1303,17 @@ func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
 func (m *Map) SpawnMeso(count int32, position, spawnFrom types.Point[int16], ownerID uint32, dropType constant.DropType, playerDrop bool) (*Meso, error) {
 	oid := m.allocateOID()
 
-	dropPoint, ok := m.Wz.DropPoint(position)
+	dropPoint, ok := m.wz.DropPoint(position)
 	if !ok {
 		dropPoint = spawnFrom
 	}
 
-	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.GameWorld, m)
+	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.gameWorld, m)
 
 	fp := meso.GetFieldPlacement()
 	if fp != nil {
-		fp.SpawnedPoint = spawnFrom
-		fp.PlayerDrop = playerDrop
+		fp.spawnedPoint = spawnFrom
+		fp.playerDrop = playerDrop
 		m.registerFieldDropTimers(fp, dropType)
 	}
 
@@ -1383,14 +1383,14 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedInvalidItem
 		}
 
-		if fp.Quest > 0 && !character.Quests.Get(fp.Quest).IsStarted() {
+		if fp.quest > 0 && !character.quests.Get(fp.quest).IsStarted() {
 			return constant.LootFailedNoOwnership
 		}
 
 		if !m.canLootFieldDrop(fp, character) {
 			return constant.LootFailedNoOwnership
 		}
-		if item.GetModel().GetTraits()&constant.ItemTraitPartyQuest == 0 && character.Inventory.hasOnlyItem(item.GetModel()) {
+		if item.GetModel().GetTraits()&constant.ItemTraitPartyQuest == 0 && character.inventory.hasOnlyItem(item.GetModel()) {
 			return constant.LootFailedInventoryFull
 		}
 
@@ -1405,12 +1405,12 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootSuccess
 		}
 
-		if fp.Quest > 0 && !character.Quests.NeedsItem(fp.Quest, item.GetModel().GetID()) {
+		if fp.quest > 0 && !character.quests.NeedsItem(fp.quest, item.GetModel().GetID()) {
 			return constant.LootFailedInventoryFull
 		}
 
 		count := item.GetCount()
-		added, err := character.Inventory.AddItem(item, false)
+		added, err := character.inventory.AddItem(item, false)
 		if err != nil {
 			log.Printf("Failed to add item: %v", err)
 			return constant.LootFailedInventoryFull
@@ -1434,9 +1434,9 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		}
 
 		mesoCount := item.GetCount32()
-		beforeMeso := character.Inventory.Meso
-		character.Inventory.GainMeso(mesoCount)
-		if character.Inventory.Meso == beforeMeso {
+		beforeMeso := character.inventory.meso
+		character.inventory.GainMeso(mesoCount)
+		if character.inventory.meso == beforeMeso {
 			return constant.LootFailedMesoFull
 		}
 		return constant.LootSuccess
@@ -1461,7 +1461,7 @@ func (m *Map) SpawnMist(caster *Character, skill *SkillEntry, position types.Poi
 	if skill == nil {
 		return nil
 	}
-	wzSkill := caster.GameWorld.GetResources().GetSkill(skill.Wz.ID)
+	wzSkill := caster.gameWorld.GetResources().GetSkill(skill.wz.ID)
 	if wzSkill == nil {
 		return nil
 	}
@@ -1472,34 +1472,34 @@ func (m *Map) SpawnMist(caster *Character, skill *SkillEntry, position types.Poi
 	}
 	b := bounds
 	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
-		b = ld.Area(int32(caster.Position.X), int32(caster.Position.Y), caster.Stance%2 != 0)
+		b = ld.Area(int32(caster.position.X), int32(caster.position.Y), caster.stance%2 != 0)
 	}
 	if poisonTickMultiplier <= 0 {
 		poisonTickMultiplier = 1.0
 	}
 	mist := &Mist{
-		ObjectCore: ObjectCore{
-			Position:  position,
-			GameWorld: m.GameWorld,
-			Map:       nil,
+		objectCore: ObjectCore{
+			position:  position,
+			gameWorld: m.gameWorld,
+			onMap:     nil,
 		},
-		Causer:               caster.GetID(),
-		SkillWz:              wzSkill,
-		SkillLevel:           skillLevel,
-		MistType:             mistType,
-		MobMist:              false,
-		MobSkill:             false,
-		SkillDelay:           8,
-		Bounds:               b,
-		ExpiresAt:            time.Time{},
-		PoisonTickMultiplier: poisonTickMultiplier,
+		causer:               caster.GetID(),
+		skillWz:              wzSkill,
+		skillLevel:           skillLevel,
+		mistType:             mistType,
+		mobMist:              false,
+		mobSkill:             false,
+		skillDelay:           8,
+		bounds:               b,
+		expiresAt:            time.Time{},
+		poisonTickMultiplier: poisonTickMultiplier,
 	}
-	mist.ObjectCore.self = mist
+	mist.objectCore.self = mist
 	if initialDelay > 0 {
-		mist.NextPoisonTickAt = clock.Now().Add(initialDelay)
+		mist.nextPoisonTickAt = clock.Now().Add(initialDelay)
 	}
 	if duration > 0 {
-		mist.ExpiresAt = clock.Now().Add(duration)
+		mist.expiresAt = clock.Now().Add(duration)
 	}
 	m.AddMist(mist)
 	return mist

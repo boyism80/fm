@@ -39,10 +39,10 @@ func (t *MobPoisonTickTimer) Handle(ctx actor.Context, mapData *game.Map) error 
 }
 
 func tickDotDamage(mapData *game.Map, mob *game.Mob, status constant.MobBuffFlag) {
-	if !mob.Buffs.Has(status) {
+	if !mob.Buffs().Has(status) {
 		return
 	}
-	tick := mob.Buffs.GetValue(status)
+	tick := mob.Buffs().GetValue(status)
 	if tick <= 0 {
 		return
 	}
@@ -57,7 +57,7 @@ func tickDotDamage(mapData *game.Map, mob *game.Mob, status constant.MobBuffFlag
 	if damage == 0 {
 		return
 	}
-	causerID, ok := mob.Buffs.Causer(status)
+	causerID, ok := mob.Buffs().Causer(status)
 	if !ok {
 		return
 	}

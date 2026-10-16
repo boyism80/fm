@@ -26,6 +26,6 @@ func (h *MonsterBookCover) Handle(ctx *core.ClientContext, req *request.MonsterB
 		return nil
 	}
 
-	character.MonsterBook.SetCover(req.CardID)
+	character.MonsterBook().SetCover(req.CardID)
 	return nil
 }

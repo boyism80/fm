@@ -47,7 +47,7 @@ func (s *StateMachineSystem) Groups() []*StateMachineGroup {
 	for _, group := range s.groups {
 		out = append(out, group)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
 	return out
 }
 
@@ -73,11 +73,11 @@ func (s *StateMachineSystem) unregisterActor(pid *actor.PID) {
 }
 
 func (s *StateMachineSystem) Register(group *StateMachineGroup) {
-	if group == nil || group.Name == "" {
+	if group == nil || group.name == "" {
 		return
 	}
 	s.mu.Lock()
-	s.groups[group.Name] = group
+	s.groups[group.name] = group
 	s.mu.Unlock()
 }
 
@@ -109,10 +109,10 @@ func (s *StateMachineSystem) LoadFromScripts(dir string) error {
 }
 
 func (s *StateMachineSystem) StartActor(sm *StateMachine) *actor.PID {
-	if sm == nil || sm.Group == nil {
+	if sm == nil || sm.group == nil {
 		return nil
 	}
-	name := fmt.Sprintf("state_machine_%s_%s_%d", sm.Group.Name, sm.ID, s.nextMachineID.Add(1))
+	name := fmt.Sprintf("state_machine_%s_%s_%d", sm.group.name, sm.id, s.nextMachineID.Add(1))
 	smActor := s.gw.Systems().Get[ActorFactory]().NewStateMachineActor(sm)
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return smActor
@@ -126,11 +126,11 @@ func (s *StateMachineSystem) StartActor(sm *StateMachine) *actor.PID {
 }
 
 func (s *StateMachineSystem) StopActor(sm *StateMachine) {
-	if sm == nil || sm.ActorPID == nil {
+	if sm == nil || sm.actorPID == nil {
 		return
 	}
-	s.unregisterActor(sm.ActorPID)
-	s.gw.Systems().Get[*c_actor.ActorRegistry]().PoisonActor(sm.ActorPID.Id, sm.ActorPID)
+	s.unregisterActor(sm.actorPID)
+	s.gw.Systems().Get[*c_actor.ActorRegistry]().PoisonActor(sm.actorPID.Id, sm.actorPID)
 }
 
 func (s *StateMachineSystem) Send(pid *actor.PID, msg interface{}) {

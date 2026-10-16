@@ -58,12 +58,12 @@ type LieDetector struct {
 	answer   string
 	attempts int
 	skill    bool
-	PassedAt time.Time
-	HuntedAt time.Time
+	passedAt time.Time
+	huntedAt time.Time
 }
 
 func (ch *Character) UseLieDetectorItem(targetName string, slot int16, itemID uint32) error {
-	item := ch.Inventory.GetItem(constant.InventoryTypeConsume, slot)
+	item := ch.inventory.GetItem(constant.InventoryTypeConsume, slot)
 	if itemID != lieDetectorItemID || item == nil || item.GetModel().GetID() != itemID {
 		return ErrLieDetectorInvalid
 	}
@@ -71,12 +71,12 @@ func (ch *Character) UseLieDetectorItem(targetName string, slot int16, itemID ui
 	if err := ch.testLieDetector(targetName, false); err != nil {
 		return err
 	}
-	ch.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
+	ch.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
 	return nil
 }
 
 func (ch *Character) UseLieDetectorSkill(targetName string) error {
-	if !ch.ActsAsGM() && ch.Class != constant.ClassMapleleafBrigadier {
+	if !ch.ActsAsGM() && ch.class != constant.ClassMapleleafBrigadier {
 		return ErrLieDetectorInvalid
 	}
 	return ch.testLieDetector(targetName, true)
@@ -87,24 +87,24 @@ func (ch *Character) testLieDetector(targetName string, skill bool) error {
 	if m == nil {
 		return ErrLieDetectorInvalid
 	}
-	if m.Wz.Limits(constant.FieldLimitLieDetector) {
-		ch.Listener.OnMessage(ch, constant.MsgPinkText, "이곳에서는 거짓말 탐지기를 사용할 수 없습니다.")
+	if m.wz.Limits(constant.FieldLimitLieDetector) {
+		ch.listener.OnMessage(ch, constant.MsgPinkText, "이곳에서는 거짓말 탐지기를 사용할 수 없습니다.")
 		return ErrLieDetectorInvalid
 	}
 	target := m.FindPlayerByName(targetName)
-	if target == nil || target == ch || target.Role > ch.Role {
-		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotFound, false)
+	if target == nil || target == ch || target.role > ch.role {
+		ch.listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotFound, false)
 		return ErrLieDetectorInvalid
 	}
 
-	err := target.LieDetector.Start(ch, skill)
+	err := target.lieDetector.Start(ch, skill)
 	switch {
 	case errors.Is(err, ErrLieDetectorBusy):
-		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultBusy, false)
+		ch.listener.OnLieDetectorResult(ch, pconst.LieDetectorResultBusy, false)
 	case errors.Is(err, ErrLieDetectorTested):
-		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultTested, false)
+		ch.listener.OnLieDetectorResult(ch, pconst.LieDetectorResultTested, false)
 	case errors.Is(err, ErrLieDetectorNotHunting):
-		ch.Listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotHunting, false)
+		ch.listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotHunting, false)
 	}
 	return err
 }
@@ -114,9 +114,9 @@ func (d *LieDetector) Start(tester *Character, skill bool) error {
 	switch {
 	case d.testerID != 0:
 		return ErrLieDetectorBusy
-	case !skill && now.Sub(d.PassedAt) < lieDetectorImmunity:
+	case !skill && now.Sub(d.passedAt) < lieDetectorImmunity:
 		return ErrLieDetectorTested
-	case !skill && now.Sub(d.HuntedAt) > lieDetectorHuntWindow:
+	case !skill && now.Sub(d.huntedAt) > lieDetectorHuntWindow:
 		return ErrLieDetectorNotHunting
 	}
 
@@ -128,7 +128,7 @@ func (d *LieDetector) Start(tester *Character, skill bool) error {
 		return err
 	}
 	log.Printf("lie detector started: target=%d tester=%d skill=%t", d.owner.GetID(), d.testerID, skill)
-	tester.Listener.OnLieDetectorStarted(tester, d.owner.GetName())
+	tester.listener.OnLieDetectorStarted(tester, d.owner.GetName())
 	return nil
 }
 
@@ -162,16 +162,16 @@ func (d *LieDetector) ask() error {
 	d.answer = captcha.Answer
 	d.attempts++
 	attempt := d.attempts
-	d.owner.Listener.OnLieDetectorQuestion(d.owner, captcha.Image, d.skill)
+	d.owner.listener.OnLieDetectorQuestion(d.owner, captcha.Image, d.skill)
 
 	wait := lieDetectorAnswerTime
-	if limit := time.Duration(d.owner.GM.TimerLimit) * time.Second; limit > 0 && limit < wait {
+	if limit := time.Duration(d.owner.gm.timerLimit) * time.Second; limit > 0 && limit < wait {
 		wait = limit
 	}
 
 	// Timer callbacks run without an actor context; time out through the character's dispatch.
 	d.owner.AddTimer(lieDetectorTimer, wait, false, func() {
-		d.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(d.owner.GetID(), func(actx actor.Context, current *Character) {
+		d.owner.gameWorld.Systems().Get[*DispatchSystem]().Visit(d.owner.GetID(), func(actx actor.Context, current *Character) {
 			if current != d.owner || d.testerID == 0 || d.attempts != attempt {
 				return
 			}
@@ -192,12 +192,12 @@ func (d *LieDetector) pass() {
 	tester := d.tester()
 	log.Printf("lie detector passed: target=%d tester=%d attempt=%d", d.owner.GetID(), d.testerID, d.attempts)
 	d.testerID = 0
-	d.PassedAt = clock.Now()
+	d.passedAt = clock.Now()
 
-	d.owner.Listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultPassed, d.skill)
-	d.owner.Inventory.GainMeso(lieDetectorRewardMeso)
+	d.owner.listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultPassed, d.skill)
+	d.owner.inventory.GainMeso(lieDetectorRewardMeso)
 	if tester != nil {
-		tester.Listener.OnMessage(tester, constant.MsgPinkText, "해당 유저가 거짓말 탐지기를 통과했습니다.")
+		tester.listener.OnMessage(tester, constant.MsgPinkText, "해당 유저가 거짓말 탐지기를 통과했습니다.")
 	}
 }
 
@@ -209,17 +209,17 @@ func (d *LieDetector) fail(actx actor.Context, failure lieDetectorFailure) {
 
 	// A tester who already left the map is not paid and the target keeps the meso; missing that penalty is acceptable.
 	if tester != nil {
-		taken := min(d.owner.Inventory.Meso, lieDetectorPenaltyMeso)
-		d.owner.Inventory.RemoveMeso(taken)
-		tester.Inventory.GainMeso(taken)
-		tester.Listener.OnLieDetectorResult(tester, pconst.LieDetectorResultReported, false)
+		taken := min(d.owner.inventory.meso, lieDetectorPenaltyMeso)
+		d.owner.inventory.RemoveMeso(taken)
+		tester.inventory.GainMeso(taken)
+		tester.listener.OnLieDetectorResult(tester, pconst.LieDetectorResultReported, false)
 	}
 	if failure == lieDetectorEscape {
 		return
 	}
 
-	d.owner.Listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultCaught, d.skill)
-	jail := d.owner.GameWorld.Systems().Get[*MapSystem]().Get(lieDetectorJailMapID)
+	d.owner.listener.OnLieDetectorResult(d.owner, pconst.LieDetectorResultCaught, d.skill)
+	jail := d.owner.gameWorld.Systems().Get[*MapSystem]().Get(lieDetectorJailMapID)
 	if jail == nil {
 		return
 	}

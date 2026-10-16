@@ -1,8 +1,6 @@
 package server
 
 import (
-	"time"
-
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
@@ -116,15 +114,15 @@ func (l *CharacterListenerImpl) OnPopulationReceived(ch *game.Character, mode pc
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnNotes(ch *game.Character, notes []*internal.Note) {
+func (l *CharacterListenerImpl) OnNotes(ch *game.Character, notes []game.Note) {
 	packet := &response.Notes{Action: pconst.NotesPacketList}
 	for _, n := range notes {
 		packet.Notes = append(packet.Notes, response.Note{
-			ID:      n.Id,
-			Sender:  n.SenderName,
-			Message: n.Message,
-			SentAt:  time.UnixMilli(n.SentAtUnixMs),
-			Kind:    pconst.NoteKind(n.Gift),
+			ID:      n.ID(),
+			Sender:  n.Sender(),
+			Message: n.Message(),
+			SentAt:  n.SentAt(),
+			Kind:    pconst.NoteKind(n.Gift()),
 		})
 	}
 	ch.Send(packet, types.SEND_POLICY_ENCRYPT)
@@ -155,43 +153,57 @@ func (l *CharacterListenerImpl) OnFamilyPrivileges(ch *game.Character) {
 
 func (l *CharacterListenerImpl) OnFamilyChanged(ch *game.Character) {
 	id := ch.GetID()
-	self := ch.Family.Self()
+	self := ch.Family().Self()
 	info := &response.FamilyInfo{
-		Reputation:      self.GetReputation(),
-		TotalReputation: self.GetTotalReputation(),
-		Juniors:         uint16(len(ch.Family.Tree.Juniors(id))),
-		Precept:         ch.Family.Tree.Precept(),
-		UsedFeatures:    self.GetUsedFeatures(),
+		Reputation:      self.Reputation(),
+		TotalReputation: self.TotalReputation(),
+		Juniors:         uint16(len(ch.Family().Tree().Juniors(id))),
+		Precept:         ch.Family().Tree().Precept(),
+		UsedFeatures:    self.UsedFeatures(),
 	}
-	if leader := ch.Family.Tree.Leader(); leader != nil {
-		info.LeaderID = leader.GetCharacterId()
-		info.LeaderName = leader.GetName()
+	if leader := ch.Family().Tree().Leader(); leader != nil {
+		info.LeaderID = leader.CharacterID()
+		info.LeaderName = leader.Name()
 	}
 	ch.Send(info, types.SEND_POLICY_ENCRYPT)
 
-	remaining := ch.Family.BuffRemaining()
+	remaining := ch.Family().BuffRemaining()
 	if remaining > 0 {
 		ch.Send(&response.FamilyBuff{
-			Feature:   self.GetBuffFeature(),
-			ExpRate:   ch.Family.ExpRate(),
-			DropRate:  ch.Family.DropRate(),
+			Feature:   self.BuffFeature(),
+			ExpRate:   ch.Family().ExpRate(),
+			DropRate:  ch.Family().DropRate(),
 			Remaining: remaining,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 }
 
 func (l *CharacterListenerImpl) OnFamilyChart(ch *game.Character, tree game.FamilyTree, characterID uint32) {
+	pedigree := tree.Pedigree(characterID)
+	members := make([]response.FamilyMember, 0, len(pedigree))
+	for _, m := range pedigree {
+		members = append(members, response.FamilyMember{
+			CharacterID:     m.CharacterID(),
+			SeniorID:        m.SeniorID(),
+			Name:            m.Name(),
+			Level:           m.Level(),
+			ClassID:         m.ClassID(),
+			Reputation:      m.Reputation(),
+			TotalReputation: m.TotalReputation(),
+			ChannelID:       m.ChannelID(),
+		})
+	}
 	chart := &response.FamilyChart{
 		CharacterID:  characterID,
-		Members:      tree.Pedigree(characterID),
+		Members:      members,
 		MemberCount:  tree.Size(),
-		UsedFeatures: tree.Member(characterID).GetUsedFeatures(),
+		UsedFeatures: tree.Member(characterID).UsedFeatures(),
 	}
 	for _, junior := range tree.Juniors(characterID) {
-		for _, grand := range tree.Juniors(junior.GetCharacterId()) {
+		for _, grand := range tree.Juniors(junior.CharacterID()) {
 			chart.GrandJuniors = append(chart.GrandJuniors, response.FamilyDescendants{
-				CharacterID: grand.GetCharacterId(),
-				Count:       tree.Descendants(grand.GetCharacterId()),
+				CharacterID: grand.CharacterID(),
+				Count:       tree.Descendants(grand.CharacterID()),
 			})
 		}
 	}

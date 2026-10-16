@@ -29,9 +29,9 @@ func (h *RemoteEntrustedShop) Handle(ctx *core.ClientContext, req *request.Remot
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	ch.Listener.OnMiniRoomFailed(ch, ch.RemoteShops.Manage(ctx.ActorContext, req.Slot))
+	ch.Listener().OnMiniRoomFailed(ch, ch.RemoteShops().Manage(ctx.ActorContext, req.Slot))
 	return nil
 }

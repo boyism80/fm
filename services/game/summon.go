@@ -7,14 +7,14 @@ import (
 )
 
 type Summon struct {
-	LifeCore
-	Owner        *Character
-	OwnerID      uint32
-	SkillID      constant.SkillID
-	SkillLevel   uint8
-	MovementType constant.SummonMovementType
-	SummonType   constant.SummonType
-	ChangedMap   bool
+	lifeCore
+	owner        *Character
+	ownerID      uint32
+	skillID      constant.SkillID
+	skillLevel   uint8
+	movementType constant.SummonMovementType
+	summonType   constant.SummonType
+	changedMap   bool
 }
 
 func (s *Summon) GetObjectType() constant.ObjectType {
@@ -22,8 +22,8 @@ func (s *Summon) GetObjectType() constant.ObjectType {
 }
 
 func (s *Summon) GetRole() constant.CharacterRole {
-	if s.Owner != nil {
-		return s.Owner.Role
+	if s.owner != nil {
+		return s.owner.role
 	}
 	return constant.RoleUser
 }
@@ -37,24 +37,24 @@ func (s *Summon) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.SpawnSummon{
-		OwnerID:      s.Owner.GetID(),
-		OID:          s.OID,
-		SkillID:      s.SkillID,
-		SkillLevel:   s.SkillLevel,
-		Position:     s.Position,
-		MovementType: s.MovementType,
-		SummonType:   s.SummonType,
+		OwnerID:      s.owner.GetID(),
+		OID:          s.oid,
+		SkillID:      s.skillID,
+		SkillLevel:   s.skillLevel,
+		Position:     s.position,
+		MovementType: s.movementType,
+		SummonType:   s.summonType,
 		Animated:     false,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (s *Summon) SendDestroySyncToViewer(viewer *Character) {
-	if s == nil || viewer == nil || s.Owner == nil {
+	if s == nil || viewer == nil || s.owner == nil {
 		return
 	}
 	viewer.Send(&response.RemoveSummon{
-		OwnerID:  s.Owner.GetID(),
-		OID:      s.OID,
+		OwnerID:  s.owner.GetID(),
+		OID:      s.oid,
 		Animated: false,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -65,17 +65,17 @@ type SummonAttackTarget struct {
 }
 
 func (s *Summon) Spawn(animated bool) {
-	m := s.Owner.GetMap()
+	m := s.owner.GetMap()
 	if m == nil {
 		return
 	}
-	pos := s.Owner.Position
-	s.Position = pos
+	pos := s.owner.position
+	s.position = pos
 	m.AddSummon(s)
 }
 
 func (s *Summon) Remove(animated bool) {
-	s.Owner.Summons.Remove(s, animated)
+	s.owner.summons.Remove(s, animated)
 }
 
 func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) {
@@ -88,9 +88,9 @@ func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) 
 	} else {
 		s.SetHp(s.GetHp()-damage, false)
 	}
-	s.Owner.Listener.OnSummonDamaged(s.Owner, s, unknown, damage, monsterIdFrom)
+	s.owner.listener.OnSummonDamaged(s.owner, s, unknown, damage, monsterIdFrom)
 
 	if s.GetHp() == 0 {
-		s.Owner.Buffs.CancelBySource(int32(s.SkillID))
+		s.owner.buffs.CancelBySource(int32(s.skillID))
 	}
 }

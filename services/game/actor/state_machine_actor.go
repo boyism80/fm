@@ -280,13 +280,13 @@ func (a *StateMachineActor) handleNamedTimeout(ctx actor.Context, msg *game.Stat
 }
 
 func (a *StateMachineActor) beginCreate(ctx actor.Context) {
-	if a.StateMachine == nil || a.StateMachine.Group == nil {
+	if a.StateMachine == nil || a.StateMachine.Group() == nil {
 		return
 	}
 	if a.luaRoot == nil {
 		a.luaRoot = luax.NewState()
 	}
-	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
+	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group().ScriptPath())
 	if err != nil {
 		a.abortCreate(err.Error())
 		return
@@ -352,7 +352,7 @@ func (a *StateMachineActor) createMaps(ctx actor.Context, msg *game.CreateStateM
 }
 
 func (a *StateMachineActor) abortCreate(reason string) {
-	fmt.Printf("state machine %s create failed: %s\n", a.StateMachine.Group.Name, reason)
+	fmt.Printf("state machine %s create failed: %s\n", a.StateMachine.Group().Name(), reason)
 	a.lc.deferred = nil
 	a.StateMachine.AbortStart()
 	a.beginStop()
@@ -404,13 +404,13 @@ func (a *StateMachineActor) finalizeStop() {
 		return
 	}
 	a.lc.stopped = true
-	a.StateMachine.Group.RemoveMachine(a.StateMachine)
+	a.StateMachine.Group().RemoveMachine(a.StateMachine)
 	a.GameWorld.Systems().Get[*game.StateMachineSystem]().StopActor(a.StateMachine)
 	a.GameWorld.Systems().Get[*game.ExpeditionSystem]().EndBattle(a.StateMachine)
 }
 
 func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...interface{}) {
-	if a.StateMachine == nil || a.StateMachine.Group == nil || hook == "" {
+	if a.StateMachine == nil || a.StateMachine.Group() == nil || hook == "" {
 		return
 	}
 	if a.StateMachine.Disposed() {
@@ -419,7 +419,7 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	if a.luaRoot == nil {
 		a.luaRoot = luax.NewState()
 	}
-	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
+	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group().ScriptPath())
 	if err != nil {
 		return
 	}
@@ -432,6 +432,6 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 		ActorPID:     ctx.Self(),
 	})
 	luax.CallAsync(ctx, a.luaRoot, thread, hook, append([]interface{}{a.StateMachine}, args...)...).OnError(func(err error) {
-		fmt.Printf("state machine %s hook %s: %v\n", a.StateMachine.Group.Name, hook, err)
+		fmt.Printf("state machine %s hook %s: %v\n", a.StateMachine.Group().Name(), hook, err)
 	})
 }

@@ -28,11 +28,11 @@ func (inv *InventoryTab) validateItemExchange(cost map[uint32]uint16, reward map
 		return ExchangeOK
 	}
 
-	slots := make(map[int16]itemSlotSnapshot, inv.SlotLimit)
+	slots := make(map[int16]itemSlotSnapshot, inv.slotLimit)
 	slotsByID := make(map[uint32][]int16)
 	freeSlots := 0
-	for slot := int16(1); slot <= int16(inv.SlotLimit); slot++ {
-		item := inv.Items[slot]
+	for slot := int16(1); slot <= int16(inv.slotLimit); slot++ {
+		item := inv.items[slot]
 		if item == nil {
 			freeSlots++
 			continue

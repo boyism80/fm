@@ -31,7 +31,7 @@ func (t *MobBuffExpireTimer) Handle(ctx actor.Context, mapData *game.Map) error 
 		if !ok || mob == nil || !mob.IsAlive() {
 			continue
 		}
-		mob.Buffs.RemoveExpired()
+		mob.Buffs().RemoveExpired()
 	}
 	return nil
 }

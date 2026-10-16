@@ -31,6 +31,6 @@ func (h *PartySearchStop) Handle(ctx *core.ClientContext, req *request.PartySear
 		return nil
 	}
 
-	ch.Party.Search = nil
+	ch.Party().SetSearch(nil)
 	return nil
 }

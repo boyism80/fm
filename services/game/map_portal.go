@@ -5,8 +5,8 @@ import (
 )
 
 type Portal struct {
-	Map    *Map
-	Wz     *wz.Portal
+	onMap  *Map
+	wz     *wz.Portal
 	script string
 }
 
@@ -25,10 +25,10 @@ func (p *Portal) SetScript(name string) {
 }
 
 func (p *Portal) ResetScript() {
-	if p == nil || p.Wz == nil {
+	if p == nil || p.wz == nil {
 		return
 	}
-	p.script = p.Wz.ScriptName
+	p.script = p.wz.ScriptName
 }
 
 func (m *Map) initPortals() {
@@ -37,15 +37,15 @@ func (m *Map) initPortals() {
 	}
 	m.portals = make(map[uint8]*Portal)
 	m.portalsByName = make(map[string]*Portal)
-	if m.Wz == nil {
+	if m.wz == nil {
 		return
 	}
-	for id, wp := range m.Wz.Portals {
+	for id, wp := range m.wz.Portals {
 		cp := wp
 		cp.ID = id
 		p := &Portal{
-			Map:    m,
-			Wz:     &cp,
+			onMap:  m,
+			wz:     &cp,
 			script: cp.ScriptName,
 		}
 		m.portals[id] = p

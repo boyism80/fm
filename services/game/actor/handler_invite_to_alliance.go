@@ -24,7 +24,7 @@ func (h *InviteToAllianceHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	if ch == nil {
 		return
 	}
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.Guild().ID()
 	if !inGuild || guildID != msg.TargetGuildID {
 		return
 	}
@@ -38,9 +38,9 @@ func (h *InviteToAllianceHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 			if inviter == nil {
 				return
 			}
-			inviter.Listener.OnMessage(inviter, constant.MsgPinkText, constant.GuildInviteTargetBusyMessage)
+			inviter.Listener().OnMessage(inviter, constant.MsgPinkText, constant.GuildInviteTargetBusyMessage)
 		})
 		return
 	}
-	ch.Listener.OnAllianceInvite(ch, msg.InviterGuildID, msg.InviterName, msg.AllianceName)
+	ch.Listener().OnAllianceInvite(ch, msg.InviterGuildID, msg.InviterName, msg.AllianceName)
 }

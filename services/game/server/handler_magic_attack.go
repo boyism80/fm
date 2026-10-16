@@ -46,27 +46,27 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	}
 
 	if req.Skill == 0 {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	skill := character.Skills.Get(req.Skill)
+	skill := character.Skills().Get(req.Skill)
 	var skillLevel uint8
 	attacked, err := character.Attack(req.ToAttackInfo(), true, func() bool {
-		return skill != nil && character.Skills.CallHook(ctx.ActorContext, skill, "on_activating")
+		return skill != nil && character.Skills().CallHook(ctx.ActorContext, skill, "on_activating")
 	}, func() {
-		skillLevel = uint8(character.Skills.Level(req.Skill))
+		skillLevel = uint8(character.Skills().Level(req.Skill))
 		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, true, false)
 	})
 	if err != nil {
 		return err
 	}
 	if !attacked {
-		character.Listener.OnUpdateStats(character, nil, true)
+		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	character.Listener.OnMagicAttack(character, req, skillLevel)
-	character.Skills.CallHook(ctx.ActorContext, skill, "on_activated")
+	character.Listener().OnMagicAttack(character, req, skillLevel)
+	character.Skills().CallHook(ctx.ActorContext, skill, "on_activated")
 	return nil
 }

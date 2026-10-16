@@ -32,7 +32,7 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
@@ -70,27 +70,27 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 			err = game.ErrMiniRoomInvalid
 		}
 	case pconst.MiniRoomExit:
-		if ch.MiniRoom != nil {
-			ch.MiniRoom.Leave(ch)
+		if ch.MiniRoom() != nil {
+			ch.MiniRoom().Leave(ch)
 		}
 	default:
 		err = h.handleRoom(ctx, ch, req)
 	}
 
-	ch.Listener.OnMiniRoomFailed(ch, err)
+	ch.Listener().OnMiniRoomFailed(ch, err)
 	return nil
 }
 
 func (h *MiniRoom) handleRoom(ctx *core.ClientContext, ch *game.Character, req *request.MiniRoom) error {
-	if ch.MiniRoom == nil {
+	if ch.MiniRoom() == nil {
 		return game.ErrMiniRoomInvalid
 	}
 
 	if req.Mode == pconst.MiniRoomChat {
-		return ch.MiniRoom.Chat(ch, req.Message)
+		return ch.MiniRoom().Chat(ch, req.Message)
 	}
 
-	switch room := ch.MiniRoom.(type) {
+	switch room := ch.MiniRoom().(type) {
 	case *game.Trade:
 		switch req.Mode {
 		case pconst.MiniRoomInvite:

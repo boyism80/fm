@@ -79,13 +79,13 @@ func (s *InternalSystem) JoinFamilyAsync(ctx actor.Context, senior *Character, j
 			CharacterId: senior.GetID(),
 			Name:        senior.GetName(),
 			Level:       uint32(senior.GetLevel()),
-			ClassId:     uint32(senior.Class),
+			ClassId:     uint32(senior.class),
 		},
 		Junior: &internal.FamilyMember{
 			CharacterId: junior.GetID(),
 			Name:        junior.GetName(),
 			Level:       uint32(junior.GetLevel()),
-			ClassId:     uint32(junior.Class),
+			ClassId:     uint32(junior.class),
 		},
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(

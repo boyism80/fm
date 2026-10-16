@@ -7,16 +7,16 @@ import (
 )
 
 type Meso struct {
-	*FieldPlacement
-	Count int32
+	*fieldPlacement
+	count int32
 }
 
-func (meso *Meso) GetCount32() int32 { return meso.Count }
+func (meso *Meso) GetCount32() int32 { return meso.count }
 func (meso *Meso) GetFieldPlacement() *FieldPlacement {
-	return meso.FieldPlacement
+	return meso.fieldPlacement
 }
 func (meso *Meso) BindFieldPlacement(placement *FieldPlacement) {
-	meso.FieldPlacement = placement
+	meso.fieldPlacement = placement
 }
 
 func (meso *Meso) GetObjectType() constant.ObjectType {
@@ -32,14 +32,14 @@ func (meso *Meso) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.SpawnMeso{
-		ID:           fp.OID,
+		ID:           fp.oid,
 		Animation:    constant.DropItemAnimationTypeNone,
-		DropType:     fp.DropType,
-		Count:        meso.Count,
-		OwnerID:      fp.Owner,
-		Position:     fp.Position,
-		SpawnedPoint: fp.SpawnedPoint,
-		IsPlayerDrop: fp.PlayerDrop,
+		DropType:     fp.dropType,
+		Count:        meso.count,
+		OwnerID:      fp.owner,
+		Position:     fp.position,
+		SpawnedPoint: fp.spawnedPoint,
+		IsPlayerDrop: fp.playerDrop,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -53,29 +53,29 @@ func (meso *Meso) SendDestroySyncToViewer(viewer *Character) {
 	}
 	viewer.Send(&response.RemoveItem{
 		Mode:        constant.RemoveItemTypeNoAnimated,
-		OID:         fp.OID,
+		OID:         fp.oid,
 		CharacterId: 0,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, gw GameWorld, mapInstance *Map) *Meso {
 	m := &Meso{
-		FieldPlacement: &FieldPlacement{
+		fieldPlacement: &FieldPlacement{
 			ObjectCore: &ObjectCore{
-				OID:       sequence,
-				Position:  position,
-				GameWorld: gw,
-				Map:       mapInstance,
+				oid:       sequence,
+				position:  position,
+				gameWorld: gw,
+				onMap:     mapInstance,
 			},
-			SpawnedPoint: position,
-			DropType:     dropType,
-			Owner:        ownerID,
+			spawnedPoint: position,
+			dropType:     dropType,
+			owner:        ownerID,
 		},
-		Count: count,
+		count: count,
 	}
-	if m.FieldPlacement != nil && m.FieldPlacement.ObjectCore != nil {
-		m.FieldPlacement.ObjectCore.self = m
-		m.FieldPlacement.initTimers()
+	if m.fieldPlacement != nil && m.fieldPlacement.ObjectCore != nil {
+		m.fieldPlacement.ObjectCore.self = m
+		m.fieldPlacement.initTimers()
 	}
 	return m
 }

@@ -31,21 +31,21 @@ func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPre
 		return nil
 	}
 	if ch.UsingCashItem() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
 	var err error
 	switch req.Mode {
 	case pconst.WeddingPresentGive:
-		err = ch.Wedding.GiveGift(ctx.ActorContext, req.Slot, req.ItemID, req.Count)
+		err = ch.Wedding().GiveGift(ctx.ActorContext, req.Slot, req.ItemID, req.Count)
 	case pconst.WeddingPresentReceive:
-		err = ch.Wedding.ReceiveGift(ctx.ActorContext, constant.InventoryType(req.InventoryType), int(req.Index))
+		err = ch.Wedding().ReceiveGift(ctx.ActorContext, constant.InventoryType(req.InventoryType), int(req.Index))
 	case pconst.WeddingPresentClose:
-		ch.Wedding.CloseGift()
+		ch.Wedding().CloseGift()
 	}
 	if err != nil {
-		ch.Listener.OnUnlockAction(ch)
+		ch.Listener().OnUnlockAction(ch)
 	}
 	return nil
 }

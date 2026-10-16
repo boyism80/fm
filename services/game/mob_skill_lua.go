@@ -24,7 +24,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(skill.Slot.SkillID))
+			L.Push(lua.LNumber(skill.slot.SkillID))
 			return 1
 		},
 		"level": func(L *lua.LState) int {
@@ -38,7 +38,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "level() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(skill.Slot.Level))
+			L.Push(lua.LNumber(skill.slot.Level))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -52,11 +52,11 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			if skill.LevelData == nil || skill.LevelData.SkillWz == nil {
+			if skill.levelData == nil || skill.levelData.SkillWz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, skill.LevelData.SkillWz))
+			L.Push(luax.NewLuable(L, skill.levelData.SkillWz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
@@ -70,11 +70,11 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0
 			}
-			if skill.LevelData == nil {
+			if skill.levelData == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(skill.LevelData.ToLuaTable(L))
+			L.Push(skill.levelData.ToLuaTable(L))
 			return 1
 		},
 		"last_used_at": func(L *lua.LState) int {
@@ -88,11 +88,11 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "last_used_at() is read-only")
 				return 0
 			}
-			if skill.LastUsedAt.IsZero() {
+			if skill.lastUsedAt.IsZero() {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(skill.LastUsedAt.UnixMilli()))
+			L.Push(lua.LNumber(skill.lastUsedAt.UnixMilli()))
 			return 1
 		},
 		"is_on_cooldown": func(L *lua.LState) int {

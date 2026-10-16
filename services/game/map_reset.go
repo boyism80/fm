@@ -18,8 +18,8 @@ func (m *Map) Reset() {
 	m.SetReactorGenEnabled(true)
 	m.RemoveRuntimeNpcs()
 	m.resetPortalScripts()
-	m.SummonedMobSpawns = nil
-	for _, spawn := range m.MobSpawns {
+	m.summonedMobSpawns = nil
+	for _, spawn := range m.mobSpawns {
 		if spawn == nil {
 			continue
 		}

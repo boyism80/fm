@@ -12,7 +12,7 @@ func (c *CarnivalMembership) Match() *CarnivalMatch {
 	if team == nil {
 		return nil
 	}
-	return team.Match
+	return team.match
 }
 
 // The team outlives the match slot so reward NPCs can read the result after Conclude.
@@ -25,7 +25,7 @@ func (c *CarnivalMembership) Team() *CarnivalTeam {
 
 func (c *CarnivalMembership) useItem(wzConsume *wz.Consume) {
 	team := c.Team()
-	if team == nil || team.Match == nil {
+	if team == nil || team.match == nil {
 		return
 	}
 	if wzConsume.CP > 0 {
@@ -34,7 +34,7 @@ func (c *CarnivalMembership) useItem(wzConsume *wz.Consume) {
 	if wzConsume.NuffSkillID == 0 {
 		return
 	}
-	enemy := team.Match.enemyTeam(team.TeamID)
+	enemy := team.match.enemyTeam(team.teamID)
 	if enemy == nil {
 		return
 	}

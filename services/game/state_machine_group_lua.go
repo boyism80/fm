@@ -36,7 +36,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "StateMachineGroup expected")
 				return 0
 			}
-			L.Push(lua.LString(group.Name))
+			L.Push(lua.LString(group.name))
 			return 1
 		},
 		"set_property": func(L *lua.LState) int {
@@ -107,7 +107,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				group.OverrideMachineCap(MachineCap{})
 				return 0
 			}
-			group.OverrideMachineCap(MachineCap{Limited: true, Max: L.CheckInt(2)})
+			group.OverrideMachineCap(MachineCap{limited: true, max: L.CheckInt(2)})
 			return 0
 		},
 		"reset_max_machines": func(L *lua.LState) int {
@@ -128,8 +128,8 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			c, overridden := group.MachineCap()
-			if c.Limited {
-				L.Push(lua.LNumber(c.Max))
+			if c.limited {
+				L.Push(lua.LNumber(c.max))
 			} else {
 				L.Push(lua.LNil)
 			}
@@ -182,8 +182,8 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(3, "Character expected")
 					return 0
 				}
-				opts.Leader = leader
-				opts.ScaleLevel = int(leader.GetLevel())
+				opts.leader = leader
+				opts.scaleLevel = int(leader.GetLevel())
 			}
 			if L.GetTop() >= 4 && L.Get(4).Type() != lua.LTNil {
 				partyUd := L.CheckUserData(4)
@@ -192,12 +192,12 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(4, "Party expected")
 					return 0
 				}
-				opts.Party = party
+				opts.party = party
 			}
 			if L.GetTop() >= 5 {
 				maxLevel := L.CheckInt(5)
-				if maxLevel > 0 && opts.ScaleLevel > maxLevel {
-					opts.ScaleLevel = maxLevel
+				if maxLevel > 0 && opts.scaleLevel > maxLevel {
+					opts.scaleLevel = maxLevel
 				}
 			}
 			sm, err := group.Create(id, opts)
@@ -231,19 +231,19 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 			} else {
-				pid := leader.Party.ID()
-				if pid == nil || leader.GameWorld == nil {
+				pid := leader.party.ID()
+				if pid == nil || leader.gameWorld == nil {
 					L.Push(lua.LNil)
 					L.Push(lua.LString("no party"))
 					return 2
 				}
-				party = leader.GameWorld.Systems().Get[*PartySystem]().Get(*pid)
+				party = leader.gameWorld.Systems().Get[*PartySystem]().Get(*pid)
 			}
 			maxLevel := 0
 			if L.GetTop() >= 4 {
 				maxLevel = L.CheckInt(4)
 			}
-			sm, err := group.StartParty(leader, party, StartPartyOpts{MaxLevel: maxLevel})
+			sm, err := group.StartParty(leader, party, StartPartyOpts{maxLevel: maxLevel})
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))
@@ -269,7 +269,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() >= 3 {
 				maxLevel = L.CheckInt(3)
 			}
-			sm, err := group.StartSolo(player, StartPartyOpts{MaxLevel: maxLevel})
+			sm, err := group.StartSolo(player, StartPartyOpts{maxLevel: maxLevel})
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))

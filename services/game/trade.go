@@ -63,12 +63,12 @@ func (t *Trade) tax(meso int32) int32 {
 }
 
 func (ch *Character) Trading() bool {
-	_, ok := ch.MiniRoom.(*Trade)
+	_, ok := ch.miniRoom.(*Trade)
 	return ok
 }
 
 func NewTrade(owner *Character) (*Trade, error) {
-	if owner.GetMap() == nil || owner.MiniRoom != nil {
+	if owner.GetMap() == nil || owner.miniRoom != nil {
 		return nil, ErrMiniRoomInvalid
 	}
 
@@ -78,12 +78,12 @@ func NewTrade(owner *Character) (*Trade, error) {
 }
 
 func (t *Trade) Open() {
-	t.sides[0].ch.MiniRoom = t
-	t.sides[0].ch.Listener.OnTradeEntered(t.sides[0].ch, t)
+	t.sides[0].ch.miniRoom = t
+	t.sides[0].ch.listener.OnTradeEntered(t.sides[0].ch, t)
 }
 
 func (t *Trade) Invite(ch *Character, targetID uint32) error {
-	if t.sides[0].ch != ch || ch.MiniRoom != t || t.invited != nil {
+	if t.sides[0].ch != ch || ch.miniRoom != t || t.invited != nil {
 		return ErrMiniRoomInvalid
 	}
 
@@ -94,22 +94,22 @@ func (t *Trade) Invite(ch *Character, targetID uint32) error {
 	target := m.GetPlayer(targetID)
 	switch {
 	case target == nil || target == ch:
-		ch.Listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteNotFound, "")
+		ch.listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteNotFound, "")
 		t.Leave(ch)
-	case target.MiniRoom != nil:
-		ch.Listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteBusy, target.GetName())
+	case target.miniRoom != nil:
+		ch.listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteBusy, target.GetName())
 		t.Leave(ch)
 	default:
 		t.invited = target
 		t.sn = nextTradeInviteSN.Add(1)
-		target.MiniRoom = t
-		target.Listener.OnTradeInvited(target, ch.GetName(), t.sn)
+		target.miniRoom = t
+		target.listener.OnTradeInvited(target, ch.GetName(), t.sn)
 	}
 	return nil
 }
 
 func (t *Trade) Decline(ch *Character, sn uint32, reason uint8) error {
-	if ch.MiniRoom != t || t.sn != sn || t.invited != ch || t.sides[1] != nil {
+	if ch.miniRoom != t || t.sn != sn || t.invited != ch || t.sides[1] != nil {
 		return ErrMiniRoomInvalid
 	}
 
@@ -118,13 +118,13 @@ func (t *Trade) Decline(ch *Character, sn uint32, reason uint8) error {
 		result = pconst.MiniRoomInviteBlocked
 	}
 	inviter := t.sides[0].ch
-	inviter.Listener.OnTradeInviteResult(inviter, result, ch.GetName())
+	inviter.listener.OnTradeInviteResult(inviter, result, ch.GetName())
 	t.Leave(inviter)
 	return nil
 }
 
 func (t *Trade) Visit(ch *Character) error {
-	if ch.MiniRoom != t {
+	if ch.miniRoom != t {
 		return ErrMiniRoomInvalid
 	}
 	if t.invited != ch || t.sides[1] != nil || t.sides[0].ch.GetMap() == nil || t.sides[0].ch.GetMap() != ch.GetMap() {
@@ -134,8 +134,8 @@ func (t *Trade) Visit(ch *Character) error {
 	t.invited = nil
 	t.sides[1] = &tradeSide{ch: ch}
 	inviter := t.sides[0].ch
-	inviter.Listener.OnMiniRoomVisited(inviter, 1, ch)
-	ch.Listener.OnTradeEntered(ch, t)
+	inviter.listener.OnMiniRoomVisited(inviter, 1, ch)
+	ch.listener.OnTradeEntered(ch, t)
 	return nil
 }
 
@@ -147,7 +147,7 @@ func (t *Trade) Chat(ch *Character, message string) error {
 
 	text := fmt.Sprintf("%s : %s", ch.GetName(), message)
 	for _, member := range t.Members() {
-		member.Listener.OnMiniRoomChat(member, slot, text)
+		member.listener.OnMiniRoomChat(member, slot, text)
 	}
 	return nil
 }
@@ -168,7 +168,7 @@ func (t *Trade) PutItem(ch *Character, invType constant.InventoryType, slot int1
 	if tradeSlot < 1 || tradeSlot > TradeSlots || side.items[tradeSlot-1] != nil {
 		return ErrMiniRoomInvalid
 	}
-	item := ch.Inventory.GetItem(invType, slot)
+	item := ch.inventory.GetItem(invType, slot)
 	if item == nil {
 		return ErrMiniRoomItemNotFound
 	}
@@ -182,7 +182,7 @@ func (t *Trade) PutItem(ch *Character, invType constant.InventoryType, slot int1
 		count = item.GetCount()
 	}
 
-	held, err := ch.Escrow.hold(invType, slot, count)
+	held, err := ch.escrow.hold(invType, slot, count)
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (t *Trade) PutItem(ch *Character, invType constant.InventoryType, slot int1
 		if member == side {
 			who = 0
 		}
-		member.ch.Listener.OnTradeItem(member.ch, who, tradeSlot, held)
+		member.ch.listener.OnTradeItem(member.ch, who, tradeSlot, held)
 	}
 	return nil
 }
@@ -202,7 +202,7 @@ func (t *Trade) PutMeso(ch *Character, meso int32) error {
 	if err != nil {
 		return err
 	}
-	if err := ch.Escrow.holdMeso(meso); err != nil {
+	if err := ch.escrow.holdMeso(meso); err != nil {
 		return err
 	}
 
@@ -211,7 +211,7 @@ func (t *Trade) PutMeso(ch *Character, meso int32) error {
 		if member == side {
 			who = 0
 		}
-		member.ch.Listener.OnTradeMeso(member.ch, who, ch.Escrow.Meso)
+		member.ch.listener.OnTradeMeso(member.ch, who, ch.escrow.meso)
 	}
 	return nil
 }
@@ -225,7 +225,7 @@ func (t *Trade) Confirm(ch *Character) error {
 	t.sides[slot].confirmed = true
 	other := t.sides[1-slot]
 	if !other.confirmed {
-		other.ch.Listener.OnTradeConfirmed(other.ch)
+		other.ch.listener.OnTradeConfirmed(other.ch)
 		return nil
 	}
 	t.complete()
@@ -233,14 +233,14 @@ func (t *Trade) Confirm(ch *Character) error {
 }
 
 func (t *Trade) Leave(ch *Character) {
-	if t.invited == ch && ch.MiniRoom == t {
+	if t.invited == ch && ch.miniRoom == t {
 		inviter := t.sides[0].ch
 		t.close()
-		inviter.Listener.OnMiniRoomLeft(inviter, 0, pconst.MiniRoomLeaveTradeCancel)
+		inviter.listener.OnMiniRoomLeft(inviter, 0, pconst.MiniRoomLeaveTradeCancel)
 		return
 	}
 	slot, ok := t.SlotOf(ch)
-	if !ok || ch.MiniRoom != t {
+	if !ok || ch.miniRoom != t {
 		return
 	}
 
@@ -249,24 +249,24 @@ func (t *Trade) Leave(ch *Character) {
 		if side == nil {
 			continue
 		}
-		side.ch.Escrow.restore()
+		side.ch.escrow.restore()
 		reason := pconst.MiniRoomLeaveTradeCancel
 		if uint8(i) == slot {
 			reason = pconst.MiniRoomLeaveExit
 		}
-		side.ch.Listener.OnMiniRoomLeft(side.ch, uint8(i), reason)
+		side.ch.listener.OnMiniRoomLeft(side.ch, uint8(i), reason)
 	}
 }
 
 func (t *Trade) close() {
-	if t.invited != nil && t.invited.MiniRoom == t {
-		t.invited.MiniRoom = nil
+	if t.invited != nil && t.invited.miniRoom == t {
+		t.invited.miniRoom = nil
 	}
 	t.invited = nil
 	for _, side := range t.sides {
 		if side != nil {
-			if side.ch.MiniRoom == t {
-				side.ch.MiniRoom = nil
+			if side.ch.miniRoom == t {
+				side.ch.miniRoom = nil
 			}
 		}
 	}
@@ -284,12 +284,12 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 				continue
 			}
 			model := item.GetModel()
-			if side.ch.Inventory.hasOnlyItem(model) || (model.GetTraits()&constant.ItemTraitOnly != 0 && rewards[model.GetID()] > 0) {
+			if side.ch.inventory.hasOnlyItem(model) || (model.GetTraits()&constant.ItemTraitOnly != 0 && rewards[model.GetID()] > 0) {
 				return pconst.MiniRoomLeaveTradeOnly
 			}
 			rewards[model.GetID()] += item.GetCount()
 		}
-		meso := giver.ch.Escrow.Meso
+		meso := giver.ch.escrow.meso
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: rewards, Meso: meso - t.tax(meso)}}
 		if spec.Valid(side.ch) != ExchangeOK {
 			return pconst.MiniRoomLeaveTradeFail
@@ -303,8 +303,8 @@ func (t *Trade) complete() {
 	reason := t.check()
 	if reason != pconst.MiniRoomLeaveTradeDone {
 		for i, side := range t.sides {
-			side.ch.Escrow.restore()
-			side.ch.Listener.OnMiniRoomLeft(side.ch, uint8(i), reason)
+			side.ch.escrow.restore()
+			side.ch.listener.OnMiniRoomLeft(side.ch, uint8(i), reason)
 		}
 		return
 	}
@@ -312,15 +312,15 @@ func (t *Trade) complete() {
 	var given [2][]Item
 	var meso [2]int32
 	for i, side := range t.sides {
-		given[i], meso[i] = side.ch.Escrow.release()
+		given[i], meso[i] = side.ch.escrow.release()
 	}
 	for i, side := range t.sides {
 		for _, item := range given[1-i] {
-			side.ch.Inventory.receive(item)
+			side.ch.inventory.receive(item)
 		}
-		side.ch.Inventory.addMesoUnchecked(meso[1-i] - t.tax(meso[1-i]))
+		side.ch.inventory.addMesoUnchecked(meso[1-i] - t.tax(meso[1-i]))
 	}
 	for i, side := range t.sides {
-		side.ch.Listener.OnMiniRoomLeft(side.ch, uint8(i), pconst.MiniRoomLeaveTradeDone)
+		side.ch.listener.OnMiniRoomLeft(side.ch, uint8(i), pconst.MiniRoomLeaveTradeDone)
 	}
 }

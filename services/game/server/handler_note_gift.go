@@ -31,8 +31,8 @@ func (h *NoteGift) Handle(ctx *core.ClientContext, _ *request.NoteGift) error {
 		return nil
 	}
 
-	ch.Notes.Remove(ctx.ActorContext, internal.NotesAction_NOTES_ACTION_REMOVE_GIFTS, nil).Finally(func() {
-		ch.Listener.OnUnlockAction(ch)
+	ch.Notes().Remove(ctx.ActorContext, internal.NotesAction_NOTES_ACTION_REMOVE_GIFTS, nil).Finally(func() {
+		ch.Listener().OnUnlockAction(ch)
 	})
 	return nil
 }

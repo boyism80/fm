@@ -23,7 +23,7 @@ func (h *SetDoorPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor, msg
 		if door == nil {
 			return
 		}
-		door.PartyID = msg.PartyID
+		door.SetPartyID(msg.PartyID)
 		return
 	}
 }

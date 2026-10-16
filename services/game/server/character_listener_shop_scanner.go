@@ -13,7 +13,7 @@ import (
 func (l *CharacterListenerImpl) OnShopScannerResult(ch *game.Character, itemID uint32, entries []*internal.ShopSearchEntry) {
 	result := &response.ShopScannerResult{ItemID: itemID}
 	for _, entry := range entries {
-		item, err := game.NewItemFromInternalProto(entry.GetItem(), ch.GameWorld)
+		item, err := game.NewItemFromInternalProto(entry.GetItem(), ch.GetGameWorld())
 		if err != nil {
 			log.Printf("OnShopScannerResult item=%d: %v", itemID, err)
 			continue

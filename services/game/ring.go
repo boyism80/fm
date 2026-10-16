@@ -7,50 +7,50 @@ import (
 )
 
 type Ring struct {
-	RingId       uint64
-	PartnerId    uint64
-	RingUniqueId uint64
-	PartnerChrId uint32
-	ItemId       uint32
-	PartnerName  string
-	Equipped     bool
+	ringId       uint64
+	partnerId    uint64
+	ringUniqueId uint64
+	partnerChrId uint32
+	itemId       uint32
+	partnerName  string
+	equipped     bool
 }
 
 type Rings struct {
-	Left []*Ring
-	Mid  []*Ring
+	left []*Ring
+	mid  []*Ring
 }
 
 func (inv *Inventory) LoadRings(rings []*internal.CashRing) {
 	for _, pb := range rings {
 		ring := &Ring{
-			RingId:       pb.GetSerial(),
-			PartnerId:    pb.GetPartnerSerial(),
-			RingUniqueId: pb.GetSerial(),
-			PartnerChrId: pb.GetPartnerId(),
-			ItemId:       pb.GetItemId(),
-			PartnerName:  pb.GetPartnerName(),
+			ringId:       pb.GetSerial(),
+			partnerId:    pb.GetPartnerSerial(),
+			ringUniqueId: pb.GetSerial(),
+			partnerChrId: pb.GetPartnerId(),
+			itemId:       pb.GetItemId(),
+			partnerName:  pb.GetPartnerName(),
 		}
-		model := inv.owner.itemModel(ring.ItemId)
+		model := inv.owner.itemModel(ring.itemId)
 		if model == nil {
 			continue
 		}
 		switch {
 		case model.GetTraits()&constant.ItemTraitCrushRing != 0:
-			inv.Rings.Left = append(inv.Rings.Left, ring)
+			inv.rings.left = append(inv.rings.left, ring)
 		case model.GetTraits()&constant.ItemTraitFriendshipRing != 0:
-			inv.Rings.Mid = append(inv.Rings.Mid, ring)
+			inv.rings.mid = append(inv.rings.mid, ring)
 		}
 	}
 }
 
 func (inv *Inventory) WornRing(rings []*Ring) *dto.Ring {
 	for _, ring := range rings {
-		for _, equipment := range inv.Equipped {
+		for _, equipment := range inv.equipped {
 			if equipment == nil {
 				continue
 			}
-			if uniqueID := equipment.GetEquipmentCore().UniqueId; uniqueID != nil && *uniqueID == ring.RingId {
+			if uniqueID := equipment.GetEquipmentCore().uniqueId; uniqueID != nil && *uniqueID == ring.ringId {
 				return ring.BuildS2C()
 			}
 		}

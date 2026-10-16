@@ -22,11 +22,11 @@ func (h *PetExceptions) Handle(ctx *core.ClientContext, req *request.PetExceptio
 		return nil
 	}
 	character := gameClient.GetCharacter()
-	if character == nil || character.Pets.Active == nil {
+	if character == nil || character.Pets().Active() == nil {
 		return nil
 	}
 
-	character.Pets.Active.SetExceptions(req.ItemIDs)
+	character.Pets().Active().SetExceptions(req.ItemIDs)
 
 	return nil
 }

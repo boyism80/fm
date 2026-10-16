@@ -159,7 +159,7 @@ func (s *MapSystem) CreateStateMachineMap(templateID uint32, sm *StateMachine, o
 	opts.Instance = true
 	opts.StateMachine = sm
 	key := s.nextInstanceID.Add(1)
-	mapInstance := NewMapWithOpts(key, s.mapListener, s.mobListener, templateID, s.gw, sm.ActorPID, opts)
+	mapInstance := NewMapWithOpts(key, s.mapListener, s.mobListener, templateID, s.gw, sm.actorPID, opts)
 
 	s.mu.Lock()
 	s.instances[key] = mapInstance
@@ -191,7 +191,7 @@ func (s *MapSystem) RemoveInstanceMap(instanceKey uint32) error {
 
 	sm := m.StateMachine()
 	if sm != nil {
-		s.gw.Systems().Get[*StateMachineSystem]().Send(sm.ActorPID, &StateMachineMapRemoved{Map: m})
+		s.gw.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &StateMachineMapRemoved{Map: m})
 	}
 	if m.GetPlayerCount() > 0 {
 		return fmt.Errorf("instance map %d closed with %d players", instanceKey, m.GetPlayerCount())
@@ -216,7 +216,7 @@ func (s *MapSystem) CloseInstance(m *Map) {
 	s.Visit(m, func(ctx actor.Context) {
 		for _, obj := range m.GetObjects(gameconst.ObjectTypeDoor) {
 			if door, ok := obj.(*Door); ok {
-				m.RemoveDoor(door.OID, true)
+				m.RemoveDoor(door.oid, true)
 			}
 		}
 
@@ -254,12 +254,12 @@ func (s *MapSystem) Broadcast(m *Map, message types.Packet) {
 }
 
 func (s *MapSystem) returnMap(m *Map) *Map {
-	if m.Wz == nil {
+	if m.wz == nil {
 		return nil
 	}
-	exitID := uint32(m.Wz.ReturnMapId)
-	if m.Wz.ForcedReturn != 0 {
-		exitID = m.Wz.ForcedReturn
+	exitID := uint32(m.wz.ReturnMapId)
+	if m.wz.ForcedReturn != 0 {
+		exitID = m.wz.ForcedReturn
 	}
 	if exitID == 0 || exitID == m.TemplateID() {
 		return nil
@@ -426,7 +426,7 @@ func (s *MapSystem) Warp(actorCtx actor.Context, character *Character, targetMap
 			return err
 		}
 		character.ResumeTimers(actorCtx.Self())
-		character.Listener.OnPartyMemberFieldsChanged(character)
+		character.listener.OnPartyMemberFieldsChanged(character)
 		if onEnter != nil {
 			// Deferred so a Lua caller finishes its own call before onEnter starts on the same root.
 			actorCtx.Send(targetPID, &MapCall{Run: func(ctx actor.Context, _ []*Map) []lua.LValue {
@@ -460,41 +460,41 @@ func (s *MapSystem) CreateReturnDoor(ch *Character, key DoorKey, skillID gamecon
 		return nil
 	}
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return nil
 	}
-	destMapID := uint32(m.Wz.ReturnMapId)
-	if destMapID == 0 || destMapID == uint32(m.Wz.ID) {
+	destMapID := uint32(m.wz.ReturnMapId)
+	if destMapID == 0 || destMapID == uint32(m.wz.ID) {
 		return nil
 	}
 	destMap := s.Get(destMapID)
 	if destMap == nil {
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
+		ch.listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return nil
 	}
 	destPID := destMap.LogicActorPID()
 	if destPID == nil {
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
+		ch.listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return nil
 	}
 	srcPID := m.LogicActorPID()
 	if srcPID == nil {
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
+		ch.listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return nil
 	}
 	root := s.gw.Systems().Get[*c_actor.ActorRegistry]().Root()
 	if root == nil {
 		return nil
 	}
-	fieldAnchorPt := types.Point[int16]{X: ch.Position.X, Y: ch.Position.Y}
+	fieldAnchorPt := types.Point[int16]{X: ch.position.X, Y: ch.position.Y}
 	var closestPortalID uint8
-	if id, ok := m.Wz.FindClosestDoorReturnPortalSpawnID(fieldAnchorPt); ok {
+	if id, ok := m.wz.FindClosestDoorReturnPortalSpawnID(fieldAnchorPt); ok {
 		closestPortalID = id
 	} else {
-		closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchorPt)
+		closestPortalID = m.wz.FindClosestPortalSpawnID(fieldAnchorPt)
 	}
 	slot := 0
-	slot = s.gw.Systems().Get[*PartySystem]().PartyMemberIndex(ch.GetID(), ch.Party.ID())
+	slot = s.gw.Systems().Get[*PartySystem]().PartyMemberIndex(ch.GetID(), ch.party.ID())
 	root.Send(destPID, &RequestSpawnDoor{
 		ReplyTo:     srcPID,
 		TargetMap:   destMap,
@@ -505,10 +505,10 @@ func (s *MapSystem) CreateReturnDoor(ch *Character, key DoorKey, skillID gamecon
 		Field: DoorEndpoint{
 			Map:      m,
 			PortalID: closestPortalID,
-			Position: ch.Position,
+			Position: ch.position,
 		},
 		PartyOwnerSlot: slot,
-		PartyID:        ch.Party.ID(),
+		PartyID:        ch.party.ID(),
 	})
 	return destMap
 }

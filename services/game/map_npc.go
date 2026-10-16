@@ -39,7 +39,7 @@ func (m *Map) RemoveRuntimeNpcs() {
 	oids := make([]uint32, 0)
 	for oid, obj := range m.objects[constant.ObjectTypeNpc] {
 		npc, ok := obj.(*Npc)
-		if !ok || npc == nil || !npc.RuntimeSpawn {
+		if !ok || npc == nil || !npc.runtimeSpawn {
 			continue
 		}
 		oids = append(oids, oid)
@@ -55,10 +55,10 @@ func (m *Map) NpcByTemplate(npcID uint32) *Npc {
 	}
 	for _, obj := range m.GetNpcs() {
 		npc, ok := obj.(*Npc)
-		if !ok || npc == nil || npc.Wz == nil || npc.Wz.BaseSpawn == nil {
+		if !ok || npc == nil || npc.wz == nil || npc.wz.BaseSpawn == nil {
 			continue
 		}
-		if npc.Wz.BaseSpawn.ID == npcID {
+		if npc.wz.BaseSpawn.ID == npcID {
 			return npc
 		}
 	}

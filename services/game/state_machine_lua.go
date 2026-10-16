@@ -27,7 +27,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "StateMachine expected")
 				return 0
 			}
-			L.Push(lua.LString(machine.ID))
+			L.Push(lua.LString(machine.id))
 			return 1
 		},
 		"group": func(L *lua.LState) int {
@@ -37,11 +37,11 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "StateMachine expected")
 				return 0
 			}
-			if machine.Group == nil {
+			if machine.group == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, machine.Group))
+			L.Push(luax.NewLuable(L, machine.group))
 			return 1
 		},
 		"players": func(L *lua.LState) int {
@@ -68,11 +68,11 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "StateMachine expected")
 				return 0
 			}
-			if machine.Party == nil {
+			if machine.party == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, machine.Party))
+			L.Push(luax.NewLuable(L, machine.party))
 			return 1
 		},
 		"leader": func(L *lua.LState) int {
@@ -82,11 +82,11 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "StateMachine expected")
 				return 0
 			}
-			if machine.Leader == nil {
+			if machine.leader == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, machine.Leader))
+			L.Push(luax.NewLuable(L, machine.leader))
 			return 1
 		},
 		"scale_level": func(L *lua.LState) int {
@@ -96,7 +96,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "StateMachine expected")
 				return 0
 			}
-			L.Push(lua.LNumber(machine.ScaleLevel))
+			L.Push(lua.LNumber(machine.scaleLevel))
 			return 1
 		},
 		"disposed": func(L *lua.LState) int {
@@ -153,7 +153,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			if cfg.ActorContext != nil && cfg.ActorContext.Self().Equal(machine.ActorPID) {
+			if cfg.ActorContext != nil && cfg.ActorContext.Self().Equal(machine.actorPID) {
 				machine.LeavePlayer(cfg.ActorContext, ch, false, StateMachineLeaveExit)
 			} else {
 				machine.RequestLeave(ch, false, StateMachineLeaveExit)
@@ -202,7 +202,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			exitMapID := uint32(L.OptInt(2, 0))
 			exitPortal := uint8(L.OptInt(3, 0))
 			cfg, _ := luax.GetConfiguration(L)
-			if cfg.ActorContext != nil && cfg.ActorContext.Self().Equal(machine.ActorPID) {
+			if cfg.ActorContext != nil && cfg.ActorContext.Self().Equal(machine.actorPID) {
 				machine.Finish(cfg.ActorContext, exitMapID, exitPortal)
 			} else {
 				machine.RequestFinish(exitMapID, exitPortal)
@@ -226,7 +226,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.group.gameWorld, promise, nil)
 		},
 		"restart_timer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -245,7 +245,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.group.gameWorld, promise, nil)
 		},
 		"stop_timer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -263,7 +263,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.group.gameWorld, promise, nil)
 		},
 		"time_left": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -334,7 +334,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch == nil {
 					continue
 				}
-				ch.Listener.OnMessage(ch, msgType, message)
+				ch.listener.OnMessage(ch, msgType, message)
 			}
 			return 0
 		},
@@ -385,7 +385,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.group.gameWorld, promise, nil)
 		},
 		"cron": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -406,7 +406,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.group.gameWorld, promise, nil)
 		},
 		"cancel": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -428,7 +428,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.group.gameWorld, promise, nil)
 		},
 		"warp_all": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

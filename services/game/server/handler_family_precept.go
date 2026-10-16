@@ -25,6 +25,6 @@ func (h *FamilyPrecept) Handle(ctx *core.ClientContext, req *request.FamilyPrece
 		return nil
 	}
 
-	ch.Family.SetPrecept(ctx.ActorContext, req.Precept)
+	ch.Family().SetPrecept(ctx.ActorContext, req.Precept)
 	return nil
 }

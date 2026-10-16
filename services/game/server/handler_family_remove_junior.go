@@ -24,6 +24,6 @@ func (h *FamilyRemoveJunior) Handle(ctx *core.ClientContext, req *request.Family
 		return nil
 	}
 
-	ch.Family.Separate(ctx.ActorContext, req.JuniorID)
+	ch.Family().Separate(ctx.ActorContext, req.JuniorID)
 	return nil
 }

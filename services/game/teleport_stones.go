@@ -33,13 +33,13 @@ func (t *TeleportStones) Register(vip bool) {
 		return
 	}
 	if m.BlocksTeleportStone() || !t.query(m, "can_register_teleport_stone", m.TemplateID()) {
-		t.owner.Listener.OnTeleportStoneFailed(t.owner, vip, pconst.TeleportStoneResultCannotRegister)
+		t.owner.listener.OnTeleportStoneFailed(t.owner, vip, pconst.TeleportStoneResultCannotRegister)
 		return
 	}
 
 	stones := t.Slots(vip)
 	if stones.Contains(m.TemplateID()) {
-		t.owner.Listener.OnTeleportStones(t.owner, vip)
+		t.owner.listener.OnTeleportStones(t.owner, vip)
 		return
 	}
 	for i, mapID := range stones {
@@ -48,7 +48,7 @@ func (t *TeleportStones) Register(vip bool) {
 			break
 		}
 	}
-	t.owner.Listener.OnTeleportStones(t.owner, vip)
+	t.owner.listener.OnTeleportStones(t.owner, vip)
 }
 
 func (t *TeleportStones) Remove(vip bool, mapID uint32) {
@@ -56,7 +56,7 @@ func (t *TeleportStones) Remove(vip bool, mapID uint32) {
 	for i, registered := range stones {
 		if registered == mapID {
 			stones[i] = constant.TeleportStoneEmpty
-			t.owner.Listener.OnTeleportStones(t.owner, vip)
+			t.owner.listener.OnTeleportStones(t.owner, vip)
 			return
 		}
 	}
@@ -65,18 +65,18 @@ func (t *TeleportStones) Remove(vip bool, mapID uint32) {
 func (t *TeleportStones) Reset() {
 	t.regular = constant.NewTeleportStoneSlots(nil, constant.TeleportStoneCount)
 	t.vip = constant.NewTeleportStoneSlots(nil, constant.VipTeleportStoneCount)
-	t.owner.Listener.OnTeleportStones(t.owner, false)
-	t.owner.Listener.OnTeleportStones(t.owner, true)
+	t.owner.listener.OnTeleportStones(t.owner, false)
+	t.owner.listener.OnTeleportStones(t.owner, true)
 }
 
 func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, slot int16, itemID uint32, mapID uint32, name string) {
 	if !t.owner.session.cashItemInUse.CompareAndSwap(false, true) {
-		t.owner.Listener.OnUpdateStats(t.owner, nil, true)
+		t.owner.listener.OnUpdateStats(t.owner, nil, true)
 		return
 	}
 	finish := func() {
 		t.owner.session.cashItemInUse.Store(false)
-		t.owner.Listener.OnUpdateStats(t.owner, nil, true)
+		t.owner.listener.OnUpdateStats(t.owner, nil, true)
 	}
 	model := t.owner.itemModel(itemID)
 	if model == nil {
@@ -85,7 +85,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 	}
 	vip := model.GetTraits()&constant.ItemTraitVipTeleportStone != 0
 	fail := func(result pconst.TeleportStoneResult) {
-		t.owner.Listener.OnTeleportStoneFailed(t.owner, vip, result)
+		t.owner.listener.OnTeleportStoneFailed(t.owner, vip, result)
 		finish()
 	}
 
@@ -105,20 +105,20 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 		finish()
 		return
 	}
-	item := t.owner.Inventory.Tabs[invType].Get(uint8(slot))
+	item := t.owner.inventory.tabs[invType].Get(uint8(slot))
 	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
 		finish()
 		return
 	}
-	if t.owner.GetHp() <= 0 || t.owner.Dialog.Busy() {
+	if t.owner.GetHp() <= 0 || t.owner.dialog.Busy() {
 		finish()
 		return
 	}
 
 	consume := func(actor.Context) {
-		item := t.owner.Inventory.Tabs[invType].Get(uint8(slot))
+		item := t.owner.inventory.tabs[invType].Get(uint8(slot))
 		if item != nil && item.GetModel().GetID() == itemID {
-			t.owner.Inventory.RemoveItem(invType, slot, 1)
+			t.owner.inventory.RemoveItem(invType, slot, 1)
 		}
 		finish()
 	}
@@ -128,11 +128,11 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 			fail(pconst.TeleportStoneResultCannotGo)
 			return
 		}
-		t.teleport(ctx, itemID, vip, t.owner.GameWorld.Systems().Get[*MapSystem]().Get(mapID), 0, false, consume, fail)
+		t.teleport(ctx, itemID, vip, t.owner.gameWorld.Systems().Get[*MapSystem]().Get(mapID), 0, false, consume, fail)
 		return
 	}
 
-	targetID, found := t.owner.GameWorld.Systems().Get[*DispatchSystem]().FindCharacterID(name)
+	targetID, found := t.owner.gameWorld.Systems().Get[*DispatchSystem]().FindCharacterID(name)
 	if !found || targetID == t.owner.GetID() {
 		fail(pconst.TeleportStoneResultNotFound)
 		return
@@ -140,7 +140,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 	admin := t.owner.HasRoleAtLeast(constant.RoleAdmin)
 	var settled atomic.Bool
 	settle := func(run func(ctx actor.Context)) {
-		t.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(t.owner.GetID(), func(ctx actor.Context, _ *Character) {
+		t.owner.gameWorld.Systems().Get[*DispatchSystem]().Visit(t.owner.GetID(), func(ctx actor.Context, _ *Character) {
 			if settled.CompareAndSwap(false, true) {
 				run(ctx)
 			}
@@ -151,7 +151,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 			fail(pconst.TeleportStoneResultNotFound)
 		})
 	})
-	t.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(targetID, func(_ actor.Context, target *Character) {
+	t.owner.gameWorld.Systems().Get[*DispatchSystem]().Visit(targetID, func(_ actor.Context, target *Character) {
 		if target == nil || ((target.IsHidden() || target.HasRoleAtLeast(constant.RoleAdmin)) && !admin) {
 			settle(func(actor.Context) {
 				fail(pconst.TeleportStoneResultNotFound)
@@ -159,7 +159,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 			return
 		}
 		targetMap := target.GetMap()
-		spawnPoint := targetMap.Wz.FindClosestPortalSpawnID(target.Position)
+		spawnPoint := targetMap.wz.FindClosestPortalSpawnID(target.position)
 		settle(func(ctx actor.Context) {
 			t.teleport(ctx, itemID, vip, targetMap, spawnPoint, true, consume, fail)
 		})
@@ -180,7 +180,7 @@ func (t *TeleportStones) teleport(ctx actor.Context, itemID uint32, vip bool, ta
 		onFail(pconst.TeleportStoneResultCannotGo)
 		return
 	}
-	if !vip && m.Wz.Continent != target.Wz.Continent {
+	if !vip && m.wz.Continent != target.wz.Continent {
 		onFail(pconst.TeleportStoneResultCannotGo)
 		return
 	}
@@ -189,7 +189,7 @@ func (t *TeleportStones) teleport(ctx actor.Context, itemID uint32, vip bool, ta
 		return
 	}
 
-	err := t.owner.GameWorld.Systems().Get[*MapSystem]().Warp(ctx, t.owner, target, spawnPoint, onEnter)
+	err := t.owner.gameWorld.Systems().Get[*MapSystem]().Warp(ctx, t.owner, target, spawnPoint, onEnter)
 	if err != nil {
 		onFail(pconst.TeleportStoneResultCannotGo)
 	}

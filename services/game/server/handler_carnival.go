@@ -27,11 +27,11 @@ func (h *Carnival) Handle(ctx *core.ClientContext, req *request.Carnival) error 
 	if ch == nil {
 		return fmt.Errorf("character is nil")
 	}
-	defer ch.Listener.OnUnlockAction(ch)
+	defer ch.Listener().OnUnlockAction(ch)
 
-	if ch.Carnival.Match() == nil || ch.StateMachine == nil {
+	if ch.Carnival().Match() == nil || ch.StateMachine() == nil {
 		return nil
 	}
-	ch.StateMachine.CallHook("on_carnival_summon", ch, int(req.Tab), req.Num)
+	ch.StateMachine().CallHook("on_carnival_summon", ch, int(req.Tab), req.Num)
 	return nil
 }

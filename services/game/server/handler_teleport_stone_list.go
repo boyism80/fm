@@ -25,9 +25,9 @@ func (h *TeleportStoneList) Handle(ctx *core.ClientContext, req *request.Telepor
 
 	switch req.Action {
 	case pconst.TeleportStoneActionRegister:
-		character.TeleportStones.Register(req.VIP)
+		character.TeleportStones().Register(req.VIP)
 	case pconst.TeleportStoneActionRemove:
-		character.TeleportStones.Remove(req.VIP, req.MapID)
+		character.TeleportStones().Remove(req.VIP, req.MapID)
 	}
 	return nil
 }

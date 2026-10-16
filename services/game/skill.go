@@ -8,12 +8,12 @@ import (
 )
 
 type SkillEntry struct {
-	Wz          *wz.Skill
+	wz          *wz.Skill
 	level       int
-	MasterLevel int
-	Expiration  time.Time
-	CooldownEnd *time.Time
-	Owner       *Character
+	masterLevel int
+	expiration  time.Time
+	cooldownEnd *time.Time
+	owner       *Character
 }
 
 func NewSkillEntry(owner *Character, w *wz.Skill, level, masterLevel int) *SkillEntry {
@@ -30,10 +30,10 @@ func NewSkillEntry(owner *Character, w *wz.Skill, level, masterLevel int) *Skill
 		masterLevel = 0
 	}
 	return &SkillEntry{
-		Wz:          w,
+		wz:          w,
 		level:       level,
-		MasterLevel: masterLevel,
-		Owner:       owner,
+		masterLevel: masterLevel,
+		owner:       owner,
 	}
 }
 
@@ -50,11 +50,11 @@ func (s *SkillEntry) SetLevel(level int) {
 	if prev != level {
 		s.refreshPassiveStats(prev, level)
 	}
-	if s.Owner != nil {
-		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
+	if s.owner != nil {
+		s.owner.listener.OnUpdateSkill(s.owner, s.wz.ID, int32(s.level), int32(s.masterLevel))
 	}
-	if level == 0 && s.MasterLevel == 0 {
-		delete(s.Owner.Skills.entries, s.Wz.ID)
+	if level == 0 && s.masterLevel == 0 {
+		delete(s.owner.skills.entries, s.wz.ID)
 	}
 }
 
@@ -65,17 +65,17 @@ func (s *SkillEntry) SetLevels(level, masterLevel int) {
 	if masterLevel < 0 {
 		masterLevel = 0
 	}
-	s.MasterLevel = masterLevel
+	s.masterLevel = masterLevel
 	prev := s.level
 	s.level = level
 	if prev != level {
 		s.refreshPassiveStats(prev, level)
 	}
-	if s.Owner != nil {
-		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
+	if s.owner != nil {
+		s.owner.listener.OnUpdateSkill(s.owner, s.wz.ID, int32(s.level), int32(s.masterLevel))
 	}
 	if level == 0 && masterLevel == 0 {
-		delete(s.Owner.Skills.entries, s.Wz.ID)
+		delete(s.owner.skills.entries, s.wz.ID)
 	}
 }
 
@@ -83,9 +83,9 @@ func (s *SkillEntry) SetMasterLevel(masterLevel int) {
 	if masterLevel < 0 {
 		masterLevel = 0
 	}
-	s.MasterLevel = masterLevel
-	if s.Owner != nil {
-		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
+	s.masterLevel = masterLevel
+	if s.owner != nil {
+		s.owner.listener.OnUpdateSkill(s.owner, s.wz.ID, int32(s.level), int32(s.masterLevel))
 	}
 }
 
@@ -93,47 +93,47 @@ func (s *SkillEntry) refreshPassiveStats(prevLevel, newLevel int) {
 	if prevLevel == newLevel {
 		return
 	}
-	if s.Owner == nil {
+	if s.owner == nil {
 		return
 	}
 	if prevLevel > 0 && newLevel == 0 {
-		s.Owner.Skills.CallHook(nil, s, "on_unpassive")
+		s.owner.skills.CallHook(nil, s, "on_unpassive")
 		return
 	}
 	if newLevel > 0 {
-		s.Owner.Skills.CallHook(nil, s, "on_passive")
+		s.owner.skills.CallHook(nil, s, "on_passive")
 	}
 }
 
 func (s *SkillEntry) IsCooling() bool {
-	if s.CooldownEnd == nil {
+	if s.cooldownEnd == nil {
 		return false
 	}
-	return clock.Now().Before(*s.CooldownEnd)
+	return clock.Now().Before(*s.cooldownEnd)
 }
 
 func (s *SkillEntry) StartCooldown(duration time.Duration) {
 	end := clock.Now().Add(duration)
-	s.CooldownEnd = &end
+	s.cooldownEnd = &end
 	sec := min(int(duration.Seconds()), 65535)
-	if s.Owner != nil {
-		s.Owner.Listener.OnSkillCooldown(s.Owner, s.Wz.ID, uint16(sec))
+	if s.owner != nil {
+		s.owner.listener.OnSkillCooldown(s.owner, s.wz.ID, uint16(sec))
 	}
 }
 
 func (s *SkillEntry) CooldownRemaining() time.Duration {
-	if s.CooldownEnd == nil {
+	if s.cooldownEnd == nil {
 		return 0
 	}
-	if !clock.Now().Before(*s.CooldownEnd) {
+	if !clock.Now().Before(*s.cooldownEnd) {
 		return 0
 	}
-	return time.Until(*s.CooldownEnd)
+	return time.Until(*s.cooldownEnd)
 }
 
 func (s *SkillEntry) ClearCooldown() {
-	s.CooldownEnd = nil
-	if s.Owner != nil {
-		s.Owner.Listener.OnSkillCooldown(s.Owner, s.Wz.ID, 0)
+	s.cooldownEnd = nil
+	if s.owner != nil {
+		s.owner.listener.OnSkillCooldown(s.owner, s.wz.ID, 0)
 	}
 }

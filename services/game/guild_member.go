@@ -3,45 +3,45 @@ package game
 import internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 
 type GuildMember struct {
-	WorldID       uint32
-	CharacterID   uint32
-	CharacterName string
-	Level         uint32
-	ClassID       uint32
-	Rank          internal.GuildMemberRank
-	AllianceRank  *uint32
-	ChannelIndex  *int32
+	worldID       uint32
+	characterID   uint32
+	characterName string
+	level         uint32
+	classID       uint32
+	rank          internal.GuildMemberRank
+	allianceRank  *uint32
+	channelIndex  *int32
 }
 
 func (m *GuildMember) GetAllianceRank() (uint32, bool) {
-	if m == nil || m.AllianceRank == nil {
+	if m == nil || m.allianceRank == nil {
 		return 0, false
 	}
-	return *m.AllianceRank, true
+	return *m.allianceRank, true
 }
 
 func (m *GuildMember) GetCharacterId() uint32 {
-	return m.CharacterID
+	return m.characterID
 }
 
 func (m *GuildMember) GetCharacterName() string {
-	return m.CharacterName
+	return m.characterName
 }
 
 func (m *GuildMember) GetLevel() uint32 {
-	return m.Level
+	return m.level
 }
 
 func (m *GuildMember) GetClassId() uint32 {
-	return m.ClassID
+	return m.classID
 }
 
 func (m *GuildMember) GetRank() internal.GuildMemberRank {
-	return m.Rank
+	return m.rank
 }
 
 func (m *GuildMember) GetChannelIndex() *int32 {
-	return m.ChannelIndex
+	return m.channelIndex
 }
 
 func (m *GuildMember) Clone() *GuildMember {
@@ -49,20 +49,20 @@ func (m *GuildMember) Clone() *GuildMember {
 		return nil
 	}
 	out := &GuildMember{
-		WorldID:       m.WorldID,
-		CharacterID:   m.CharacterID,
-		CharacterName: m.CharacterName,
-		Level:         m.Level,
-		ClassID:       m.ClassID,
-		Rank:          m.Rank,
+		worldID:       m.worldID,
+		characterID:   m.characterID,
+		characterName: m.characterName,
+		level:         m.level,
+		classID:       m.classID,
+		rank:          m.rank,
 	}
-	if m.AllianceRank != nil {
-		ar := *m.AllianceRank
-		out.AllianceRank = &ar
+	if m.allianceRank != nil {
+		ar := *m.allianceRank
+		out.allianceRank = &ar
 	}
-	if m.ChannelIndex != nil {
-		c := *m.ChannelIndex
-		out.ChannelIndex = &c
+	if m.channelIndex != nil {
+		c := *m.channelIndex
+		out.channelIndex = &c
 	}
 	return out
 }
@@ -72,20 +72,20 @@ func GuildMemberFromProto(pb *internal.GuildMember) *GuildMember {
 		return nil
 	}
 	m := &GuildMember{
-		WorldID:       pb.GetWorldId(),
-		CharacterID:   pb.GetCharacterId(),
-		CharacterName: pb.GetCharacterName(),
-		Level:         pb.GetLevel(),
-		ClassID:       pb.GetClassId(),
-		Rank:          pb.GetRank(),
+		worldID:       pb.GetWorldId(),
+		characterID:   pb.GetCharacterId(),
+		characterName: pb.GetCharacterName(),
+		level:         pb.GetLevel(),
+		classID:       pb.GetClassId(),
+		rank:          pb.GetRank(),
 	}
 	if pb.ChannelIndex != nil {
 		c := pb.GetChannelIndex()
-		m.ChannelIndex = &c
+		m.channelIndex = &c
 	}
 	if pb.AllianceRank != nil {
 		ar := pb.GetAllianceRank()
-		m.AllianceRank = &ar
+		m.allianceRank = &ar
 	}
 	return m
 }
@@ -95,19 +95,19 @@ func (m *GuildMember) BuildRPC() *internal.GuildMember {
 		return nil
 	}
 	pm := &internal.GuildMember{
-		WorldId:       m.WorldID,
-		CharacterId:   m.CharacterID,
-		CharacterName: m.CharacterName,
-		Level:         m.Level,
-		ClassId:       m.ClassID,
-		Rank:          m.Rank,
+		WorldId:       m.worldID,
+		CharacterId:   m.characterID,
+		CharacterName: m.characterName,
+		Level:         m.level,
+		ClassId:       m.classID,
+		Rank:          m.rank,
 	}
-	if m.ChannelIndex != nil {
-		c := *m.ChannelIndex
+	if m.channelIndex != nil {
+		c := *m.channelIndex
 		pm.ChannelIndex = &c
 	}
-	if m.AllianceRank != nil {
-		ar := *m.AllianceRank
+	if m.allianceRank != nil {
+		ar := *m.allianceRank
 		pm.AllianceRank = &ar
 	}
 	return pm
@@ -118,16 +118,16 @@ func GuildMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ra
 		return nil
 	}
 	m := &GuildMember{
-		WorldID:       worldID,
-		CharacterID:   ch.GetID(),
-		CharacterName: ch.GetName(),
-		Level:         uint32(ch.GetLevel()),
-		ClassID:       uint32(ch.Class),
-		Rank:          rank,
+		worldID:       worldID,
+		characterID:   ch.GetID(),
+		characterName: ch.GetName(),
+		level:         uint32(ch.GetLevel()),
+		classID:       uint32(ch.class),
+		rank:          rank,
 	}
 	if channelID >= 0 {
 		ci := channelID
-		m.ChannelIndex = &ci
+		m.channelIndex = &ci
 	}
 	return m
 }

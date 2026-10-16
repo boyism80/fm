@@ -19,12 +19,12 @@ func (m *Map) Respawn(includeNegativeMobTime bool) int {
 
 	now := clock.Now()
 	spawned := 0
-	for _, mobSpawn := range m.MobSpawns {
+	for _, mobSpawn := range m.mobSpawns {
 		if m.trySpawnMobRezen(mobSpawn, now, includeNegativeMobTime, true) {
 			spawned++
 		}
 	}
-	for _, mobSpawn := range m.SummonedMobSpawns {
+	for _, mobSpawn := range m.summonedMobSpawns {
 		if m.trySpawnMobRezen(mobSpawn, now, includeNegativeMobTime, true) {
 			spawned++
 		}
@@ -38,10 +38,10 @@ func (m *Map) TickMobSpawns() {
 	}
 
 	now := clock.Now()
-	for _, mobSpawn := range m.MobSpawns {
+	for _, mobSpawn := range m.mobSpawns {
 		m.trySpawnMobRezen(mobSpawn, now, false, false)
 	}
-	for _, mobSpawn := range m.SummonedMobSpawns {
+	for _, mobSpawn := range m.summonedMobSpawns {
 		m.trySpawnMobRezen(mobSpawn, now, false, false)
 	}
 }
@@ -61,7 +61,7 @@ func (m *Map) SummonMob(mobID uint32, position types.Point[int16], team constant
 	if !m.trySpawnMobRezen(mobSpawn, clock.Now(), false, true) {
 		return fmt.Errorf("failed to summon mob %d", mobID)
 	}
-	m.SummonedMobSpawns = append(m.SummonedMobSpawns, mobSpawn)
+	m.summonedMobSpawns = append(m.summonedMobSpawns, mobSpawn)
 	return nil
 }
 

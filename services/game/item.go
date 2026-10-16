@@ -47,11 +47,11 @@ type Item interface {
 
 type FieldPlacement struct {
 	*ObjectCore
-	Owner                uint32
-	SpawnedPoint         types.Point[int16]
-	DropType             constant.DropType
-	PlayerDrop           bool
-	Quest                uint32
+	owner                uint32
+	spawnedPoint         types.Point[int16]
+	dropType             constant.DropType
+	playerDrop           bool
+	quest                uint32
 	restrictedPlayerDrop bool
 	nextFFA              time.Time
 	nextExpiry           time.Time
@@ -61,22 +61,26 @@ func (fp *FieldPlacement) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeItem
 }
 
+type fieldPlacement = FieldPlacement
+
 type ItemCore struct {
-	*FieldPlacement
-	Wz         wz.Item
-	Expiration time.Time
-	Count      uint16
-	Flags      uint16
+	*fieldPlacement
+	wz         wz.Item
+	expiration time.Time
+	count      uint16
+	flags      uint16
 }
 
+type itemCore = ItemCore
+
 type EquipmentCore struct {
-	*ItemCore
-	EnhanceChance uint8
-	EnhanceCount  uint8
-	OwnerName     string
-	SkillBonus    uint16
-	UniqueId      *uint64
-	BonusStats    *EquipmentBonusStats
+	*itemCore
+	enhanceChance uint8
+	enhanceCount  uint8
+	ownerName     string
+	skillBonus    uint16
+	uniqueId      *uint64
+	bonusStats    *EquipmentBonusStats
 }
 
 func (e *EquipmentCore) GetEquipmentCore() *EquipmentCore { return e }
@@ -103,24 +107,24 @@ func copyUint64Ptr(p *uint64) *uint64 {
 
 func (e *EquipmentCore) Clone(count uint16) Item {
 	var bonus *EquipmentBonusStats
-	if e.BonusStats != nil {
-		v := *e.BonusStats
+	if e.bonusStats != nil {
+		v := *e.bonusStats
 		bonus = &v
 	}
 	return &EquipmentCore{
-		ItemCore: &ItemCore{
-			FieldPlacement: nil,
-			Count:          count,
-			Wz:             e.Wz,
-			Expiration:     e.Expiration,
-			Flags:          e.Flags,
+		itemCore: &ItemCore{
+			fieldPlacement: nil,
+			count:          count,
+			wz:             e.wz,
+			expiration:     e.expiration,
+			flags:          e.flags,
 		},
-		EnhanceChance: e.EnhanceChance,
-		EnhanceCount:  e.EnhanceCount,
-		OwnerName:     e.OwnerName,
-		SkillBonus:    e.SkillBonus,
-		UniqueId:      copyUint64Ptr(e.UniqueId),
-		BonusStats:    bonus,
+		enhanceChance: e.enhanceChance,
+		enhanceCount:  e.enhanceCount,
+		ownerName:     e.ownerName,
+		skillBonus:    e.skillBonus,
+		uniqueId:      copyUint64Ptr(e.uniqueId),
+		bonusStats:    bonus,
 	}
 }
 
@@ -136,19 +140,19 @@ func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
 	if fp == nil {
 		return
 	}
-	if fp.Quest > 0 && !viewer.Quests.NeedsItem(fp.Quest, item.GetModel().GetID()) {
+	if fp.quest > 0 && !viewer.quests.NeedsItem(fp.quest, item.GetModel().GetID()) {
 		return
 	}
 	viewer.Send(&response.SpawnItem{
-		ID:           fp.OID,
+		ID:           fp.oid,
 		Animation:    constant.DropItemAnimationTypeNone,
-		DropType:     fp.DropType,
+		DropType:     fp.dropType,
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
-		Position:     fp.Position,
-		OwnerID:      fp.Owner,
-		SpawnedPoint: fp.SpawnedPoint,
-		IsPlayerDrop: fp.PlayerDrop,
+		Position:     fp.position,
+		OwnerID:      fp.owner,
+		SpawnedPoint: fp.spawnedPoint,
+		IsPlayerDrop: fp.playerDrop,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -162,31 +166,31 @@ func (item *ItemCore) SendDestroySyncToViewer(viewer *Character) {
 	}
 	viewer.Send(&response.RemoveItem{
 		Mode:        constant.RemoveItemTypeNoAnimated,
-		OID:         fp.OID,
+		OID:         fp.oid,
 		CharacterId: 0,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (item *ItemCore) GetFieldPlacement() *FieldPlacement           { return item.FieldPlacement }
-func (item *ItemCore) Getcount() uint16                             { return item.Count }
-func (item *ItemCore) GetCount32() int32                            { return int32(item.Count) }
-func (item *ItemCore) SetCount(count uint16)                        { item.Count = count }
-func (item *ItemCore) GetFlags() constant.ItemFlag                  { return constant.ItemFlag(item.Flags) }
-func (item *ItemCore) SetFlags(flags constant.ItemFlag)             { item.Flags = uint16(flags) }
-func (item *ItemCore) GetModel() wz.Item                            { return item.Wz }
-func (item *ItemCore) GetExpiration() time.Time                     { return item.Expiration }
-func (item *ItemCore) SetExpiration(expiration time.Time)           { item.Expiration = expiration }
-func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.FieldPlacement = placement }
+func (item *ItemCore) GetFieldPlacement() *FieldPlacement           { return item.fieldPlacement }
+func (item *ItemCore) Getcount() uint16                             { return item.count }
+func (item *ItemCore) GetCount32() int32                            { return int32(item.count) }
+func (item *ItemCore) SetCount(count uint16)                        { item.count = count }
+func (item *ItemCore) GetFlags() constant.ItemFlag                  { return constant.ItemFlag(item.flags) }
+func (item *ItemCore) SetFlags(flags constant.ItemFlag)             { item.flags = uint16(flags) }
+func (item *ItemCore) GetModel() wz.Item                            { return item.wz }
+func (item *ItemCore) GetExpiration() time.Time                     { return item.expiration }
+func (item *ItemCore) SetExpiration(expiration time.Time)           { item.expiration = expiration }
+func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.fieldPlacement = placement }
 
 func (item *ItemCore) Tradable() bool {
-	if item.Wz.GetTraits()&(constant.ItemTraitQuest|constant.ItemTraitPet) != 0 || item.GetFlags()&constant.ItemFlagLock != 0 {
+	if item.wz.GetTraits()&(constant.ItemTraitQuest|constant.ItemTraitPet) != 0 || item.GetFlags()&constant.ItemFlagLock != 0 {
 		return false
 	}
 	return !item.untradeable(constant.ItemTraitTradeBlock|constant.ItemTraitAccountSharable) || item.GetFlags()&item.karma() != 0
 }
 
 func (item *ItemCore) Storable() bool {
-	if item.Wz.GetTraits()&constant.ItemTraitPet != 0 {
+	if item.wz.GetTraits()&constant.ItemTraitPet != 0 {
 		return false
 	}
 	return !item.untradeable(constant.ItemTraitTradeBlock|constant.ItemTraitQuest) || item.GetFlags()&item.karma() != 0
@@ -204,15 +208,15 @@ func (item *ItemCore) prepareFieldDrop() bool {
 }
 
 func (item *ItemCore) untradeable(traits constant.ItemTrait) bool {
-	if item.Wz.GetTraits()&traits != 0 {
+	if item.wz.GetTraits()&traits != 0 {
 		return true
 	}
-	return item.Wz.GetInventoryType() == constant.InventoryTypeEquipment && item.GetFlags()&constant.ItemFlagUntradeable != 0
+	return item.wz.GetInventoryType() == constant.InventoryTypeEquipment && item.GetFlags()&constant.ItemFlagUntradeable != 0
 }
 
 // The client reads a different karma bit for equipment than for other tabs.
 func (item *ItemCore) karma() constant.ItemFlag {
-	if item.Wz.GetInventoryType() == constant.InventoryTypeEquipment {
+	if item.wz.GetInventoryType() == constant.InventoryTypeEquipment {
 		return constant.ItemFlagEquipKarma
 	}
 	return constant.ItemFlagBundleKarma
@@ -224,7 +228,7 @@ func (item *ItemCore) consumeKarma() {
 }
 
 func (e *EquipmentCore) bindToWearer() bool {
-	if e.Wz.GetTraits()&constant.ItemTraitEquipTradeBlock == 0 || e.GetFlags()&constant.ItemFlagUntradeable != 0 {
+	if e.wz.GetTraits()&constant.ItemTraitEquipTradeBlock == 0 || e.GetFlags()&constant.ItemFlagUntradeable != 0 {
 		return false
 	}
 	e.SetFlags(e.GetFlags() | constant.ItemFlagUntradeable)
@@ -240,8 +244,13 @@ func (fp *FieldPlacement) RegisterFFA(duration time.Duration) {
 func (fp *FieldPlacement) ShouldExpire(now time.Time) bool {
 	return !fp.nextExpiry.IsZero() && now.After(fp.nextExpiry)
 }
+func (fp *FieldPlacement) ReleaseToFFA() {
+	fp.dropType = constant.DropTypeFFA
+	fp.owner = 0
+}
+
 func (fp *FieldPlacement) ShouldFFA(now time.Time) bool {
-	return fp.DropType != constant.DropTypeFFA && !fp.nextFFA.IsZero() && now.After(fp.nextFFA)
+	return fp.dropType != constant.DropTypeFFA && !fp.nextFFA.IsZero() && now.After(fp.nextFFA)
 }
 
 func NewItem(itemId uint32, count uint16, gw ItemWorld) (Item, error) {
@@ -255,39 +264,39 @@ func NewItem(itemId uint32, count uint16, gw ItemWorld) (Item, error) {
 			return nil, fmt.Errorf("item %d: model is equipment but not equippable", itemId)
 		}
 		return &EquipmentCore{
-			ItemCore: &ItemCore{
-				Wz:         m,
-				Count:      1,
-				Expiration: util.TimeMax,
+			itemCore: &ItemCore{
+				wz:         m,
+				count:      1,
+				expiration: util.TimeMax,
 			},
-			EnhanceChance: m.GetEnhanceChance(),
+			enhanceChance: m.GetEnhanceChance(),
 		}, nil
 	case *wz.Consume:
 		return &Consume{
-			ItemCore: &ItemCore{Wz: m, Count: count, Expiration: util.TimeMax},
+			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
 		}, nil
 	case *wz.Installation:
 		return &Installation{
-			ItemCore: &ItemCore{Wz: m, Count: 1, Expiration: util.TimeMax},
+			itemCore: &ItemCore{wz: m, count: 1, expiration: util.TimeMax},
 		}, nil
 	case *wz.MiscItem:
 		return &MiscItem{
-			ItemCore: &ItemCore{Wz: m, Count: count, Expiration: util.TimeMax},
+			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
 		}, nil
 	case *wz.CashItem:
 		return &CashItem{
-			ItemCore: &ItemCore{Wz: m, Count: count, Expiration: util.TimeMax},
+			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
 		}, nil
 	case *wz.Pet:
 		uniqueID := gw.NewUniqueID()
 		return &Pet{
-			ItemCore:    &ItemCore{Wz: m, Count: 1, Expiration: time.Now().AddDate(0, 0, m.Life)},
-			UniqueId:    &uniqueID,
-			Name:        gw.GetResources().GetItemName(itemId),
-			Level:       1,
-			Fullness:    constant.PetMaxFullness,
-			Skills:      m.Skills,
-			SecondsLeft: uint32(m.LimitedLife),
+			itemCore:    &ItemCore{wz: m, count: 1, expiration: time.Now().AddDate(0, 0, m.Life)},
+			uniqueId:    &uniqueID,
+			name:        gw.GetResources().GetItemName(itemId),
+			level:       1,
+			fullness:    constant.PetMaxFullness,
+			skills:      m.Skills,
+			secondsLeft: uint32(m.LimitedLife),
 		}, nil
 	default:
 		return nil, fmt.Errorf("not supported item type")

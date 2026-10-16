@@ -38,12 +38,12 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	assigned := false
 	switch stat {
 	case constant.StatTypeHP, constant.StatTypeMP:
-		assigned = character.Points.AssignHPMP(stat)
+		assigned = character.Points().AssignHPMP(stat)
 	default:
-		assigned = character.Points.AssignStats([]game.APEntry{{Stat: stat, Amount: 1}})
+		assigned = character.Points().AssignStats([]game.APEntry{{Stat: stat, Amount: 1}})
 	}
 	if !assigned {
-		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)
+		character.Listener().OnUpdateStats(character, map[constant.Stat]int32{}, true)
 	}
 	return nil
 }

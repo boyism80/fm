@@ -44,8 +44,7 @@ func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 		}
 
 		if fp.ShouldFFA(now) {
-			fp.DropType = constant.DropTypeFFA
-			fp.Owner = 0
+			fp.ReleaseToFFA()
 		}
 
 		if fp.ShouldExpire(now) {

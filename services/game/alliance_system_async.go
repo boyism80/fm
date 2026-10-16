@@ -22,7 +22,7 @@ func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, resu
 		return nil
 	}
 	*result = fail
-	guildID, inGuild := ch.Guild.ID()
+	guildID, inGuild := ch.guild.ID()
 	if !inGuild {
 		*result = int(constant.AllianceIncreaseCapacityResultNotInAlliance)
 		return nil
@@ -37,7 +37,7 @@ func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, resu
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
+	if g.leaderCharacterID != charID {
 		*result = int(constant.AllianceIncreaseCapacityResultNotGuildMaster)
 		return nil
 	}
@@ -45,17 +45,17 @@ func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, resu
 		*result = int(constant.AllianceIncreaseCapacityResultNotLeader)
 		return nil
 	}
-	if !ch.Inventory.RemoveMeso(constant.AllianceIncreaseCapacityMesoCost) {
+	if !ch.inventory.RemoveMeso(constant.AllianceIncreaseCapacityMesoCost) {
 		*result = int(constant.AllianceIncreaseCapacityResultInsufficientMeso)
 		return nil
 	}
 	allianceID, _ := g.GetAllianceID()
 	detail := allianceCapacityDetail{Meso: constant.AllianceIncreaseCapacityMesoCost}
-	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CAPACITY, uint64(allianceID), detail)
+	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CAPACITY, uint64(allianceID), detail)
 	return s.incCapacityAsync(ctx, ch, id).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
-		ch.Unsettled.Erase(id)
+		ch.unsettled.Erase(id)
 		if !reply.GetOk() {
-			ch.Inventory.AddMeso(detail.Meso)
+			ch.inventory.AddMeso(detail.Meso)
 		}
 
 		if !reply.GetOk() {
@@ -81,7 +81,7 @@ func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, resu
 		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Unsettled.Find(id).InFlight = false
+		ch.unsettled.Find(id).inFlight = false
 
 		log.Printf("alliance inc_capacity: character=%d id=%d: %v", charID, id, err)
 		*result = int(constant.AllianceIncreaseCapacityResultFailed)
@@ -105,14 +105,14 @@ func (s *AllianceSystem) incCapacityAsync(ctx actor.Context, ch *Character, requ
 
 func (s *AllianceSystem) SettleCapacity(ctx actor.Context, ch *Character, request *UnsettledRequest) {
 	var detail allianceCapacityDetail
-	if err := json.Unmarshal([]byte(request.Detail), &detail); err != nil {
-		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.ID, err)
+	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.id, err)
 		return
 	}
-	s.incCapacityAsync(ctx, ch, request.ID).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
-		ch.Unsettled.Erase(request.ID)
+	s.incCapacityAsync(ctx, ch, request.id).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
+		ch.unsettled.Erase(request.id)
 		if !reply.GetOk() {
-			ch.Inventory.AddMeso(detail.Meso)
+			ch.inventory.AddMeso(detail.Meso)
 			return nil
 		}
 		if alliancePb := reply.GetAlliance(); alliancePb != nil {
@@ -121,8 +121,8 @@ func (s *AllianceSystem) SettleCapacity(ctx actor.Context, ch *Character, reques
 		}
 		return nil
 	}).OnError(func(err error) {
-		request.InFlight = false
+		request.inFlight = false
 
-		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.ID, err)
+		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.id, err)
 	})
 }

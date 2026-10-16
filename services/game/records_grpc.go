@@ -13,12 +13,12 @@ func NewRecordsFromInternalProto(pbs []*internal.Record) *Records {
 			continue
 		}
 		record := &Record{
-			Value:      pb.GetValue(),
-			Text:       pb.GetText(),
-			RecordedAt: time.UnixMilli(pb.GetRecordedAtUnixMs()),
+			value:      pb.GetValue(),
+			text:       pb.GetText(),
+			recordedAt: time.UnixMilli(pb.GetRecordedAtUnixMs()),
 		}
 		if pb.GetExpiresAtUnixMs() != 0 {
-			record.ExpiresAt = time.UnixMilli(pb.GetExpiresAtUnixMs())
+			record.expiresAt = time.UnixMilli(pb.GetExpiresAtUnixMs())
 		}
 		r.entries[pb.GetKey()] = record
 	}
@@ -34,12 +34,12 @@ func (r *Records) BuildRPC() []*internal.Record {
 		}
 		pb := &internal.Record{
 			Key:              key,
-			Value:            record.Value,
-			Text:             record.Text,
-			RecordedAtUnixMs: record.RecordedAt.UnixMilli(),
+			Value:            record.value,
+			Text:             record.text,
+			RecordedAtUnixMs: record.recordedAt.UnixMilli(),
 		}
-		if !record.ExpiresAt.IsZero() {
-			pb.ExpiresAtUnixMs = record.ExpiresAt.UnixMilli()
+		if !record.expiresAt.IsZero() {
+			pb.ExpiresAtUnixMs = record.expiresAt.UnixMilli()
 		}
 		out = append(out, pb)
 	}

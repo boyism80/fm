@@ -15,18 +15,18 @@ func (n *Npc) BuildS2C() *dto.Npc {
 	rx1 := int16(0)
 	cy := int16(0)
 
-	if n.Wz != nil && n.Wz.BaseSpawn != nil {
-		npcId = n.Wz.ID
-		foothold = n.Wz.Foothold
-		rx0 = n.Wz.RenderX0
-		rx1 = n.Wz.RenderX1
-		cy = n.Wz.CollisionY
+	if n.wz != nil && n.wz.BaseSpawn != nil {
+		npcId = n.wz.ID
+		foothold = n.wz.Foothold
+		rx0 = n.wz.RenderX0
+		rx1 = n.wz.RenderX1
+		cy = n.wz.CollisionY
 	}
 
 	return &dto.Npc{
-		OID:      n.OID,
+		OID:      n.oid,
 		NpcId:    npcId,
-		Position: n.Position,
+		Position: n.position,
 		Foothold: foothold,
 		Rx0:      rx0,
 		Rx1:      rx1,

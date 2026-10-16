@@ -23,29 +23,31 @@ type Buff interface {
 }
 
 type BaseBuff struct {
-	StartTime time.Time
-	Duration  time.Duration
-	Flags     []constant.BuffFlag
-	Values    map[constant.BuffFlag]int32
+	startTime time.Time
+	duration  time.Duration
+	flags     []constant.BuffFlag
+	values    map[constant.BuffFlag]int32
 }
 
+type baseBuff = BaseBuff
+
 type ItemBuff struct {
-	*BaseBuff
-	Wz *wz.Consume
+	*baseBuff
+	wz *wz.Consume
 }
 
 type SkillBuff struct {
-	*BaseBuff
-	Wz         *wz.Skill
-	SkillLevel uint8
-	CauserID   uint32
+	*baseBuff
+	wz         *wz.Skill
+	skillLevel uint8
+	causerID   uint32
 }
 
 func (e *BaseBuff) RemainingDuration(now time.Time) time.Duration {
-	if e == nil || e.Duration <= 0 {
+	if e == nil || e.duration <= 0 {
 		return 0
 	}
-	end := e.StartTime.Add(e.Duration)
+	end := e.startTime.Add(e.duration)
 	rem := end.Sub(now)
 	if rem < 0 {
 		return 0
@@ -54,62 +56,62 @@ func (e *BaseBuff) RemainingDuration(now time.Time) time.Duration {
 }
 
 func (e *BaseBuff) expiresAt() (time.Time, bool) {
-	if e.Duration <= 0 {
+	if e.duration <= 0 {
 		return time.Time{}, false
 	}
-	return e.StartTime.Add(e.Duration), true
+	return e.startTime.Add(e.duration), true
 }
 
 func (e *BaseBuff) dropFlag(flag constant.BuffFlag) {
-	e.Flags = slices.DeleteFunc(e.Flags, func(f constant.BuffFlag) bool {
+	e.flags = slices.DeleteFunc(e.flags, func(f constant.BuffFlag) bool {
 		return f == flag
 	})
-	delete(e.Values, flag)
+	delete(e.values, flag)
 }
 
 func (e *BaseBuff) GetFlags() []constant.BuffFlag {
 	if e == nil {
 		return nil
 	}
-	return e.Flags
+	return e.flags
 }
 
 func (e *BaseBuff) GetValues() map[constant.BuffFlag]int32 {
 	if e == nil {
 		return nil
 	}
-	return e.Values
+	return e.values
 }
 
 func (e *SkillBuff) GetBuffID() int32 {
 	if e == nil {
 		return 0
 	}
-	return int32(e.Wz.ID)
+	return int32(e.wz.ID)
 }
 
 func (e *SkillBuff) hookScript(ch *Character) (string, interface{}, bool) {
-	return fmt.Sprintf("script/skill/%d.lua", e.Wz.ID), e, true
+	return fmt.Sprintf("script/skill/%d.lua", e.wz.ID), e, true
 }
 
 func (e *ItemBuff) GetBuffID() int32 {
 	if e == nil {
 		return 0
 	}
-	return -int32(e.Wz.ID)
+	return -int32(e.wz.ID)
 }
 
 func (e *ItemBuff) hookScript(ch *Character) (string, interface{}, bool) {
-	item, err := NewItem(e.Wz.ID, 1, ch.GameWorld)
+	item, err := NewItem(e.wz.ID, 1, ch.gameWorld)
 	if err != nil {
-		log.Printf("Failed to create temp item %d: %v", e.Wz.ID, err)
+		log.Printf("Failed to create temp item %d: %v", e.wz.ID, err)
 		return "", nil, false
 	}
 	consume, ok := item.(*Consume)
 	if !ok {
 		return "", nil, false
 	}
-	return fmt.Sprintf("script/item/%d.lua", e.Wz.ID), consume, true
+	return fmt.Sprintf("script/item/%d.lua", e.wz.ID), consume, true
 }
 
 type Buffs struct {
@@ -122,7 +124,7 @@ func NewBuffs(owner *Character) *Buffs {
 	if owner == nil {
 		panic("Buffs owner is nil")
 	}
-	if owner.Listener == nil {
+	if owner.listener == nil {
 		panic("Buffs: character listener must not be nil")
 	}
 	return &Buffs{
@@ -196,7 +198,7 @@ func (bc *Buffs) notifyAdded(entity Buff, now time.Time) {
 	for flag, value := range values {
 		entityValues[flag] = value
 	}
-	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
+	ch.listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
 }
 
 func (bc *Buffs) add(entity Buff) (removed []Buff) {
@@ -340,15 +342,15 @@ func (bc *Buffs) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8,
 	now := clock.Now()
 	flags, valCopy := copyBuffValues(values)
 	entity := &SkillBuff{
-		BaseBuff: &BaseBuff{
-			StartTime: now,
-			Duration:  duration,
-			Flags:     flags,
-			Values:    valCopy,
+		baseBuff: &BaseBuff{
+			startTime: now,
+			duration:  duration,
+			flags:     flags,
+			values:    valCopy,
 		},
-		Wz:         wz,
-		SkillLevel: skillLevel,
-		CauserID:   causerID,
+		wz:         wz,
+		skillLevel: skillLevel,
+		causerID:   causerID,
 	}
 	bc.commitBuff(entity, now, notify)
 }
@@ -361,17 +363,17 @@ func (bc *Buffs) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, valu
 	flags, valCopy := copyBuffValues(values)
 	scaledDuration := duration
 	if applyPotionDurationScale && duration > 0 {
-		mul := bc.owner.Stats.PotionDurationMultiplierPercent()
+		mul := bc.owner.stats.PotionDurationMultiplierPercent()
 		scaledDuration = time.Duration(int64(duration) * int64(mul) / 100)
 	}
 	entity := &ItemBuff{
-		BaseBuff: &BaseBuff{
-			StartTime: now,
-			Duration:  scaledDuration,
-			Flags:     flags,
-			Values:    valCopy,
+		baseBuff: &BaseBuff{
+			startTime: now,
+			duration:  scaledDuration,
+			flags:     flags,
+			values:    valCopy,
 		},
-		Wz: consumeWz,
+		wz: consumeWz,
 	}
 	bc.commitBuff(entity, now, notify)
 }
@@ -401,7 +403,7 @@ func (bc *Buffs) RemoveBuff(flags []constant.BuffFlag) {
 	}
 	bc.callUnbuffScripts(removed)
 	if len(removedFlags) > 0 {
-		bc.owner.Listener.OnBuffRemoved(bc.owner, removedFlags)
+		bc.owner.listener.OnBuffRemoved(bc.owner, removedFlags)
 	}
 	bc.updateMaxHpMp(removedFlags)
 }
@@ -442,7 +444,7 @@ func (bc *Buffs) SetBuffValue(flag constant.BuffFlag, value int32) (Buff, bool) 
 		return nil, false
 	}
 	values[flag] = value
-	bc.owner.Listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(clock.Now()), map[constant.BuffFlag]int32{flag: value})
+	bc.owner.listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(clock.Now()), map[constant.BuffFlag]int32{flag: value})
 	return entity, true
 }
 
@@ -513,9 +515,9 @@ func (bc *Buffs) SpawnPlayerData() SpawnPlayerBuffData {
 			for _, flag := range typed.GetFlags() {
 				switch flag {
 				case constant.BuffFlagWkCharge:
-					data.WKChargeSkillID = typed.Wz.ID
+					data.WKChargeSkillID = typed.wz.ID
 				case constant.BuffFlagSpiritClaw:
-					data.SpiritClawSkillID = typed.Wz.ID
+					data.SpiritClawSkillID = typed.wz.ID
 				}
 			}
 		}
@@ -526,9 +528,9 @@ func (bc *Buffs) SpawnPlayerData() SpawnPlayerBuffData {
 
 func (bc *Buffs) Cancel(sourceID int32) {
 	if sourceID > 0 {
-		skill := bc.owner.Skills.Learned(uint32(sourceID))
-		if skill != nil && skill.Wz.Charge {
-			bc.owner.Listener.OnChargeSkillCancelled(bc.owner, uint32(sourceID))
+		skill := bc.owner.skills.Learned(uint32(sourceID))
+		if skill != nil && skill.wz.Charge {
+			bc.owner.listener.OnChargeSkillCancelled(bc.owner, uint32(sourceID))
 			return
 		}
 	}
@@ -553,16 +555,16 @@ func (bc *Buffs) addConsumeBuff(consumeItem *wz.Consume) bool {
 func (bc *Buffs) HolySymbolExpRate() int32 {
 	ent := bc.GetEntity(constant.BuffFlagHolySymbol)
 	sb, typeOk := ent.(*SkillBuff)
-	if !typeOk || sb == nil || sb.Wz == nil {
+	if !typeOk || sb == nil || sb.wz == nil {
 		return 100
 	}
-	x, valOk := sb.Values[constant.BuffFlagHolySymbol]
+	x, valOk := sb.values[constant.BuffFlagHolySymbol]
 	if !valOk || x <= 0 {
 		return 100
 	}
-	full := sb.Wz.FullHolySymbol
+	full := sb.wz.FullHolySymbol
 	if !full {
-		pid := bc.owner.Party.ID()
+		pid := bc.owner.party.ID()
 		m := bc.owner.GetMap()
 		full = pid != nil && m != nil && len(m.GetPartyMembers(*pid)) >= 2
 	}

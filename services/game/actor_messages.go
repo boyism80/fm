@@ -6,7 +6,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/maple/constant"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -77,7 +76,7 @@ type AddCharacter struct {
 	TargetMap  *Map
 	SpawnPoint uint8
 	Init       bool
-	Notes      []*internal.Note
+	Notes      []Note
 }
 
 type WarpCharacter struct {
@@ -134,7 +133,7 @@ type ReceiveMessengerEvent struct {
 
 type SetFamily struct {
 	CharacterID uint32
-	Family      *internal.Family
+	Family      FamilyTree
 }
 
 type RefreshWedding struct {

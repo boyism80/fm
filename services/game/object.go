@@ -8,13 +8,15 @@ import (
 
 type ObjectCore struct {
 	self      Object
-	OID       uint32
-	Position  types.Vector2[int16]
-	GameWorld GameWorld
-	Map       *Map
+	oid       uint32
+	position  types.Vector2[int16]
+	gameWorld GameWorld
+	onMap     *Map
 	section   *section
 	timers    map[string]*ObjectTimer
 }
+
+type objectCore = ObjectCore
 
 type ObjectBroadcastOption struct {
 	SendRaw                  bool
@@ -54,28 +56,32 @@ type Object interface {
 }
 
 func (obj *ObjectCore) GetOID() uint32 {
-	return obj.OID
+	return obj.oid
 }
 
 func (obj *ObjectCore) GetPK() uint32 {
-	return obj.OID
+	return obj.oid
 }
 
 func (obj *ObjectCore) GetPosition() types.Vector2[int16] {
-	return obj.Position
+	return obj.position
+}
+
+func (obj *ObjectCore) Place(p types.Vector2[int16]) {
+	obj.position = p
 }
 
 func (obj *ObjectCore) SetPosition(x, y int16) {
-	before := obj.Position
-	obj.Position.X = x
-	obj.Position.Y = y
-	if obj.Map != nil && obj.self != nil {
-		obj.Map.OnMoved(obj.self, before)
+	before := obj.position
+	obj.position.X = x
+	obj.position.Y = y
+	if obj.onMap != nil && obj.self != nil {
+		obj.onMap.OnMoved(obj.self, before)
 	}
 }
 
 func (obj *ObjectCore) GetGameWorld() GameWorld {
-	return obj.GameWorld
+	return obj.gameWorld
 }
 
 func (obj *ObjectCore) Is(typ constant.ObjectType) bool {
@@ -83,7 +89,7 @@ func (obj *ObjectCore) Is(typ constant.ObjectType) bool {
 }
 
 func (obj *ObjectCore) GetMap() *Map {
-	return obj.Map
+	return obj.onMap
 }
 
 func (obj *ObjectCore) getSection() *section {
@@ -151,7 +157,7 @@ func (o *ObjectCore) ObjectsIn(filter constant.ObjectType, bounds types.Rect[int
 }
 
 func (o *ObjectCore) BroadcastCall(fn func(Object), option *ObjectBroadcastOption) {
-	if o.Map == nil || fn == nil {
+	if o.onMap == nil || fn == nil {
 		return
 	}
 	pivot := o.self
@@ -188,7 +194,7 @@ func (o *ObjectCore) BroadcastCall(fn func(Object), option *ObjectBroadcastOptio
 }
 
 func (o *ObjectCore) Broadcast(message types.Packet, option *ObjectBroadcastOption) {
-	if o.Map == nil {
+	if o.onMap == nil {
 		return
 	}
 	pivot := o.self

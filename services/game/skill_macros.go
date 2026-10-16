@@ -37,7 +37,7 @@ func (m *SkillMacros) Replace(entries []SkillMacro) bool {
 			if skillID == 0 {
 				continue
 			}
-			skill := m.owner.Skills.Learned(skillID)
+			skill := m.owner.skills.Learned(skillID)
 			if skill == nil || skill.Level() < 1 {
 				return false
 			}

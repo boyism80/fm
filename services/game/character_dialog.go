@@ -159,7 +159,7 @@ func (d *Dialog) Resume(actx actor.Context, dialogType constant.DialogType, next
 		}
 		if selected >= uint32(asked.choices) {
 			d.Close()
-			d.owner.Listener.OnUnlockAction(d.owner)
+			d.owner.listener.OnUnlockAction(d.owner)
 			return ErrDialogChoiceRange
 		}
 		args = append(args, lua.LNumber(selected+1))
@@ -176,7 +176,7 @@ func (d *Dialog) Resume(actx actor.Context, dialogType constant.DialogType, next
 		}
 		if int32(selected) < asked.min || int32(selected) > asked.max {
 			d.Close()
-			d.owner.Listener.OnUnlockAction(d.owner)
+			d.owner.listener.OnUnlockAction(d.owner)
 			return ErrDialogChoiceRange
 		}
 		args = append(args, lua.LNumber(int32(selected)))

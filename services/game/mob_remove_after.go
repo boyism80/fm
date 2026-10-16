@@ -9,13 +9,13 @@ import (
 const mobTimerRemoveAfterKey = "mob:removeAfter"
 
 func (m *Mob) scheduleRemoveAfter() {
-	if m == nil || m.Wz == nil {
+	if m == nil || m.wz == nil {
 		return
 	}
-	if m.Fake {
+	if m.fake {
 		return
 	}
-	removeAfter := m.Wz.RemoveAfter
+	removeAfter := m.wz.RemoveAfter
 	if removeAfter <= 0 {
 		return
 	}

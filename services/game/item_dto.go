@@ -16,8 +16,8 @@ func (item *Consume) BuildS2C() dto.Item {
 		ItemId:     cons.GetID(),
 		Count:      item.GetCount(),
 		Expiration: item.GetExpiration(),
-		OwnerName:  item.OwnerName,
-		Flags:      item.Flags,
+		OwnerName:  item.ownerName,
+		Flags:      item.flags,
 	}
 }
 
@@ -26,19 +26,19 @@ func (item *MiscItem) BuildS2C() dto.Item {
 		ItemId:     item.GetModel().GetID(),
 		Count:      item.GetCount(),
 		Expiration: item.GetExpiration(),
-		OwnerName:  item.OwnerName,
-		Flags:      item.Flags,
+		OwnerName:  item.ownerName,
+		Flags:      item.flags,
 	}
 }
 
 func (item *CashItem) BuildS2C() dto.Item {
 	return &dto.CashItem{
 		ItemId:     item.GetModel().GetID(),
-		UniqueId:   copyUint64Ptr(item.UniqueId),
+		UniqueId:   copyUint64Ptr(item.uniqueId),
 		Count:      item.GetCount(),
 		Expiration: item.GetExpiration(),
-		OwnerName:  item.OwnerName,
-		Flags:      item.Flags,
+		OwnerName:  item.ownerName,
+		Flags:      item.flags,
 	}
 }
 
@@ -46,48 +46,48 @@ func (item *Installation) BuildS2C() dto.Item {
 	return &dto.InstallationItem{
 		ItemId:     item.GetModel().GetID(),
 		Expiration: item.GetExpiration(),
-		OwnerName:  item.OwnerName,
-		Flags:      item.Flags,
+		OwnerName:  item.ownerName,
+		Flags:      item.flags,
 	}
 }
 
 func (pet *Pet) BuildS2C() dto.Item {
 	return &dto.PetItem{
 		ItemId:         pet.GetModel().GetID(),
-		UniqueId:       copyUint64Ptr(pet.UniqueId),
+		UniqueId:       copyUint64Ptr(pet.uniqueId),
 		Expiration:     pet.GetExpiration(),
-		PetName:        pet.Name,
-		PetLevel:       pet.Level,
-		PetCloseness:   pet.Closeness,
-		PetFullness:    pet.Fullness,
-		PetSpeed:       pet.Speed,
-		PetFlags:       uint16(pet.Skills),
+		PetName:        pet.name,
+		PetLevel:       pet.level,
+		PetCloseness:   pet.closeness,
+		PetFullness:    pet.fullness,
+		PetSpeed:       pet.speed,
+		PetFlags:       uint16(pet.skills),
 		PetExpiration:  pet.GetExpiration(),
-		PetSecondsLeft: pet.SecondsLeft,
+		PetSecondsLeft: pet.secondsLeft,
 	}
 }
 
 func (e *EquipmentCore) BuildS2C() dto.Item { return e.BuildEquipmentS2C() }
 
 func (e *EquipmentCore) BuildEquipmentS2C() *dto.Equipment {
-	if e == nil || e.Wz == nil {
+	if e == nil || e.wz == nil {
 		return nil
 	}
-	model, ok := e.Wz.(wz.Equipment)
+	model, ok := e.wz.(wz.Equipment)
 	if !ok || model == nil {
 		return nil
 	}
 	ability := model.GetAbility()
-	b := e.BonusStats
+	b := e.bonusStats
 	if b == nil {
 		b = &EquipmentBonusStats{}
 	}
 	return &dto.Equipment{
 		ItemId:        model.GetID(),
-		UniqueId:      copyUint64Ptr(e.UniqueId),
-		Expiration:    e.Expiration,
-		EnhanceChance: e.EnhanceChance,
-		EnhanceCount:  e.EnhanceCount,
+		UniqueId:      copyUint64Ptr(e.uniqueId),
+		Expiration:    e.expiration,
+		EnhanceChance: e.enhanceChance,
+		EnhanceCount:  e.enhanceCount,
 		Str:           uint16(util.ClampInt32(int32(ability.Str)+int32(b.Str), 0, 0xffff)),
 		Dex:           uint16(util.ClampInt32(int32(ability.Dex)+int32(b.Dex), 0, 0xffff)),
 		Int:           uint16(util.ClampInt32(int32(ability.Int)+int32(b.Int), 0, 0xffff)),
@@ -103,8 +103,8 @@ func (e *EquipmentCore) BuildEquipmentS2C() *dto.Equipment {
 		Hands:         uint16(util.ClampInt32(int32(ability.Hands)+int32(b.Hands), 0, 0xffff)),
 		Speed:         uint16(util.ClampInt32(int32(ability.Speed)+int32(b.Speed), 0, 0xffff)),
 		Jump:          uint16(util.ClampInt32(int32(ability.Jump)+int32(b.Jump), 0, 0xffff)),
-		OwnerName:     e.OwnerName,
-		Flag:          e.Flags,
-		SkillBonus:    uint8(e.SkillBonus),
+		OwnerName:     e.ownerName,
+		Flag:          e.flags,
+		SkillBonus:    uint8(e.skillBonus),
 	}
 }

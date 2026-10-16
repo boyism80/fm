@@ -16,25 +16,25 @@ const (
 )
 
 type MessageBox struct {
-	ObjectCore
-	ItemID uint32
-	Owner  string
-	Text   string
+	objectCore
+	itemID uint32
+	owner  string
+	text   string
 }
 
 func NewMessageBox(owner *Character, itemID uint32, text string) *MessageBox {
 	m := owner.GetMap()
-	if m == nil || !owner.IsAlive() || m.Wz.MessageBoxBlocked || !ClientText(text).ValidLines(messageBoxLines, messageBoxLineLimit) {
+	if m == nil || !owner.IsAlive() || m.wz.MessageBoxBlocked || !ClientText(text).ValidLines(messageBoxLines, messageBoxLineLimit) {
 		return nil
 	}
-	box := &MessageBox{ItemID: itemID, Owner: owner.GetName(), Text: text}
-	box.Position = owner.Position
+	box := &MessageBox{itemID: itemID, owner: owner.GetName(), text: text}
+	box.position = owner.position
 	return box
 }
 
 func (box *MessageBox) Place(owner *Character) bool {
 	if err := owner.GetMap().AddMessageBox(box); err != nil {
-		owner.Listener.OnMessageBoxFailed(owner)
+		owner.listener.OnMessageBoxFailed(owner)
 		return false
 	}
 	return true
@@ -50,15 +50,15 @@ func (box *MessageBox) Is(typ constant.ObjectType) bool {
 
 func (box *MessageBox) SendSpawnSyncToViewer(viewer *Character) {
 	viewer.Send(&response.SpawnMessageBox{
-		OID:    box.OID,
-		ItemID: box.ItemID,
-		Text:   box.Text,
-		Owner:  box.Owner,
-		X:      box.Position.X,
-		Y:      box.Position.Y,
+		OID:    box.oid,
+		ItemID: box.itemID,
+		Text:   box.text,
+		Owner:  box.owner,
+		X:      box.position.X,
+		Y:      box.position.Y,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (box *MessageBox) SendDestroySyncToViewer(viewer *Character) {
-	viewer.Send(&response.RemoveMessageBox{OID: box.OID}, types.SEND_POLICY_ENCRYPT)
+	viewer.Send(&response.RemoveMessageBox{OID: box.oid}, types.SEND_POLICY_ENCRYPT)
 }

@@ -17,7 +17,7 @@ func NewPhysicalValidator(ch *Character) *PhysicalValidator {
 }
 
 func (v *PhysicalValidator) Validate(info dto.AttackInfo) error {
-	if v.ch.GM.InstantKill {
+	if v.ch.gm.instantKill {
 		return nil
 	}
 	bounds, err := v.maximumDamages(info)
@@ -41,10 +41,10 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 	}
 	maxTargets, maxHits := a.limits()
 
-	if partner, ok := v.ch.Buffs.GetEntity(constant.BuffFlagShadowPartner).(*SkillBuff); ok && a.skill != constant.SkillShowdown {
-		p := partner.Wz.GetLevelData(int(partner.SkillLevel))
+	if partner, ok := v.ch.buffs.GetEntity(constant.BuffFlagShadowPartner).(*SkillBuff); ok && a.skill != constant.SkillShowdown {
+		p := partner.wz.GetLevelData(int(partner.skillLevel))
 		if p == nil {
-			return nil, fmt.Errorf("no shadow partner level %d", partner.SkillLevel)
+			return nil, fmt.Errorf("no shadow partner level %d", partner.skillLevel)
 		}
 		if a.skill == 0 {
 			a.modifiers.ShadowPercent = float64(p.X)
@@ -58,7 +58,7 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 	}
 
 	if info.Slot > 0 {
-		item := v.ch.Inventory.Tabs[constant.InventoryTypeConsume].Items[int16(info.Slot)]
+		item := v.ch.inventory.tabs[constant.InventoryTypeConsume].items[int16(info.Slot)]
 		if item == nil || item.GetCount() == 0 {
 			return nil, fmt.Errorf("missing projectile")
 		}
@@ -76,7 +76,7 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 	}
 
 	if a.stats.Class == constant.ClassPaladin {
-		if p := v.ch.Skills.LevelData(constant.SkillAdvancedCharge); p != nil {
+		if p := v.ch.skills.LevelData(constant.SkillAdvancedCharge); p != nil {
 			a.modifiers.SkillDamageOverride = float64(p.Damage)
 		}
 	}
@@ -87,14 +87,14 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 		// The server keeps no dark sight timer, so take the longest the skill allows.
 		a.modifiers.AssassinateSeconds = a.data.Time.Seconds()
 	}
-	if v.ch.Buffs.value(constant.BuffFlagDarksight) > 0 && a.stats.Class >= constant.ClassNoblesse {
-		if p := v.ch.Skills.LevelData(constant.SkillVanish); p != nil {
+	if v.ch.buffs.value(constant.BuffFlagDarksight) > 0 && a.stats.Class >= constant.ClassNoblesse {
+		if p := v.ch.skills.LevelData(constant.SkillVanish); p != nil {
 			a.modifiers.ExtraPercent = float64(p.Damage)
 		}
-		if buff, ok := v.ch.Buffs.GetEntity(constant.BuffFlagDarksight).(*SkillBuff); ok && constant.SkillID(buff.Wz.ID) == constant.SkillWindWalk {
-			p := buff.Wz.GetLevelData(int(buff.SkillLevel))
+		if buff, ok := v.ch.buffs.GetEntity(constant.BuffFlagDarksight).(*SkillBuff); ok && constant.SkillID(buff.wz.ID) == constant.SkillWindWalk {
+			p := buff.wz.GetLevelData(int(buff.skillLevel))
 			if p == nil {
-				return nil, fmt.Errorf("no wind walk level %d", buff.SkillLevel)
+				return nil, fmt.Errorf("no wind walk level %d", buff.skillLevel)
 			}
 			a.modifiers.ExtraPercent = float64(p.Damage)
 		}

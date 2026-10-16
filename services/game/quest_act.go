@@ -30,10 +30,10 @@ type QuestPhaseOpts struct {
 }
 
 type questActionOpts struct {
-	ClassID   constant.ClassType
-	Selection *uint32
-	Forfeited bool
-	NpcID     uint32
+	classID   constant.ClassType
+	selection *uint32
+	forfeited bool
+	npcID     uint32
 }
 
 func (qc *Quests) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts) error {
@@ -48,20 +48,20 @@ func (qc *Quests) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts
 	if ch != nil && ch.Exchange(exchange) != ExchangeOK {
 		return ErrQuestExchangeFailed
 	}
-	if actions.BuffItemID != 0 && !opts.Forfeited {
-		if !ch.Quests.RunHook(qp.QuestID, "on_buff_item", actions.BuffItemID) {
+	if actions.BuffItemID != 0 && !opts.forfeited {
+		if !ch.quests.RunHook(qp.questID, "on_buff_item", actions.BuffItemID) {
 			ch.UseItemEffect(actions.BuffItemID)
 		}
 	}
-	if actions.PetTameness > 0 && ch.Pets.Active != nil && !opts.Forfeited {
-		ch.Pets.Active.AddCloseness(actions.PetTameness)
+	if actions.PetTameness > 0 && ch.pets.active != nil && !opts.forfeited {
+		ch.pets.active.AddCloseness(actions.PetTameness)
 	}
-	if actions.PetSpeed > 0 && ch.Pets.Active != nil && !opts.Forfeited {
-		ch.Pets.Active.Item.Speed = uint16(actions.PetSpeed)
-		ch.Listener.OnPetUpdated(ch, ch.Pets.Active.Item)
+	if actions.PetSpeed > 0 && ch.pets.active != nil && !opts.forfeited {
+		ch.pets.active.item.speed = uint16(actions.PetSpeed)
+		ch.listener.OnPetUpdated(ch, ch.pets.active.item)
 	}
 	if actions.Info != "" {
-		qp.StatusRecord.WriteString(actions.Info)
+		qp.statusRecord.WriteString(actions.Info)
 	}
 	if len(actions.Quests) > 0 {
 		qc.updateLinkedQuests(actions.Quests)
@@ -70,7 +70,7 @@ func (qc *Quests) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts
 		qc.completeLinkedQuest(actions.InfoNumber)
 	}
 	if actions.NPCAct != "" {
-		qc.broadcastNpcAct(opts.NpcID, actions.NPCAct)
+		qc.broadcastNpcAct(opts.npcID, actions.NPCAct)
 	}
 	return nil
 }
@@ -80,7 +80,7 @@ func (qc *Quests) buildPhaseExchange(actions wz.QuestActions, opts questActionOp
 	if qc == nil {
 		return spec
 	}
-	if !opts.Forfeited {
+	if !opts.forfeited {
 		if actions.Money > 0 {
 			spec.Reward.Meso += int32(actions.Money)
 		} else if actions.Money < 0 {
@@ -99,19 +99,19 @@ func (qc *Quests) buildPhaseExchange(actions wz.QuestActions, opts questActionOp
 		}
 	}
 	if len(actions.Item) > 0 {
-		qc.appendPhaseActItems(&spec, opts.ClassID, actions.Item, opts.Selection)
+		qc.appendPhaseActItems(&spec, opts.classID, actions.Item, opts.selection)
 	}
 	if len(actions.Skills) == 0 {
 		return spec
 	}
-	if len(actions.SkillClasses) > 0 && !matchesQuestClass(opts.ClassID, actions.SkillClasses) {
+	if len(actions.SkillClasses) > 0 && !matchesQuestClass(opts.classID, actions.SkillClasses) {
 		return spec
 	}
 	for _, skill := range actions.Skills {
 		if skill.SkillID == 0 {
 			continue
 		}
-		if len(skill.Classes) > 0 && !matchesQuestClass(opts.ClassID, skill.Classes) {
+		if len(skill.Classes) > 0 && !matchesQuestClass(opts.classID, skill.Classes) {
 			continue
 		}
 		spec.Reward.Skills = append(spec.Reward.Skills, ExchangeSkill{
@@ -152,20 +152,20 @@ func (qc *Quests) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	}
 
 	before := *qp
-	qp.Status = QuestStatusStarted
-	qp.StatusRecord.WriteString("")
-	if qp.Wz.Meta.TimeLimit2 > 0 {
-		qp.SetDeadline(clock.Now().Add(time.Duration(qp.Wz.Meta.TimeLimit2) * time.Second))
+	qp.status = QuestStatusStarted
+	qp.statusRecord.WriteString("")
+	if qp.wz.Meta.TimeLimit2 > 0 {
+		qp.SetDeadline(clock.Now().Add(time.Duration(qp.wz.Meta.TimeLimit2) * time.Second))
 	} else {
 		qp.ResetDeadline()
 	}
-	qp.MobKills = make(map[uint32]int)
+	qp.mobKills = make(map[uint32]int)
 	qp.InitMobKillCounters()
 	if !opts.Force {
-		err := qc.grant(qp, qp.Wz.Start.Actions, questActionOpts{
-			ClassID:   qc.owner.Class,
-			Forfeited: qp.Forfeited > 0,
-			NpcID:     wireNPC,
+		err := qc.grant(qp, qp.wz.Start.Actions, questActionOpts{
+			classID:   qc.owner.class,
+			forfeited: qp.forfeited > 0,
+			npcID:     wireNPC,
 		})
 		if err != nil {
 			if created {
@@ -186,12 +186,12 @@ func (qc *Quests) notifyQuestStart(qp *Quest, wireNPC uint32, opts QuestPhaseOpt
 		return
 	}
 	ch := qc.owner
-	ch.Listener.OnQuestStarted(ch, qp, wireNPC)
+	ch.listener.OnQuestStarted(ch, qp, wireNPC)
 	if opts.Record == nil || *opts.Record == "" {
 		return
 	}
-	qp.StatusRecord.WriteString(*opts.Record)
-	ch.Listener.OnQuestProgress(ch, qp)
+	qp.statusRecord.WriteString(*opts.Record)
+	ch.listener.OnQuestProgress(ch, qp)
 }
 
 func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
@@ -207,7 +207,7 @@ func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
 		return ErrQuestNotStartable
 	}
 	if existing != nil {
-		switch existing.Status {
+		switch existing.status {
 		case QuestStatusStarted:
 			return ErrQuestNotStartable
 		case QuestStatusNotStarted:
@@ -227,8 +227,8 @@ func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {
 		return ErrQuestNotStartable
 	}
 	exchange := qc.buildPhaseExchange(def.Start.Actions, questActionOpts{
-		ClassID:   qc.owner.Class,
-		Forfeited: existing != nil && existing.Forfeited > 0,
+		classID:   qc.owner.class,
+		forfeited: existing != nil && existing.forfeited > 0,
 	})
 	if exchange.Cost.ValidCost(qc.owner) != ExchangeOK {
 		return ErrQuestNotStartable
@@ -246,10 +246,10 @@ func (qc *Quests) broadcastNpcAct(npcID uint32, act string) {
 	}
 	for _, obj := range mapInst.GetNpcs() {
 		npc, ok := obj.(*Npc)
-		if !ok || npc.Wz == nil || npc.Wz.BaseSpawn == nil {
+		if !ok || npc.wz == nil || npc.wz.BaseSpawn == nil {
 			continue
 		}
-		if npc.Wz.ID != npcID {
+		if npc.wz.ID != npcID {
 			continue
 		}
 		npc.ShowEffect(act)
@@ -270,18 +270,18 @@ func (qc *Quests) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
 			if existing == nil {
 				qc.Create(questID, QuestStatusStarted)
 			} else {
-				existing.Status = QuestStatusStarted
+				existing.status = QuestStatusStarted
 			}
 		case wz.QuestStatusCompleted:
 			existing := qc.Get(questID)
 			if existing == nil {
 				created := qc.Create(questID, QuestStatusCompleted)
 				if created != nil {
-					created.CompletionTime = clock.Now()
+					created.completionTime = clock.Now()
 				}
 			} else {
-				existing.Status = QuestStatusCompleted
-				existing.CompletionTime = clock.Now()
+				existing.status = QuestStatusCompleted
+				existing.completionTime = clock.Now()
 			}
 		}
 	}
@@ -295,8 +295,8 @@ func (qc *Quests) completeLinkedQuest(refID uint32) {
 	if refQP == nil || !refQP.IsStarted() {
 		return
 	}
-	refQP.Status = QuestStatusCompleted
-	refQP.CompletionTime = clock.Now()
+	refQP.status = QuestStatusCompleted
+	refQP.completionTime = clock.Now()
 }
 
 func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID constant.ClassType, items []wz.QuestActionItem, selection *uint32) {
@@ -392,7 +392,7 @@ func (qc *Quests) completedQuestCount() int {
 	}
 	count := 0
 	qc.ForEach(func(questID uint32, qp *Quest) {
-		if qp == nil || qp.Status != QuestStatusCompleted {
+		if qp == nil || qp.status != QuestStatusCompleted {
 			return
 		}
 		if questID > 99999 {
@@ -407,7 +407,7 @@ func (qc *Quests) matchesRewardItem(item wz.QuestRewardItem, classID constant.Cl
 	if qc == nil || qc.owner == nil {
 		return false
 	}
-	if item.Gender <= 1 && item.Gender != int(qc.owner.look.Gender) {
+	if item.Gender <= 1 && item.Gender != int(qc.owner.look.gender) {
 		return false
 	}
 	if item.Classes == nil {

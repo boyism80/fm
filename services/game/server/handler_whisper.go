@@ -37,7 +37,7 @@ func (h *Whisper) Handle(ctx *core.ClientContext, req *request.Whisper) error {
 	}
 
 	fail := func() {
-		ch.Listener.OnWhisperFailed(ch, req.Target)
+		ch.Listener().OnWhisperFailed(ch, req.Target)
 	}
 	switch req.Mode {
 	case internal.WhisperMode_WHISPER_MODE_FIND, internal.WhisperMode_WHISPER_MODE_SEND, internal.WhisperMode_WHISPER_MODE_FIND_BUDDY:
@@ -73,9 +73,9 @@ func (h *Whisper) Handle(ctx *core.ClientContext, req *request.Whisper) error {
 			}
 
 			if req.Mode == internal.WhisperMode_WHISPER_MODE_SEND {
-				ch.Listener.OnWhisperSent(ch, reply.Name)
+				ch.Listener().OnWhisperSent(ch, reply.Name)
 			} else {
-				ch.Listener.OnWhisperFound(ch, reply, req.Mode == internal.WhisperMode_WHISPER_MODE_FIND_BUDDY)
+				ch.Listener().OnWhisperFound(ch, reply, req.Mode == internal.WhisperMode_WHISPER_MODE_FIND_BUDDY)
 			}
 			return nil
 		},

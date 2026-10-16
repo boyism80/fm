@@ -22,7 +22,7 @@ func (b *ItemBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"wz": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ib, ok := ud.Value.(*ItemBuff)
-			if !ok || ib == nil || ib.Wz == nil {
+			if !ok || ib == nil || ib.wz == nil {
 				L.ArgError(1, "ItemBuff expected")
 				return 0
 			}
@@ -30,7 +30,7 @@ func (b *ItemBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			L.Push(luax.NewLuable(L, ib.Wz))
+			L.Push(luax.NewLuable(L, ib.wz))
 			return 1
 		},
 	}

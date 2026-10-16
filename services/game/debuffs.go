@@ -9,12 +9,12 @@ import (
 )
 
 type Debuff struct {
-	Flag       constant.DebuffFlag
-	StartTime  time.Time
-	Duration   time.Duration
-	X          int16
-	SkillID    uint16
-	SkillLevel uint16
+	flag       constant.DebuffFlag
+	startTime  time.Time
+	duration   time.Duration
+	x          int16
+	skillID    uint16
+	skillLevel uint16
 }
 
 type Debuffs struct {
@@ -35,15 +35,15 @@ func (d *Debuffs) Add(holder *Debuff) {
 	if holder == nil {
 		return
 	}
-	d.owner.RemoveTimer(d.timerKey(holder.Flag))
-	d.entries[holder.Flag] = holder
-	if holder.Duration > 0 {
-		flag := holder.Flag
-		d.owner.AddTimer(d.timerKey(flag), holder.Duration, false, func() {
+	d.owner.RemoveTimer(d.timerKey(holder.flag))
+	d.entries[holder.flag] = holder
+	if holder.duration > 0 {
+		flag := holder.flag
+		d.owner.AddTimer(d.timerKey(flag), holder.duration, false, func() {
 			d.owner.RemoveTimer(d.timerKey(flag))
 			if _, ok := d.entries[flag]; ok {
 				delete(d.entries, flag)
-				d.owner.Listener.OnDebuffRemoved(d.owner, []constant.DebuffFlag{flag})
+				d.owner.listener.OnDebuffRemoved(d.owner, []constant.DebuffFlag{flag})
 			}
 		})
 	}
@@ -57,15 +57,15 @@ func (d *Debuffs) Give(flag constant.DebuffFlag, duration time.Duration, x int16
 		skillLevel = 1
 	}
 	holder := &Debuff{
-		Flag:       flag,
-		StartTime:  clock.Now(),
-		Duration:   duration,
-		X:          x,
-		SkillID:    skillID,
-		SkillLevel: skillLevel,
+		flag:       flag,
+		startTime:  clock.Now(),
+		duration:   duration,
+		x:          x,
+		skillID:    skillID,
+		skillLevel: skillLevel,
 	}
 	d.Add(holder)
-	d.owner.Listener.OnDebuffAdded(d.owner, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
+	d.owner.listener.OnDebuffAdded(d.owner, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
 }
 
 func (d *Debuffs) restore() {
@@ -75,7 +75,7 @@ func (d *Debuffs) restore() {
 	}
 	for _, holder := range restored {
 		d.Add(holder)
-		d.owner.Listener.OnDebuffAdded(d.owner, holder.Flag, holder.X, holder.SkillID, holder.SkillLevel, int32(holder.Duration.Milliseconds()))
+		d.owner.listener.OnDebuffAdded(d.owner, holder.flag, holder.x, holder.skillID, holder.skillLevel, int32(holder.duration.Milliseconds()))
 	}
 }
 
@@ -89,7 +89,7 @@ func (d *Debuffs) Remove(flags ...constant.DebuffFlag) {
 		}
 	}
 	if len(removed) > 0 {
-		d.owner.Listener.OnDebuffRemoved(d.owner, removed)
+		d.owner.listener.OnDebuffRemoved(d.owner, removed)
 	}
 }
 
@@ -106,7 +106,7 @@ func (d *Debuffs) DiseaseMask() [4]uint32 {
 
 // Returns false when the mob skill is not a disease, so the caller can fall back to a dispel.
 func (d *Debuffs) GiveMobSkill(skillID uint32, skillLevel uint8) bool {
-	mobSkill := d.owner.GameWorld.GetResources().GetMobSkill(skillID, skillLevel)
+	mobSkill := d.owner.gameWorld.GetResources().GetMobSkill(skillID, skillLevel)
 	if mobSkill == nil {
 		return false
 	}

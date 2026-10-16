@@ -24,7 +24,7 @@ type PartySystem struct {
 	worldID       uint32
 	mu            sync.Mutex
 	parties       map[uint32]*Party
-	memberUpdates map[uint32]*internal.UpdatePartyMemberRequest
+	memberUpdates map[uint32]*PartyMember
 }
 
 func NewPartySystem(gw GameWorld) *PartySystem {
@@ -32,7 +32,7 @@ func NewPartySystem(gw GameWorld) *PartySystem {
 		gw:            gw,
 		worldID:       gw.GetWorldID(),
 		parties:       make(map[uint32]*Party),
-		memberUpdates: make(map[uint32]*internal.UpdatePartyMemberRequest),
+		memberUpdates: make(map[uint32]*PartyMember),
 	}
 }
 
@@ -50,10 +50,10 @@ func (s *PartySystem) store(pb *internal.Party) (*Party, bool) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if prev := s.parties[party.PartyID]; prev != nil && party.UpdatedAt.Before(prev.UpdatedAt) {
+	if prev := s.parties[party.partyID]; prev != nil && party.updatedAt.Before(prev.updatedAt) {
 		return prev, false
 	}
-	s.parties[party.PartyID] = party
+	s.parties[party.partyID] = party
 	return party, true
 }
 
@@ -199,7 +199,7 @@ func (s *PartySystem) BroadcastPartySilent(party *Party) {
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnPartyUpdateSilent(ch, forChannel, partyID, leaderID, respMembers)
+			ch.listener.OnPartyUpdateSilent(ch, forChannel, partyID, leaderID, respMembers)
 		})
 	}
 }
@@ -209,7 +209,7 @@ func (s *PartySystem) SendPartySilentAsync(ctx actor.Context, ch *Character) *as
 	if s == nil || ch == nil || s.gw == nil || ctx == nil {
 		return p
 	}
-	partyIDPtr := ch.Party.ID()
+	partyIDPtr := ch.party.ID()
 	if partyIDPtr == nil {
 		return p
 	}
@@ -255,7 +255,7 @@ func (s *PartySystem) sendPartySilentToCharacter(ch *Character, party *Party) {
 		if ch == nil {
 			return
 		}
-		ch.Listener.OnPartyUpdateSilent(ch, forChannel, partyID, leaderID, members)
+		ch.listener.OnPartyUpdateSilent(ch, forChannel, partyID, leaderID, members)
 	})
 }
 

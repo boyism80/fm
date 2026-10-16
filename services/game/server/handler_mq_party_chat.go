@@ -65,7 +65,7 @@ func (h *partyMqChat) handlePartyMultiChat(gs *GameServer, memberID uint32, send
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnMultiChat(ch, mode, senderName, message)
+			ch.Listener().OnMultiChat(ch, mode, senderName, message)
 		})
 	}
 }

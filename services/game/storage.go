@@ -19,9 +19,9 @@ var (
 
 type Storage struct {
 	owner      *Character
-	Slots      uint8
-	Meso       int32
-	Tabs       map[constant.InventoryType][]Item
+	slots      uint8
+	meso       int32
+	tabs       map[constant.InventoryType][]Item
 	opened     bool
 	storeFee   int32
 	takeOutFee int32
@@ -31,7 +31,7 @@ func (s *Storage) Open(npcID uint32, storeFee int32, takeOutFee int32) {
 	s.opened = true
 	s.storeFee = storeFee
 	s.takeOutFee = takeOutFee
-	s.owner.Listener.OnOpenStorage(s.owner, npcID)
+	s.owner.listener.OnOpenStorage(s.owner, npcID)
 }
 
 func (s *Storage) Close() {
@@ -40,14 +40,14 @@ func (s *Storage) Close() {
 
 func (s *Storage) count() int {
 	count := 0
-	for _, items := range s.Tabs {
+	for _, items := range s.tabs {
 		count += len(items)
 	}
 	return count
 }
 
 func (s *Storage) has(invType constant.InventoryType, itemID uint32) bool {
-	for _, stored := range s.Tabs[invType] {
+	for _, stored := range s.tabs[invType] {
 		if stored.GetModel().GetID() == itemID {
 			return true
 		}
@@ -59,7 +59,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if !s.opened {
 		return ErrStorageClosed
 	}
-	if s.count() >= int(s.Slots) {
+	if s.count() >= int(s.slots) {
 		return ErrStorageFull
 	}
 
@@ -68,7 +68,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 		return ErrStorageItemNotFound
 	}
 	invType := model.GetInventoryType()
-	item := s.owner.Inventory.GetItem(invType, slot)
+	item := s.owner.inventory.GetItem(invType, slot)
 	if item == nil || item.GetModel().GetID() != itemID {
 		return ErrStorageItemNotFound
 	}
@@ -90,10 +90,10 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 
 	stored := item.Clone(count)
 	stored.consumeKarma()
-	s.owner.Inventory.removeMesoUnchecked(s.storeFee)
-	s.owner.Inventory.RemoveItem(invType, slot, count)
-	s.Tabs[invType] = append(s.Tabs[invType], stored)
-	s.owner.Listener.OnStorageTabChanged(s.owner, pconst.StorageResultStore, invType)
+	s.owner.inventory.removeMesoUnchecked(s.storeFee)
+	s.owner.inventory.RemoveItem(invType, slot, count)
+	s.tabs[invType] = append(s.tabs[invType], stored)
+	s.owner.listener.OnStorageTabChanged(s.owner, pconst.StorageResultStore, invType)
 	return nil
 }
 
@@ -101,12 +101,12 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 	if !s.opened {
 		return ErrStorageClosed
 	}
-	items := s.Tabs[invType]
+	items := s.tabs[invType]
 	if int(index) >= len(items) {
 		return ErrStorageItemNotFound
 	}
 	item := items[index]
-	if s.owner.Inventory.hasOnlyItem(item.GetModel()) {
+	if s.owner.inventory.hasOnlyItem(item.GetModel()) {
 		return ErrStorageNotStorable
 	}
 
@@ -125,10 +125,10 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 		return ErrInventoryFull
 	}
 
-	s.Tabs[invType] = append(items[:index:index], items[index+1:]...)
-	s.owner.Inventory.removeMesoUnchecked(s.takeOutFee)
-	s.owner.Inventory.addItemUnchecked(item, true)
-	s.owner.Listener.OnStorageTabChanged(s.owner, pconst.StorageResultTakeOut, invType)
+	s.tabs[invType] = append(items[:index:index], items[index+1:]...)
+	s.owner.inventory.removeMesoUnchecked(s.takeOutFee)
+	s.owner.inventory.addItemUnchecked(item, true)
+	s.owner.listener.OnStorageTabChanged(s.owner, pconst.StorageResultTakeOut, invType)
 	return nil
 }
 
@@ -137,12 +137,12 @@ func (s *Storage) Arrange() error {
 		return ErrStorageClosed
 	}
 
-	for _, items := range s.Tabs {
+	for _, items := range s.tabs {
 		sort.SliceStable(items, func(i, j int) bool {
 			return items[i].GetModel().GetID() < items[j].GetModel().GetID()
 		})
 	}
-	s.owner.Listener.OnStorageArranged(s.owner)
+	s.owner.listener.OnStorageArranged(s.owner)
 	return nil
 }
 
@@ -150,7 +150,7 @@ func (s *Storage) DepositMeso(amount int32) error {
 	if !s.opened {
 		return ErrStorageClosed
 	}
-	amount = min(amount, math.MaxInt32-s.Meso)
+	amount = min(amount, math.MaxInt32-s.meso)
 	if amount <= 0 {
 		return ErrStorageNotEnoughMeso
 	}
@@ -158,9 +158,9 @@ func (s *Storage) DepositMeso(amount int32) error {
 		return ErrStorageNotEnoughMeso
 	}
 
-	s.owner.Inventory.removeMesoUnchecked(amount)
-	s.Meso += amount
-	s.owner.Listener.OnStorageMesoChanged(s.owner)
+	s.owner.inventory.removeMesoUnchecked(amount)
+	s.meso += amount
+	s.owner.listener.OnStorageMesoChanged(s.owner)
 	return nil
 }
 
@@ -168,13 +168,13 @@ func (s *Storage) WithdrawMeso(amount int32) error {
 	if !s.opened {
 		return ErrStorageClosed
 	}
-	amount = min(amount, math.MaxInt32-s.owner.Inventory.Meso)
-	if amount <= 0 || amount > s.Meso {
+	amount = min(amount, math.MaxInt32-s.owner.inventory.meso)
+	if amount <= 0 || amount > s.meso {
 		return ErrStorageNotEnoughMeso
 	}
 
-	s.Meso -= amount
-	s.owner.Inventory.addMesoUnchecked(amount)
-	s.owner.Listener.OnStorageMesoChanged(s.owner)
+	s.meso -= amount
+	s.owner.inventory.addMesoUnchecked(amount)
+	s.owner.listener.OnStorageMesoChanged(s.owner)
 	return nil
 }

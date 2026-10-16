@@ -11,19 +11,19 @@ func PartyMemberFromProto(pb *internal.PartyMember) *PartyMember {
 		return nil
 	}
 	m := &PartyMember{
-		WorldID:       pb.GetWorldId(),
-		CharacterID:   pb.GetCharacterId(),
-		CharacterName: pb.GetCharacterName(),
-		Level:         pb.GetLevel(),
-		ClassID:       pb.GetClassId(),
-		Role:          pb.GetRole(),
-		MapID:         pb.GetMapId(),
+		worldID:       pb.GetWorldId(),
+		characterID:   pb.GetCharacterId(),
+		characterName: pb.GetCharacterName(),
+		level:         pb.GetLevel(),
+		classID:       pb.GetClassId(),
+		role:          pb.GetRole(),
+		mapID:         pb.GetMapId(),
 	}
 	if pb.ChannelIndex != nil {
 		c := pb.GetChannelIndex()
-		m.ChannelIndex = &c
+		m.channelIndex = &c
 	}
-	m.Door = PartyDoorFromProto(pb.GetDoor())
+	m.door = PartyDoorFromProto(pb.GetDoor())
 	return m
 }
 
@@ -33,19 +33,19 @@ func (m *PartyMember) BuildRPC() *internal.PartyMember {
 		return nil
 	}
 	pm := &internal.PartyMember{
-		WorldId:       m.WorldID,
-		CharacterId:   m.CharacterID,
-		CharacterName: m.CharacterName,
-		Level:         m.Level,
-		ClassId:       m.ClassID,
-		Role:          m.Role,
-		MapId:         m.MapID,
+		WorldId:       m.worldID,
+		CharacterId:   m.characterID,
+		CharacterName: m.characterName,
+		Level:         m.level,
+		ClassId:       m.classID,
+		Role:          m.role,
+		MapId:         m.mapID,
 	}
-	if m.ChannelIndex != nil {
-		c := *m.ChannelIndex
+	if m.channelIndex != nil {
+		c := *m.channelIndex
 		pm.ChannelIndex = &c
 	}
-	pm.Door = m.Door.BuildRPC()
+	pm.Door = m.door.BuildRPC()
 	return pm
 }
 
@@ -59,21 +59,21 @@ func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ro
 		mapID = m.TemplateID()
 	}
 	m := &PartyMember{
-		WorldID:       worldID,
-		CharacterID:   ch.GetID(),
-		CharacterName: ch.GetName(),
-		Level:         uint32(ch.GetLevel()),
-		ClassID:       uint32(ch.Class),
-		Role:          role,
-		MapID:         mapID,
+		worldID:       worldID,
+		characterID:   ch.GetID(),
+		characterName: ch.GetName(),
+		level:         uint32(ch.GetLevel()),
+		classID:       uint32(ch.class),
+		role:          role,
+		mapID:         mapID,
 	}
 	if channelID >= 0 {
 		ci := channelID
-		m.ChannelIndex = &ci
+		m.channelIndex = &ci
 	}
-	if door := ch.Doors.Find(constant.SkillMysticDoor); door != nil {
+	if door := ch.doors.Find(constant.SkillMysticDoor); door != nil {
 		if pb := door.BuildRPC(); pb != nil {
-			m.Door = PartyDoorFromProto(pb)
+			m.door = PartyDoorFromProto(pb)
 		}
 	}
 	return m

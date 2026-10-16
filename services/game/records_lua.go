@@ -102,18 +102,18 @@ func (reset *RecordReset) ParseLua(L *lua.LState, idx int) {
 	if opts == nil {
 		return
 	}
-	reset.Restart = lua.LVAsBool(opts.RawGetString("restart"))
+	reset.restart = lua.LVAsBool(opts.RawGetString("restart"))
 
 	if daily := opts.RawGetString("daily"); daily != lua.LNil {
-		reset.Kind = RecordResetDaily
+		reset.kind = RecordResetDaily
 		if text, ok := daily.(lua.LString); ok {
-			reset.At = reset.parseClock(L, idx, string(text))
+			reset.at = reset.parseClock(L, idx, string(text))
 		}
 		return
 	}
 
 	if weekly := opts.RawGetString("weekly"); weekly != lua.LNil {
-		reset.Kind = RecordResetWeekly
+		reset.kind = RecordResetWeekly
 		text, ok := weekly.(lua.LString)
 		if !ok {
 			return
@@ -131,9 +131,9 @@ func (reset *RecordReset) ParseLua(L *lua.LState, idx int) {
 			L.ArgError(idx, "weekly must start with a weekday such as Thu")
 			return
 		}
-		reset.At = time.Duration(day) * 24 * time.Hour
+		reset.at = time.Duration(day) * 24 * time.Hour
 		if len(fields) > 1 {
-			reset.At += reset.parseClock(L, idx, fields[1])
+			reset.at += reset.parseClock(L, idx, fields[1])
 		}
 		return
 	}
@@ -144,8 +144,8 @@ func (reset *RecordReset) ParseLua(L *lua.LState, idx int) {
 			L.ArgError(idx, "every must be a positive number of seconds")
 			return
 		}
-		reset.Kind = RecordResetEvery
-		reset.Every = time.Duration(float64(seconds) * float64(time.Second))
+		reset.kind = RecordResetEvery
+		reset.every = time.Duration(float64(seconds) * float64(time.Second))
 	}
 }
 

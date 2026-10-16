@@ -8,9 +8,9 @@ import (
 )
 
 type Npc struct {
-	ObjectCore
-	Wz           *wz.NpcSpawn
-	RuntimeSpawn bool
+	objectCore
+	wz           *wz.NpcSpawn
+	runtimeSpawn bool
 }
 
 func (n *Npc) GetObjectType() constant.ObjectType {
@@ -40,8 +40,8 @@ func (n *Npc) SendDestroySyncToViewer(viewer *Character) {
 	if n == nil || viewer == nil {
 		return
 	}
-	viewer.Send(&response.NpcRemoveControl{OID: n.OID}, types.SEND_POLICY_ENCRYPT)
-	viewer.Send(&response.RemoveNpc{OID: n.OID}, types.SEND_POLICY_ENCRYPT)
+	viewer.Send(&response.NpcRemoveControl{OID: n.oid}, types.SEND_POLICY_ENCRYPT)
+	viewer.Send(&response.RemoveNpc{OID: n.oid}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (n *Npc) ShowEffect(action string) {
@@ -49,7 +49,7 @@ func (n *Npc) ShowEffect(action string) {
 		return
 	}
 	n.Broadcast(&response.ShowNpcEffect{
-		OID:    n.OID,
+		OID:    n.oid,
 		Action: action,
 	}, nil)
 }

@@ -11,35 +11,35 @@ import (
 type Skills struct {
 	owner           *Character
 	entries         map[uint32]*SkillEntry
-	Macros          *SkillMacros
-	HomingTargetOID *uint32
+	macros          *SkillMacros
+	homingTargetOID *uint32
 }
 
 func NewSkills(owner *Character) *Skills {
 	return &Skills{
 		owner:   owner,
 		entries: make(map[uint32]*SkillEntry),
-		Macros:  NewSkillMacros(owner),
+		macros:  NewSkillMacros(owner),
 	}
 }
 
 func (sc *Skills) Bind(skillID uint32, entry *SkillEntry) {
-	if entry == nil || entry.Level() < 1 && entry.MasterLevel < 1 {
+	if entry == nil || entry.Level() < 1 && entry.masterLevel < 1 {
 		return
 	}
-	entry.Owner = sc.owner
+	entry.owner = sc.owner
 	sc.entries[skillID] = entry
 }
 
 func (sc *Skills) Register(skillID uint32, entry *SkillEntry) {
-	if entry == nil || entry.Level() < 1 && entry.MasterLevel < 1 {
+	if entry == nil || entry.Level() < 1 && entry.masterLevel < 1 {
 		return
 	}
 	sc.Bind(skillID, entry)
 	if entry.Level() > 0 {
 		sc.CallHook(nil, entry, "on_passive")
 	}
-	sc.owner.Listener.OnUpdateSkill(sc.owner, skillID, int32(entry.Level()), int32(entry.MasterLevel))
+	sc.owner.listener.OnUpdateSkill(sc.owner, skillID, int32(entry.Level()), int32(entry.masterLevel))
 }
 
 func (sc *Skills) RestorePassives() {
@@ -63,7 +63,7 @@ func (sc *Skills) Remove(skillID uint32) bool {
 }
 
 func (sc *Skills) Get(skillID uint32) *SkillEntry {
-	if entry := sc.entries[skillID]; entry != nil && entry.Level() > 0 && !entry.Wz.Dojo {
+	if entry := sc.entries[skillID]; entry != nil && entry.Level() > 0 && !entry.wz.Dojo {
 		return entry
 	}
 	return sc.dojoSkill(skillID)
@@ -74,14 +74,14 @@ func (sc *Skills) Learned(skillID uint32) *SkillEntry {
 }
 
 func (sc *Skills) dojoSkill(skillID uint32) *SkillEntry {
-	if sc.owner.GameWorld == nil {
+	if sc.owner.gameWorld == nil {
 		return nil
 	}
-	w := sc.owner.GameWorld.GetResources().GetSkill(skillID)
+	w := sc.owner.gameWorld.GetResources().GetSkill(skillID)
 	if w == nil || !w.Dojo {
 		return nil
 	}
-	if sc.owner.Dojo.Energy < DojoEnergyFull || !sc.owner.Dojo.onField() {
+	if sc.owner.dojo.energy < DojoEnergyFull || !sc.owner.dojo.onField() {
 		return nil
 	}
 	return NewSkillEntry(sc.owner, w, 1, 1)
@@ -102,7 +102,7 @@ func (sc *Skills) Level(skillID uint32) int {
 }
 
 func (sc *Skills) UseAttack(skillID uint32, activate func() bool) bool {
-	wzSkill := sc.owner.GameWorld.GetResources().GetSkill(skillID)
+	wzSkill := sc.owner.gameWorld.GetResources().GetSkill(skillID)
 	if wzSkill == nil {
 		log.Printf("Skill not found: %d", skillID)
 		return false
@@ -134,7 +134,7 @@ func (sc *Skills) LevelData(id constant.SkillID) *wz.SkillLevelData {
 	if entry == nil || entry.Level() <= 0 {
 		return nil
 	}
-	return entry.Wz.GetLevelData(entry.Level())
+	return entry.wz.GetLevelData(entry.Level())
 }
 
 func (sc *Skills) masteries(weapon constant.WeaponType) []constant.SkillID {
@@ -152,19 +152,19 @@ func (sc *Skills) masteries(weapon constant.WeaponType) []constant.SkillID {
 	case constant.WeaponTypePoleArm:
 		return []constant.SkillID{constant.SkillPoleArmMastery}
 	case constant.WeaponTypeBow:
-		if sc.owner.Class >= constant.ClassNoblesse {
+		if sc.owner.class >= constant.ClassNoblesse {
 			return []constant.SkillID{constant.SkillBowMasteryCygnus, constant.SkillBowExpertCygnus}
 		}
 		return []constant.SkillID{constant.SkillBowMastery, constant.SkillBowExpert}
 	case constant.WeaponTypeCrossbow:
 		return []constant.SkillID{constant.SkillCrossbowMastery, constant.SkillCrossbowExpert}
 	case constant.WeaponTypeClaw:
-		if sc.owner.Class >= constant.ClassNoblesse {
+		if sc.owner.class >= constant.ClassNoblesse {
 			return []constant.SkillID{constant.SkillClawMasteryCygnus}
 		}
 		return []constant.SkillID{constant.SkillClawMastery}
 	case constant.WeaponTypeKnuckle:
-		if sc.owner.Class >= constant.ClassNoblesse {
+		if sc.owner.class >= constant.ClassNoblesse {
 			return []constant.SkillID{constant.SkillKnuckleMasteryCygnus}
 		}
 		return []constant.SkillID{constant.SkillKnuckleMastery}
@@ -177,12 +177,12 @@ func (sc *Skills) masteries(weapon constant.WeaponType) []constant.SkillID {
 func (sc *Skills) criticalLevelData(weapon constant.WeaponType) *wz.SkillLevelData {
 	switch weapon {
 	case constant.WeaponTypeBow, constant.WeaponTypeCrossbow:
-		if sc.owner.Class >= constant.ClassNoblesse {
+		if sc.owner.class >= constant.ClassNoblesse {
 			return sc.LevelData(constant.SkillCriticalShotCygnus)
 		}
 		return sc.LevelData(constant.SkillCriticalShot)
 	case constant.WeaponTypeClaw:
-		if sc.owner.Class >= constant.ClassNoblesse {
+		if sc.owner.class >= constant.ClassNoblesse {
 			return sc.LevelData(constant.SkillCriticalThrowCygnus)
 		}
 		return sc.LevelData(constant.SkillCriticalThrow)
@@ -194,7 +194,7 @@ func (sc *Skills) criticalLevelData(weapon constant.WeaponType) *wz.SkillLevelDa
 
 func (sc *Skills) makerLevel() int {
 	skillID := uint32(constant.SkillMaker)
-	if sc.owner.Class >= constant.ClassNoblesse && sc.owner.Class < constant.ClassLegend {
+	if sc.owner.class >= constant.ClassNoblesse && sc.owner.class < constant.ClassLegend {
 		skillID = uint32(constant.SkillMakerCygnus)
 	}
 	entry := sc.Get(skillID)
@@ -208,10 +208,10 @@ func (sc *Skills) grant(skill ExchangeSkill) {
 	if skill.SkillID == 0 {
 		return
 	}
-	if sc.owner.GameWorld == nil {
+	if sc.owner.gameWorld == nil {
 		return
 	}
-	resources := sc.owner.GameWorld.GetResources()
+	resources := sc.owner.gameWorld.GetResources()
 	if resources == nil {
 		return
 	}
@@ -227,12 +227,12 @@ func (sc *Skills) grant(skill ExchangeSkill) {
 	entry := sc.Learned(skill.SkillID)
 	if entry == nil {
 		entry = NewSkillEntry(sc.owner, wzSkill, targetLevel, targetMaster)
-		entry.Expiration = time.Time{}
+		entry.expiration = time.Time{}
 		sc.Register(skill.SkillID, entry)
 	} else {
 		targetLevel = exchangeSkillTargetLevel(entry.Level(), skill.Level)
-		targetMaster = max(entry.MasterLevel, targetMaster)
-		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
+		targetMaster = max(entry.masterLevel, targetMaster)
+		if targetLevel != entry.Level() || targetMaster != entry.masterLevel {
 			entry.SetLevels(targetLevel, targetMaster)
 		}
 	}

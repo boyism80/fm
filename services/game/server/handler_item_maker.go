@@ -26,11 +26,11 @@ func (*ItemMaker) Handle(ctx *core.ClientContext, req *request.ItemMaker) error 
 	if ch == nil {
 		return nil
 	}
-	defer ch.Listener.OnUnlockAction(ch)
+	defer ch.Listener().OnUnlockAction(ch)
 	if req.Malformed {
 		return nil
 	}
 
-	ch.Inventory.Make(req.Type, req.ItemID, req.Catalyst, req.Enhancers, int16(req.Slot))
+	ch.Inventory().Make(req.Type, req.ItemID, req.Catalyst, req.Enhancers, int16(req.Slot))
 	return nil
 }

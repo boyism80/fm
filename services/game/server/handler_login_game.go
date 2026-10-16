@@ -151,9 +151,9 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 			return fmt.Errorf("default map %d not found", mapID)
 		}
 	}
-	if mapInstance.Wz != nil && mapInstance.Wz.ForcedReturn != 0 {
-		if alt := h.gs.systems.Get[*game.MapSystem]().Get(mapInstance.Wz.ForcedReturn); alt != nil {
-			mapID = mapInstance.Wz.ForcedReturn
+	if mapInstance.Wz() != nil && mapInstance.Wz().ForcedReturn != 0 {
+		if alt := h.gs.systems.Get[*game.MapSystem]().Get(mapInstance.Wz().ForcedReturn); alt != nil {
+			mapID = mapInstance.Wz().ForcedReturn
 			spawnPoint = 0
 			mapInstance = alt
 		}
@@ -163,7 +163,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		spawnPoint = 0
 	}
 
-	character.Stance = constant.StanceDefaultValue
+	character.SetStance(constant.StanceDefaultValue)
 
 	targetMapPID := mapInstance.LogicActorPID()
 	if targetMapPID == nil {
@@ -198,7 +198,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		TargetMap:  mapInstance,
 		SpawnPoint: spawnPoint,
 		Init:       true,
-		Notes:      reply.GetNotes(),
+		Notes:      game.NotesFromProto(reply.GetNotes()),
 	})
 
 	return nil

@@ -6,7 +6,7 @@ import (
 )
 
 func (inv *Inventory) Merge(inventoryType constant.InventoryType) {
-	inven := inv.Tabs[inventoryType]
+	inven := inv.tabs[inventoryType]
 	if inven == nil {
 		return
 	}
@@ -16,8 +16,8 @@ func (inv *Inventory) Merge(inventoryType constant.InventoryType) {
 	}
 	buckets := map[stack]map[int16]Item{}
 
-	for i := range inven.SlotLimit {
-		item := inven.Items[int16(i+1)]
+	for i := range inven.slotLimit {
+		item := inven.items[int16(i+1)]
 		if item == nil || !inven.Stackable(item, item) {
 			continue
 		}
@@ -40,10 +40,10 @@ func (inv *Inventory) Merge(inventoryType constant.InventoryType) {
 			if item.GetCount() != value {
 				item.SetCount(value)
 				if value == 0 {
-					inv.owner.Listener.OnRemoveInventorySlot(inv.owner, inventoryType, slot)
-					delete(inven.Items, slot)
+					inv.owner.listener.OnRemoveInventorySlot(inv.owner, inventoryType, slot)
+					delete(inven.items, slot)
 				} else {
-					inv.owner.Listener.OnInventorySlotUpdated(inv.owner, inventoryType, slot, item)
+					inv.owner.listener.OnInventorySlotUpdated(inv.owner, inventoryType, slot, item)
 				}
 			}
 			count -= value
@@ -52,14 +52,14 @@ func (inv *Inventory) Merge(inventoryType constant.InventoryType) {
 }
 
 func (inv *Inventory) Sort(inventoryType constant.InventoryType) {
-	inven := inv.Tabs[inventoryType]
+	inven := inv.tabs[inventoryType]
 	if inven == nil {
 		return
 	}
-	n := inven.SlotLimit
+	n := inven.slotLimit
 	buffer := make([]Item, n)
 	for i := range n {
-		buffer[i] = inven.Items[int16(i+1)]
+		buffer[i] = inven.items[int16(i+1)]
 	}
 
 	less := func(item1, item2 Item) bool {
@@ -91,7 +91,7 @@ func (inv *Inventory) Sort(inventoryType constant.InventoryType) {
 			}
 			if i1 <= i2 {
 				buffer[i1], buffer[i2] = buffer[i2], buffer[i1]
-				inv.owner.Listener.OnSwapInventorySlot(inv.owner, inventoryType, int16(i1+1), int16(i2+1), 0)
+				inv.owner.listener.OnSwapInventorySlot(inv.owner, inventoryType, int16(i1+1), int16(i2+1), 0)
 				i1++
 				i2--
 			}
@@ -110,10 +110,10 @@ func (inv *Inventory) Sort(inventoryType constant.InventoryType) {
 
 	qsort(0, int(n-1))
 
-	inven.Items = map[int16]Item{}
+	inven.items = map[int16]Item{}
 	for i := range buffer {
 		if buffer[i] != nil {
-			inven.Items[int16(i+1)] = buffer[i]
+			inven.items[int16(i+1)] = buffer[i]
 		}
 	}
 }

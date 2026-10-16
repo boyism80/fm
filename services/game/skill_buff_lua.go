@@ -30,7 +30,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "causer() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(sk.CauserID))
+			L.Push(lua.LNumber(sk.causerID))
 			return 1
 		},
 		"level": func(L *lua.LState) int {
@@ -44,7 +44,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "level() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(sk.SkillLevel))
+			L.Push(lua.LNumber(sk.skillLevel))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -58,7 +58,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			L.Push(luax.NewLuable(L, sk.Wz))
+			L.Push(luax.NewLuable(L, sk.wz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
@@ -72,7 +72,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0
 			}
-			ld := sk.Wz.GetLevelData(int(sk.SkillLevel))
+			ld := sk.wz.GetLevelData(int(sk.skillLevel))
 			if ld == nil {
 				L.Push(lua.LNil)
 				return 1

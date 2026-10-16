@@ -23,10 +23,10 @@ func (h *PartyMemberJoinedHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	if ch == nil {
 		return
 	}
-	ch.Listener.OnPartyUpdateJoin(ch, msg.ForChannel, msg.PartyID, msg.JoinName, msg.LeaderID, msg.Members)
+	ch.Listener().OnPartyUpdateJoin(ch, msg.ForChannel, msg.PartyID, msg.JoinName, msg.LeaderID, msg.Members)
 	if ch.GetID() != msg.JoinCharacterID {
 		return
 	}
-	ch.Party.SetID(&msg.PartyID)
+	ch.Party().SetID(&msg.PartyID)
 	m.SyncPartyHP(ch)
 }

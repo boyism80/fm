@@ -94,10 +94,10 @@ func (s *PartySystem) BroadcastMemberLeft(prev, current *Party, targetCharacterI
 				return
 			}
 			if expelled {
-				ch.Listener.OnPartyUpdateExpel(ch, forChannel, partyID, targetCharacterID, targetName, leaderID, respMembers)
+				ch.listener.OnPartyUpdateExpel(ch, forChannel, partyID, targetCharacterID, targetName, leaderID, respMembers)
 				return
 			}
-			ch.Listener.OnPartyUpdateLeave(ch, forChannel, partyID, targetCharacterID, targetName, leaderID, respMembers)
+			ch.listener.OnPartyUpdateLeave(ch, forChannel, partyID, targetCharacterID, targetName, leaderID, respMembers)
 		})
 	}
 }
@@ -137,7 +137,7 @@ func (s *PartySystem) BroadcastDisbanded(prev *Party, leaderCharacterID uint32) 
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnPartyUpdateDisband(ch, partyID, leaderCharacterID)
+			ch.listener.OnPartyUpdateDisband(ch, partyID, leaderCharacterID)
 		})
 	}
 }
@@ -154,7 +154,7 @@ func (s *PartySystem) BroadcastLeaderChanged(party *Party, newLeaderCharacterID 
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnPartyUpdateLeaderChange(ch, newLeaderCharacterID, disconnected)
+			ch.listener.OnPartyUpdateLeaderChange(ch, newLeaderCharacterID, disconnected)
 		})
 	}
 }
@@ -175,7 +175,7 @@ func (s *PartySystem) BroadcastLogOnOff(party *Party) {
 			if ch == nil {
 				return
 			}
-			ch.Listener.OnPartyUpdateLogOnOff(ch, forChannel, partyID, leaderID, respMembers)
+			ch.listener.OnPartyUpdateLogOnOff(ch, forChannel, partyID, leaderID, respMembers)
 		})
 	}
 }

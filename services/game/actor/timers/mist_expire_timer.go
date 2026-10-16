@@ -28,11 +28,11 @@ func (t *MistExpireTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 	objects := mapData.GetObjects(constant.ObjectTypeMist)
 	for _, obj := range objects {
 		mist, ok := obj.(*game.Mist)
-		if !ok || mist == nil || mist.OID == 0 {
+		if !ok || mist == nil || mist.GetOID() == 0 {
 			continue
 		}
 		if mist.IsExpired(now) {
-			mapData.RemoveMist(mist.OID)
+			mapData.RemoveMist(mist.GetOID())
 		}
 	}
 	return nil

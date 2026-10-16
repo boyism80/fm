@@ -6,10 +6,10 @@ import (
 )
 
 func (ch *Character) itemModel(itemID uint32) wz.Item {
-	if ch == nil || ch.GameWorld == nil {
+	if ch == nil || ch.gameWorld == nil {
 		return nil
 	}
-	resources := ch.GameWorld.GetResources()
+	resources := ch.gameWorld.GetResources()
 	if resources == nil {
 		return nil
 	}
@@ -47,22 +47,22 @@ func (ch *Character) payExchangeCost(side ExchangeSide) {
 		return
 	}
 	if side.Meso > 0 {
-		ch.Inventory.removeMesoUnchecked(side.Meso)
+		ch.inventory.removeMesoUnchecked(side.Meso)
 	}
 	if side.Population > 0 {
-		ch.Stats.AddPopulation(-side.Population)
+		ch.stats.AddPopulation(-side.Population)
 	}
 	for id, count := range side.Items {
 		if count == 0 {
 			continue
 		}
-		ch.Inventory.removeByItemIDCountUnchecked(id, count)
+		ch.inventory.removeByItemIDCountUnchecked(id, count)
 	}
 	for _, skill := range side.Skills {
 		if skill.SkillID == 0 {
 			continue
 		}
-		ch.Skills.Remove(skill.SkillID)
+		ch.skills.Remove(skill.SkillID)
 	}
 }
 
@@ -71,16 +71,16 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 		return
 	}
 	if side.Meso > 0 {
-		ch.Inventory.gainMesoUnchecked(side.Meso)
+		ch.inventory.gainMesoUnchecked(side.Meso)
 	}
 	for id, count := range side.Items {
 		if count == 0 {
 			continue
 		}
-		if ch.GameWorld == nil {
+		if ch.gameWorld == nil {
 			continue
 		}
-		item, err := NewItem(id, count, ch.GameWorld)
+		item, err := NewItem(id, count, ch.gameWorld)
 		if err != nil {
 			continue
 		}
@@ -95,19 +95,19 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 		if period := side.Period[id]; period > 0 {
 			item.SetExpiration(clock.Now().Add(period))
 		}
-		ch.Inventory.addItemUnchecked(item, true)
+		ch.inventory.addItemUnchecked(item, true)
 	}
 	if side.Exp > 0 {
 		ch.addExpUnchecked(side.Exp)
 	}
 	if side.Population > 0 {
-		ch.Stats.AddPopulation(side.Population)
+		ch.stats.AddPopulation(side.Population)
 	}
 	if side.SkillPoint > 0 {
-		ch.Points.SetSP(ch.Points.SP+side.SkillPoint, true)
+		ch.points.SetSP(ch.points.sp+side.SkillPoint, true)
 	}
 	for _, skill := range side.Skills {
-		ch.Skills.grant(skill)
+		ch.skills.grant(skill)
 	}
 }
 

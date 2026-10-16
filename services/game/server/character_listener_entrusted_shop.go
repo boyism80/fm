@@ -31,10 +31,10 @@ func (l *CharacterListenerImpl) miniRoomItems(items []*game.ShopItem) response.M
 	out := make(response.MiniRoomItemList, 0, len(items))
 	for _, listed := range items {
 		out = append(out, response.MiniRoomItem{
-			Bundles:   listed.Bundles,
-			PerBundle: listed.PerBundle,
-			Price:     listed.Price,
-			Item:      listed.Item.BuildS2C(),
+			Bundles:   listed.Bundles(),
+			PerBundle: listed.PerBundle(),
+			Price:     listed.Price(),
+			Item:      listed.Item().BuildS2C(),
 		})
 	}
 	return out
@@ -43,27 +43,27 @@ func (l *CharacterListenerImpl) miniRoomItems(items []*game.ShopItem) response.M
 func (l *CharacterListenerImpl) OnMiniRoomEntered(ch *game.Character, slot uint8, view game.EntrustedShopView, firstTime bool) {
 	enter := &response.MiniRoomEnter{
 		MySlot:       slot,
-		PermitItemID: view.ItemID,
-		OwnerName:    view.OwnerName,
-		Elapsed:      uint32(view.Elapsed.Milliseconds()),
+		PermitItemID: view.ItemID(),
+		OwnerName:    view.OwnerName(),
+		Elapsed:      uint32(view.Elapsed().Milliseconds()),
 		FirstTime:    firstTime,
-		Title:        view.Title,
+		Title:        view.Title(),
 		MaxItems:     game.EntrustedShopMaxItems,
 		MiniRoomItems: response.MiniRoomItems{
-			Meso:  view.Meso,
-			Items: l.miniRoomItems(view.Items),
+			Meso:  view.Meso(),
+			Items: l.miniRoomItems(view.Items()),
 		},
 	}
-	for i, visitor := range view.Visitors {
+	for i, visitor := range view.Visitors() {
 		if visitor == nil {
 			continue
 		}
 		enter.Visitors = append(enter.Visitors, response.MiniRoomVisitor{
 			Slot:      uint8(i + 1),
-			Character: visitor,
+			Character: visitor.BuildS2C(),
 		})
 	}
-	for _, sale := range view.Sold {
+	for _, sale := range view.Sold() {
 		enter.Sold = append(enter.Sold, response.MiniRoomSale{
 			ItemID:  sale.ItemID,
 			Bundles: sale.Bundles,
@@ -116,8 +116,8 @@ func (l *CharacterListenerImpl) OnMiniRoomLeft(ch *game.Character, slot uint8, r
 
 func (l *CharacterListenerImpl) OnMiniRoomItems(ch *game.Character, view game.EntrustedShopView) {
 	ch.Send(&response.MiniRoomItems{
-		Meso:  view.Meso,
-		Items: l.miniRoomItems(view.Items),
+		Meso:  view.Meso(),
+		Items: l.miniRoomItems(view.Items()),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -126,7 +126,7 @@ func (l *CharacterListenerImpl) OnMiniRoomBuyFailed(ch *game.Character, result p
 }
 
 func (l *CharacterListenerImpl) OnMiniRoomArranged(ch *game.Character, view game.EntrustedShopView) {
-	ch.Send(&response.MiniRoomArranged{Meso: view.Meso}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.MiniRoomArranged{Meso: view.Meso()}, types.SEND_POLICY_ENCRYPT)
 	l.OnMiniRoomItems(ch, view)
 }
 
@@ -139,14 +139,14 @@ func (l *CharacterListenerImpl) OnMiniRoomMesoWithdrawn(ch *game.Character) {
 }
 
 func (l *CharacterListenerImpl) OnOpenStoreBank(ch *game.Character, npcID uint32) {
-	meso := int32(min(ch.StoreBank.Meso, math.MaxInt32))
+	meso := int32(min(ch.StoreBank().Meso(), math.MaxInt32))
 	tabs := map[constant.InventoryType][]dto.Item{}
 	for invType := constant.InventoryTypeEquipment; invType <= constant.InventoryTypeCash; invType++ {
 		tabs[invType] = []dto.Item{}
 	}
-	for _, listed := range ch.StoreBank.Items {
-		invType := listed.Item.GetInventoryType()
-		tabs[invType] = append(tabs[invType], listed.Item.Clone(listed.Bundles*listed.PerBundle).BuildS2C())
+	for _, listed := range ch.StoreBank().Items() {
+		invType := listed.Item().GetInventoryType()
+		tabs[invType] = append(tabs[invType], listed.Item().Clone(listed.Bundles()*listed.PerBundle()).BuildS2C())
 	}
 	ch.Send(&response.StoreBankOpen{
 		NpcID: npcID,

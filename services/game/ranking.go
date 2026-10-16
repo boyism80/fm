@@ -1,8 +1,8 @@
 package game
 
 type Ranking struct {
-	World     uint32
-	WorldDiff int32
-	Class     uint32
-	ClassDiff int32
+	world     uint32
+	worldDiff int32
+	class     uint32
+	classDiff int32
 }

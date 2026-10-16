@@ -1,16 +1,19 @@
 package game
 
-import "github.com/boyism80/fm/protocol/dto"
+import (
+	"github.com/boyism80/fm/protocol/dto"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+)
 
 type Alliance struct {
-	GameWorld         GameWorld
-	AllianceID        uint32
-	LeaderCharacterID uint32
-	Name              string
-	RankTitles        [5]string
-	GuildIDs          []uint32
-	Capacity          uint32
-	Notice            string
+	gameWorld         GameWorld
+	allianceID        uint32
+	leaderCharacterID uint32
+	name              string
+	rankTitles        [5]string
+	guildIDs          []uint32
+	capacity          uint32
+	notice            string
 }
 
 func (a *Alliance) Clone() *Alliance {
@@ -18,30 +21,49 @@ func (a *Alliance) Clone() *Alliance {
 		return nil
 	}
 	return &Alliance{
-		GameWorld:         a.GameWorld,
-		AllianceID:        a.AllianceID,
-		LeaderCharacterID: a.LeaderCharacterID,
-		Name:              a.Name,
-		RankTitles:        a.RankTitles,
-		GuildIDs:          append([]uint32(nil), a.GuildIDs...),
-		Capacity:          a.Capacity,
-		Notice:            a.Notice,
+		gameWorld:         a.gameWorld,
+		allianceID:        a.allianceID,
+		leaderCharacterID: a.leaderCharacterID,
+		name:              a.name,
+		rankTitles:        a.rankTitles,
+		guildIDs:          append([]uint32(nil), a.guildIDs...),
+		capacity:          a.capacity,
+		notice:            a.notice,
 	}
 }
 
-func AllianceFromInfo(gw GameWorld, info *dto.AllianceInfo) *Alliance {
-	if info == nil {
+func (a *Alliance) BuildS2C() *dto.AllianceInfo {
+	if a == nil {
 		return nil
 	}
-	guildIDs := append([]uint32(nil), info.GuildIDs...)
+	return &dto.AllianceInfo{
+		AllianceID: a.allianceID,
+		Name:       a.name,
+		RankTitles: a.rankTitles,
+		GuildIDs:   append([]uint32(nil), a.guildIDs...),
+		Capacity:   a.capacity,
+		Notice:     a.notice,
+	}
+}
+
+func allianceFromProto(gw GameWorld, pb *internal.Alliance) *Alliance {
+	if pb == nil || pb.GetAllianceId() == 0 {
+		return nil
+	}
+	var rankTitles [5]string
+	titles := pb.GetRankTitles()
+	for i := 0; i < len(rankTitles) && i < len(titles); i++ {
+		rankTitles[i] = titles[i]
+	}
 	return &Alliance{
-		GameWorld:  gw,
-		AllianceID: info.AllianceID,
-		Name:       info.Name,
-		RankTitles: info.RankTitles,
-		GuildIDs:   guildIDs,
-		Capacity:   info.Capacity,
-		Notice:     info.Notice,
+		gameWorld:         gw,
+		allianceID:        pb.GetAllianceId(),
+		leaderCharacterID: pb.GetLeaderCharacterId(),
+		name:              pb.GetName(),
+		rankTitles:        rankTitles,
+		guildIDs:          append([]uint32(nil), pb.GetGuildIds()...),
+		capacity:          pb.GetCapacity(),
+		notice:            pb.GetNotice(),
 	}
 }
 
@@ -49,8 +71,8 @@ func (a *Alliance) CanSendInvite(inviterCharacterID uint32) bool {
 	if a == nil || inviterCharacterID == 0 {
 		return false
 	}
-	if uint32(len(a.GuildIDs)) >= a.Capacity {
+	if uint32(len(a.guildIDs)) >= a.capacity {
 		return false
 	}
-	return a.LeaderCharacterID == inviterCharacterID
+	return a.leaderCharacterID == inviterCharacterID
 }

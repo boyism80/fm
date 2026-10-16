@@ -18,8 +18,8 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Npc expected")
 				return 0
 			}
-			if npc.Wz != nil && npc.Wz.BaseSpawn != nil {
-				L.Push(lua.LNumber(npc.Wz.BaseSpawn.ID))
+			if npc.wz != nil && npc.wz.BaseSpawn != nil {
+				L.Push(lua.LNumber(npc.wz.BaseSpawn.ID))
 			} else {
 				L.Push(lua.LNumber(0))
 			}
@@ -43,11 +43,11 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Npc expected")
 				return 0
 			}
-			if npc.Wz == nil {
+			if npc.wz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, npc.Wz))
+			L.Push(luax.NewLuable(L, npc.wz))
 			return 1
 		},
 	}
@@ -58,8 +58,8 @@ func LuaCheckNpcID(L *lua.LState, idx int) (uint32, bool) {
 	case lua.LNumber:
 		return uint32(v), true
 	case *lua.LUserData:
-		if npc, ok := v.Value.(*Npc); ok && npc.Wz != nil && npc.Wz.BaseSpawn != nil {
-			return uint32(npc.Wz.BaseSpawn.ID), true
+		if npc, ok := v.Value.(*Npc); ok && npc.wz != nil && npc.wz.BaseSpawn != nil {
+			return uint32(npc.wz.BaseSpawn.ID), true
 		}
 	}
 	L.ArgError(idx, "Npc or npc id expected")

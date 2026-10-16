@@ -10,9 +10,20 @@ type FamilyDescendants struct {
 	Count       uint32
 }
 
+type FamilyMember struct {
+	CharacterID     uint32
+	SeniorID        uint32
+	Name            string
+	Level           uint32
+	ClassID         uint32
+	Reputation      uint32
+	TotalReputation uint32
+	ChannelID       int32
+}
+
 type FamilyChart struct {
 	CharacterID  uint32
-	Members      []*internal.FamilyMember
+	Members      []FamilyMember
 	GrandJuniors []FamilyDescendants
 	MemberCount  uint32
 	UsedFeatures []internal.FamilyFeature
@@ -27,18 +38,18 @@ func (p *FamilyChart) Serialize(w *stream.StreamWriter) error {
 
 	w.WriteU32(uint32(len(p.Members)))
 	for _, m := range p.Members {
-		w.WriteU32(m.GetCharacterId())
-		w.WriteU32(m.GetSeniorId())
-		w.WriteU16(uint16(m.GetClassId()))
-		w.WriteU8(uint8(m.GetLevel()))
-		w.WriteBoolean(m.GetChannelId() >= 0)
-		w.WriteU32(m.GetReputation())
-		w.WriteU32(m.GetTotalReputation())
+		w.WriteU32(m.CharacterID)
+		w.WriteU32(m.SeniorID)
+		w.WriteU16(uint16(m.ClassID))
+		w.WriteU8(uint8(m.Level))
+		w.WriteBoolean(m.ChannelID >= 0)
+		w.WriteU32(m.Reputation)
+		w.WriteU32(m.TotalReputation)
 		w.WriteU32(0)
 		w.WriteU32(0)
-		w.Write32(max(0, m.GetChannelId()))
+		w.Write32(max(0, m.ChannelID))
 		w.WriteU32(0)
-		w.WriteStr16(m.GetName())
+		w.WriteStr16(m.Name)
 	}
 
 	w.WriteU32(uint32(2 + len(p.GrandJuniors)))
@@ -64,19 +75,19 @@ func (p *FamilyChart) Deserialize(reader *stream.StreamReader) {
 	p.CharacterID = reader.ReadU32()
 	count := int(reader.ReadU32())
 	for range count {
-		m := &internal.FamilyMember{
-			CharacterId: reader.ReadU32(),
-			SeniorId:    reader.ReadU32(),
-			ClassId:     uint32(reader.ReadU16()),
+		m := FamilyMember{
+			CharacterID: reader.ReadU32(),
+			SeniorID:    reader.ReadU32(),
+			ClassID:     uint32(reader.ReadU16()),
 			Level:       uint32(reader.ReadU8()),
 		}
 		online := reader.ReadBool()
 		m.Reputation = reader.ReadU32()
 		m.TotalReputation = reader.ReadU32()
 		reader.Skip(8)
-		m.ChannelId = reader.Read32()
+		m.ChannelID = reader.Read32()
 		if !online {
-			m.ChannelId = -1
+			m.ChannelID = -1
 		}
 		reader.Skip(4)
 		m.Name = reader.ReadStr16()

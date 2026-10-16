@@ -27,32 +27,32 @@ func (qc *Quests) Load(pbs []*internal.Quest) {
 		if q == nil {
 			continue
 		}
-		q.Status = status
-		q.MobKills = make(map[uint32]int, len(pb.GetMobKills()))
+		q.status = status
+		q.mobKills = make(map[uint32]int, len(pb.GetMobKills()))
 		for mobID, kills := range pb.GetMobKills() {
-			q.MobKills[mobID] = int(kills)
+			q.mobKills[mobID] = int(kills)
 		}
-		q.StatusRecord.WriteString(pb.GetStatusRecord())
+		q.statusRecord.WriteString(pb.GetStatusRecord())
 		if ms := pb.GetDeadlineUnixMs(); ms > 0 {
-			q.Deadline = time.UnixMilli(ms)
+			q.deadline = time.UnixMilli(ms)
 		} else {
-			q.Deadline = time.Time{}
+			q.deadline = time.Time{}
 		}
 		if ms := pb.GetStartTimeUnixMs(); ms > 0 {
-			q.StartTime = time.UnixMilli(ms)
+			q.startTime = time.UnixMilli(ms)
 		} else {
-			q.StartTime = time.Time{}
+			q.startTime = time.Time{}
 		}
-		q.RecordEx = make(map[string]string, len(pb.GetRecordEx()))
+		q.recordEx = make(map[string]string, len(pb.GetRecordEx()))
 		for key, value := range pb.GetRecordEx() {
-			q.RecordEx[key] = value
+			q.recordEx[key] = value
 		}
 		if ms := pb.GetCompletionTimeUnixMs(); ms > 0 {
-			q.CompletionTime = time.UnixMilli(ms)
+			q.completionTime = time.UnixMilli(ms)
 		} else {
-			q.CompletionTime = time.Time{}
+			q.completionTime = time.Time{}
 		}
-		q.Forfeited = int(pb.GetForfeited())
+		q.forfeited = int(pb.GetForfeited())
 	}
 }
 
@@ -62,43 +62,43 @@ func (qc *Quests) BuildRPC() []*internal.Quest {
 		if q == nil {
 			return
 		}
-		if q.Status != QuestStatusStarted && q.Status != QuestStatusCompleted && q.Forfeited == 0 && len(q.RecordEx) == 0 {
+		if q.status != QuestStatusStarted && q.status != QuestStatusCompleted && q.forfeited == 0 && len(q.recordEx) == 0 {
 			return
 		}
-		mobKills := make(map[uint32]uint32, len(q.MobKills))
-		for mobID, kills := range q.MobKills {
+		mobKills := make(map[uint32]uint32, len(q.mobKills))
+		for mobID, kills := range q.mobKills {
 			if kills < 0 {
 				continue
 			}
 			mobKills[mobID] = uint32(kills)
 		}
-		recordEx := make(map[string]string, len(q.RecordEx))
-		for key, value := range q.RecordEx {
+		recordEx := make(map[string]string, len(q.recordEx))
+		for key, value := range q.recordEx {
 			recordEx[key] = value
 		}
 		var completionTimeUnixMs int64
-		if !q.CompletionTime.IsZero() {
-			completionTimeUnixMs = q.CompletionTime.UnixMilli()
+		if !q.completionTime.IsZero() {
+			completionTimeUnixMs = q.completionTime.UnixMilli()
 		}
 		var deadlineUnixMs int64
-		if !q.Deadline.IsZero() {
-			deadlineUnixMs = q.Deadline.UnixMilli()
+		if !q.deadline.IsZero() {
+			deadlineUnixMs = q.deadline.UnixMilli()
 		}
 		var startTimeUnixMs int64
-		if !q.StartTime.IsZero() {
-			startTimeUnixMs = q.StartTime.UnixMilli()
+		if !q.startTime.IsZero() {
+			startTimeUnixMs = q.startTime.UnixMilli()
 		}
 		out = append(out, &internal.Quest{
 			CharacterId:          qc.owner.GetID(),
 			QuestId:              questID,
-			Status:               uint32(q.Status),
+			Status:               uint32(q.status),
 			MobKills:             mobKills,
-			StatusRecord:         q.StatusRecord.AsString(),
+			StatusRecord:         q.statusRecord.AsString(),
 			RecordEx:             recordEx,
 			CompletionTimeUnixMs: completionTimeUnixMs,
 			DeadlineUnixMs:       deadlineUnixMs,
 			StartTimeUnixMs:      startTimeUnixMs,
-			Forfeited:            uint32(q.Forfeited),
+			Forfeited:            uint32(q.forfeited),
 		})
 	})
 	return out

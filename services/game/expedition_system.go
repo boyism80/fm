@@ -39,7 +39,7 @@ func NewExpeditionSystem(gw GameWorld) *ExpeditionSystem {
 
 func (b *expeditionBoard) reservationIndex(id uint32) int {
 	for i, reservation := range b.reservations {
-		if reservation.member.ID == id {
+		if reservation.member.id == id {
 			return i
 		}
 	}
@@ -58,38 +58,38 @@ func (r *ExpeditionSystem) Register(name string, leader *Character, spec Expedit
 		r.mu.Unlock()
 		return nil, ErrExpeditionExists
 	}
-	if len(board.battles) >= spec.MaxBattles {
+	if len(board.battles) >= spec.maxBattles {
 		r.mu.Unlock()
 		return nil, ErrExpeditionBattling
 	}
 
 	e := &Expedition{
-		Name:     name,
-		Spec:     spec,
-		Leader:   leader,
-		BeginMap: leader.GetMap(),
-		Deadline: time.Now().Add(time.Duration(spec.RecruitMs) * time.Millisecond),
+		name:     name,
+		spec:     spec,
+		leader:   leader,
+		beginMap: leader.GetMap(),
+		deadline: time.Now().Add(time.Duration(spec.recruitMs) * time.Millisecond),
 		members:  []*ExpeditionMember{NewExpeditionMember(leader)},
 		registry: r,
 	}
 	if i := board.reservationIndex(leader.GetID()); i >= 0 {
 		board.reservations = append(board.reservations[:i], board.reservations[i+1:]...)
 	}
-	e.expiry = time.AfterFunc(time.Duration(spec.RecruitMs)*time.Millisecond, func() {
+	e.expiry = time.AfterFunc(time.Duration(spec.recruitMs)*time.Millisecond, func() {
 		r.expire(e)
 	})
 	board.recruiting = e
 	r.mu.Unlock()
 
-	seconds := int32(spec.RecruitMs / 1000)
-	notice := leader.GetName() + spec.Notice
-	for _, obj := range e.BeginMap.GetAllPlayers() {
+	seconds := int32(spec.recruitMs / 1000)
+	notice := leader.GetName() + spec.notice
+	for _, obj := range e.beginMap.GetAllPlayers() {
 		ch, ok := obj.(*Character)
 		if !ok {
 			continue
 		}
-		ch.Listener.OnClock(ch, seconds)
-		ch.Listener.OnMessage(ch, constant.MsgLightBlueText, notice)
+		ch.listener.OnClock(ch, seconds)
+		ch.listener.OnMessage(ch, constant.MsgLightBlueText, notice)
 	}
 	return e, nil
 }
@@ -150,7 +150,7 @@ func (r *ExpeditionSystem) Reservations(name string) []ExpeditionMember {
 
 func (r *ExpeditionSystem) expire(e *Expedition) {
 	r.mu.Lock()
-	board := r.boards[e.Name]
+	board := r.boards[e.name]
 	if board == nil || board.recruiting != e {
 		r.mu.Unlock()
 		return
@@ -161,14 +161,14 @@ func (r *ExpeditionSystem) expire(e *Expedition) {
 
 	e.stopClock()
 	for _, member := range members {
-		member.character.Listener.OnMessage(member.character, constant.MsgPinkText, constant.ExpeditionExpiredMessage)
+		member.character.listener.OnMessage(member.character, constant.MsgPinkText, constant.ExpeditionExpiredMessage)
 	}
-	r.promote(e.Name)
+	r.promote(e.name)
 }
 
 func (r *ExpeditionSystem) disband(e *Expedition) error {
 	r.mu.Lock()
-	board := r.boards[e.Name]
+	board := r.boards[e.name]
 	if board == nil || board.recruiting != e {
 		r.mu.Unlock()
 		return ErrExpeditionClosed
@@ -180,16 +180,16 @@ func (r *ExpeditionSystem) disband(e *Expedition) error {
 
 	e.stopClock()
 	for _, member := range members[1:] {
-		member.character.Listener.OnMessage(member.character, constant.MsgPinkText, constant.ExpeditionDisbandedMessage)
+		member.character.listener.OnMessage(member.character, constant.MsgPinkText, constant.ExpeditionDisbandedMessage)
 	}
-	r.promote(e.Name)
+	r.promote(e.name)
 	return nil
 }
 
 func (r *ExpeditionSystem) promote(name string) {
 	r.mu.Lock()
 	board := r.boards[name]
-	if board == nil || board.recruiting != nil || len(board.battles) >= board.spec.MaxBattles || len(board.reservations) == 0 {
+	if board == nil || board.recruiting != nil || len(board.battles) >= board.spec.maxBattles || len(board.reservations) == 0 {
 		r.mu.Unlock()
 		return
 	}
@@ -199,12 +199,12 @@ func (r *ExpeditionSystem) promote(name string) {
 	r.mu.Unlock()
 
 	r.gw.Systems().Get[*MapSystem]().Visit(reservation.field, func(actor.Context) {
-		leader := reservation.field.GetPlayer(reservation.member.ID)
+		leader := reservation.field.GetPlayer(reservation.member.id)
 		if leader == nil {
-			notice := fmt.Sprintf(constant.ExpeditionSkippedMessage, reservation.member.Name)
+			notice := fmt.Sprintf(constant.ExpeditionSkippedMessage, reservation.member.name)
 			for _, obj := range reservation.field.GetAllPlayers() {
 				if ch, ok := obj.(*Character); ok {
-					ch.Listener.OnMessage(ch, constant.MsgLightBlueText, notice)
+					ch.listener.OnMessage(ch, constant.MsgLightBlueText, notice)
 				}
 			}
 			r.promote(name)
@@ -232,7 +232,7 @@ func (r *ExpeditionSystem) LeaveChannel(ch *Character) {
 		if e == nil {
 			continue
 		}
-		if e.Leader.GetID() == id {
+		if e.leader.GetID() == id {
 			disbanded = append(disbanded, e)
 			continue
 		}
@@ -250,7 +250,7 @@ func (r *ExpeditionSystem) LeaveChannel(ch *Character) {
 		_ = r.disband(e)
 	}
 	for _, e := range left {
-		e.Leader.Listener.OnMessage(e.Leader, constant.MsgPinkText, fmt.Sprintf(constant.ExpeditionLeftMessage, ch.GetName()))
+		e.leader.listener.OnMessage(e.leader, constant.MsgPinkText, fmt.Sprintf(constant.ExpeditionLeftMessage, ch.GetName()))
 	}
 }
 
@@ -278,7 +278,7 @@ func (r *ExpeditionSystem) SyncClock(ch *Character, m *Map) {
 	r.mu.Lock()
 	var recruiting *Expedition
 	for _, board := range r.boards {
-		if board.recruiting != nil && board.recruiting.BeginMap == m {
+		if board.recruiting != nil && board.recruiting.beginMap == m {
 			recruiting = board.recruiting
 			break
 		}
@@ -292,5 +292,5 @@ func (r *ExpeditionSystem) SyncClock(ch *Character, m *Map) {
 	if left <= 0 {
 		return
 	}
-	ch.Listener.OnClock(ch, int32(left/1000))
+	ch.listener.OnClock(ch, int32(left/1000))
 }
