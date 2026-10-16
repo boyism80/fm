@@ -5,13 +5,14 @@ import (
 	"math/rand"
 	"slices"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
 )
 
 var ErrCannotScroll = errors.New("cannot scroll equipment")
 
-func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
+func (ch *Character) Scroll(actx actor.Context, scrollSlot int16, targetSlot int16) error {
 	if scrollSlot <= 0 {
 		return ErrCannotScroll
 	}
@@ -21,7 +22,7 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 		return ErrCannotScroll
 	}
 	scroll, ok := scrollItem.GetModel().(*wz.Consume)
-	if !ok {
+	if !ok || scroll.GetTraits()&constant.ItemTraitScroll == 0 {
 		return ErrCannotScroll
 	}
 
@@ -98,8 +99,10 @@ func (ch *Character) Scroll(scrollSlot int16, targetSlot int16) error {
 	}
 	if destroyed {
 		if targetSlot < 0 {
-			delete(ch.inventory.equipped, constant.EquipmentPartsType(targetSlot))
+			parts := constant.EquipmentPartsType(targetSlot)
+			delete(ch.inventory.equipped, parts)
 			ch.listener.OnUpdateCharacterLook(ch)
+			ch.onEquipmentChanged(actx, parts, target, nil)
 		} else {
 			equipInventory.Remove(uint8(targetSlot))
 		}

@@ -420,6 +420,7 @@ func (s *MapSystem) Warp(actorCtx actor.Context, character *Character, targetMap
 			ticket.Release()
 			return err
 		}
+		character.Account().Storage().Close()
 		err := targetMap.AddPlayer(actorCtx, character.GetID(), character, spawnPoint, false)
 		ticket.Release()
 		if err != nil {
@@ -446,6 +447,7 @@ func (s *MapSystem) Warp(actorCtx actor.Context, character *Character, targetMap
 		ticket.Release()
 		return err
 	}
+	character.Account().Storage().Close()
 	actorCtx.Send(targetPID, &WarpCharacter{
 		Character: character,
 		TargetMap: targetMap,

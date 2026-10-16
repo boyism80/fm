@@ -64,6 +64,8 @@ func (model *ItemCore) classify() {
 		model.Traits |= constant.ItemTraitSummonBag
 	case 227:
 		model.Traits |= constant.ItemTraitCatchItem
+	case 204, 234:
+		model.Traits |= constant.ItemTraitScroll
 	case 228, 229:
 		model.Traits |= constant.ItemTraitSkillBook
 	case 231, 523:

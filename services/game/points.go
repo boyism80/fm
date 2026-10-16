@@ -42,15 +42,19 @@ func (p *Points) AssignAll(entries []APEntry) bool {
 }
 
 func (p *Points) AssignStats(entries []APEntry) bool {
+	combined := map[constant.StatType]uint32{}
 	total := uint32(0)
 	for _, e := range entries {
-		if !p.owner.stats.canAdd(e.Stat, e.Amount) {
-			return false
-		}
+		combined[e.Stat] += uint32(e.Amount)
 		total += uint32(e.Amount)
 	}
 	if total > uint32(p.ap) {
 		return false
+	}
+	for stat, amount := range combined {
+		if amount > math.MaxUint16 || !p.owner.stats.canAdd(stat, uint16(amount)) {
+			return false
+		}
 	}
 
 	statUpdate := map[constant.Stat]int32{}
@@ -71,14 +75,14 @@ func (p *Points) AssignHPMP(stat constant.StatType) bool {
 	statUpdate := map[constant.Stat]int32{}
 	switch stat {
 	case constant.StatTypeHP:
-		if p.owner.GetMaxHp() >= constant.StatMaxHPMP {
+		if int64(p.owner.baseHp)+int64(p.owner.bonusHp) >= int64(constant.StatMaxHPMP) {
 			return false
 		}
 		p.owner.AddBaseHp(p.hpmpIncrease("get_ap_to_hp", 10), false)
 		statUpdate[constant.StatHP] = int32(p.owner.GetHp())
 		statUpdate[constant.StatMaxHP] = int32(p.owner.GetMaxHp())
 	case constant.StatTypeMP:
-		if p.owner.GetMaxMp() >= constant.StatMaxHPMP {
+		if int64(p.owner.baseMp)+int64(p.owner.bonusMp) >= int64(constant.StatMaxHPMP) {
 			return false
 		}
 		p.owner.AddBaseMp(p.hpmpIncrease("get_ap_to_mp", 5), false)

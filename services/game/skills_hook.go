@@ -43,12 +43,17 @@ func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, dir
 		return false
 	}
 	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
-		if !sc.owner.inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+		if !sc.owner.inventory.HasItemCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
 			return false
 		}
 	}
 	if !sc.CallHook(actx, entry, "on_activated", args) {
 		return false
+	}
+	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
+		if !sc.owner.inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+			return false
+		}
 	}
 
 	if levelData.Cooldown > 0 && !entry.wz.ManualCooldown {

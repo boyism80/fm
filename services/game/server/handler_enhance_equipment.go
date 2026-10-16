@@ -31,7 +31,7 @@ func (h *EnhanceEquipment) Handle(ctx *core.ClientContext, req *request.EnhanceE
 		return nil
 	}
 
-	if err := ch.Scroll(req.ScrollSlot, req.TargetSlot); err != nil {
+	if err := ch.Scroll(ctx.ActorContext, req.ScrollSlot, req.TargetSlot); err != nil {
 		ch.Listener().OnUpdateStats(ch, nil, true)
 	}
 	return nil

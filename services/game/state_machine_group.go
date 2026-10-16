@@ -289,23 +289,32 @@ func (g *StateMachineGroup) checkCreateLocked(id string) error {
 	if existing := g.machines[id]; existing != nil && !existing.Disposed() {
 		return fmt.Errorf("state machine %s is already running", id)
 	}
+	c := g.capLocked()
+	if !c.limited {
+		return nil
+	}
+	if g.runningLocked() >= c.max {
+		return ErrStateMachineLimit
+	}
+	return nil
+}
+
+func (g *StateMachineGroup) capLocked() MachineCap {
 	c := g.machineCap
 	if g.capOverride != nil {
 		c = *g.capOverride
 	}
-	if !c.limited {
-		return nil
-	}
+	return c
+}
+
+func (g *StateMachineGroup) runningLocked() int {
 	running := 0
 	for _, sm := range g.machines {
-		if !sm.Disposed() {
+		if sm != nil && !sm.Disposed() {
 			running++
 		}
 	}
-	if running >= c.max {
-		return ErrStateMachineLimit
-	}
-	return nil
+	return running
 }
 
 func (g *StateMachineGroup) Full() bool {
@@ -314,20 +323,11 @@ func (g *StateMachineGroup) Full() bool {
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	c := g.machineCap
-	if g.capOverride != nil {
-		c = *g.capOverride
-	}
+	c := g.capLocked()
 	if !c.limited {
 		return false
 	}
-	running := 0
-	for _, sm := range g.machines {
-		if sm != nil && !sm.Disposed() {
-			running++
-		}
-	}
-	return running >= c.max
+	return g.runningLocked() >= c.max
 }
 
 func (g *StateMachineGroup) EnterPlayer(sm *StateMachine, ch *Character) {
