@@ -114,6 +114,42 @@ export class CashShopRepository {
         );
     }
 
+    async isTransferCompleted(worldId: number, request: CashTransferRequest): Promise<boolean> {
+        const res = await this.ctx.getPgDataPool(worldId, request.source_id).query(
+            "SELECT completed FROM cash_transfer_requests WHERE request_id = $1",
+            [request.request_id]
+        );
+        const row = res.rows[0] as { completed: boolean } | undefined;
+        return row?.completed === true;
+    }
+
+    async claimTransfer(requestId: string, client: PoolClient): Promise<boolean> {
+        const res = await client.query(
+            "UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1 AND completed = FALSE RETURNING request_id",
+            [requestId]
+        );
+        return (res.rowCount ?? 0) > 0;
+    }
+
+    async completeRingTransfers(sourceId: number, serials: string[], client: PoolClient): Promise<void> {
+        if (serials.length === 0) {
+            return;
+        }
+        await client.query(
+            `UPDATE cash_transfer_requests
+             SET completed = TRUE
+             WHERE completed = FALSE AND source_id = $1 AND kind = 'ring' AND detail->>'serial' = ANY($2::text[])`,
+            [sourceId, serials]
+        );
+    }
+
+    async deleteRing(worldId: number, characterId: number, serial: string): Promise<void> {
+        await this.ctx.getPgDataPool(worldId, characterId).query(
+            "DELETE FROM cash_rings WHERE character_id = $1 AND serial = $2",
+            [characterId, serial]
+        );
+    }
+
     async findBalance(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<CashBalance> {
         const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         const res = await client.query("SELECT nx_cash, maple_point FROM accounts WHERE id = $1", [accountId]);
