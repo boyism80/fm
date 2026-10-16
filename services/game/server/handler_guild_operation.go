@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
@@ -75,34 +74,31 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 
 		detail := game.GuildCreateDetail{Name: req.GuildName, Meso: gameconst.GuildCreateMesoCost}
 		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE, 0, detail)
-		h.gs.systems.Get[*game.GuildSystem]().CreateAsync(ctx.ActorContext, ch, id, detail.Name).Do(func(reply *internal.CreateGuildReply) error {
-			ch.Resume(func(actor.Context) {
-				ch.Unsettled.Erase(id)
-				if !reply.GetOk() {
-					if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
-						ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
-					} else {
-						log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
-						ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
-					}
-					ch.Inventory.AddMeso(detail.Meso)
-					return
-				}
-				guildPb := reply.GetGuild()
-				if guildPb == nil {
-					log.Printf("GuildOperation(create): ok but missing guild character=%d", charID)
+		h.gs.systems.Get[*game.GuildSystem]().CreateAsync(ctx.ActorContext, ch, id, detail.Name).Bind(ch).Do(func(reply *internal.CreateGuildReply) error {
+			ch.Unsettled.Erase(id)
+			if !reply.GetOk() {
+				if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
+					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
+				} else {
+					log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
 					ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
-					return
 				}
-				h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
-				ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreatedMessage)
-			})
+				ch.Inventory.AddMeso(detail.Meso)
+				return nil
+			}
+			guildPb := reply.GetGuild()
+			if guildPb == nil {
+				log.Printf("GuildOperation(create): ok but missing guild character=%d", charID)
+				ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
+				return nil
+			}
+			h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreatedMessage)
 			return nil
 		}).OnError(func(err error) {
-			ch.Resume(func(actor.Context) {
-				ch.Unsettled.Find(id).InFlight = false
-				ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
-			})
+			ch.Unsettled.Find(id).InFlight = false
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
+
 			log.Printf("GuildOperation(create) character=%d id=%d: %v", charID, id, err)
 		})
 		return nil
@@ -169,9 +165,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				log.Printf("GuildOperation(accept invite): ok but missing guild character=%d", charID)
 				return nil
 			}
-			ch.Resume(func(actor.Context) {
-				h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
-			})
+			h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
 			return nil
 		})
 		promise.OnError(func(err error) {
@@ -337,22 +331,19 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			LogoBgColor: uint32(req.LogoBGColor),
 		}
 		id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM, uint64(guildID), detail)
-		h.gs.systems.Get[*game.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo).Do(func(reply *internal.ChangeGuildEmblemReply) error {
-			ch.Resume(func(actor.Context) {
-				ch.Unsettled.Erase(id)
-				if !reply.GetOk() {
-					h.gs.systems.Get[*game.GuildSystem]().RefundEmblem(ch, detail)
-					if reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD &&
-						reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_AUTHORIZED {
-						log.Printf("GuildOperation(change emblem): failed character=%d code=%v", charID, reply.GetErrorCode())
-					}
+		h.gs.systems.Get[*game.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
+			ch.Unsettled.Erase(id)
+			if !reply.GetOk() {
+				h.gs.systems.Get[*game.GuildSystem]().RefundEmblem(ch, detail)
+				if reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD &&
+					reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_NOT_AUTHORIZED {
+					log.Printf("GuildOperation(change emblem): failed character=%d code=%v", charID, reply.GetErrorCode())
 				}
-			})
+			}
 			return nil
 		}).OnError(func(err error) {
-			ch.Resume(func(actor.Context) {
-				ch.Unsettled.Find(id).InFlight = false
-			})
+			ch.Unsettled.Find(id).InFlight = false
+
 			log.Printf("GuildOperation(change emblem) character=%d id=%d: %v", charID, id, err)
 		})
 		return nil

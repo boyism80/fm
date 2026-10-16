@@ -267,11 +267,9 @@ func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType c
 		causer = m.Wz.ID
 	}
 	mist := &Mist{
-		ObjectCore: ObjectCore{
-			Position:  position,
-			GameWorld: mapInstance.GameWorld,
-			Map:       nil,
-		},
+		Position:             position,
+		GameWorld:            mapInstance.GameWorld,
+		Map:                  nil,
 		Causer:               causer,
 		SkillWz:              skill.LevelData.SkillWz,
 		MobLevelData:         skill.LevelData,

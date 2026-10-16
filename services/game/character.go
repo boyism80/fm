@@ -282,7 +282,10 @@ func (ch *Character) GetSpawnPoint() uint8 {
 
 func (ch *Character) SetHp(v uint32, notify bool) {
 	wasAlive := ch.IsAlive()
-	ch.LifeCore.setHp(v)
+	if max := ch.GetMaxHp(); v > max {
+		v = max
+	}
+	ch.hp = v
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 	}
@@ -300,7 +303,10 @@ func (ch *Character) die() {
 }
 
 func (ch *Character) SetMp(v uint32, notify bool) {
-	ch.LifeCore.setMp(v)
+	if max := ch.GetMaxMp(); v > max {
+		v = max
+	}
+	ch.mp = v
 	if !notify {
 		return
 	}
@@ -308,7 +314,10 @@ func (ch *Character) SetMp(v uint32, notify bool) {
 }
 
 func (ch *Character) SetBonusHp(v int32, notify bool) {
-	ch.LifeCore.SetBonusHp(v, false)
+	ch.BonusHp = v
+	if ch.GetHp() > ch.GetMaxHp() {
+		ch.SetHp(ch.GetMaxHp(), false)
+	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatHP:    int32(ch.GetHp()),
@@ -318,7 +327,10 @@ func (ch *Character) SetBonusHp(v int32, notify bool) {
 }
 
 func (ch *Character) SetBonusMp(v int32, notify bool) {
-	ch.LifeCore.SetBonusMp(v, false)
+	ch.BonusMp = v
+	if ch.GetMp() > ch.GetMaxMp() {
+		ch.SetMp(ch.GetMaxMp(), false)
+	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.StatMP:    int32(ch.GetMp()),
@@ -660,9 +672,9 @@ func (ch *Character) LoggedOut() bool {
 }
 
 // An RPC reply returns to the actor that sent the request, which the character may have left by moving maps.
-// Resume runs fn on the actor that owns the character now. It skips fn once the character has left the channel or
+// Post runs fn on the actor that owns the character now. It skips fn once the character has left the channel or
 // logged in again; unsettled requests are settled after that login.
-func (ch *Character) Resume(fn func(actx actor.Context)) {
+func (ch *Character) Post(fn func(actx actor.Context)) {
 	ch.GameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actx actor.Context, current *Character) {
 		if current != ch {
 			return

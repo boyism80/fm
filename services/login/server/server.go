@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -17,12 +18,16 @@ import (
 	"github.com/boyism80/fm/core/system"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/login"
+	"google.golang.org/grpc"
 )
+
+const shutdownWaitTimeout = time.Minute
 
 type LoginServer struct {
 	*core.ServerCore
-	config  *LoginConfig
-	systems *system.Systems
+	config      *LoginConfig
+	systems     *system.Systems
+	disconnects sync.WaitGroup
 }
 
 func (ls *LoginServer) handleClient(c core.Client) {
@@ -168,22 +173,22 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 	transfer := loginClient.TakeTransferDisconnect()
 	log.Printf("Login disconnect: remote=%s account=%d transfer=%v", remoteAddr, accountId, transfer)
 
+	ls.disconnects.Add(1)
 	p := async.NewTask(nil, core.InternalRPCPerStepTimeout)
 	p.OnError(func(err error) {
 		log.Printf("LogoutSession (login disconnect) failed for world=%d account=%d: %v", worldId, accountId, err)
-	})
+	}).Finally(ls.disconnects.Done)
 	p.ThenRPC(func(ctx context.Context) (*internal.LogoutSessionReply, error) {
 		return ls.systems.Get[*rpc.InternalConnection]().Client.LogoutSession(ctx, &internal.LogoutSessionRequest{
 			WorldId:            worldId,
 			AccountId:          accountId,
 			DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_LOGIN_SERVER,
 			TransferDisconnect: transfer,
-		})
+		}, grpc.WaitForReady(true))
 	}, func(reply *internal.LogoutSessionReply) error {
 		log.Printf("LogoutSession (login disconnect): account=%d ok=%v", accountId, reply.GetOk())
 		return nil
 	})
-
 }
 
 func (ls *LoginServer) Start() error {
@@ -205,6 +210,16 @@ func (ls *LoginServer) Start() error {
 func (ls *LoginServer) Stop() error {
 	log.Println("Shutting down login server...")
 	err := ls.ServerCore.Stop()
+	done := make(chan struct{})
+	go func() {
+		ls.disconnects.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownWaitTimeout):
+		log.Printf("shutdown: disconnect logouts did not finish within %v", shutdownWaitTimeout)
+	}
 	ls.systems.Stop()
 	return err
 }

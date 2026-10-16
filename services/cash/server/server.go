@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -18,12 +19,16 @@ import (
 	"github.com/boyism80/fm/maple/wz"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/cash/client"
+	"google.golang.org/grpc"
 )
+
+const shutdownWaitTimeout = time.Minute
 
 type CashShopServer struct {
 	*core.ServerCore
-	config  *config.CashShop
-	systems *system.Systems
+	config      *config.CashShop
+	systems     *system.Systems
+	disconnects sync.WaitGroup
 }
 
 func NewCashShopServer(cfg *config.CashShop) (*CashShopServer, error) {
@@ -95,10 +100,11 @@ func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 
 	characterID := character.ID()
 	cashShopID := uint32(cs.config.CashShopID)
+	cs.disconnects.Add(1)
 	p := async.NewTask(nil, core.InternalRPCPerStepTimeout)
 	p.OnError(func(err error) {
 		log.Printf("LogoutSession (cash shop disconnect) failed for character %d: %v", characterID, err)
-	})
+	}).Finally(cs.disconnects.Done)
 	p.ThenRPC(func(ctx context.Context) (*internal.LogoutSessionReply, error) {
 		return cs.systems.Get[*rpc.InternalConnection]().Client.LogoutSession(ctx, &internal.LogoutSessionRequest{
 			WorldId:          uint32(cs.config.WorldID),
@@ -106,7 +112,7 @@ func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 			DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
 			CharacterId:      &characterID,
 			CashShopId:       &cashShopID,
-		})
+		}, grpc.WaitForReady(true))
 	}, nil)
 }
 
@@ -139,6 +145,16 @@ func (cs *CashShopServer) Start() error {
 
 func (cs *CashShopServer) Stop() error {
 	err := cs.ServerCore.Stop()
+	done := make(chan struct{})
+	go func() {
+		cs.disconnects.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownWaitTimeout):
+		log.Printf("shutdown: disconnect logouts did not finish within %v", shutdownWaitTimeout)
+	}
 	cs.systems.Stop()
 	return err
 }

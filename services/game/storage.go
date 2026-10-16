@@ -106,7 +106,7 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 		return ErrStorageItemNotFound
 	}
 	item := items[index]
-	if item.GetModel().GetTraits()&constant.ItemTraitOnly != 0 && s.owner.Inventory.HasItem(item.GetModel().GetID()) {
+	if s.owner.Inventory.hasOnlyItem(item.GetModel()) {
 		return ErrStorageNotStorable
 	}
 

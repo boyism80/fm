@@ -56,7 +56,7 @@ func (s *GuildSystem) CreateAsync(ctx actor.Context, ch *Character, requestID ui
 		Leader:    GuildMemberFromCharacter(ch, worldID, s.gw.GetChannelID(), internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER).BuildRPC(),
 		RequestId: requestID,
 	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.CreateGuildReply, error) {
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.CreateGuildReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.CreateGuild(c, req)
 	}, nil)
 }
@@ -67,22 +67,19 @@ func (s *GuildSystem) SettleCreate(ctx actor.Context, ch *Character, request *Un
 		log.Printf("guild settle create: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 		return
 	}
-	s.CreateAsync(ctx, ch, request.ID, detail.Name).Do(func(reply *internal.CreateGuildReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(request.ID)
-			if !reply.GetOk() {
-				ch.Inventory.AddMeso(detail.Meso)
-				return
-			}
-			if guildPb := reply.GetGuild(); guildPb != nil {
-				s.ApplyGuildFromProto(ch, guildPb)
-			}
-		})
+	s.CreateAsync(ctx, ch, request.ID, detail.Name).Bind(ch).Do(func(reply *internal.CreateGuildReply) error {
+		ch.Unsettled.Erase(request.ID)
+		if !reply.GetOk() {
+			ch.Inventory.AddMeso(detail.Meso)
+			return nil
+		}
+		if guildPb := reply.GetGuild(); guildPb != nil {
+			s.ApplyGuildFromProto(ch, guildPb)
+		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			request.InFlight = false
-		})
+		request.InFlight = false
+
 		log.Printf("guild settle create: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 	})
 }
@@ -94,7 +91,7 @@ func (s *GuildSystem) ChangeEmblemAsync(ctx actor.Context, ch *Character, reques
 		Logo:        logo,
 		RequestId:   requestID,
 	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.ChangeGuildEmblemReply, error) {
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.ChangeGuildEmblemReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.ChangeGuildEmblem(c, req)
 	}, nil)
 }
@@ -120,18 +117,15 @@ func (s *GuildSystem) SettleEmblem(ctx actor.Context, ch *Character, request *Un
 		log.Printf("guild settle emblem: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 		return
 	}
-	s.ChangeEmblemAsync(ctx, ch, request.ID, detail.Logo).Do(func(reply *internal.ChangeGuildEmblemReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(request.ID)
-			if !reply.GetOk() {
-				s.RefundEmblem(ch, detail)
-			}
-		})
+	s.ChangeEmblemAsync(ctx, ch, request.ID, detail.Logo).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
+		ch.Unsettled.Erase(request.ID)
+		if !reply.GetOk() {
+			s.RefundEmblem(ch, detail)
+		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			request.InFlight = false
-		})
+		request.InFlight = false
+
 		log.Printf("guild settle emblem: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 	})
 }
@@ -172,7 +166,7 @@ func (s *GuildSystem) DisbandAsync(ctx actor.Context, ch *Character, result *int
 			*result = int(constant.GuildDisbandResultFailed)
 		}
 		return nil
-	}).OnError(func(err error) {
+	}).Bind(ch).OnError(func(err error) {
 		log.Printf("guild disband: character=%d: %v", charID, err)
 		*result = int(constant.GuildDisbandResultFailed)
 	})
@@ -198,13 +192,12 @@ func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extende
 	*result = fail
 	guildID, _ := ch.Guild.ID()
 	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CAPACITY, uint64(guildID), detail)
-	return s.incCapacityAsync(ctx, ch, id, extendedCap).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(id)
-			if !reply.GetOk() {
-				ch.Inventory.AddMeso(detail.Meso)
-			}
-		})
+	return s.incCapacityAsync(ctx, ch, id, extendedCap).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
+		ch.Unsettled.Erase(id)
+		if !reply.GetOk() {
+			ch.Inventory.AddMeso(detail.Meso)
+		}
+
 		if reply.GetOk() {
 			*result = int(constant.GuildIncreaseCapacityResultOK)
 			return nil
@@ -223,9 +216,8 @@ func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extende
 		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Find(id).InFlight = false
-		})
+		ch.Unsettled.Find(id).InFlight = false
+
 		log.Printf("guild inc_capacity: character=%d id=%d: %v", ch.GetID(), id, err)
 		*result = int(constant.GuildIncreaseCapacityResultFailed)
 	})
@@ -238,7 +230,7 @@ func (s *GuildSystem) incCapacityAsync(ctx actor.Context, ch *Character, request
 		ExtendedCap: extendedCap,
 		RequestId:   requestID,
 	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.IncreaseGuildCapacityReply, error) {
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.IncreaseGuildCapacityReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.IncreaseGuildCapacity(c, req)
 	}, nil)
 }
@@ -249,18 +241,15 @@ func (s *GuildSystem) SettleCapacity(ctx actor.Context, ch *Character, request *
 		log.Printf("guild settle capacity: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 		return
 	}
-	s.incCapacityAsync(ctx, ch, request.ID, detail.Extended).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(request.ID)
-			if !reply.GetOk() {
-				ch.Inventory.AddMeso(detail.Meso)
-			}
-		})
+	s.incCapacityAsync(ctx, ch, request.ID, detail.Extended).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
+		ch.Unsettled.Erase(request.ID)
+		if !reply.GetOk() {
+			ch.Inventory.AddMeso(detail.Meso)
+		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			request.InFlight = false
-		})
+		request.InFlight = false
+
 		log.Printf("guild settle capacity: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 	})
 }
@@ -272,18 +261,15 @@ func (s *GuildSystem) GainGPAsync(ctx actor.Context, ch *Character, amount int32
 	}
 
 	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_GP, uint64(guildID), guildGPDetail{Amount: amount})
-	return s.gainGPAsync(ctx, id, guildID, amount).Do(func(reply *internal.GainGuildGPReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(id)
-			if !reply.GetOk() {
-				log.Printf("guild gain_gp: guild=%d amount=%d: %s", guildID, amount, reply.GetErrorCode())
-			}
-		})
+	return s.gainGPAsync(ctx, id, guildID, amount).Bind(ch).Do(func(reply *internal.GainGuildGPReply) error {
+		ch.Unsettled.Erase(id)
+		if !reply.GetOk() {
+			log.Printf("guild gain_gp: guild=%d amount=%d: %s", guildID, amount, reply.GetErrorCode())
+		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Find(id).InFlight = false
-		})
+		ch.Unsettled.Find(id).InFlight = false
+
 		log.Printf("guild gain_gp: guild=%d amount=%d id=%d: %v", guildID, amount, id, err)
 	})
 }
@@ -306,15 +292,12 @@ func (s *GuildSystem) SettleGP(ctx actor.Context, ch *Character, request *Unsett
 		log.Printf("guild settle gp: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 		return
 	}
-	s.gainGPAsync(ctx, request.ID, uint32(request.Target), detail.Amount).Do(func(reply *internal.GainGuildGPReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(request.ID)
-		})
+	s.gainGPAsync(ctx, request.ID, uint32(request.Target), detail.Amount).Bind(ch).Do(func(reply *internal.GainGuildGPReply) error {
+		ch.Unsettled.Erase(request.ID)
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			request.InFlight = false
-		})
+		request.InFlight = false
+
 		log.Printf("guild settle gp: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 	})
 }
@@ -403,13 +386,12 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 	guildID, _ := ch.Guild.ID()
 	detail := allianceCreateDetail{Name: trimmed, Partner: partnerID, Meso: constant.AllianceCreateMesoCost}
 	id := ch.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CREATE, uint64(guildID), detail)
-	return s.createAllianceAsync(ctx, ch, id, detail).Do(func(reply *internal.CreateAllianceReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(id)
-			if !reply.GetOk() {
-				ch.Inventory.AddMeso(detail.Meso)
-			}
-		})
+	return s.createAllianceAsync(ctx, ch, id, detail).Bind(ch).Do(func(reply *internal.CreateAllianceReply) error {
+		ch.Unsettled.Erase(id)
+		if !reply.GetOk() {
+			ch.Inventory.AddMeso(detail.Meso)
+		}
+
 		if !reply.GetOk() {
 			switch reply.GetErrorCode() {
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NAME_INVALID:
@@ -430,9 +412,8 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 		*result = int(constant.AllianceCreateResultOK)
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Find(id).InFlight = false
-		})
+		ch.Unsettled.Find(id).InFlight = false
+
 		log.Printf("alliance create: character=%d id=%d: %v", ch.GetID(), id, err)
 		*result = int(constant.AllianceCreateResultFailed)
 	})
@@ -446,7 +427,7 @@ func (s *GuildSystem) createAllianceAsync(ctx actor.Context, ch *Character, requ
 		PartnerCharacterId: detail.Partner,
 		RequestId:          requestID,
 	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.CreateAllianceReply, error) {
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.CreateAllianceReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.CreateAlliance(c, req)
 	}, nil)
 }
@@ -457,23 +438,20 @@ func (s *GuildSystem) SettleAllianceCreate(ctx actor.Context, ch *Character, req
 		log.Printf("alliance settle create: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 		return
 	}
-	s.createAllianceAsync(ctx, ch, request.ID, detail).Do(func(reply *internal.CreateAllianceReply) error {
-		ch.Resume(func(actor.Context) {
-			ch.Unsettled.Erase(request.ID)
-			if !reply.GetOk() {
-				ch.Inventory.AddMeso(detail.Meso)
-				return
-			}
-			if alliancePb := reply.GetAlliance(); alliancePb != nil {
-				s.gw.Systems().Get[*AllianceSystem]().Update(alliancePb)
-				s.gw.Systems().Get[*AllianceSystem]().BroadcastCreate(alliancePb)
-			}
-		})
+	s.createAllianceAsync(ctx, ch, request.ID, detail).Bind(ch).Do(func(reply *internal.CreateAllianceReply) error {
+		ch.Unsettled.Erase(request.ID)
+		if !reply.GetOk() {
+			ch.Inventory.AddMeso(detail.Meso)
+			return nil
+		}
+		if alliancePb := reply.GetAlliance(); alliancePb != nil {
+			s.gw.Systems().Get[*AllianceSystem]().Update(alliancePb)
+			s.gw.Systems().Get[*AllianceSystem]().BroadcastCreate(alliancePb)
+		}
 		return nil
 	}).OnError(func(err error) {
-		ch.Resume(func(actor.Context) {
-			request.InFlight = false
-		})
+		request.InFlight = false
+
 		log.Printf("alliance settle create: character=%d id=%d: %v", ch.GetID(), request.ID, err)
 	})
 }
@@ -540,7 +518,7 @@ func (s *GuildSystem) DisbandAllianceAsync(ctx actor.Context, ch *Character, res
 		s.gw.Systems().Get[*AllianceSystem]().DisbandAsync(ctx, allianceID, guildIDs)
 		*result = int(constant.AllianceDisbandResultOK)
 		return nil
-	}).OnError(func(err error) {
+	}).Bind(ch).OnError(func(err error) {
 		log.Printf("alliance disband: character=%d: %v", charID, err)
 		*result = int(constant.AllianceDisbandResultFailed)
 	})

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
@@ -70,30 +69,29 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		Message:     req.Message,
 		Gift:        uint32(req.Kind),
 	}
-	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 		func(c context.Context) (*internal.NotesReply, error) {
 			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Notes(c, internalReq)
 		},
 		func(reply *internal.NotesReply) error {
-			h.gs.systems.Get[*game.DispatchSystem]().Visit(ch.GetID(), func(_ actor.Context, current *game.Character) {
-				switch req.Action {
-				case internal.NotesAction_NOTES_ACTION_SEND:
-					if reply.Status == internal.NoteResult_NOTE_RESULT_OK {
-						current.Listener.OnNoteSent(current)
-					} else {
-						current.Listener.OnNoteFailed(current, reply.Status)
-					}
-				case internal.NotesAction_NOTES_ACTION_LIST:
-					current.Notes.Receive(reply.Notes, 0)
-					current.Listener.OnNotes(current, current.Notes.Entries)
+			switch req.Action {
+			case internal.NotesAction_NOTES_ACTION_SEND:
+				if reply.Status == internal.NoteResult_NOTE_RESULT_OK {
+					ch.Listener.OnNoteSent(ch)
+				} else {
+					ch.Listener.OnNoteFailed(ch, reply.Status)
 				}
-			})
+			case internal.NotesAction_NOTES_ACTION_LIST:
+				ch.Notes.Receive(reply.Notes, 0)
+				ch.Listener.OnNotes(ch, ch.Notes.Entries)
+			}
 			return nil
 		},
 	).OnError(func(error) {
-		if req.Action == internal.NotesAction_NOTES_ACTION_SEND {
-			ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_INBOX_FULL)
+		if req.Action != internal.NotesAction_NOTES_ACTION_SEND {
+			return
 		}
+		ch.Listener.OnNoteFailed(ch, internal.NoteResult_NOTE_RESULT_INBOX_FULL)
 	})
 	return nil
 }

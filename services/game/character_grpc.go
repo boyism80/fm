@@ -107,8 +107,6 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.KeyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	ch.LifeCore.ObjectCore.initTimers()
-	ch.LifeCore.setHp(p.GetHp())
-	ch.LifeCore.setMp(p.GetMp())
 
 	ch.KeyLayout.LoadKeyLayoutProto(reply.GetKeyLayout())
 	ch.CashWishlist = reply.GetCashWishlist()
@@ -119,6 +117,8 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Skills.Macros.Load(NewSkillMacrosFromInternalProto(reply.GetSkillMacros()))
 	ch.Buffs.Load(reply.GetBuffs())
 	ch.Debuffs.Load(reply.GetDebuffs())
+	ch.SetHp(p.GetHp(), false)
+	ch.SetMp(p.GetMp(), false)
 	ch.Quests.Load(reply.GetQuests())
 	ch.SavedLocations.Load(reply.GetSavedLocations())
 	ch.Buddies.LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())

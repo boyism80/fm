@@ -12,6 +12,11 @@ import (
 
 const promiseKickTimeout = 5 * time.Second
 
+// Mailbox runs work on the logic actor that owns an object now.
+type Mailbox interface {
+	Post(fn func(ctx actor.Context))
+}
+
 type promiseResult struct {
 	Value interface{}
 	Err   error
@@ -25,6 +30,7 @@ type promiseStep struct {
 type chain struct {
 	ctx            actor.Context
 	perStepTimeout time.Duration
+	bound          Mailbox
 	steps          []promiseStep
 	onErrors       []func(error)
 	finally        func()
@@ -57,6 +63,11 @@ func NewDeferredTask(ctx actor.Context) *Task {
 
 func NewDeferred[T any](ctx actor.Context) *Promise[T] {
 	return &Promise[T]{c: &chain{ctx: ctx}}
+}
+
+func (t *Task) Bind(m Mailbox) *Task {
+	t.c.bound = m
+	return t
 }
 
 func (t *Task) Do(fn func() error) *Task {
@@ -124,6 +135,11 @@ func (t *Task) SetError(err error) {
 
 func (p *Promise[T]) Task() *Task {
 	return &Task{c: p.c}
+}
+
+func (p *Promise[T]) Bind(m Mailbox) *Promise[T] {
+	p.c.bound = m
+	return p
 }
 
 func (p *Promise[T]) Then[U any](fn func(T) (U, error)) *Promise[U] {
@@ -247,8 +263,9 @@ func (p *chain) onErrorSet(fn func(error)) {
 	p.mu.Lock()
 	if p.rejected {
 		err := p.err
+		bound := p.bound
 		p.mu.Unlock()
-		fn(err)
+		p.invokeOnErrors(bound, []func(error){fn}, err)
 		return
 	}
 	p.onErrors = append(p.onErrors, fn)
@@ -300,11 +317,10 @@ func (p *chain) setError(err error) {
 	p.err = err
 	onErrors := p.onErrors
 	finally := p.finally
+	bound := p.bound
 	p.done = true
 	p.mu.Unlock()
-	for _, onError := range onErrors {
-		onError(err)
-	}
+	p.invokeOnErrors(bound, onErrors, err)
 	if finally != nil {
 		finally()
 	}
@@ -314,6 +330,43 @@ func (p *chain) isDone() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.done || p.rejected
+}
+
+func (p *chain) continueFrom(i int, value interface{}) {
+	p.mu.Lock()
+	bound := p.bound
+	p.mu.Unlock()
+	if bound == nil {
+		p.driveFrom(i, value)
+		return
+	}
+	bound.Post(func(actx actor.Context) {
+		p.mu.Lock()
+		p.ctx = actx
+		p.mu.Unlock()
+		p.driveFrom(i, value)
+	})
+}
+
+func (p *chain) invokeOnErrors(bound Mailbox, onErrors []func(error), err error) {
+	if len(onErrors) == 0 {
+		return
+	}
+	run := func() {
+		for _, onError := range onErrors {
+			onError(err)
+		}
+	}
+	if bound == nil {
+		run()
+		return
+	}
+	bound.Post(func(actx actor.Context) {
+		p.mu.Lock()
+		p.ctx = actx
+		p.mu.Unlock()
+		run()
+	})
 }
 
 func (p *chain) driveFrom(i int, value interface{}) {
@@ -357,7 +410,7 @@ func (p *chain) driveFrom(i int, value interface{}) {
 					p.completeError(pr.Err)
 					return
 				}
-				p.driveFrom(i+1, pr.Value)
+				p.continueFrom(i+1, pr.Value)
 			})
 			return
 		}
@@ -367,7 +420,7 @@ func (p *chain) driveFrom(i int, value interface{}) {
 				p.completeError(err)
 				return
 			}
-			p.driveFrom(i+1, v)
+			p.continueFrom(i+1, v)
 		}()
 		return
 	}
@@ -407,10 +460,9 @@ func (p *chain) completeError(err error) {
 	p.err = err
 	onErrors := p.onErrors
 	finally := p.finally
+	bound := p.bound
 	p.mu.Unlock()
-	for _, onError := range onErrors {
-		onError(err)
-	}
+	p.invokeOnErrors(bound, onErrors, err)
 	if finally != nil {
 		finally()
 	}

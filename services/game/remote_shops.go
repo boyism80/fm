@@ -29,7 +29,7 @@ type RemoteShops struct {
 }
 
 func (r *RemoteShops) FindPopularSearches(actx actor.Context) {
-	r.owner.GameWorld.Systems().Get[*InternalSystem]().FindPopularShopSearchesAsync(actx, r.owner).Do(func(v *internal.FindPopularShopSearchesReply) error {
+	r.owner.GameWorld.Systems().Get[*InternalSystem]().FindPopularShopSearchesAsync(actx, r.owner).Bind(r.owner).Do(func(v *internal.FindPopularShopSearchesReply) error {
 		r.owner.Listener.OnShopScannerPopular(r.owner, v.GetItemIds())
 		return nil
 	}).OnError(func(err error) {
@@ -64,7 +64,7 @@ func (r *RemoteShops) Scan(actx actor.Context, invType constant.InventoryType, s
 	}
 
 	r.scanning = true
-	r.owner.GameWorld.Systems().Get[*InternalSystem]().SearchShopsAsync(actx, r.owner, searchID, highFirst).Do(func(v *internal.SearchShopsReply) error {
+	r.owner.GameWorld.Systems().Get[*InternalSystem]().SearchShopsAsync(actx, r.owner, searchID, highFirst).Bind(r.owner).Do(func(v *internal.SearchShopsReply) error {
 		r.scanning = false
 		entries := v.GetEntries()
 		r.found = make(map[remoteShop]bool, len(entries))
@@ -82,6 +82,7 @@ func (r *RemoteShops) Scan(actx actor.Context, invType constant.InventoryType, s
 	}).OnError(func(err error) {
 		r.scanning = false
 		r.owner.Listener.OnUpdateStats(r.owner, nil, true)
+
 		log.Printf("UseShopScanner character=%d: %v", r.owner.GetID(), err)
 	})
 }
@@ -119,40 +120,37 @@ func (r *RemoteShops) Manage(actx actor.Context, slot int16) error {
 		return ErrMiniRoomBusy
 	}
 
-	r.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, r.owner).Do(func(v *internal.FindEntrustedShopReply) error {
-		r.owner.Resume(func(actor.Context) {
-			shop := v.GetShop()
-			target := r.owner.GameWorld.Systems().Get[*MapSystem]().Get(shop.GetMapId())
-			switch {
-			case shop == nil || shop.GetCharacterId() != r.owner.GetID():
-				r.owner.Listener.OnEntrustedShopCheck(r.owner, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
-			case shop.GetChannelId() != r.owner.GameWorld.GetChannelID():
-				r.owner.Listener.OnEntrustedShopCheck(r.owner, pconst.EntrustedShopRemoteLocation, shop.GetMapId(), uint8(shop.GetChannelId()))
-			case target == nil:
-				r.owner.Listener.OnEntrustedShopCheck(r.owner, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
-			default:
-				r.owner.GameWorld.Systems().Get[*MapSystem]().Visit(target, func(actor.Context) {
-					sn, ok := target.FindEntrustedShopByOwner(r.owner.GetID())
-					r.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(r.owner.GetID(), func(ctx actor.Context, c *Character) {
-						if c == nil {
-							return
-						}
-						if !ok {
-							c.Listener.OnEntrustedShopCheck(c, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
-							return
-						}
-						c.RemoteShops.managed = remoteShop{sn: sn, mapID: target.TemplateID()}
-						c.Listener.OnEntrustedShopRemoteVisit(c, sn)
-					})
+	r.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, r.owner).Bind(r.owner).Do(func(v *internal.FindEntrustedShopReply) error {
+		shop := v.GetShop()
+		target := r.owner.GameWorld.Systems().Get[*MapSystem]().Get(shop.GetMapId())
+		switch {
+		case shop == nil || shop.GetCharacterId() != r.owner.GetID():
+			r.owner.Listener.OnEntrustedShopCheck(r.owner, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
+		case shop.GetChannelId() != r.owner.GameWorld.GetChannelID():
+			r.owner.Listener.OnEntrustedShopCheck(r.owner, pconst.EntrustedShopRemoteLocation, shop.GetMapId(), uint8(shop.GetChannelId()))
+		case target == nil:
+			r.owner.Listener.OnEntrustedShopCheck(r.owner, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
+		default:
+			r.owner.GameWorld.Systems().Get[*MapSystem]().Visit(target, func(actor.Context) {
+				sn, ok := target.FindEntrustedShopByOwner(r.owner.GetID())
+				r.owner.GameWorld.Systems().Get[*DispatchSystem]().Visit(r.owner.GetID(), func(ctx actor.Context, c *Character) {
+					if c == nil {
+						return
+					}
+					if !ok {
+						c.Listener.OnEntrustedShopCheck(c, pconst.EntrustedShopRemoteLocation, StoreBankNothingMapID, StoreBankNothingChannel)
+						return
+					}
+					c.RemoteShops.managed = remoteShop{sn: sn, mapID: target.TemplateID()}
+					c.Listener.OnEntrustedShopRemoteVisit(c, sn)
 				})
-			}
-		})
+			})
+		}
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("UseRemoteEntrustedShop character=%d: %v", r.owner.GetID(), err)
-		r.owner.Resume(func(actor.Context) {
-			r.owner.Listener.OnUnlockAction(r.owner)
-		})
+		r.owner.Listener.OnUnlockAction(r.owner)
+
 	})
 	return nil
 }

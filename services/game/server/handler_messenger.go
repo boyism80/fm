@@ -65,7 +65,7 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 		Text:        req.Text,
 		Look:        w.Bytes(),
 	}
-	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 		func(c context.Context) (*internal.MessengerReply, error) {
 			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Messenger(c, internalReq)
 		},
@@ -73,7 +73,6 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 			if ch.LoggedOut() {
 				return nil
 			}
-
 			if !reply.Ok {
 				ch.Messenger.Fail(req.Action, req.Text)
 				return nil
@@ -83,6 +82,7 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 		},
 	).OnError(func(error) {
 		ch.Messenger.Fail(req.Action, req.Text)
+
 	})
 	return nil
 }

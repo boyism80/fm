@@ -215,7 +215,7 @@ func (ps *PersonalShop) returnItems(ch *Character) {
 		}
 		model := listed.Item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if (model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID())) || spec.Valid(ch) != ExchangeOK {
+		if ch.Inventory.hasOnlyItem(model) || spec.Valid(ch) != ExchangeOK {
 			items = append(items, listed)
 			continue
 		}
@@ -305,33 +305,30 @@ func NewPersonalShop(owner *Character, title string, slot int16, itemID uint32) 
 
 func (ps *PersonalShop) Place(actx actor.Context, owner *Character) {
 	id := owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID), nil)
-	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, ps.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
-		owner.Resume(func(actx actor.Context) {
-			owner.Unsettled.Erase(id)
-			if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
-				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
-				return
-			}
+	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, ps.BuildRPC()).Bind(owner).Do(func(v *internal.OpenShopReply) error {
+		owner.Unsettled.Erase(id)
+		if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
+			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+			return nil
+		}
 
-			ps.ID = v.GetShopId()
-			if owner.GetMap() != ps.home || owner.MiniRoom != nil || ps.home.checkShopSpot(ps.Position) != nil {
-				ps.save(actx, true)
-				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
-				return
-			}
-			ps.home.AddPersonalShop(ps)
-			ps.owner = owner
-			owner.MiniRoom = ps
-			owner.Listener.OnPersonalShopEntered(owner, ps)
-		})
+		ps.ID = v.GetShopId()
+		if owner.GetMap() != ps.home || owner.MiniRoom != nil || ps.home.checkShopSpot(ps.Position) != nil {
+			ps.save(actx, true)
+			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+			return nil
+		}
+		ps.home.AddPersonalShop(ps)
+		ps.owner = owner
+		owner.MiniRoom = ps
+		owner.Listener.OnPersonalShopEntered(owner, ps)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("PersonalShop.Place character=%d: %v", owner.GetID(), err)
-		owner.Resume(func(actx actor.Context) {
-			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
-			if request := owner.Unsettled.Find(id); request != nil {
-				owner.StoreBank.settleShopOpen(actx, request)
-			}
-		})
+		owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+		if request := owner.Unsettled.Find(id); request != nil {
+			owner.StoreBank.settleShopOpen(actx, request)
+		}
+
 	})
 }

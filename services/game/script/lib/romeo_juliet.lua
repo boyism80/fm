@@ -191,7 +191,7 @@ local function create(cfg)
 			shuffle_lab(sm:map(lab2))
 			sm:map(urete_office):spawn_npc(2112000, 200, 188)
 			local boss = sm:map(boss_map)
-			boss:set_respawn(true)
+			boss:set_respawn(false)
 			boss:kill_all_mobs()
 		end,
 
@@ -248,7 +248,7 @@ local function create(cfg)
 				local boss = sm:map(boss_map)
 				if boss ~= nil then
 					clear_fx(boss)
-					boss:set_respawn(true)
+					boss:set_respawn(false)
 					boss:kill_all_mobs()
 				end
 				local ok = sm:get_property("stage7") ~= "1"

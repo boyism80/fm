@@ -569,33 +569,30 @@ func NewEntrustedShop(owner *Character, title string, slot int16, itemID uint32)
 
 func (es *EntrustedShop) Place(actx actor.Context, owner *Character) {
 	id := owner.Unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_SHOP_OPEN, uint64(owner.AccountID), nil)
-	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, es.BuildRPC()).Do(func(v *internal.OpenShopReply) error {
-		owner.Resume(func(actx actor.Context) {
-			owner.Unsettled.Erase(id)
-			if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
-				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
-				return
-			}
+	owner.GameWorld.Systems().Get[*InternalSystem]().OpenShopAsync(actx, owner, id, es.BuildRPC()).Bind(owner).Do(func(v *internal.OpenShopReply) error {
+		owner.Unsettled.Erase(id)
+		if v.GetExisting() != nil || v.GetAborted() || v.GetShopId() == 0 {
+			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+			return nil
+		}
 
-			es.ID = v.GetShopId()
-			if owner.GetMap() != es.home || owner.MiniRoom != nil || es.home.checkShopSpot(es.Position) != nil {
-				es.save(actx, true)
-				owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
-				return
-			}
-			es.home.AddEntrustedShop(es)
-			es.managing = true
-			owner.MiniRoom = es
-			owner.Listener.OnMiniRoomEntered(owner, 0, es.view(), true)
-		})
+		es.ID = v.GetShopId()
+		if owner.GetMap() != es.home || owner.MiniRoom != nil || es.home.checkShopSpot(es.Position) != nil {
+			es.save(actx, true)
+			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+			return nil
+		}
+		es.home.AddEntrustedShop(es)
+		es.managing = true
+		owner.MiniRoom = es
+		owner.Listener.OnMiniRoomEntered(owner, 0, es.view(), true)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("EntrustedShop.Place character=%d: %v", owner.GetID(), err)
-		owner.Resume(func(actx actor.Context) {
-			owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
-			if request := owner.Unsettled.Find(id); request != nil {
-				owner.StoreBank.settleShopOpen(actx, request)
-			}
-		})
+		owner.Listener.OnMiniRoomEnterFailed(owner, pconst.MiniRoomEnterCannotOpen)
+		if request := owner.Unsettled.Find(id); request != nil {
+			owner.StoreBank.settleShopOpen(actx, request)
+		}
+
 	})
 }

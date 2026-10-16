@@ -47,7 +47,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 	case pconst.BuddyAdd:
 		targetName := req.Name
 		groupName := req.Group
-		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 			func(c context.Context) (*internal.RequestBuddyReply, error) {
 				return h.gs.systems.Get[*rpc.InternalConnection]().Client.RequestBuddy(c, &internal.RequestBuddyRequest{
 					WorldId:              worldID,
@@ -76,7 +76,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 
 	case pconst.BuddyAccept:
 		requesterID := req.CharacterID
-		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 			func(c context.Context) (*internal.AcceptBuddyReply, error) {
 				return h.gs.systems.Get[*rpc.InternalConnection]().Client.AcceptBuddy(c, &internal.AcceptBuddyRequest{
 					WorldId:              worldID,
@@ -104,7 +104,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 
 	case pconst.BuddyDelete:
 		buddyID := req.CharacterID
-		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 			func(c context.Context) (*internal.RemoveBuddyReply, error) {
 				return h.gs.systems.Get[*rpc.InternalConnection]().Client.RemoveBuddy(c, &internal.RemoveBuddyRequest{
 					WorldId:          worldID,

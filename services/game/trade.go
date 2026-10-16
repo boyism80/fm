@@ -284,7 +284,7 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 				continue
 			}
 			model := item.GetModel()
-			if model.GetTraits()&constant.ItemTraitOnly != 0 && (side.ch.Inventory.HasItem(model.GetID()) || rewards[model.GetID()] > 0) {
+			if side.ch.Inventory.hasOnlyItem(model) || (model.GetTraits()&constant.ItemTraitOnly != 0 && rewards[model.GetID()] > 0) {
 				return pconst.MiniRoomLeaveTradeOnly
 			}
 			rewards[model.GetID()] += item.GetCount()

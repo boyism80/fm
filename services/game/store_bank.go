@@ -9,7 +9,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
-	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
@@ -40,7 +39,7 @@ func (sb *StoreBank) Open(actx actor.Context, npcID uint32) {
 	}
 
 	sb.pending = true
-	sb.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
+	sb.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, sb.owner).Bind(sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
 		sb.pending = false
 		var shops []*internal.Shop
 		for _, closed := range sb.unclaimed(v.GetStoreBank()) {
@@ -135,7 +134,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 	rewards := map[uint32]uint16{}
 	for _, listed := range sb.Items {
 		model := listed.Item.GetModel()
-		if model.GetTraits()&constant.ItemTraitOnly != 0 && sb.owner.Inventory.HasItem(model.GetID()) {
+		if sb.owner.Inventory.hasOnlyItem(model) {
 			return pconst.StoreBankResultOnlyOne
 		}
 		rewards[model.GetID()] += listed.count()
@@ -168,7 +167,7 @@ func (sb *StoreBank) Confirm(actx actor.Context) error {
 	sb.owner.Listener.OnStoreBankResult(sb.owner, pconst.StoreBankResultClaimed)
 
 	entry := sb.owner.BuildRPC(sb.owner.GameWorld.GetWorldID())
-	sb.owner.GameWorld.Systems().Get[*InternalSystem]().SaveAsync(actx, []*internal.CharacterSaveEntry{entry}).Do(func() error {
+	sb.owner.GameWorld.Systems().Get[*InternalSystem]().SaveAsync(actx, []*internal.CharacterSaveEntry{entry}).Bind(sb.owner).Do(func() error {
 		sb.claimed = slices.DeleteFunc(sb.claimed, func(id uint32) bool {
 			return slices.Contains(entry.GetClaimedShops(), id)
 		})
@@ -186,44 +185,38 @@ func (sb *StoreBank) CheckShopOpen(actx actor.Context) {
 		return
 	}
 
-	sb.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
-		sb.owner.Resume(func(actor.Context) {
-			shop := v.GetShop()
-			switch {
-			case len(sb.unclaimed(v.GetStoreBank())) > 0:
-				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopStoreBankFull, 0, 0)
-			case shop == nil:
-				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopTitle, 0, 0)
-			case shop.GetCharacterId() == sb.owner.GetID():
-				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopAlreadyOpen, shop.GetMapId(), uint8(shop.GetChannelId()))
-			default:
-				sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopAccountBusy, 0, 0)
-			}
-		})
+	sb.owner.GameWorld.Systems().Get[*InternalSystem]().FindEntrustedShopAsync(actx, sb.owner).Bind(sb.owner).Do(func(v *internal.FindEntrustedShopReply) error {
+		shop := v.GetShop()
+		switch {
+		case len(sb.unclaimed(v.GetStoreBank())) > 0:
+			sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopStoreBankFull, 0, 0)
+		case shop == nil:
+			sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopTitle, 0, 0)
+		case shop.GetCharacterId() == sb.owner.GetID():
+			sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopAlreadyOpen, shop.GetMapId(), uint8(shop.GetChannelId()))
+		default:
+			sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopAccountBusy, 0, 0)
+		}
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("CheckShopOpen character=%d: %v", sb.owner.GetID(), err)
-		sb.owner.Resume(func(actor.Context) {
-			sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopCannotOpen, 0, 0)
-		})
+		sb.owner.Listener.OnEntrustedShopCheck(sb.owner, pconst.EntrustedShopCannotOpen, 0, 0)
+
 	})
 }
 
 func (sb *StoreBank) settleShopOpen(actx actor.Context, request *UnsettledRequest) {
-	sb.owner.GameWorld.Systems().Get[*InternalSystem]().AbortOpenShopAsync(actx, sb.owner, request.ID).Do(func(reply *internal.AbortOpenShopReply) error {
-		sb.owner.Resume(func(actor.Context) {
-			if !reply.GetAborted() {
-				request.InFlight = false
-				log.Printf("AbortOpenShop character=%d request=%d: shop is no longer empty", sb.owner.GetID(), request.ID)
-				return
-			}
-			sb.owner.Unsettled.Erase(request.ID)
-		})
+	sb.owner.GameWorld.Systems().Get[*InternalSystem]().AbortOpenShopAsync(actx, sb.owner, request.ID).Bind(sb.owner).Do(func(reply *internal.AbortOpenShopReply) error {
+		if !reply.GetAborted() {
+			request.InFlight = false
+			log.Printf("AbortOpenShop character=%d request=%d: shop is no longer empty", sb.owner.GetID(), request.ID)
+			return nil
+		}
+		sb.owner.Unsettled.Erase(request.ID)
 		return nil
 	}).OnError(func(err error) {
-		sb.owner.Resume(func(actor.Context) {
-			request.InFlight = false
-		})
+		request.InFlight = false
+
 		log.Printf("AbortOpenShop character=%d request=%d: %v", sb.owner.GetID(), request.ID, err)
 	})
 }

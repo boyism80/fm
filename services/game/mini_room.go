@@ -243,7 +243,7 @@ func (inv *Inventory) collectShopGoods(meso int32, items []*ShopItem) (int32, []
 	for _, listed := range items {
 		model := listed.Item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if (model.GetTraits()&constant.ItemTraitOnly != 0 && inv.HasItem(model.GetID())) || spec.Valid(inv.owner) != ExchangeOK {
+		if inv.hasOnlyItem(model) || spec.Valid(inv.owner) != ExchangeOK {
 			kept = append(kept, listed)
 			continue
 		}
@@ -260,7 +260,7 @@ func (r *shopRoom) unlist(ch *Character, index uint16) error {
 	listed := r.Items[index]
 	if listed.Bundles > 0 {
 		model := listed.Item.GetModel()
-		if model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID()) {
+		if ch.Inventory.hasOnlyItem(model) {
 			return ErrMiniRoomOnlyHeld
 		}
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
@@ -295,7 +295,7 @@ func (r *shopRoom) sell(ch *Character, index uint16, bundles uint16, held int32)
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuySellerLimit}
 	}
 	model := listed.Item.GetModel()
-	if model.GetTraits()&constant.ItemTraitOnly != 0 && ch.Inventory.HasItem(model.GetID()) {
+	if ch.Inventory.hasOnlyItem(model) {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyOnlyOne}
 	}
 	count := bundles * listed.PerBundle

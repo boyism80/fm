@@ -2,7 +2,6 @@ package game
 
 import (
 	"context"
-	"errors"
 	"log"
 	"sync"
 
@@ -40,6 +39,38 @@ func NewPartySystem(gw GameWorld) *PartySystem {
 func (s *PartySystem) Start() error { return nil }
 func (s *PartySystem) Stop()        {}
 
+// store keeps the snapshot unless an equal-or-newer one is already cached.
+func (s *PartySystem) store(pb *internal.Party) (*Party, bool) {
+	if s == nil || pb == nil {
+		return nil, false
+	}
+	party := PartyFromProto(s.gw, pb)
+	if party == nil {
+		return nil, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if prev := s.parties[party.PartyID]; prev != nil && party.UpdatedAt.Before(prev.UpdatedAt) {
+		return prev, false
+	}
+	s.parties[party.PartyID] = party
+	return party, true
+}
+
+func (s *PartySystem) forget(partyID uint32) []uint32 {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var memberIDs []uint32
+	if party, ok := s.parties[partyID]; ok && party != nil {
+		memberIDs = party.MemberCharacterIDs()
+	}
+	delete(s.parties, partyID)
+	return memberIDs
+}
+
 func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *async.Task {
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if s == nil {
@@ -50,18 +81,10 @@ func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 	})
 
 	if evt.EventType == "disbanded" {
-		s.mu.Lock()
-		var memberIDs []uint32
-		if party, ok := s.parties[evt.PartyID]; ok && party != nil {
-			memberIDs = party.MemberCharacterIDs()
-		}
-		if len(memberIDs) > 0 {
-			delete(s.parties, evt.PartyID)
+		if memberIDs := s.forget(evt.PartyID); len(memberIDs) > 0 {
 			s.ClearPartyMembers(memberIDs)
-			s.mu.Unlock()
 			return p
 		}
-		s.mu.Unlock()
 	}
 
 	p.ThenRPC(
@@ -72,107 +95,46 @@ func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 			})
 		},
 		func(reply *internal.GetPartyReply) error {
-			s.mu.Lock()
-			defer s.mu.Unlock()
-			s.mergeGetPartyReplyLocked(partyID, reply)
-			return s.syncAfterFetch(evt)
+			if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
+				memberIDs := s.forget(partyID)
+				if evt.EventType == "disbanded" {
+					s.ClearPartyMembers(memberIDs)
+				}
+				return nil
+			}
+			party, _ := s.store(reply.GetParty())
+			if party == nil {
+				memberIDs := s.forget(partyID)
+				if evt.EventType == "disbanded" {
+					s.ClearPartyMembers(memberIDs)
+				}
+				return nil
+			}
+			s.Sync(party)
+			return nil
 		},
 	)
 	return p
 }
 
-func (s *PartySystem) mergeGetPartyReplyLocked(partyID uint32, reply *internal.GetPartyReply) {
-	if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
-		delete(s.parties, partyID)
-		return
-	}
-	ent := PartyFromProto(s.gw, reply.GetParty())
-	if ent == nil {
-		delete(s.parties, partyID)
-		return
-	}
-	stored := ent.Clone()
-	if stored == nil {
-		delete(s.parties, partyID)
-		return
-	}
-	if prev := s.parties[partyID]; prev != nil && stored.UpdatedAt.Before(prev.UpdatedAt) {
-		return
-	}
-	s.parties[partyID] = stored
-}
-
-func (s *PartySystem) syncAfterFetch(evt PartyEventEnvelope) error {
-	partyID := evt.PartyID
-	if evt.EventType == "log_onoff" {
-		if party := s.parties[partyID]; party != nil {
-			s.Sync(party)
-		}
-		return nil
-	}
-	if evt.EventType == "disbanded" {
-		var memberIDs []uint32
-		if party, ok := s.parties[partyID]; ok && party != nil {
-			memberIDs = party.MemberCharacterIDs()
-		}
-		delete(s.parties, partyID)
-		s.ClearPartyMembers(memberIDs)
-		return nil
-	}
-	if party := s.parties[partyID]; party != nil {
-		s.Sync(party)
-	}
-	return nil
-}
-
 func (s *PartySystem) ApplyPartySnapshot(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
-	if s == nil || partyPb == nil {
+	party, ok := s.store(partyPb)
+	if !ok {
 		return false, nil
 	}
-	partyID := evt.PartyID
-	ent := PartyFromProto(s.gw, partyPb)
-	if ent == nil {
-		return false, nil
-	}
-	cloned := ent.Clone()
-	if cloned == nil {
-		return false, errors.New("party: clone failed")
-	}
-	s.mu.Lock()
-	if prev := s.parties[partyID]; prev != nil && cloned.UpdatedAt.Before(prev.UpdatedAt) {
-		s.mu.Unlock()
-		return false, nil
-	}
-	s.parties[partyID] = cloned
-	s.mu.Unlock()
-
-	s.Sync(cloned)
+	s.Sync(party)
 	if notifySilent {
-		s.BroadcastPartySilent(cloned)
+		s.BroadcastPartySilent(party)
 	}
 	return true, nil
 }
 
 func (s *PartySystem) Update(partyPb *internal.Party) {
-	if s == nil || partyPb == nil {
+	party, ok := s.store(partyPb)
+	if !ok {
 		return
 	}
-	ent := PartyFromProto(s.gw, partyPb)
-	if ent == nil {
-		return
-	}
-	stored := ent.Clone()
-	if stored == nil {
-		return
-	}
-	partyID := stored.PartyID
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if prev := s.parties[partyID]; prev != nil && stored.UpdatedAt.Before(prev.UpdatedAt) {
-		return
-	}
-	s.parties[partyID] = stored
-	s.Sync(stored)
+	s.Sync(party)
 }
 
 func (s *PartySystem) Get(partyID uint32) *Party {

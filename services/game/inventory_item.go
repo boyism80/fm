@@ -171,6 +171,24 @@ func (inv *Inventory) HasItem(itemID uint32) bool {
 	return false
 }
 
+func (inv *Inventory) hasOnlyItem(model wz.Item) bool {
+	if model == nil || model.GetTraits()&constant.ItemTraitOnly == 0 {
+		return false
+	}
+	if inv.HasItem(model.GetID()) {
+		return true
+	}
+	if model.GetInventoryType() != constant.InventoryTypeEquipment {
+		return false
+	}
+	for _, eq := range inv.Equipped {
+		if eq != nil && eq.GetModel().GetID() == model.GetID() {
+			return true
+		}
+	}
+	return false
+}
+
 func (inv *Inventory) HasItemCount(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
