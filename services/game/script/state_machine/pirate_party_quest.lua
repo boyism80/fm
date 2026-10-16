@@ -76,14 +76,11 @@ end
 
 return {
 	on_init = function(group)
-		group:set_property("state", "0")
 		group:min_players(1)
 		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
-		local group = sm:group()
-		group:set_property("state", "1")
 		sm:set_property("stage", "1")
 		sm:set_property("stage2", "0")
 		sm:set_property("stage2a", "0")
@@ -257,11 +254,4 @@ return {
 		end_run(sm)
 	end,
 
-	on_clear = function(sm)
-		end_run(sm)
-	end,
-
-	on_finish = function(sm)
-		sm:group():set_property("state", "0")
-	end
 }

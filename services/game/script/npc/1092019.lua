@@ -6,15 +6,15 @@ local function start_trial(me, npc, group_name)
 		me:dialog(npc, "오류가 발생해서 시험을 치를 수 없네.")
 		return
 	end
-	if group:get_property("noEntry") == "true" then
-		me:dialog(npc, "흠, 이미 누군가가 시험을 치르는 중이네. 나중에 다시 시도하게나.")
-		return
-	end
 	local sm, err = group:start_solo(me)
 	if sm == nil then
-		me:dialog(npc, "오류가 발생해서 시험을 치를 수 없네.")
-		if err ~= nil then
-			log(group_name .. " start_solo:", err)
+		if err == StateMachineError.Full then
+			me:dialog(npc, "흠, 이미 누군가가 시험을 치르는 중이네. 나중에 다시 시도하게나.")
+		else
+			me:dialog(npc, "오류가 발생해서 시험을 치를 수 없네.")
+			if err ~= nil then
+				log(group_name .. " start_solo:", err)
+			end
 		end
 	end
 end

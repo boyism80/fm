@@ -97,15 +97,12 @@ local function try_start(me, npc)
 		me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
 		return
 	end
-	local state = group:get_property("state")
-	if state ~= nil and state ~= "" and state ~= "0" then
-		me:dialog(npc, "이미 이 안에서 다른 파티가 퀘스트에 도전하는 중입니다. 나중에 다시 시도하세요.")
-		return
-	end
 	local sm, err = group:start_party(me, party, SCALE_LEVEL)
 	if sm == nil then
-		me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
-		if err ~= nil then
+		if err == StateMachineError.Full then
+			me:dialog(npc, "이미 이 안에서 다른 파티가 퀘스트에 도전하는 중입니다. 나중에 다시 시도하세요.")
+		else
+			me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
 			log("ellin_party_quest start_party:", err)
 		end
 	end

@@ -8,13 +8,11 @@ local NPC_Y = 95
 
 return {
 	on_init = function(group)
-		group:set_property("state", "0")
 		group:min_players(1)
 		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
-		sm:group():set_property("state", "1")
 		return {
 			{ id = TEMPLATE_MAP, npcs = false, reactors = false, respawns = false },
 		}
@@ -31,7 +29,4 @@ return {
 		player:map(sm:map(TEMPLATE_MAP), 0)
 	end,
 
-	on_finish = function(sm)
-		sm:group():set_property("state", "0")
-	end,
 }

@@ -36,11 +36,6 @@ return {
 			me:dialog(npc, "오류가 발생했군요.")
 			return
 		end
-		local state = group:get_property("state")
-		if state ~= nil and state ~= "" and state ~= "0" then
-			me:dialog(npc, "이미 이 안에 다른 누군가가 대왕지네를 물리치고 있는 것 같네. 잠시 후에 다시 찾아와 주게.")
-			return
-		end
 		local party = me:party()
 		local sm, err
 		if party ~= nil then
@@ -49,8 +44,10 @@ return {
 			sm, err = group:start_solo(me)
 		end
 		if sm == nil then
-			me:dialog(npc, "오류가 발생했군요.")
-			if err ~= nil then
+			if err == StateMachineError.Full then
+				me:dialog(npc, "이미 이 안에 다른 누군가가 대왕지네를 물리치고 있는 것 같네. 잠시 후에 다시 찾아와 주게.")
+			else
+				me:dialog(npc, "오류가 발생했군요.")
 				log("shanghai_boss start:", err)
 			end
 		end

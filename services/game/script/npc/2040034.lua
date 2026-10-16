@@ -65,18 +65,16 @@ local function try_start(me, npc)
 		me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
 		return
 	end
-	local state = group:get_property("state")
-	if state ~= nil and state ~= "" and state ~= "0" then
-		me:dialog(npc, "이 안에 이미 다른 파티가 입장하여 클리어에 도전중입니다. 잠시 후에 다시 시도해보세요.")
-		return
-	end
 	local sm, err = group:start_party(me, party, SCALE_LEVEL)
 	if sm == nil then
-		me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
-		if err ~= nil then
+		if err == StateMachineError.Full then
+			me:dialog(npc, "이 안에 이미 다른 파티가 입장하여 클리어에 도전중입니다. 잠시 후에 다시 시도해보세요.")
+			return
+		else
+			me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
 			log("ludibrium_party_quest start_party:", err)
+			return
 		end
-		return
 	end
 	pq.remove_all(PASS_ID, me)
 	pq.remove_all(KEY_ID, me)

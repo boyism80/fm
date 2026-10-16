@@ -39,10 +39,6 @@ local function create(config)
 			finish(sm)
 		end,
 
-		on_clear = function(sm)
-			finish(sm)
-		end,
-
 		on_finish = function(sm)
 			sm:group():set_property("started", "false")
 		end

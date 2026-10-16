@@ -11,14 +11,11 @@ end
 
 return {
 	on_init = function(group)
-		group:set_property("state", "0")
 		group:min_players(1)
 		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
-		local group = sm:group()
-		group:set_property("state", "1")
 		return { STAGE_MAP }
 	end,
 
@@ -56,14 +53,6 @@ return {
 
 	on_scheduled_timeout = function(sm)
 		clear(sm)
-	end,
-
-	on_clear = function(sm)
-		clear(sm)
-	end,
-
-	on_finish = function(sm)
-		sm:group():set_property("state", "0")
 	end,
 
 	on_all_monsters_dead = function(sm)

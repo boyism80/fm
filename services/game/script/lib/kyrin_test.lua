@@ -12,13 +12,10 @@ local function create(map_id)
 
 	return {
 		on_init = function(group)
-			group:set_property("state", "0")
 			group:min_players(1)
 		end,
 
 		on_create = function(sm)
-			local group = sm:group()
-			group:set_property("state", "1")
 			return { map_id }
 		end,
 
@@ -38,9 +35,6 @@ local function create(map_id)
 			finish(sm)
 		end,
 
-		on_finish = function(sm)
-			sm:group():set_property("state", "0")
-		end
 	}
 end
 

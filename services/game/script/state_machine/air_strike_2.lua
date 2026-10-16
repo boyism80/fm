@@ -14,13 +14,10 @@ end
 
 return {
 	on_init = function(group)
-		group:set_property("noEntry", "false")
 		group:min_players(1)
 	end,
 
 	on_create = function(sm)
-		local group = sm:group()
-		group:set_property("noEntry", "true")
 		return { QUEST_MAP }
 	end,
 
@@ -36,7 +33,4 @@ return {
 		finish(sm)
 	end,
 
-	on_finish = function(sm)
-		sm:group():set_property("noEntry", "false")
-	end
 }

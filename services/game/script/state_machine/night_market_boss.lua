@@ -10,14 +10,11 @@ end
 
 return {
 	on_init = function(group)
-		group:set_property("state", "0")
 		group:min_players(1)
 		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
-		local group = sm:group()
-		group:set_property("state", "1")
 		return { BOSS_MAP }
 	end,
 
@@ -37,7 +34,4 @@ return {
 		end_run(sm)
 	end,
 
-	on_finish = function(sm)
-		sm:group():set_property("state", "0")
-	end
 }

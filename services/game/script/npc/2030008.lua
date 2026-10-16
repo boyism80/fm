@@ -24,15 +24,12 @@ local function start_fire_demon(me, npc)
 		me:dialog(npc, "오류가 발생했습니다.")
 		return
 	end
-	local state = group:get_property("state")
-	if state ~= nil and state ~= "" and state ~= "0" then
-		me:dialog(npc, "이미 다른 사람이 용암의 심장부에 들어가 있습니다.")
-		return
-	end
 	local sm, err = group:start_solo(me)
 	if sm == nil then
-		me:dialog(npc, "오류가 발생했습니다.")
-		if err ~= nil then
+		if err == StateMachineError.Full then
+			me:dialog(npc, "이미 다른 사람이 용암의 심장부에 들어가 있습니다.")
+		else
+			me:dialog(npc, "오류가 발생했습니다.")
 			log("fire_demon start_solo:", err)
 		end
 	end
@@ -68,20 +65,20 @@ local function start_zakum_pq(me, npc)
 		me:dialog(npc, "파티퀘스트에 현재 문제가 생긴것 같군. 미안하지만 지금은 입장할 수 없겠네.")
 		return
 	end
-	local state = group:get_property("state")
-	if state ~= nil and state ~= "" and state ~= "0" then
-		me:dialog(npc, "이미 다른 파티가 안으로 들어가 퀘스트 클리어에 도전하고 있습니다.")
+	local sm, err = group:start_party(me, party)
+	if sm == nil then
+		if err == StateMachineError.Full then
+			me:dialog(npc, "이미 다른 파티가 안으로 들어가 퀘스트 클리어에 도전하고 있습니다.")
+		else
+			me:dialog(npc, "지금은 무언가 문제가 생긴 것 같군..")
+			if err ~= nil then
+				log("zakum_party_quest start_party:", err)
+			end
+		end
 		return
 	end
 	if me:records():get(STAGE1_RECORD) == 0 then
 		me:records():set(STAGE1_RECORD, STAGE_STARTED)
-	end
-	local sm, err = group:start_party(me, party)
-	if sm == nil then
-		me:dialog(npc, "지금은 무언가 문제가 생긴 것 같군..")
-		if err ~= nil then
-			log("zakum_party_quest start_party:", err)
-		end
 	end
 end
 

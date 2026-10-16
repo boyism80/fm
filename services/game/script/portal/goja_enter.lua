@@ -7,17 +7,16 @@ return {
 			me:message("지금은 입장할 수 없습니다.", Msg.PinkText)
 			return
 		end
-		local state = group:get_property("state")
-		if state ~= nil and state ~= "" and state ~= "0" then
-			me:message("이미 다른 사람이 안에 있습니다.", Msg.PinkText)
-			return
-		end
 		me:play_portal_sound()
 		local sm, err = group:start_solo(me)
 		if sm == nil then
-			me:message("지금은 입장할 수 없습니다.", Msg.PinkText)
-			if err ~= nil then
-				log("gojarani start_solo:", err)
+			if err == StateMachineError.Full then
+				me:message("이미 다른 사람이 안에 있습니다.", Msg.PinkText)
+			else
+				me:message("지금은 입장할 수 없습니다.", Msg.PinkText)
+				if err ~= nil then
+					log("gojarani start_solo:", err)
+				end
 			end
 		end
 	end,

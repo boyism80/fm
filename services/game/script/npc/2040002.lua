@@ -26,17 +26,18 @@ return {
 			me:dialog(npc, "지금은 방에 들어갈 수 없습니다.")
 			return
 		end
-		if group:get_property("noEntry") == "true" then
-			me:dialog(npc, "이미 이 안에서 다른 사람이 시계추를 찾고 있는 것 같군요. 나중에 다시 찾아와주세요.")
+		local sm, err = group:start_solo(me)
+		if sm == nil then
+			if err == StateMachineError.Full then
+				me:dialog(npc, "이미 이 안에서 다른 사람이 시계추를 찾고 있는 것 같군요. 나중에 다시 찾아와주세요.")
+			else
+				me:dialog(npc, "지금은 방에 들어갈 수 없습니다.")
+				if err ~= nil then
+					log("doll_house start_solo:", err)
+				end
+			end
 			return
 		end
 		pq.remove_all(WALNUT, me)
-		local sm, err = group:start_solo(me)
-		if sm == nil then
-			me:dialog(npc, "지금은 방에 들어갈 수 없습니다.")
-			if err ~= nil then
-				log("doll_house start_solo:", err)
-			end
-		end
 	end
 }

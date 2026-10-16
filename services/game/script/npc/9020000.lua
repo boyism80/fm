@@ -51,17 +51,16 @@ return {
 			me:dialog(npc, "This PQ is not currently available.")
 			return
 		end
-		local state = group:get_property("state")
-		if state == nil or state == "" or state == "0" then
-			local sm, err = group:start_party(me, party, 30)
-			if sm == nil then
+		local sm, err = group:start_party(me, party, 30)
+		if sm == nil then
+			if err == StateMachineError.Full then
+				me:dialog(npc, "이 안에 이미 다른 파티가 들어가서 클리어에 도전하고있습니다. 잠시후에 다시 시도해 주세요")
+			else
 				me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
 				if err ~= nil then
 					log("kpq start_party:", err)
 				end
 			end
-		else
-			me:dialog(npc, "이 안에 이미 다른 파티가 들어가서 클리어에 도전하고있습니다. 잠시후에 다시 시도해 주세요")
 		end
 		pq.remove_all(PASS_ID, me)
 		pq.remove_all(COUPON_ID, me)

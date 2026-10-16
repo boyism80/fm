@@ -67,15 +67,12 @@ return {
 			me:dialog(npc, "오류가 발생했습니다.")
 			return
 		end
-		local state = group:get_property("state")
-		if state ~= nil and state ~= "" and state ~= "0" then
-			me:dialog(npc, "이미 다른 파티가 속성의 타나토스에 도전하고 있습니다.")
-			return
-		end
 		local sm, err = group:start_party(me, party)
 		if sm == nil then
-			me:dialog(npc, "오류가 발생했습니다.")
-			if err ~= nil then
+			if err == StateMachineError.Full then
+				me:dialog(npc, "이미 다른 파티가 속성의 타나토스에 도전하고 있습니다.")
+			else
+				me:dialog(npc, "오류가 발생했습니다.")
 				log("element_thanatos start_party:", err)
 			end
 		end

@@ -45,7 +45,6 @@ end
 
 return {
 	on_init = function(group)
-		group:set_property("state", "0")
 		group:set_property("allfinish", "")
 		group:min_players(MIN_PARTY_SIZE)
 		group:exit_map(LOBBY_MAP)
@@ -53,7 +52,6 @@ return {
 
 	on_create = function(sm)
 		local group = sm:group()
-		group:set_property("state", "1")
 		group:set_property("allfinish", "")
 		sm:set_property("stage", "1")
 		sm:set_property("guideRead", "0")
@@ -104,13 +102,8 @@ return {
 		end_run(sm)
 	end,
 
-	on_clear = function(sm)
-		end_run(sm)
-	end,
-
 	on_finish = function(sm)
 		local group = sm:group()
-		group:set_property("state", "0")
 		group:set_property("allfinish", "")
 	end
 }

@@ -19,6 +19,16 @@ func (g *StateMachineGroup) Type() lua.LValueType {
 
 func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
+		"full": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			L.Push(lua.LBool(group.Full()))
+			return 1
+		},
 		"name": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)

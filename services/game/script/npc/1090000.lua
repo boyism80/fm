@@ -188,7 +188,7 @@ end
 local function start_test(me, npc, quest_id)
 	for _, group_name in ipairs(TEST_GROUPS[quest_id]) do
 		local group = state_machine(group_name)
-		if group ~= nil and group:get_property("state") ~= "1" then
+		if group ~= nil and not group:full() then
 			if start_solo(group, me) then
 				return
 			end

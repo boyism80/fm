@@ -97,8 +97,7 @@ local function group_free(name)
 	if group == nil then
 		return false
 	end
-	local state = group:get_property("state")
-	return state == nil or state == "" or state == "0"
+	return not group:full()
 end
 
 return {
@@ -180,9 +179,13 @@ return {
 
 		local sm, err = main:start_party(me, party, 200)
 		if sm == nil then
-			me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
-			if err ~= nil then
-				log("henesys pq start_party:", err)
+			if err == StateMachineError.Full then
+				me:dialog(npc, "이미 다른 파티가 이 안에 들어가서 퀘스트에 도전중입니다. 잠시 후 다시 시도해 주세요.")
+			else
+				me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
+				if err ~= nil then
+					log("henesys pq start_party:", err)
+				end
 			end
 			return
 		end

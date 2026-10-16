@@ -84,18 +84,16 @@ return {
 				me:dialog(npc, "미안하지만 파티퀘스트 시스템에 현재 문제가 생겼다. 지금은 입장할 수 없다..")
 				return
 			end
-			local state = group:get_property("state")
-			if state ~= nil and state ~= "" and state ~= "0" then
-				me:dialog(npc, "이 안에 이미 다른 파티가 입장하여 클리어에 도전중입니다. 잠시 후에 다시 시도해보세요.")
-				return
-			end
 			local sm, err = group:start_party(me, party, 200)
 			if sm == nil then
-				me:dialog(npc, "미안하지만 파티퀘스트 시스템에 현재 문제가 생겼다. 지금은 입장할 수 없다..")
-				if err ~= nil then
+				if err == StateMachineError.Full then
+					me:dialog(npc, "이 안에 이미 다른 파티가 입장하여 클리어에 도전중입니다. 잠시 후에 다시 시도해보세요.")
+					return
+				else
+					me:dialog(npc, "미안하지만 파티퀘스트 시스템에 현재 문제가 생겼다. 지금은 입장할 수 없다..")
 					log("horntail pq start_party:", err)
+					return
 				end
-				return
 			end
 			remove_keys(me)
 			return

@@ -55,8 +55,7 @@ return {
 				me:dialog(npc, "This PQ is not currently available.")
 				return
 			end
-			local state = group:get_property("state")
-			if state ~= nil and state ~= "" and state ~= "0" then
+			if group:full() then
 				me:dialog(npc, "으음..이미 이 안에 다른 파티가 들어간 것 같은데요?")
 				return
 			end
@@ -66,9 +65,13 @@ return {
 			end
 			local sm, err = group:start_party(me, party, 200)
 			if sm == nil then
-				me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
-				if err ~= nil then
-					log("henesys bonus start_party:", err)
+				if err == StateMachineError.Full then
+					me:dialog(npc, "으음..이미 이 안에 다른 파티가 들어간 것 같은데요?")
+				else
+					me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
+					if err ~= nil then
+						log("henesys bonus start_party:", err)
+					end
 				end
 			end
 			return

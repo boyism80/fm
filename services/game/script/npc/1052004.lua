@@ -14,8 +14,7 @@ return {
 			me:dialog(npc, "지금은 입장할 수 없습니다.")
 			return
 		end
-		local state = group:get_property("state")
-		if state ~= nil and state ~= "" and state ~= "0" then
+		if group:full() then
 			me:dialog(npc, "이미 다른 사람이 안에 있습니다.")
 			return
 		end
@@ -24,9 +23,13 @@ return {
 		end
 		local started, err = group:start_solo(me)
 		if started == nil then
-			me:dialog(npc, "지금은 입장할 수 없습니다.")
-			if err ~= nil then
-				log("gojarani start_solo:", err)
+			if err == StateMachineError.Full then
+				me:dialog(npc, "이미 다른 사람이 안에 있습니다.")
+			else
+				me:dialog(npc, "지금은 입장할 수 없습니다.")
+				if err ~= nil then
+					log("gojarani start_solo:", err)
+				end
 			end
 		end
 	end,

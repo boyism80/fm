@@ -308,6 +308,28 @@ func (g *StateMachineGroup) checkCreateLocked(id string) error {
 	return nil
 }
 
+func (g *StateMachineGroup) Full() bool {
+	if g == nil {
+		return true
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	c := g.machineCap
+	if g.capOverride != nil {
+		c = *g.capOverride
+	}
+	if !c.Limited {
+		return false
+	}
+	running := 0
+	for _, sm := range g.machines {
+		if sm != nil && !sm.Disposed() {
+			running++
+		}
+	}
+	return running >= c.Max
+}
+
 func (g *StateMachineGroup) EnterPlayer(sm *StateMachine, ch *Character) {
 	if sm == nil {
 		return

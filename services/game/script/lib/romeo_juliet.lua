@@ -169,14 +169,12 @@ local function create(cfg)
 		clear_fx = clear_fx,
 
 		on_init = function(group)
-			group:set_property("state", "0")
 			group:min_players(1)
 			group:exit_map(exit_map)
 		end,
 
 		on_create = function(sm)
 			local group = sm:group()
-			group:set_property("state", "1")
 			clear_props(sm)
 			init_stage6(sm)
 			return maps
@@ -282,12 +280,7 @@ local function create(cfg)
 			end_run(sm)
 		end,
 
-		on_clear = function(sm)
-			end_run(sm)
-		end,
-
 		on_finish = function(sm)
-			sm:group():set_property("state", "0")
 			clear_props(sm)
 		end
 	}

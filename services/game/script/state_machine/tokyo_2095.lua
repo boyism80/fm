@@ -10,7 +10,6 @@ end
 
 return {
 	on_init = function(group)
-		group:set_property("state", "0")
 		group:set_property("leader", "true")
 		group:min_players(1)
 		group:exit_map(EXIT_MAP)
@@ -18,7 +17,6 @@ return {
 
 	on_create = function(sm)
 		local group = sm:group()
-		group:set_property("state", "1")
 		group:set_property("leader", "true")
 		return { TEMPLATE_MAP }
 	end,
@@ -39,13 +37,8 @@ return {
 		finish(sm, EXIT_MAP)
 	end,
 
-	on_clear = function(sm)
-		finish(sm, 0)
-	end,
-
 	on_finish = function(sm)
 		local group = sm:group()
-		group:set_property("state", "0")
 		group:set_property("leader", "true")
 	end,
 }

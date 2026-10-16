@@ -27,15 +27,15 @@ return {
 			me:dialog(npc, "지금은 사육실에 들어갈 수 없습니다.")
 			return
 		end
-		if group:get_property("state") == "1" then
-			me:dialog(npc, "이미 다른 플레이어가 입장하여 퀘스트에 도전하는 중입니다. 잠시 후 다시 시도해 주세요.")
-			return
-		end
 		local sm, err = group:start_solo(me)
 		if sm == nil then
-			me:dialog(npc, "지금은 사육실에 들어갈 수 없습니다.")
-			if err ~= nil then
-				log("tame_pig start_solo:", err)
+			if err == StateMachineError.Full then
+				me:dialog(npc, "이미 다른 플레이어가 입장하여 퀘스트에 도전하는 중입니다. 잠시 후 다시 시도해 주세요.")
+			else
+				me:dialog(npc, "지금은 사육실에 들어갈 수 없습니다.")
+				if err ~= nil then
+					log("tame_pig start_solo:", err)
+				end
 			end
 		end
 	end

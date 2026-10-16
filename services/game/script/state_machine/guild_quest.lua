@@ -55,14 +55,11 @@ local GATE_NOTICES = {
 
 return {
 	on_init = function(group)
-		group:set_property("state", "0")
 		group:min_players(1)
 		group:exit_map(gq.EXIT_MAP)
 	end,
 
 	on_create = function(sm)
-		local group = sm:group()
-		group:set_property("state", "1")
 		sm:set_property("state", "waiting")
 		return STAGE_MAPS
 	end,
@@ -178,7 +175,4 @@ return {
 		sm:restart_timer(BONUS_MS)
 	end,
 
-	on_finish = function(sm)
-		sm:group():set_property("state", "0")
-	end
 }
