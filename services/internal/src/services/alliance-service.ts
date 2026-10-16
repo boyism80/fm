@@ -10,6 +10,7 @@ import type { PoolClient } from "pg";
 import { AppConfiguration } from "../config/app-configuration";
 import { InternalContext } from "../context/internal-context";
 import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "../repos/alliance-repository";
+import { RequestStatus } from "../repos/request-repository";
 import { GuildRepository } from "../repos/guild-repository";
 import { GuildMemberRepository } from "../repos/guild-member-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
@@ -327,7 +328,7 @@ export class AllianceService {
         }
 
         const recorded = requestId === "0" ? null : await this.allianceCreateRequestRepo.find(worldId, guildId, requestId);
-        if (recorded?.status === "applied") {
+        if (recorded?.status === RequestStatus.Applied) {
             const recordedAllianceId = recorded.outcome.alliance_id;
             const recordedAlliance = await this.allianceRepo.get(worldId, recordedAllianceId);
             if (!recordedAlliance) {

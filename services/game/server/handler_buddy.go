@@ -11,7 +11,6 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
 )
@@ -63,9 +62,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 					return nil
 				}
 				if view := reply.GetRequesterView(); view != nil {
-					entry := game.BuddyListEntryFromProto(view)
-					ch.Buddies().Upsert(entry)
-					ch.Listener().OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
+					ch.Buddies().Put(game.BuddyListEntryFromProto(view))
 				}
 				return nil
 			},
@@ -91,9 +88,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 					return nil
 				}
 				if view := reply.GetAccepterView(); view != nil {
-					entry := game.BuddyListEntryFromProto(view)
-					ch.Buddies().Upsert(entry)
-					ch.Listener().OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.BuildS2C()})
+					ch.Buddies().Put(game.BuddyListEntryFromProto(view))
 				}
 				return nil
 			},

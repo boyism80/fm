@@ -40,11 +40,20 @@ export type CashBalance = {
     maplePoint: number;
 };
 
+export enum CashTransferKind {
+    Gift = 0,
+    Ring = 1,
+    TakeOut = 2,
+    PutIn = 3,
+    InventorySlot = 4,
+    Meso = 5,
+}
+
 export type CashTransferRequest = {
     request_id: string;
     source_id: number;
     target_id: number;
-    kind: string;
+    kind: CashTransferKind;
     detail: unknown;
 };
 
@@ -57,11 +66,16 @@ export class CashShopRepository {
         this.cashRequestRepo = cashRequestRepository;
     }
 
-    async withAccountLock<T>(worldId: number, accountId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    async withAccountLock<T>(
+        worldId: number,
+        accountId: number,
+        fn: (client: PoolClient) => Promise<T>,
+        options: RepositoryTxOptions = {}
+    ): Promise<T> {
         return this.ctx.withPgDataTransaction(worldId, accountId, async (client) => {
             await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, accountId]);
             return fn(client);
-        });
+        }, options);
     }
 
     async withCharacterLock<T>(worldId: number, characterId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -75,7 +89,7 @@ export class CashShopRepository {
         return this.ctx.withPgDataTransaction(worldId, accountId, fn, options);
     }
 
-    async queueTransfer(worldId: number, sourceId: number, targetId: number, kind: string, detail: unknown, client: PoolClient): Promise<void> {
+    async queueTransfer(worldId: number, sourceId: number, targetId: number, kind: CashTransferKind, detail: unknown, client: PoolClient): Promise<void> {
         await client.query(
             "INSERT INTO cash_transfer_requests (request_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5)",
             [randomUUID(), sourceId, targetId, kind, JSON.stringify(detail)]
@@ -95,9 +109,9 @@ export class CashShopRepository {
 
     async receiveTransfer(worldId: number, request: CashTransferRequest, fn: (client: PoolClient) => Promise<void>): Promise<void> {
         await this.ctx.withPgDataTransaction(worldId, request.target_id, async (client) => {
-            if (request.kind === "gift" || request.kind === "put_in") {
+            if (request.kind === CashTransferKind.Gift || request.kind === CashTransferKind.PutIn) {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, request.target_id]);
-            } else if (request.kind === "inventory_slot" || request.kind === "meso") {
+            } else if (request.kind === CashTransferKind.InventorySlot || request.kind === CashTransferKind.Meso) {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, request.target_id]);
             }
             if ((await this.cashRequestRepo.reserve(worldId, request.target_id, request.request_id, {}, client)) === false) {
@@ -113,8 +127,8 @@ export class CashShopRepository {
             const res = await pool.query(
                 `SELECT COALESCE(SUM(jsonb_array_length(detail->'items')), 0) AS count
                  FROM cash_transfer_requests
-                 WHERE completed = FALSE AND kind = 'gift' AND target_id = $1 AND jsonb_typeof(detail->'items') = 'array'`,
-                [accountId]
+                 WHERE completed = FALSE AND kind = $2 AND target_id = $1 AND jsonb_typeof(detail->'items') = 'array'`,
+                [accountId, CashTransferKind.Gift]
             );
             count += Number(res.rows[0]?.count ?? 0);
         }
@@ -152,8 +166,8 @@ export class CashShopRepository {
         await client.query(
             `UPDATE cash_transfer_requests
              SET completed = TRUE
-             WHERE completed = FALSE AND source_id = $1 AND kind = 'ring' AND detail->>'serial' = ANY($2::text[])`,
-            [sourceId, serials]
+             WHERE completed = FALSE AND source_id = $1 AND kind = $3 AND detail->>'serial' = ANY($2::text[])`,
+            [sourceId, serials, CashTransferKind.Ring]
         );
     }
 

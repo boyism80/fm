@@ -8,6 +8,7 @@ import {
 } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
 import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository, type ParcelRow } from "../repos/parcel-repository";
+import { RequestStatus } from "../repos/request-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
@@ -109,7 +110,7 @@ export class ParcelService {
         const result = await this.parcelRepo.withReceiverLock(input.worldId, receiverId, async (txClient) => {
             if (input.requestId !== "0") {
                 const request = await this.parcelSendRequestRepo.find(input.worldId, receiverId, input.requestId, { txClient });
-                if (request?.status === "aborted") {
+                if (request?.status === RequestStatus.Aborted) {
                     return ParcelResult.PARCEL_RESULT_ABORTED;
                 }
                 if (request != null) {
@@ -236,7 +237,7 @@ export class ParcelService {
 
         return this.parcelRepo.withReceiverLock(worldId, entry.character_id, async (txClient) => {
             const request = await this.parcelSendRequestRepo.abort(worldId, entry.character_id, requestId, txClient);
-            return request?.status === "applied";
+            return request?.status === RequestStatus.Applied;
         });
     }
 
@@ -244,7 +245,7 @@ export class ParcelService {
         return this.parcelRepo.withReceiverLock(worldId, characterId, async (txClient) => {
             if (requestId !== "0") {
                 const claimed = await this.parcelClaimRequestRepo.find(worldId, characterId, requestId, { txClient });
-                if (claimed?.status === "applied") {
+                if (claimed?.status === RequestStatus.Applied) {
                     return { result: ParcelResult.PARCEL_RESULT_OK, parcel: Parcel.fromJSON(claimed.outcome.parcel) };
                 }
             }

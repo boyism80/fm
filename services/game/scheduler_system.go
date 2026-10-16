@@ -34,16 +34,3 @@ func (s *SchedulerSystem) RunObjectTimer(pid *actor.PID, obj Object, key string)
 		root.Send(pid, payload)
 	}
 }
-
-func (s *SchedulerSystem) RunReactorRespawn(pid *actor.PID, mapID uint32, spawnID uint32) {
-	if s.gw == nil || pid == nil {
-		return
-	}
-	payload := &c_actor.RunReactorRespawn{
-		MapID:   mapID,
-		SpawnID: spawnID,
-	}
-	if root := s.gw.Systems().Get[*c_actor.ActorRegistry]().Root(); root != nil {
-		root.Send(pid, payload)
-	}
-}

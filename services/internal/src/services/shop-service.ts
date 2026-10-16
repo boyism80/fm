@@ -6,6 +6,7 @@ import {
     type ShopSearchEntry,
 } from "../protobuf/generated/fminternal/internal_service";
 import { ShopOpenRequestRepository, ShopRepository, type ShopRow } from "../repos/shop-repository";
+import { RequestStatus } from "../repos/request-repository";
 import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
 const ShopKindEntrusted = 5;
@@ -91,7 +92,7 @@ export class ShopService {
         }
         return this.shopRepo.withAccountLock(shop.worldId, shop.accountId, async (txClient) => {
             const request = await this.shopOpenRequestRepo.find(shop.worldId, shop.accountId, requestId, { txClient });
-            if (request?.status === "aborted") {
+            if (request?.status === RequestStatus.Aborted) {
                 return { shopId: 0, existing: undefined, aborted: true };
             }
             if (request != null) {
@@ -143,13 +144,13 @@ export class ShopService {
             if (request == null) {
                 return false;
             }
-            if (request.status === "aborted") {
+            if (request.status === RequestStatus.Aborted) {
                 return true;
             }
             if ((await this.shopRepo.abortOpen(worldId, accountId, request.outcome.shop_id, { txClient })) === false) {
                 return false;
             }
-            await this.shopOpenRequestRepo.transition(worldId, accountId, requestId, "applied", "aborted", txClient);
+            await this.shopOpenRequestRepo.transition(worldId, accountId, requestId, RequestStatus.Applied, RequestStatus.Aborted, txClient);
             return true;
         });
     }

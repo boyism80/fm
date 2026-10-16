@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import type { InternalContext } from "../context/internal-context";
 import type { CharacterRepository } from "../repos/character-repository";
 import type { FamilyMoveRequestRepository } from "../repos/family-request-repository";
+import { RequestStatus } from "../repos/request-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 import type { SessionRepository } from "../repos/session-repository";
 import type { SocialService } from "./social-service";
@@ -481,14 +482,14 @@ export class FamilyService {
 
         if (req.complete) {
             await this.internalContext.withPgGlobalTransaction(world, async tx => {
-                await this.familyMoveRequestRepository.transition(world, id, req.requestId, "applied", "completed", tx);
+                await this.familyMoveRequestRepository.transition(world, id, req.requestId, RequestStatus.Applied, RequestStatus.Completed, tx);
             });
             return { status: FamilyResult.FAMILY_RESULT_OK, family: undefined };
         }
 
         const payer = await this.internalContext.withPgGlobalTransaction(world, async tx => {
             await this.familyMoveRequestRepository.abort(world, id, req.requestId, tx);
-            const reservation = await this.familyMoveRequestRepository.transition(world, id, req.requestId, "applied", "aborted", tx);
+            const reservation = await this.familyMoveRequestRepository.transition(world, id, req.requestId, RequestStatus.Applied, RequestStatus.Aborted, tx);
             if (!reservation) {
                 return 0;
             }

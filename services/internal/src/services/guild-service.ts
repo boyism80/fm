@@ -11,6 +11,7 @@ import { AppConfiguration } from "../config/app-configuration";
 import { InternalContext } from "../context/internal-context";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "../repos/guild-repository";
+import { RequestStatus } from "../repos/request-repository";
 import { GuildMemberRepository } from "../repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "../repos/guild-bulletin-board-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
@@ -298,7 +299,7 @@ export class GuildService {
         );
 
         const recorded = requestId === "0" ? null : await this.guildCreateRequestRepo.find(worldId, leaderCharacterId, requestId);
-        if (recorded?.status === "applied") {
+        if (recorded?.status === RequestStatus.Applied) {
             const recordedGuildId = recorded.outcome.guild_id;
             const loaded = await this.getGuild(worldId, recordedGuildId);
             if (!loaded?.guild) {

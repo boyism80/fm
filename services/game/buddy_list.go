@@ -66,6 +66,11 @@ func (bl *BuddyList) Upsert(entry BuddyListEntry) {
 	bl.entries[entry.CharacterID] = entry
 }
 
+func (bl *BuddyList) Put(entry BuddyListEntry) {
+	bl.Upsert(entry)
+	bl.owner.listener.OnBuddyListUpdate(bl.owner, pconst.BuddyListSyncUpdate, bl.BuildS2C())
+}
+
 func (bl *BuddyList) Remove(characterID uint32) bool {
 	if _, ok := bl.entries[characterID]; !ok {
 		return false

@@ -264,22 +264,31 @@ func (m *Map) HoldOID(oid uint32) {
 	m.availableOIDs = append(m.availableOIDs, oid)
 }
 
+func (m *Map) After(delay time.Duration, run func()) *time.Timer {
+	if m == nil || m.gameWorld == nil || run == nil {
+		return nil
+	}
+	return time.AfterFunc(delay, func() {
+		if m.gameWorld.Systems().Get[*c_actor.ActorRegistry]().Root() == nil {
+			return
+		}
+		m.gameWorld.Systems().Get[*MapSystem]().Visit(m, func(actor.Context) {
+			run()
+		})
+	})
+}
+
 // The client keeps the leave animation, so the id waits before it can be used again.
 func (m *Map) releaseOID(oid uint32) {
 	if oid == 0 {
 		return
 	}
-	pid := m.LogicActorPID()
-	if pid == nil || m.gameWorld == nil {
+	if m.LogicActorPID() == nil || m.gameWorld == nil {
 		m.HoldOID(oid)
 		return
 	}
-	time.AfterFunc(oidReuseDelay, func() {
-		root := m.gameWorld.Systems().Get[*c_actor.ActorRegistry]().Root()
-		if root == nil {
-			return
-		}
-		root.Send(pid, &ReuseOID{MapID: m.id, OID: oid})
+	m.After(oidReuseDelay, func() {
+		m.HoldOID(oid)
 	})
 }
 

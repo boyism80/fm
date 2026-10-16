@@ -41,5 +41,9 @@ func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 			Channel:     channel,
 		})
 	}
-	ch.Listener().OnBuddyListUpdate(ch, action, msg.Entries)
+	entries := msg.Entries
+	if action == pconst.BuddyListSyncUpdate {
+		entries = ch.Buddies().BuildS2C()
+	}
+	ch.Listener().OnBuddyListUpdate(ch, action, entries)
 }

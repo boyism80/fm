@@ -21,6 +21,7 @@ import {
     type WeddingGiftRow,
 } from "../repos/marriage-repository";
 import { ParcelSendRequestRepository } from "../repos/parcel-repository";
+import { RequestStatus } from "../repos/request-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { ParcelService } from "./parcel-service";
@@ -250,7 +251,7 @@ export class MarriageService {
     async abortMarriageChange(worldId: number, requestId: string): Promise<boolean> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             const request = await this.marriageRequestRepo.abort(worldId, 0, requestId, client);
-            return request?.status === "applied";
+            return request?.status === RequestStatus.Applied;
         });
     }
 
@@ -262,7 +263,7 @@ export class MarriageService {
             }
             const request = await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client });
             if (request != null) {
-                if (request.status === "aborted" || (found.groom_id !== characterId && found.bride_id !== characterId)) {
+                if (request.status === RequestStatus.Aborted || (found.groom_id !== characterId && found.bride_id !== characterId)) {
                     return null;
                 }
                 return found;
@@ -297,7 +298,7 @@ export class MarriageService {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             const row = await this.marriageRepo.find(client, marriageId);
             const request = await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client });
-            if (request?.status === "aborted") {
+            if (request?.status === RequestStatus.Aborted) {
                 return { result: MarriageResult.MARRIAGE_RESULT_ABORTED };
             }
             if (request != null) {
@@ -434,7 +435,7 @@ export class MarriageService {
         return this.marriageRepo.withReceiverLock(input.worldId, input.receiverId, async (client) => {
             if (input.requestId !== "0") {
                 const request = await this.weddingGiftSendRequestRepo.find(input.worldId, input.receiverId, input.requestId, { txClient: client });
-                if (request?.status === "aborted") {
+                if (request?.status === RequestStatus.Aborted) {
                     return MarriageResult.MARRIAGE_RESULT_ABORTED;
                 }
                 if (request != null) {
@@ -459,7 +460,7 @@ export class MarriageService {
     async abortWeddingGift(worldId: number, receiverId: number, requestId: string): Promise<boolean> {
         return this.marriageRepo.withReceiverLock(worldId, receiverId, async (client) => {
             const request = await this.weddingGiftSendRequestRepo.abort(worldId, receiverId, requestId, client);
-            return request?.status === "applied";
+            return request?.status === RequestStatus.Applied;
         });
     }
 
@@ -472,7 +473,7 @@ export class MarriageService {
         return this.marriageRepo.withReceiverLock(worldId, characterId, async (client) => {
             if (requestId !== "0") {
                 const claimed = await this.weddingGiftClaimRequestRepo.find(worldId, characterId, requestId, { txClient: client });
-                if (claimed?.status === "applied") {
+                if (claimed?.status === RequestStatus.Applied) {
                     return { result: MarriageResult.MARRIAGE_RESULT_OK, gift: WeddingGift.fromJSON(claimed.outcome.gift) };
                 }
             }

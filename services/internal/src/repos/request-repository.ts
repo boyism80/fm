@@ -2,11 +2,15 @@ import type { Pool, PoolClient } from "pg";
 import type { InternalContext } from "../context/internal-context";
 import type { RepositoryTxOptions } from "../types/repository-contracts";
 
-export type RequestStatus = "applied" | "aborted" | "completed";
+export enum RequestStatus {
+    Applied = 0,
+    Aborted = 1,
+    Completed = 2,
+}
 
 export type RequestRow<TOutcome> = { requestId: string; ownerId: number } & (
-    | { status: "applied" | "completed"; outcome: TOutcome }
-    | { status: "aborted"; outcome: Partial<TOutcome> }
+    | { status: RequestStatus.Applied | RequestStatus.Completed; outcome: TOutcome }
+    | { status: RequestStatus.Aborted; outcome: Partial<TOutcome> }
 );
 
 type RequestRecord = {
@@ -72,8 +76,8 @@ export abstract class RequestRepository<TOutcome extends object = Record<string,
     // The tombstone goes in first, so a request that arrives later is rejected. Null when the id belongs to another owner.
     async abort(worldId: number, ownerId: number, requestId: string, txClient: PoolClient): Promise<RequestRow<TOutcome> | null> {
         await this.tx(worldId, ownerId, txClient).query(
-            "INSERT INTO requests (request_id, kind, owner_id, status) VALUES ($1, $2, $3, 'aborted') ON CONFLICT DO NOTHING",
-            [requestId, this.kind, ownerId]
+            "INSERT INTO requests (request_id, kind, owner_id, status) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING",
+            [requestId, this.kind, ownerId, RequestStatus.Aborted]
         );
         return this.find(worldId, ownerId, requestId, { txClient });
     }
@@ -82,7 +86,7 @@ export abstract class RequestRepository<TOutcome extends object = Record<string,
         worldId: number,
         ownerId: number,
         requestId: string,
-        from: "applied" | "completed",
+        from: RequestStatus.Applied | RequestStatus.Completed,
         to: RequestStatus,
         txClient: PoolClient
     ): Promise<{ requestId: string; ownerId: number; status: RequestStatus; outcome: TOutcome } | null> {

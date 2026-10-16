@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { InternalContext } from "../context/internal-context";
 import type { CharacterRepository } from "../repos/character-repository";
 import type { NoteRemoveRequestRepository } from "../repos/note-request-repository";
+import { RequestStatus } from "../repos/request-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 import type { SessionRepository } from "../repos/session-repository";
 import type { DistributedLockService } from "./distributed-lock-service";
@@ -583,7 +584,7 @@ export class SocialService {
             await tx.query("SELECT pg_advisory_xact_lock(280, $1)", [id]);
             if (req.requestId !== "0") {
                 const recorded = await this.noteRemoveRequestRepository.find(req.worldId, id, req.requestId, { txClient: tx });
-                if (recorded?.status === "applied") {
+                if (recorded?.status === RequestStatus.Applied) {
                     return recorded.outcome.population;
                 }
             }

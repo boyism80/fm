@@ -21,10 +21,16 @@ import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import type { CharacterModel } from "../../repos/character-repository";
 import { Controller, Method } from "../grpc-method-decorator";
 
+enum OwnedCharacterKind {
+    Skip = 0,
+    Bad = 1,
+    Ok = 2,
+}
+
 type OwnedCharacterResult =
-    | { kind: "skip" }
-    | { kind: "bad"; code: SessionErrorCode }
-    | { kind: "ok"; row: CharacterModel };
+    | { kind: OwnedCharacterKind.Skip }
+    | { kind: OwnedCharacterKind.Bad; code: SessionErrorCode }
+    | { kind: OwnedCharacterKind.Ok; row: CharacterModel };
 
 @Controller("sessionController")
 export class SessionGrpcController {
@@ -54,13 +60,13 @@ export class SessionGrpcController {
         characterId: number | undefined,
     ): Promise<OwnedCharacterResult> {
         if (characterId == null || characterId === 0) {
-            return { kind: "skip" };
+            return { kind: OwnedCharacterKind.Skip };
         }
         const row = await this.characterService.getCharacter(worldId, characterId);
         if (!row || (accountId !== 0 && row.accountId !== accountId)) {
-            return { kind: "bad", code: SessionErrorCode.SESSION_NOT_FOUND };
+            return { kind: OwnedCharacterKind.Bad, code: SessionErrorCode.SESSION_NOT_FOUND };
         }
-        return { kind: "ok", row };
+        return { kind: OwnedCharacterKind.Ok, row };
     }
 
     @Method("beginGameTransition")
@@ -226,7 +232,7 @@ export class SessionGrpcController {
                 call.request.accountId,
                 call.request.characterId,
             );
-            if (oc.kind === "bad") {
+            if (oc.kind === OwnedCharacterKind.Bad) {
                 callback(null, {
                     ok: false,
                     errorCode: oc.code,
@@ -258,11 +264,11 @@ export class SessionGrpcController {
                 call.request.accountId,
                 call.request.characterId,
             );
-            if (oc.kind === "bad") {
+            if (oc.kind === OwnedCharacterKind.Bad) {
                 callback(null, { ok: false });
                 return;
             }
-            const accountId = oc.kind === "ok" ? oc.row.accountId : call.request.accountId;
+            const accountId = oc.kind === OwnedCharacterKind.Ok ? oc.row.accountId : call.request.accountId;
             if (accountId === 0) {
                 callback(null, { ok: false });
                 return;

@@ -33,11 +33,6 @@ type ResponseSpawnDoor struct {
 	PartyID     *uint32
 }
 
-type ReuseOID struct {
-	MapID uint32
-	OID   uint32
-}
-
 type DespawnDoor struct {
 	Map               *Map
 	Key               DoorKey
