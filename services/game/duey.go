@@ -228,7 +228,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	}
 
 	cost := int64(meso) + int64(d.Fee(meso, quick))
-	if cost > math.MaxInt32 || (ExchangeSpec{Cost: ExchangeSide{Meso: int32(cost)}}).Valid(d.owner) != ExchangeOK {
+	if cost > math.MaxInt32 || (ExchangeSpec{Cost: ExchangeSide{Meso: int32(cost)}}).Valid(d.owner, d.owner.escrow) != ExchangeOK {
 		return ErrDueyNotEnoughMeso
 	}
 
@@ -505,7 +505,7 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 			Items: map[uint32]uint16{parcel.item.GetModel().GetID(): parcel.item.GetCount()},
 		},
 	}
-	if spec.Valid(d.owner) != ExchangeOK {
+	if spec.Valid(d.owner, d.owner.escrow) != ExchangeOK {
 		return ErrInventoryFull
 	}
 	return nil

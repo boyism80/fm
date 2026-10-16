@@ -225,7 +225,7 @@ func (inv *Inventory) RemoveByItemIDCount(itemID uint32, count uint16) bool {
 			Items: map[uint32]uint16{itemID: count},
 		},
 	}
-	if spec.Valid(ch) != ExchangeOK {
+	if spec.Valid(ch, ch.escrow) != ExchangeOK {
 		return false
 	}
 	return inv.removeByItemIDCountUnchecked(itemID, count)
@@ -321,7 +321,7 @@ func (inv *Inventory) AddItem(item Item, allOrNothing bool) (addedItems []Item, 
 				Items: map[uint32]uint16{item.GetModel().GetID(): item.GetCount()},
 			},
 		}
-		if spec.Valid(ch) != ExchangeOK {
+		if spec.Valid(ch, ch.escrow) != ExchangeOK {
 			return nil, fmt.Errorf("not enough inventory space for %d items", item.GetCount())
 		}
 	}
@@ -641,5 +641,5 @@ func (inv *Inventory) Move(invType constant.InventoryType, src, dst int16) bool 
 }
 
 func (inv *Inventory) canReceive(itemID uint32, count uint16) bool {
-	return (ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}}}).Valid(inv.owner) == ExchangeOK
+	return (ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}}}).Valid(inv.owner, inv.owner.escrow) == ExchangeOK
 }

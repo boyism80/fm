@@ -86,7 +86,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if count == 0 || item.GetCount() < count {
 		return ErrStorageItemNotFound
 	}
-	if (ExchangeSpec{Cost: ExchangeSide{Meso: s.storeFee}}).Valid(s.owner) != ExchangeOK {
+	if (ExchangeSpec{Cost: ExchangeSide{Meso: s.storeFee}}).Valid(s.owner, s.owner.escrow) != ExchangeOK {
 		return ErrStorageNotEnoughMeso
 	}
 
@@ -120,7 +120,7 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 			Items: map[uint32]uint16{item.GetModel().GetID(): item.GetCount()},
 		},
 	}
-	switch spec.Valid(s.owner) {
+	switch spec.Valid(s.owner, s.owner.escrow) {
 	case ExchangeLackCost:
 		return ErrStorageNotEnoughMeso
 	case ExchangeLackCapacity:
@@ -156,7 +156,7 @@ func (s *Storage) DepositMeso(amount int32) error {
 	if amount <= 0 {
 		return ErrStorageNotEnoughMeso
 	}
-	if (ExchangeSpec{Cost: ExchangeSide{Meso: amount}}).Valid(s.owner) != ExchangeOK {
+	if (ExchangeSpec{Cost: ExchangeSide{Meso: amount}}).Valid(s.owner, s.owner.escrow) != ExchangeOK {
 		return ErrStorageNotEnoughMeso
 	}
 

@@ -140,7 +140,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 		}
 		rewards[model.GetID()] += listed.count()
 	}
-	if (ExchangeSpec{Reward: ExchangeSide{Items: rewards}}).Valid(sb.owner) != ExchangeOK {
+	if (ExchangeSpec{Reward: ExchangeSide{Items: rewards}}).Valid(sb.owner, sb.owner.escrow) != ExchangeOK {
 		return pconst.StoreBankResultInventoryFull
 	}
 	return pconst.StoreBankResultClaimed

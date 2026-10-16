@@ -215,7 +215,7 @@ func (ps *PersonalShop) returnItems(ch *Character) {
 		}
 		model := listed.item.GetModel()
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if ch.inventory.hasOnlyItem(model) || spec.Valid(ch) != ExchangeOK {
+		if ch.inventory.hasOnlyItem(model) || spec.Valid(ch, ch.escrow) != ExchangeOK {
 			items = append(items, listed)
 			continue
 		}

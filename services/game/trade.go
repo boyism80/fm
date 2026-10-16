@@ -291,7 +291,7 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 		}
 		meso := giver.ch.escrow.meso
 		spec := ExchangeSpec{Reward: ExchangeSide{Items: rewards, Meso: meso - t.tax(meso)}}
-		if spec.Valid(side.ch) != ExchangeOK {
+		if spec.Valid(side.ch, nil) != ExchangeOK {
 			return pconst.MiniRoomLeaveTradeFail
 		}
 	}

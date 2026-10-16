@@ -54,7 +54,7 @@ func (side ExchangeSide) isEmpty() bool {
 	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && side.SkillPoint == 0 && exchangeItemsEmpty(side.Items) && len(side.Skills) == 0
 }
 
-func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
+func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 	if ch == nil {
 		return ExchangeLackCost
 	}
@@ -91,7 +91,7 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 		inv := ch.inventory.tabs[invType]
 		cost := costByInv[invType]
 		reward := rewardByInv[invType]
-		if result := inv.validateItemExchange(invType, cost, reward, spec.Reward.Period, modelOf, ch.escrow); result != ExchangeOK {
+		if result := inv.validateItemExchange(invType, cost, reward, spec.Reward.Period, modelOf, escrow); result != ExchangeOK {
 			return result
 		}
 	}

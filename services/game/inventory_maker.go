@@ -104,7 +104,7 @@ func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32)
 	if !destroyed {
 		spec.Reward.Items = map[uint32]uint16{rewardID: rewardCount}
 	}
-	if spec.Valid(inv.owner) != ExchangeOK {
+	if spec.Valid(inv.owner, inv.owner.escrow) != ExchangeOK {
 		return
 	}
 
@@ -199,7 +199,7 @@ func (inv *Inventory) disassemble(slot int16, itemID uint32) {
 		Cost:   ExchangeSide{Meso: int32(meso - meso%1000)},
 		Reward: ExchangeSide{Items: map[uint32]uint16{crystalID: uint16(count)}},
 	}
-	if spec.Valid(inv.owner) != ExchangeOK {
+	if spec.Valid(inv.owner, inv.owner.escrow) != ExchangeOK {
 		return
 	}
 	if !inv.RemoveItem(constant.InventoryTypeEquipment, slot, 1) {

@@ -33,7 +33,7 @@ func (ch *Character) validateExpExchange(costExp, rewardExp uint32) ExchangeResu
 }
 
 func (ch *Character) Exchange(spec ExchangeSpec) ExchangeResult {
-	result := spec.Valid(ch)
+	result := spec.Valid(ch, ch.escrow)
 	if result != ExchangeOK {
 		return result
 	}
