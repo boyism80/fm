@@ -37,6 +37,7 @@ const EVT = {
 const INVITE_PENDING_TTL_SEC = 300;
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
 const PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE = 22;
+const PARTY_DENY_ACTION_DECLINED = 23;
 
 export type PartyMutationResult = { ok: boolean; code?: number; partyId?: number };
 export type CreatePartyResult = PartyMutationResult & { party?: PartyMessage };
@@ -521,6 +522,10 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
 
+        if (action !== PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE && action !== PARTY_DENY_ACTION_DECLINED) {
+            return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
+        }
+
         const deniedRow = await this.characterRepo.get(worldId, deniedCharacterId);
         const deniedName = deniedRow?.name ?? "";
         if (!deniedName) {
@@ -646,15 +651,10 @@ export class PartyService {
         const partyPreview = await this.partyRepo.get(worldId, lockedPartyId);
         const membersPreview = await this.partyMemberRepo.getAll(worldId, String(lockedPartyId));
         const coMemberKeyRests: string[] = [];
-        if (
-            partyPreview
-            && partyPreview.leaderCharacterId === characterId
-            && membersPreview.size === 2
-        ) {
+        if (partyPreview && partyPreview.leaderCharacterId === characterId) {
             for (const member of membersPreview.values()) {
                 if (member.characterId !== characterId) {
                     coMemberKeyRests.push(`character_realtime:${member.characterId}`);
-                    break;
                 }
             }
         }
@@ -684,13 +684,15 @@ export class PartyService {
             }
 
             const remainingMembers = [...remaining.values()];
-            if (party.leaderCharacterId === characterId && remainingMembers.length === 1) {
-                const onlyRemaining = remainingMembers[0];
-                if (!onlyRemaining || onlyRemaining.characterId == null) {
-                    return { ok: false as const, code: messages.PartyErrorCode.UNKNOWN };
+            if (party.leaderCharacterId === characterId) {
+                const disbandCharacterIds = [characterId];
+                for (const member of remainingMembers) {
+                    if (member.characterId == null) {
+                        return { ok: false as const, code: messages.PartyErrorCode.UNKNOWN };
+                    }
+                    disbandCharacterIds.push(member.characterId);
+                    await this.partyMemberRepo.del(worldId, String(lockedPartyId), member.characterId, { txClient });
                 }
-                const disbandCharacterIds = [characterId, onlyRemaining.characterId];
-                await this.partyMemberRepo.del(worldId, String(lockedPartyId), onlyRemaining.characterId, { txClient });
                 await this.partyRepo.delete({ worldId, partyId: lockedPartyId }, { txClient });
                 return {
                     ok: true as const,
@@ -701,24 +703,14 @@ export class PartyService {
             }
 
             const previousLeaderCharacterId = party.leaderCharacterId;
-            let nextLeaderCharacterId = previousLeaderCharacterId;
-            if (party.leaderCharacterId === characterId) {
-                const sorted = remainingMembers.sort((a, b) => b.level - a.level);
-                const topMember = sorted[0];
-                if (!topMember || topMember.characterId == null) {
-                    return { ok: false as const, code: messages.PartyErrorCode.UNKNOWN };
-                }
-                nextLeaderCharacterId = topMember.characterId;
-                await this.partyMemberRepo.set(worldId, { ...topMember, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER }, { txClient });
-            }
-            const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: nextLeaderCharacterId }, { txClient });
+            const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: previousLeaderCharacterId }, { txClient });
             return {
                 ok: true as const,
                 partyId: updatedParty.partyId,
                 disbanded: false as const,
-                leaderChanged: previousLeaderCharacterId !== nextLeaderCharacterId,
+                leaderChanged: false,
                 oldLeaderCharacterId: previousLeaderCharacterId,
-                newLeaderCharacterId: nextLeaderCharacterId,
+                newLeaderCharacterId: previousLeaderCharacterId,
                 realtimeStateCharacterIds: [characterId],
             };
         });
@@ -869,8 +861,13 @@ export class PartyService {
         this.assertCharacterId(requesterCharacterId);
         this.assertCharacterId(newLeaderCharacterId);
 
-        if ((await this.sessionRepo.findChannel(worldId, newLeaderCharacterId)) == null) {
+        const requesterChannel = await this.sessionRepo.findChannel(worldId, requesterCharacterId);
+        const targetChannel = await this.sessionRepo.findChannel(worldId, newLeaderCharacterId);
+        if (targetChannel == null) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
+        }
+        if (requesterChannel == null || requesterChannel !== targetChannel) {
+            return { ok: false, code: messages.PartyErrorCode.DIFFERENT_CHANNEL };
         }
 
         await using _partyLock = await this.distributedLockService.acquireWorldDataLock(
@@ -895,12 +892,13 @@ export class PartyService {
             if (!newLeader) {
                 return { ok: false, code: messages.PartyErrorCode.TARGET_NOT_IN_PARTY };
             }
+            const requesterMember = members.get(String(requesterCharacterId));
+            if (!requesterMember || requesterMember.mapId !== newLeader.mapId) {
+                return { ok: false, code: messages.PartyErrorCode.DIFFERENT_MAP };
+            }
 
             await this.partyMemberRepo.set(worldId, { ...newLeader, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER }, { txClient });
-            const requester = members.get(String(requesterCharacterId));
-            if (requester) {
-                await this.partyMemberRepo.set(worldId, { ...requester, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER }, { txClient });
-            }
+            await this.partyMemberRepo.set(worldId, { ...requesterMember, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER }, { txClient });
             const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: newLeaderCharacterId }, { txClient });
             return { ok: true, partyId: updatedParty.partyId };
         });

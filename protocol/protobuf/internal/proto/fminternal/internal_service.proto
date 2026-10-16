@@ -1396,6 +1396,8 @@ enum PartyErrorCode {
   INVITER_NOT_IN_PARTY = 13;
   CANNOT_INVITE_SELF = 14;
   TARGET_ALREADY_IN_PARTY = 15;
+  DIFFERENT_CHANNEL = 16;
+  DIFFERENT_MAP = 17;
 }
 
 message CreatePartyReply {

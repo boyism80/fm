@@ -71,6 +71,8 @@ var partyStatusByOperationAndError = map[PartyOperationCode]map[int32]PartyStatu
 		9:  PartyS2CStatusLeaderChange29,
 		4:  PartyS2CStatusUnableFindChar,
 		12: PartyS2CStatusLeaderChange28, // TARGET_OFFLINE (new leader not connected)
+		16: PartyS2CStatusLeaderChange29, // DIFFERENT_CHANNEL
+		17: PartyS2CStatusLeaderChange27, // DIFFERENT_MAP
 	},
 }
 

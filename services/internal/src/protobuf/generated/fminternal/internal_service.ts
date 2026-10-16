@@ -938,6 +938,8 @@ export enum PartyErrorCode {
   INVITER_NOT_IN_PARTY = 13,
   CANNOT_INVITE_SELF = 14,
   TARGET_ALREADY_IN_PARTY = 15,
+  DIFFERENT_CHANNEL = 16,
+  DIFFERENT_MAP = 17,
   UNRECOGNIZED = -1,
 }
 
@@ -991,6 +993,12 @@ export function partyErrorCodeFromJSON(object: any): PartyErrorCode {
     case 15:
     case "TARGET_ALREADY_IN_PARTY":
       return PartyErrorCode.TARGET_ALREADY_IN_PARTY;
+    case 16:
+    case "DIFFERENT_CHANNEL":
+      return PartyErrorCode.DIFFERENT_CHANNEL;
+    case 17:
+    case "DIFFERENT_MAP":
+      return PartyErrorCode.DIFFERENT_MAP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -1032,6 +1040,10 @@ export function partyErrorCodeToJSON(object: PartyErrorCode): string {
       return "CANNOT_INVITE_SELF";
     case PartyErrorCode.TARGET_ALREADY_IN_PARTY:
       return "TARGET_ALREADY_IN_PARTY";
+    case PartyErrorCode.DIFFERENT_CHANNEL:
+      return "DIFFERENT_CHANNEL";
+    case PartyErrorCode.DIFFERENT_MAP:
+      return "DIFFERENT_MAP";
     case PartyErrorCode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
