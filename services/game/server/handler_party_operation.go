@@ -160,7 +160,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		pid := ch.Party.ID()
 		hasParty := pid != nil
 		var inv *internal.InvitePartyReply
-		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch)
 		if !hasParty {
 			leader := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER).BuildRPC()
 			promise.ThenRPC(
