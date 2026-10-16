@@ -188,7 +188,7 @@ func (g *Guild) IsAllianceOfficer(characterID uint32) bool {
 }
 
 func (g *Guild) IsGuildMaster(characterID uint32) bool {
-	if g == nil || characterID == 0 {
+	if g == nil {
 		return false
 	}
 	if g.leaderCharacterID == characterID {
@@ -202,7 +202,7 @@ func (g *Guild) IsGuildMaster(characterID uint32) bool {
 }
 
 func (g *Guild) CanInvite(characterID uint32) bool {
-	if g == nil || characterID == 0 {
+	if g == nil {
 		return false
 	}
 	m := g.FindMember(characterID)
@@ -250,7 +250,7 @@ func (g *Guild) Clone() *Guild {
 func (g *Guild) MemberCharacterIDs() []uint32 {
 	out := make([]uint32, 0, len(g.members))
 	for _, m := range g.members {
-		if m == nil || m.characterID == 0 {
+		if m == nil {
 			continue
 		}
 		out = append(out, m.characterID)

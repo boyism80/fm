@@ -328,6 +328,7 @@ export class MarriageService {
                     senderAccountId: 0,
                     oneOfAKind: false,
                     requestId,
+                    system: true,
                 });
                 if (result === ParcelResult.PARCEL_RESULT_RECIPIENT_FULL) {
                     return fail(MarriageResult.MARRIAGE_RESULT_GUEST_FULL);

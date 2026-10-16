@@ -37,7 +37,7 @@ func (h *buddyMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 		log.Printf("buddy consumer: multi_chat JSON: %v", err)
 		return nil
 	}
-	if payload.SenderCharacterID == 0 || len(payload.NotifyCharacterIDs) == 0 {
+	if len(payload.NotifyCharacterIDs) == 0 {
 		return nil
 	}
 	if payload.ChatMode > uint32(pconst.MultiChatModeAlliance) {

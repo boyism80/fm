@@ -19,6 +19,7 @@ const (
 	ParcelKeepDuration        = 30 * 24 * time.Hour
 	ParcelMessageBytes        = 100
 	QuickParcelCoupon  uint32 = 5330000
+	systemParcelSender        = "택배"
 )
 
 var (
@@ -78,10 +79,12 @@ func (p *Parcel) BuildS2C() dto.Parcel {
 }
 
 type parcelSendDetail struct {
-	Recipient string          `json:"recipient"`
-	Meso      int32           `json:"meso"`
-	Quick     bool            `json:"quick"`
-	Item      json.RawMessage `json:"item,omitempty"`
+	Recipient  string          `json:"recipient"`
+	ReceiverID uint32          `json:"receiver_id,omitempty"`
+	Meso       int32           `json:"meso"`
+	Quick      bool            `json:"quick"`
+	Item       json.RawMessage `json:"item,omitempty"`
+	System     bool            `json:"system,omitempty"`
 }
 
 type Duey struct {
@@ -237,28 +240,50 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	}
 	detail := parcelSendDetail{Recipient: recipient, Meso: int32(cost), Quick: quick}
 	oneOfAKind := false
+	var held Item
 	if item != nil {
-		parcel.Item = item.Clone(uint16(count)).BuildRPC(0, 0)
-		oneOfAKind = item.GetModel().GetTraits()&constant.ItemTraitOnly != 0
+		held = item.Clone(uint16(count))
+		if !d.owner.inventory.RemoveItem(invType, slot, uint16(count)) {
+			return ErrDueyInvalid
+		}
+		parcel.Item = held.BuildRPC(0, 0)
+		oneOfAKind = held.GetModel().GetTraits()&constant.ItemTraitOnly != 0
 		detail.Item, _ = json.Marshal(parcel.Item)
-		d.owner.inventory.RemoveItem(invType, slot, uint16(count))
 	}
-	d.owner.inventory.removeMesoUnchecked(int32(cost))
+	paid := false
+	if cost > 0 {
+		if !d.owner.inventory.RemoveMeso(int32(cost)) {
+			if held != nil {
+				d.owner.inventory.addItemUnchecked(held, true)
+			}
+			return ErrDueyNotEnoughMeso
+		}
+		paid = true
+	}
 	if quick {
-		d.owner.inventory.RemoveByItemIDCount(QuickParcelCoupon, 1)
+		couponType, slots := d.owner.inventory.FindSlots(QuickParcelCoupon)
+		if len(slots) == 0 || !d.owner.inventory.RemoveItem(couponType, slots[0], 1) {
+			if held != nil {
+				d.owner.inventory.addItemUnchecked(held, true)
+			}
+			if paid {
+				d.owner.inventory.addMesoUnchecked(int32(cost))
+			}
+			return ErrDueyInvalid
+		}
 	}
 	id := d.owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_PARCEL_SEND, 0, detail)
 
 	d.pending = true
-	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, id, d.owner.accountID, recipient, parcel, oneOfAKind).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
+	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, id, d.owner.accountID, recipient, parcel, oneOfAKind, false).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
 		d.pending = false
 		result := v.GetResult()
-		if result != internal.ParcelResult_PARCEL_RESULT_OK && !d.refundSend(detail) {
-			if request := d.owner.unsettled.Find(id); request != nil {
-				request.inFlight = false
-			}
-		} else {
+		if result == internal.ParcelResult_PARCEL_RESULT_OK {
 			d.owner.unsettled.Erase(id)
+		} else {
+			d.owner.Post(func(actx actor.Context) {
+				d.returnSend(actx, d.owner.unsettled.Find(id))
+			})
 		}
 		switch result {
 		case internal.ParcelResult_PARCEL_RESULT_OK:
@@ -285,43 +310,76 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	return nil
 }
 
-func (d *Duey) refundSend(detail parcelSendDetail) bool {
-	var grants []Item
-	if len(detail.Item) > 0 {
-		var pb internal.Inventory
-		if err := json.Unmarshal(detail.Item, &pb); err != nil {
-			log.Printf("Duey.refundSend character=%d: %v", d.owner.GetID(), err)
-			return false
-		}
-		item, err := NewItemFromInternalProto(&pb, d.owner.gameWorld)
-		if err != nil {
-			log.Printf("Duey.refundSend character=%d: %v", d.owner.GetID(), err)
-			return false
-		}
-		grants = append(grants, item)
+func systemParcel(item *internal.Inventory, meso int32) *internal.Parcel {
+	return &internal.Parcel{
+		SenderName: systemParcelSender,
+		Meso:       meso,
+		Quick:      true,
+		Item:       item,
 	}
+}
+
+func (d *Duey) Return(actx actor.Context, request *UnsettledRequest, parcels []*internal.Parcel) {
+	if request == nil {
+		return
+	}
+	kept := make([]*internal.Parcel, 0, len(parcels))
+	for _, parcel := range parcels {
+		if parcel != nil && (parcel.Item != nil || parcel.Meso > 0) {
+			kept = append(kept, parcel)
+		}
+	}
+	if len(kept) == 0 {
+		d.owner.unsettled.Erase(request.id)
+		return
+	}
+
+	request.inFlight = true
+	d.owner.gameWorld.Systems().Get[*InternalSystem]().ReturnParcelAsync(actx, d.owner, request.id, kept).Bind(d.owner).Do(func(v *internal.ReturnParcelReply) error {
+		if v.GetResult() == internal.ParcelResult_PARCEL_RESULT_OK {
+			d.owner.unsettled.Erase(request.id)
+			return nil
+		}
+		request.inFlight = false
+		log.Printf("Duey.Return character=%d id=%d: %s", d.owner.GetID(), request.id, v.GetResult())
+		return nil
+	}).OnError(func(err error) {
+		request.inFlight = false
+		log.Printf("Duey.Return character=%d id=%d: %v", d.owner.GetID(), request.id, err)
+	})
+}
+
+func (d *Duey) returnSend(actx actor.Context, request *UnsettledRequest) {
+	if request == nil {
+		return
+	}
+	var detail parcelSendDetail
+	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		request.inFlight = false
+		log.Printf("Duey.returnSend character=%d id=%d: %v", d.owner.GetID(), request.id, err)
+		return
+	}
+
+	var item *internal.Inventory
+	if len(detail.Item) > 0 {
+		item = &internal.Inventory{}
+		if err := json.Unmarshal(detail.Item, item); err != nil {
+			request.inFlight = false
+			log.Printf("Duey.returnSend character=%d id=%d: %v", d.owner.GetID(), request.id, err)
+			return
+		}
+	}
+	parcels := []*internal.Parcel{systemParcel(item, detail.Meso)}
 	if detail.Quick {
 		coupon, err := NewItem(QuickParcelCoupon, 1, d.owner.gameWorld)
 		if err != nil {
-			log.Printf("Duey.refundSend character=%d: %v", d.owner.GetID(), err)
-			return false
+			request.inFlight = false
+			log.Printf("Duey.returnSend character=%d id=%d: %v", d.owner.GetID(), request.id, err)
+			return
 		}
-		grants = append(grants, coupon)
+		parcels = append(parcels, systemParcel(coupon.BuildRPC(0, 0), 0))
 	}
-	if len(grants) > 0 {
-		items := map[uint32]uint16{}
-		for _, item := range grants {
-			items[item.GetModel().GetID()] += item.GetCount()
-		}
-		if (ExchangeSpec{Reward: ExchangeSide{Items: items}}).Valid(d.owner) != ExchangeOK {
-			return false
-		}
-	}
-	d.owner.inventory.addMesoUnchecked(detail.Meso)
-	for _, item := range grants {
-		d.owner.inventory.addItemUnchecked(item, true)
-	}
-	return true
+	d.Return(actx, request, parcels)
 }
 
 func (d *Duey) settleSend(actx actor.Context, request *UnsettledRequest) {
@@ -332,11 +390,11 @@ func (d *Duey) settleSend(actx actor.Context, request *UnsettledRequest) {
 	}
 
 	d.owner.gameWorld.Systems().Get[*InternalSystem]().AbortParcelSendAsync(actx, d.owner, request.id, detail.Recipient).Bind(d.owner).Do(func(v *internal.AbortParcelSendReply) error {
-		if !v.GetSent() && !d.refundSend(detail) {
-			request.inFlight = false
+		if v.GetSent() {
+			d.owner.unsettled.Erase(request.id)
 			return nil
 		}
-		d.owner.unsettled.Erase(request.id)
+		d.returnSend(actx, request)
 		return nil
 	}).OnError(func(err error) {
 		request.inFlight = false
@@ -507,7 +565,7 @@ func (d *Duey) SendFromSystem(actx actor.Context, recipient string, senderName s
 		return ErrDueyInvalid
 	}
 
-	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, 0, 0, recipient, parcel, false).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
+	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, 0, 0, recipient, parcel, false, true).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
 		result := v.GetResult()
 		if result != internal.ParcelResult_PARCEL_RESULT_OK {
 			log.Printf("Duey.SendFromSystem character=%d recipient=%s: %s", d.owner.GetID(), recipient, result)

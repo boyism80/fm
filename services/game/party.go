@@ -44,7 +44,7 @@ func (p *Party) Clone() *Party {
 func (p *Party) MemberCharacterIDs() []uint32 {
 	out := make([]uint32, 0, len(p.members))
 	for _, m := range p.members {
-		if m == nil || m.characterID == 0 {
+		if m == nil {
 			continue
 		}
 		out = append(out, m.characterID)

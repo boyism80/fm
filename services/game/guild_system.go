@@ -46,7 +46,7 @@ func (s *GuildSystem) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope) *as
 	}
 	guildID := evt.GuildID
 	p.OnError(func(err error) {
-		log.Printf("guild consumer: apply type=%s guild_id=%d: %v", evt.EventType, guildID, err)
+		log.Printf("guild consumer: type=%s guild_id=%d: %v", evt.EventType, guildID, err)
 	})
 	p.ThenRPC(
 		func(c context.Context) (*internal.GetGuildReply, error) {
@@ -172,7 +172,7 @@ func (s *GuildSystem) Get(guildID uint32) *Guild {
 }
 
 func (s *GuildSystem) GuildIDForCharacter(characterID uint32) (uint32, bool) {
-	if s == nil || characterID == 0 {
+	if s == nil {
 		return 0, false
 	}
 	s.mu.Lock()

@@ -7,7 +7,7 @@ import {
     Parcel,
 } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
-import { ParcelClaimRequestRepository, ParcelRepository, ParcelSendRequestRepository, type ParcelRow } from "../repos/parcel-repository";
+import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository, type ParcelRow } from "../repos/parcel-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
@@ -23,12 +23,14 @@ export type SendParcelInput = {
     senderAccountId: number;
     oneOfAKind: boolean;
     requestId: string;
+    system: boolean;
 };
 
 export class ParcelService {
     private readonly app: AppConfiguration;
     private readonly parcelRepo: ParcelRepository;
     private readonly parcelSendRequestRepo: ParcelSendRequestRepository;
+    private readonly parcelReturnRequestRepo: ParcelReturnRequestRepository;
     private readonly parcelClaimRequestRepo: ParcelClaimRequestRepository;
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
@@ -38,6 +40,7 @@ export class ParcelService {
         appConfiguration: AppConfiguration,
         parcelRepository: ParcelRepository,
         parcelSendRequestRepository: ParcelSendRequestRepository,
+        parcelReturnRequestRepository: ParcelReturnRequestRepository,
         parcelClaimRequestRepository: ParcelClaimRequestRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
@@ -46,6 +49,7 @@ export class ParcelService {
         this.app = appConfiguration;
         this.parcelRepo = parcelRepository;
         this.parcelSendRequestRepo = parcelSendRequestRepository;
+        this.parcelReturnRequestRepo = parcelReturnRequestRepository;
         this.parcelClaimRequestRepo = parcelClaimRequestRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
@@ -95,7 +99,7 @@ export class ParcelService {
             if (entry == null || entry.world_id !== input.worldId) {
                 return ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND;
             }
-            if (input.senderAccountId !== 0 && entry.account_id === input.senderAccountId) {
+            if (input.system === false && input.senderAccountId !== 0 && entry.account_id === input.senderAccountId) {
                 return ParcelResult.PARCEL_RESULT_SAME_ACCOUNT;
             }
             receiverId = entry.character_id;
@@ -117,10 +121,10 @@ export class ParcelService {
             const rows = (await this.parcelRepo.findByReceiver(input.worldId, receiverId, { txClient })).filter(
                 (row) => this.expired(row, now) === false
             );
-            if (rows.length >= this.app.getMaxParcels()) {
+            if (input.system === false && rows.length >= this.app.getMaxParcels()) {
                 return ParcelResult.PARCEL_RESULT_RECIPIENT_FULL;
             }
-            if (input.oneOfAKind && rows.some((row) => this.toProto(row).item?.itemId === itemId)) {
+            if (input.system === false && input.oneOfAKind && rows.some((row) => this.toProto(row).item?.itemId === itemId)) {
                 return ParcelResult.PARCEL_RESULT_ONE_OF_A_KIND;
             }
 
@@ -162,6 +166,66 @@ export class ParcelService {
             console.error("[parcel] arrival notice failed", err);
         }
         return result;
+    }
+
+    async returnParcels(worldId: number, characterId: number, requestId: string, parcels: Parcel[]): Promise<ParcelResult> {
+        let created = false;
+        const stored = await this.parcelRepo.withReceiverLock(worldId, characterId, async (txClient) => {
+            if (requestId !== "0") {
+                const request = await this.parcelReturnRequestRepo.find(worldId, characterId, requestId, { txClient });
+                if (request != null) {
+                    return ParcelResult.PARCEL_RESULT_OK;
+                }
+            }
+
+            const inserted: Parcel[] = [];
+            for (const parcel of parcels) {
+                if (parcel.item == null && parcel.meso === 0) {
+                    continue;
+                }
+                const row = await this.parcelRepo.insert(
+                    worldId,
+                    {
+                        receiverId: characterId,
+                        senderName: parcel.senderName,
+                        meso: parcel.meso,
+                        quick: true,
+                        message: parcel.message,
+                        item: parcel.item ? Inventory.toJSON(parcel.item) : null,
+                    },
+                    { txClient }
+                );
+                inserted.push(this.toProto(row));
+            }
+            if (inserted.length === 0) {
+                return ParcelResult.PARCEL_RESULT_OK;
+            }
+            if (requestId !== "0") {
+                await this.parcelReturnRequestRepo.insert(worldId, characterId, requestId, {}, txClient);
+            }
+            created = true;
+            return ParcelResult.PARCEL_RESULT_OK;
+        });
+        if (stored !== ParcelResult.PARCEL_RESULT_OK || created === false) {
+            return stored;
+        }
+
+        try {
+            const channelId = await this.sessionRepo.findChannel(worldId, characterId);
+            if (channelId == null || channelId < 0) {
+                return stored;
+            }
+            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
+            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "parcel_arrived", {
+                occurred_at: new Date().toISOString(),
+                character_id: characterId,
+                sender_name: parcels[0]?.senderName ?? "",
+                quick: true,
+            });
+        } catch (err) {
+            console.error("[parcel] return notice failed", err);
+        }
+        return stored;
     }
 
     async abortParcelSend(worldId: number, recipientName: string, requestId: string): Promise<boolean> {

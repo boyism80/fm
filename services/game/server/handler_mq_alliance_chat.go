@@ -37,7 +37,7 @@ func (h *allianceMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 		log.Printf("alliance consumer: multi_chat JSON: %v", err)
 		return nil
 	}
-	if payload.AllianceID == 0 || payload.SenderCharacterID == 0 {
+	if payload.AllianceID == 0 {
 		return nil
 	}
 	if payload.ChatMode != uint32(pconst.MultiChatModeAlliance) {

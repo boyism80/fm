@@ -26,9 +26,6 @@ func (h *parcelMqArrived) Handle(_ actor.Context, raw json.RawMessage) error {
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil
 	}
-	if payload.CharacterID == 0 {
-		return nil
-	}
 	h.gs.systems.Get[*game.DispatchSystem]().Visit(payload.CharacterID, func(_ actor.Context, ch *game.Character) {
 		if ch == nil {
 			return

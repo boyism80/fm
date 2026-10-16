@@ -44,7 +44,7 @@ func (inv *Inventory) Load(items []*internal.Inventory) {
 	}
 }
 
-func (inv *Inventory) BuildRPC() ([]*internal.Inventory, []Item) {
+func (inv *Inventory) BuildRPC() []*internal.Inventory {
 	items := make([]*internal.Inventory, 0, len(inv.equipped)+64)
 	ownerID := inv.owner.GetID()
 	for parts, item := range inv.equipped {

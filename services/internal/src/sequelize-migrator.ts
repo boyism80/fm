@@ -92,7 +92,7 @@ async function inTransaction(sequelize: Sequelize, work: () => Promise<void>): P
     }
 }
 
-export async function applyPendingMigrations(sequelize: Sequelize, logPrefix: string): Promise<void> {
+export async function migratePending(sequelize: Sequelize, logPrefix: string): Promise<void> {
     await withMigrationLock(sequelize, async () => {
         const [appliedRowsRaw] = await sequelize.query('SELECT name FROM "SequelizeMeta" ORDER BY name');
         const appliedRows = appliedRowsRaw as Array<{ name: string }>;
@@ -119,7 +119,7 @@ export async function applyPendingMigrations(sequelize: Sequelize, logPrefix: st
 export async function runMigrate(): Promise<void> {
     const sequelize = connectMigrationDatabase(getDatabaseUrl(), process.env.PGSSL === "1");
     try {
-        await applyPendingMigrations(sequelize, "[migrate]");
+        await migratePending(sequelize, "[migrate]");
     } finally {
         await sequelize.close();
     }

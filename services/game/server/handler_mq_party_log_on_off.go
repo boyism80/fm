@@ -39,11 +39,11 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, raw json.RawMessage) error {
 			if err == nil {
 				var partyPb internal.Party
 				if err := proto.Unmarshal(wire, &partyPb); err == nil {
-					applied, err := pc.ApplyPartySnapshot(evt, &partyPb, false)
+					stored, err := pc.StoreSnapshot(evt, &partyPb, false)
 					if err != nil {
 						return nil
 					}
-					if applied && payload.CharacterID != 0 {
+					if stored {
 						if party := pc.Get(evt.PartyID); party != nil {
 							pc.BroadcastLogOnOff(party)
 						}
@@ -60,7 +60,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, raw json.RawMessage) error {
 		var extra struct {
 			CharacterID uint32 `json:"character_id"`
 		}
-		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+		if err := json.Unmarshal(raw, &extra); err != nil {
 			return nil
 		}
 		party := pc.Get(evt.PartyID)

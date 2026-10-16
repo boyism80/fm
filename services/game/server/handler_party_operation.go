@@ -131,7 +131,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 
 	case constant.PartyC2SChangeLeader:
 		partyIDPtr := ch.Party().ID()
-		if partyIDPtr == nil || req.TargetCharacterID == 0 {
+		if partyIDPtr == nil {
 			return nil
 		}
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(

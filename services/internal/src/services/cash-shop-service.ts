@@ -104,7 +104,7 @@ export class CashShopService {
             try {
                 await this.cashShopRepo.receiveTransfer(worldId, request, async (txClient) => {
                     ran = true;
-                    granted = await this.applyTransfer(worldId, request, txClient);
+                    granted = await this.grantTransfer(worldId, request, txClient);
                 });
                 if (ran && !granted) {
                     continue;
@@ -128,7 +128,7 @@ export class CashShopService {
         }
     }
 
-    private async applyTransfer(worldId: number, request: CashTransferRequest, txClient: PoolClient): Promise<boolean> {
+    private async grantTransfer(worldId: number, request: CashTransferRequest, txClient: PoolClient): Promise<boolean> {
         if (await this.cashShopRepo.isTransferCompleted(worldId, request)) {
             return false;
         }

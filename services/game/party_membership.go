@@ -26,10 +26,10 @@ func (p *PartyMembership) Is(partyID *uint32) bool {
 }
 
 func (p *PartyMembership) SetID(id *uint32) {
-	p.Apply(id, clock.Now())
+	p.SetAt(id, clock.Now())
 }
 
-func (p *PartyMembership) Apply(id *uint32, at time.Time) {
+func (p *PartyMembership) SetAt(id *uint32, at time.Time) {
 	if !at.After(p.updatedAt) {
 		return
 	}

@@ -126,7 +126,7 @@ func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 	return p
 }
 
-func (s *PartySystem) ApplyPartySnapshot(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
+func (s *PartySystem) StoreSnapshot(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
 	party, ok := s.store(partyPb)
 	if !ok {
 		return false, nil
@@ -183,9 +183,6 @@ func (s *PartySystem) ClearPartyMembers(memberIDs []uint32, partyID uint32) {
 		return
 	}
 	for _, cid := range memberIDs {
-		if cid == 0 {
-			continue
-		}
 		id := partyID
 		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &SyncCharacterPartyState{
 			CharacterID: cid,
@@ -205,7 +202,7 @@ func (s *PartySystem) BroadcastPartySilent(party *Party) {
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()
 	for _, m := range party.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {

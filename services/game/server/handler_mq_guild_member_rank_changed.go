@@ -29,7 +29,7 @@ func (h *guildMqMemberRankChanged) Handle(ctx actor.Context, raw json.RawMessage
 	var extra struct {
 		CharacterID uint32 `json:"character_id"`
 	}
-	if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
 	}
 	targetID := extra.CharacterID

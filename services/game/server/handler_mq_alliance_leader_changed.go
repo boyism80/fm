@@ -36,7 +36,7 @@ func (h *allianceMqLeaderChanged) Handle(_ actor.Context, raw json.RawMessage) e
 		OldLeaderCharacterID uint32 `json:"old_leader_character_id"`
 		NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
 	}
-	if err := json.Unmarshal(raw, &extra); err != nil || extra.NewLeaderCharacterID == 0 {
+	if err := json.Unmarshal(raw, &extra); err != nil {
 		log.Printf("alliance consumer: leader_changed alliance_id=%d missing leader ids", evt.AllianceID)
 		return nil
 	}

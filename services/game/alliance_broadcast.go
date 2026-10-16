@@ -87,9 +87,6 @@ func (s *AllianceSystem) recipientIDs(alliancePb *internal.Alliance) []uint32 {
 	seen := make(map[uint32]struct{})
 	var ids []uint32
 	add := func(characterID uint32) {
-		if characterID == 0 {
-			return
-		}
 		if _, ok := seen[characterID]; ok {
 			return
 		}
@@ -258,7 +255,7 @@ func (s *AllianceSystem) broadcastAllianceStateRefresh(alliancePb *internal.Alli
 }
 
 func (s *AllianceSystem) allianceCharacterName(alliancePb *internal.Alliance, characterID uint32) string {
-	if alliancePb == nil || characterID == 0 {
+	if alliancePb == nil {
 		return ""
 	}
 	for _, g := range alliancePb.GetGuilds() {
@@ -275,7 +272,7 @@ func (s *AllianceSystem) allianceCharacterName(alliancePb *internal.Alliance, ch
 }
 
 func (s *AllianceSystem) BroadcastMemberRankChanged(alliancePb *internal.Alliance, characterID uint32, allianceRank uint32) {
-	if s.gw == nil || alliancePb == nil || characterID == 0 {
+	if s.gw == nil || alliancePb == nil {
 		return
 	}
 	info := AllianceInfoFromProto(alliancePb)

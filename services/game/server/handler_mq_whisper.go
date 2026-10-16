@@ -32,9 +32,6 @@ func (h *whisperMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil
 	}
-	if payload.CharacterID == 0 {
-		return nil
-	}
 	h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, payload.CharacterID, &game.ReceiveWhisper{
 		CharacterID: payload.CharacterID,
 		Whisper: game.Whisper{

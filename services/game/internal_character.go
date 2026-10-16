@@ -116,7 +116,7 @@ func (s *InternalSystem) LoadParcelsAsync(ctx actor.Context, ch *Character) *asy
 	)
 }
 
-func (s *InternalSystem) SendParcelAsync(ctx actor.Context, ch *Character, requestID uint64, senderAccountID uint32, recipient string, parcel *internal.Parcel, oneOfAKind bool) *async.Promise[*internal.SendParcelReply] {
+func (s *InternalSystem) SendParcelAsync(ctx actor.Context, ch *Character, requestID uint64, senderAccountID uint32, recipient string, parcel *internal.Parcel, oneOfAKind bool, system bool) *async.Promise[*internal.SendParcelReply] {
 	req := &internal.SendParcelRequest{
 		WorldId:         s.gw.GetWorldID(),
 		RecipientName:   recipient,
@@ -124,10 +124,26 @@ func (s *InternalSystem) SendParcelAsync(ctx actor.Context, ch *Character, reque
 		SenderAccountId: senderAccountID,
 		OneOfAKind:      oneOfAKind,
 		RequestId:       requestID,
+		System:          system,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SendParcelReply, error) {
 			return s.client.SendParcel(c, req)
+		},
+		nil,
+	)
+}
+
+func (s *InternalSystem) ReturnParcelAsync(ctx actor.Context, ch *Character, requestID uint64, parcels []*internal.Parcel) *async.Promise[*internal.ReturnParcelReply] {
+	req := &internal.ReturnParcelRequest{
+		WorldId:     s.gw.GetWorldID(),
+		CharacterId: ch.GetID(),
+		RequestId:   requestID,
+		Parcels:     parcels,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.ReturnParcelReply, error) {
+			return s.client.ReturnParcel(c, req)
 		},
 		nil,
 	)

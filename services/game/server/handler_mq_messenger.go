@@ -37,9 +37,6 @@ func (h *messengerMq) Handle(_ actor.Context, raw json.RawMessage) error {
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil
 	}
-	if payload.CharacterID == 0 {
-		return nil
-	}
 
 	event := game.MessengerEvent{
 		Action:   payload.Action,

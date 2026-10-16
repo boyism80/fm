@@ -34,7 +34,7 @@ func (h *partyMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) error 
 		var extra struct {
 			CharacterID uint32 `json:"character_id"`
 		}
-		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevParty == nil {
+		if err := json.Unmarshal(raw, &extra); err != nil || prevParty == nil {
 			return nil
 		}
 		pc.BroadcastDisbanded(prevParty, extra.CharacterID)

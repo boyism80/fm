@@ -36,7 +36,7 @@ func (h *allianceMqMemberRankChanged) Handle(_ actor.Context, raw json.RawMessag
 		CharacterID     uint32 `json:"character_id"`
 		NewAllianceRank uint32 `json:"new_alliance_rank"`
 	}
-	if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+	if err := json.Unmarshal(raw, &extra); err != nil {
 		log.Printf("alliance consumer: member_rank_changed alliance_id=%d missing character_id", evt.AllianceID)
 		return nil
 	}

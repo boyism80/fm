@@ -37,7 +37,7 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 			LeaderChanged        bool   `json:"leader_changed"`
 			NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
 		}
-		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+		if err := json.Unmarshal(raw, &extra); err != nil {
 			return nil
 		}
 		h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, extra.CharacterID, &game.ClearPartyByPartyID{

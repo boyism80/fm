@@ -68,7 +68,7 @@ func allianceFromProto(gw GameWorld, pb *internal.Alliance) *Alliance {
 }
 
 func (a *Alliance) CanSendInvite(inviterCharacterID uint32) bool {
-	if a == nil || inviterCharacterID == 0 {
+	if a == nil {
 		return false
 	}
 	if uint32(len(a.guildIDs)) >= a.capacity {

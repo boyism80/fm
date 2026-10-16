@@ -355,14 +355,14 @@ func (bc *Buffs) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8,
 	bc.commitBuff(entity, now, notify)
 }
 
-func (bc *Buffs) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool, notify bool) {
+func (bc *Buffs) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, scalePotionDuration bool, notify bool) {
 	if len(values) == 0 || consumeWz == nil {
 		return
 	}
 	now := clock.Now()
 	flags, valCopy := copyBuffValues(values)
 	scaledDuration := duration
-	if applyPotionDurationScale && duration > 0 {
+	if scalePotionDuration && duration > 0 {
 		mul := bc.owner.stats.PotionDurationMultiplierPercent()
 		scaledDuration = time.Duration(int64(duration) * int64(mul) / 100)
 	}

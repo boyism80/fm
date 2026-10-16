@@ -3,7 +3,9 @@ package game
 import (
 	"encoding/json"
 	"log"
+	"math"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
@@ -45,66 +47,67 @@ func (e *Escrow) holdMeso(amount int32) error {
 
 func (e *Escrow) restore() {
 	ch := e.owner
-	var unplaced []Item
+	var left []json.RawMessage
+	var stayed []escrowItem
 	for _, held := range e.items {
-		inven := ch.inventory.tabs[held.invType]
-		model := held.item.GetModel()
-		exists := inven.items[held.slot]
-		switch {
-		case exists == nil:
-			inven.items[held.slot] = held.item
-			ch.listener.OnInventorySlotAdded(ch, held.invType, held.slot, held.item)
-		case exists.GetModel() == model && exists.GetCount()+held.item.GetCount() <= model.GetCapacity():
-			exists.Increase(held.item.GetCount())
-			ch.listener.OnInventorySlotUpdated(ch, held.invType, held.slot, exists)
-		default:
-			slot, ok := inven.NextSlot()
-			if !ok {
-				unplaced = append(unplaced, held.item)
-				continue
-			}
-			inven.items[int16(slot)] = held.item
-			ch.listener.OnInventorySlotAdded(ch, held.invType, int16(slot), held.item)
-		}
-	}
-	e.items = nil
-	if len(unplaced) > 0 {
-		e.keepUnplaced(unplaced)
-	}
-
-	if e.meso > 0 {
-		ch.inventory.addMesoUnchecked(e.meso)
-		e.meso = 0
-	}
-}
-
-type tradeRestoreDetail struct {
-	Items []json.RawMessage `json:"items"`
-}
-
-func tradeRestoreDetailFrom(items []Item) (tradeRestoreDetail, bool) {
-	detail := tradeRestoreDetail{Items: make([]json.RawMessage, 0, len(items))}
-	for _, item := range items {
-		raw, err := json.Marshal(item.BuildRPC(0, 0))
-		if err != nil {
-			log.Printf("trade restore: %v", err)
+		if e.putBack(held) {
 			continue
 		}
-		detail.Items = append(detail.Items, raw)
+		raw, err := json.Marshal(held.item.BuildRPC(ch.GetID(), 0))
+		if err != nil {
+			stayed = append(stayed, held)
+			continue
+		}
+		left = append(left, raw)
 	}
-	return detail, len(detail.Items) > 0
-}
+	e.items = stayed
 
-func (e *Escrow) keepUnplaced(items []Item) {
-	detail, ok := tradeRestoreDetailFrom(items)
-	if !ok {
+	returnMeso := int32(0)
+	if e.meso > 0 {
+		if ch.inventory.meso > math.MaxInt32-e.meso {
+			returnMeso = e.meso
+		} else {
+			ch.inventory.addMesoUnchecked(e.meso)
+		}
+		e.meso = 0
+	}
+	if len(left) == 0 && returnMeso == 0 {
 		return
 	}
-	id := e.owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_TRADE_RESTORE, 0, detail)
-	e.owner.unsettled.Lost(id)
+
+	requestID := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_TRADE_RESTORE, 0, tradeRestoreDetail{Items: left, Meso: returnMeso})
+	ch.Post(func(actx actor.Context) {
+		ch.escrow.settleRestore(actx, ch.unsettled.Find(requestID))
+	})
 }
 
-func (e *Escrow) settleRestore(request *UnsettledRequest) {
+func (e *Escrow) putBack(held escrowItem) bool {
+	ch := e.owner
+	inven := ch.inventory.tabs[held.invType]
+	model := held.item.GetModel()
+	exists := inven.items[held.slot]
+	switch {
+	case exists == nil:
+		inven.items[held.slot] = held.item
+		ch.listener.OnInventorySlotAdded(ch, held.invType, held.slot, held.item)
+	case exists.GetModel() == model && exists.GetCount()+held.item.GetCount() <= model.GetCapacity():
+		exists.Increase(held.item.GetCount())
+		ch.listener.OnInventorySlotUpdated(ch, held.invType, held.slot, exists)
+	default:
+		slot, ok := inven.NextSlot()
+		if !ok {
+			return false
+		}
+		inven.items[int16(slot)] = held.item
+		ch.listener.OnInventorySlotAdded(ch, held.invType, int16(slot), held.item)
+	}
+	return true
+}
+
+func (e *Escrow) settleRestore(actx actor.Context, request *UnsettledRequest) {
+	if request == nil {
+		return
+	}
 	var detail tradeRestoreDetail
 	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
 		request.inFlight = false
@@ -112,31 +115,27 @@ func (e *Escrow) settleRestore(request *UnsettledRequest) {
 		return
 	}
 
-	var left []json.RawMessage
+	parcels := make([]*internal.Parcel, 0, len(detail.Items)+1)
+	meso := detail.Meso
 	for _, raw := range detail.Items {
 		var pb internal.Inventory
 		if err := json.Unmarshal(raw, &pb); err != nil {
-			left = append(left, raw)
-			continue
+			request.inFlight = false
+			log.Printf("Escrow.settleRestore character=%d id=%d: %v", e.owner.GetID(), request.id, err)
+			return
 		}
-		item, err := NewItemFromInternalProto(&pb, e.owner.gameWorld)
-		if err != nil {
-			left = append(left, raw)
-			continue
-		}
-		if _, err := e.owner.inventory.AddItem(item, true); err != nil {
-			left = append(left, raw)
-		}
+		parcels = append(parcels, systemParcel(&pb, meso))
+		meso = 0
 	}
-	if len(left) > 0 {
-		detail.Items = left
-		if data, err := json.Marshal(detail); err == nil {
-			request.detail = string(data)
-		}
-		request.inFlight = false
-		return
+	if meso > 0 {
+		parcels = append(parcels, systemParcel(nil, meso))
 	}
-	e.owner.unsettled.Erase(request.id)
+	e.owner.duey.Return(actx, request, parcels)
+}
+
+type tradeRestoreDetail struct {
+	Items []json.RawMessage `json:"items"`
+	Meso  int32             `json:"meso,omitempty"`
 }
 
 func (e *Escrow) release() ([]Item, int32) {
@@ -144,8 +143,8 @@ func (e *Escrow) release() ([]Item, int32) {
 	for _, held := range e.items {
 		items = append(items, held.item)
 	}
-	meso := e.meso
 	e.items = nil
+	meso := e.meso
 	e.meso = 0
 	return items, meso
 }

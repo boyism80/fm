@@ -37,7 +37,7 @@ func (h *guildMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 		log.Printf("guild consumer: multi_chat JSON: %v", err)
 		return nil
 	}
-	if payload.GuildID == 0 || payload.SenderCharacterID == 0 {
+	if payload.GuildID == 0 {
 		return nil
 	}
 	if payload.ChatMode != uint32(pconst.MultiChatModeGuild) {

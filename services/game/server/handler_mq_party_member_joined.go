@@ -33,7 +33,7 @@ func (h *partyMqMemberJoined) Handle(ctx actor.Context, raw json.RawMessage) err
 		var extra struct {
 			CharacterID uint32 `json:"character_id"`
 		}
-		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+		if err := json.Unmarshal(raw, &extra); err != nil {
 			return nil
 		}
 		party := pc.Get(evt.PartyID)

@@ -23,7 +23,7 @@ type Reactor struct {
 }
 
 func (r *Reactor) GetTrigger() *Character {
-	if r == nil || r.onMap == nil || r.triggerCharacterID == 0 {
+	if r == nil || r.onMap == nil {
 		return nil
 	}
 	return r.onMap.GetPlayer(r.triggerCharacterID)

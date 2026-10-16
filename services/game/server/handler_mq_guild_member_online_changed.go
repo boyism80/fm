@@ -30,7 +30,7 @@ func (h *guildMqMemberOnlineChanged) Handle(ctx actor.Context, raw json.RawMessa
 		CharacterID uint32 `json:"character_id"`
 		Online      bool   `json:"online"`
 	}
-	if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
 	}
 	subjectID := extra.CharacterID

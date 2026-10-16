@@ -12,7 +12,7 @@ func (PartyDisbandHandler) New() *PartyDisbandHandler {
 }
 
 func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.PartyDisband) {
-	if msg == nil || msg.CharacterID == 0 {
+	if msg == nil {
 		return
 	}
 	m := a.GetCharacter(msg.CharacterID)

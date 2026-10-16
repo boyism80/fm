@@ -71,7 +71,7 @@ func (a *GameLogicActor) handleEnvelope(ctx actor.Context, env *route.Envelope) 
 }
 
 func (a *GameLogicActor) hasCharacterOnMap(characterID uint32) bool {
-	if a == nil || characterID == 0 {
+	if a == nil {
 		return false
 	}
 	return a.GetCharacter(characterID) != nil

@@ -59,9 +59,6 @@ func (s *GuildSystem) BroadcastNoticeChanged(guildID uint32) {
 }
 
 func (s *GuildSystem) BroadcastMemberRankChanged(guildID uint32, targetCharacterID uint32) {
-	if targetCharacterID == 0 {
-		return
-	}
 	g := s.Get(guildID)
 	if g == nil {
 		return
@@ -231,9 +228,6 @@ func (s *GuildSystem) BroadcastRankTitlesChanged(guildID uint32) {
 }
 
 func (s *GuildSystem) BroadcastMemberJoined(guildID uint32, joinerCharacterID uint32) {
-	if joinerCharacterID == 0 {
-		return
-	}
 	g := s.Get(guildID)
 	if g == nil {
 		return
@@ -263,7 +257,7 @@ func (s *GuildSystem) BroadcastMemberJoined(guildID uint32, joinerCharacterID ui
 }
 
 func (s *GuildSystem) BroadcastMemberLeft(prevGuild *Guild, leftCharacterID uint32, expelled bool) {
-	if prevGuild == nil || leftCharacterID == 0 {
+	if prevGuild == nil {
 		return
 	}
 	leftName := ""
@@ -357,9 +351,6 @@ func (s *GuildSystem) BroadcastMessage(guildID uint32, messageType constant.Serv
 }
 
 func (s *GuildSystem) BroadcastMultiChat(guildID uint32, senderCharacterID uint32, senderName string, message string) {
-	if senderCharacterID == 0 {
-		return
-	}
 	g := s.Get(guildID)
 	if g == nil {
 		return

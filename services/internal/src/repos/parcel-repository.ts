@@ -104,6 +104,10 @@ export class ParcelSendRequestRepository extends RequestRepository {
     protected readonly kind = "parcel_send";
 }
 
+export class ParcelReturnRequestRepository extends RequestRepository {
+    protected readonly kind = "parcel_return";
+}
+
 export class ParcelClaimRequestRepository extends RequestRepository<{ parcel: unknown }> {
     protected readonly kind = "parcel_claim";
 }

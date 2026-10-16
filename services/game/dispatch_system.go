@@ -53,9 +53,6 @@ func nameKey(name string) string {
 }
 
 func (s *DispatchSystem) RegisterCharacter(characterID uint32, name string) error {
-	if characterID == 0 {
-		return fmt.Errorf("dispatch: invalid character id 0")
-	}
 	key := nameKey(name)
 	if key == "" {
 		return fmt.Errorf("dispatch: empty character name")
@@ -74,9 +71,6 @@ func (s *DispatchSystem) RegisterCharacter(characterID uint32, name string) erro
 }
 
 func (s *DispatchSystem) UnregisterCharacter(characterID uint32) {
-	if characterID == 0 {
-		return
-	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	ent, ok := s.byCID[characterID]
@@ -88,9 +82,6 @@ func (s *DispatchSystem) UnregisterCharacter(characterID uint32) {
 }
 
 func (s *DispatchSystem) SetMapPID(characterID uint32, pid *actor.PID) error {
-	if characterID == 0 {
-		return fmt.Errorf("dispatch: invalid character id 0")
-	}
 	s.mu.Lock()
 	ent, ok := s.byCID[characterID]
 	if !ok {
@@ -107,9 +98,6 @@ func (s *DispatchSystem) SetMapPID(characterID uint32, pid *actor.PID) error {
 }
 
 func (s *DispatchSystem) Exists(characterID uint32) bool {
-	if characterID == 0 {
-		return false
-	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	_, ok := s.byCID[characterID]
@@ -117,9 +105,6 @@ func (s *DispatchSystem) Exists(characterID uint32) bool {
 }
 
 func (s *DispatchSystem) GetMapPID(characterID uint32) (pid *actor.PID, ok bool) {
-	if characterID == 0 {
-		return nil, false
-	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	ent, exists := s.byCID[characterID]
@@ -158,7 +143,7 @@ func (s *DispatchSystem) Visit(characterID uint32, run func(ctx actor.Context, c
 }
 
 func (s *DispatchSystem) SendToCharacter(caller *actor.PID, characterID uint32, inner interface{}) {
-	if characterID == 0 || inner == nil {
+	if inner == nil {
 		return
 	}
 	corr := s.nextEnvelope.Add(1)
@@ -269,9 +254,6 @@ func (s *DispatchSystem) flushEnvelopes(characterID uint32, mapPID *actor.PID) {
 }
 
 func (s *DispatchSystem) AbandonEnvelopes(characterID uint32) {
-	if characterID == 0 {
-		return
-	}
 	for _, d := range s.takeEnvelopes(characterID) {
 		if d != nil {
 			s.failEnvelope(d.CorrelationID, "gone")

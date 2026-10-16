@@ -1,4 +1,4 @@
-import { applyPendingMigrations, connectMigrationDatabase } from "./sequelize-migrator";
+import { migratePending, connectMigrationDatabase } from "./sequelize-migrator";
 import type { InternalConfig, PgEndpoint } from "./types/internal-config";
 
 interface TargetEndpoint {
@@ -38,7 +38,7 @@ export async function autoMigrateAllIfEnabled(internalConfig: InternalConfig): P
     for (const target of collectPgEndpoints(internalConfig)) {
         const sequelize = connectMigrationDatabase(endpointToUrl(target.endpoint), Boolean(target.endpoint.ssl));
         try {
-            await applyPendingMigrations(sequelize, `[auto-migrate] ${target.name}:`);
+            await migratePending(sequelize, `[auto-migrate] ${target.name}:`);
         } finally {
             await sequelize.close();
         }

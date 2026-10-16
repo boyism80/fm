@@ -40,7 +40,7 @@ type allianceCreateDetail struct {
 	Meso    int32
 }
 
-func (s *GuildSystem) ApplyGuildFromProto(ch *Character, guildPb *internal.Guild) {
+func (s *GuildSystem) StoreGuild(ch *Character, guildPb *internal.Guild) {
 	guildID := guildPb.GetGuildId()
 	ch.guild.SetID(&guildID)
 	s.Update(guildPb)
@@ -74,7 +74,7 @@ func (s *GuildSystem) SettleCreate(ctx actor.Context, ch *Character, request *Un
 			return nil
 		}
 		if guildPb := reply.GetGuild(); guildPb != nil {
-			s.ApplyGuildFromProto(ch, guildPb)
+			s.StoreGuild(ch, guildPb)
 		}
 		return nil
 	}).OnError(func(err error) {

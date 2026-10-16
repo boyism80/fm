@@ -46,7 +46,7 @@ func AllianceGuildMemberRanksFromProto(g *internal.Guild) []dto.AllianceGuildMem
 	}
 	out := make([]dto.AllianceGuildMemberRank, 0, len(g.GetMembers()))
 	for _, m := range g.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		rank := uint8(0)
@@ -69,7 +69,7 @@ func AllianceMembershipChangeGuildFromProto(g *internal.Guild) (dto.AllianceMemb
 		GuildID: g.GetGuildId(),
 	}
 	for _, m := range g.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		if m.AllianceRank == nil {

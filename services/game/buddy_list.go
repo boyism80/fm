@@ -55,7 +55,7 @@ func (bl *BuddyList) LoadFromProto(entries []*internal.BuddyEntry, capacity uint
 		bl.capacity = capacity
 	}
 	for _, pb := range entries {
-		if pb == nil || pb.GetCharacterId() == 0 {
+		if pb == nil {
 			continue
 		}
 		bl.entries[pb.GetCharacterId()] = BuddyListEntryFromProto(pb)
@@ -63,16 +63,10 @@ func (bl *BuddyList) LoadFromProto(entries []*internal.BuddyEntry, capacity uint
 }
 
 func (bl *BuddyList) Upsert(entry BuddyListEntry) {
-	if entry.CharacterID == 0 {
-		return
-	}
 	bl.entries[entry.CharacterID] = entry
 }
 
 func (bl *BuddyList) Remove(characterID uint32) bool {
-	if characterID == 0 {
-		return false
-	}
 	if _, ok := bl.entries[characterID]; !ok {
 		return false
 	}
@@ -81,9 +75,6 @@ func (bl *BuddyList) Remove(characterID uint32) bool {
 }
 
 func (bl *BuddyList) SetChannel(characterID uint32, channel int32) bool {
-	if characterID == 0 {
-		return false
-	}
 	entry, ok := bl.entries[characterID]
 	if !ok {
 		return false

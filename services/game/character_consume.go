@@ -35,7 +35,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 		return false
 	}
 
-	applyWZ, err := ch.callActiveConsumeScript(consume)
+	useWZ, err := ch.callActiveConsumeScript(consume)
 	if err != nil {
 		log.Printf("item script failed %v", err)
 		return false
@@ -45,7 +45,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 		ch.monsterBook.Register(wzConsume.ID)
 	}
 
-	if applyWZ {
+	if useWZ {
 		if wzConsume.CP > 0 || wzConsume.NuffSkillID > 0 {
 			ch.carnival.useItem(wzConsume)
 			return true
@@ -228,7 +228,7 @@ func (ch *Character) recover(consumeItem *wz.Consume) bool {
 	return true
 }
 
-func (ch *Character) callActiveConsumeScript(consume *Consume) (applyWZ bool, err error) {
+func (ch *Character) callActiveConsumeScript(consume *Consume) (useWZ bool, err error) {
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return true, nil

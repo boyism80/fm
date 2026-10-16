@@ -13,6 +13,7 @@ func (d *Dialog) Open(actx actor.Context, npc *Npc) error {
 	if actx == nil {
 		return fmt.Errorf("actor context is nil")
 	}
+	d.owner.account.storage.Close()
 	if d.Busy() {
 		return ErrDialogBusy
 	}

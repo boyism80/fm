@@ -29,9 +29,6 @@ func (h *SyncBuddyListHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		ch.Buddies().Clear()
 	}
 	for _, entry := range msg.Entries {
-		if entry.CharacterID == 0 {
-			continue
-		}
 		channel := entry.Channel
 		if channel < 0 {
 			channel = -1

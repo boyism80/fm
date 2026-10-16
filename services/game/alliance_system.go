@@ -49,7 +49,7 @@ func (s *AllianceSystem) UpdateAsync(ctx actor.Context, evt AllianceEventEnvelop
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	allianceID := evt.AllianceID
 	p.OnError(func(err error) {
-		log.Printf("alliance consumer: apply type=%s alliance_id=%d: %v", evt.EventType, allianceID, err)
+		log.Printf("alliance consumer: type=%s alliance_id=%d: %v", evt.EventType, allianceID, err)
 	})
 	p.ThenRPC(
 		func(c context.Context) (*internal.GetAllianceReply, error) {
@@ -294,7 +294,7 @@ func (s *AllianceSystem) ValidateCreateAlliance(ch *Character) (uint32, bool) {
 	}
 	var partnerID uint32
 	for _, pm := range members {
-		if pm == nil || pm.characterID == 0 || pm.characterID == leaderID {
+		if pm == nil || pm.characterID == leaderID {
 			continue
 		}
 		partnerID = pm.characterID

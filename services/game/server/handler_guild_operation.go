@@ -92,7 +92,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 				return nil
 			}
-			h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
+			h.gs.systems.Get[*game.GuildSystem]().StoreGuild(ch, guildPb)
 			ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreatedMessage)
 			return nil
 		}).OnError(func(err error) {
@@ -165,7 +165,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				log.Printf("GuildOperation(accept invite): ok but missing guild character=%d", charID)
 				return nil
 			}
-			h.gs.systems.Get[*game.GuildSystem]().ApplyGuildFromProto(ch, guildPb)
+			h.gs.systems.Get[*game.GuildSystem]().StoreGuild(ch, guildPb)
 			return nil
 		})
 		promise.OnError(func(err error) {

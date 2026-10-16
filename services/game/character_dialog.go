@@ -100,6 +100,7 @@ func (d *Dialog) Reset() {
 }
 
 func (d *Dialog) Close() {
+	d.owner.account.storage.Close()
 	d.shopID = 0
 	thread := d.Thread()
 	if thread == nil {

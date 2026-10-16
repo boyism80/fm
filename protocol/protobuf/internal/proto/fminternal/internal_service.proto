@@ -25,6 +25,7 @@ service Internal {
   rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
   rpc LoadParcels (LoadParcelsRequest) returns (LoadParcelsReply);
   rpc SendParcel (SendParcelRequest) returns (SendParcelReply);
+  rpc ReturnParcel (ReturnParcelRequest) returns (ReturnParcelReply);
   rpc AbortParcelSend (AbortParcelSendRequest) returns (AbortParcelSendReply);
   rpc ClaimParcel (ClaimParcelRequest) returns (ClaimParcelReply);
   rpc DeleteParcel (DeleteParcelRequest) returns (DeleteParcelReply);
@@ -922,9 +923,21 @@ message SendParcelRequest {
   reserved 5;
   bool one_of_a_kind = 6;
   uint64 request_id = 7 [jstype = JS_STRING];
+  bool system = 8;
 }
 
 message SendParcelReply {
+  ParcelResult result = 1;
+}
+
+message ReturnParcelRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint64 request_id = 3 [jstype = JS_STRING];
+  repeated Parcel parcels = 4;
+}
+
+message ReturnParcelReply {
   ParcelResult result = 1;
 }
 

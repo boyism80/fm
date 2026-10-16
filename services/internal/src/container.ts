@@ -21,7 +21,7 @@ import { MountRepository } from "./repos/mount-repository";
 import { UnsettledRequestRepository } from "./repos/unsettled-request-repository";
 import { StorageRepository } from "./repos/storage-repository";
 import { StorageItemRepository } from "./repos/storage-item-repository";
-import { ParcelClaimRequestRepository, ParcelRepository, ParcelSendRequestRepository } from "./repos/parcel-repository";
+import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository } from "./repos/parcel-repository";
 import { ShopOpenRequestRepository, ShopRepository } from "./repos/shop-repository";
 import { CashRequestRepository, CashShopRepository } from "./repos/cash-shop-repository";
 import {
@@ -95,6 +95,7 @@ export function createAppContainer() {
         storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),
         parcelRepository: awilix.asClass(ParcelRepository).scoped(),
         parcelSendRequestRepository: awilix.asClass(ParcelSendRequestRepository).scoped(),
+        parcelReturnRequestRepository: awilix.asClass(ParcelReturnRequestRepository).scoped(),
         parcelClaimRequestRepository: awilix.asClass(ParcelClaimRequestRepository).scoped(),
         shopRepository: awilix.asClass(ShopRepository).scoped(),
         shopOpenRequestRepository: awilix.asClass(ShopOpenRequestRepository).scoped(),

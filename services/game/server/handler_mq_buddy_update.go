@@ -51,9 +51,6 @@ func (h *buddyMqUpdate) Handle(_ actor.Context, raw json.RawMessage) error {
 	}
 	entries := make([]response.BuddyEntry, 0, len(payload.Entries))
 	for _, row := range payload.Entries {
-		if row.CharacterID == 0 {
-			continue
-		}
 		ch := row.ChannelIndex
 		if ch < 0 {
 			ch = -1

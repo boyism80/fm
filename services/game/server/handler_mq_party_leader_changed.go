@@ -33,7 +33,7 @@ func (h *partyMqLeaderChanged) Handle(ctx actor.Context, raw json.RawMessage) er
 		var extra struct {
 			NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
 		}
-		if err := json.Unmarshal(raw, &extra); err != nil || extra.NewLeaderCharacterID == 0 {
+		if err := json.Unmarshal(raw, &extra); err != nil {
 			return nil
 		}
 		party := pc.Get(evt.PartyID)

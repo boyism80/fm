@@ -705,30 +705,26 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 		count = item.GetCount()
 	}
 
-	gift := item.Clone(count)
-	w.owner.inventory.RemoveItem(invType, slot, count)
-	pb := &internal.WeddingGift{SenderName: w.owner.GetName(), Item: gift.BuildRPC(0, 0)}
+	held := item.Clone(count)
+	if !w.owner.inventory.RemoveItem(invType, slot, count) {
+		return ErrMarriageInvalid
+	}
+	pb := &internal.WeddingGift{SenderName: w.owner.GetName(), Item: held.BuildRPC(0, 0)}
 	itemJSON, _ := json.Marshal(pb.Item)
 	id := w.owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_GIFT_SEND, uint64(w.gift.receiverID), weddingGiftDetail{Item: itemJSON})
 
 	w.gift.pending = true
 	w.owner.gameWorld.Systems().Get[*InternalSystem]().GiveWeddingGiftAsync(actx, w.owner, id, w.gift.receiverID, pb).Bind(w.owner).Do(func(v *internal.GiveWeddingGiftReply) error {
 		w.gift.pending = false
-		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
-			if _, err := w.owner.inventory.AddItem(gift, true); err != nil {
-				if request := w.owner.unsettled.Find(id); request != nil {
-					request.inFlight = false
-				}
-				w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
-				return nil
-			}
-		}
-		w.owner.unsettled.Erase(id)
-		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
-			w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
+		if v.GetResult() == internal.MarriageResult_MARRIAGE_RESULT_OK {
+			w.owner.unsettled.Erase(id)
+			w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiven, w.gift.wishes, map[constant.InventoryType][]Item{invType: {held}})
 			return nil
 		}
-		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiven, w.gift.wishes, map[constant.InventoryType][]Item{invType: {gift}})
+		w.owner.Post(func(actx actor.Context) {
+			w.returnGift(actx, w.owner.unsettled.Find(id))
+		})
+		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
 		return nil
 	}).OnError(func(err error) {
 		w.gift.pending = false
@@ -740,33 +736,32 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 	return nil
 }
 
-func (w *Wedding) settleGiftSend(actx actor.Context, request *UnsettledRequest) {
-	var detail weddingGiftDetail
-	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
-		log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.id, err)
+func (w *Wedding) returnGift(actx actor.Context, request *UnsettledRequest) {
+	if request == nil {
 		return
 	}
+	var detail weddingGiftDetail
+	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		request.inFlight = false
+		log.Printf("Wedding.returnGift character=%d id=%d: %v", w.owner.GetID(), request.id, err)
+		return
+	}
+	var item internal.Inventory
+	if err := json.Unmarshal(detail.Item, &item); err != nil {
+		request.inFlight = false
+		log.Printf("Wedding.returnGift character=%d id=%d: %v", w.owner.GetID(), request.id, err)
+		return
+	}
+	w.owner.duey.Return(actx, request, []*internal.Parcel{systemParcel(&item, 0)})
+}
 
+func (w *Wedding) settleGiftSend(actx actor.Context, request *UnsettledRequest) {
 	w.owner.gameWorld.Systems().Get[*InternalSystem]().AbortWeddingGiftAsync(actx, w.owner, request.id, uint32(request.target)).Bind(w.owner).Do(func(v *internal.AbortWeddingGiftReply) error {
-		if !v.GetGiven() {
-			var pb internal.Inventory
-			if err := json.Unmarshal(detail.Item, &pb); err != nil {
-				request.inFlight = false
-				log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.id, err)
-				return nil
-			}
-			item, err := NewItemFromInternalProto(&pb, w.owner.gameWorld)
-			if err != nil {
-				request.inFlight = false
-				log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.id, err)
-				return nil
-			}
-			if _, err := w.owner.inventory.AddItem(item, true); err != nil {
-				request.inFlight = false
-				return nil
-			}
+		if v.GetGiven() {
+			w.owner.unsettled.Erase(request.id)
+			return nil
 		}
-		w.owner.unsettled.Erase(request.id)
+		w.returnGift(actx, request)
 		return nil
 	}).OnError(func(err error) {
 		request.inFlight = false

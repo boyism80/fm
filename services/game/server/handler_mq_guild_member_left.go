@@ -30,7 +30,7 @@ func (h *guildMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 		CharacterID uint32 `json:"character_id"`
 		Expelled    bool   `json:"expelled"`
 	}
-	if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
 	}
 	prevGuild := gs.systems.Get[*game.GuildSystem]().Get(evt.GuildID)

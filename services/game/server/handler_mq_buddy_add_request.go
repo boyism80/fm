@@ -34,9 +34,6 @@ func (h *buddyMqAddRequest) Handle(_ actor.Context, raw json.RawMessage) error {
 		log.Printf("buddy consumer: add_request JSON: %v", err)
 		return nil
 	}
-	if payload.FromCharacterID == 0 {
-		return nil
-	}
 	ids := payload.NotifyCharacterIDs
 	if len(ids) == 0 {
 		return nil

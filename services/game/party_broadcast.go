@@ -6,7 +6,7 @@ import (
 )
 
 func (s *PartySystem) BroadcastMemberJoined(party *Party, joinedCharacterID uint32) {
-	if s == nil || s.gw == nil || party == nil || joinedCharacterID == 0 {
+	if s == nil || s.gw == nil || party == nil {
 		return
 	}
 	members := party.GetMembers()
@@ -25,7 +25,7 @@ func (s *PartySystem) BroadcastMemberJoined(party *Party, joinedCharacterID uint
 	}
 	respMembers := party.BuildS2C()
 	for _, m := range members {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, m.GetCharacterId(), &PartyMemberJoined{
@@ -41,7 +41,7 @@ func (s *PartySystem) BroadcastMemberJoined(party *Party, joinedCharacterID uint
 }
 
 func (s *PartySystem) BroadcastMemberLeft(prev, current *Party, targetCharacterID uint32, expelled bool) {
-	if s == nil || s.gw == nil || prev == nil || targetCharacterID == 0 {
+	if s == nil || s.gw == nil || prev == nil {
 		return
 	}
 	targetName := ""
@@ -70,7 +70,7 @@ func (s *PartySystem) BroadcastMemberLeft(prev, current *Party, targetCharacterI
 
 	forChannel := s.gw.GetChannelID()
 	for _, m := range oldMembers {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
@@ -87,15 +87,12 @@ func (s *PartySystem) BroadcastMemberLeft(prev, current *Party, targetCharacterI
 }
 
 func (s *PartySystem) BroadcastDisbanded(prev *Party, leaderCharacterID uint32) {
-	if s == nil || s.gw == nil || prev == nil || leaderCharacterID == 0 {
+	if s == nil || s.gw == nil || prev == nil {
 		return
 	}
 
 	formerIDs := prev.MemberCharacterIDs()
 	for _, cid := range formerIDs {
-		if cid == 0 {
-			continue
-		}
 		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &PartyDisband{
 			CharacterID:     cid,
 			FormerMemberIDs: formerIDs,
@@ -104,7 +101,7 @@ func (s *PartySystem) BroadcastDisbanded(prev *Party, leaderCharacterID uint32) 
 
 	partyID := prev.GetPartyId()
 	for _, m := range prev.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
@@ -117,11 +114,11 @@ func (s *PartySystem) BroadcastDisbanded(prev *Party, leaderCharacterID uint32) 
 }
 
 func (s *PartySystem) BroadcastLeaderChanged(party *Party, newLeaderCharacterID uint32, disconnected bool) {
-	if s == nil || s.gw == nil || party == nil || newLeaderCharacterID == 0 {
+	if s == nil || s.gw == nil || party == nil {
 		return
 	}
 	for _, m := range party.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {
@@ -142,7 +139,7 @@ func (s *PartySystem) BroadcastLogOnOff(party *Party) {
 	partyID := party.GetPartyId()
 	leaderID := party.GetLeaderCharacterId()
 	for _, m := range party.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
+		if m == nil {
 			continue
 		}
 		s.gw.Systems().Get[*DispatchSystem]().Visit(m.GetCharacterId(), func(_ actor.Context, ch *Character) {

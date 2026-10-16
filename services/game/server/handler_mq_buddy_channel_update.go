@@ -34,7 +34,7 @@ func (h *buddyMqChannelUpdate) Handle(_ actor.Context, raw json.RawMessage) erro
 		log.Printf("buddy consumer: channel_update JSON: %v", err)
 		return nil
 	}
-	if payload.CharacterID == 0 || len(payload.NotifyCharacterIDs) == 0 {
+	if len(payload.NotifyCharacterIDs) == 0 {
 		return nil
 	}
 	for _, recipientID := range payload.NotifyCharacterIDs {

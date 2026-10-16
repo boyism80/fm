@@ -7,6 +7,7 @@ import (
 
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
 var (
@@ -22,6 +23,7 @@ type Storage struct {
 	slots      uint8
 	meso       int32
 	tabs       map[constant.InventoryType][]Item
+	kept       []*internal.Inventory
 	opened     bool
 	storeFee   int32
 	takeOutFee int32
@@ -39,7 +41,7 @@ func (s *Storage) Close() {
 }
 
 func (s *Storage) count() int {
-	count := 0
+	count := len(s.kept)
 	for _, items := range s.tabs {
 		count += len(items)
 	}

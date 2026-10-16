@@ -176,7 +176,7 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		return nil
 	}
 	baseLooks, overlays := equipmentLooksForPersist(ch)
-	inventory, unplaced := ch.inventory.BuildRPC()
+	inventory := ch.inventory.BuildRPC()
 	slotLimits := make([]uint32, 0, constant.InventoryTypeCash)
 	for typ := constant.InventoryTypeEquipment; typ <= constant.InventoryTypeCash; typ++ {
 		slotLimits = append(slotLimits, uint32(ch.inventory.tabs[typ].slotLimit))
@@ -246,6 +246,6 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		Account:           ch.account.BuildRPC(worldID),
 		ClaimedShops:      slices.Clone(ch.storeBank.claimed),
 		Mount:             &internal.Mount{Level: ch.mount.level, Exp: ch.mount.exp, Fatigue: ch.mount.fatigue},
-		UnsettledRequests: append(ch.unsettled.BuildRPC(), ch.escrow.restoreRequests(unplaced)...),
+		UnsettledRequests: ch.unsettled.BuildRPC(),
 	}
 }

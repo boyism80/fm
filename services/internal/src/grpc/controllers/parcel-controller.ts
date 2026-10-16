@@ -10,6 +10,8 @@ import type {
     DeleteParcelRequest,
     LoadParcelsReply,
     LoadParcelsRequest,
+    ReturnParcelReply,
+    ReturnParcelRequest,
     SendParcelReply,
     SendParcelRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
@@ -49,7 +51,19 @@ export class ParcelGrpcController {
                 senderAccountId: req.senderAccountId,
                 oneOfAKind: req.oneOfAKind === true,
                 requestId: req.requestId,
+                system: req.system === true,
             });
+            callback(null, { result });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("returnParcel")
+    async returnParcel(call: GrpcCall<ReturnParcelRequest>, callback: GrpcCallback<ReturnParcelReply>) {
+        try {
+            const req = call.request;
+            const result = await this.parcelService.returnParcels(req.worldId, req.characterId, req.requestId, req.parcels);
             callback(null, { result });
         } catch (err) {
             this.grpcError(err, callback);
