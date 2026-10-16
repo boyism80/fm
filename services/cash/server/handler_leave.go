@@ -14,6 +14,7 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/cash/client"
 	"github.com/boyism80/fm/types"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -70,7 +71,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 			ClientIp:         ctx.Client.GetRemoteIP(),
 			Debuffs:          character.DebuffsRPC(),
 			SourceCashShopId: &cashShopID,
-		})
+		}, grpc.WaitForReady(true))
 	}, func(reply *internal.BeginGameTransitionReply) error {
 		transitionPending = false
 		if !reply.GetOk() {

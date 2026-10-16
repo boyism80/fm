@@ -13,6 +13,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -44,7 +45,7 @@ func (s *InternalSystem) SaveAsync(ctx actor.Context, entries []*internal.Charac
 			wg.Add(1)
 			cp := async.NewTask(nil, SaveCharactersPromiseTimeout)
 			cp.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {
-				return s.client.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: chunk})
+				return s.client.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: chunk}, grpc.WaitForReady(true))
 			}, nil)
 			cp.OnError(func(err error) {
 				mu.Lock()

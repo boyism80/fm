@@ -14,6 +14,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -118,7 +119,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 				CharacterId:      &characterID,
 				ChannelId:        &channelID,
 				DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-			})
+			}, grpc.WaitForReady(true))
 		}, nil)
 		logout.OnError(func(err error) {
 			log.Printf("LoginGame: logout session of character %d after login failure: %v", characterID, err)

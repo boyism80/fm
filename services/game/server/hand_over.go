@@ -14,6 +14,7 @@ import (
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/types"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -74,7 +75,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		return nil
 	})
 	promise.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {
-		return ic.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}})
+		return ic.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}}, grpc.WaitForReady(true))
 	}, func(saveReply *internal.SaveCharactersReply) error {
 		if saveReply == nil || !saveReply.GetOk() {
 			block()
@@ -97,7 +98,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 			ClientIp:        ctx.Client.GetRemoteIP(),
 			Debuffs:         debuffs,
 			SourceChannelId: &sourceChannel,
-		})
+		}, grpc.WaitForReady(true))
 	}, func(transReply *internal.BeginGameTransitionReply) error {
 		transitionPending = false
 		if transReply == nil || !transReply.GetOk() {

@@ -15,6 +15,7 @@ import (
 	"github.com/boyism80/fm/services/cash"
 	"github.com/boyism80/fm/services/cash/client"
 	"github.com/boyism80/fm/types"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -98,7 +99,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 				CharacterId:      &characterID,
 				CashShopId:       &cashShopID,
 				DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
-			})
+			}, grpc.WaitForReady(true))
 		}, nil)
 		logout.OnError(func(err error) {
 			log.Printf("cash shop login: logout session of character %d after login failure: %v", characterID, err)
