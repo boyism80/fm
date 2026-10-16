@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/json"
 	"log"
 	"math"
 
@@ -13,10 +14,12 @@ type escrowSlotKey struct {
 	slot    int16
 }
 
-func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
+func (e *Escrow) mergeProto(items []*internal.Inventory) ([]*internal.Inventory, []Item) {
 	if len(e.items) == 0 {
-		return items
+		return items, nil
 	}
+
+	var unplaced []Item
 
 	ownerID := e.owner.GetID()
 	taken := make(map[escrowSlotKey]*internal.Inventory, len(items))
@@ -38,7 +41,7 @@ func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
 
 			free, found := e.freeProtoSlot(taken, held.invType)
 			if !found {
-				log.Printf("Escrow.mergeProto character=%d: no slot for item %d x%d", ownerID, model.GetID(), count)
+				unplaced = append(unplaced, held.item)
 				continue
 			}
 			key = free
@@ -48,7 +51,24 @@ func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
 		taken[key] = pb
 		items = append(items, pb)
 	}
-	return items
+	return items, unplaced
+}
+
+func (e *Escrow) restoreRequests(items []Item) []*internal.UnsettledRequest {
+	detail, ok := tradeRestoreDetailFrom(items)
+	if !ok {
+		return nil
+	}
+	data, err := json.Marshal(detail)
+	if err != nil {
+		log.Printf("Escrow.restoreRequests character=%d: %v", e.owner.GetID(), err)
+		return nil
+	}
+	return []*internal.UnsettledRequest{{
+		Id:     e.owner.gameWorld.NewUniqueID(),
+		Type:   internal.UnsettledType_UNSETTLED_TYPE_TRADE_RESTORE,
+		Detail: string(data),
+	}}
 }
 
 func (e *Escrow) freeProtoSlot(taken map[escrowSlotKey]*internal.Inventory, invType constant.InventoryType) (escrowSlotKey, bool) {

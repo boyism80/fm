@@ -403,6 +403,7 @@ export enum UnsettledType {
   UNSETTLED_TYPE_WEDDING_WISHLIST = 15,
   UNSETTLED_TYPE_SHOP_OPEN = 16,
   UNSETTLED_TYPE_WEDDING_INVITE = 17,
+  UNSETTLED_TYPE_TRADE_RESTORE = 18,
   UNRECOGNIZED = -1,
 }
 
@@ -462,6 +463,9 @@ export function unsettledTypeFromJSON(object: any): UnsettledType {
     case 17:
     case "UNSETTLED_TYPE_WEDDING_INVITE":
       return UnsettledType.UNSETTLED_TYPE_WEDDING_INVITE;
+    case 18:
+    case "UNSETTLED_TYPE_TRADE_RESTORE":
+      return UnsettledType.UNSETTLED_TYPE_TRADE_RESTORE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -507,6 +511,8 @@ export function unsettledTypeToJSON(object: UnsettledType): string {
       return "UNSETTLED_TYPE_SHOP_OPEN";
     case UnsettledType.UNSETTLED_TYPE_WEDDING_INVITE:
       return "UNSETTLED_TYPE_WEDDING_INVITE";
+    case UnsettledType.UNSETTLED_TYPE_TRADE_RESTORE:
+      return "UNSETTLED_TYPE_TRADE_RESTORE";
     case UnsettledType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

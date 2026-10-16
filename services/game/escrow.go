@@ -1,9 +1,11 @@
 package game
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/boyism80/fm/maple/constant"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
 type escrowItem struct {
@@ -43,6 +45,7 @@ func (e *Escrow) holdMeso(amount int32) error {
 
 func (e *Escrow) restore() {
 	ch := e.owner
+	var unplaced []Item
 	for _, held := range e.items {
 		inven := ch.inventory.tabs[held.invType]
 		model := held.item.GetModel()
@@ -57,7 +60,7 @@ func (e *Escrow) restore() {
 		default:
 			slot, ok := inven.NextSlot()
 			if !ok {
-				log.Printf("Escrow.restore character=%d: no slot for item %d x%d", ch.GetID(), model.GetID(), held.item.GetCount())
+				unplaced = append(unplaced, held.item)
 				continue
 			}
 			inven.items[int16(slot)] = held.item
@@ -65,11 +68,75 @@ func (e *Escrow) restore() {
 		}
 	}
 	e.items = nil
+	if len(unplaced) > 0 {
+		e.keepUnplaced(unplaced)
+	}
 
 	if e.meso > 0 {
 		ch.inventory.addMesoUnchecked(e.meso)
 		e.meso = 0
 	}
+}
+
+type tradeRestoreDetail struct {
+	Items []json.RawMessage `json:"items"`
+}
+
+func tradeRestoreDetailFrom(items []Item) (tradeRestoreDetail, bool) {
+	detail := tradeRestoreDetail{Items: make([]json.RawMessage, 0, len(items))}
+	for _, item := range items {
+		raw, err := json.Marshal(item.BuildRPC(0, 0))
+		if err != nil {
+			log.Printf("trade restore: %v", err)
+			continue
+		}
+		detail.Items = append(detail.Items, raw)
+	}
+	return detail, len(detail.Items) > 0
+}
+
+func (e *Escrow) keepUnplaced(items []Item) {
+	detail, ok := tradeRestoreDetailFrom(items)
+	if !ok {
+		return
+	}
+	id := e.owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_TRADE_RESTORE, 0, detail)
+	e.owner.unsettled.Lost(id)
+}
+
+func (e *Escrow) settleRestore(request *UnsettledRequest) {
+	var detail tradeRestoreDetail
+	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		request.inFlight = false
+		log.Printf("Escrow.settleRestore character=%d id=%d: %v", e.owner.GetID(), request.id, err)
+		return
+	}
+
+	var left []json.RawMessage
+	for _, raw := range detail.Items {
+		var pb internal.Inventory
+		if err := json.Unmarshal(raw, &pb); err != nil {
+			left = append(left, raw)
+			continue
+		}
+		item, err := NewItemFromInternalProto(&pb, e.owner.gameWorld)
+		if err != nil {
+			left = append(left, raw)
+			continue
+		}
+		if _, err := e.owner.inventory.AddItem(item, true); err != nil {
+			left = append(left, raw)
+		}
+	}
+	if len(left) > 0 {
+		detail.Items = left
+		if data, err := json.Marshal(detail); err == nil {
+			request.detail = string(data)
+		}
+		request.inFlight = false
+		return
+	}
+	e.owner.unsettled.Erase(request.id)
 }
 
 func (e *Escrow) release() ([]Item, int32) {

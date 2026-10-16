@@ -253,10 +253,13 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, id, d.owner.accountID, recipient, parcel, oneOfAKind).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
 		d.pending = false
 		result := v.GetResult()
-		if result != internal.ParcelResult_PARCEL_RESULT_OK {
-			d.refundSend(detail)
+		if result != internal.ParcelResult_PARCEL_RESULT_OK && !d.refundSend(detail) {
+			if request := d.owner.unsettled.Find(id); request != nil {
+				request.inFlight = false
+			}
+		} else {
+			d.owner.unsettled.Erase(id)
 		}
-		d.owner.unsettled.Erase(id)
 		switch result {
 		case internal.ParcelResult_PARCEL_RESULT_OK:
 			d.owner.listener.OnDueyResult(d.owner, pconst.DueyResultSent)
@@ -282,22 +285,43 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	return nil
 }
 
-func (d *Duey) refundSend(detail parcelSendDetail) {
-	d.owner.inventory.addMesoUnchecked(detail.Meso)
+func (d *Duey) refundSend(detail parcelSendDetail) bool {
+	var grants []Item
 	if len(detail.Item) > 0 {
 		var pb internal.Inventory
-		if err := json.Unmarshal(detail.Item, &pb); err == nil {
-			if item, err := NewItemFromInternalProto(&pb, d.owner.gameWorld); err == nil {
-				d.owner.inventory.addItemUnchecked(item, true)
-			}
+		if err := json.Unmarshal(detail.Item, &pb); err != nil {
+			log.Printf("Duey.refundSend character=%d: %v", d.owner.GetID(), err)
+			return false
+		}
+		item, err := NewItemFromInternalProto(&pb, d.owner.gameWorld)
+		if err != nil {
+			log.Printf("Duey.refundSend character=%d: %v", d.owner.GetID(), err)
+			return false
+		}
+		grants = append(grants, item)
+	}
+	if detail.Quick {
+		coupon, err := NewItem(QuickParcelCoupon, 1, d.owner.gameWorld)
+		if err != nil {
+			log.Printf("Duey.refundSend character=%d: %v", d.owner.GetID(), err)
+			return false
+		}
+		grants = append(grants, coupon)
+	}
+	if len(grants) > 0 {
+		items := map[uint32]uint16{}
+		for _, item := range grants {
+			items[item.GetModel().GetID()] += item.GetCount()
+		}
+		if (ExchangeSpec{Reward: ExchangeSide{Items: items}}).Valid(d.owner) != ExchangeOK {
+			return false
 		}
 	}
-	if !detail.Quick {
-		return
+	d.owner.inventory.addMesoUnchecked(detail.Meso)
+	for _, item := range grants {
+		d.owner.inventory.addItemUnchecked(item, true)
 	}
-	if coupon, err := NewItem(QuickParcelCoupon, 1, d.owner.gameWorld); err == nil {
-		d.owner.inventory.addItemUnchecked(coupon, true)
-	}
+	return true
 }
 
 func (d *Duey) settleSend(actx actor.Context, request *UnsettledRequest) {
@@ -308,8 +332,9 @@ func (d *Duey) settleSend(actx actor.Context, request *UnsettledRequest) {
 	}
 
 	d.owner.gameWorld.Systems().Get[*InternalSystem]().AbortParcelSendAsync(actx, d.owner, request.id, detail.Recipient).Bind(d.owner).Do(func(v *internal.AbortParcelSendReply) error {
-		if !v.GetSent() {
-			d.refundSend(detail)
+		if !v.GetSent() && !d.refundSend(detail) {
+			request.inFlight = false
+			return nil
 		}
 		d.owner.unsettled.Erase(request.id)
 		return nil

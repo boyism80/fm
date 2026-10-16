@@ -714,9 +714,17 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 	w.gift.pending = true
 	w.owner.gameWorld.Systems().Get[*InternalSystem]().GiveWeddingGiftAsync(actx, w.owner, id, w.gift.receiverID, pb).Bind(w.owner).Do(func(v *internal.GiveWeddingGiftReply) error {
 		w.gift.pending = false
+		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+			if _, err := w.owner.inventory.AddItem(gift, true); err != nil {
+				if request := w.owner.unsettled.Find(id); request != nil {
+					request.inFlight = false
+				}
+				w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
+				return nil
+			}
+		}
 		w.owner.unsettled.Erase(id)
 		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
-			w.owner.inventory.addItemUnchecked(gift, true)
 			w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveFailed, nil, nil)
 			return nil
 		}
@@ -742,10 +750,20 @@ func (w *Wedding) settleGiftSend(actx actor.Context, request *UnsettledRequest) 
 	w.owner.gameWorld.Systems().Get[*InternalSystem]().AbortWeddingGiftAsync(actx, w.owner, request.id, uint32(request.target)).Bind(w.owner).Do(func(v *internal.AbortWeddingGiftReply) error {
 		if !v.GetGiven() {
 			var pb internal.Inventory
-			if err := json.Unmarshal(detail.Item, &pb); err == nil {
-				if item, err := NewItemFromInternalProto(&pb, w.owner.gameWorld); err == nil {
-					w.owner.inventory.addItemUnchecked(item, true)
-				}
+			if err := json.Unmarshal(detail.Item, &pb); err != nil {
+				request.inFlight = false
+				log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.id, err)
+				return nil
+			}
+			item, err := NewItemFromInternalProto(&pb, w.owner.gameWorld)
+			if err != nil {
+				request.inFlight = false
+				log.Printf("Wedding.settleGiftSend character=%d id=%d: %v", w.owner.GetID(), request.id, err)
+				return nil
+			}
+			if _, err := w.owner.inventory.AddItem(item, true); err != nil {
+				request.inFlight = false
+				return nil
 			}
 		}
 		w.owner.unsettled.Erase(request.id)
