@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/boyism80/fm/core/client"
@@ -29,7 +30,7 @@ type BaseClient struct {
 	sendEncryption *crypt.Encryption
 	recvEncryption *crypt.Encryption
 	lastPingAt     time.Time
-	pongReceived   bool
+	pongReceived   atomic.Bool
 }
 
 func (c *BaseClient) GetConnection() net.Conn {
@@ -108,13 +109,13 @@ func (c *BaseClient) Close() {
 }
 
 func (c *BaseClient) MarkPongReceived() {
-	c.pongReceived = true
+	c.pongReceived.Store(true)
 }
 
 func (c *BaseClient) NextPingAction(now time.Time, interval time.Duration) (sendPing bool, disconnect bool) {
 	if c.lastPingAt.IsZero() {
 		c.lastPingAt = now
-		c.pongReceived = false
+		c.pongReceived.Store(false)
 		return true, false
 	}
 
@@ -122,12 +123,12 @@ func (c *BaseClient) NextPingAction(now time.Time, interval time.Duration) (send
 		return false, false
 	}
 
-	if !c.pongReceived {
+	if !c.pongReceived.Load() {
 		return false, true
 	}
 
 	c.lastPingAt = now
-	c.pongReceived = false
+	c.pongReceived.Store(false)
 	return true, false
 }
 

@@ -136,7 +136,18 @@ func (sw *StreamWriter) WriteStr32(str string) {
 func (sw *StreamWriter) WriteStaticStr(str string, max int) {
 	encodedStr := sw.encodeEUCKR(str)
 	if len(encodedStr) > max {
-		encodedStr = encodedStr[:max]
+		n := 0
+		for n < max {
+			if encodedStr[n] >= 0x81 {
+				if n+1 >= max {
+					break
+				}
+				n += 2
+				continue
+			}
+			n++
+		}
+		encodedStr = encodedStr[:n]
 	}
 
 	sw.Write(encodedStr)

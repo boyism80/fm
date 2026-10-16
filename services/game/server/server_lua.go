@@ -872,14 +872,6 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		return gs.systems.Get[*game.MapSystem]().RunScript(L, cfg.ActorContext, targetMap, scriptPath, funcName, args)
 	})
 
-	luax.RegisterFunc(luaState, "set_packet_log_enabled", func(L *lua.LState) int {
-		core.SetPacketLogEnabled(L.CheckBool(1))
-		return 0
-	})
-	luax.RegisterFunc(luaState, "get_packet_log_enabled", func(L *lua.LState) int {
-		L.Push(lua.LBool(core.GetPacketLogEnabled()))
-		return 1
-	})
 	luax.RegisterFunc(luaState, "channel_id", func(L *lua.LState) int {
 		L.Push(lua.LNumber(gs.config.ChannelId))
 		return 1
