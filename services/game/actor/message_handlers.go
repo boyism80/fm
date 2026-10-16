@@ -10,6 +10,7 @@ func registerMapMessageHandlers(r *MessageRegistry) {
 	r.Bind[RequestSpawnDoorHandler]()
 	r.Bind[ResponseSpawnDoorHandler]()
 	r.Bind[DespawnDoorHandler]()
+	r.Bind[ReuseOIDHandler]()
 	r.Bind[SetDoorPartyIDHandler]()
 	r.Bind[ResumeLuaHandler]()
 	r.Bind[MapCallHandler]()

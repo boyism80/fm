@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
@@ -220,20 +221,66 @@ func (m *Map) ClearLuaRoot() {
 	}
 }
 
-func (m *Map) allocateOID() uint32 {
-	if len(m.availableOIDs) > 0 {
+const (
+	oidLimit      uint32 = 0xFFFF
+	oidReuseDelay        = 5 * time.Second
+)
 
+func (m *Map) allocateOID() uint32 {
+	for len(m.availableOIDs) > 0 {
 		oid := m.availableOIDs[0]
 		m.availableOIDs = m.availableOIDs[1:]
-		return oid
+		if oid != 0 && oid < oidLimit && !m.oidInUse(oid) {
+			return oid
+		}
 	}
 
-	m.sequence++
-	return m.sequence
+	for range oidLimit {
+		m.sequence++
+		if m.sequence == 0 || m.sequence >= oidLimit {
+			m.sequence = 1
+		}
+		if !m.oidInUse(m.sequence) {
+			return m.sequence
+		}
+	}
+	log.Printf("map %d has no free object id", m.id)
+	return 0
 }
 
-func (m *Map) releaseOID(oid uint32) {
+func (m *Map) oidInUse(oid uint32) bool {
+	for _, bucket := range m.objects {
+		if _, ok := bucket[oid]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Map) HoldOID(oid uint32) {
+	if oid == 0 || oid >= oidLimit || m.oidInUse(oid) {
+		return
+	}
 	m.availableOIDs = append(m.availableOIDs, oid)
+}
+
+// The client keeps the leave animation, so the id waits before it can be used again.
+func (m *Map) releaseOID(oid uint32) {
+	if oid == 0 {
+		return
+	}
+	pid := m.LogicActorPID()
+	if pid == nil || m.gameWorld == nil {
+		m.HoldOID(oid)
+		return
+	}
+	time.AfterFunc(oidReuseDelay, func() {
+		root := m.gameWorld.Systems().Get[*c_actor.ActorRegistry]().Root()
+		if root == nil {
+			return
+		}
+		root.Send(pid, &ReuseOID{MapID: m.id, OID: oid})
+	})
 }
 
 func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
@@ -1055,13 +1102,12 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob.ClearTimers()
 	m.sections.remove(mob)
 	delete(m.objects[constant.ObjectTypeMob], mobID)
+	m.releaseOID(mobID)
 
 	mob.buffs.Clear()
 	if mob.spawn != nil {
 		mob.spawn.Spawned = false
 	}
-
-	m.releaseOID(mobID)
 	m.controllerTable.LeaveMob(mob)
 	m.listener.OnMobRemoved(m, mob, animationType)
 
@@ -1342,7 +1388,6 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 	position := obj.GetPosition()
 	m.sections.remove(obj)
 	delete(m.objects[constant.ObjectTypeItem], itemID)
-
 	m.releaseOID(itemID)
 
 	m.listener.OnItemRemoved(m, itemID, playerID, removeType, position)
