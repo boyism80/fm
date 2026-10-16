@@ -151,6 +151,17 @@ function M.is_leader(me)
 	return party ~= nil and party:leader_id() == me:id()
 end
 
+function M.character_count(map)
+	if map == nil then
+		return 0
+	end
+	local n = 0
+	for _, _ in pairs(map:characters()) do
+		n = n + 1
+	end
+	return n
+end
+
 function M.mob_count(map, mob_id)
 	if map == nil then
 		return 0

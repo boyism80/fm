@@ -6,20 +6,13 @@ local KEY = 4032858
 local TEMP_KEY = 4032832
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	reset_map = function(map)
 		map:reset()
 	end,
 
 	on_enter = function(me)
-		local ok, count = run_on_map(TOWER, SCRIPT, "character_count")
+		local ok, count = run_on_map(TOWER, "script/lib/party_quest.lua", "character_count")
 		local investigating = me:quest(3139):started()
 		local allowed = (me:quest(3164):started() and pq.has_item(me, KEY))
 			or (investigating and pq.has_item(me, TEMP_KEY))

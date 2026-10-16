@@ -42,7 +42,7 @@ local function challenge(me, npc)
 	end
 
 	for _, map_id in ipairs(WAVES) do
-		local ok, count = run_on_map(map_id, SCRIPT, "character_count")
+		local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
 		if ok and count ~= nil and count > 0 then
 			me:dialog(npc, "이미 다른 파티가 입장 중이거나, 파티장이 파티원 수만큼 입장권을 가지고 있지 않습니다.")
 			return
@@ -79,13 +79,6 @@ local function buy_ticket(me, npc)
 end
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	reset_map = function(map)
 		map:reset()

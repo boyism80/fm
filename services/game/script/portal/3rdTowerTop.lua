@@ -8,13 +8,6 @@ local GUARD_X = { 1483, 1683, 1880, 2347, 2108 }
 local GUARD_Y = -139
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	prepare_tower = function(map)
 		map:reset()
@@ -24,7 +17,7 @@ return {
 	end,
 
 	on_enter = function(me)
-		local ok, count = run_on_map(TOWER, SCRIPT, "character_count")
+		local ok, count = run_on_map(TOWER, "script/lib/party_quest.lua", "character_count")
 		local allowed = me:quest(3141):started()
 			and (pq.has_item(me, TEMP_KEY) or me:quest(3167):completed())
 		if ok == false or count ~= 0 or allowed == false then

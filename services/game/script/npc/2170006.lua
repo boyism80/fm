@@ -5,13 +5,6 @@ local BASE_MAP = 200101500
 local ROOMS = 10
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	prepare_room = function(map)
 		map:reset()
@@ -38,7 +31,7 @@ return {
 		for i = 0, ROOMS - 1 do
 			local map_id = BASE_MAP + i
 			if id2map(map_id) ~= nil then
-				local ok, count = run_on_map(map_id, SCRIPT, "character_count")
+				local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
 				if ok and count == 0 then
 					run_on_map(map_id, SCRIPT, "prepare_room")
 					local pid = party:id()

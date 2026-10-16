@@ -8,14 +8,6 @@ local MIN_LEVEL = 120
 local MIN_MEMBERS = 1
 local MAX_MEMBERS = 6
 
-function M.character_count(map)
-	local n = 0
-	for _, _ in pairs(map:characters()) do
-		n = n + 1
-	end
-	return n
-end
-
 function M.reset_map(map)
 	map:reset()
 end
@@ -52,7 +44,7 @@ function M.on_click(me, npc, boss)
 	end
 
 	for _, map_id in ipairs(boss.maps) do
-		local ok, count = run_on_map(map_id, SCRIPT, "character_count")
+		local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
 		if ok and count ~= nil and count > 0 then
 			me:dialog(npc, "이미 누군가가 이용 중에 있습니다.")
 			return

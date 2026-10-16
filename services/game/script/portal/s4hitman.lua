@@ -5,13 +5,6 @@ local ROOM = 910200000
 local EXIT = 101030104
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	reset_map = function(map)
 		map:reset()
@@ -26,7 +19,7 @@ return {
 			me:message("샨이 요청한 것을 끝냈습니다. 더 이상 입장할 필요가 없습니다.")
 			return
 		end
-		local ok, count = run_on_map(ROOM, SCRIPT, "character_count")
+		local ok, count = run_on_map(ROOM, "script/lib/party_quest.lua", "character_count")
 		if ok == false or count ~= 0 then
 			me:message("이미 다른 누군가가 퀘스트에 도전중입니다.")
 			return

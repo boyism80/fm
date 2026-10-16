@@ -1,15 +1,6 @@
 local M = {}
 
-local SCRIPT = "script/lib/mini_dungeon.lua"
 local ROOMS = 39
-
-function M.character_count(map)
-	local n = 0
-	for _, _ in pairs(map:characters()) do
-		n = n + 1
-	end
-	return n
-end
 
 function M.enter(me, base, first_room, rooms)
 	if me:map():wz():id() ~= base then
@@ -30,7 +21,7 @@ function M.enter(me, base, first_room, rooms)
 
 	for i = 0, (rooms or ROOMS) - 1 do
 		local room = first_room + i
-		local ok, count = run_on_map(room, SCRIPT, "character_count")
+		local ok, count = run_on_map(room, "script/lib/party_quest.lua", "character_count")
 		if ok and count == 0 then
 			local pid = party:id()
 			for _, ch in pairs(me:map():characters()) do

@@ -1978,7 +1978,7 @@ func loadMob(path string) (*Mob, error) {
 
 	model.BodyAttack = info.Int("bodyAttack", 0)
 	model.Level = uint8(info.Int("level", 0))
-	model.MaxHP = info.Int("maxHP", 0)
+	model.MaxHP = info.Int("maxHP", 0) + info.Int("finalmaxHP", 0)
 	model.MaxMP = info.Int("maxMP", 0)
 	model.Speed = int16(info.Int("speed", 0))
 	model.PADamage = info.Int("PADamage", 0)
@@ -2049,6 +2049,9 @@ func loadMob(path string) (*Mob, error) {
 		case "noFlip":
 		case "mbookID":
 		case "finalmaxHP":
+			for _, intf := range iv.Ints {
+				model.MaxHP += intf.Value
+			}
 		case "changeableMob":
 		case "changeableMob_Type":
 		case "wp":

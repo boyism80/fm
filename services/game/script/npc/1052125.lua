@@ -3,13 +3,6 @@
 local BASE_MAP = 103040410
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	reset_map = function(map)
 		map:reset()
@@ -40,7 +33,7 @@ return {
 			local maps = { BASE_MAP + i, BASE_MAP + 10 + i, BASE_MAP + 20 + i }
 			local empty = true
 			for _, map_id in ipairs(maps) do
-				local ok, count = run_on_map(map_id, "script/npc/1052125.lua", "character_count")
+				local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
 				if ok and count ~= nil and count > 0 then
 					empty = false
 				end

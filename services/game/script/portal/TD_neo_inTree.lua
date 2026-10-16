@@ -11,13 +11,6 @@ local QUESTS = {
 local ROOMS = 10
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	reset_map = function(map)
 		map:reset()
@@ -37,7 +30,7 @@ return {
 
 		for i = 0, ROOMS - 1 do
 			local room = base + i
-			local ok, count = run_on_map(room, SCRIPT, "character_count")
+			local ok, count = run_on_map(room, "script/lib/party_quest.lua", "character_count")
 			if ok and count == 0 then
 				run_on_map(room, SCRIPT, "reset_map")
 				me:play_portal_sound()

@@ -45,7 +45,7 @@ local function item_count(me, item_id)
 end
 
 local function enter_training(me, npc)
-	local ok, count = run_on_map(TRAINING_MAP, SCRIPT, "character_count")
+	local ok, count = run_on_map(TRAINING_MAP, "script/lib/party_quest.lua", "character_count")
 	if ok and count ~= nil and count > 0 then
 		me:dialog(npc, "흠.. 훈련장에 이미 누군가가 들어간 것 같구만. 나중에 다시 찾아오게나.")
 		return
@@ -168,13 +168,6 @@ local function second_class_test(me, npc)
 end
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	reset_map = function(map)
 		map:reset()

@@ -9,13 +9,6 @@ local function item_count(me, item_id)
 end
 
 return {
-	character_count = function(map)
-		local n = 0
-		for _, _ in pairs(map:characters()) do
-			n = n + 1
-		end
-		return n
-	end,
 
 	on_click = function(me, npc)
 		local sel = me:dialog_list(npc, "정말 꼭 입장하고 싶으신 것 같군요. 좀 곤라합니다만, 골든티켓을 갖고 계시다면 들어가실 수도 있을 것 같군요. 어느 곳에 가길 희망하시는 겁니까? #k", {
@@ -33,7 +26,7 @@ return {
 			return
 		end
 		local target = me:map():wz():id() + 500 + (sel - 1) * 100
-		local ok, count = run_on_map(target, "script/npc/9000075.lua", "character_count")
+		local ok, count = run_on_map(target, "script/lib/party_quest.lua", "character_count")
 		if ok and count ~= nil and count > 0 then
 			me:dialog(npc, "누군가 맵에 들어가있습니다.")
 			return
