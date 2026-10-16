@@ -1,9 +1,16 @@
 package game
 
+import (
+	"time"
+
+	"github.com/boyism80/fm/core/clock"
+)
+
 type PartyMembership struct {
-	owner  *Character
-	id     *uint32
-	search *PartySearchConfig
+	owner     *Character
+	id        *uint32
+	updatedAt time.Time
+	search    *PartySearchConfig
 }
 
 func (p *PartyMembership) ID() *uint32 {
@@ -19,6 +26,14 @@ func (p *PartyMembership) Is(partyID *uint32) bool {
 }
 
 func (p *PartyMembership) SetID(id *uint32) {
+	p.Apply(id, clock.Now())
+}
+
+func (p *PartyMembership) Apply(id *uint32, at time.Time) {
+	if !at.After(p.updatedAt) {
+		return
+	}
+	p.updatedAt = at
 	p.id = id
 	p.owner.doors.SetPartyID(id)
 }

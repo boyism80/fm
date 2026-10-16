@@ -108,6 +108,8 @@ type ClearPartyByPartyID struct {
 type SyncCharacterPartyState struct {
 	CharacterID uint32
 	PartyID     *uint32
+	UpdatedAt   time.Time
+	Clear       bool
 }
 
 type PartyMemberLeft struct {
@@ -115,6 +117,7 @@ type PartyMemberLeft struct {
 }
 
 type PartyDisband struct {
+	CharacterID     uint32
 	FormerMemberIDs []uint32
 }
 

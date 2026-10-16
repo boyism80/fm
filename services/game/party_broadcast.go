@@ -2,7 +2,6 @@ package game
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/protocol/response"
 )
 
@@ -65,24 +64,9 @@ func (s *PartySystem) BroadcastMemberLeft(prev, current *Party, targetCharacterI
 		respMembers = current.BuildS2C()
 	}
 
-	oldIDs := prev.MemberCharacterIDs()
-	if root := s.gw.Systems().Get[*c_actor.ActorRegistry]().Root(); root != nil {
-		seen := make(map[string]struct{})
-		for _, cid := range oldIDs {
-			mapPID, ok := s.gw.Systems().Get[*DispatchSystem]().GetMapPID(cid)
-			if !ok || mapPID == nil {
-				continue
-			}
-			key := mapPID.String()
-			if _, dup := seen[key]; dup {
-				continue
-			}
-			seen[key] = struct{}{}
-			root.Send(mapPID, &PartyMemberLeft{
-				LeaverID: targetCharacterID,
-			})
-		}
-	}
+	s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, targetCharacterID, &PartyMemberLeft{
+		LeaverID: targetCharacterID,
+	})
 
 	forChannel := s.gw.GetChannelID()
 	for _, m := range oldMembers {
@@ -108,24 +92,14 @@ func (s *PartySystem) BroadcastDisbanded(prev *Party, leaderCharacterID uint32) 
 	}
 
 	formerIDs := prev.MemberCharacterIDs()
-	if len(formerIDs) > 0 {
-		if root := s.gw.Systems().Get[*c_actor.ActorRegistry]().Root(); root != nil {
-			seen := make(map[string]struct{})
-			for _, cid := range formerIDs {
-				mapPID, ok := s.gw.Systems().Get[*DispatchSystem]().GetMapPID(cid)
-				if !ok || mapPID == nil {
-					continue
-				}
-				key := mapPID.String()
-				if _, dup := seen[key]; dup {
-					continue
-				}
-				seen[key] = struct{}{}
-				root.Send(mapPID, &PartyDisband{
-					FormerMemberIDs: formerIDs,
-				})
-			}
+	for _, cid := range formerIDs {
+		if cid == 0 {
+			continue
 		}
+		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &PartyDisband{
+			CharacterID:     cid,
+			FormerMemberIDs: formerIDs,
+		})
 	}
 
 	partyID := prev.GetPartyId()

@@ -23,10 +23,16 @@ func (h *SyncCharacterPartyStateHandler) Handle(ctx actor.Context, a *GameLogicA
 	if ch == nil {
 		return
 	}
-	if msg.PartyID == nil {
-		ch.Party().SetID(nil)
-	} else {
-		id := *msg.PartyID
-		ch.Party().SetID(&id)
+	if msg.Clear {
+		if cur := ch.Party().ID(); cur != nil && msg.PartyID != nil && *cur == *msg.PartyID {
+			ch.Party().Apply(nil, msg.UpdatedAt)
+		}
+		return
 	}
+	if msg.PartyID == nil {
+		ch.Party().Apply(nil, msg.UpdatedAt)
+		return
+	}
+	id := *msg.PartyID
+	ch.Party().Apply(&id, msg.UpdatedAt)
 }

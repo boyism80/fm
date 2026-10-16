@@ -12,25 +12,17 @@ func (PartyDisbandHandler) New() *PartyDisbandHandler {
 }
 
 func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *game.PartyDisband) {
-	if msg == nil {
+	if msg == nil || msg.CharacterID == 0 {
 		return
 	}
-	seen := make(map[*game.StateMachine]struct{})
-	for _, m := range a.Maps() {
-		m.SyncDoors(msg.FormerMemberIDs)
-		for _, id := range msg.FormerMemberIDs {
-			ch := m.GetPlayer(id)
-			if ch == nil {
-				continue
-			}
-			if ch.StateMachine() == nil {
-				continue
-			}
-			if _, ok := seen[ch.StateMachine()]; ok {
-				continue
-			}
-			seen[ch.StateMachine()] = struct{}{}
-			ch.StateMachine().CallHook("on_disband_party")
-		}
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
 	}
+	m.SyncDoors(msg.FormerMemberIDs)
+	ch := m.GetPlayer(msg.CharacterID)
+	if ch == nil || ch.StateMachine() == nil {
+		return
+	}
+	ch.StateMachine().CallHook("on_disband_party")
 }

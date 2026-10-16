@@ -8,6 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/clock"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
@@ -82,7 +83,7 @@ func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 
 	if evt.EventType == "disbanded" {
 		if memberIDs := s.forget(evt.PartyID); len(memberIDs) > 0 {
-			s.ClearPartyMembers(memberIDs)
+			s.ClearPartyMembers(memberIDs, evt.PartyID)
 			return p
 		}
 	}
@@ -98,7 +99,7 @@ func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 			if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
 				memberIDs := s.forget(partyID)
 				if evt.EventType == "disbanded" {
-					s.ClearPartyMembers(memberIDs)
+					s.ClearPartyMembers(memberIDs, partyID)
 				}
 				return nil
 			}
@@ -106,7 +107,7 @@ func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *as
 			if party == nil {
 				memberIDs := s.forget(partyID)
 				if evt.EventType == "disbanded" {
-					s.ClearPartyMembers(memberIDs)
+					s.ClearPartyMembers(memberIDs, partyID)
 				}
 				return nil
 			}
@@ -164,11 +165,12 @@ func (s *PartySystem) Sync(party *Party) {
 		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &SyncCharacterPartyState{
 			CharacterID: cid,
 			PartyID:     &pid,
+			UpdatedAt:   party.updatedAt,
 		})
 	}
 }
 
-func (s *PartySystem) ClearPartyMembers(memberIDs []uint32) {
+func (s *PartySystem) ClearPartyMembers(memberIDs []uint32, partyID uint32) {
 	if s == nil || len(memberIDs) == 0 || s.gw == nil {
 		return
 	}
@@ -176,9 +178,12 @@ func (s *PartySystem) ClearPartyMembers(memberIDs []uint32) {
 		if cid == 0 {
 			continue
 		}
+		id := partyID
 		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &SyncCharacterPartyState{
 			CharacterID: cid,
-			PartyID:     nil,
+			PartyID:     &id,
+			UpdatedAt:   clock.Now(),
+			Clear:       true,
 		})
 	}
 }
