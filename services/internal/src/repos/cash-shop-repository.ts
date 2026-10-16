@@ -107,6 +107,20 @@ export class CashShopRepository {
         });
     }
 
+    async pendingGiftItemCount(worldId: number, accountId: number): Promise<number> {
+        let count = 0;
+        for (const pool of this.ctx.getPgDataPools(worldId)) {
+            const res = await pool.query(
+                `SELECT COALESCE(SUM(jsonb_array_length(detail->'items')), 0) AS count
+                 FROM cash_transfer_requests
+                 WHERE completed = FALSE AND kind = 'gift' AND target_id = $1 AND jsonb_typeof(detail->'items') = 'array'`,
+                [accountId]
+            );
+            count += Number(res.rows[0]?.count ?? 0);
+        }
+        return count;
+    }
+
     async finishTransfer(worldId: number, request: CashTransferRequest): Promise<void> {
         await this.ctx.getPgDataPool(worldId, request.source_id).query(
             "UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1",

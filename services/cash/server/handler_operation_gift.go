@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"log"
+	"unicode/utf8"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/rpc"
@@ -26,6 +27,10 @@ func (h *Operation) gift(ctx *core.ClientContext, character *cash.Character, req
 	}
 	if req.Recipient == "" {
 		fail(constant.CashShopFailureWrongName)
+		return
+	}
+	if length := utf8.RuneCountInString(req.Message); length == 0 || length > ringMessageMaxLength {
+		fail(constant.CashShopFailureUnknown)
 		return
 	}
 	if character.NXCash < commodity.Price {

@@ -514,35 +514,57 @@ export class CashShopService {
         }
     }
 
+    private async withAccounts<T>(
+        worldId: number,
+        senderId: number,
+        recipientId: number,
+        fn: (senderTx: PoolClient, recipientTx: PoolClient) => Promise<T>
+    ): Promise<T> {
+        return this.cashShopRepo.withAccountLock(worldId, recipientId, async (recipientTx) => {
+            return this.cashShopRepo.withAccountLock(worldId, senderId, async (senderTx) => fn(senderTx, recipientTx));
+        });
+    }
+
+    private async reservedLockerCount(worldId: number, accountId: number, txClient: PoolClient): Promise<number> {
+        const items = await this.cashShopRepo.findItems(worldId, accountId, { txClient });
+        return items.length + (await this.cashShopRepo.pendingGiftItemCount(worldId, accountId));
+    }
+
     async gift(req: GiftCashItemRequest): Promise<GiftCashItemReply> {
-        const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
+        const opened = await this.cashShopRepo.findBalance(req.worldId, req.accountId);
+        const fail = (result: CashShopResult, balance: CashBalance = opened) => ({
+            result,
+            nxCash: balance.nxCash,
+            maplePoint: balance.maplePoint,
+            recipientId: 0,
+        });
+        const entry = await this.unifiedRepo.findCharacterNameEntry(req.recipientName);
+        if (entry == null || entry.world_id !== req.worldId) {
+            return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+        }
+        if (entry.account_id === req.accountId) {
+            return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
+        }
+        const recipient = await this.characterRepo.get(req.worldId, entry.character_id);
+        if (recipient == null) {
+            return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+        }
+        if (req.gender !== 2 && recipient.gender !== req.gender) {
+            return fail(CashShopResult.CASH_SHOP_RESULT_GENDER);
+        }
+
+        const reply = await this.withAccounts(req.worldId, req.accountId, entry.account_id, async (txClient, recipientTx) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
-            const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: 0 });
             if ((await this.cashRequestRepo.find(req.worldId, req.accountId, req.requestId, { txClient })) != null) {
                 return { result: CashShopResult.CASH_SHOP_RESULT_OK, nxCash: balance.nxCash, maplePoint: balance.maplePoint, recipientId: 0 };
             }
+            const used = await this.reservedLockerCount(req.worldId, entry.account_id, recipientTx);
+            if (used + req.items.length > LOCKER_CAPACITY) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL, balance);
+            }
             const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
             if (this.affordable(balance, delta) === false) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH);
-            }
-
-            const entry = await this.unifiedRepo.findCharacterNameEntry(req.recipientName);
-            if (entry == null || entry.world_id !== req.worldId) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-            }
-            if (entry.account_id === req.accountId) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
-            }
-            const recipient = await this.characterRepo.get(req.worldId, entry.character_id);
-            if (recipient == null) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-            }
-            if (req.gender !== 2 && recipient.gender !== req.gender) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_GENDER);
-            }
-            const lockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id);
-            if (lockerItems.length + req.items.length > LOCKER_CAPACITY) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
+                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH, balance);
             }
 
             await this.cashRequestRepo.insert(req.worldId, req.accountId, req.requestId, {}, txClient);
@@ -573,7 +595,24 @@ export class CashShopService {
     async buyRing(req: BuyCashRingRequest): Promise<BuyCashRingReply> {
         const item = req.item!;
         const partnerItem = req.partnerItem!;
-        const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
+        const opened = await this.cashShopRepo.findBalance(req.worldId, req.accountId);
+        const early = (result: CashShopResult) => ({ result, nxCash: opened.nxCash, maplePoint: opened.maplePoint, partnerId: 0 });
+        const entry = await this.unifiedRepo.findCharacterNameEntry(req.partnerName);
+        if (entry == null || entry.world_id !== req.worldId || entry.character_id === req.characterId) {
+            return early(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+        }
+        if (entry.account_id === req.accountId) {
+            return early(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
+        }
+        const partner = await this.characterRepo.get(req.worldId, entry.character_id);
+        if (partner == null) {
+            return early(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+        }
+        if (req.couple && partner.gender === req.gender) {
+            return early(CashShopResult.CASH_SHOP_RESULT_GENDER);
+        }
+
+        const reply = await this.withAccounts(req.worldId, req.accountId, entry.account_id, async (txClient, partnerTx) => {
             const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
             const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: 0 });
             if ((await this.cashRequestRepo.find(req.worldId, req.accountId, req.requestId, { txClient })) != null) {
@@ -583,27 +622,10 @@ export class CashShopService {
             if (this.affordable(balance, delta) === false) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH);
             }
-
-            const entry = await this.unifiedRepo.findCharacterNameEntry(req.partnerName);
-            if (entry == null || entry.world_id !== req.worldId || entry.character_id === req.characterId) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-            }
-            if (entry.account_id === req.accountId) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
-            }
-            const partner = await this.characterRepo.get(req.worldId, entry.character_id);
-            if (partner == null) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-            }
-            if (req.couple && partner.gender === req.gender) {
-                return fail(CashShopResult.CASH_SHOP_RESULT_GENDER);
-            }
-            const lockerItems = await this.cashShopRepo.findItems(req.worldId, req.accountId, { txClient });
-            if (lockerItems.length >= LOCKER_CAPACITY) {
+            if ((await this.reservedLockerCount(req.worldId, req.accountId, txClient)) >= LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL);
             }
-            const partnerLockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id);
-            if (partnerLockerItems.length >= LOCKER_CAPACITY) {
+            if ((await this.reservedLockerCount(req.worldId, entry.account_id, partnerTx)) + 1 > LOCKER_CAPACITY) {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
