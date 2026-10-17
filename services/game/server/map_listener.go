@@ -451,7 +451,7 @@ func (l *MapListenerImpl) OnMistSpawned(mapInstance *game.Map, mist *game.Mist) 
 		SkillLevel: mist.SkillLevel(),
 		SkillDelay: mist.SkillDelay(),
 		Bounds:     mist.Bounds(),
-		MobSkill:   mist.MobSkill(),
+		MobSkill:   mist.MobMist(),
 	}
 	mist.Broadcast(pkt, nil)
 }

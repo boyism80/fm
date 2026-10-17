@@ -162,9 +162,6 @@ return {
 				if ch == nil then
 					goto continue_char
 				end
-				if ch:has_debuff(DebuffFlag.Poison) then
-					goto continue_char
-				end
 				if math.random(1, 100) > prop then
 					goto continue_char
 				end
@@ -175,15 +172,9 @@ return {
 		else
 			local wz = mist:wz()
 			local level = mist:level()
-			local multiplier = mist:poison_tick_multiplier() or 1.0
-			if multiplier <= 0 then
-				multiplier = 1.0
-			end
+			local multiplier = mist:poison_tick_multiplier()
 			for _, mob in ipairs(targets) do
 				if mob == nil then
-					goto continue_mob
-				end
-				if mob:has_buff(MobBuff.Poison) then
 					goto continue_mob
 				end
 				if math.random(1, 100) > prop then

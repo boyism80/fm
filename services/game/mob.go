@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boyism80/fm/core/clock"
-
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -246,50 +244,31 @@ func (m *Mob) Relink(spawnType constant.MobSpawnType, link uint32) bool {
 	return true
 }
 
-func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
-	if m == nil || m.gameWorld == nil || skill == nil || skill.levelData == nil || skill.levelData.SkillWz == nil {
+func (m *Mob) SpawnMist(skill *MobSkill, spec mistSpec) *Mist {
+	if skill.levelData == nil || skill.levelData.SkillWz == nil {
 		return nil
 	}
 	mapInstance := m.GetMap()
 	if mapInstance == nil {
 		return nil
 	}
-	b := bounds
-	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
-		pos := m.GetPosition()
-		b = skill.levelData.Bounds.AtOrigin(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
-	}
-	if poisonTickMultiplier <= 0 {
-		poisonTickMultiplier = 1.0
+	if spec.bounds == (types.Rect[int32]{}) {
+		spec.bounds = skill.levelData.Bounds.AtOrigin(types.Point[int32]{X: int32(m.position.X), Y: int32(m.position.Y)})
 	}
 	causer := uint32(0)
 	if m.wz != nil {
 		causer = m.wz.ID
 	}
+
 	mist := &Mist{
-		position:             position,
-		gameWorld:            mapInstance.gameWorld,
-		onMap:                nil,
-		causer:               causer,
-		skillWz:              skill.levelData.SkillWz,
-		mobLevelData:         skill.levelData,
-		skillLevel:           skill.slot.Level,
-		mistType:             mistType,
-		mobMist:              true,
-		mobSkill:             true,
-		skillDelay:           0,
-		bounds:               b,
-		expiresAt:            time.Time{},
-		poisonTickMultiplier: poisonTickMultiplier,
+		objectCore:   ObjectCore{position: m.position},
+		causer:       causer,
+		skillWz:      skill.levelData.SkillWz,
+		mobLevelData: skill.levelData,
+		skillLevel:   skill.slot.Level,
+		mobMist:      true,
 	}
-	mist.objectCore.self = mist
-	if initialDelay > 0 {
-		mist.nextPoisonTickAt = clock.Now().Add(initialDelay)
-	}
-	if duration > 0 {
-		mist.expiresAt = clock.Now().Add(duration)
-	}
-	mapInstance.AddMist(mist)
+	mist.spread(mapInstance, spec)
 	return mist
 }
 

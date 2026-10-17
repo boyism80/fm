@@ -12,9 +12,12 @@ local SNAIL = 100100
 local CLAW = 1472000
 local STAR = 2070000
 local LUCKY_SEVEN = 4001344
+local POISON_MIST = 2111003
+local MOB_POISON = 0x200
 local PRIEST = 231
 local ROGUE = 400
 local HERMIT = 411
+local FP_MAGE = 211
 local GM = 900
 local EQUIP = 1
 local WEAPON_SLOT = -11
@@ -302,8 +305,35 @@ local function ranged_ammo(ctx)
 	return check(ctx, bot:slot(STAR) == slot and stars(bot) == 0, "다 쓴 표창 칸이 0개로 남지 않음: " .. tostring(stars(bot)))
 end
 
+-- A poison mist poisons a mob standing in it. Each tick poisons at the level's chance (70% at level 30).
+local function poison_mist(ctx)
+	local bot = ctx:bot(1)
+	if setup(ctx, bot, 120, FP_MAGE, "-") == false then
+		return false
+	end
+	if pq.command(bot, "/스킬레벨 " .. POISON_MIST .. " 30", "스킬레벨 설정") == false then
+		return ctx:fail("독 안개 배우기 실패")
+	end
+	if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+		return ctx:fail("마력 설정 실패")
+	end
+	if bot:instance_move(HUNTING_GROUND) == false then
+		return ctx:fail("사냥터 이동 실패")
+	end
+
+	local x, y = bot:position()
+	local golem = spawn_golem(ctx, bot, x, y)
+	if golem == nil then
+		return false
+	end
+	local p = bot:request(resp.apply_mob_buff, req.active_skill { skill_id = POISON_MIST, skill_level = 30 }, function(p)
+		return p.oid == golem and math.floor(p.status / MOB_POISON) % 2 == 1
+	end, 13000)
+	return check(ctx, p ~= false, "독 안개 안의 스톤골렘이 중독되지 않음")
+end
+
 test_suite {
-	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모",
+	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개",
 	bot_count = 2,
 
 	scenarios = {
@@ -312,5 +342,6 @@ test_suite {
 		solo_holy_symbol,
 		shadow_web_front,
 		ranged_ammo,
+		poison_mist,
 	},
 }

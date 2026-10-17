@@ -344,14 +344,6 @@ func (x *Mist) MobMist() bool {
 	return x.mobMist
 }
 
-func (x *Mist) MobSkill() bool {
-	return x.mobSkill
-}
-
-func (x *Mist) NextPoisonTickAt() time.Time {
-	return x.nextPoisonTickAt
-}
-
 func (x *Mist) SkillDelay() uint16 {
 	return x.skillDelay
 }

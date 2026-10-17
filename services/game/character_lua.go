@@ -1348,38 +1348,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Skill expected")
 				return 0
 			}
-			durationMs := L.CheckInt(3)
-			if durationMs < 0 {
-				durationMs = 0
-			}
-			mistType := constant.MistType(L.CheckInt(4))
-			boundsTable := L.CheckTable(5)
-			left := int32(lua.LVAsNumber(boundsTable.RawGetString("left")))
-			top := int32(lua.LVAsNumber(boundsTable.RawGetString("top")))
-			right := int32(lua.LVAsNumber(boundsTable.RawGetString("right")))
-			bottom := int32(lua.LVAsNumber(boundsTable.RawGetString("bottom")))
-			duration := time.Duration(durationMs) * time.Millisecond
-			initialDelay := time.Duration(0)
-			if L.GetTop() >= 6 {
-				initialDelayMs := L.CheckInt(6)
-				if initialDelayMs > 0 {
-					initialDelay = time.Duration(initialDelayMs) * time.Millisecond
-				}
-			}
-			poisonTickMultiplier := 1.0
-			if L.GetTop() >= 7 {
-				poisonTickMultiplier = float64(L.CheckNumber(7))
-				if poisonTickMultiplier <= 0 {
-					poisonTickMultiplier = 1.0
-				}
-			}
-			bounds := types.Rect[int32]{Left: left, Top: top, Right: right, Bottom: bottom}
-			m := ch.GetMap()
-			if m == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			mist := m.SpawnMist(ch, skill, ch.position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
+			var spec mistSpec
+			spec.Parse(L)
+			mist := ch.SpawnMist(skill, spec)
 			if mist == nil {
 				L.Push(lua.LNil)
 				return 1

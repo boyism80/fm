@@ -903,6 +903,30 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	}, false)
 }
 
+func (ch *Character) SpawnMist(skill *SkillEntry, spec mistSpec) *Mist {
+	m := ch.GetMap()
+	if m == nil {
+		return nil
+	}
+	ld := skill.wz.GetLevelData(skill.Level())
+	if ld == nil {
+		return nil
+	}
+	if spec.bounds == (types.Rect[int32]{}) {
+		spec.bounds = ld.Area(int32(ch.position.X), int32(ch.position.Y), ch.stance%2 != 0)
+	}
+
+	mist := &Mist{
+		objectCore: ObjectCore{position: ch.position},
+		causer:     ch.GetID(),
+		skillWz:    skill.wz,
+		skillLevel: uint8(skill.Level()),
+		skillDelay: 8,
+	}
+	mist.spread(m, spec)
+	return mist
+}
+
 func (ch *Character) broadcastLevelUpEffect() {
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {

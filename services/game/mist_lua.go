@@ -1,9 +1,34 @@
 package game
 
 import (
+	"time"
+
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
+
+// Parse reads create_mist(skill, duration_ms, type, bounds[, poison_delay_ms[, poison_tick_multiplier]]) after the skill.
+func (spec *mistSpec) Parse(L *lua.LState) {
+	spec.duration = time.Duration(max(L.CheckInt(3), 0)) * time.Millisecond
+	spec.mistType = constant.MistType(L.CheckInt(4))
+	bounds := L.CheckTable(5)
+	spec.bounds = types.Rect[int32]{
+		Left:   int32(lua.LVAsNumber(bounds.RawGetString("left"))),
+		Top:    int32(lua.LVAsNumber(bounds.RawGetString("top"))),
+		Right:  int32(lua.LVAsNumber(bounds.RawGetString("right"))),
+		Bottom: int32(lua.LVAsNumber(bounds.RawGetString("bottom"))),
+	}
+	spec.poisonDelay = mistPoisonDelay
+	if L.GetTop() >= 6 && L.CheckInt(6) > 0 {
+		spec.poisonDelay = time.Duration(L.CheckInt(6)) * time.Millisecond
+	}
+	spec.poisonTickMultiplier = 1.0
+	if L.GetTop() >= 7 && L.CheckNumber(7) > 0 {
+		spec.poisonTickMultiplier = float64(L.CheckNumber(7))
+	}
+}
 
 func (mist *Mist) LuaTypeName() string {
 	return "LuaMist"
