@@ -73,6 +73,10 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 
+	if itemID, name, ok := mapInstance.Song(); ok {
+		character.Send(&response.CashSong{ItemID: itemID, Name: name}, types.SEND_POLICY_ENCRYPT)
+	}
+
 	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter, &game.SearchOption{IncludeHidden: true}) {
 		if viewer, ok := obj.(*game.Character); ok {
 			character.SendSpawnSyncToViewer(viewer)
@@ -311,6 +315,13 @@ func (l *MapListenerImpl) OnWeather(mapInstance *game.Map, itemID uint32, messag
 	mapInstance.Broadcast(&response.Weather{
 		ItemID:  itemID,
 		Message: message,
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnSongPlayed(mapInstance *game.Map, itemID uint32, name string) {
+	mapInstance.Broadcast(&response.CashSong{
+		ItemID: itemID,
+		Name:   name,
 	}, nil)
 }
 

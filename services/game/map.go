@@ -35,6 +35,7 @@ type MapListener interface {
 	OnReactorTriggered(mapInstance *Map, reactor *Reactor, stance int32)
 	OnMusicChanged(mapInstance *Map, song string)
 	OnWeather(mapInstance *Map, itemID uint32, message string)
+	OnSongPlayed(mapInstance *Map, itemID uint32, name string)
 	OnYellowChat(mapInstance *Map, message string)
 	OnWeddingEffect(mapInstance *Map, groomID uint32, brideID uint32)
 	OnMapMessage(mapInstance *Map, messageType constant.ServerMessageType, message string)
@@ -120,6 +121,7 @@ type Map struct {
 	properties        map[string]interface{}
 	portals           map[uint8]*Portal
 	portalsByName     map[string]*Portal
+	song              mapSong
 }
 
 type BroadcastOption struct {

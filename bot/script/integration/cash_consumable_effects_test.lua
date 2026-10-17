@@ -1,12 +1,17 @@
 local pq = require("script/integration/lib/party_quest")
 
 local HUNTING_GROUND = 104040000
+local TOWN = 100000000
+local SONG = 5100000
 local MEGAPHONE = 5070000
 local ITEM_MEGAPHONE = 5076000
 local TRIPLE_MEGAPHONE = 5077000
 local KITE = 5080000
 local NOTE = 5090000
 local CHALKBOARD = 5370000
+local GREEN_LENS = 5152103
+local BLACK_LENS = 5152100
+local FACE = 0x2
 local ATTACHMENT = 4000000
 local ETC = 4
 local MSG_ITEM_MEGAPHONE = 8
@@ -241,6 +246,73 @@ local function item_megaphone(ctx)
 	return consumed(ctx, sender, ITEM_MEGAPHONE, before, "첨부 없는 아이템 확성기")
 end
 
+local function color_lens(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, GREEN_LENS .. ":1," .. BLACK_LENS .. ":1") == false then
+		return false
+	end
+
+	local face_of = function(p)
+		return p.stats[FACE] ~= nil
+	end
+	local green = bot:request(resp.update_stats, use(bot, GREEN_LENS), face_of, 5000)
+	if green == false then
+		return ctx:fail("초록색 렌즈를 썼는데 얼굴이 바뀌지 않음")
+	end
+	if math.floor(green.stats[FACE] / 100) % 10 ~= 3 then
+		return ctx:fail("초록색 렌즈 뒤 얼굴 " .. green.stats[FACE] .. "의 눈 색이 3이 아님")
+	end
+	if consumed(ctx, bot, GREEN_LENS, 1, "초록색 렌즈") == false then
+		return false
+	end
+
+	local black = bot:request(resp.update_stats, use(bot, BLACK_LENS), face_of, 5000)
+	if black == false then
+		return ctx:fail("검은색 렌즈를 썼는데 얼굴이 바뀌지 않음")
+	end
+	if black.stats[FACE] ~= green.stats[FACE] - 300 then
+		return ctx:fail("검은색 렌즈가 눈 색 말고 다른 자리도 바꿈: " .. green.stats[FACE] .. " -> " .. black.stats[FACE])
+	end
+	return consumed(ctx, bot, BLACK_LENS, 1, "검은색 렌즈")
+end
+
+local function song(ctx)
+	local actor = ctx:bot(0)
+	local observer = ctx:bot(1)
+	if setup(ctx, actor, SONG .. ":2") == false or meet(ctx, actor, observer) == false then
+		return false
+	end
+	actor:request(resp.notice, req.normal_chat { message = "/맵리셋" }, nil, 300)
+
+	local played = function(p)
+		return p.item_id == SONG and p.name == actor:name()
+	end
+	local before = count(actor, SONG)
+	if actor:request_on(observer, resp.cash_song, use(actor, SONG), played, 5000) == false then
+		return ctx:fail("축하곡이 다른 플레이어에게 들리지 않음")
+	end
+	if consumed(ctx, actor, SONG, before, "축하곡") == false then
+		return false
+	end
+
+	before = count(actor, SONG)
+	if actor:request_on(observer, resp.cash_song, use(actor, SONG), nil, QUIET_MS) ~= false then
+		return ctx:fail("곡이 끝나기 전에 다른 곡이 시작됨")
+	end
+	if kept(ctx, actor, SONG, before, "재생 중 축하곡") == false then
+		return false
+	end
+
+	if observer:force_instance_move(TOWN, "축하곡 재입장") == false then
+		return ctx:fail("마을 이동 실패")
+	end
+	local back = req.normal_chat { message = string.format("/인스턴스이동 %d %d", HUNTING_GROUND, ctx:seat()) }
+	if observer:request(resp.cash_song, back, played, 5000) == false then
+		return ctx:fail("다시 들어온 플레이어에게 재생 중인 곡이 오지 않음")
+	end
+	return true
+end
+
 local function unsupported(ctx)
 	local bot = ctx:bot(0)
 	if setup(ctx, bot, MEGAPHONE .. ":1") == false then
@@ -256,11 +328,13 @@ local function unsupported(ctx)
 end
 
 test_suite {
-	name = "Cash consumable effects: 칠판·쪽지·메시지 박스·세 줄/아이템 확성기",
+	name = "Cash consumable effects: 칠판·쪽지·메시지 박스·세 줄/아이템 확성기·컬러렌즈·축하곡",
 	bot_count = 2,
 
 	scenarios = {
 		unsupported,
+		color_lens,
+		song,
 		chalkboard,
 		note,
 		message_box,

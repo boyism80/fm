@@ -16,6 +16,7 @@ func (m *Map) Reset() {
 	for _, mist := range m.GetObjects(constant.ObjectTypeMist) {
 		m.RemoveMist(mist.GetOID())
 	}
+	m.song = mapSong{}
 	m.ClearProperties()
 	m.ClearBlockedMobGen()
 	m.SetReactorGenEnabled(true)

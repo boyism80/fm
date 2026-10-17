@@ -267,6 +267,7 @@ var decoders = func() []decoder {
 		newDecoder[response.SpouseMap](nil),
 		newDecoder[response.WeddingGift](nil),
 		newDecoder[response.Weather](nil),
+		newDecoder[response.CashSong](nil),
 		newDecoder[response.YellowChat](nil),
 		newDecoder[response.WeddingCouple](nil),
 		newDecoder[response.WeddingEffect](nil),

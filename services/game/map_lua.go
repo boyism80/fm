@@ -829,6 +829,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mapInstance.Weather(uint32(L.CheckNumber(2)), L.OptString(3, ""))
 			return 0
 		},
+		"play_song": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			L.Push(lua.LBool(mapInstance.PlaySong(uint32(L.CheckNumber(2)), L.CheckString(3))))
+			return 1
+		},
 		"yellow_chat": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

@@ -1,8 +1,19 @@
 package game
 
 import (
+	"time"
+
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/maple/constant"
 )
+
+const songDuration = 5 * time.Minute
+
+type mapSong struct {
+	itemID uint32
+	name   string
+	until  time.Time
+}
 
 func (m *Map) ChangeMusic(song string) {
 	if m == nil || song == "" || m.listener == nil {
@@ -20,6 +31,24 @@ func (m *Map) MapMessage(messageType constant.ServerMessageType, message string)
 
 func (m *Map) Weather(itemID uint32, message string) {
 	m.listener.OnWeather(m, itemID, message)
+}
+
+// The client has no way to stop a song, so a map plays one at a time until it ends.
+func (m *Map) PlaySong(itemID uint32, name string) bool {
+	now := clock.Now()
+	if now.Before(m.song.until) {
+		return false
+	}
+	m.song = mapSong{itemID: itemID, name: name, until: now.Add(songDuration)}
+	m.listener.OnSongPlayed(m, itemID, name)
+	return true
+}
+
+func (m *Map) Song() (uint32, string, bool) {
+	if !clock.Now().Before(m.song.until) {
+		return 0, "", false
+	}
+	return m.song.itemID, m.song.name, true
 }
 
 func (m *Map) YellowChat(message string) {
