@@ -11,9 +11,100 @@ import (
 
 const soloDamageBucketID int64 = -1
 
-// grantKillExp splits mob kill EXP among accDamage contributors on this mob's current map (alive).
-// Party groups use Maple-style pool + bonus + per-damager splits; solos use ExpForDamage per row.
-func (m *Mob) grantKillExp() {
+// mobCredit holds resolved recipients and values for mob kill rewards,
+// computed in a single pass over m.accDamage.
+type mobCredit struct {
+	dropOwner  *Character           // highest damager for item drops (falls back to rateSource/attacker if none)
+	rateSource *Character           // rate modifier source for drops (attacker / last hitter)
+	expRewards map[*Character]uint64 // EXP share per character; receivers with 0 exp still qualify for kill count
+}
+
+// credit resolves mob kill reward recipients (drop owner, rate source, and exp/quest recipients)
+// in a single pass over m.accDamage.
+func (m *Mob) credit(attacker *Character) mobCredit {
+	credit := mobCredit{
+		rateSource: attacker,
+		expRewards: make(map[*Character]uint64),
+	}
+	if m == nil || m.wz == nil {
+		return credit
+	}
+	mapInst := m.GetMap()
+	if mapInst == nil {
+		return credit
+	}
+
+	mobExpRate := m.expRate
+	if mobExpRate <= 0 {
+		mobExpRate = 100
+	}
+	mobExpRate += m.buffs.GetValue(constant.MobBuffShowdown)
+
+	var winBucketTotal uint64
+	var winTopCID uint32
+
+	for bucketID, damagers := range m.accDamage {
+		if len(damagers) == 0 {
+			continue
+		}
+
+		var bucketTotal uint64
+		var bucketTopCID uint32
+		var bucketTopDmg uint64
+
+		for cid, dmg := range damagers {
+			bucketTotal += dmg
+			if dmg > bucketTopDmg {
+				bucketTopDmg = dmg
+				bucketTopCID = cid
+			}
+		}
+
+		if bucketTotal > winBucketTotal {
+			winBucketTotal = bucketTotal
+			winTopCID = bucketTopCID
+		}
+
+		if bucketID == soloDamageBucketID {
+			for cid, dmg := range damagers {
+				if dmg == 0 {
+					continue
+				}
+				ch := mapInst.GetPlayer(cid)
+				if ch == nil || ch.GetMap() != mapInst || !ch.IsAlive() {
+					continue
+				}
+				raw := m.ExpForDamage(dmg)
+				raw = raw * uint32(mobExpRate) / 100
+				credit.expRewards[ch] += uint64(raw)
+			}
+		} else {
+			partyRewards, err := m.grantPartyKillExp(mapInst, uint32(bucketID), damagers, mobExpRate)
+			if err != nil {
+				log.Printf("credit: mob_oid=%d party_id=%d err=%v", m.GetOID(), uint32(bucketID), err)
+				continue
+			}
+			for ch, raw := range partyRewards {
+				credit.expRewards[ch] += raw
+			}
+		}
+	}
+
+	if winTopCID != 0 {
+		if topChar := mapInst.GetPlayer(winTopCID); topChar != nil && topChar.GetMap() == mapInst && topChar.IsAlive() {
+			credit.dropOwner = topChar
+		}
+	}
+	if credit.dropOwner == nil {
+		credit.dropOwner = attacker
+	}
+
+	return credit
+}
+
+// applyCredit distributes EXP, records quest kill progress, and triggers character kill hooks
+// for all qualifying reward receivers.
+func (m *Mob) applyCredit(credit mobCredit) {
 	if m == nil || m.wz == nil {
 		return
 	}
@@ -22,41 +113,7 @@ func (m *Mob) grantKillExp() {
 		return
 	}
 
-	rawByChar := make(map[uint32]uint64)
-	mobExpRate := m.expRate
-	if mobExpRate <= 0 {
-		mobExpRate = 100
-	}
-	mobExpRate += m.buffs.GetValue(constant.MobBuffShowdown)
-
-	for bucketID, damagers := range m.accDamage {
-		if len(damagers) == 0 {
-			continue
-		}
-		if bucketID == soloDamageBucketID {
-			for cid, dmg := range damagers {
-				if dmg == 0 {
-					continue
-				}
-				raw := m.ExpForDamage(dmg)
-				raw = raw * uint32(mobExpRate) / 100
-				rawByChar[cid] += uint64(raw)
-			}
-		} else {
-			partyRaw, err := m.grantPartyKillExp(mapInst, uint32(bucketID), damagers)
-			if err != nil {
-				log.Printf("grantKillExp: mob_oid=%d party_id=%d err=%v", m.GetOID(), uint32(bucketID), err)
-				continue
-			}
-			for cid, raw := range partyRaw {
-				rawByChar[cid] += raw
-			}
-		}
-	}
-
-	// A receiver whose share rounds to zero still counts the kill.
-	for cid, rawTotal := range rawByChar {
-		ch := mapInst.GetPlayer(cid)
+	for ch, rawTotal := range credit.expRewards {
 		if ch == nil || ch.GetMap() != mapInst || !ch.IsAlive() {
 			continue
 		}
@@ -72,9 +129,15 @@ func (m *Mob) grantKillExp() {
 	}
 }
 
-func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uint64) (map[uint32]uint64, error) {
+// grantKillExp resolves and applies mob kill rewards using credit.
+// Preserved as a backward-compatible wrapper around credit and applyCredit.
+func (m *Mob) grantKillExp() {
+	m.applyCredit(m.credit(nil))
+}
+
+func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uint64, mobExpRate int) (map[*Character]uint64, error) {
 	if len(damagers) == 0 {
-		return map[uint32]uint64{}, nil
+		return map[*Character]uint64{}, nil
 	}
 
 	gw := mapInst.gameWorld
@@ -88,27 +151,31 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 		totDamage += dmg
 	}
 	if totDamage == 0 {
-		return map[uint32]uint64{}, nil
+		return map[*Character]uint64{}, nil
 	}
 	poolRaw := m.ExpForDamage(totDamage)
-	mobExpRate := m.expRate
 	if mobExpRate <= 0 {
 		mobExpRate = 100
+		mobExpRate += m.buffs.GetValue(constant.MobBuffShowdown)
 	}
-	mobExpRate += m.buffs.GetValue(constant.MobBuffShowdown)
 	poolRaw = poolRaw * uint32(mobExpRate) / 100
 
 	mobLv := int(m.wz.Level)
+
+	// Collect active, alive damagers on map once to avoid repeated map lookups
+	activeDamagers := make([]*Character, 0, len(damagers))
+	for damagerID := range damagers {
+		d := mapInst.GetPlayer(damagerID)
+		if d == nil || d.GetMap() != mapInst || !d.IsAlive() {
+			continue
+		}
+		activeDamagers = append(activeDamagers, d)
+	}
+
 	expApplicable := make([]*Character, 0)
 	if party == nil {
 		// Party disbanded or snapshot unavailable: degrade to current damagers only.
-		for damagerID := range damagers {
-			damager := mapInst.GetPlayer(damagerID)
-			if damager == nil || damager.GetMap() != mapInst || !damager.IsAlive() {
-				continue
-			}
-			expApplicable = append(expApplicable, damager)
-		}
+		expApplicable = append(expApplicable, activeDamagers...)
 	} else {
 		expApplicable = make([]*Character, 0, len(party.members))
 		for _, pm := range party.members {
@@ -121,11 +188,7 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 			}
 			pl := int(pch.GetLevel())
 			eligible := false
-			for damagerID := range damagers {
-				damager := mapInst.GetPlayer(damagerID)
-				if damager == nil || damager.GetMap() != mapInst || !damager.IsAlive() {
-					continue
-				}
+			for _, damager := range activeDamagers {
 				dl := int(damager.GetLevel())
 				if math.Abs(float64(dl-pl)) <= 5 || math.Abs(float64(mobLv-pl)) <= 5 {
 					eligible = true
@@ -161,17 +224,14 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 		expBonus = 1.0 + 0.05*float64(n)
 	}
 
-	rawAcc := make(map[uint32]float64)
-	for damagerID, dmg := range damagers {
-		damager := mapInst.GetPlayer(damagerID)
-		if damager == nil || damager.GetMap() != mapInst || !damager.IsAlive() {
-			continue
-		}
+	rawAcc := make(map[*Character]float64, len(expApplicable))
+	for _, damager := range activeDamagers {
+		dmg := damagers[damager.GetID()]
 		innerBase := float64(poolRaw) * float64(dmg) / float64(totDamage)
 		expFraction := innerBase * expBonus / float64(n+1)
 		for _, recv := range expApplicable {
 			w := 1.0
-			if recv.GetID() == damagerID {
+			if recv.GetID() == damager.GetID() {
 				w = 2.0
 			}
 			levelMod := float64(recv.GetLevel()) / avgLv
@@ -181,13 +241,13 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 			if _, hit := damagers[recv.GetID()]; hit {
 				levelMod = 1.0
 			}
-			rawAcc[recv.GetID()] += expFraction * w * levelMod
+			rawAcc[recv] += expFraction * w * levelMod
 		}
 	}
 
-	out := make(map[uint32]uint64, len(rawAcc))
-	for rid, v := range rawAcc {
-		out[rid] += uint64(math.Round(v))
+	out := make(map[*Character]uint64, len(expApplicable))
+	for _, recv := range expApplicable {
+		out[recv] = uint64(math.Round(rawAcc[recv]))
 	}
 	return out, nil
 }
