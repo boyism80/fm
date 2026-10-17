@@ -275,40 +275,7 @@ func (m *Mob) SpawnMist(skill *MobSkill, spec mistSpec) *Mist {
 }
 
 func (m *Mob) highestDamageCharacter() *Character {
-	mapInstance := m.GetMap()
-	if mapInstance == nil {
-		return nil
-	}
-
-	var winBucketID int64 = soloDamageBucketID
-	var winTotal uint64
-	for bucketID, damagers := range m.accDamage {
-		var total uint64
-		for _, dmg := range damagers {
-			total += dmg
-		}
-		if total > winTotal {
-			winTotal = total
-			winBucketID = bucketID
-		}
-	}
-	if winTotal == 0 {
-		return nil
-	}
-
-	damagers := m.accDamage[winBucketID]
-	var topCID uint32
-	var topDamage uint64
-	for cid, dmg := range damagers {
-		if dmg > topDamage {
-			topDamage = dmg
-			topCID = cid
-		}
-	}
-	if topCID == 0 {
-		return nil
-	}
-	return mapInstance.GetPlayer(topCID)
+	return m.credit(nil).dropOwner
 }
 
 func (m *Mob) mobDropType(dropChar *Character) constant.DropType {
@@ -327,7 +294,7 @@ func (m *Mob) mobDropType(dropChar *Character) constant.DropType {
 	return constant.DropTypeOwnerOnly
 }
 
-func (m *Mob) dropItems(attacker *Character) {
+func (m *Mob) dropItems(dropOwner *Character, rateSource *Character) {
 	mapInstance := m.GetMap()
 	if mapInstance == nil {
 		return
@@ -360,7 +327,7 @@ func (m *Mob) dropItems(attacker *Character) {
 		if !entry.IsAvailableAt(mapInstance.TemplateID()) || !entry.IsAvailableFor(m.wz) {
 			continue
 		}
-		if entry.Quest != 0 && !attacker.quests.NeedsItem(entry.Quest, entry.Item) {
+		if entry.Quest != 0 && rateSource != nil && !rateSource.quests.NeedsItem(entry.Quest, entry.Item) {
 			continue
 		}
 		entries = append(entries, dropRule{Drop: entry.Drop, quest: entry.Quest, global: true})
@@ -368,13 +335,16 @@ func (m *Mob) dropItems(attacker *Character) {
 
 	dropRate := float32(m.gameWorld.GetDropRate())
 	mesoRate := float32(m.gameWorld.GetMesoRate())
-	dropRateMul := max(int16(attacker.family.DropRate()), attacker.stats.bonus.dropRate)
-	mesoAmountMul := int16(100)
-	if attacker.stats.bonus.mesoMultiplier > 0 {
-		mesoAmountMul = attacker.stats.bonus.mesoMultiplier
-	}
-	if _, v, ok := attacker.buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
-		mesoAmountMul += int16(v - 100)
+	var dropRateMul int16
+	var mesoAmountMul int16 = 100
+	if rateSource != nil {
+		dropRateMul = max(int16(rateSource.family.DropRate()), rateSource.stats.bonus.dropRate)
+		if rateSource.stats.bonus.mesoMultiplier > 0 {
+			mesoAmountMul = rateSource.stats.bonus.mesoMultiplier
+		}
+		if _, v, ok := rateSource.buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
+			mesoAmountMul += int16(v - 100)
+		}
 	}
 	dropRateMulF := float32(dropRateMul) / 100.0
 	mesoAmountMulF := float32(mesoAmountMul) / 100.0
@@ -437,9 +407,8 @@ func (m *Mob) dropItems(attacker *Character) {
 
 	spawnPoint := m.position
 
-	dropOwner := m.highestDamageCharacter()
 	if dropOwner == nil {
-		dropOwner = attacker
+		dropOwner = rateSource
 	}
 	var ownerID uint32
 	if dropOwner != nil {
@@ -602,11 +571,10 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 	}
 
 	if reward {
-		m.grantKillExp()
-	}
-	if reward && attacker != nil {
-		if m.wz != nil {
-			if match := attacker.carnival.Match(); match != nil && m.wz != nil {
+		credit := m.credit(attacker)
+		m.applyCredit(credit)
+		if attacker != nil && m.wz != nil {
+			if match := attacker.carnival.Match(); match != nil {
 				cpAmount := m.wz.CP
 				if cpAmount <= 0 {
 					cpAmount = m.wz.Point
@@ -616,7 +584,7 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 				}
 			}
 		}
-		m.dropItems(attacker)
+		m.dropItems(credit.dropOwner, credit.rateSource)
 	}
 
 	pos := m.position
