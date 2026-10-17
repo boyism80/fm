@@ -2,48 +2,13 @@ package game
 
 import (
 	"github.com/boyism80/fm/maple/constant"
-	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/protocol/dto"
 )
 
 func (ch *Character) BuildS2C() *dto.Character {
-	equipments := make(map[int8]uint32)
-	overlays := make(map[int8]uint32)
-
-	for parts, equipment := range ch.inventory.equipped {
-		if equipment == nil {
-			continue
-		}
-
-		if parts < -127 {
-			continue
-		}
-
-		model, ok := equipment.GetModel().(wz.Equipment)
-		if !ok {
-			continue
-		}
-
-		absoluteParts := int8(parts * -1)
-		if absoluteParts < 100 {
-			if _, exists := equipments[absoluteParts]; !exists {
-				equipments[absoluteParts] = model.GetID()
-			}
-		} else if absoluteParts > 100 && absoluteParts != 111 {
-			adjustedParts := int8(absoluteParts - 100)
-			if existingItem, exists := equipments[adjustedParts]; exists {
-				overlays[adjustedParts] = existingItem
-			}
-			equipments[adjustedParts] = model.GetID()
-		} else if _, exists := equipments[absoluteParts]; exists {
-			overlays[absoluteParts] = model.GetID()
-		}
-	}
-
-	var weapon uint32
-	if weaponEquip := ch.inventory.equipped[constant.EquipmentPartsWeapon]; weaponEquip != nil {
-		weapon = weaponEquip.GetModel().GetID()
-	}
+	look := ch.inventory.look()
+	equipments, overlays := look.split()
+	weapon := look[constant.EquipmentPartsWeapon]
 
 	mapID := uint32(0)
 	if m := ch.GetMap(); m != nil {

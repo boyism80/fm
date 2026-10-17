@@ -49,6 +49,22 @@ func (m *Map) RemoveRuntimeNpcs() {
 	}
 }
 
+func (m *Map) PlacePlayerNpc(npc *PlayerNpc) {
+	if m.NpcByTemplate(npc.NpcID) != nil {
+		return
+	}
+	m.addNpc(npc.NpcID, npc.Position, npc)
+}
+
+func (m *Map) RemovePlayerNpc(npcID uint32) {
+	for oid, obj := range m.GetNpcs() {
+		if npc, ok := obj.(*Npc); ok && npc.player != nil && npc.player.NpcID == npcID {
+			_ = m.RemoveNpc(oid)
+			return
+		}
+	}
+}
+
 func (m *Map) NpcByTemplate(npcID uint32) *Npc {
 	if m == nil {
 		return nil

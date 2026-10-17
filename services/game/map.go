@@ -949,6 +949,11 @@ func (m *Map) GetNpcs() map[uint32]Object {
 }
 
 func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) {
+	return m.addNpc(npcId, position, nil), nil
+}
+
+// addNpc puts a server-made npc on the map; a player npc is not removed by a map reset.
+func (m *Map) addNpc(npcId uint32, position types.Point[int16], player *PlayerNpc) *Npc {
 	oid := m.allocateOID()
 
 	footholdID := int16(0)
@@ -987,7 +992,8 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 			onMap:     m,
 		},
 		wz:           &npcSpawn,
-		runtimeSpawn: true,
+		runtimeSpawn: player == nil,
+		player:       player,
 	}
 	npc.objectCore.self = npc
 	npc.initTimers()
@@ -1003,12 +1009,15 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 		NPC:     npc.BuildS2C(),
 		Visible: true,
 	}, nil)
+	if player != nil {
+		npc.Broadcast(&response.PlayerNpc{NpcID: player.NpcID, Look: player.BuildS2C()}, nil)
+	}
 	npc.Broadcast(&response.NpcControl{
 		NPC:     npc.BuildS2C(),
 		MiniMap: true,
 	}, nil)
 
-	return npc, nil
+	return npc
 }
 
 func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn, spawnType constant.MobSpawnType, link uint32, team constant.CarnivalTeam) (*Mob, error) {

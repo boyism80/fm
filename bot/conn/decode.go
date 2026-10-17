@@ -103,6 +103,7 @@ var decoders = func() []decoder {
 		newDecoder[response.Notice](nil),
 		newDecoder[response.SpawnNpc](nil),
 		newDecoder[response.RemoveNpc](nil),
+		newDecoder[response.PlayerNpc](nil),
 		newDecoder[response.DialogYesNo](dialog(constant.DialogTypeYesNo)),
 		newDecoder[response.DialogInput](dialog(constant.DialogTypeInput)),
 		newDecoder[response.DialogNumber](dialog(constant.DialogTypeNumber)),

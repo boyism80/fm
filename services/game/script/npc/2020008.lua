@@ -4,6 +4,7 @@ local third_class = require("script/lib/third_class")
 
 local APPROVAL_RECORD = "zakum.approval"
 local MIN_LEVEL = 50
+local PROTECT_QUEST = 6192
 
 local THIRD_CLASS = {
 	family = Class.Warrior,
@@ -59,8 +60,28 @@ local function grant_approval(me, npc)
 	me:records():set(APPROVAL_RECORD, 1)
 end
 
+local function protect(me, npc)
+	local party = me:party()
+	if party == nil then
+		me:dialog(npc, "파티를 구성한 후 내게 말을 걸게.")
+		return
+	end
+	local sm, err = state_machine("protect_tylus"):start_party(me, party)
+	if sm == nil then
+		me:dialog(npc, "이미 다른 파티가 입장하여 퀘스트에 도전하는 중입니다. 잠시 후 다시 시도해 주세요.")
+		if err ~= nil then
+			log("protect_tylus start_party:", err)
+		end
+	end
+end
+
 return {
 	on_click = function(me, npc)
+		if me:quest(PROTECT_QUEST):started() then
+			protect(me, npc)
+			return
+		end
+
 		local sel = me:dialog_list(npc, "나에게 무슨 볼일이라도 있는가?", {
 			"3차 전직을 하고 싶습니다.",
 			"자쿰던전 퀘스트를 허가해 주세요",

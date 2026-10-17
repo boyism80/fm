@@ -117,6 +117,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.systems.Add[*game.CarnivalSystem](game.NewCarnivalSystem())
 	gs.systems.Add[*game.ExpeditionSystem](game.NewExpeditionSystem(gs))
 	gs.systems.Add[*game.NoticeSystem](game.NewNoticeSystem(server))
+	gs.systems.Add[*game.PlayerNpcSystem](game.NewPlayerNpcSystem(gs, conn))
 	gs.systems.Add[*mq.Consumers](mq.NewConsumers(actors, config.RabbitMQ, gs.mqQueues()))
 
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {

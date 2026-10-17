@@ -29,3 +29,13 @@ func NewInventory(owner *Character) *Inventory {
 		},
 	}
 }
+
+func (inv *Inventory) look() equippedLook {
+	look := make(equippedLook, len(inv.equipped))
+	for parts, equipment := range inv.equipped {
+		if equipment != nil {
+			look[parts] = equipment.GetModel().GetID()
+		}
+	}
+	return look
+}

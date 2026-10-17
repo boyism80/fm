@@ -875,6 +875,61 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["플레이어NPC생성"] = {
+		privilege = ROLE.Admin,
+		usage = "<NPC ID> [캐릭터이름] - 같은 맵 캐릭터(생략 시 자신)의 외형으로 플레이어 NPC를 지금 위치에 세움",
+		command = function(me, args)
+			local npc_id = tonumber(args[1])
+			if npc_id == nil then
+				me:message("사용법: /플레이어NPC생성 <NPC ID> [캐릭터이름]")
+				return true
+			end
+			local source = me
+			if args[2] ~= nil and args[2] ~= "" then
+				source = nil
+				for _, character in pairs(me:map():characters()) do
+					if character:name() == args[2] then
+						source = character
+						break
+					end
+				end
+				if source == nil then
+					me:message("같은 맵에 없는 캐릭터입니다: " .. args[2])
+					return true
+				end
+			end
+			local reasons = {
+				unknown = "존재하지 않는 NPC입니다",
+				taken = "이미 플레이어 NPC로 쓰이는 NPC입니다",
+				placed = "이 맵에 이미 배치된 NPC입니다",
+				error = "저장에 실패했습니다",
+			}
+			local ok, reason = create_player_npc(me, npc_id, source)
+			if not ok then
+				me:message(string.format("플레이어 NPC 생성 실패 %d: %s", npc_id, reasons[reason] or tostring(reason)))
+				return true
+			end
+			me:message(string.format("플레이어 NPC 생성 %d", npc_id))
+			return true
+		end,
+	},
+	["플레이어NPC삭제"] = {
+		privilege = ROLE.Admin,
+		usage = "<NPC ID> - 플레이어 NPC를 모든 채널에서 삭제",
+		command = function(me, args)
+			local npc_id = tonumber(args[1])
+			if npc_id == nil then
+				me:message("사용법: /플레이어NPC삭제 <NPC ID>")
+				return true
+			end
+			if not remove_player_npc(npc_id) then
+				me:message(string.format("플레이어 NPC 삭제 실패 %d", npc_id))
+				return true
+			end
+			me:message(string.format("플레이어 NPC 삭제 %d", npc_id))
+			return true
+		end,
+	},
 	["퀘스트상태"] = {
 		privilege = ROLE.Admin,
 		usage = "<퀘스트ID> - 퀘스트 진행 상태 조회",
@@ -1229,6 +1284,35 @@ local command_funcs = {
 				return true
 			end
 			me:map(instance, spawn)
+			return true
+		end,
+	},
+	["SM시작"] = {
+		privilege = ROLE.Admin,
+		usage = "<그룹> - 파티가 있으면 파티로, 없으면 혼자 SM을 시작",
+		command = function(me, args)
+			local name = args[1]
+			if name == nil or name == "" then
+				me:message("사용법: /SM시작 <그룹>")
+				return true
+			end
+			local group = state_machine(name)
+			if group == nil then
+				me:message("그룹 없음: " .. name)
+				return true
+			end
+			local sm, err
+			local party = me:party()
+			if party ~= nil then
+				sm, err = group:start_party(me, party)
+			else
+				sm, err = group:start_solo(me)
+			end
+			if sm == nil then
+				me:message("SM 시작 실패: " .. tostring(err))
+				return true
+			end
+			me:message("SM 시작: " .. name)
 			return true
 		end,
 	},

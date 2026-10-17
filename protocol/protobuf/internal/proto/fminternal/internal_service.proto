@@ -96,6 +96,9 @@ service Internal {
   rpc SetServerDateTime (SetServerDateTimeRequest) returns (SetServerDateTimeReply);
   rpc BroadcastNotice (BroadcastNoticeRequest) returns (BroadcastNoticeReply);
   rpc SetPublishFault (SetPublishFaultRequest) returns (SetPublishFaultReply);
+  rpc ListPlayerNpcs (ListPlayerNpcsRequest) returns (ListPlayerNpcsReply);
+  rpc CreatePlayerNpc (CreatePlayerNpcRequest) returns (CreatePlayerNpcReply);
+  rpc RemovePlayerNpc (RemovePlayerNpcRequest) returns (RemovePlayerNpcReply);
   rpc WriteOperationLog (WriteOperationLogRequest) returns (WriteOperationLogReply);
   rpc FindCashShop (FindCashShopRequest) returns (FindCashShopReply);
   rpc EnterCashShop (EnterCashShopRequest) returns (EnterCashShopReply);
@@ -2186,6 +2189,51 @@ message SetPublishFaultRequest {
 
 message SetPublishFaultReply {
   bool enabled = 1;
+}
+
+message PlayerNpcEquip {
+  int32 slot = 1;
+  uint32 item_id = 2;
+}
+
+message PlayerNpc {
+  uint32 npc_id = 1;
+  uint32 character_id = 2;
+  string name = 3;
+  uint32 gender = 4;
+  uint32 skin = 5;
+  uint32 face = 6;
+  uint32 hair = 7;
+  repeated PlayerNpcEquip equips = 8;
+  uint32 map_id = 9;
+  int32 x = 10;
+  int32 y = 11;
+}
+
+message ListPlayerNpcsRequest {
+  uint32 world_id = 1;
+}
+
+message ListPlayerNpcsReply {
+  repeated PlayerNpc npcs = 1;
+}
+
+message CreatePlayerNpcRequest {
+  uint32 world_id = 1;
+  PlayerNpc npc = 2;
+}
+
+message CreatePlayerNpcReply {
+  bool created = 1;
+}
+
+message RemovePlayerNpcRequest {
+  uint32 world_id = 1;
+  uint32 npc_id = 2;
+}
+
+message RemovePlayerNpcReply {
+  bool removed = 1;
 }
 
 message BroadcastNoticeRequest {

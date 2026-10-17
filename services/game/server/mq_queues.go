@@ -69,6 +69,8 @@ func (gs *GameServer) mqQueues() []mq.Queue {
 		queue("global", []string{toWorld("global")}, func(d *mq.Dispatcher) {
 			d.Bind[globalMqServerDatetime](gs)
 			d.Bind[globalMqNotice](gs)
+			d.Bind[playerNpcMqCreated](gs)
+			d.Bind[playerNpcMqRemoved](gs)
 		}),
 		queue("parcel", []string{toChannel("parcel")}, func(d *mq.Dispatcher) {
 			d.Bind[parcelMqArrived](gs)

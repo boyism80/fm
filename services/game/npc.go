@@ -11,6 +11,7 @@ type Npc struct {
 	objectCore
 	wz           *wz.NpcSpawn
 	runtimeSpawn bool
+	player       *PlayerNpc
 }
 
 func (n *Npc) GetObjectType() constant.ObjectType {
@@ -30,6 +31,9 @@ func (n *Npc) SendSpawnSyncToViewer(viewer *Character) {
 		NPC:     npcDTO,
 		Visible: true,
 	}, types.SEND_POLICY_ENCRYPT)
+	if n.player != nil {
+		viewer.Send(&response.PlayerNpc{NpcID: n.player.NpcID, Look: n.player.BuildS2C()}, types.SEND_POLICY_ENCRYPT)
+	}
 	viewer.Send(&response.NpcControl{
 		NPC:     npcDTO,
 		MiniMap: true,

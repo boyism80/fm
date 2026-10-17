@@ -13,6 +13,7 @@ import { BuddyGrpcController } from "./grpc/controllers/buddy-controller";
 import { ChatGrpcController } from "./grpc/controllers/chat-controller";
 import { ServerTimeGrpcController } from "./grpc/controllers/server-time-controller";
 import { FaultGrpcController } from "./grpc/controllers/fault-controller";
+import { PlayerNpcGrpcController } from "./grpc/controllers/player-npc-controller";
 import { OperationLogGrpcController } from "./grpc/controllers/operation-log-controller";
 import { ParcelGrpcController } from "./grpc/controllers/parcel-controller";
 import { ShopGrpcController } from "./grpc/controllers/shop-controller";
@@ -150,6 +151,7 @@ async function main() {
         chatController: awilix.asClass(ChatGrpcController).scoped(),
         serverTimeController: awilix.asClass(ServerTimeGrpcController).scoped(),
         faultController: awilix.asClass(FaultGrpcController).scoped(),
+        playerNpcController: awilix.asClass(PlayerNpcGrpcController).scoped(),
         operationLogController: awilix.asClass(OperationLogGrpcController).scoped(),
         parcelController: awilix.asClass(ParcelGrpcController).scoped(),
         shopController: awilix.asClass(ShopGrpcController).scoped(),

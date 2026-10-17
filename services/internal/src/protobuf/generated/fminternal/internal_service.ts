@@ -3822,6 +3822,51 @@ export interface SetPublishFaultReply {
   enabled: boolean;
 }
 
+export interface PlayerNpcEquip {
+  slot: number;
+  itemId: number;
+}
+
+export interface PlayerNpc {
+  npcId: number;
+  characterId: number;
+  name: string;
+  gender: number;
+  skin: number;
+  face: number;
+  hair: number;
+  equips: PlayerNpcEquip[];
+  mapId: number;
+  x: number;
+  y: number;
+}
+
+export interface ListPlayerNpcsRequest {
+  worldId: number;
+}
+
+export interface ListPlayerNpcsReply {
+  npcs: PlayerNpc[];
+}
+
+export interface CreatePlayerNpcRequest {
+  worldId: number;
+  npc: PlayerNpc | undefined;
+}
+
+export interface CreatePlayerNpcReply {
+  created: boolean;
+}
+
+export interface RemovePlayerNpcRequest {
+  worldId: number;
+  npcId: number;
+}
+
+export interface RemovePlayerNpcReply {
+  removed: boolean;
+}
+
 export interface BroadcastNoticeRequest {
   worldId: number;
   sourceChannelId: number;
@@ -36227,6 +36272,720 @@ export const SetPublishFaultReply: MessageFns<SetPublishFaultReply> = {
   },
 };
 
+function createBasePlayerNpcEquip(): PlayerNpcEquip {
+  return { slot: 0, itemId: 0 };
+}
+
+export const PlayerNpcEquip: MessageFns<PlayerNpcEquip> = {
+  encode(message: PlayerNpcEquip, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.slot !== 0) {
+      writer.uint32(8).int32(message.slot);
+    }
+    if (message.itemId !== 0) {
+      writer.uint32(16).uint32(message.itemId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlayerNpcEquip {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlayerNpcEquip();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.slot = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.itemId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlayerNpcEquip {
+    return {
+      slot: isSet(object.slot) ? globalThis.Number(object.slot) : 0,
+      itemId: isSet(object.itemId)
+        ? globalThis.Number(object.itemId)
+        : isSet(object.item_id)
+        ? globalThis.Number(object.item_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: PlayerNpcEquip): unknown {
+    const obj: any = {};
+    if (message.slot !== 0) {
+      obj.slot = Math.round(message.slot);
+    }
+    if (message.itemId !== 0) {
+      obj.itemId = Math.round(message.itemId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PlayerNpcEquip>, I>>(base?: I): PlayerNpcEquip {
+    return PlayerNpcEquip.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PlayerNpcEquip>, I>>(object: I): PlayerNpcEquip {
+    const message = createBasePlayerNpcEquip();
+    message.slot = object.slot ?? 0;
+    message.itemId = object.itemId ?? 0;
+    return message;
+  },
+};
+
+function createBasePlayerNpc(): PlayerNpc {
+  return { npcId: 0, characterId: 0, name: "", gender: 0, skin: 0, face: 0, hair: 0, equips: [], mapId: 0, x: 0, y: 0 };
+}
+
+export const PlayerNpc: MessageFns<PlayerNpc> = {
+  encode(message: PlayerNpc, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.npcId !== 0) {
+      writer.uint32(8).uint32(message.npcId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.gender !== 0) {
+      writer.uint32(32).uint32(message.gender);
+    }
+    if (message.skin !== 0) {
+      writer.uint32(40).uint32(message.skin);
+    }
+    if (message.face !== 0) {
+      writer.uint32(48).uint32(message.face);
+    }
+    if (message.hair !== 0) {
+      writer.uint32(56).uint32(message.hair);
+    }
+    for (const v of message.equips) {
+      PlayerNpcEquip.encode(v!, writer.uint32(66).fork()).join();
+    }
+    if (message.mapId !== 0) {
+      writer.uint32(72).uint32(message.mapId);
+    }
+    if (message.x !== 0) {
+      writer.uint32(80).int32(message.x);
+    }
+    if (message.y !== 0) {
+      writer.uint32(88).int32(message.y);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlayerNpc {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlayerNpc();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.npcId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.gender = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.skin = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.face = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.hair = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.equips.push(PlayerNpcEquip.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.mapId = reader.uint32();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.x = reader.int32();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.y = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlayerNpc {
+    return {
+      npcId: isSet(object.npcId)
+        ? globalThis.Number(object.npcId)
+        : isSet(object.npc_id)
+        ? globalThis.Number(object.npc_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      gender: isSet(object.gender) ? globalThis.Number(object.gender) : 0,
+      skin: isSet(object.skin) ? globalThis.Number(object.skin) : 0,
+      face: isSet(object.face) ? globalThis.Number(object.face) : 0,
+      hair: isSet(object.hair) ? globalThis.Number(object.hair) : 0,
+      equips: globalThis.Array.isArray(object?.equips) ? object.equips.map((e: any) => PlayerNpcEquip.fromJSON(e)) : [],
+      mapId: isSet(object.mapId)
+        ? globalThis.Number(object.mapId)
+        : isSet(object.map_id)
+        ? globalThis.Number(object.map_id)
+        : 0,
+      x: isSet(object.x) ? globalThis.Number(object.x) : 0,
+      y: isSet(object.y) ? globalThis.Number(object.y) : 0,
+    };
+  },
+
+  toJSON(message: PlayerNpc): unknown {
+    const obj: any = {};
+    if (message.npcId !== 0) {
+      obj.npcId = Math.round(message.npcId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.gender !== 0) {
+      obj.gender = Math.round(message.gender);
+    }
+    if (message.skin !== 0) {
+      obj.skin = Math.round(message.skin);
+    }
+    if (message.face !== 0) {
+      obj.face = Math.round(message.face);
+    }
+    if (message.hair !== 0) {
+      obj.hair = Math.round(message.hair);
+    }
+    if (message.equips?.length) {
+      obj.equips = message.equips.map((e) => PlayerNpcEquip.toJSON(e));
+    }
+    if (message.mapId !== 0) {
+      obj.mapId = Math.round(message.mapId);
+    }
+    if (message.x !== 0) {
+      obj.x = Math.round(message.x);
+    }
+    if (message.y !== 0) {
+      obj.y = Math.round(message.y);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PlayerNpc>, I>>(base?: I): PlayerNpc {
+    return PlayerNpc.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PlayerNpc>, I>>(object: I): PlayerNpc {
+    const message = createBasePlayerNpc();
+    message.npcId = object.npcId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.name = object.name ?? "";
+    message.gender = object.gender ?? 0;
+    message.skin = object.skin ?? 0;
+    message.face = object.face ?? 0;
+    message.hair = object.hair ?? 0;
+    message.equips = object.equips?.map((e) => PlayerNpcEquip.fromPartial(e)) || [];
+    message.mapId = object.mapId ?? 0;
+    message.x = object.x ?? 0;
+    message.y = object.y ?? 0;
+    return message;
+  },
+};
+
+function createBaseListPlayerNpcsRequest(): ListPlayerNpcsRequest {
+  return { worldId: 0 };
+}
+
+export const ListPlayerNpcsRequest: MessageFns<ListPlayerNpcsRequest> = {
+  encode(message: ListPlayerNpcsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListPlayerNpcsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListPlayerNpcsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListPlayerNpcsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ListPlayerNpcsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListPlayerNpcsRequest>, I>>(base?: I): ListPlayerNpcsRequest {
+    return ListPlayerNpcsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListPlayerNpcsRequest>, I>>(object: I): ListPlayerNpcsRequest {
+    const message = createBaseListPlayerNpcsRequest();
+    message.worldId = object.worldId ?? 0;
+    return message;
+  },
+};
+
+function createBaseListPlayerNpcsReply(): ListPlayerNpcsReply {
+  return { npcs: [] };
+}
+
+export const ListPlayerNpcsReply: MessageFns<ListPlayerNpcsReply> = {
+  encode(message: ListPlayerNpcsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.npcs) {
+      PlayerNpc.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListPlayerNpcsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListPlayerNpcsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.npcs.push(PlayerNpc.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListPlayerNpcsReply {
+    return { npcs: globalThis.Array.isArray(object?.npcs) ? object.npcs.map((e: any) => PlayerNpc.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: ListPlayerNpcsReply): unknown {
+    const obj: any = {};
+    if (message.npcs?.length) {
+      obj.npcs = message.npcs.map((e) => PlayerNpc.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListPlayerNpcsReply>, I>>(base?: I): ListPlayerNpcsReply {
+    return ListPlayerNpcsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListPlayerNpcsReply>, I>>(object: I): ListPlayerNpcsReply {
+    const message = createBaseListPlayerNpcsReply();
+    message.npcs = object.npcs?.map((e) => PlayerNpc.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCreatePlayerNpcRequest(): CreatePlayerNpcRequest {
+  return { worldId: 0, npc: undefined };
+}
+
+export const CreatePlayerNpcRequest: MessageFns<CreatePlayerNpcRequest> = {
+  encode(message: CreatePlayerNpcRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.npc !== undefined) {
+      PlayerNpc.encode(message.npc, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreatePlayerNpcRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreatePlayerNpcRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.npc = PlayerNpc.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreatePlayerNpcRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      npc: isSet(object.npc) ? PlayerNpc.fromJSON(object.npc) : undefined,
+    };
+  },
+
+  toJSON(message: CreatePlayerNpcRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.npc !== undefined) {
+      obj.npc = PlayerNpc.toJSON(message.npc);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreatePlayerNpcRequest>, I>>(base?: I): CreatePlayerNpcRequest {
+    return CreatePlayerNpcRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreatePlayerNpcRequest>, I>>(object: I): CreatePlayerNpcRequest {
+    const message = createBaseCreatePlayerNpcRequest();
+    message.worldId = object.worldId ?? 0;
+    message.npc = (object.npc !== undefined && object.npc !== null) ? PlayerNpc.fromPartial(object.npc) : undefined;
+    return message;
+  },
+};
+
+function createBaseCreatePlayerNpcReply(): CreatePlayerNpcReply {
+  return { created: false };
+}
+
+export const CreatePlayerNpcReply: MessageFns<CreatePlayerNpcReply> = {
+  encode(message: CreatePlayerNpcReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.created !== false) {
+      writer.uint32(8).bool(message.created);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreatePlayerNpcReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreatePlayerNpcReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.created = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreatePlayerNpcReply {
+    return { created: isSet(object.created) ? globalThis.Boolean(object.created) : false };
+  },
+
+  toJSON(message: CreatePlayerNpcReply): unknown {
+    const obj: any = {};
+    if (message.created !== false) {
+      obj.created = message.created;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreatePlayerNpcReply>, I>>(base?: I): CreatePlayerNpcReply {
+    return CreatePlayerNpcReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreatePlayerNpcReply>, I>>(object: I): CreatePlayerNpcReply {
+    const message = createBaseCreatePlayerNpcReply();
+    message.created = object.created ?? false;
+    return message;
+  },
+};
+
+function createBaseRemovePlayerNpcRequest(): RemovePlayerNpcRequest {
+  return { worldId: 0, npcId: 0 };
+}
+
+export const RemovePlayerNpcRequest: MessageFns<RemovePlayerNpcRequest> = {
+  encode(message: RemovePlayerNpcRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.npcId !== 0) {
+      writer.uint32(16).uint32(message.npcId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemovePlayerNpcRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemovePlayerNpcRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.npcId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemovePlayerNpcRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      npcId: isSet(object.npcId)
+        ? globalThis.Number(object.npcId)
+        : isSet(object.npc_id)
+        ? globalThis.Number(object.npc_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: RemovePlayerNpcRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.npcId !== 0) {
+      obj.npcId = Math.round(message.npcId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RemovePlayerNpcRequest>, I>>(base?: I): RemovePlayerNpcRequest {
+    return RemovePlayerNpcRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RemovePlayerNpcRequest>, I>>(object: I): RemovePlayerNpcRequest {
+    const message = createBaseRemovePlayerNpcRequest();
+    message.worldId = object.worldId ?? 0;
+    message.npcId = object.npcId ?? 0;
+    return message;
+  },
+};
+
+function createBaseRemovePlayerNpcReply(): RemovePlayerNpcReply {
+  return { removed: false };
+}
+
+export const RemovePlayerNpcReply: MessageFns<RemovePlayerNpcReply> = {
+  encode(message: RemovePlayerNpcReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.removed !== false) {
+      writer.uint32(8).bool(message.removed);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemovePlayerNpcReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemovePlayerNpcReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.removed = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemovePlayerNpcReply {
+    return { removed: isSet(object.removed) ? globalThis.Boolean(object.removed) : false };
+  },
+
+  toJSON(message: RemovePlayerNpcReply): unknown {
+    const obj: any = {};
+    if (message.removed !== false) {
+      obj.removed = message.removed;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RemovePlayerNpcReply>, I>>(base?: I): RemovePlayerNpcReply {
+    return RemovePlayerNpcReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RemovePlayerNpcReply>, I>>(object: I): RemovePlayerNpcReply {
+    const message = createBaseRemovePlayerNpcReply();
+    message.removed = object.removed ?? false;
+    return message;
+  },
+};
+
 function createBaseBroadcastNoticeRequest(): BroadcastNoticeRequest {
   return {
     worldId: 0,
@@ -40192,6 +40951,38 @@ export const InternalService = {
       Buffer.from(SetPublishFaultReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SetPublishFaultReply => SetPublishFaultReply.decode(value),
   },
+  listPlayerNpcs: {
+    path: "/fm.internal.Internal/ListPlayerNpcs" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ListPlayerNpcsRequest): Buffer =>
+      Buffer.from(ListPlayerNpcsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ListPlayerNpcsRequest => ListPlayerNpcsRequest.decode(value),
+    responseSerialize: (value: ListPlayerNpcsReply): Buffer => Buffer.from(ListPlayerNpcsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ListPlayerNpcsReply => ListPlayerNpcsReply.decode(value),
+  },
+  createPlayerNpc: {
+    path: "/fm.internal.Internal/CreatePlayerNpc" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CreatePlayerNpcRequest): Buffer =>
+      Buffer.from(CreatePlayerNpcRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreatePlayerNpcRequest => CreatePlayerNpcRequest.decode(value),
+    responseSerialize: (value: CreatePlayerNpcReply): Buffer =>
+      Buffer.from(CreatePlayerNpcReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CreatePlayerNpcReply => CreatePlayerNpcReply.decode(value),
+  },
+  removePlayerNpc: {
+    path: "/fm.internal.Internal/RemovePlayerNpc" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: RemovePlayerNpcRequest): Buffer =>
+      Buffer.from(RemovePlayerNpcRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): RemovePlayerNpcRequest => RemovePlayerNpcRequest.decode(value),
+    responseSerialize: (value: RemovePlayerNpcReply): Buffer =>
+      Buffer.from(RemovePlayerNpcReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): RemovePlayerNpcReply => RemovePlayerNpcReply.decode(value),
+  },
   writeOperationLog: {
     path: "/fm.internal.Internal/WriteOperationLog" as const,
     requestStream: false as const,
@@ -40626,6 +41417,9 @@ export interface InternalServer extends UntypedServiceImplementation {
   setServerDateTime: handleUnaryCall<SetServerDateTimeRequest, SetServerDateTimeReply>;
   broadcastNotice: handleUnaryCall<BroadcastNoticeRequest, BroadcastNoticeReply>;
   setPublishFault: handleUnaryCall<SetPublishFaultRequest, SetPublishFaultReply>;
+  listPlayerNpcs: handleUnaryCall<ListPlayerNpcsRequest, ListPlayerNpcsReply>;
+  createPlayerNpc: handleUnaryCall<CreatePlayerNpcRequest, CreatePlayerNpcReply>;
+  removePlayerNpc: handleUnaryCall<RemovePlayerNpcRequest, RemovePlayerNpcReply>;
   writeOperationLog: handleUnaryCall<WriteOperationLogRequest, WriteOperationLogReply>;
   findCashShop: handleUnaryCall<FindCashShopRequest, FindCashShopReply>;
   enterCashShop: handleUnaryCall<EnterCashShopRequest, EnterCashShopReply>;
@@ -42004,6 +42798,51 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SetPublishFaultReply) => void,
+  ): ClientUnaryCall;
+  listPlayerNpcs(
+    request: ListPlayerNpcsRequest,
+    callback: (error: ServiceError | null, response: ListPlayerNpcsReply) => void,
+  ): ClientUnaryCall;
+  listPlayerNpcs(
+    request: ListPlayerNpcsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ListPlayerNpcsReply) => void,
+  ): ClientUnaryCall;
+  listPlayerNpcs(
+    request: ListPlayerNpcsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ListPlayerNpcsReply) => void,
+  ): ClientUnaryCall;
+  createPlayerNpc(
+    request: CreatePlayerNpcRequest,
+    callback: (error: ServiceError | null, response: CreatePlayerNpcReply) => void,
+  ): ClientUnaryCall;
+  createPlayerNpc(
+    request: CreatePlayerNpcRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CreatePlayerNpcReply) => void,
+  ): ClientUnaryCall;
+  createPlayerNpc(
+    request: CreatePlayerNpcRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CreatePlayerNpcReply) => void,
+  ): ClientUnaryCall;
+  removePlayerNpc(
+    request: RemovePlayerNpcRequest,
+    callback: (error: ServiceError | null, response: RemovePlayerNpcReply) => void,
+  ): ClientUnaryCall;
+  removePlayerNpc(
+    request: RemovePlayerNpcRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: RemovePlayerNpcReply) => void,
+  ): ClientUnaryCall;
+  removePlayerNpc(
+    request: RemovePlayerNpcRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: RemovePlayerNpcReply) => void,
   ): ClientUnaryCall;
   writeOperationLog(
     request: WriteOperationLogRequest,
