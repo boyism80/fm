@@ -274,10 +274,6 @@ func (m *Mob) SpawnMist(skill *MobSkill, spec mistSpec) *Mist {
 	return mist
 }
 
-func (m *Mob) highestDamageCharacter() *Character {
-	return m.credit(nil).dropOwner
-}
-
 func (m *Mob) mobDropType(dropChar *Character) constant.DropType {
 	if m == nil || m.wz == nil {
 		return constant.DropTypeOwnerOnly

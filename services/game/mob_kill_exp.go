@@ -14,8 +14,8 @@ const soloDamageBucketID int64 = -1
 // mobCredit holds resolved recipients and values for mob kill rewards,
 // computed in a single pass over m.accDamage.
 type mobCredit struct {
-	dropOwner  *Character           // highest damager for item drops (falls back to rateSource/attacker if none)
-	rateSource *Character           // rate modifier source for drops (attacker / last hitter)
+	dropOwner  *Character            // highest damager for item drops (falls back to rateSource/attacker if none)
+	rateSource *Character            // rate modifier source for drops (attacker / last hitter)
 	expRewards map[*Character]uint64 // EXP share per character; receivers with 0 exp still qualify for kill count
 }
 
@@ -79,7 +79,7 @@ func (m *Mob) credit(attacker *Character) mobCredit {
 				credit.expRewards[ch] += uint64(raw)
 			}
 		} else {
-			partyRewards, err := m.grantPartyKillExp(mapInst, uint32(bucketID), damagers, mobExpRate)
+			partyRewards, err := m.grantKillExp(mapInst, uint32(bucketID), damagers, mobExpRate)
 			if err != nil {
 				log.Printf("credit: mob_oid=%d party_id=%d err=%v", m.GetOID(), uint32(bucketID), err)
 				continue
@@ -129,13 +129,7 @@ func (m *Mob) applyCredit(credit mobCredit) {
 	}
 }
 
-// grantKillExp resolves and applies mob kill rewards using credit.
-// Preserved as a backward-compatible wrapper around credit and applyCredit.
-func (m *Mob) grantKillExp() {
-	m.applyCredit(m.credit(nil))
-}
-
-func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uint64, mobExpRate int) (map[*Character]uint64, error) {
+func (m *Mob) grantKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uint64, mobExpRate int32) (map[*Character]uint64, error) {
 	if len(damagers) == 0 {
 		return map[*Character]uint64{}, nil
 	}
@@ -154,10 +148,6 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 		return map[*Character]uint64{}, nil
 	}
 	poolRaw := m.ExpForDamage(totDamage)
-	if mobExpRate <= 0 {
-		mobExpRate = 100
-		mobExpRate += m.buffs.GetValue(constant.MobBuffShowdown)
-	}
 	poolRaw = poolRaw * uint32(mobExpRate) / 100
 
 	mobLv := int(m.wz.Level)
