@@ -14,16 +14,14 @@ const soloDamageBucketID int64 = -1
 // mobCredit holds resolved recipients and values for mob kill rewards,
 // computed in a single pass over m.accDamage.
 type mobCredit struct {
-	dropOwner  *Character            // highest damager for item drops (falls back to rateSource/attacker if none)
-	rateSource *Character            // rate modifier source for drops (attacker / last hitter)
+	dropOwner  *Character            // highest damager for item drops (falls back to attacker if none)
 	expRewards map[*Character]uint64 // EXP share per character; receivers with 0 exp still qualify for kill count
 }
 
-// credit resolves mob kill reward recipients (drop owner, rate source, and exp/quest recipients)
+// credit resolves mob kill reward recipients (drop owner and exp/quest recipients)
 // in a single pass over m.accDamage.
 func (m *Mob) credit(attacker *Character) mobCredit {
 	credit := mobCredit{
-		rateSource: attacker,
 		expRewards: make(map[*Character]uint64),
 	}
 	if m == nil || m.wz == nil {

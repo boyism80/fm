@@ -290,7 +290,7 @@ func (m *Mob) mobDropType(dropChar *Character) constant.DropType {
 	return constant.DropTypeOwnerOnly
 }
 
-func (m *Mob) dropItems(dropOwner *Character, rateSource *Character) {
+func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 	mapInstance := m.GetMap()
 	if mapInstance == nil {
 		return
@@ -323,7 +323,7 @@ func (m *Mob) dropItems(dropOwner *Character, rateSource *Character) {
 		if !entry.IsAvailableAt(mapInstance.TemplateID()) || !entry.IsAvailableFor(m.wz) {
 			continue
 		}
-		if entry.Quest != 0 && rateSource != nil && !rateSource.quests.NeedsItem(entry.Quest, entry.Item) {
+		if entry.Quest != 0 && !attacker.quests.NeedsItem(entry.Quest, entry.Item) {
 			continue
 		}
 		entries = append(entries, dropRule{Drop: entry.Drop, quest: entry.Quest, global: true})
@@ -331,16 +331,13 @@ func (m *Mob) dropItems(dropOwner *Character, rateSource *Character) {
 
 	dropRate := float32(m.gameWorld.GetDropRate())
 	mesoRate := float32(m.gameWorld.GetMesoRate())
-	var dropRateMul int16
-	var mesoAmountMul int16 = 100
-	if rateSource != nil {
-		dropRateMul = max(int16(rateSource.family.DropRate()), rateSource.stats.bonus.dropRate)
-		if rateSource.stats.bonus.mesoMultiplier > 0 {
-			mesoAmountMul = rateSource.stats.bonus.mesoMultiplier
-		}
-		if _, v, ok := rateSource.buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
-			mesoAmountMul += int16(v - 100)
-		}
+	dropRateMul := max(int16(attacker.family.DropRate()), attacker.stats.bonus.dropRate)
+	mesoAmountMul := int16(100)
+	if attacker.stats.bonus.mesoMultiplier > 0 {
+		mesoAmountMul = attacker.stats.bonus.mesoMultiplier
+	}
+	if _, v, ok := attacker.buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
+		mesoAmountMul += int16(v - 100)
 	}
 	dropRateMulF := float32(dropRateMul) / 100.0
 	mesoAmountMulF := float32(mesoAmountMul) / 100.0
@@ -403,13 +400,7 @@ func (m *Mob) dropItems(dropOwner *Character, rateSource *Character) {
 
 	spawnPoint := m.position
 
-	if dropOwner == nil {
-		dropOwner = rateSource
-	}
-	var ownerID uint32
-	if dropOwner != nil {
-		ownerID = dropOwner.GetID()
-	}
+	ownerID := dropOwner.GetID()
 	dropType := m.mobDropType(dropOwner)
 	spacing := int16(25)
 	if dropType == constant.DropTypeExplosive {
@@ -566,10 +557,10 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 		return true
 	}
 
-	if reward {
+	if reward && attacker != nil {
 		credit := m.credit(attacker)
 		m.applyCredit(credit)
-		if attacker != nil && m.wz != nil {
+		if m.wz != nil {
 			if match := attacker.carnival.Match(); match != nil {
 				cpAmount := m.wz.CP
 				if cpAmount <= 0 {
@@ -580,7 +571,7 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 				}
 			}
 		}
-		m.dropItems(credit.dropOwner, credit.rateSource)
+		m.dropItems(credit.dropOwner, attacker)
 	}
 
 	pos := m.position
