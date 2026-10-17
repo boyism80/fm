@@ -12,13 +12,11 @@ import (
 )
 
 type PartyEventEnvelope struct {
-	EventID    string `json:"event_id"`
-	EventType  string `json:"event_type"`
-	WorldID    uint32 `json:"world_id"`
-	PartyID    uint32 `json:"party_id"`
-	OccurredAt string `json:"occurred_at"`
-	PartyPB    string `json:"party_pb"`
-	Revision   uint64 `json:"revision"`
+	EventType string `json:"event_type"`
+	WorldID   uint32 `json:"world_id"`
+	PartyID   uint32 `json:"party_id"`
+	PartyPB   string `json:"party_pb"`
+	Revision  uint64 `json:"revision"`
 }
 
 type PartySystem struct {

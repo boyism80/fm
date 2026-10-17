@@ -15,11 +15,9 @@ type allianceStored struct {
 }
 
 type AllianceEventEnvelope struct {
-	EventID    string `json:"event_id"`
 	EventType  string `json:"event_type"`
 	WorldID    uint32 `json:"world_id"`
 	AllianceID uint32 `json:"alliance_id"`
-	OccurredAt string `json:"occurred_at"`
 }
 
 type AllianceSystem struct {

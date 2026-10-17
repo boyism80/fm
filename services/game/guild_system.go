@@ -9,12 +9,10 @@ import (
 )
 
 type GuildEventEnvelope struct {
-	EventID    string `json:"event_id"`
-	EventType  string `json:"event_type"`
-	WorldID    uint32 `json:"world_id"`
-	GuildID    uint32 `json:"guild_id"`
-	OccurredAt string `json:"occurred_at"`
-	GuildPB    string `json:"guild_pb"`
+	EventType string `json:"event_type"`
+	WorldID   uint32 `json:"world_id"`
+	GuildID   uint32 `json:"guild_id"`
+	GuildPB   string `json:"guild_pb"`
 }
 
 type GuildSystem struct {

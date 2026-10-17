@@ -2433,6 +2433,23 @@ local command_funcs = {
 }
 
 if DEV then
+	command_funcs["MQ장애"] = {
+		privilege = ROLE.Admin,
+		usage = "<on|off> - internal의 MQ 발행을 끊긴 것처럼 실패시킴 (개발환경 전용, 테스트용)",
+		command = function(me, args)
+			local mode = string.lower(args[1] or "")
+			if mode ~= "on" and mode ~= "off" then
+				me:message("사용법: /MQ장애 <on|off>")
+				return true
+			end
+			if mq_fault(mode == "on") == false then
+				me:message("MQ 장애 설정 실패")
+				return true
+			end
+			me:message("MQ 장애: " .. string.upper(mode))
+			return true
+		end,
+	}
 	command_funcs["권한"] = {
 		privilege = ROLE.User,
 		usage = "<유저|GM> - 계정·캐릭터 권한을 바꾸고 접속 종료 (재접속 후 적용, 개발환경 전용)",

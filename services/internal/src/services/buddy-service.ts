@@ -12,7 +12,6 @@ import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 
 const DEFAULT_BUDDY_GROUP = "그룹 미지정";
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 const BUDDY_EVT_CHANNEL_UPDATE = "channel_update";
 const BUDDY_EVT_LIST_UPDATE = "list_update";
 const BUDDY_EVT_ADD_REQUEST = "add_request";
@@ -427,12 +426,9 @@ export class BuddyService {
         if (!notifyCharacterIds.length) {
             return;
         }
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.buddy`;
         const clientChannel = this.buddyChannelIndexForClient(channelIndex);
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, BUDDY_EVT_CHANNEL_UPDATE, {
-            event_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            occurred_at: new Date().toISOString(),
+        await this.rabbitmqService.publish(routingKey, BUDDY_EVT_CHANNEL_UPDATE, {
             character_id: characterId,
             channel_index: clientChannel,
             notify_character_ids: notifyCharacterIds,
@@ -448,11 +444,8 @@ export class BuddyService {
         if (!notifyCharacterIds.length || !entries.length) {
             return;
         }
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.buddy`;
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, BUDDY_EVT_LIST_UPDATE, {
-            event_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            occurred_at: new Date().toISOString(),
+        await this.rabbitmqService.publish(routingKey, BUDDY_EVT_LIST_UPDATE, {
             sync_action: syncAction,
             notify_character_ids: notifyCharacterIds,
             entries: entries.map((e) => ({
@@ -474,11 +467,8 @@ export class BuddyService {
         if (!targetCharacterId || !fromCharacterId) {
             return;
         }
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.buddy`;
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, BUDDY_EVT_ADD_REQUEST, {
-            event_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            occurred_at: new Date().toISOString(),
+        await this.rabbitmqService.publish(routingKey, BUDDY_EVT_ADD_REQUEST, {
             notify_character_ids: [targetCharacterId],
             from_character_id: fromCharacterId,
             from_name: fromName,
@@ -521,11 +511,8 @@ export class BuddyService {
             return { ok: true, recipientCount: 0 };
         }
 
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.buddy`;
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, BUDDY_EVT_MULTI_CHAT, {
-            event_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            occurred_at: new Date().toISOString(),
+        await this.rabbitmqService.publish(routingKey, BUDDY_EVT_MULTI_CHAT, {
             sender_character_id: senderCharacterId,
             chat_mode: 0,
             sender_name: name,

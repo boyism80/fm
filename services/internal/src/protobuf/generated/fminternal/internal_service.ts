@@ -3814,6 +3814,14 @@ export interface SetServerDateTimeReply {
   ok: boolean;
 }
 
+export interface SetPublishFaultRequest {
+  enabled: boolean;
+}
+
+export interface SetPublishFaultReply {
+  enabled: boolean;
+}
+
 export interface BroadcastNoticeRequest {
   worldId: number;
   sourceChannelId: number;
@@ -36103,6 +36111,122 @@ export const SetServerDateTimeReply: MessageFns<SetServerDateTimeReply> = {
   },
 };
 
+function createBaseSetPublishFaultRequest(): SetPublishFaultRequest {
+  return { enabled: false };
+}
+
+export const SetPublishFaultRequest: MessageFns<SetPublishFaultRequest> = {
+  encode(message: SetPublishFaultRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.enabled !== false) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetPublishFaultRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetPublishFaultRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetPublishFaultRequest {
+    return { enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false };
+  },
+
+  toJSON(message: SetPublishFaultRequest): unknown {
+    const obj: any = {};
+    if (message.enabled !== false) {
+      obj.enabled = message.enabled;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetPublishFaultRequest>, I>>(base?: I): SetPublishFaultRequest {
+    return SetPublishFaultRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetPublishFaultRequest>, I>>(object: I): SetPublishFaultRequest {
+    const message = createBaseSetPublishFaultRequest();
+    message.enabled = object.enabled ?? false;
+    return message;
+  },
+};
+
+function createBaseSetPublishFaultReply(): SetPublishFaultReply {
+  return { enabled: false };
+}
+
+export const SetPublishFaultReply: MessageFns<SetPublishFaultReply> = {
+  encode(message: SetPublishFaultReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.enabled !== false) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetPublishFaultReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetPublishFaultReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetPublishFaultReply {
+    return { enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false };
+  },
+
+  toJSON(message: SetPublishFaultReply): unknown {
+    const obj: any = {};
+    if (message.enabled !== false) {
+      obj.enabled = message.enabled;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetPublishFaultReply>, I>>(base?: I): SetPublishFaultReply {
+    return SetPublishFaultReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetPublishFaultReply>, I>>(object: I): SetPublishFaultReply {
+    const message = createBaseSetPublishFaultReply();
+    message.enabled = object.enabled ?? false;
+    return message;
+  },
+};
+
 function createBaseBroadcastNoticeRequest(): BroadcastNoticeRequest {
   return {
     worldId: 0,
@@ -40057,6 +40181,17 @@ export const InternalService = {
       Buffer.from(BroadcastNoticeReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): BroadcastNoticeReply => BroadcastNoticeReply.decode(value),
   },
+  setPublishFault: {
+    path: "/fm.internal.Internal/SetPublishFault" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetPublishFaultRequest): Buffer =>
+      Buffer.from(SetPublishFaultRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetPublishFaultRequest => SetPublishFaultRequest.decode(value),
+    responseSerialize: (value: SetPublishFaultReply): Buffer =>
+      Buffer.from(SetPublishFaultReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SetPublishFaultReply => SetPublishFaultReply.decode(value),
+  },
   writeOperationLog: {
     path: "/fm.internal.Internal/WriteOperationLog" as const,
     requestStream: false as const,
@@ -40490,6 +40625,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   broadcastMultiChat: handleUnaryCall<BroadcastMultiChatRequest, BroadcastMultiChatReply>;
   setServerDateTime: handleUnaryCall<SetServerDateTimeRequest, SetServerDateTimeReply>;
   broadcastNotice: handleUnaryCall<BroadcastNoticeRequest, BroadcastNoticeReply>;
+  setPublishFault: handleUnaryCall<SetPublishFaultRequest, SetPublishFaultReply>;
   writeOperationLog: handleUnaryCall<WriteOperationLogRequest, WriteOperationLogReply>;
   findCashShop: handleUnaryCall<FindCashShopRequest, FindCashShopReply>;
   enterCashShop: handleUnaryCall<EnterCashShopRequest, EnterCashShopReply>;
@@ -41853,6 +41989,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: BroadcastNoticeReply) => void,
+  ): ClientUnaryCall;
+  setPublishFault(
+    request: SetPublishFaultRequest,
+    callback: (error: ServiceError | null, response: SetPublishFaultReply) => void,
+  ): ClientUnaryCall;
+  setPublishFault(
+    request: SetPublishFaultRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SetPublishFaultReply) => void,
+  ): ClientUnaryCall;
+  setPublishFault(
+    request: SetPublishFaultRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SetPublishFaultReply) => void,
   ): ClientUnaryCall;
   writeOperationLog(
     request: WriteOperationLogRequest,

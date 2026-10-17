@@ -29,7 +29,6 @@ import {
 
 const messages = { AllianceErrorCode };
 
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
 const ALLIANCE_EVT = {
     CREATED: "created",
@@ -190,13 +189,10 @@ export class AllianceService {
         allianceId: number,
         extraPayload: Record<string, unknown> = {}
     ) {
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.alliance`;
-        return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
-            event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        return this.rabbitmqService.publish(routingKey, eventType, {
             world_id: worldId,
             alliance_id: allianceId,
-            occurred_at: new Date().toISOString(),
             ...extraPayload,
         });
     }

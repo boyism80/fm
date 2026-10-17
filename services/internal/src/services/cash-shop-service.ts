@@ -52,7 +52,6 @@ const DEFAULT_STORAGE_SLOTS = 4;
 const COUPON_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const COUPON_LENGTH = 16;
 const MAX_MESO = 2147483647;
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
 export class CashShopService {
     private readonly cashShopRepo: CashShopRepository;
@@ -597,9 +596,7 @@ export class CashShopService {
             if (channelId == null || channelId < 0) {
                 return;
             }
-            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "cash_gift_arrived", {
-                occurred_at: new Date().toISOString(),
+            await this.rabbitmqService.publish(`fm.${worldId}.${channelId}.parcel`, "cash_gift_arrived", {
                 character_id: recipientId,
                 sender_name: senderName,
             });

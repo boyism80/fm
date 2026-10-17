@@ -1,12 +1,15 @@
 package server
 
 import (
+	"log"
 	"time"
 
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/fault"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/rpc"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -54,4 +57,20 @@ func registerFaultLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			return 1
 		})
 	}
+
+	luax.RegisterFunc(luaState, "mq_fault", func(L *lua.LState) int {
+		cfg, ok := luax.GetConfiguration(L)
+		if !ok || cfg.ActorContext == nil {
+			L.Push(lua.LFalse)
+			return 1
+		}
+		promise := gs.systems.Get[*game.InternalSystem]().SetPublishFaultAsync(cfg.ActorContext, L.CheckBool(1))
+		return game.LuaYieldPromise(L, gs, promise, func(_ *internal.SetPublishFaultReply, err error) []lua.LValue {
+			if err != nil {
+				log.Printf("mq fault: %v", err)
+				return []lua.LValue{lua.LFalse}
+			}
+			return []lua.LValue{lua.LTrue}
+		})
+	})
 }

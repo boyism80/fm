@@ -142,9 +142,7 @@ export class SessionService {
             await this.socialService
                 .leaveMessenger(worldId, characterId)
                 .catch(err => console.error("[social] messenger cleanup failed", err));
-            await this.familyService
-                .presence(worldId, characterId)
-                .catch(err => console.error("[social] family presence failed", err));
+            await this.announcePresence(worldId, characterId, { family: true });
             await this.releaseCharacterNameReservation(accountId);
         })();
         return { ok: true };
@@ -174,18 +172,12 @@ export class SessionService {
         // The game server reads an error reply as "did not enter the game", and a caller that already timed out never reads the reply,
         // so every failure after the session moved, and a caller gone by the end, leaves it again.
         try {
-            await this.familyService
-                .presence(worldId, characterId)
-                .catch(err => console.error("[social] family presence failed", err));
-            if (this.partyService) {
-                await this.partyService.publishMemberLogOnOff(worldId, characterId);
-            }
-            if (this.buddyService) {
-                await this.buddyService.publishBuddyChannel(worldId, characterId, channelId);
-            }
-            if (this.guildService && !gameToGameTransfer) {
-                await this.guildService.publishMemberOnline(worldId, characterId, true);
-            }
+            await this.announcePresence(worldId, characterId, {
+                family: true,
+                party: true,
+                buddyChannel: channelId,
+                guildOnline: gameToGameTransfer ? undefined : true,
+            });
             const reply = await this.characterService.load(worldId, row);
             if (callerGone()) {
                 throw new Error(`enter game: caller left before the reply (character=${characterId})`);
@@ -227,12 +219,7 @@ export class SessionService {
             await this.socialService
                 .leaveMessenger(worldId, characterId)
                 .catch(err => console.error("[social] messenger cleanup failed", err));
-            await this.familyService
-                .presence(worldId, characterId)
-                .catch(err => console.error("[social] family presence failed", err));
-            if (this.partyService) {
-                await this.partyService.publishMemberLogOnOff(worldId, characterId);
-            }
+            await this.announcePresence(worldId, characterId, { family: true, party: true });
             const game = await this.characterService.load(worldId, row);
             const cashShop = await this.cashShopService.loadAccount(worldId, accountId, characterId);
             if (callerGone()) {
@@ -325,23 +312,41 @@ export class SessionService {
             await this.socialService
                 .leaveMessenger(worldId, options.characterId)
                 .catch(err => console.error("[social] messenger cleanup failed", err));
-            await this.familyService
-                .presence(worldId, options.characterId)
-                .catch(err => console.error("[social] family presence failed", err));
+            await this.announcePresence(worldId, options.characterId, { family: true });
         }
         const gameNormalDisconnect = serverDisconnect && !transferDisconnect;
         const cid = options.characterId ?? null;
         if (cid != null && gameNormalDisconnect) {
-            if (this.partyService) {
-                await this.partyService.publishMemberLogOnOff(worldId, cid);
-            }
-            if (this.buddyService) {
-                await this.buddyService.publishBuddyChannel(worldId, cid, -1);
-            }
-            if (this.guildService) {
-                await this.guildService.publishMemberOnline(worldId, cid, false);
-            }
+            await this.announcePresence(worldId, cid, { party: true, buddyChannel: -1, guildOnline: false });
         }
         return { ok: true, code: SessionErrorCode.SESSION_NONE };
+    }
+
+    // A lost notice only leaves a stale online mark on the other members, so it never fails the session change.
+    private async announcePresence(
+        worldId: number,
+        characterId: number,
+        notices: { family?: boolean; party?: boolean; buddyChannel?: number; guildOnline?: boolean }
+    ) {
+        if (notices.family) {
+            await this.familyService
+                .presence(worldId, characterId)
+                .catch(err => console.error("[social] family presence failed", err));
+        }
+        if (notices.party && this.partyService) {
+            await this.partyService
+                .publishMemberLogOnOff(worldId, characterId)
+                .catch(err => console.error("[party] log on/off notice failed", err));
+        }
+        if (notices.buddyChannel !== undefined && this.buddyService) {
+            await this.buddyService
+                .publishBuddyChannel(worldId, characterId, notices.buddyChannel)
+                .catch(err => console.error("[buddy] channel notice failed", err));
+        }
+        if (notices.guildOnline !== undefined && this.guildService) {
+            await this.guildService
+                .publishMemberOnline(worldId, characterId, notices.guildOnline)
+                .catch(err => console.error("[guild] online notice failed", err));
+        }
     }
 }

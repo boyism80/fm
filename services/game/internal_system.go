@@ -4,7 +4,9 @@ import (
 	"context"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
@@ -34,3 +36,12 @@ func (s *InternalSystem) Start() error {
 }
 
 func (s *InternalSystem) Stop() {}
+
+func (s *InternalSystem) SetPublishFaultAsync(actorCtx actor.Context, enabled bool) *async.Promise[*internal.SetPublishFaultReply] {
+	return async.NewTask(actorCtx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.SetPublishFaultReply, error) {
+			return s.client.SetPublishFault(c, &internal.SetPublishFaultRequest{Enabled: enabled})
+		},
+		nil,
+	)
+}

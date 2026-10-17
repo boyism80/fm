@@ -108,6 +108,7 @@ const (
 	Internal_BroadcastMultiChat_FullMethodName             = "/fm.internal.Internal/BroadcastMultiChat"
 	Internal_SetServerDateTime_FullMethodName              = "/fm.internal.Internal/SetServerDateTime"
 	Internal_BroadcastNotice_FullMethodName                = "/fm.internal.Internal/BroadcastNotice"
+	Internal_SetPublishFault_FullMethodName                = "/fm.internal.Internal/SetPublishFault"
 	Internal_WriteOperationLog_FullMethodName              = "/fm.internal.Internal/WriteOperationLog"
 	Internal_FindCashShop_FullMethodName                   = "/fm.internal.Internal/FindCashShop"
 	Internal_EnterCashShop_FullMethodName                  = "/fm.internal.Internal/EnterCashShop"
@@ -235,6 +236,7 @@ type InternalClient interface {
 	BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error)
 	SetServerDateTime(ctx context.Context, in *SetServerDateTimeRequest, opts ...grpc.CallOption) (*SetServerDateTimeReply, error)
 	BroadcastNotice(ctx context.Context, in *BroadcastNoticeRequest, opts ...grpc.CallOption) (*BroadcastNoticeReply, error)
+	SetPublishFault(ctx context.Context, in *SetPublishFaultRequest, opts ...grpc.CallOption) (*SetPublishFaultReply, error)
 	WriteOperationLog(ctx context.Context, in *WriteOperationLogRequest, opts ...grpc.CallOption) (*WriteOperationLogReply, error)
 	FindCashShop(ctx context.Context, in *FindCashShopRequest, opts ...grpc.CallOption) (*FindCashShopReply, error)
 	EnterCashShop(ctx context.Context, in *EnterCashShopRequest, opts ...grpc.CallOption) (*EnterCashShopReply, error)
@@ -1167,6 +1169,16 @@ func (c *internalClient) BroadcastNotice(ctx context.Context, in *BroadcastNotic
 	return out, nil
 }
 
+func (c *internalClient) SetPublishFault(ctx context.Context, in *SetPublishFaultRequest, opts ...grpc.CallOption) (*SetPublishFaultReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetPublishFaultReply)
+	err := c.cc.Invoke(ctx, Internal_SetPublishFault_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) WriteOperationLog(ctx context.Context, in *WriteOperationLogRequest, opts ...grpc.CallOption) (*WriteOperationLogReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WriteOperationLogReply)
@@ -1580,6 +1592,7 @@ type InternalServer interface {
 	BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error)
 	SetServerDateTime(context.Context, *SetServerDateTimeRequest) (*SetServerDateTimeReply, error)
 	BroadcastNotice(context.Context, *BroadcastNoticeRequest) (*BroadcastNoticeReply, error)
+	SetPublishFault(context.Context, *SetPublishFaultRequest) (*SetPublishFaultReply, error)
 	WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error)
 	FindCashShop(context.Context, *FindCashShopRequest) (*FindCashShopReply, error)
 	EnterCashShop(context.Context, *EnterCashShopRequest) (*EnterCashShopReply, error)
@@ -1888,6 +1901,9 @@ func (UnimplementedInternalServer) SetServerDateTime(context.Context, *SetServer
 }
 func (UnimplementedInternalServer) BroadcastNotice(context.Context, *BroadcastNoticeRequest) (*BroadcastNoticeReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BroadcastNotice not implemented")
+}
+func (UnimplementedInternalServer) SetPublishFault(context.Context, *SetPublishFaultRequest) (*SetPublishFaultReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetPublishFault not implemented")
 }
 func (UnimplementedInternalServer) WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteOperationLog not implemented")
@@ -3608,6 +3624,24 @@ func _Internal_BroadcastNotice_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_SetPublishFault_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetPublishFaultRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetPublishFault(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetPublishFault_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetPublishFault(ctx, req.(*SetPublishFaultRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_WriteOperationLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WriteOperationLogRequest)
 	if err := dec(in); err != nil {
@@ -4546,6 +4580,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BroadcastNotice",
 			Handler:    _Internal_BroadcastNotice_Handler,
+		},
+		{
+			MethodName: "SetPublishFault",
+			Handler:    _Internal_SetPublishFault_Handler,
 		},
 		{
 			MethodName: "WriteOperationLog",

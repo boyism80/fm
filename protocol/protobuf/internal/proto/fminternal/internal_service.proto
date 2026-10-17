@@ -95,6 +95,7 @@ service Internal {
   rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
   rpc SetServerDateTime (SetServerDateTimeRequest) returns (SetServerDateTimeReply);
   rpc BroadcastNotice (BroadcastNoticeRequest) returns (BroadcastNoticeReply);
+  rpc SetPublishFault (SetPublishFaultRequest) returns (SetPublishFaultReply);
   rpc WriteOperationLog (WriteOperationLogRequest) returns (WriteOperationLogReply);
   rpc FindCashShop (FindCashShopRequest) returns (FindCashShopReply);
   rpc EnterCashShop (EnterCashShopRequest) returns (EnterCashShopReply);
@@ -2177,6 +2178,14 @@ message SetServerDateTimeRequest {
 
 message SetServerDateTimeReply {
   bool ok = 1;
+}
+
+message SetPublishFaultRequest {
+  bool enabled = 1;
+}
+
+message SetPublishFaultReply {
+  bool enabled = 1;
 }
 
 message BroadcastNoticeRequest {

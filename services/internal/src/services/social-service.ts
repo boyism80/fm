@@ -48,7 +48,6 @@ type Room = {
     invites: Invite[];
 };
 
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 const MESSENGER_LOCK = "social:messengers";
 const MESSENGER_CAPACITY = 3;
 const MESSENGER_INVITE_LIMIT = 20;
@@ -123,11 +122,7 @@ export class SocialService {
     }
 
     async publish(world: number, channel: number, eventType: string, payload: Record<string, unknown>) {
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${world}.${channel}.parcel`, eventType, {
-            occurred_at: new Date().toISOString(),
-            ...payload,
-        });
+        await this.rabbitmqService.publish(`fm.${world}.${channel}.parcel`, eventType, payload);
     }
 
     // The target's channel claims the request through completeWhisper and

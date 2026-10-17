@@ -30,7 +30,6 @@ import { RabbitMQService } from "./rabbitmq-service";
 const DIVORCE_DELAY_MS = 72 * 60 * 60 * 1000;
 const ENGAGEMENT_RING_BASE = 4210000;
 const WEDDING_RING_BASE = 1112300;
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
 export type GiveWeddingGiftInput = {
     worldId: number;
@@ -114,9 +113,7 @@ export class MarriageService {
             if (channelId == null) {
                 continue;
             }
-            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "marriage_changed", {
-                occurred_at: new Date().toISOString(),
+            await this.rabbitmqService.publish(`fm.${worldId}.${channelId}.parcel`, "marriage_changed", {
                 character_id: characterId,
                 event,
             });
@@ -492,9 +489,7 @@ export class MarriageService {
         if (channelId == null) {
             return;
         }
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "spouse_moved", {
-            occurred_at: new Date().toISOString(),
+        await this.rabbitmqService.publish(`fm.${worldId}.${channelId}.parcel`, "spouse_moved", {
             character_id: spouseId,
             spouse_id: characterId,
             map_id: mapId,

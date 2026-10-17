@@ -4,6 +4,7 @@ import type { InternalConfig } from "../types/internal-config";
 
 const RECONNECT_MIN_DELAY_MS = 1000;
 const RECONNECT_MAX_DELAY_MS = 30000;
+const DIRECT_EXCHANGE = "amq.direct";
 
 export class RabbitMQService {
     private readonly cfg: InternalConfig["rabbitmq"];
@@ -12,8 +13,8 @@ export class RabbitMQService {
     private started: boolean;
     private reconnectTimer: NodeJS.Timeout | null;
     private reconnectDelayMs: number;
-    private readonly assertedTopicExchanges: Set<string>;
-    private readonly assertedDirectExchanges: Set<string>;
+    private exchangeAsserted: boolean;
+    private publishFault: boolean;
 
     constructor(appConfiguration: AppConfiguration) {
         this.cfg = appConfiguration.raw.rabbitmq;
@@ -22,8 +23,12 @@ export class RabbitMQService {
         this.started = false;
         this.reconnectTimer = null;
         this.reconnectDelayMs = RECONNECT_MIN_DELAY_MS;
-        this.assertedTopicExchanges = new Set();
-        this.assertedDirectExchanges = new Set();
+        this.exchangeAsserted = false;
+        this.publishFault = false;
+    }
+
+    setPublishFault(enabled: boolean) {
+        this.publishFault = enabled;
     }
 
     private amqpUrl() {
@@ -76,8 +81,7 @@ export class RabbitMQService {
         this.connection = connection;
         this.channel = channel;
         this.reconnectDelayMs = RECONNECT_MIN_DELAY_MS;
-        this.assertedTopicExchanges.clear();
-        this.assertedDirectExchanges.clear();
+        this.exchangeAsserted = false;
     }
 
     private disconnected(connection: amqp.ChannelModel) {
@@ -86,8 +90,7 @@ export class RabbitMQService {
         }
         this.connection = null;
         this.channel = null;
-        this.assertedTopicExchanges.clear();
-        this.assertedDirectExchanges.clear();
+        this.exchangeAsserted = false;
         connection.close().catch(() => {});
         if (this.started === false) {
             return;
@@ -114,38 +117,20 @@ export class RabbitMQService {
         }, delay);
     }
 
-    async assertTopicExchange(exchange: string) {
-        if (!this.started || !this.channel) {
-            throw new Error("rabbitmq service is not started");
-        }
-        if (this.assertedTopicExchanges.has(exchange)) {
-            return;
-        }
-        await this.channel.assertExchange(exchange, "topic", { durable: true });
-        this.assertedTopicExchanges.add(exchange);
-    }
-
-    async assertDirectExchange(exchange: string) {
-        if (!this.started || !this.channel) {
-            throw new Error("rabbitmq service is not started");
-        }
-        if (this.assertedDirectExchanges.has(exchange)) {
-            return;
-        }
-        await this.channel.assertExchange(exchange, "direct", { durable: true });
-        this.assertedDirectExchanges.add(exchange);
-    }
-
-    async publish(exchange: string, routingKey: string, eventType: string, payload: Record<string, unknown> = {}) {
-        if (!this.started || !this.channel) {
+    async publish(routingKey: string, eventType: string, payload: Record<string, unknown> = {}) {
+        if (!this.started || !this.channel || this.publishFault) {
             throw new Error("rabbitmq service is not started");
         }
         if (typeof eventType !== "string" || eventType.length === 0) {
             throw new Error("rabbitmq publish: eventType must be a non-empty string");
         }
+        if (!this.exchangeAsserted) {
+            await this.channel.assertExchange(DIRECT_EXCHANGE, "direct", { durable: true });
+            this.exchangeAsserted = true;
+        }
         const bodyObj = { ...payload, event_type: eventType };
         const body = Buffer.from(JSON.stringify(bodyObj));
-        return this.channel.publish(exchange, routingKey, body, {
+        return this.channel.publish(DIRECT_EXCHANGE, routingKey, body, {
             contentType: "application/json",
             persistent: true,
         });
@@ -157,8 +142,7 @@ export class RabbitMQService {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
-        this.assertedTopicExchanges.clear();
-        this.assertedDirectExchanges.clear();
+        this.exchangeAsserted = false;
         if (this.channel) {
             try {
                 await this.channel.close();

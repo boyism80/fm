@@ -67,7 +67,6 @@ const GUILD_RANKING_SIZE = 50;
 const GUILD_RANKING_TTL_SEC = 60;
 const DEFAULT_ALLIANCE_MEMBER_RANK = 5;
 
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
 const EVT = {
     CREATED: "created",
@@ -242,13 +241,10 @@ export class GuildService {
         guildId: number,
         extraPayload: Record<string, unknown> = {}
     ) {
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.guild`;
-        return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
-            event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        return this.rabbitmqService.publish(routingKey, eventType, {
             world_id: worldId,
             guild_id: guildId,
-            occurred_at: new Date().toISOString(),
             ...extraPayload,
         });
     }

@@ -15,7 +15,6 @@ import { RabbitMQService } from "./rabbitmq-service";
 
 const ARRIVAL_DELAY_MS = 12 * 60 * 60 * 1000;
 const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
 export type SendParcelInput = {
     worldId: number;
@@ -156,9 +155,7 @@ export class ParcelService {
             if (channelId == null || channelId < 0) {
                 return result;
             }
-            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${input.worldId}.${channelId}.parcel`, "parcel_arrived", {
-                occurred_at: new Date().toISOString(),
+            await this.rabbitmqService.publish(`fm.${input.worldId}.${channelId}.parcel`, "parcel_arrived", {
                 character_id: receiverId,
                 sender_name: input.parcel.senderName,
                 quick: true,
@@ -216,9 +213,7 @@ export class ParcelService {
             if (channelId == null || channelId < 0) {
                 return stored;
             }
-            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "parcel_arrived", {
-                occurred_at: new Date().toISOString(),
+            await this.rabbitmqService.publish(`fm.${worldId}.${channelId}.parcel`, "parcel_arrived", {
                 character_id: characterId,
                 sender_name: parcels[0]?.senderName ?? "",
                 quick: true,

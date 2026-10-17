@@ -35,7 +35,6 @@ const EVT = {
 } as const;
 
 const INVITE_PENDING_TTL_SEC = 300;
-const AMQ_DIRECT_EXCHANGE = "amq.direct";
 const PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE = 22;
 const PARTY_DENY_ACTION_DECLINED = 23;
 
@@ -96,23 +95,16 @@ export class PartyService {
         partyId: number,
         extraPayload: Record<string, unknown> = {}
     ) {
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.party`;
-        return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
-            event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        return this.rabbitmqService.publish(routingKey, eventType, {
             party_id: partyId,
-            occurred_at: new Date().toISOString(),
             ...extraPayload,
         });
     }
 
     private async publishToPartyGameChannel(worldId: number, channelId: number, eventType: string, payload: Record<string, unknown> = {}) {
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.${channelId}.party`;
-        return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
-            occurred_at: new Date().toISOString(),
-            ...payload,
-        });
+        return this.rabbitmqService.publish(routingKey, eventType, payload);
     }
 
     private invitePendingKey(worldId: number, characterId: number) {
