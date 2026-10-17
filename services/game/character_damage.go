@@ -255,9 +255,8 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 	if index, ok := hit.Type.MobAttackIndex(); ok && mob != nil && !mob.fake && hit.Damage > 0 {
 		attack = mob.wz.Attack(index)
 	}
+	banish := hit.Type == constant.IncomingHitCollide && hit.Damage >= 0 && mob != nil && !mob.fake && mob.wz.Banish != nil && mob.wz.Banish.OnTouch
 	switch {
-	case hit.Type == constant.IncomingHitCollide && hit.Damage >= 0 && mob != nil && !mob.fake && mob.wz.Banish != nil && mob.wz.Banish.OnTouch:
-		mob.Banish(actx, ch)
 	case attack != nil:
 		if attack.DiseaseSkill != 0 {
 			ch.debuffs.GiveMobSkill(attack.DiseaseSkill, attack.DiseaseLevel)
@@ -277,9 +276,14 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 
 	if ch.invincible {
 		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{}, true)
-		return
+	} else {
+		ch.TakeDamage(damage)
 	}
-	ch.TakeDamage(damage)
+
+	// A banish to another actor's map hands the character over, so nothing may touch it afterwards.
+	if banish && ch.IsAlive() {
+		mob.Banish(actx, ch)
+	}
 }
 
 func (ch *Character) hitDamage(hit Hit, mob *Mob, attack *wz.MobAttack) int32 {

@@ -16,6 +16,9 @@ local function setup(ctx, bot)
 	if pq.command(bot, "/봇초기화 70 0 0 -", "봇초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 봇 초기화 실패")
 	end
+	if pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false then
+		return ctx:fail(bot:name() .. " 체력 설정 실패")
+	end
 	if bot:instance_move(HUNTING_GROUND) == false then
 		return ctx:fail(bot:name() .. " 사냥터 이동 실패")
 	end
@@ -104,11 +107,33 @@ local function banish(ctx)
 	if oid == false then
 		return false
 	end
-	local warp = actor:request(resp.warp, hit(BANISH_MOB, oid, HIT_COLLIDE, 0), function(p)
+	local warp = actor:request(resp.warp, hit(BANISH_MOB, oid, HIT_COLLIDE, 1), function(p)
 		return p.character.map == BANISH_MAP
 	end, 5000)
 	if warp == false then
 		return ctx:fail("몸에 닿으면 추방하는 몹에 닿았는데 추방되지 않음")
+	end
+	return true
+end
+
+-- A touch that kills leaves the body where it fell instead of banishing it.
+local function lethal_touch(ctx)
+	local actor = ctx:bot(0)
+	if setup(ctx, actor) == false then
+		return false
+	end
+	local oid = spawn(ctx, actor, BANISH_MOB)
+	if oid == false then
+		return false
+	end
+	local dead = actor:request(resp.update_stats, hit(BANISH_MOB, oid, HIT_COLLIDE, 30000), function(p)
+		return p.stats[HP] == 0
+	end, 5000)
+	if dead == false then
+		return ctx:fail("죽을 만큼 맞았는데 HP가 0이 되지 않음")
+	end
+	if actor:request(resp.warp, nil, nil, 1500) ~= false then
+		return ctx:fail("죽은 캐릭터가 추방됨")
 	end
 	return true
 end
@@ -121,5 +146,6 @@ test_suite {
 		diseases,
 		hp_mp,
 		banish,
+		lethal_touch,
 	},
 }
