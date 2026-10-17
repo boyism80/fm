@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
@@ -34,6 +35,9 @@ func (d *Dialog) Open(actx actor.Context, npc *Npc) error {
 		return fmt.Errorf("lua state not available")
 	}
 	scriptPath := fmt.Sprintf("script/npc/%d.lua", npcID)
+	if _, err := os.Stat(scriptPath); err != nil {
+		scriptPath = "script/npc/default.lua"
+	}
 	luaThread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		d.owner.listener.OnScriptError(d.owner, scriptPath, err)

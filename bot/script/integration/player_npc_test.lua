@@ -48,11 +48,20 @@ test_suite {
 			end
 			for _ = 1, 10 do
 				if gm:npc(TEMPLATE) ~= nil then
-					return true
+					break
 				end
 				ctx:sleep(200)
 			end
-			return ctx:fail("만든 채널에 플레이어 NPC가 보이지 않음")
+			local oid = gm:npc(TEMPLATE)
+			if oid == nil then
+				return ctx:fail("만든 채널에 플레이어 NPC가 보이지 않음")
+			end
+			local dlg = gm:npc_click(oid)
+			if dlg == false or dlg.text:find("레벨 200", 1, true) == nil then
+				return ctx:fail("플레이어 NPC 클릭 대사가 WZ 기본 대사가 아님")
+			end
+			gm:dialog(false)
+			return true
 		end,
 		function(ctx)
 			local gm = ctx:bot(0)

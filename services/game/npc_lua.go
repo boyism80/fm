@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+
 	"github.com/boyism80/fm/core/luax"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -35,6 +37,25 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			action := L.CheckString(2)
 			npc.ShowEffect(action)
 			return 0
+		},
+		"dialogues": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			npc, ok := ud.Value.(*Npc)
+			if !ok {
+				L.ArgError(1, "Npc expected")
+				return 0
+			}
+			lines := L.NewTable()
+			texts := npc.gameWorld.GetResources().Strings.NpcStrings[npc.wz.BaseSpawn.ID]
+			for i := 0; ; i++ {
+				line, ok := texts[fmt.Sprintf("d%d", i)]
+				if !ok {
+					break
+				}
+				lines.Append(lua.LString(line))
+			}
+			L.Push(lines)
+			return 1
 		},
 		"wz": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
