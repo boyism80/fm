@@ -4,9 +4,11 @@ local LITH_HARBOR = 104000000
 
 local POTION = 2000000
 local SWORD = 1302000
+local SHELL = 4000000
 
 local EQUIP = 1
 local CONSUME = 2
+local ETC = 4
 local TRADE = 3
 
 local MODE = {
@@ -122,15 +124,14 @@ local function trade_flow(ctx)
 		return false
 	end
 
-	local x, y = b:position()
-	if blocked(ctx, b, req.item_loot { position = { x = x, y = y }, oid = dropped }, "줍기") == false then
+	if check(ctx, b:loot(dropped), "교환 중 물약 줍기") == false then
 		return false
 	end
 	if blocked(ctx, a, req.move_item { inventory_type = CONSUME, source = a:slot(POTION), dest = 0, count = 1 }, "버리기") == false then
 		return false
 	end
 	ctx:sleep(300)
-	if has(ctx, b, POTION, 0) == false or has(ctx, a, POTION, 60) == false then
+	if has(ctx, b, POTION, 10) == false or has(ctx, a, POTION, 60) == false then
 		return false
 	end
 
@@ -152,15 +153,7 @@ local function trade_flow(ctx)
 	if has(ctx, a, POTION, 60) == false or has(ctx, a, SWORD, 1) == false or meso_is(ctx, a, 1000000) == false then
 		return false
 	end
-	if has(ctx, b, POTION, 30) == false or has(ctx, b, SWORD, 0) == false or meso_is(ctx, b, 982000) == false then
-		return false
-	end
-
-	if check(ctx, b:loot(dropped), "교환이 끝난 뒤에도 줍기가 안 됨") == false then
-		return false
-	end
-	ctx:sleep(300)
-	return has(ctx, b, POTION, 40)
+	return has(ctx, b, POTION, 40) and has(ctx, b, SWORD, 0) and meso_is(ctx, b, 982000)
 end
 
 local function cancel_flow(ctx)
@@ -195,6 +188,42 @@ local function cancel_flow(ctx)
 		return false
 	end
 	return check(ctx, a:slot(POTION) == potion_slot and a:slot(SWORD) == sword_slot, "취소 후 원래 칸으로 돌아오지 않음")
+end
+
+-- An item put into a trade keeps its slot, so a loot cannot take the slot the item must return to.
+local function restore_slot(ctx)
+	local a = ctx:bot(0)
+	local b = ctx:bot(1)
+	local items = {}
+	for i = 1, 32 do
+		items[#items + 1] = (SHELL + i) .. ":1"
+	end
+	if setup(ctx, a, 0, SHELL .. ":1") == false or setup(ctx, b, 0, table.concat(items, ",")) == false then
+		return false
+	end
+	local traded = SHELL + 1
+	local slot = b:slot(traded)
+	local dropped = a:drop(SHELL, 1)
+	if check(ctx, dropped ~= nil, "줍기 확인용 아이템을 떨어뜨리지 못함") == false then
+		return false
+	end
+
+	if open(ctx, a, b) == false or put_item(ctx, b, a, ETC, traded, 1, 1) == false then
+		return false
+	end
+	if check(ctx, b:loot(dropped) == false, "교환에 올린 아이템이 돌아갈 칸으로 아이템을 주움") == false then
+		return false
+	end
+
+	local left = b:request_on(a, resp.mini_room_leave, req.mini_room { mode = MODE.exit }, nil, 5000)
+	if check(ctx, left ~= false and left.reason == LEAVE.cancel, "취소 알림이 오지 않음") == false then
+		return false
+	end
+	ctx:sleep(500)
+	if has(ctx, b, traded, 1) == false or has(ctx, b, SHELL, 0) == false then
+		return false
+	end
+	return check(ctx, b:slot(traded) == slot, "취소 후 원래 칸으로 돌아오지 않음")
 end
 
 local function move_flow(ctx)
@@ -277,12 +306,13 @@ local function invitee_moves(ctx)
 end
 
 test_suite {
-	name = "Trade: 개인 거래 성사·취소·이동 거절·거절·초대 중 이동",
+	name = "Trade: 개인 거래 성사·취소·복구 칸·이동 거절·거절·초대 중 이동",
 	bot_count = 2,
 
 	scenarios = {
 		trade_flow,
 		cancel_flow,
+		restore_slot,
 		move_flow,
 		decline_flow,
 		invitee_moves,

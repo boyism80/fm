@@ -30,4 +30,17 @@ func (p *BuddyListUpdate) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *BuddyListUpdate) Deserialize(*stream.StreamReader) {}
+func (p *BuddyListUpdate) Deserialize(reader *stream.StreamReader) {
+	p.Action = constant.BuddyListSyncAction(reader.ReadU8())
+	count := int(reader.ReadU8())
+	p.Entries = make([]BuddyEntry, count)
+	for i := range p.Entries {
+		p.Entries[i] = BuddyEntry{
+			CharacterID: reader.ReadU32(),
+			Name:        reader.ReadStaticStr(buddyNameFieldLen),
+			Pending:     reader.ReadBool(),
+			Channel:     reader.Read32(),
+			Group:       reader.ReadStaticStr(buddyGroupFieldLen),
+		}
+	}
+}

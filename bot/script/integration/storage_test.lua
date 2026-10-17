@@ -1,6 +1,7 @@
 local pq = require("script/integration/lib/party_quest")
 local route = require("script/integration/lib/route")
 
+local HENESYS = 100000000
 local HENESYS_PARK = 100000200
 local KEEPER = 1012009
 local FREE_MARKET = 910000000
@@ -394,6 +395,27 @@ local function forged_requests(ctx)
 	return has(ctx, bot, POTION, 10)
 end
 
+-- Storage opened on one map closes when the character leaves it.
+local function closed_on_leave(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, 10000, SHELL .. ":1") == false then
+		return false
+	end
+	if open(ctx, bot, HENESYS_PARK, KEEPER) == false then
+		return false
+	end
+	if route.travel(ctx, bot, HENESYS) == false then
+		return ctx:fail("창고를 연 채로 맵 이동 실패")
+	end
+	if ignored(ctx, bot, store_request(bot, SHELL, 1), "맵을 떠난 뒤 보관") == false then
+		return false
+	end
+	if ignored(ctx, bot, meso_request(-1000), "맵을 떠난 뒤 메소 맡기기") == false then
+		return false
+	end
+	return has(ctx, bot, SHELL, 1) and meso_is(ctx, bot, 10000)
+end
+
 local function free_market_fee(ctx)
 	local bot = ctx:bot(5)
 	if setup(ctx, bot, 2000, SHELL .. ":1") == false then
@@ -444,6 +466,7 @@ test_suite {
 		limits,
 		not_enough_fee,
 		forged_requests,
+		closed_on_leave,
 		free_market_fee,
 	},
 }

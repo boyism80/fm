@@ -1521,6 +1521,20 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["AP바꾸기"] = {
+		privilege = ROLE.Admin,
+		usage = "<AP> - 남은 능력치 포인트 설정",
+		command = function(me, args)
+			local v = tonumber(args[1])
+			if v == nil or v < 0 then
+				me:message("사용법: /AP바꾸기 <AP>")
+				return true
+			end
+			me:ability_point(v)
+			me:message(string.format("AP 설정: %d", v))
+			return true
+		end,
+	},
 	["힘바꾸기"] = {
 		privilege = ROLE.Admin,
 		usage = "<힘값> - 힘 설정",

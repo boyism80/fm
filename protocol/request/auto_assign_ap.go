@@ -17,6 +17,12 @@ type AutoAssignAP struct {
 func (*AutoAssignAP) Opcode() byte { return 0x47 }
 
 func (p *AutoAssignAP) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU32(uint32(len(p.Entries)))
+	for _, e := range p.Entries {
+		writer.WriteU32(e.Stat)
+		writer.WriteU32(e.Amount)
+	}
 	return nil
 }
 

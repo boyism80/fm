@@ -38,6 +38,7 @@ local MESO = 100000
 local COST = 1000 + 5000
 local SETTLE_WAIT_MS = 40000
 local SYSTEM_SENDER = "[복구]"
+local REFUND_SENDER = "택배"
 
 local function check(ctx, ok, message)
 	if ok == false then
@@ -353,6 +354,28 @@ local function quick_flow(ctx)
 	return true
 end
 
+local function claim_refunds(ctx, bot, wait_ms)
+	local steps = math.max(1, math.floor((wait_ms or 10000) / 500))
+	for _ = 1, steps do
+		local p = open(ctx, bot)
+		if p == false then
+			return false
+		end
+		local found = find(p, REFUND_SENDER)
+		if #found > 0 then
+			for _, parcel in ipairs(found) do
+				if removed(ctx, bot, req.duey { mode = MODE.receive, parcel_id = parcel.id }, REMOVED.received, "환불 택배 수령") == false then
+					return false
+				end
+			end
+			return true
+		end
+		bot:send(req.duey { mode = MODE.close })
+		ctx:sleep(500)
+	end
+	return ctx:fail(bot:name() .. " 환불 택배가 오지 않음")
+end
+
 local function system_parcels(ctx)
 	local bot = ctx:bot(4)
 	local gm = ctx:bot(0)
@@ -401,6 +424,9 @@ local function system_parcels(ctx)
 		return false
 	end
 	if expect(ctx, gm, send_request(gm, ONLY, 1, 0, bot:name()), RESULT.only_in_box, "보관함에 있는 고유 아이템 배송") == false then
+		return false
+	end
+	if claim_refunds(ctx, gm) == false then
 		return false
 	end
 	if has(ctx, gm, ONLY, 1) == false or meso_is(ctx, gm, 100000) == false then
@@ -474,6 +500,9 @@ local function box_limit(ctx)
 	if expect(ctx, gm, send_request(gm, SHELL, 1, 0, bot:name()), RESULT.recipient_full, "가득 찬 보관함으로 배송") == false then
 		return false
 	end
+	if claim_refunds(ctx, gm) == false then
+		return false
+	end
 	if has(ctx, gm, SHELL, 1) == false or meso_is(ctx, gm, 100000) == false then
 		return false
 	end
@@ -524,6 +553,11 @@ local function forged_requests(ctx)
 	for _, case in ipairs(cases) do
 		if expect(ctx, bot, case.request, case.result, case.what) == false then
 			return false
+		end
+		if case.result == RESULT.recipient_not_found or case.result == RESULT.same_account or case.result == RESULT.recipient_full or case.result == RESULT.only_in_box then
+			if claim_refunds(ctx, bot) == false then
+				return false
+			end
 		end
 	end
 	if has(ctx, bot, POTION, 9) == false or has(ctx, bot, BLOCK, 1) == false or has(ctx, bot, PET, 1) == false then
@@ -590,7 +624,10 @@ local function wait_holds(ctx, bot, shell, meso, what)
 end
 
 local function wait_refund(ctx, bot)
-	return wait_holds(ctx, bot, 5, MESO, "환불 대기")
+	if claim_refunds(ctx, bot, SETTLE_WAIT_MS) == false then
+		return false
+	end
+	return holds(ctx, bot, 5, MESO, "환불")
 end
 
 local function parcels_from(ctx, recipient, sender)

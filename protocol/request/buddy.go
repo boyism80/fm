@@ -15,6 +15,14 @@ type Buddy struct {
 func (*Buddy) Opcode() byte { return 0x6C }
 
 func (p *Buddy) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(p.Mode))
+	switch p.Mode {
+	case constant.BuddyAdd:
+		writer.WriteStr16(p.Name)
+		writer.WriteStr16(p.Group)
+	case constant.BuddyAccept, constant.BuddyDelete:
+		writer.WriteU32(p.CharacterID)
+	}
 	return nil
 }
 

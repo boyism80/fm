@@ -459,8 +459,41 @@ local function wait_count(ctx, bot, item_id, count, what)
 end
 
 -- The guest's unsent gift is refunded and the lost one stays given; the groom's lost claim is granted on settle.
+local function claim_refunds(ctx, bot)
+	for _ = 1, SETTLE_WAIT_MS / 500 do
+		bot:send(req.duey { mode = DUEY.close })
+		local p = bot:request(resp.duey_open, req.normal_chat { message = "/듀이" }, nil, 5000)
+		if p == false then
+			return ctx:fail(bot:name() .. " 택배 보관함이 열리지 않음")
+		end
+		local found = {}
+		for _, parcel in ipairs(p.parcels) do
+			if parcel.sender == "택배" then
+				found[#found + 1] = parcel
+			end
+		end
+		if #found > 0 then
+			for _, parcel in ipairs(found) do
+				if bot:request(resp.duey_removed, req.duey { mode = DUEY.receive, parcel_id = parcel.id }, function(got)
+					return got.reason == 4
+				end, 3000) == false then
+					return ctx:fail(bot:name() .. " 환불 택배 수령 실패")
+				end
+			end
+			bot:send(req.duey { mode = DUEY.close })
+			return true
+		end
+		bot:send(req.duey { mode = DUEY.close })
+		ctx:sleep(500)
+	end
+	return ctx:fail(bot:name() .. " 환불 택배가 오지 않음")
+end
+
 local function gifts(ctx)
 	local groom, bride, guest = ctx:bot(0), ctx:bot(1), ctx:bot(2)
+	if claim_refunds(ctx, guest) == false then
+		return false
+	end
 	if wait_count(ctx, guest, GIFT, 2, "보내지 않은 선물 환불") == false then
 		return false
 	end
@@ -1136,26 +1169,20 @@ local function invite_guest_full(ctx)
 		return false
 	end
 
-	local full = groom:request(resp.engage_result, invite(groom, guest), function(p)
-		return p.result == 0x15
+	local sent = groom:request(resp.notice, invite(groom, guest), function(p)
+		return p.message:find("청첩장을 보냈습니다", 1, true) ~= nil
 	end, 5000)
-	if full == false then
-		return ctx:fail("택배함이 가득 찬 하객 초대가 거절되지 않음")
+	if sent == false then
+		return ctx:fail("택배함이 가득 찬 하객에게 청첩장이 가지 않음")
 	end
 	ctx:sleep(500)
-	if holds(ctx, groom, INVITATION, 5, "거절 뒤 청첩장 유지") == false then
+	if holds(ctx, groom, INVITATION, 4, "가득 찬 택배함으로 초대한 뒤") == false then
 		return false
 	end
-
-	if clear_duey(ctx, guest) == false then
+	if invited(ctx, guest, 51, "가득 찬 택배함으로 초대한 뒤") == false then
 		return false
 	end
-	groom:send(invite(groom, guest))
-	if wait_count(ctx, groom, INVITATION, 4, "택배함을 비운 뒤 재초대") == false then
-		return false
-	end
-	ctx:sleep(1000)
-	return invited(ctx, guest, 1, "택배함을 비운 뒤 재초대")
+	return clear_duey(ctx, guest)
 end
 
 local function cleanup(ctx)

@@ -203,6 +203,17 @@ var decoders = func() []decoder {
 			}
 			return true
 		}),
+		newDecoder[response.BuddyAddRequest](sub(uint8(pconst.BuddyS2CAddRequest))),
+		newDecoder[response.BuddyListUpdate](func(body []byte) bool {
+			if len(body) == 0 {
+				return false
+			}
+			switch pconst.BuddyListSyncAction(body[0]) {
+			case pconst.BuddyListSyncLogin, pconst.BuddyListSyncUpdate, pconst.BuddyListSyncDelete:
+				return true
+			}
+			return false
+		}),
 		newDecoder[response.SpawnMob](nil),
 		newDecoder[response.DieMob](nil),
 		newDecoder[response.ApplyMobBuff](nil),

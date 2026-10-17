@@ -367,6 +367,7 @@ func (a *SuiteActor) timeoutMs() int {
 }
 
 func (a *SuiteActor) Fail(msg string) bool {
+	log.Printf("[%s] %s", a.name, msg)
 	a.failures = append(a.failures, msg)
 	return false
 }

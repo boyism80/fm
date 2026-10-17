@@ -31,6 +31,8 @@ var requests = []outbound{
 	&request.Dialog{},
 	&request.Warp{},
 	&request.PartyOperation{},
+	&request.Buddy{},
+	&request.AutoAssignAP{},
 	&request.GuildOperation{},
 	&request.SwitchChannel{},
 	&request.EnterCashShop{},

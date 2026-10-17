@@ -248,11 +248,19 @@ local function gift_flow(ctx, buyer, receiver)
 		return false
 	end
 
-	local p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.gift, commodity_sn = MEGAPHONE.sn, recipient = buyer:name(), message = "" }, KIND.gift_sent + 1, "같은 계정 선물")
+	local p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.gift, commodity_sn = MEGAPHONE.sn, recipient = receiver:name(), message = "" }, KIND.gift_sent + 1, "빈 메시지 선물")
+	if p == false or check(ctx, p.failure == UNKNOWN, "빈 메시지 선물 실패 코드 " .. p.failure) == false then
+		return false
+	end
+	if cash_is(ctx, buyer, 30000 - MEGAPHONE.price, 5000) == false then
+		return false
+	end
+
+	p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.gift, commodity_sn = MEGAPHONE.sn, recipient = buyer:name(), message = "선물입니다" }, KIND.gift_sent + 1, "같은 계정 선물")
 	if p == false or check(ctx, p.failure == SAME_ACCOUNT, "같은 계정 선물 실패 코드 " .. p.failure) == false then
 		return false
 	end
-	p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.gift, commodity_sn = MEGAPHONE.sn, recipient = "nobody_here", message = "" }, KIND.gift_sent + 1, "없는 캐릭터 선물")
+	p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.gift, commodity_sn = MEGAPHONE.sn, recipient = "nobody_here", message = "선물입니다" }, KIND.gift_sent + 1, "없는 캐릭터 선물")
 	if p == false or check(ctx, p.failure == WRONG_NAME, "없는 캐릭터 선물 실패 코드 " .. p.failure) == false then
 		return false
 	end

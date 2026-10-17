@@ -27,4 +27,8 @@ func (p *BuddyAddRequest) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *BuddyAddRequest) Deserialize(*stream.StreamReader) {}
+func (p *BuddyAddRequest) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.FromCharacterID = reader.ReadU32()
+	p.FromName = reader.ReadStr16()
+}
