@@ -49,4 +49,7 @@ func (p *UpdateQuest) Deserialize(reader *stream.StreamReader) {
 	reader.ReadU8()
 	p.QuestID = reader.ReadU16()
 	p.Status = reader.ReadU8()
+	if p.Status == QuestWireStatusStarted {
+		p.StatusRecord = reader.ReadStr16()
+	}
 }

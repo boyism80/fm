@@ -52,6 +52,8 @@ type Consume struct {
 	MountFatigue   int
 	SkillBook      *SkillBook
 	SummonBag      []SummonBagEntry
+	Rewards        []RewardEntry
+	RewardProb     int
 
 	CureDebuffs   []constant.DebuffFlag
 	AvailableMaps []MapRange
@@ -106,6 +108,14 @@ type SkillBook struct {
 type SummonBagEntry struct {
 	MobID       uint32
 	Probability int
+}
+
+type RewardEntry struct {
+	ItemID uint32
+	Count  uint16
+	Prob   int
+	Period time.Duration
+	Effect string
 }
 
 type MapRange struct {

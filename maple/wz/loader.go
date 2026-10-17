@@ -301,6 +301,23 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			sort.Slice(model.SummonBag, func(i, j int) bool { return model.SummonBag[i].MobID < model.SummonBag[j].MobID })
 		}
 
+		if rewardNode := v.find("reward"); rewardNode != nil {
+			for _, child := range rewardNode.Children {
+				reward := RewardEntry{
+					ItemID: uint32(child.Int("item", 0)),
+					Count:  uint16(child.Int("count", 1)),
+					Prob:   child.Int("prob", 0),
+					Period: time.Duration(child.Int("period", 0)) * time.Minute,
+					Effect: child.Text("Effect", ""),
+				}
+				if reward.ItemID == 0 || reward.Prob <= 0 {
+					continue
+				}
+				model.Rewards = append(model.Rewards, reward)
+				model.RewardProb += reward.Prob
+			}
+		}
+
 		if reqNode := v.find("req"); reqNode != nil {
 			for _, intField := range reqNode.Ints {
 				model.ScrollReqs = append(model.ScrollReqs, uint32(intField.Value))
@@ -807,6 +824,7 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 		info := v.find("info")
 		model.setTradeFlags(info)
 		if info != nil {
+			grade := 0
 			for _, intField := range info.Ints {
 				switch intField.Name {
 				case "price":
@@ -831,8 +849,11 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 						model.Traits |= constant.ItemTraitQuest
 					}
 				case "exp":
+					model.Exp = intField.Value
 				case "grade":
+					grade = intField.Value
 				case "questId":
+					model.QuestID = uint32(intField.Value)
 				case "lv":
 					model.MakerLevel = intField.Value
 				case "lvMin":
@@ -862,7 +883,9 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 				case "uiData":
 				case "message":
 				case "consumeItem":
-					break
+					for _, feed := range iv.Ints {
+						model.ConsumeItems = append(model.ConsumeItems, uint32(feed.Value))
+					}
 
 				default:
 					mutex.Lock()
@@ -875,6 +898,7 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 					log.Printf("%s is not declared in %s:info\n", iv.Name, filepath.Base(path))
 				}
 			}
+			model.MaxExp = model.Exp * grade
 		}
 
 		if model.SlotMax == 0 {

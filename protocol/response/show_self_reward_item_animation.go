@@ -26,4 +26,9 @@ func (p *ShowSelfRewardItemAnimation) Serialize(writer *stream.StreamWriter) err
 }
 
 func (p *ShowSelfRewardItemAnimation) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.ItemID = reader.ReadU32()
+	if reader.ReadU8() == 1 {
+		p.Effect = reader.ReadStr16()
+	}
 }

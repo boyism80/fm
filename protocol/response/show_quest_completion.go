@@ -16,4 +16,5 @@ func (p *ShowQuestCompletion) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ShowQuestCompletion) Deserialize(reader *stream.StreamReader) {
+	p.QuestID = reader.ReadU16()
 }

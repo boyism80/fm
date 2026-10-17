@@ -13,6 +13,10 @@ local CRYSTAL_SOURCE = 4000013
 local LOW_CRYSTAL_SOURCE = 4000673
 local CRYSTAL = 4260000
 local DISASSEMBLE_WEAPON = 1302009
+local REWARD_BOX = 2022354
+local REWARD_BOX_REWARDS = { 2022335, 4031991, 4031992 }
+local ETC_REWARD_BOX = 2022422
+local ETC_FILLER = 4000000
 
 local function setup(ctx, bot, class_id, meso, items)
 	local command = string.format("/봇초기화 120 %d %d %s -", class_id, meso, items)
@@ -187,8 +191,58 @@ local function disassemble(ctx)
 	return true
 end
 
+local function reward_box(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, 0, 0, REWARD_BOX .. ":2") == false then
+		return false
+	end
+	local shown = bot:request(resp.show_self_reward_item_animation, req.use_reward_box {
+		slot = bot:slot(REWARD_BOX) or 0,
+		item_id = REWARD_BOX,
+	}, nil, 3000)
+	if shown == false then
+		return ctx:fail("보상 상자 연출이 없음")
+	end
+	if (bot:items()[REWARD_BOX] or 0) ~= 1 then
+		return ctx:fail("보상 상자가 하나 줄지 않음")
+	end
+	local received = 0
+	for _, id in ipairs(REWARD_BOX_REWARDS) do
+		received = received + (bot:items()[id] or 0)
+	end
+	if received ~= 1 or (bot:items()[shown.item_id] or 0) ~= 1 then
+		return ctx:fail("보상 목록의 아이템 하나가 들어오지 않음: " .. tostring(shown.item_id))
+	end
+
+	if setup(ctx, bot, 0, 0, ETC_REWARD_BOX .. ":1") == false then
+		return false
+	end
+	for _ = 1, 300 do
+		local p = pq.command(bot, "/아이템생성 " .. ETC_FILLER .. " 100", "아이템 생성")
+		if p == false then
+			return ctx:fail("기타 창 채우기 응답 없음")
+		end
+		if p.message:find("실패", 1, true) ~= nil then
+			break
+		end
+	end
+	local refused = bot:request(resp.notice, req.use_reward_box {
+		slot = bot:slot(ETC_REWARD_BOX) or 0,
+		item_id = ETC_REWARD_BOX,
+	}, function(p)
+		return p.message:find("공간이 부족", 1, true) ~= nil
+	end, 3000)
+	if refused == false then
+		return ctx:fail("기타 창이 가득 찼는데 공간 부족 안내가 없음")
+	end
+	if (bot:items()[ETC_REWARD_BOX] or 0) ~= 1 then
+		return ctx:fail("공간이 부족한데 보상 상자가 사라짐")
+	end
+	return true
+end
+
 test_suite {
 	name = "Item: 스킬북·소환 가방·아이템 메이커",
 	bot_count = 1,
-	scenarios = { skill_book, skill_book_unlock, summon_bag, item_maker, make_crystal, disassemble },
+	scenarios = { skill_book, skill_book_unlock, summon_bag, item_maker, make_crystal, disassemble, reward_box },
 }

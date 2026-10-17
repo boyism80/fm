@@ -2,6 +2,7 @@ package game
 
 import (
 	"math/rand"
+	"time"
 
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -86,5 +87,40 @@ func (ch *Character) UseSummonBag(slot int16, itemID uint32) {
 
 	for _, mobID := range selected {
 		mapInstance.SpawnMob(mobID, ch.GetPosition(), nil, constant.MobSpawnTypeAnimate, 0, constant.CarnivalTeamNone)
+	}
+}
+
+func (ch *Character) UseRewardBox(slot int16, itemID uint32) {
+	item := ch.inventory.GetItem(constant.InventoryTypeConsume, slot)
+	if item == nil || item.GetModel().GetID() != itemID {
+		return
+	}
+	box, ok := item.GetModel().(*wz.Consume)
+	if !ok || box.RewardProb == 0 {
+		return
+	}
+
+	var reward wz.RewardEntry
+	pick := rand.Intn(box.RewardProb)
+	for _, entry := range box.Rewards {
+		if pick < entry.Prob {
+			reward = entry
+			break
+		}
+		pick -= entry.Prob
+	}
+
+	result := ch.Exchange(ExchangeSpec{
+		Cost: ExchangeSide{Items: map[uint32]uint16{itemID: 1}},
+		Reward: ExchangeSide{
+			Items:  map[uint32]uint16{reward.ItemID: reward.Count},
+			Period: map[uint32]time.Duration{reward.ItemID: reward.Period},
+		},
+	})
+	switch result {
+	case ExchangeOK:
+		ch.listener.OnShowSelfRewardItemAnimation(ch, reward.ItemID, reward.Effect)
+	case ExchangeLackCapacity:
+		ch.listener.OnMessage(ch, constant.MsgPopup, "인벤토리 공간이 부족합니다.")
 	}
 }
