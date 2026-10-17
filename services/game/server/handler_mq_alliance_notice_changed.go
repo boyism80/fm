@@ -36,7 +36,9 @@ func (h *allianceMqNoticeChanged) Handle(_ actor.Context, raw json.RawMessage) e
 		Notice string `json:"notice"`
 	}
 	_ = json.Unmarshal(raw, &extra)
-	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	if !gs.systems.Get[*game.AllianceSystem]().Update(alliancePb) {
+		return nil
+	}
 	gs.systems.Get[*game.AllianceSystem]().BroadcastNoticeChanged(alliancePb, extra.Notice)
 	return nil
 }

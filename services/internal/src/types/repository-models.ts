@@ -351,6 +351,7 @@ export interface PartyModel {
     disbandedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
+    revision?: number;
 }
 
 export type PartyRow = {
@@ -361,6 +362,7 @@ export type PartyRow = {
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
     updated_at?: Date | string;
+    revision?: number | string;
     deleted?: boolean;
 };
 
@@ -409,6 +411,7 @@ export interface GuildModel {
     disbandedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
+    revision?: number;
 }
 
 export type GuildRow = {
@@ -425,6 +428,7 @@ export type GuildRow = {
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
     updated_at?: Date | string;
+    revision?: number | string;
     deleted?: boolean;
 };
 
@@ -469,6 +473,7 @@ export interface AllianceModel {
     disbandedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
+    revision?: number;
 }
 
 export type AllianceRow = {
@@ -483,6 +488,7 @@ export type AllianceRow = {
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
     updated_at?: Date | string;
+    revision?: number | string;
     deleted?: boolean;
 };
 

@@ -26,6 +26,6 @@ func (h *guildMqCreated) Handle(ctx actor.Context, raw json.RawMessage) error {
 	if !ok {
 		return nil
 	}
-	gs.systems.Get[*game.GuildSystem]().UpdateAsync(ctx, evt)
+	gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB))
 	return nil
 }

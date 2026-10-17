@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game"
 )
 
@@ -28,8 +29,8 @@ func (h *allianceMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) err
 		return nil
 	}
 	var extra struct {
-		GuildIDs           []uint32 `json:"guild_ids"`
-		MemberCharacterIDs []uint32 `json:"member_character_ids"`
+		GuildIDs []uint32 `json:"guild_ids"`
+		GuildPBs []string `json:"guild_pbs"`
 	}
 	if err := json.Unmarshal(raw, &extra); err != nil {
 		log.Printf("alliance consumer: disbanded alliance_id=%d invalid payload: %v", evt.AllianceID, err)
@@ -39,9 +40,12 @@ func (h *allianceMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) err
 	if len(guildIDs) == 0 {
 		guildIDs = gs.systems.Get[*game.AllianceSystem]().GuildIDs(evt.AllianceID)
 	}
-	gs.systems.Get[*game.AllianceSystem]().UpdateAsync(ctx, evt).Do(func() error {
-		gs.systems.Get[*game.AllianceSystem]().DisbandAsync(ctx, evt.AllianceID, guildIDs)
-		return nil
-	})
+	guildPbs := make([]*internal.Guild, 0, len(extra.GuildPBs))
+	for _, encoded := range extra.GuildPBs {
+		if guildPb := decodeGuildSnapshot(encoded); guildPb != nil {
+			guildPbs = append(guildPbs, guildPb)
+		}
+	}
+	gs.systems.Get[*game.AllianceSystem]().Disband(evt.AllianceID, guildIDs, guildPbs)
 	return nil
 }

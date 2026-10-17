@@ -34,8 +34,9 @@ func (h *guildMqGPChanged) Handle(ctx actor.Context, raw json.RawMessage) error 
 		log.Printf("guild consumer: gp_changed guild_id=%d invalid payload: %v", evt.GuildID, err)
 		return nil
 	}
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
-		gs.systems.Get[*game.GuildSystem]().BroadcastGPChanged(guildID, payload.Amount)
-	})
+	if !gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB)) {
+		return nil
+	}
+	gs.systems.Get[*game.GuildSystem]().BroadcastGPChanged(evt.GuildID, payload.Amount)
 	return nil
 }

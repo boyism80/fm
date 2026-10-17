@@ -27,16 +27,14 @@ func (h *guildMqMemberOnlineChanged) Handle(ctx actor.Context, raw json.RawMessa
 		return nil
 	}
 	var extra struct {
-		CharacterID uint32 `json:"character_id"`
-		Online      bool   `json:"online"`
+		CharacterID  uint32 `json:"character_id"`
+		Online       bool   `json:"online"`
+		ChannelIndex int32  `json:"channel_index"`
 	}
 	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
 	}
-	subjectID := extra.CharacterID
-	online := extra.Online
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
-		gs.systems.Get[*game.GuildSystem]().BroadcastMemberOnlineChanged(guildID, subjectID, online)
-	})
+	gs.systems.Get[*game.GuildSystem]().SetMemberChannel(evt.GuildID, extra.CharacterID, extra.ChannelIndex)
+	gs.systems.Get[*game.GuildSystem]().BroadcastMemberOnlineChanged(evt.GuildID, extra.CharacterID, extra.Online)
 	return nil
 }

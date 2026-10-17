@@ -1431,6 +1431,7 @@ message JoinPartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
+  uint64 revision = 4;
 }
 
 message LeavePartyRequest {
@@ -1443,6 +1444,7 @@ message LeavePartyReply {
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
   bool disbanded = 5;
+  uint64 revision = 6;
 }
 
 message ExpelPartyRequest {
@@ -1456,6 +1458,7 @@ message ExpelPartyReply {
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
   bool disbanded = 5;
+  uint64 revision = 6;
 }
 
 message ChangePartyLeaderRequest {
@@ -1480,7 +1483,7 @@ message Party {
   uint32 world_id = 1;
   uint32 party_id = 2;
   uint32 leader_character_id = 3;
-  int64 updated_at_unix_ms = 4;
+  uint64 revision = 4;
   PartyState state = 5;
   repeated PartyMember members = 6;
 }
@@ -1878,7 +1881,7 @@ message Guild {
   uint32 guild_id = 2;
   string name = 3;
   uint32 leader_character_id = 4;
-  int64 updated_at_unix_ms = 5;
+  uint64 revision = 5;
   uint32 gp = 6;
   uint32 capacity = 7;
   string notice = 8;
@@ -1917,7 +1920,7 @@ message Alliance {
   uint32 alliance_id = 2;
   string name = 3;
   uint32 leader_character_id = 4;
-  int64 updated_at_unix_ms = 5;
+  uint64 revision = 5;
   uint32 capacity = 6;
   string notice = 7;
   repeated string rank_titles = 8;

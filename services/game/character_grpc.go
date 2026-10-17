@@ -58,7 +58,11 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	}
 	ch.stats = &Stats{owner: ch, base: BaseStats{str: uint16(p.GetStr()), dex: uint16(p.GetDex()), int: uint16(p.GetIntStat()), luk: uint16(p.GetLuk())}, population: int16(p.GetPopulation()), populationHistory: NewPopulationHistoryFromInternalProto(p.GetPopulationHistory())}
 	ch.points = &Points{owner: ch, ap: uint16(p.GetAbilityPoint()), sp: uint16(p.GetSkillPoint()), hpmpUsed: uint16(p.GetHpApUsed())}
-	ch.party = &PartyMembership{owner: ch, id: partyID}
+	ch.party = &PartyMembership{owner: ch}
+	if partyID != nil {
+		ch.party.id = *partyID
+		ch.party.joined = true
+	}
 	ch.guild = &GuildMembership{owner: ch, id: guildID, invites: make(map[uint32]time.Time)}
 	ch.buddies = NewBuddyList(ch)
 	ch.family = &Family{owner: ch, tree: FamilyTreeFromProto(reply.GetFamily()), progress: p.GetFamilyProgress(), reputation: make(map[uint32]uint64)}

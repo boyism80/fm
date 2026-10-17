@@ -1,22 +1,17 @@
 package game
 
 import (
-	"context"
-	"log"
 	"sync"
-	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
 type allianceStored struct {
-	alliance  *Alliance
-	guildIDs  []uint32
-	updatedAt time.Time
+	alliance *Alliance
+	guildIDs []uint32
+	revision uint64
 }
 
 type AllianceEventEnvelope struct {
@@ -45,76 +40,55 @@ func NewAllianceSystem(gw GameWorld) *AllianceSystem {
 func (s *AllianceSystem) Start() error { return nil }
 func (s *AllianceSystem) Stop()        {}
 
-func (s *AllianceSystem) UpdateAsync(ctx actor.Context, evt AllianceEventEnvelope) *async.Task {
-	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
-	allianceID := evt.AllianceID
-	p.OnError(func(err error) {
-		log.Printf("alliance consumer: type=%s alliance_id=%d: %v", evt.EventType, allianceID, err)
-	})
-	p.ThenRPC(
-		func(c context.Context) (*internal.GetAllianceReply, error) {
-			return s.gw.Systems().Get[*InternalSystem]().client.GetAlliance(c, &internal.GetAllianceRequest{
-				WorldId:    s.worldID,
-				AllianceId: allianceID,
-			})
-		},
-		func(reply *internal.GetAllianceReply) error {
-			if reply == nil || !reply.GetFound() || reply.GetAlliance() == nil {
-				s.Remove(allianceID)
-				return nil
-			}
-			s.Update(reply.GetAlliance())
-			return nil
-		},
-	)
-	return p
-}
-
-func (s *AllianceSystem) Update(alliancePb *internal.Alliance) {
+func (s *AllianceSystem) Update(alliancePb *internal.Alliance) bool {
 	if alliancePb == nil {
-		return
+		return false
 	}
 	allianceID := alliancePb.GetAllianceId()
+	if s.Get(allianceID) == nil {
+		found := false
+		for _, guildID := range alliancePb.GetGuildIds() {
+			if s.gw.Systems().Get[*GuildSystem]().Get(guildID) != nil {
+				found = true
+				break
+			}
+		}
+		for _, g := range alliancePb.GetGuilds() {
+			if found {
+				break
+			}
+			for _, m := range g.GetMembers() {
+				if s.gw.Systems().Get[*DispatchSystem]().Exists(m.GetCharacterId()) {
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
 	for _, g := range alliancePb.GetGuilds() {
-		if g == nil {
-			continue
-		}
-		s.gw.Systems().Get[*GuildSystem]().Update(g)
+		s.gw.Systems().Get[*GuildSystem]().store(g)
 	}
-	for _, guildID := range alliancePb.GetGuildIds() {
-		ent := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
-		if ent == nil {
-			continue
-		}
-		id, ok := ent.GetAllianceID()
-		if ok && id == allianceID {
-			continue
-		}
-		cloned := ent.Clone()
-		if cloned == nil {
-			continue
-		}
-		aid := allianceID
-		cloned.allianceID = &aid
-		s.gw.Systems().Get[*GuildSystem]().Update(cloned.BuildRPC())
-	}
+
 	ent := allianceFromProto(s.gw, alliancePb)
 	if ent == nil {
-		return
+		return false
 	}
-	guildIDs := append([]uint32(nil), alliancePb.GetGuildIds()...)
 	stored := &allianceStored{
-		alliance:  ent,
-		guildIDs:  guildIDs,
-		updatedAt: time.UnixMilli(alliancePb.GetUpdatedAtUnixMs()),
+		alliance: ent,
+		guildIDs: append([]uint32(nil), alliancePb.GetGuildIds()...),
+		revision: alliancePb.GetRevision(),
 	}
 	s.mu.Lock()
-	if prev := s.alliances[allianceID]; prev != nil && stored.updatedAt.Before(prev.updatedAt) {
-		s.mu.Unlock()
-		return
+	defer s.mu.Unlock()
+	if prev := s.alliances[allianceID]; prev != nil && stored.revision < prev.revision {
+		return false
 	}
 	s.alliances[allianceID] = stored
-	s.mu.Unlock()
+	return true
 }
 
 func (s *AllianceSystem) Remove(allianceID uint32) []uint32 {

@@ -2,25 +2,10 @@ package game
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 )
-
-func (s *GuildSystem) SyncGuildEventAsync(ctx actor.Context, evt GuildEventEnvelope, after func(guildID uint32)) *async.Task {
-	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
-	if s == nil {
-		return promise
-	}
-	return s.UpdateAsync(ctx, evt).Do(func() error {
-		if after != nil {
-			after(evt.GuildID)
-		}
-		return nil
-	})
-}
 
 func (s *GuildSystem) forEachOnlineGuildMember(g *Guild, skipCharacterID uint32, fn func(memberID uint32)) {
 	if g == nil || fn == nil {

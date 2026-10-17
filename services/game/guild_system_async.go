@@ -472,7 +472,7 @@ func (s *GuildSystem) DisbandAllianceAsync(ctx actor.Context, ch *Character, res
 		return nil
 	}
 	g := s.Get(guildID)
-	allianceID, inAlliance := g.GetAllianceID()
+	_, inAlliance := g.GetAllianceID()
 	if g == nil || !inAlliance {
 		*result = int(constant.AllianceDisbandResultNotInAlliance)
 		return nil
@@ -511,11 +511,6 @@ func (s *GuildSystem) DisbandAllianceAsync(ctx actor.Context, ch *Character, res
 			}
 			return nil
 		}
-		guildIDs := s.gw.Systems().Get[*AllianceSystem]().GuildIDs(allianceID)
-		if len(guildIDs) == 0 {
-			guildIDs = []uint32{guildID}
-		}
-		s.gw.Systems().Get[*AllianceSystem]().DisbandAsync(ctx, allianceID, guildIDs)
 		*result = int(constant.AllianceDisbandResultOK)
 		return nil
 	}).Bind(ch).OnError(func(err error) {

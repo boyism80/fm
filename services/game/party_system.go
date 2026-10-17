@@ -8,7 +8,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/clock"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
@@ -18,6 +17,8 @@ type PartyEventEnvelope struct {
 	WorldID    uint32 `json:"world_id"`
 	PartyID    uint32 `json:"party_id"`
 	OccurredAt string `json:"occurred_at"`
+	PartyPB    string `json:"party_pb"`
+	Revision   uint64 `json:"revision"`
 }
 
 type PartySystem struct {
@@ -40,99 +41,56 @@ func NewPartySystem(gw GameWorld) *PartySystem {
 func (s *PartySystem) Start() error { return nil }
 func (s *PartySystem) Stop()        {}
 
-func (s *PartySystem) store(pb *internal.Party) (*Party, bool) {
-	if s == nil || pb == nil {
-		return nil, false
+func (s *PartySystem) Update(partyPb *internal.Party) bool {
+	if partyPb == nil {
+		return false
 	}
-	party := PartyFromProto(s.gw, pb)
+	if s.Get(partyPb.GetPartyId()) == nil {
+		found := false
+		for _, m := range partyPb.GetMembers() {
+			if s.gw.Systems().Get[*DispatchSystem]().Exists(m.GetCharacterId()) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	party := PartyFromProto(s.gw, partyPb)
 	if party == nil {
-		return nil, false
+		return false
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if prev := s.parties[party.partyID]; prev != nil && party.updatedAt.Before(prev.updatedAt) {
-		return prev, false
+	if prev := s.parties[party.partyID]; prev != nil && party.revision < prev.revision {
+		s.mu.Unlock()
+		return false
 	}
 	s.parties[party.partyID] = party
-	return party, true
+	s.mu.Unlock()
+
+	s.Sync(party)
+	return true
 }
 
-func (s *PartySystem) forget(partyID uint32) []uint32 {
-	if s == nil {
-		return nil
-	}
+func (s *PartySystem) Disband(partyID uint32, revision uint64) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	var memberIDs []uint32
-	if party, ok := s.parties[partyID]; ok && party != nil {
+	if party := s.parties[partyID]; party != nil {
 		memberIDs = party.MemberCharacterIDs()
 	}
 	delete(s.parties, partyID)
-	return memberIDs
-}
+	s.mu.Unlock()
 
-func (s *PartySystem) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *async.Task {
-	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
-	if s == nil {
-		return p
+	for _, cid := range memberIDs {
+		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &SyncCharacterPartyState{
+			CharacterID: cid,
+			PartyID:     partyID,
+			Revision:    revision,
+			Clear:       true,
+		})
 	}
-	partyID := evt.PartyID
-	p.OnError(func(err error) {
-	})
-
-	if evt.EventType == "disbanded" {
-		s.ClearPartyMembers(s.forget(evt.PartyID), evt.PartyID)
-		return p
-	}
-
-	p.ThenRPC(
-		func(c context.Context) (*internal.GetPartyReply, error) {
-			return s.gw.Systems().Get[*InternalSystem]().client.GetParty(c, &internal.GetPartyRequest{
-				WorldId: s.worldID,
-				PartyId: partyID,
-			})
-		},
-		func(reply *internal.GetPartyReply) error {
-			if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
-				memberIDs := s.forget(partyID)
-				if evt.EventType == "disbanded" {
-					s.ClearPartyMembers(memberIDs, partyID)
-				}
-				return nil
-			}
-			party, _ := s.store(reply.GetParty())
-			if party == nil {
-				memberIDs := s.forget(partyID)
-				if evt.EventType == "disbanded" {
-					s.ClearPartyMembers(memberIDs, partyID)
-				}
-				return nil
-			}
-			s.Sync(party)
-			return nil
-		},
-	)
-	return p
-}
-
-func (s *PartySystem) StoreSnapshot(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
-	party, ok := s.store(partyPb)
-	if !ok {
-		return false, nil
-	}
-	s.Sync(party)
-	if notifySilent {
-		s.BroadcastPartySilent(party)
-	}
-	return true, nil
-}
-
-func (s *PartySystem) Update(partyPb *internal.Party) {
-	party, ok := s.store(partyPb)
-	if !ok {
-		return
-	}
-	s.Sync(party)
 }
 
 func (s *PartySystem) Get(partyID uint32) *Party {
@@ -152,32 +110,15 @@ func (s *PartySystem) Sync(party *Party) {
 	if s == nil || party == nil || s.gw == nil {
 		return
 	}
-	partyID := party.GetPartyId()
 	for _, member := range party.GetMembers() {
 		if member == nil {
 			continue
 		}
 		cid := member.GetCharacterId()
-		pid := partyID
 		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &SyncCharacterPartyState{
 			CharacterID: cid,
-			PartyID:     &pid,
-			UpdatedAt:   party.updatedAt,
-		})
-	}
-}
-
-func (s *PartySystem) ClearPartyMembers(memberIDs []uint32, partyID uint32) {
-	if s == nil || len(memberIDs) == 0 || s.gw == nil {
-		return
-	}
-	for _, cid := range memberIDs {
-		id := partyID
-		s.gw.Systems().Get[*DispatchSystem]().SendToCharacter(nil, cid, &SyncCharacterPartyState{
-			CharacterID: cid,
-			PartyID:     &id,
-			UpdatedAt:   clock.Now(),
-			Clear:       true,
+			PartyID:     party.partyID,
+			Revision:    party.revision,
 		})
 	}
 }

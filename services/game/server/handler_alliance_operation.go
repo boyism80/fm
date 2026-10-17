@@ -473,39 +473,9 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *game.Charac
 			CharacterId: charID,
 		})
 	}, func(reply *internal.LeaveAllianceReply) error {
-		if reply == nil || !reply.GetOk() {
-			if reply != nil && !reply.GetOk() {
-				log.Printf("AllianceOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
-			}
-			return nil
+		if !reply.GetOk() {
+			log.Printf("AllianceOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
 		}
-		if reply.GetDisbanded() {
-			allianceID := reply.GetAllianceId()
-			guildIDs := h.gs.systems.Get[*game.AllianceSystem]().GuildIDs(allianceID)
-			if len(guildIDs) == 0 && reply.GetRemovedGuildId() != 0 {
-				guildIDs = []uint32{reply.GetRemovedGuildId()}
-			}
-			h.gs.systems.Get[*game.AllianceSystem]().DisbandAsync(ctx.ActorContext, allianceID, guildIDs)
-			return nil
-		}
-		alliancePb := reply.GetAlliance()
-		if alliancePb == nil {
-			return nil
-		}
-		removedGuildID := reply.GetRemovedGuildId()
-		actorCtx := ctx.ActorContext
-		if removedGuildID == 0 {
-			h.gs.systems.Get[*game.AllianceSystem]().BroadcastGuildLeft(alliancePb, nil, false)
-			return nil
-		}
-		h.gs.systems.Get[*game.GuildSystem]().RefreshAsync(actorCtx, []uint32{removedGuildID}).Do(func() error {
-			var removedGuildPb *internal.Guild
-			if g := h.gs.systems.Get[*game.GuildSystem]().Get(removedGuildID); g != nil {
-				removedGuildPb = g.BuildRPC()
-			}
-			h.gs.systems.Get[*game.AllianceSystem]().BroadcastGuildLeft(alliancePb, removedGuildPb, false)
-			return nil
-		})
 		return nil
 	})
 	promise.OnError(func(err error) {

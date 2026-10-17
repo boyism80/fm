@@ -26,6 +26,9 @@ func (h *guildMqRankTitlesChanged) Handle(ctx actor.Context, raw json.RawMessage
 	if !ok {
 		return nil
 	}
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, gs.systems.Get[*game.GuildSystem]().BroadcastRankTitlesChanged)
+	if !gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB)) {
+		return nil
+	}
+	gs.systems.Get[*game.GuildSystem]().BroadcastRankTitlesChanged(evt.GuildID)
 	return nil
 }

@@ -56,7 +56,9 @@ func (h *allianceMqCreated) Handle(_ actor.Context, raw json.RawMessage) error {
 		log.Printf("alliance consumer: created alliance_id=%d missing alliance_pb", evt.AllianceID)
 		return nil
 	}
-	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	if !gs.systems.Get[*game.AllianceSystem]().Update(alliancePb) {
+		return nil
+	}
 	gs.systems.Get[*game.AllianceSystem]().BroadcastCreate(alliancePb)
 	return nil
 }

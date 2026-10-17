@@ -34,9 +34,10 @@ func (h *guildMqCapacityChanged) Handle(ctx actor.Context, raw json.RawMessage) 
 		log.Printf("guild consumer: capacity_changed guild_id=%d invalid payload: %v", evt.GuildID, err)
 		return nil
 	}
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
-		gs.systems.Get[*game.GuildSystem]().BroadcastCapacityChanged(guildID)
-		gs.systems.Get[*game.GuildSystem]().BroadcastGPChanged(guildID, payload.GPAmount)
-	})
+	if !gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB)) {
+		return nil
+	}
+	gs.systems.Get[*game.GuildSystem]().BroadcastCapacityChanged(evt.GuildID)
+	gs.systems.Get[*game.GuildSystem]().BroadcastGPChanged(evt.GuildID, payload.GPAmount)
 	return nil
 }

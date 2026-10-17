@@ -26,6 +26,9 @@ func (h *guildMqNoticeChanged) Handle(ctx actor.Context, raw json.RawMessage) er
 	if !ok {
 		return nil
 	}
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, gs.systems.Get[*game.GuildSystem]().BroadcastNoticeChanged)
+	if !gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB)) {
+		return nil
+	}
+	gs.systems.Get[*game.GuildSystem]().BroadcastNoticeChanged(evt.GuildID)
 	return nil
 }

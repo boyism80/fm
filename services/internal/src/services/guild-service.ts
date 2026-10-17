@@ -253,6 +253,28 @@ export class GuildService {
         });
     }
 
+    async guildSnapshot(worldId: number, guildId: number): Promise<string | null> {
+        const loaded = await this.getGuild(worldId, guildId);
+        if (!loaded.found || !loaded.guild) {
+            return null;
+        }
+        const guildPb = await this.guildToPb(worldId, loaded.guild, loaded.members ?? []);
+        return Buffer.from(Guild.encode(guildPb).finish()).toString("base64");
+    }
+
+    private async publishGuildChange(
+        eventType: string,
+        worldId: number,
+        guildId: number,
+        extraPayload: Record<string, unknown> = {}
+    ) {
+        const guildPb = await this.guildSnapshot(worldId, guildId);
+        if (guildPb == null) {
+            return;
+        }
+        await this.publishToGuildRoutes(eventType, worldId, guildId, { ...extraPayload, guild_pb: guildPb });
+    }
+
     private async rollbackCreateGuild(worldId: number, guildId: number, leaderCharacterId: number) {
         await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
             await this.guildMemberRepo.deleteAllForGuild(worldId, guildId, { txClient: dataTx });
@@ -394,7 +416,7 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, leaderCharacterId);
 
-        await this.publishToGuildRoutes(EVT.CREATED, worldId, guildId, {
+        await this.publishGuildChange(EVT.CREATED, worldId, guildId, {
             leader_character_id: leaderCharacterId,
             guild_name: guildName,
         });
@@ -512,7 +534,7 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
 
-        await this.publishToGuildRoutes(EVT.MEMBER_JOINED, worldId, guildId, {
+        await this.publishGuildChange(EVT.MEMBER_JOINED, worldId, guildId, {
             character_id: characterId,
         });
 
@@ -594,7 +616,7 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
 
-        await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, {
+        await this.publishGuildChange(EVT.MEMBER_LEFT, worldId, result.guildId, {
             character_id: characterId,
         });
 
@@ -716,7 +738,7 @@ export class GuildService {
         await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, targetCharacterId);
 
-        await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, {
+        await this.publishGuildChange(EVT.MEMBER_LEFT, worldId, result.guildId, {
             character_id: targetCharacterId,
             expelled: true,
         });
@@ -799,7 +821,7 @@ export class GuildService {
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.RANK_TITLES_CHANGED, worldId, result.guildId, {});
+        await this.publishGuildChange(EVT.RANK_TITLES_CHANGED, worldId, result.guildId, {});
 
         return { ok: true, guildId: result.guildId };
     }
@@ -914,7 +936,7 @@ export class GuildService {
         await this.guildRepo.invalidateCache(worldId, result.guildId);
         await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
 
-        await this.publishToGuildRoutes(EVT.MEMBER_RANK_CHANGED, worldId, result.guildId, {
+        await this.publishGuildChange(EVT.MEMBER_RANK_CHANGED, worldId, result.guildId, {
             character_id: targetCharacterId,
         });
 
@@ -1015,7 +1037,7 @@ export class GuildService {
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.EMBLEM_CHANGED, worldId, result.guildId, {});
+        await this.publishGuildChange(EVT.EMBLEM_CHANGED, worldId, result.guildId, {});
 
         return { ok: true, guildId: result.guildId };
     }
@@ -1091,7 +1113,7 @@ export class GuildService {
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.NOTICE_CHANGED, worldId, result.guildId, {});
+        await this.publishGuildChange(EVT.NOTICE_CHANGED, worldId, result.guildId, {});
 
         return { ok: true, guildId: result.guildId };
     }
@@ -1183,7 +1205,7 @@ export class GuildService {
 
         await this.guildRepo.invalidateCache(worldId, result.guildId);
 
-        await this.publishToGuildRoutes(EVT.CAPACITY_CHANGED, worldId, result.guildId, {
+        await this.publishGuildChange(EVT.CAPACITY_CHANGED, worldId, result.guildId, {
             capacity: result.capacity,
             gp: result.gp,
             gp_amount: extendedCap ? -GUILD_CAPACITY_EXTENDED_GP_COST : 0,
@@ -1252,7 +1274,7 @@ export class GuildService {
 
         await this.guildRepo.invalidateCache(worldId, guildId);
 
-        await this.publishToGuildRoutes(EVT.GP_CHANGED, worldId, guildId, {
+        await this.publishGuildChange(EVT.GP_CHANGED, worldId, guildId, {
             gp: result.gp,
             amount: result.changed,
         });
@@ -1421,9 +1443,11 @@ export class GuildService {
             return;
         }
 
+        const channelIndex = online ? ((await this.sessionRepo.findChannel(worldId, characterId)) ?? -2) : -2;
         await this.publishToGuildRoutes(EVT.MEMBER_ONLINE_CHANGED, worldId, guildId, {
             character_id: characterId,
             online,
+            channel_index: channelIndex,
         });
     }
 
@@ -1488,7 +1512,7 @@ export class GuildService {
             guildId: guild.guildId,
             name: guild.name,
             leaderCharacterId: guild.leaderCharacterId,
-            updatedAtUnixMs: guild.updatedAt?.getTime() ?? 0,
+            revision: guild.revision ?? 0,
             gp: guild.gp,
             capacity: guild.capacity,
             notice: guild.notice,

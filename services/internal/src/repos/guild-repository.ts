@@ -13,7 +13,7 @@ import {
 import { RequestRepository } from "./request-repository";
 
 const SELECT_COLS = `world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles,
-  alliance_id, disbanded_at, created_at, updated_at`;
+  alliance_id, disbanded_at, created_at, updated_at, revision`;
 
 export type { GuildModel };
 
@@ -73,8 +73,8 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
 
     override onUpsert(row: GuildRow): RepositoryQuery {
         return {
-            text: `INSERT INTO guilds (world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles, alliance_id, disbanded_at, created_at, updated_at)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,NOW(),clock_timestamp())
+            text: `INSERT INTO guilds (world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles, alliance_id, disbanded_at, created_at, updated_at, revision)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,NOW(),clock_timestamp(),1)
                    ON CONFLICT (world_id, guild_id) DO UPDATE
                    SET name = EXCLUDED.name,
                        leader_character_id = EXCLUDED.leader_character_id,
@@ -85,7 +85,8 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
                        rank_titles = EXCLUDED.rank_titles,
                        alliance_id = EXCLUDED.alliance_id,
                        disbanded_at = EXCLUDED.disbanded_at,
-                       updated_at = clock_timestamp()
+                       updated_at = clock_timestamp(),
+                       revision = guilds.revision + 1
                    RETURNING ${SELECT_COLS}`,
             values: [
                 row.world_id,
@@ -133,6 +134,7 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            revision: Number(row.revision ?? 0),
         };
     }
 

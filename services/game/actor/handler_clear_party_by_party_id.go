@@ -23,7 +23,5 @@ func (h *ClearPartyByPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor
 	if ch == nil {
 		return
 	}
-	if cur := ch.Party().ID(); cur != nil && *cur == msg.PartyID {
-		ch.Party().SetID(nil)
-	}
+	ch.Party().Leave(msg.PartyID, msg.Revision)
 }

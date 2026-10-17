@@ -26,30 +26,33 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 	if !ok {
 		return nil
 	}
-	prevParty := pc.Get(evt.PartyID)
-	pc.UpdateAsync(ctx, evt).Do(func() error {
-		if raw == nil {
-			return nil
-		}
-		var extra struct {
-			CharacterID          uint32 `json:"character_id"`
-			ExpelledByCharacter  uint32 `json:"expelled_by_character_id"`
-			LeaderChanged        bool   `json:"leader_changed"`
-			NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
-		}
-		if err := json.Unmarshal(raw, &extra); err != nil {
-			return nil
-		}
-		h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, extra.CharacterID, &game.ClearPartyByPartyID{
-			CharacterID: extra.CharacterID,
-			PartyID:     evt.PartyID,
-		})
-		party := pc.Get(evt.PartyID)
-		pc.BroadcastMemberLeft(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
-		if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {
-			pc.BroadcastLeaderChanged(party, extra.NewLeaderCharacterID, true)
-		}
+	var extra struct {
+		CharacterID          uint32 `json:"character_id"`
+		ExpelledByCharacter  uint32 `json:"expelled_by_character_id"`
+		LeaderChanged        bool   `json:"leader_changed"`
+		NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
+	}
+	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
+	}
+	partyPb := decodePartySnapshot(evt.PartyPB)
+	if partyPb == nil {
+		return nil
+	}
+	h.gs.systems.Get[*game.DispatchSystem]().SendToCharacter(nil, extra.CharacterID, &game.ClearPartyByPartyID{
+		CharacterID: extra.CharacterID,
+		PartyID:     evt.PartyID,
+		Revision:    partyPb.GetRevision(),
 	})
+
+	prevParty := pc.Get(evt.PartyID)
+	if !pc.Update(partyPb) {
+		return nil
+	}
+	party := pc.Get(evt.PartyID)
+	pc.BroadcastMemberLeft(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
+	if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {
+		pc.BroadcastLeaderChanged(party, extra.NewLeaderCharacterID, true)
+	}
 	return nil
 }

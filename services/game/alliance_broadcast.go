@@ -2,8 +2,6 @@ package game
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	gameconst "github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -18,40 +16,22 @@ func (s *AllianceSystem) BroadcastCreate(alliancePb *internal.Alliance) {
 		return
 	}
 	guilds := s.guildInfos(alliancePb)
-	membershipGuilds := AllianceMembershipChangeGuildsFromProto(alliancePb)
-	if len(membershipGuilds) == 0 {
-		membershipGuilds = s.membershipGuilds(alliancePb)
-	}
-	for _, memberID := range s.recipientIDs(alliancePb) {
+	membershipGuilds := s.membershipGuilds(alliancePb)
+	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		s.callOnlineMember(memberID, func(ch *Character) {
 			ch.listener.OnAllianceCreate(ch, info, guilds, membershipGuilds)
 		})
-	}
+	})
 }
 
 func (s *AllianceSystem) guildInfos(alliancePb *internal.Alliance) []*dto.GuildInfo {
-	if guilds := AllianceCreateGuildsFromProto(alliancePb); len(guilds) > 0 {
-		return guilds
-	}
-	if s.gw == nil || alliancePb == nil {
-		return nil
-	}
-	allianceID := alliancePb.GetAllianceId()
 	var out []*dto.GuildInfo
 	for _, guildID := range alliancePb.GetGuildIds() {
 		ent := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
 		if ent == nil {
 			continue
 		}
-		pb := ent.BuildRPC()
-		if pb == nil {
-			continue
-		}
-		if pb.AllianceId == nil {
-			id := allianceID
-			pb.AllianceId = &id
-		}
-		if info := GuildInfoFromProto(pb); info != nil {
+		if info := GuildInfoFromProto(ent.BuildRPC()); info != nil {
 			out = append(out, info)
 		}
 	}
@@ -80,55 +60,13 @@ func (s *AllianceSystem) membershipGuilds(alliancePb *internal.Alliance) []dto.A
 	return out
 }
 
-func (s *AllianceSystem) recipientIDs(alliancePb *internal.Alliance) []uint32 {
-	if alliancePb == nil {
-		return nil
-	}
-	seen := make(map[uint32]struct{})
-	var ids []uint32
-	add := func(characterID uint32) {
-		if _, ok := seen[characterID]; ok {
-			return
-		}
-		seen[characterID] = struct{}{}
-		ids = append(ids, characterID)
-	}
-	for _, g := range alliancePb.GetGuilds() {
-		if g == nil {
-			continue
-		}
-		for _, m := range g.GetMembers() {
-			if m != nil {
-				add(m.GetCharacterId())
-			}
-		}
-	}
-	if len(ids) > 0 {
-		return ids
-	}
-	if s.gw == nil {
-		return ids
-	}
-	for _, guildID := range alliancePb.GetGuildIds() {
-		ent := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
-		if ent == nil {
-			continue
-		}
-		for _, m := range ent.GetMembers() {
-			if m != nil {
-				add(m.GetCharacterId())
-			}
-		}
-	}
-	return ids
-}
-
 func (s *AllianceSystem) forEachOnlineAllianceMember(alliancePb *internal.Alliance, fn func(memberID uint32)) {
 	if s.gw == nil || alliancePb == nil || fn == nil {
 		return
 	}
 	seen := make(map[uint32]struct{})
-	for _, g := range alliancePb.GetGuilds() {
+	for _, guildID := range alliancePb.GetGuildIds() {
+		g := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
 		if g == nil {
 			continue
 		}
@@ -258,7 +196,8 @@ func (s *AllianceSystem) allianceCharacterName(alliancePb *internal.Alliance, ch
 	if alliancePb == nil {
 		return ""
 	}
-	for _, g := range alliancePb.GetGuilds() {
+	for _, guildID := range alliancePb.GetGuildIds() {
+		g := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
 		if g == nil {
 			continue
 		}
@@ -278,22 +217,6 @@ func (s *AllianceSystem) BroadcastMemberRankChanged(alliancePb *internal.Allianc
 	info := AllianceInfoFromProto(alliancePb)
 	if info == nil {
 		return
-	}
-	if allianceRank == 0 {
-		for _, g := range alliancePb.GetGuilds() {
-			if g == nil {
-				continue
-			}
-			for _, m := range g.GetMembers() {
-				if m != nil && m.GetCharacterId() == characterID && m.AllianceRank != nil {
-					allianceRank = m.GetAllianceRank()
-					break
-				}
-			}
-			if allianceRank != 0 {
-				break
-			}
-		}
 	}
 	if allianceRank == 0 {
 		return
@@ -332,7 +255,8 @@ func (s *AllianceSystem) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 		})
 	}
 
-	for _, g := range alliancePb.GetGuilds() {
+	for _, guildID := range alliancePb.GetGuildIds() {
+		g := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
 		if g == nil {
 			continue
 		}
@@ -353,16 +277,7 @@ func (s *AllianceSystem) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 }
 
 func (s *AllianceSystem) BroadcastGuildLeft(alliancePb *internal.Alliance, removedGuildPb *internal.Guild, expelled bool) {
-	if s.gw == nil {
-		return
-	}
-	if alliancePb != nil {
-		s.Update(alliancePb)
-	}
-	if removedGuildPb != nil {
-		s.gw.Systems().Get[*GuildSystem]().Update(removedGuildPb)
-	}
-	if alliancePb == nil || removedGuildPb == nil {
+	if s.gw == nil || alliancePb == nil || removedGuildPb == nil {
 		return
 	}
 	info := AllianceInfoFromProto(alliancePb)
@@ -387,7 +302,8 @@ func (s *AllianceSystem) BroadcastGuildLeft(alliancePb *internal.Alliance, remov
 		})
 	}
 
-	for _, g := range alliancePb.GetGuilds() {
+	for _, guildID := range alliancePb.GetGuildIds() {
+		g := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
 		if g == nil {
 			continue
 		}
@@ -406,15 +322,14 @@ func (s *AllianceSystem) BroadcastGuildLeft(alliancePb *internal.Alliance, remov
 	}
 }
 
-func (s *AllianceSystem) DisbandAsync(ctx actor.Context, allianceID uint32, guildIDs []uint32) *async.Task {
-	if s.gw == nil {
-		return async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+func (s *AllianceSystem) Disband(allianceID uint32, guildIDs []uint32, guildPbs []*internal.Guild) {
+	if s.Get(allianceID) != nil {
+		for _, g := range guildPbs {
+			s.gw.Systems().Get[*GuildSystem]().store(g)
+		}
 	}
-	return s.gw.Systems().Get[*GuildSystem]().RefreshAsync(ctx, guildIDs).Do(func() error {
-		s.Remove(allianceID)
-		s.broadcastDisband(allianceID, guildIDs)
-		return nil
-	})
+	s.Remove(allianceID)
+	s.broadcastDisband(allianceID, guildIDs)
 }
 
 func (s *AllianceSystem) broadcastDisband(allianceID uint32, guildIDs []uint32) {

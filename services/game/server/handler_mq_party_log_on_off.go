@@ -1,13 +1,10 @@
 package server
 
 import (
-	"encoding/base64"
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game"
-	"google.golang.org/protobuf/proto"
 )
 
 type partyMqLogOnOff struct{ gs *GameServer }
@@ -29,45 +26,11 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, raw json.RawMessage) error {
 	if !ok {
 		return nil
 	}
-	if raw != nil {
-		var payload struct {
-			PartyPB     string `json:"party_pb"`
-			CharacterID uint32 `json:"character_id"`
-		}
-		if err := json.Unmarshal(raw, &payload); err == nil && payload.PartyPB != "" && pc.Get(evt.PartyID) != nil {
-			wire, err := base64.StdEncoding.DecodeString(payload.PartyPB)
-			if err == nil {
-				var partyPb internal.Party
-				if err := proto.Unmarshal(wire, &partyPb); err == nil {
-					stored, err := pc.StoreSnapshot(evt, &partyPb, false)
-					if err != nil {
-						return nil
-					}
-					if stored {
-						if party := pc.Get(evt.PartyID); party != nil {
-							pc.BroadcastLogOnOff(party)
-						}
-					}
-					return nil
-				}
-			}
-		}
-	}
-	pc.UpdateAsync(ctx, evt).Do(func() error {
-		if raw == nil {
-			return nil
-		}
-		var extra struct {
-			CharacterID uint32 `json:"character_id"`
-		}
-		if err := json.Unmarshal(raw, &extra); err != nil {
-			return nil
-		}
-		party := pc.Get(evt.PartyID)
-		if party != nil {
-			pc.BroadcastLogOnOff(party)
-		}
+	if !pc.Update(decodePartySnapshot(evt.PartyPB)) {
 		return nil
-	})
+	}
+	if party := pc.Get(evt.PartyID); party != nil {
+		pc.BroadcastLogOnOff(party)
+	}
 	return nil
 }

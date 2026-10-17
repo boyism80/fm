@@ -32,7 +32,9 @@ func (h *allianceMqCapacityChanged) Handle(_ actor.Context, raw json.RawMessage)
 		log.Printf("alliance consumer: capacity_changed alliance_id=%d missing alliance_pb", evt.AllianceID)
 		return nil
 	}
-	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	if !gs.systems.Get[*game.AllianceSystem]().Update(alliancePb) {
+		return nil
+	}
 	gs.systems.Get[*game.AllianceSystem]().BroadcastInfoUpdate(alliancePb)
 	return nil
 }

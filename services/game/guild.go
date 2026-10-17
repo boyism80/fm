@@ -31,7 +31,7 @@ type Guild struct {
 	guildID           uint32
 	name              string
 	leaderCharacterID uint32
-	updatedAt         time.Time
+	revision          uint64
 	gp                uint32
 	capacity          uint32
 	notice            string
@@ -228,7 +228,7 @@ func (g *Guild) Clone() *Guild {
 		guildID:           g.guildID,
 		name:              g.name,
 		leaderCharacterID: g.leaderCharacterID,
-		updatedAt:         g.updatedAt,
+		revision:          g.revision,
 		gp:                g.gp,
 		capacity:          g.capacity,
 		notice:            g.notice,
@@ -338,7 +338,7 @@ func GuildFromProto(gw GameWorld, pb *internal.Guild) *Guild {
 		guildID:           pb.GetGuildId(),
 		name:              pb.GetName(),
 		leaderCharacterID: pb.GetLeaderCharacterId(),
-		updatedAt:         time.UnixMilli(pb.GetUpdatedAtUnixMs()),
+		revision:          pb.GetRevision(),
 		gp:                pb.GetGp(),
 		capacity:          pb.GetCapacity(),
 		notice:            pb.GetNotice(),
@@ -373,7 +373,7 @@ func (g *Guild) BuildRPC() *internal.Guild {
 		GuildId:           g.guildID,
 		Name:              g.name,
 		LeaderCharacterId: g.leaderCharacterID,
-		UpdatedAtUnixMs:   g.updatedAt.UnixMilli(),
+		Revision:          g.revision,
 		Gp:                g.gp,
 		Capacity:          g.capacity,
 		Notice:            g.notice,

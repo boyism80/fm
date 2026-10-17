@@ -40,7 +40,9 @@ func (h *allianceMqLeaderChanged) Handle(_ actor.Context, raw json.RawMessage) e
 		log.Printf("alliance consumer: leader_changed alliance_id=%d missing leader ids", evt.AllianceID)
 		return nil
 	}
-	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	if !gs.systems.Get[*game.AllianceSystem]().Update(alliancePb) {
+		return nil
+	}
 	gs.systems.Get[*game.AllianceSystem]().BroadcastLeaderChanged(alliancePb, extra.OldLeaderCharacterID, extra.NewLeaderCharacterID)
 	return nil
 }

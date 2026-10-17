@@ -201,13 +201,13 @@ export class AllianceService {
         });
     }
 
-    private async allianceToPb(worldId: number, alliance: AllianceModel, fallbackGuildIds?: number[]): Promise<AllianceMessage> {
-        let guildIds = alliance.guildIds;
-        if (guildIds.length === 0 && fallbackGuildIds != null && fallbackGuildIds.length > 0) {
-            guildIds = fallbackGuildIds;
-        }
+    private async allianceToPb(
+        worldId: number,
+        alliance: AllianceModel,
+        embeddedGuildIds: number[] = alliance.guildIds
+    ): Promise<AllianceMessage> {
         const guilds: GuildMessage[] = [];
-        for (const guildId of guildIds) {
+        for (const guildId of embeddedGuildIds) {
             const loaded = await this.guildService.getGuild(worldId, guildId);
             if (loaded.guild) {
                 guilds.push(await this.guildService.guildToPb(worldId, loaded.guild, loaded.members ?? []));
@@ -218,11 +218,11 @@ export class AllianceService {
             allianceId: alliance.allianceId,
             name: alliance.name,
             leaderCharacterId: alliance.leaderCharacterId,
-            updatedAtUnixMs: alliance.updatedAt?.getTime() ?? 0,
+            revision: alliance.revision ?? 0,
             capacity: alliance.capacity,
             notice: alliance.notice,
             rankTitles: [...alliance.rankTitles],
-            guildIds,
+            guildIds: alliance.guildIds,
             guilds,
         };
     }
@@ -452,7 +452,7 @@ export class AllianceService {
         await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
         await this.guildMemberRepo.invalidateCache(worldId, String(partnerGuildId));
 
-        const allianceMessage = await this.allianceToPb(worldId, savedAlliance, initialGuildIds);
+        const allianceMessage = await this.allianceToPb(worldId, savedAlliance);
         const wire = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(ALLIANCE_EVT.CREATED, worldId, createdAllianceId, {
             alliance_name: allianceName,
@@ -545,9 +545,17 @@ export class AllianceService {
             await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
+        const guildPbs: string[] = [];
+        for (const gid of result.guildIds) {
+            const guildPb = await this.guildService.guildSnapshot(worldId, gid);
+            if (guildPb != null) {
+                guildPbs.push(guildPb);
+            }
+        }
         await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, {
             guild_ids: result.guildIds,
             member_character_ids: result.memberCharacterIds,
+            guild_pbs: guildPbs,
         });
         return result;
     }
@@ -611,7 +619,7 @@ export class AllianceService {
             await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
+        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const removedGuildLoaded = await this.guildService.getGuild(worldId, guildId);
         const removedGuildMessage =
             removedGuildLoaded.guild != null
@@ -919,7 +927,7 @@ export class AllianceService {
 
         await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
 
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
+        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(
             ALLIANCE_EVT.CAPACITY_CHANGED,
@@ -1008,7 +1016,7 @@ export class AllianceService {
 
         await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
 
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
+        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(
             ALLIANCE_EVT.RANK_TITLES_CHANGED,
@@ -1079,7 +1087,7 @@ export class AllianceService {
 
         await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
 
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
+        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(
             ALLIANCE_EVT.NOTICE_CHANGED,
@@ -1268,7 +1276,10 @@ export class AllianceService {
             await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
+        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, [
+            txResult.oldLeaderGuildId,
+            txResult.newLeaderGuildId,
+        ]);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(
             ALLIANCE_EVT.LEADER_CHANGED,
@@ -1409,7 +1420,11 @@ export class AllianceService {
             await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
+        const allianceMessage = await this.allianceToPb(
+            worldId,
+            txResult.savedAlliance,
+            txResult.targetGuildId != null ? [txResult.targetGuildId] : []
+        );
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(
             ALLIANCE_EVT.MEMBER_RANK_CHANGED,

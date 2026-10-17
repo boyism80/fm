@@ -1,8 +1,6 @@
 package game
 
 import (
-	"time"
-
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
@@ -21,7 +19,7 @@ func PartyFromProto(gw GameWorld, pb *internal.Party) *Party {
 		worldID:           pb.GetWorldId(),
 		partyID:           pb.GetPartyId(),
 		leaderCharacterID: pb.GetLeaderCharacterId(),
-		updatedAt:         time.UnixMilli(pb.GetUpdatedAtUnixMs()),
+		revision:          pb.GetRevision(),
 		state:             pb.GetState(),
 		members:           members,
 	}
@@ -41,7 +39,7 @@ func (p *Party) BuildRPC() *internal.Party {
 		WorldId:           p.worldID,
 		PartyId:           p.partyID,
 		LeaderCharacterId: p.leaderCharacterID,
-		UpdatedAtUnixMs:   p.updatedAt.UnixMilli(),
+		Revision:          p.revision,
 		State:             p.state,
 		Members:           members,
 	}

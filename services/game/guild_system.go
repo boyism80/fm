@@ -1,15 +1,10 @@
 package game
 
 import (
-	"context"
-	"log"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
@@ -19,6 +14,7 @@ type GuildEventEnvelope struct {
 	WorldID    uint32 `json:"world_id"`
 	GuildID    uint32 `json:"guild_id"`
 	OccurredAt string `json:"occurred_at"`
+	GuildPB    string `json:"guild_pb"`
 }
 
 type GuildSystem struct {
@@ -39,62 +35,62 @@ func NewGuildSystem(gw GameWorld) *GuildSystem {
 func (s *GuildSystem) Start() error { return nil }
 func (s *GuildSystem) Stop()        {}
 
-func (s *GuildSystem) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope) *async.Task {
-	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
-	if s == nil {
-		return p
+func (s *GuildSystem) Update(guildPb *internal.Guild) bool {
+	if guildPb == nil {
+		return false
 	}
-	guildID := evt.GuildID
-	p.OnError(func(err error) {
-		log.Printf("guild consumer: type=%s guild_id=%d: %v", evt.EventType, guildID, err)
-	})
-	p.ThenRPC(
-		func(c context.Context) (*internal.GetGuildReply, error) {
-			return s.gw.Systems().Get[*InternalSystem]().client.GetGuild(c, &internal.GetGuildRequest{
-				WorldId: s.worldID,
-				GuildId: guildID,
-			})
-		},
-		func(reply *internal.GetGuildReply) error {
-			if reply == nil || !reply.GetFound() || reply.GetGuild() == nil {
-				s.mu.Lock()
-				delete(s.guilds, guildID)
-				s.mu.Unlock()
-				return nil
+	if s.Get(guildPb.GetGuildId()) == nil {
+		found := false
+		for _, m := range guildPb.GetMembers() {
+			if s.gw.Systems().Get[*DispatchSystem]().Exists(m.GetCharacterId()) {
+				found = true
+				break
 			}
-			s.Update(reply.GetGuild())
-			return nil
-		},
-	)
-	return p
+		}
+		if !found {
+			return false
+		}
+	}
+	return s.store(guildPb)
 }
 
-func (s *GuildSystem) Update(guildPb *internal.Guild) {
-	if s == nil || guildPb == nil {
-		return
-	}
-	ent := GuildFromProto(s.gw, guildPb)
-	if ent == nil {
-		return
-	}
-	stored := ent.Clone()
+func (s *GuildSystem) store(guildPb *internal.Guild) bool {
+	stored := GuildFromProto(s.gw, guildPb)
 	if stored == nil {
-		return
+		return false
 	}
-	guildID := stored.guildID
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if prev := s.guilds[guildID]; prev != nil {
-		if stored.updatedAt.Before(prev.updatedAt) {
-			return
+	if prev := s.guilds[stored.guildID]; prev != nil {
+		if stored.revision < prev.revision {
+			return false
 		}
 		if _, inAlliance := stored.GetAllianceID(); !inAlliance {
 			stored.allianceInvites = prev.CloneAllianceInvites()
 		}
 	}
-	s.guilds[guildID] = stored
+	s.guilds[stored.guildID] = stored
 	if _, inAlliance := stored.GetAllianceID(); inAlliance {
 		stored.ClearAllianceInvites()
+	}
+	return true
+}
+
+func (s *GuildSystem) Remove(guildID uint32) {
+	s.mu.Lock()
+	delete(s.guilds, guildID)
+	s.mu.Unlock()
+}
+
+func (s *GuildSystem) SetMemberChannel(guildID, characterID uint32, channelIndex int32) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	g := s.guilds[guildID]
+	if g == nil {
+		return
+	}
+	if m := g.FindMember(characterID); m != nil {
+		m.channelIndex = &channelIndex
 	}
 }
 
@@ -188,30 +184,4 @@ func (s *GuildSystem) GuildIDForCharacter(characterID uint32) (uint32, bool) {
 		}
 	}
 	return 0, false
-}
-
-func (s *GuildSystem) RefreshAsync(ctx actor.Context, guildIDs []uint32) *async.Task {
-	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
-	if s == nil {
-		return promise
-	}
-	worldID := s.worldID
-	for _, guildID := range guildIDs {
-		if guildID == 0 {
-			continue
-		}
-		gid := guildID
-		promise.ThenRPC(func(c context.Context) (*internal.GetGuildReply, error) {
-			return s.gw.Systems().Get[*InternalSystem]().client.GetGuild(c, &internal.GetGuildRequest{
-				WorldId: worldID,
-				GuildId: gid,
-			})
-		}, func(reply *internal.GetGuildReply) error {
-			if reply != nil && reply.GetFound() && reply.GetGuild() != nil {
-				s.Update(reply.GetGuild())
-			}
-			return nil
-		})
-	}
-	return promise
 }

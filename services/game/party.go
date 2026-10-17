@@ -1,8 +1,6 @@
 package game
 
 import (
-	"time"
-
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
@@ -11,7 +9,7 @@ type Party struct {
 	worldID           uint32
 	partyID           uint32
 	leaderCharacterID uint32
-	updatedAt         time.Time
+	revision          uint64
 	state             internal.PartyState
 	members           []*PartyMember
 }
@@ -31,7 +29,7 @@ func (p *Party) Clone() *Party {
 		worldID:           p.worldID,
 		partyID:           p.partyID,
 		leaderCharacterID: p.leaderCharacterID,
-		updatedAt:         p.updatedAt,
+		revision:          p.revision,
 		state:             p.state,
 		members:           make([]*PartyMember, 0, len(p.members)),
 	}

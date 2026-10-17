@@ -32,9 +32,9 @@ func (h *guildMqMemberRankChanged) Handle(ctx actor.Context, raw json.RawMessage
 	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
 	}
-	targetID := extra.CharacterID
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
-		gs.systems.Get[*game.GuildSystem]().BroadcastMemberRankChanged(guildID, targetID)
-	})
+	if !gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB)) {
+		return nil
+	}
+	gs.systems.Get[*game.GuildSystem]().BroadcastMemberRankChanged(evt.GuildID, extra.CharacterID)
 	return nil
 }

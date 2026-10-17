@@ -32,9 +32,9 @@ func (h *guildMqMemberJoined) Handle(ctx actor.Context, raw json.RawMessage) err
 	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
 	}
-	joinerID := extra.CharacterID
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
-		gs.systems.Get[*game.GuildSystem]().BroadcastMemberJoined(guildID, joinerID)
-	})
+	if !gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB)) {
+		return nil
+	}
+	gs.systems.Get[*game.GuildSystem]().BroadcastMemberJoined(evt.GuildID, extra.CharacterID)
 	return nil
 }

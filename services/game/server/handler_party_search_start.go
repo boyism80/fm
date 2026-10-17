@@ -74,7 +74,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 					return fmt.Errorf("party create failed")
 				}
 				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
-				ch.Party().SetID(reply.PartyId)
+				ch.Party().Join(*reply.PartyId, reply.GetParty().GetRevision())
 				ch.Listener().OnPartyCreated(ch, *reply.PartyId)
 				ch.Party().SetSearch(cfg)
 				return nil

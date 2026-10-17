@@ -61,7 +61,9 @@ func (h *allianceMqMemberRankChanged) Handle(_ actor.Context, raw json.RawMessag
 		log.Printf("alliance consumer: member_rank_changed alliance_id=%d missing rank for character=%d", evt.AllianceID, extra.CharacterID)
 		return nil
 	}
-	gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+	if !gs.systems.Get[*game.AllianceSystem]().Update(alliancePb) {
+		return nil
+	}
 	gs.systems.Get[*game.AllianceSystem]().BroadcastMemberRankChanged(alliancePb, extra.CharacterID, allianceRank)
 	return nil
 }

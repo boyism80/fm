@@ -98,12 +98,13 @@ type HandoffCharacter struct {
 type ClearPartyByPartyID struct {
 	CharacterID uint32
 	PartyID     uint32
+	Revision    uint64
 }
 
 type SyncCharacterPartyState struct {
 	CharacterID uint32
-	PartyID     *uint32
-	UpdatedAt   time.Time
+	PartyID     uint32
+	Revision    uint64
 	Clear       bool
 }
 

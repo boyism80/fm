@@ -5,7 +5,7 @@ import type { RepositoryQuery } from "../types/repository-contracts";
 import type { PartyDeleteRow, PartyModel, PartyRow } from "../types/repository-models";
 import { DEFAULT_PARTY_STATE, partyStateFromDb, partyStateToDb } from "../types/party-state";
 
-const SELECT_COLS = "world_id, party_id, leader_character_id, state, disbanded_at, created_at, updated_at";
+const SELECT_COLS = "world_id, party_id, leader_character_id, state, disbanded_at, created_at, updated_at, revision";
 
 export type { PartyModel };
 
@@ -34,13 +34,14 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
 
     override onUpsert(row: PartyRow): RepositoryQuery {
         return {
-            text: `INSERT INTO parties (world_id, party_id, leader_character_id, state, disbanded_at, created_at, updated_at)
-                   VALUES ($1,$2,$3,$4,$5,NOW(),clock_timestamp())
+            text: `INSERT INTO parties (world_id, party_id, leader_character_id, state, disbanded_at, created_at, updated_at, revision)
+                   VALUES ($1,$2,$3,$4,$5,NOW(),clock_timestamp(),1)
                    ON CONFLICT (world_id, party_id) DO UPDATE
                    SET leader_character_id = EXCLUDED.leader_character_id,
                        state = EXCLUDED.state,
                        disbanded_at = EXCLUDED.disbanded_at,
-                       updated_at = clock_timestamp()
+                       updated_at = clock_timestamp(),
+                       revision = parties.revision + 1
                    RETURNING ${SELECT_COLS}`,
             values: [
                 row.world_id,
@@ -75,6 +76,7 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            revision: Number(row.revision ?? 0),
         };
     }
 

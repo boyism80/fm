@@ -34,10 +34,9 @@ func (h *guildMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 		return nil
 	}
 	prevGuild := gs.systems.Get[*game.GuildSystem]().Get(evt.GuildID)
-	leftID := extra.CharacterID
-	expelled := extra.Expelled
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(uint32) {
-		gs.systems.Get[*game.GuildSystem]().BroadcastMemberLeft(prevGuild, leftID, expelled)
-	})
+	if !gs.systems.Get[*game.GuildSystem]().Update(decodeGuildSnapshot(evt.GuildPB)) {
+		return nil
+	}
+	gs.systems.Get[*game.GuildSystem]().BroadcastMemberLeft(prevGuild, extra.CharacterID, extra.Expelled)
 	return nil
 }

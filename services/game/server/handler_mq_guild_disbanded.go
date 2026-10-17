@@ -31,9 +31,7 @@ func (h *guildMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) error 
 		MemberCharacterIDs []uint32 `json:"member_character_ids"`
 	}
 	_ = json.Unmarshal(raw, &extra)
-	memberIDs := extra.MemberCharacterIDs
-	gs.systems.Get[*game.GuildSystem]().SyncGuildEventAsync(ctx, evt, func(uint32) {
-		gs.systems.Get[*game.GuildSystem]().BroadcastDisbanded(prevGuild, memberIDs)
-	})
+	gs.systems.Get[*game.GuildSystem]().Remove(evt.GuildID)
+	gs.systems.Get[*game.GuildSystem]().BroadcastDisbanded(prevGuild, extra.MemberCharacterIDs)
 	return nil
 }

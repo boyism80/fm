@@ -45,11 +45,10 @@ func (h *allianceMqGuildAdded) Handle(ctx actor.Context, raw json.RawMessage) er
 		log.Printf("alliance consumer: guild_added alliance_id=%d guild_id=%d not in alliance_pb", evt.AllianceID, payload.AddedGuildID)
 		return nil
 	}
-	gs.systems.Get[*game.AllianceSystem]().UpdateAsync(ctx, evt).Do(func() error {
-		gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
-		gs.systems.Get[*game.AllianceSystem]().BroadcastGuildAdded(alliancePb, addedGuildPb)
+	if !gs.systems.Get[*game.AllianceSystem]().Update(alliancePb) {
 		return nil
-	})
+	}
+	gs.systems.Get[*game.AllianceSystem]().BroadcastGuildAdded(alliancePb, addedGuildPb)
 	return nil
 }
 
