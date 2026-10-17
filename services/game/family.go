@@ -398,7 +398,9 @@ func (f *Family) settleMove(actx actor.Context, request *UnsettledRequest) {
 func (f *Family) finishMove(actx actor.Context, request *UnsettledRequest, complete bool) {
 	f.owner.gameWorld.Systems().Get[*InternalSystem]().FinishFamilyMoveAsync(actx, f.owner, request.id, complete).Bind(f.owner).Do(func(reply *internal.FamilyReply) error {
 		f.owner.unsettled.Erase(request.id)
-		f.Set(FamilyTreeFromProto(reply.GetFamily()))
+		if family := reply.GetFamily(); family != nil {
+			f.Set(FamilyTreeFromProto(family))
+		}
 		return nil
 	}).OnError(func(err error) {
 		request.inFlight = false
