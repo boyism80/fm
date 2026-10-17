@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
-import { LoginAccountReply_Status } from "../protobuf/generated/fminternal/internal_service";
-import type { InternalContext } from "../context/internal-context";
-import type { AccountRepository } from "../repos/account-repository";
-import type { AccountModel } from "../types/repository-models";
-import type { UnifiedRepository } from "../repos/unified-repository";
+import { LoginAccountReply_Status } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { InternalContext } from "@fm/shared/context/internal-context";
+import type { AccountRepository } from "@fm/shared/repos/account-repository";
+import type { AccountModel } from "@fm/shared/types/repository-models";
+import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import type { DistributedLockService } from "./distributed-lock-service";
 
 const BCRYPT_ROUNDS = 10;

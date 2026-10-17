@@ -5,29 +5,29 @@ import {
     type GuildMember,
     type GuildLogo as GuildLogoMessage,
     type Guild as GuildMessage,
-} from "../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
-import { AppConfiguration } from "../config/app-configuration";
-import { InternalContext } from "../context/internal-context";
-import { UnifiedRepository } from "../repos/unified-repository";
-import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "../repos/guild-repository";
-import { RequestStatus } from "../repos/request-repository";
-import { GuildMemberRepository } from "../repos/guild-member-repository";
-import { GuildBulletinBoardRepository } from "../repos/guild-bulletin-board-repository";
-import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
-import { SessionRepository } from "../repos/session-repository";
-import type { GuildModel } from "../repos/guild-repository";
-import type { GuildMemberModel } from "../repos/guild-member-repository";
+import { AppConfiguration } from "@fm/shared/config/app-configuration";
+import { InternalContext } from "@fm/shared/context/internal-context";
+import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "@fm/shared/repos/guild-repository";
+import { RequestStatus } from "@fm/shared/repos/request-repository";
+import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
+import { GuildBulletinBoardRepository } from "@fm/shared/repos/guild-bulletin-board-repository";
+import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import { SessionRepository } from "@fm/shared/repos/session-repository";
+import type { GuildModel } from "@fm/shared/repos/guild-repository";
+import type { GuildMemberModel } from "@fm/shared/repos/guild-member-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { WzService } from "./wz-service";
-import { redisCacheKey } from "../redis-cache-key";
+import { redisCacheKey } from "@fm/shared/redis-cache-key";
 import {
     DEFAULT_GUILD_LOGO,
     DEFAULT_GUILD_RANK_TITLES,
     type GuildLogo,
     type GuildRankTitles,
-} from "../types/guild-json";
+} from "@fm/shared/types/guild-json";
 
 export type {
     ListGuildBulletinBoardThreadsResult,

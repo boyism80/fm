@@ -1,4 +1,4 @@
-import type { BuddyEntry } from "../protobuf/generated/fminternal/internal_service";
+import type { BuddyEntry } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { BuddyListEntry } from "../services/buddy-service";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";

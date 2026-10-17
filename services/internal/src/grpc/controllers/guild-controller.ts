@@ -1,4 +1,4 @@
-import { AllianceErrorCode, GuildErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import { AllianceErrorCode, GuildErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type {
     AcceptGuildInviteReply,
     AcceptGuildInviteRequest,
@@ -64,7 +64,7 @@ import type {
     GetGuildRequest,
     LeaveGuildReply,
     LeaveGuildRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type {
     AcceptGuildInviteResult,
     ChangeGuildEmblemResult,

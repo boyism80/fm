@@ -1,5 +1,5 @@
-import type { SavedLocation } from "../protobuf/generated/fminternal/internal_service";
-import type { SavedLocationModel } from "../repos/saved-location-repository";
+import type { SavedLocation } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { SavedLocationModel } from "@fm/shared/repos/saved-location-repository";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 

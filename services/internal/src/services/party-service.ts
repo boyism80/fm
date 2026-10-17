@@ -1,4 +1,4 @@
-import { redisPartyKey } from "../redis-party-key";
+import { redisPartyKey } from "@fm/shared/redis-party-key";
 import {
     Party,
     type Party as PartyMessage,
@@ -7,18 +7,18 @@ import {
     PartyErrorCode,
     PartyMemberRole,
     PartyState,
-} from "../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
-import type { PartyModel } from "../repos/party-repository";
-import type { PartyMemberModel } from "../repos/party-member-repository";
-import { AppConfiguration } from "../config/app-configuration";
-import { InternalContext } from "../context/internal-context";
-import { PartyRepository } from "../repos/party-repository";
-import { PartyMemberRepository } from "../repos/party-member-repository";
-import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
-import { CharacterRepository } from "../repos/character-repository";
-import { UnifiedRepository } from "../repos/unified-repository";
-import { SessionRepository } from "../repos/session-repository";
+import type { PartyModel } from "@fm/shared/repos/party-repository";
+import type { PartyMemberModel } from "@fm/shared/repos/party-member-repository";
+import { AppConfiguration } from "@fm/shared/config/app-configuration";
+import { InternalContext } from "@fm/shared/context/internal-context";
+import { PartyRepository } from "@fm/shared/repos/party-repository";
+import { PartyMemberRepository } from "@fm/shared/repos/party-member-repository";
+import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import { CharacterRepository } from "@fm/shared/repos/character-repository";
+import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import { SessionRepository } from "@fm/shared/repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 const messages = { PartyErrorCode };

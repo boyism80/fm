@@ -1,4 +1,4 @@
-import type { InternalContext } from "../context/internal-context";
+import type { InternalContext } from "@fm/shared/context/internal-context";
 
 export class OperationLogService {
     private readonly ctx: InternalContext;

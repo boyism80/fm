@@ -21,15 +21,15 @@ import {
     type PayBackCashItemRequest,
     type RedeemCashCouponReply,
     type RedeemCashCouponRequest,
-} from "../protobuf/generated/fminternal/internal_service";
-import type { AccountRepository } from "../repos/account-repository";
-import { CashTransferKind, type CashBalance, type CashRequestRepository, type CashShopRepository, type CashItemRow, type CashRingRow, type CashTransferRequest } from "../repos/cash-shop-repository";
-import type { CharacterRepository } from "../repos/character-repository";
-import type { StorageRepository } from "../repos/storage-repository";
-import type { InventoryRepository, InventoryModel } from "../repos/inventory-repository";
-import type { SessionRepository } from "../repos/session-repository";
-import type { UnifiedRepository } from "../repos/unified-repository";
-import type { RepositoryTxOptions } from "../types/repository-contracts";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { AccountRepository } from "@fm/shared/repos/account-repository";
+import { CashTransferKind, type CashBalance, type CashRequestRepository, type CashShopRepository, type CashItemRow, type CashRingRow, type CashTransferRequest } from "@fm/shared/repos/cash-shop-repository";
+import type { CharacterRepository } from "@fm/shared/repos/character-repository";
+import type { StorageRepository } from "@fm/shared/repos/storage-repository";
+import type { InventoryRepository, InventoryModel } from "@fm/shared/repos/inventory-repository";
+import type { SessionRepository } from "@fm/shared/repos/session-repository";
+import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import type { RepositoryTxOptions } from "@fm/shared/types/repository-contracts";
 import type { RabbitMQService } from "./rabbitmq-service";
 import type { SocialService } from "./social-service";
 import type { DistributedLockService } from "./distributed-lock-service";

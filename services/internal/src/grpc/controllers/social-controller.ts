@@ -15,7 +15,7 @@ import type {
     UseFamilyFeatureRequest,
     WhisperReply,
     WhisperRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { FamilyService } from "../../services/family-service";
 import type { SocialService } from "../../services/social-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";

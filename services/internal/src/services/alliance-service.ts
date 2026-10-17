@@ -5,19 +5,19 @@ import {
     GuildMemberRank,
     type Alliance as AllianceMessage,
     type Guild as GuildMessage,
-} from "../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
-import { AppConfiguration } from "../config/app-configuration";
-import { InternalContext } from "../context/internal-context";
-import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "../repos/alliance-repository";
-import { RequestStatus } from "../repos/request-repository";
-import { GuildRepository } from "../repos/guild-repository";
-import { GuildMemberRepository } from "../repos/guild-member-repository";
-import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
-import type { AllianceModel } from "../repos/alliance-repository";
+import { AppConfiguration } from "@fm/shared/config/app-configuration";
+import { InternalContext } from "@fm/shared/context/internal-context";
+import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "@fm/shared/repos/alliance-repository";
+import { RequestStatus } from "@fm/shared/repos/request-repository";
+import { GuildRepository } from "@fm/shared/repos/guild-repository";
+import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
+import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import type { AllianceModel } from "@fm/shared/repos/alliance-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
-import { DistributedLockGuard, DistributedLockMultiGuard } from "../system/distributed-lock";
+import { DistributedLockGuard, DistributedLockMultiGuard } from "@fm/shared/system/distributed-lock";
 import { GuildService } from "./guild-service";
 import { WzService } from "./wz-service";
 import {
@@ -25,7 +25,7 @@ import {
     DEFAULT_ALLIANCE_CAPACITY,
     DEFAULT_ALLIANCE_RANK_TITLES,
     type AllianceRankTitles,
-} from "../types/alliance-json";
+} from "@fm/shared/types/alliance-json";
 
 const messages = { AllianceErrorCode };
 

@@ -26,13 +26,13 @@ import type {
     SetCashWishlistRequest,
     TakeOutCashItemReply,
     TakeOutCashItemRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 import { grpcMapper } from "../mappers";
 import { INVENTORY_MODEL, INVENTORY_PROTO } from "../inventory-proto";
-import type { Inventory } from "../../protobuf/generated/fminternal/internal_service";
-import type { InventoryModel } from "../../repos/inventory-repository";
+import type { Inventory } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
 
 @Controller("cashShopController")
 export class CashShopGrpcController {

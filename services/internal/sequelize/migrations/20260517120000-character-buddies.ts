@@ -1,4 +1,4 @@
-import { DEFAULT_BUDDY_CAPACITY } from "../../src/buddy-defaults";
+import { DEFAULT_BUDDY_CAPACITY } from "@fm/shared/buddy-defaults";
 import type { MigrationModule } from "../../src/sequelize-migration";
 
 const migration: MigrationModule = {

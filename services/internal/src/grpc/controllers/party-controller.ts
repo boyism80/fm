@@ -1,4 +1,4 @@
-import { PartyErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import { PartyErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type {
     DenyPartyResult,
     ExpelPartyResult,
@@ -27,7 +27,7 @@ import type {
     LeavePartyRequest,
     UpdatePartyMemberReply,
     UpdatePartyMemberRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 

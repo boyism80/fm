@@ -7,7 +7,7 @@ import {
     type RemoveBuddyRequest,
     type RequestBuddyReply,
     type RequestBuddyRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { BUDDY_ENTRY, BUDDY_LIST_ENTRY } from "../buddy-proto";
 import { grpcMapper } from "../mappers";
 import type { BuddyListEntry, BuddyService } from "../../services/buddy-service";

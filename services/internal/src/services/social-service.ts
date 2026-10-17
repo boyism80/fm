@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
-import type { InternalContext } from "../context/internal-context";
-import type { CharacterRepository } from "../repos/character-repository";
-import type { NoteRemoveRequestRepository } from "../repos/note-request-repository";
-import { RequestStatus } from "../repos/request-repository";
-import type { UnifiedRepository } from "../repos/unified-repository";
-import type { SessionRepository } from "../repos/session-repository";
+import type { InternalContext } from "@fm/shared/context/internal-context";
+import type { CharacterRepository } from "@fm/shared/repos/character-repository";
+import type { NoteRemoveRequestRepository } from "@fm/shared/repos/note-request-repository";
+import { RequestStatus } from "@fm/shared/repos/request-repository";
+import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import type { SessionRepository } from "@fm/shared/repos/session-repository";
 import type { DistributedLockService } from "./distributed-lock-service";
 import type { RabbitMQService } from "./rabbitmq-service";
-import type { CharacterModel } from "../types/repository-models";
+import type { CharacterModel } from "@fm/shared/types/repository-models";
 import type {
     CompleteWhisperRequest,
     MessengerReply,
@@ -17,15 +17,15 @@ import type {
     NotesRequest,
     WhisperReply,
     WhisperRequest,
-} from "../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import {
     MessengerAction,
     NoteResult,
     NotesAction,
     WhisperMode,
-} from "../protobuf/generated/fminternal/internal_service";
-import { AccountSessionState } from "../session-state";
-import { redisSessionKey } from "../redis-session-key";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import { AccountSessionState } from "@fm/shared/session-state";
+import { redisSessionKey } from "@fm/shared/redis-session-key";
 
 type Member = {
     characterId: number;

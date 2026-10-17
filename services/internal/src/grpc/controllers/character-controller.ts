@@ -9,12 +9,12 @@ import { grpcMapper } from "../mappers";
 import type { CharacterOverviewListItem, CharacterOverviewService } from "../../services/character-overview-service";
 import type { CharacterService, SaveCharacterEntry } from "../../services/character-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
-import type { CharacterModel } from "../../repos/character-repository";
-import type { InventoryModel } from "../../repos/inventory-repository";
-import type { SkillModel } from "../../repos/skill-repository";
-import type { BuffModel } from "../../repos/buff-repository";
-import type { QuestModel } from "../../repos/quest-repository";
-import type { SavedLocationModel } from "../../repos/saved-location-repository";
+import type { CharacterModel } from "@fm/shared/repos/character-repository";
+import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
+import type { SkillModel } from "@fm/shared/repos/skill-repository";
+import type { BuffModel } from "@fm/shared/repos/buff-repository";
+import type { QuestModel } from "@fm/shared/repos/quest-repository";
+import type { SavedLocationModel } from "@fm/shared/repos/saved-location-repository";
 import type {
     Buff,
     Character,
@@ -36,7 +36,7 @@ import type {
     Quest,
     SavedLocation,
     Skill,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type CharacterListResult = Awaited<ReturnType<CharacterOverviewService["getCharacterList"]>>;

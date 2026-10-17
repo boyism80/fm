@@ -32,3 +32,5 @@ docs
 /scripts
 bot/out
 logs/
+
+node_modules/

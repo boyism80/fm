@@ -1,6 +1,6 @@
 import amqp from "amqplib";
-import type { AppConfiguration } from "../config/app-configuration";
-import type { InternalConfig } from "../types/internal-config";
+import type { AppConfiguration } from "@fm/shared/config/app-configuration";
+import type { InternalConfig } from "@fm/shared/types/internal-config";
 
 const RECONNECT_MIN_DELAY_MS = 1000;
 const RECONNECT_MAX_DELAY_MS = 30000;

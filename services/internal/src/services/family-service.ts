@@ -1,12 +1,12 @@
 import type { PoolClient } from "pg";
-import type { InternalContext } from "../context/internal-context";
-import type { CharacterRepository } from "../repos/character-repository";
-import type { FamilyMoveRequestRepository } from "../repos/family-request-repository";
-import { RequestStatus } from "../repos/request-repository";
-import type { UnifiedRepository } from "../repos/unified-repository";
-import type { SessionRepository } from "../repos/session-repository";
+import type { InternalContext } from "@fm/shared/context/internal-context";
+import type { CharacterRepository } from "@fm/shared/repos/character-repository";
+import type { FamilyMoveRequestRepository } from "@fm/shared/repos/family-request-repository";
+import { RequestStatus } from "@fm/shared/repos/request-repository";
+import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import type { SessionRepository } from "@fm/shared/repos/session-repository";
 import type { SocialService } from "./social-service";
-import type { CharacterModel } from "../types/repository-models";
+import type { CharacterModel } from "@fm/shared/types/repository-models";
 import type {
     FamilyMember,
     FamilyReply,
@@ -17,8 +17,8 @@ import type {
     SeparateFamilyRequest,
     SetFamilyPreceptRequest,
     UseFamilyFeatureRequest,
-} from "../protobuf/generated/fminternal/internal_service";
-import { Family, FamilyFeature, FamilyResult } from "../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import { Family, FamilyFeature, FamilyResult } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 
 type Relative = {
     character_id: number;

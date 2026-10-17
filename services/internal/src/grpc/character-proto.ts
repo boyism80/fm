@@ -1,5 +1,5 @@
-import type { Character } from "../protobuf/generated/fminternal/internal_service";
-import type { CharacterModel } from "../repos/character-repository";
+import type { Character } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { CharacterModel } from "@fm/shared/repos/character-repository";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 

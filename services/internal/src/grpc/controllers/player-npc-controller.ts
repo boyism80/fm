@@ -1,4 +1,4 @@
-import type { PlayerNpcRow } from "../../repos/player-npc-repository";
+import type { PlayerNpcRow } from "@fm/shared/repos/player-npc-repository";
 import type { PlayerNpcService } from "../../services/player-npc-service";
 import type {
     CreatePlayerNpcReply,
@@ -8,7 +8,7 @@ import type {
     PlayerNpc,
     RemovePlayerNpcReply,
     RemovePlayerNpcRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 

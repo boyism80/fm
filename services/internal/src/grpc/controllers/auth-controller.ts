@@ -1,4 +1,4 @@
-import { LoginAccountReply_Status, SecondPasswordStatus } from "../../protobuf/generated/fminternal/internal_service";
+import { LoginAccountReply_Status, SecondPasswordStatus } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { AccountService } from "../../services/account-service";
 import type { SessionService } from "../../services/session-service";
 import type {
@@ -9,7 +9,7 @@ import type {
     SecondPasswordReply,
     SetSecondPasswordRequest,
     RemoveSecondPasswordRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 

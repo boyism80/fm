@@ -1,5 +1,5 @@
 import { migratePending, connectMigrationDatabase } from "./sequelize-migrator";
-import type { InternalConfig, PgEndpoint } from "./types/internal-config";
+import type { InternalConfig, PgEndpoint } from "@fm/shared/types/internal-config";
 
 interface TargetEndpoint {
     name: string;

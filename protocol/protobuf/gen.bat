@@ -1,8 +1,8 @@
 @echo off
 REM Regenerate Go under protocol\protobuf\gengo\ from sources in protocol\protobuf\internal\proto\.
 REM (Output avoids protocol/.../internal/go/... so other modules can import generated types without Go internal rules.)
-REM Regenerate TypeScript source under services\internal\src\protobuf\generated\.
-REM Requires: protoc, protoc-gen-go, protoc-gen-go-grpc on PATH; npm install in services\internal.
+REM Regenerate TypeScript source under services\shared\src\protobuf\generated\.
+REM Requires: protoc, protoc-gen-go, protoc-gen-go-grpc on PATH; npm install at the repository root.
 setlocal EnableExtensions
 cd /d "%~dp0"
 
@@ -12,9 +12,9 @@ popd >nul
 
 set "PROTO_SRC=%~dp0internal\proto"
 set "GO_OUT=%~dp0gengo"
-set "TS_PROTO_OUT=%REPO_ROOT%\services\internal\src\protobuf\generated"
-set "GRPC_TOOLS=%REPO_ROOT%\services\internal\node_modules\.bin\grpc_tools_node_protoc.cmd"
-set "TS_PROTO_PLUGIN=%REPO_ROOT%\services\internal\node_modules\.bin\protoc-gen-ts_proto.cmd"
+set "TS_PROTO_OUT=%REPO_ROOT%\services\shared\src\protobuf\generated"
+set "GRPC_TOOLS=%REPO_ROOT%\node_modules\.bin\grpc_tools_node_protoc.cmd"
+set "TS_PROTO_PLUGIN=%REPO_ROOT%\node_modules\.bin\protoc-gen-ts_proto.cmd"
 
 where protoc >nul 2>&1
 if errorlevel 1 (
@@ -39,13 +39,13 @@ if errorlevel 1 (
 
 if not exist "%GRPC_TOOLS%" (
   echo [gen.bat] ERROR: grpc_tools_node_protoc not found.
-  echo Run: cd services\internal ^&^& npm install
+  echo Run: npm install ^(repository root^)
   exit /b 1
 )
 
 if not exist "%TS_PROTO_PLUGIN%" (
   echo [gen.bat] ERROR: protoc-gen-ts_proto not found.
-  echo Run: cd services\internal ^&^& npm install
+  echo Run: npm install ^(repository root^)
   exit /b 1
 )
 

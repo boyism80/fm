@@ -11,7 +11,7 @@ import {
     type MarriageReply,
     type Parcel,
     WeddingGift,
-} from "../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import {
     MarriageRepository,
     MarriageRequestRepository,
@@ -19,11 +19,11 @@ import {
     WeddingGiftSendRequestRepository,
     type MarriageRow,
     type WeddingGiftRow,
-} from "../repos/marriage-repository";
-import { ParcelSendRequestRepository } from "../repos/parcel-repository";
-import { RequestStatus } from "../repos/request-repository";
-import { UnifiedRepository } from "../repos/unified-repository";
-import { SessionRepository } from "../repos/session-repository";
+} from "@fm/shared/repos/marriage-repository";
+import { ParcelSendRequestRepository } from "@fm/shared/repos/parcel-repository";
+import { RequestStatus } from "@fm/shared/repos/request-repository";
+import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import { SessionRepository } from "@fm/shared/repos/session-repository";
 import { ParcelService } from "./parcel-service";
 import { RabbitMQService } from "./rabbitmq-service";
 

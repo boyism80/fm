@@ -1,5 +1,5 @@
-import type { Quest } from "../protobuf/generated/fminternal/internal_service";
-import type { QuestModel } from "../repos/quest-repository";
+import type { Quest } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { QuestModel } from "@fm/shared/repos/quest-repository";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 

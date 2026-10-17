@@ -1,4 +1,4 @@
-import type { PlayerNpcRepository, PlayerNpcRow } from "../repos/player-npc-repository";
+import type { PlayerNpcRepository, PlayerNpcRow } from "@fm/shared/repos/player-npc-repository";
 import type { RabbitMQService } from "./rabbitmq-service";
 
 const PLAYER_NPC_CREATED_EVENT = "player_npc_created";

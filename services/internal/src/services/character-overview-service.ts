@@ -1,7 +1,7 @@
-import type { InternalContext } from "../context/internal-context";
-import type { AccountRepository } from "../repos/account-repository";
-import type { CharacterOverviewModel, CharacterOverviewRepository } from "../repos/character-overview-repository";
-import type { UnifiedRepository } from "../repos/unified-repository";
+import type { InternalContext } from "@fm/shared/context/internal-context";
+import type { AccountRepository } from "@fm/shared/repos/account-repository";
+import type { CharacterOverviewModel, CharacterOverviewRepository } from "@fm/shared/repos/character-overview-repository";
+import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import type { WzService } from "./wz-service";
 import type { DistributedLockService } from "./distributed-lock-service";
 

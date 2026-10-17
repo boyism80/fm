@@ -1,46 +1,47 @@
+import { fileURLToPath } from "node:url";
 import * as awilix from "awilix";
-import { loadConfig } from "./config";
-import { AppConfiguration } from "./config/app-configuration";
-import { InternalContext } from "./context/internal-context";
-import { CharacterRepository } from "./repos/character-repository";
-import { InventoryRepository } from "./repos/inventory-repository";
-import { AccountRepository } from "./repos/account-repository";
-import { UnifiedRepository } from "./repos/unified-repository";
-import { CharacterOverviewRepository } from "./repos/character-overview-repository";
-import { SkillRepository } from "./repos/skill-repository";
-import { BuffRepository } from "./repos/buff-repository";
-import { QuestRepository } from "./repos/quest-repository";
-import { SavedLocationRepository } from "./repos/saved-location-repository";
-import { CharacterRecordRepository } from "./repos/character-record-repository";
-import { AccountRecordRepository } from "./repos/account-record-repository";
-import { MonsterBookRepository } from "./repos/monster-book-repository";
-import { SessionRepository } from "./repos/session-repository";
-import { KeyLayoutRepository } from "./repos/key-layout-repository";
-import { SkillMacroRepository } from "./repos/skill-macro-repository";
-import { MountRepository } from "./repos/mount-repository";
-import { UnsettledRequestRepository } from "./repos/unsettled-request-repository";
-import { StorageRepository } from "./repos/storage-repository";
-import { StorageItemRepository } from "./repos/storage-item-repository";
-import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository } from "./repos/parcel-repository";
-import { ShopOpenRequestRepository, ShopRepository } from "./repos/shop-repository";
-import { CashRequestRepository, CashShopRepository } from "./repos/cash-shop-repository";
+import { loadConfig } from "@fm/shared/config";
+import { AppConfiguration } from "@fm/shared/config/app-configuration";
+import { InternalContext } from "@fm/shared/context/internal-context";
+import { CharacterRepository } from "@fm/shared/repos/character-repository";
+import { InventoryRepository } from "@fm/shared/repos/inventory-repository";
+import { AccountRepository } from "@fm/shared/repos/account-repository";
+import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import { CharacterOverviewRepository } from "@fm/shared/repos/character-overview-repository";
+import { SkillRepository } from "@fm/shared/repos/skill-repository";
+import { BuffRepository } from "@fm/shared/repos/buff-repository";
+import { QuestRepository } from "@fm/shared/repos/quest-repository";
+import { SavedLocationRepository } from "@fm/shared/repos/saved-location-repository";
+import { CharacterRecordRepository } from "@fm/shared/repos/character-record-repository";
+import { AccountRecordRepository } from "@fm/shared/repos/account-record-repository";
+import { MonsterBookRepository } from "@fm/shared/repos/monster-book-repository";
+import { SessionRepository } from "@fm/shared/repos/session-repository";
+import { KeyLayoutRepository } from "@fm/shared/repos/key-layout-repository";
+import { SkillMacroRepository } from "@fm/shared/repos/skill-macro-repository";
+import { MountRepository } from "@fm/shared/repos/mount-repository";
+import { UnsettledRequestRepository } from "@fm/shared/repos/unsettled-request-repository";
+import { StorageRepository } from "@fm/shared/repos/storage-repository";
+import { StorageItemRepository } from "@fm/shared/repos/storage-item-repository";
+import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository } from "@fm/shared/repos/parcel-repository";
+import { ShopOpenRequestRepository, ShopRepository } from "@fm/shared/repos/shop-repository";
+import { CashRequestRepository, CashShopRepository } from "@fm/shared/repos/cash-shop-repository";
 import {
     MarriageRepository,
     MarriageRequestRepository,
     WeddingGiftClaimRequestRepository,
     WeddingGiftSendRequestRepository,
-} from "./repos/marriage-repository";
-import { PartyRepository } from "./repos/party-repository";
-import { PartyMemberRepository } from "./repos/party-member-repository";
-import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "./repos/alliance-repository";
-import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "./repos/guild-repository";
-import { GuildMemberRepository } from "./repos/guild-member-repository";
-import { GuildBulletinBoardRepository } from "./repos/guild-bulletin-board-repository";
-import { CharacterBuddyRepository } from "./repos/character-buddy-repository";
-import { CharacterRealtimeStateRepository } from "./repos/character-realtime-state-repository";
-import { NoteRemoveRequestRepository } from "./repos/note-request-repository";
-import { FamilyMoveRequestRepository } from "./repos/family-request-repository";
-import { PlayerNpcRepository } from "./repos/player-npc-repository";
+} from "@fm/shared/repos/marriage-repository";
+import { PartyRepository } from "@fm/shared/repos/party-repository";
+import { PartyMemberRepository } from "@fm/shared/repos/party-member-repository";
+import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "@fm/shared/repos/alliance-repository";
+import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "@fm/shared/repos/guild-repository";
+import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
+import { GuildBulletinBoardRepository } from "@fm/shared/repos/guild-bulletin-board-repository";
+import { CharacterBuddyRepository } from "@fm/shared/repos/character-buddy-repository";
+import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import { NoteRemoveRequestRepository } from "@fm/shared/repos/note-request-repository";
+import { FamilyMoveRequestRepository } from "@fm/shared/repos/family-request-repository";
+import { PlayerNpcRepository } from "@fm/shared/repos/player-npc-repository";
 import { CharacterService } from "./services/character-service";
 import { WzService } from "./services/wz-service";
 import { BuffService } from "./services/buff-service";
@@ -53,7 +54,7 @@ import { GuildService } from "./services/guild-service";
 import { GuildBulletinBoardService } from "./services/guild-bulletin-board-service";
 import { AllianceService } from "./services/alliance-service";
 import { BuddyService } from "./services/buddy-service";
-import { DistributedLock } from "./system/distributed-lock";
+import { DistributedLock } from "@fm/shared/system/distributed-lock";
 import { DistributedLockService } from "./services/distributed-lock-service";
 import { ServerTimeService } from "./services/server-time-service";
 import { OperationLogService } from "./services/operation-log-service";
@@ -66,7 +67,7 @@ import { MarriageService } from "./services/marriage-service";
 import { PlayerNpcService } from "./services/player-npc-service";
 
 export function createAppContainer() {
-    const internalConfig = loadConfig();
+    const internalConfig = loadConfig(process.env.FM_INTERNAL_CONFIG ?? fileURLToPath(new URL("../config.yaml", import.meta.url)));
     const container = awilix.createContainer({
         injectionMode: awilix.InjectionMode.CLASSIC,
     });

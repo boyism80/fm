@@ -1,8 +1,8 @@
-import { PartyErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import { PartyErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type {
     BroadcastMultiChatReply,
     BroadcastMultiChatRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { BroadcastBuddyMultiChatResult, BuddyService } from "../../services/buddy-service";
 import type { GuildService } from "../../services/guild-service";
 import type { AllianceService } from "../../services/alliance-service";

@@ -19,6 +19,7 @@
   "dependencies": {
     "@automapper/core": "^8.8.1",
     "@automapper/pojos": "^8.8.1",
+    "@fm/shared": "*",
     "@grpc/grpc-js": "^1.12.4",
     "amqplib": "^1.0.3",
     "awilix": "^13.0.3",

@@ -1,9 +1,9 @@
 import type {
     EquipmentBonusStats,
     Inventory,
-} from "../protobuf/generated/fminternal/internal_service";
-import type { InventoryModel } from "../repos/inventory-repository";
-import type { EquipmentBonusStatsJson } from "../types/equipment-bonus-stats";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
+import type { EquipmentBonusStatsJson } from "@fm/shared/types/equipment-bonus-stats";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 

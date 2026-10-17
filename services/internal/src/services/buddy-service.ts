@@ -1,13 +1,13 @@
 import type { PoolClient } from "pg";
-import { BuddyErrorCode } from "../protobuf/generated/fminternal/internal_service";
-import type { InternalContext } from "../context/internal-context";
-import type { AppConfiguration } from "../config/app-configuration";
-import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
-import type { CharacterBuddyModel } from "../repos/character-buddy-repository";
-import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
-import { CharacterRepository } from "../repos/character-repository";
-import { SessionRepository } from "../repos/session-repository";
-import { UnifiedRepository } from "../repos/unified-repository";
+import { BuddyErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { InternalContext } from "@fm/shared/context/internal-context";
+import type { AppConfiguration } from "@fm/shared/config/app-configuration";
+import { CharacterBuddyRepository } from "@fm/shared/repos/character-buddy-repository";
+import type { CharacterBuddyModel } from "@fm/shared/repos/character-buddy-repository";
+import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import { CharacterRepository } from "@fm/shared/repos/character-repository";
+import { SessionRepository } from "@fm/shared/repos/session-repository";
+import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 

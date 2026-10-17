@@ -1,6 +1,6 @@
 import grpc, { type handleUnaryCall } from "@grpc/grpc-js";
 import * as awilix from "awilix";
-import { InternalService } from "./protobuf/generated/fminternal/internal_service";
+import { InternalService } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { createAppContainer } from "./container";
 import { autoMigrateAllIfEnabled } from "./auto-migrate";
 import { CatalogGrpcController } from "./grpc/controllers/catalog-controller";
@@ -22,8 +22,8 @@ import { SocialGrpcController } from "./grpc/controllers/social-controller";
 import { MarriageGrpcController } from "./grpc/controllers/marriage-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
 import { DailyLogFile } from "./log-file";
-import type { AppConfiguration } from "./config/app-configuration";
-import type { InternalContext } from "./context/internal-context";
+import type { AppConfiguration } from "@fm/shared/config/app-configuration";
+import type { InternalContext } from "@fm/shared/context/internal-context";
 import type { RabbitMQService } from "./services/rabbitmq-service";
 import type { WzService } from "./services/wz-service";
 import type { GuildService } from "./services/guild-service";

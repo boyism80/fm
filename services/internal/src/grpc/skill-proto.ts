@@ -1,5 +1,5 @@
-import type { Skill } from "../protobuf/generated/fminternal/internal_service";
-import type { SkillModel } from "../repos/skill-repository";
+import type { Skill } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { SkillModel } from "@fm/shared/repos/skill-repository";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 

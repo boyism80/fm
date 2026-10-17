@@ -1,5 +1,5 @@
-import type { KeyLayoutBinding } from "../protobuf/generated/fminternal/internal_service";
-import type { KeyLayoutJsonRecord, KeyLayoutSlotJson } from "../types/key-layout-json";
+import type { KeyLayoutBinding } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { KeyLayoutJsonRecord, KeyLayoutSlotJson } from "@fm/shared/types/key-layout-json";
 
 export type KeyLayoutBindingModel = { slot: number; type: number; action: number };
 

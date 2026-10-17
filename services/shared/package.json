@@ -1,0 +1,26 @@
+{
+  "name": "@fm/shared",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "FM data layer shared by the TypeScript services: config, database and Redis access, repositories, generated protobuf types",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.12.0",
+    "@grpc/grpc-js": "^1.12.4",
+    "ioredis": "^5.10.1",
+    "js-yaml": "^4.1.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
+    "typescript": "^6.0.3"
+  }
+}

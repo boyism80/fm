@@ -1,6 +1,6 @@
-import { BuffKind } from "../protobuf/generated/fminternal/internal_service";
-import type { Buff } from "../protobuf/generated/fminternal/internal_service";
-import type { BuffModel } from "../repos/buff-repository";
+import { BuffKind } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { Buff } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { BuffModel } from "@fm/shared/repos/buff-repository";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 

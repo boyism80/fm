@@ -324,10 +324,9 @@ export function pickRedisDataShard(worldRedis: WorldRedisConfig, hash: number): 
     return shard;
 }
 
-export function loadConfig(): InternalConfig {
-    const configPath = process.env.FM_INTERNAL_CONFIG ?? path.join(__dirname, "..", "config.yaml");
+export function loadConfig(configPath: string): InternalConfig {
     if (!fs.existsSync(configPath)) {
-        throw new Error(`Internal config not found: ${configPath}. Set FM_INTERNAL_CONFIG or add services/internal/config.yaml`);
+        throw new Error(`Config not found: ${configPath}`);
     }
     const raw = (yaml.load(fs.readFileSync(configPath, "utf8")) ?? {}) as RawConfig;
     return { configPath, ...withDefaults(raw) };

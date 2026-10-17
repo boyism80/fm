@@ -4,17 +4,17 @@ import {
     type GuildBulletinBoardReplyEntry,
     type GuildBulletinBoardThreadDetail,
     type GuildBulletinBoardThreadEntry,
-} from "../protobuf/generated/fminternal/internal_service";
-import { AppConfiguration } from "../config/app-configuration";
-import { InternalContext } from "../context/internal-context";
-import { GuildRepository } from "../repos/guild-repository";
-import { GuildMemberRepository } from "../repos/guild-member-repository";
-import { GuildBulletinBoardRepository } from "../repos/guild-bulletin-board-repository";
-import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
-import type { GuildMemberModel } from "../repos/guild-member-repository";
-import type { GuildBulletinBoardThreadModel } from "../types/repository-models";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import { AppConfiguration } from "@fm/shared/config/app-configuration";
+import { InternalContext } from "@fm/shared/context/internal-context";
+import { GuildRepository } from "@fm/shared/repos/guild-repository";
+import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
+import { GuildBulletinBoardRepository } from "@fm/shared/repos/guild-bulletin-board-repository";
+import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import type { GuildMemberModel } from "@fm/shared/repos/guild-member-repository";
+import type { GuildBulletinBoardThreadModel } from "@fm/shared/types/repository-models";
 import { DistributedLockService } from "./distributed-lock-service";
-import { redisCacheKey } from "../redis-cache-key";
+import { redisCacheKey } from "@fm/shared/redis-cache-key";
 
 const messages = { GuildErrorCode };
 

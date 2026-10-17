@@ -5,12 +5,12 @@ import {
     type ClaimParcelReply,
     type LoadParcelsReply,
     Parcel,
-} from "../protobuf/generated/fminternal/internal_service";
-import { AppConfiguration } from "../config/app-configuration";
-import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository, type ParcelRow } from "../repos/parcel-repository";
-import { RequestStatus } from "../repos/request-repository";
-import { UnifiedRepository } from "../repos/unified-repository";
-import { SessionRepository } from "../repos/session-repository";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import { AppConfiguration } from "@fm/shared/config/app-configuration";
+import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository, type ParcelRow } from "@fm/shared/repos/parcel-repository";
+import { RequestStatus } from "@fm/shared/repos/request-repository";
+import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import { SessionRepository } from "@fm/shared/repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 
 const ARRIVAL_DELAY_MS = 12 * 60 * 60 * 1000;

@@ -1,5 +1,5 @@
-import type { AppConfiguration } from "../../config/app-configuration";
-import type { InternalContext } from "../../context/internal-context";
+import type { AppConfiguration } from "@fm/shared/config/app-configuration";
+import type { InternalContext } from "@fm/shared/context/internal-context";
 import type {
     FindCashShopReply,
     FindCashShopRequest,
@@ -9,10 +9,10 @@ import type {
     GetServerCatalogRequest,
     PingReply,
     PingRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
-import { ServerRole } from "../../protobuf/generated/fminternal/internal_service";
-import { redisAliveKey } from "../../redis-alive-key";
-import type { InternalConfig } from "../../types/internal-config";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import { ServerRole } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import { redisAliveKey } from "@fm/shared/redis-alive-key";
+import type { InternalConfig } from "@fm/shared/types/internal-config";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 

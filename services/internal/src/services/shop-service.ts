@@ -4,9 +4,9 @@ import {
     type OpenShopReply,
     type Shop,
     type ShopSearchEntry,
-} from "../protobuf/generated/fminternal/internal_service";
-import { ShopOpenRequestRepository, ShopRepository, type ShopRow } from "../repos/shop-repository";
-import { RequestStatus } from "../repos/request-repository";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import { ShopOpenRequestRepository, ShopRepository, type ShopRow } from "@fm/shared/repos/shop-repository";
+import { RequestStatus } from "@fm/shared/repos/request-repository";
 import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
 const ShopKindEntrusted = 5;

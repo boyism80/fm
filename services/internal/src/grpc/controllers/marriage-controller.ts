@@ -24,7 +24,7 @@ import type {
     RequestDivorceRequest,
     ReserveWeddingRequest,
     SetWeddingWishlistRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 

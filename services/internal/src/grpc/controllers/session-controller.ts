@@ -1,8 +1,8 @@
-import { SecondPasswordStatus, SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import { SecondPasswordStatus, SessionErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { AccountService } from "../../services/account-service";
 import type { CharacterService } from "../../services/character-service";
 import type { SessionService } from "../../services/session-service";
-import type { InternalConfig } from "../../types/internal-config";
+import type { InternalConfig } from "@fm/shared/types/internal-config";
 import type {
     BeginGameTransitionReply,
     BeginGameTransitionRequest,
@@ -16,9 +16,9 @@ import type {
     LogoutSessionRequest,
     RefreshSessionReply,
     RefreshSessionRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
-import type { CharacterModel } from "../../repos/character-repository";
+import type { CharacterModel } from "@fm/shared/repos/character-repository";
 import { Controller, Method } from "../grpc-method-decorator";
 
 enum OwnedCharacterKind {

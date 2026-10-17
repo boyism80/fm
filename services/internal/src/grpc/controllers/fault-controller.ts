@@ -2,7 +2,7 @@ import type { RabbitMQService } from "../../services/rabbitmq-service";
 import type {
     SetPublishFaultReply,
     SetPublishFaultRequest,
-} from "../../protobuf/generated/fminternal/internal_service";
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 

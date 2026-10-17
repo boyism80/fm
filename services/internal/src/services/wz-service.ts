@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs/promises";
-import type { AppConfiguration } from "../config/app-configuration";
+import type { AppConfiguration } from "@fm/shared/config/app-configuration";
 
 const MAKE_CHAR_INFO_GENDER: Record<string, number> = { CharMale: 0, CharFemale: 1 };
 const NAME_PATTERN = /^[a-zA-Z0-9가-힣]+$/;

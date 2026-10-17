@@ -1,4 +1,4 @@
-import type { BuffModel, BuffRepository } from "../repos/buff-repository";
+import type { BuffModel, BuffRepository } from "@fm/shared/repos/buff-repository";
 
 export class BuffService {
     private readonly repo: BuffRepository;

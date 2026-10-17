@@ -1,4 +1,4 @@
-import type { InternalContext } from "../context/internal-context";
+import type { InternalContext } from "@fm/shared/context/internal-context";
 import {
     DistributedLock,
     DistributedLockMultiGuard,
@@ -6,7 +6,7 @@ import {
     redisWorldLockKey,
     type DistributedLockGuard,
     type DistributedLockOptions,
-} from "../system/distributed-lock";
+} from "@fm/shared/system/distributed-lock";
 
 export class DistributedLockService {
     private readonly ctx: InternalContext;
