@@ -28,6 +28,10 @@ return {
 		me:create_summon(wz:id(), level, effect.time, SummonMovementType.CircleStationary, SummonType.Normal)
 	end,
 
+	on_attack = function(me, skill, damages)
+		me:unbuff(skill:wz():id())
+	end,
+
 	on_unbuff = function(me, skill)
 		local wz = skill:wz()
 		me:remove_summon(wz:id())

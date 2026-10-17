@@ -2,6 +2,9 @@
 
 return {
 	on_summon_skill = function(me, summon, skill, params)
+		if summon:skill_id() ~= Skill.Beholder then
+			return
+		end
 		if params == nil or params.buff_effect_index == nil then
 			return
 		end

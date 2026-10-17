@@ -34,6 +34,7 @@ var requests = []outbound{
 	&request.Buddy{},
 	&request.AutoAssignAP{},
 	&request.SummonSkill{},
+	&request.SummonAttack{},
 	&request.GuildOperation{},
 	&request.SwitchChannel{},
 	&request.EnterCashShop{},

@@ -2,6 +2,9 @@
 
 return {
 	on_summon_skill = function(me, summon, skill, params)
+		if summon:skill_id() ~= Skill.Beholder then
+			return
+		end
 		local effect = skill:effect()
 		if effect == nil then
 			return

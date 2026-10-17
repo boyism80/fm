@@ -34,7 +34,6 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 	if summon == nil {
 		return nil
 	}
-	CallSummonOnAttackHooks(character, character.GetMap(), req.Damages, uint32(summon.SkillID()))
 
 	var targets []game.SummonAttackTarget
 	for _, ap := range req.Damages {
@@ -51,5 +50,7 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 	if len(targets) > 0 {
 		character.Listener().OnSummonAttack(character, summon, req.Animation, targets)
 	}
+	// After the broadcast, so a summon that ends in its own hook is still on the map for the attack packet.
+	CallSummonOnAttackHooks(character, character.GetMap(), req.Damages, uint32(summon.SkillID()))
 	return nil
 }

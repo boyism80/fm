@@ -6,6 +6,7 @@ local PARK = 100000200
 local OUTLAW = 521
 local DARK_KNIGHT = 132
 local OCTOPUS = 5211001
+local GAVIOTA = 5211002
 local BEHOLDER = 1321007
 local BEHOLDER_HEALING = 1320008
 local HEAL = 40
@@ -87,27 +88,44 @@ local function heal(bot, oid)
 	return p.stats[HP]
 end
 
--- Beholder's healing works once per its interval.
+local function hurt(ctx, bot)
+	if pq.command(bot, "/체력바꾸기 1000", "체력 설정: 1000") == false then
+		return ctx:fail(bot:name() .. " 체력 설정 실패")
+	end
+	local hit = bot:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 500 }, function(p)
+		return p.stats[HP] ~= nil
+	end, 3000)
+	if hit == false then
+		return ctx:fail(bot:name() .. " 피해를 받지 않음")
+	end
+	return hit.stats[HP]
+end
+
+-- Beholder's healing works once per its interval, and only through the beholder.
 local function healing_interval(ctx)
-	local knight = ctx:bot(1)
-	if setup(ctx, knight, DARK_KNIGHT, { BEHOLDER, BEHOLDER_HEALING }) == false then
+	local knight, outlaw = ctx:bot(1), ctx:bot(0)
+	if setup(ctx, knight, DARK_KNIGHT, { BEHOLDER, BEHOLDER_HEALING }) == false or setup(ctx, outlaw, OUTLAW, { OCTOPUS, BEHOLDER_HEALING }) == false then
 		return false
 	end
 	local beholder = summon(ctx, knight, BEHOLDER)
 	if beholder == false then
 		return false
 	end
-	if pq.command(knight, "/체력바꾸기 1000", "체력 설정: 1000") == false then
-		return ctx:fail("체력 설정 실패")
+	local octopus = summon(ctx, outlaw, OCTOPUS)
+	if octopus == false then
+		return false
 	end
-	local hit = knight:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 500 }, function(p)
-		return p.stats[HP] ~= nil
-	end, 3000)
-	if hit == false then
-		return ctx:fail("피해를 받지 않음")
+	if hurt(ctx, outlaw) == false then
+		return false
 	end
-	local hp = hit.stats[HP]
+	if check(ctx, heal(outlaw, octopus.oid) == nil, "비홀더가 아닌 소환수로 힐링이 됨") == false then
+		return false
+	end
 
+	local hp = hurt(ctx, knight)
+	if hp == false then
+		return false
+	end
 	local healed = heal(knight, beholder.oid)
 	if check(ctx, healed == hp + HEAL, string.format("첫 힐링 뒤 체력 %s (기대 %d)", tostring(healed), hp + HEAL)) == false then
 		return false
@@ -115,12 +133,29 @@ local function healing_interval(ctx)
 	return check(ctx, heal(knight, beholder.oid) == nil, "주기 안에 힐링이 다시 됨")
 end
 
+-- Gaviota leaves after its one attack.
+local function gaviota_once(ctx)
+	local outlaw = ctx:bot(0)
+	if setup(ctx, outlaw, OUTLAW, { GAVIOTA }) == false then
+		return false
+	end
+	local gaviota = summon(ctx, outlaw, GAVIOTA)
+	if gaviota == false then
+		return false
+	end
+	local removed = outlaw:request(resp.remove_summon, req.summon_attack { summon_oid = gaviota.oid, damages = {} }, function(p)
+		return p.oid == gaviota.oid
+	end, 3000)
+	return check(ctx, removed ~= false, "가비오타가 공격한 뒤에도 남음")
+end
+
 test_suite {
-	name = "Summon: 고정형 소환수 맵 이동·비홀더스 힐링 주기",
+	name = "Summon: 고정형 소환수 맵 이동·비홀더스 힐링·가비오타 한 번 공격",
 	bot_count = 2,
 
 	scenarios = {
 		map_change,
 		healing_interval,
+		gaviota_once,
 	},
 }

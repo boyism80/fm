@@ -15,6 +15,19 @@ type SummonAttack struct {
 func (*SummonAttack) Opcode() byte { return 0x8D }
 
 func (a *SummonAttack) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(a.SummonOID)
+	writer.WriteU32(a.Tick)
+	writer.WriteU8(a.Animation)
+	writer.WriteU8(uint8(len(a.Damages)))
+	for _, pair := range a.Damages {
+		writer.WriteU32(pair.OID)
+		writer.Write(make([]byte, 14))
+		damage := uint32(0)
+		if len(pair.DamagePairs) > 0 {
+			damage = pair.DamagePairs[0].Damage
+		}
+		writer.WriteU32(damage)
+	}
 	return nil
 }
 
