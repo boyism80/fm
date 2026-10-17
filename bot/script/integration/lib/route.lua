@@ -72,10 +72,6 @@ local ROUTES = {
 	DEEP_TEMPLE,
 }
 
-local UNREACHABLE = {
-	[123256780] = "보스 대기실 입장 경로 없음 #370",
-}
-
 local function answer(hop, name)
 	if name == resp.dialog_yes_no then
 		return req.dialog { dialog_type = 1, next = true }
@@ -202,9 +198,6 @@ end
 function M.travel(ctx, bot, map_id)
 	if bot:map() == map_id then
 		return true
-	end
-	if UNREACHABLE[map_id] ~= nil then
-		return bot:force_move(map_id, UNREACHABLE[map_id])
 	end
 	if bot:walkable(map_id) then
 		return bot:map_move(map_id)

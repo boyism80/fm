@@ -54,7 +54,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		skill = character.Skills().Get(req.Skill)
 	}
 	var skillLevel uint8
-	attacked, err := character.Attack(req.ToAttackInfo(), false, func() bool {
+	attacked, err := character.Attack(ctx.ActorContext, req.ToAttackInfo(), false, func() bool {
 		return skill != nil && character.Skills().CallHook(ctx.ActorContext, skill, "on_activating")
 	}, func() {
 		if req.Skill != 0 {

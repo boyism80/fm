@@ -2682,6 +2682,12 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 			skill.FourthClass = block%10 == 2 && skill.ID < 90000000 && !skill.Beginner
 		}
 		skill.Distributable = !skill.Beginner || slices.Contains([]uint32{1000, 1001, 1002}, skill.ID%10000)
+		for _, data := range skill.LevelData {
+			if data.Damage > 0 || data.MAD > 0 || data.FixDamage > 0 || data.AttackCount > 0 || data.BulletCount > 0 || data.MobCount > 0 {
+				skill.Attack = true
+				break
+			}
+		}
 
 		skills[uint32(skillID)] = skill
 	}

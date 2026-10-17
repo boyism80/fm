@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
 )
@@ -101,30 +102,41 @@ func (sc *Skills) Level(skillID uint32) int {
 	return entry.Level()
 }
 
-func (sc *Skills) UseAttack(skillID uint32, activate func() bool) bool {
-	wzSkill := sc.owner.gameWorld.GetResources().GetSkill(skillID)
-	if wzSkill == nil {
-		log.Printf("Skill not found: %d", skillID)
-		return false
-	}
-	skillLevel := sc.Level(skillID)
-	if skillLevel <= 0 {
+// on_activated is left to the handler, which runs it after the hits land.
+func (sc *Skills) UseAttack(actx actor.Context, skillID uint32, activate func() bool) bool {
+	entry := sc.Get(skillID)
+	if entry == nil || entry.Level() <= 0 {
 		log.Printf("Character does not have skill %d or skill level is 0", skillID)
 		return false
 	}
-	levelData := wzSkill.GetLevelData(skillLevel)
+	if !entry.wz.Attack {
+		return false
+	}
+	levelData := entry.wz.GetLevelData(entry.Level())
 	if levelData == nil {
 		return false
 	}
-	skillEntry := sc.Get(skillID)
-	if levelData.Cooldown > 0 && (skillEntry == nil || skillEntry.IsCooling()) {
+	if levelData.Cooldown > 0 && entry.IsCooling() {
 		return false
+	}
+	if !sc.CallHook(actx, entry, "can_activate") {
+		return false
+	}
+	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
+		if !sc.owner.inventory.HasItemCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+			return false
+		}
 	}
 	if !activate() {
 		return false
 	}
-	if levelData.Cooldown > 0 {
-		skillEntry.StartCooldown(levelData.Cooldown)
+	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
+		if !sc.owner.inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+			return false
+		}
+	}
+	if levelData.Cooldown > 0 && !entry.wz.ManualCooldown {
+		entry.StartCooldown(levelData.Cooldown)
 	}
 	return true
 }

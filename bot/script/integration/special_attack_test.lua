@@ -14,6 +14,10 @@ local ENERGY_CHARGE = 5110001
 local HYPNOTIZE = 5221009
 local HEAL = 2301002
 local QUIET_MS = 1500
+local PRIEST = 231
+local MYSTIC_DOOR = 2311002
+local MAGIC_ROCK = 4006000
+local DOOR_FIELD = 100010000
 
 local function setup(ctx, bot, level, class)
 	if pq.command(bot, "/봇초기화 " .. level .. " " .. class .. " 0 -", "봇초기화 완료") == false then
@@ -224,8 +228,44 @@ local function energy_attack(ctx)
 	return ctx:fail("에너지를 다 모았는데 에너지 어택이 나가지 않음")
 end
 
+local function door_attack(ctx)
+	local bot = ctx:bot(0)
+	if pq.command(bot, "/봇초기화 70 " .. PRIEST .. " 0 " .. MAGIC_ROCK .. ":2 -", "봇초기화 완료") == false then
+		return ctx:fail("봇 초기화 실패")
+	end
+	if bot:instance_move(DOOR_FIELD) == false then
+		return ctx:fail("미스틱 도어 시험 맵 이동 실패")
+	end
+	if pq.command(bot, "/스킬레벨 " .. MYSTIC_DOOR .. " 20", "스킬레벨 설정") == false then
+		return ctx:fail("미스틱 도어 배우기 실패")
+	end
+	if pq.command(bot, "/마력바꾸기 30000", "마력 설정") == false then
+		return ctx:fail("마력 설정 실패")
+	end
+	local snail = spawn(ctx, bot, SNAIL, 1)
+	if snail == nil then
+		return false
+	end
+
+	bot:magic_attack(snail[1], 0, 1, MYSTIC_DOOR)
+	if bot:request(resp.spawn_door, nil, nil, QUIET_MS) ~= false then
+		return ctx:fail("공격 패킷으로 미스틱 도어가 열림")
+	end
+	if (bot:items()[MAGIC_ROCK] or 0) ~= 2 then
+		return ctx:fail("공격 패킷 미스틱 도어가 마법의 돌을 씀")
+	end
+
+	if bot:request(resp.spawn_door, req.active_skill { skill_id = MYSTIC_DOOR, skill_level = 20 }, nil, 3000) == false then
+		return ctx:fail("정상 사용한 미스틱 도어가 열리지 않음")
+	end
+	if (bot:items()[MAGIC_ROCK] or 0) ~= 1 then
+		return ctx:fail("정상 사용한 미스틱 도어가 마법의 돌을 쓰지 않음")
+	end
+	return true
+end
+
 test_suite {
-	name = "SpecialAttack: 몬스터 자폭·최면 피해·힐 공격·에너지 어택",
+	name = "SpecialAttack: 몬스터 자폭·최면 피해·힐 공격·에너지 어택·공격 패킷 비공격 스킬",
 	bot_count = 2,
 
 	scenarios = {
@@ -233,5 +273,6 @@ test_suite {
 		hypnotize_damage,
 		heal_attack,
 		energy_attack,
+		door_attack,
 	},
 }

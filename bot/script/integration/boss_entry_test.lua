@@ -1,5 +1,4 @@
 local pq = require("script/integration/lib/party_quest")
-local route = require("script/integration/lib/route")
 
 local WAITING_ROOM = 123256780
 local BOSSES = {
@@ -12,9 +11,22 @@ local BOSSES = {
 	{ npc = 2039, name = "루시드", map = 450004150, mob = 8880166, x = 1008, y = 48 },
 }
 
+local function waiting_room(ctx, bot)
+	if bot:map() == WAITING_ROOM then
+		return true
+	end
+	local warp = bot:request(resp.warp, req.normal_chat { message = "/보스" }, function(p)
+		return p.character.map == WAITING_ROOM
+	end, 10000)
+	if warp == false then
+		return ctx:fail("/보스로 보스 대기실에 가지 못함")
+	end
+	return true
+end
+
 local function enter_and_kill(ctx, bot, boss)
-	if route.travel(ctx, bot, WAITING_ROOM) == false then
-		return ctx:fail("보스 대기실로 이동 실패")
+	if waiting_room(ctx, bot) == false then
+		return false
 	end
 	local oid = pq.npc(ctx, bot, boss.npc)
 	if oid == false then
@@ -70,7 +82,7 @@ test_suite {
 		if pq.command(bot, "/즉사 on", "즉사 상태: enabled") == false then
 			return ctx:fail("즉사 설정 실패")
 		end
-		return route.travel(ctx, bot, WAITING_ROOM)
+		return waiting_room(ctx, bot)
 	end,
 
 	on_finished = function(ctx)
@@ -86,7 +98,7 @@ test_suite {
 					passed = false
 				end
 			end
-			if route.travel(ctx, ctx:bot(0), WAITING_ROOM) == false then
+			if waiting_room(ctx, ctx:bot(0)) == false then
 				return false
 			end
 			return passed

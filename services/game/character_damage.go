@@ -24,7 +24,7 @@ type Hit struct {
 }
 
 // Attack validates the reported hits before skill costs and server attack hooks.
-func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() bool, attacking func()) (bool, error) {
+func (ch *Character) Attack(actx actor.Context, info dto.AttackInfo, magic bool, activating func() bool, attacking func()) (bool, error) {
 	if ch.GetMap() == nil {
 		return false, fmt.Errorf("attacker has no map")
 	}
@@ -45,7 +45,7 @@ func (ch *Character) Attack(info dto.AttackInfo, magic bool, activating func() b
 		return false, err
 	}
 
-	if info.Skill != 0 && !ch.skills.UseAttack(info.Skill, activating) {
+	if info.Skill != 0 && !ch.skills.UseAttack(actx, info.Skill, activating) {
 		return false, nil
 	}
 	if info.Ranged && !ch.shoot(info) {
@@ -123,7 +123,7 @@ func (ch *Character) EnergyAttack(info dto.AttackInfo, attacking func()) (bool, 
 	if !active || energy < 10000 || info.Skill != 0 {
 		return false, nil
 	}
-	return ch.Attack(info, false, nil, attacking)
+	return ch.Attack(nil, info, false, nil, attacking)
 }
 
 func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {

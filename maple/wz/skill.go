@@ -84,6 +84,7 @@ type Skill struct {
 	Beginner      bool
 	FourthClass   bool
 	Distributable bool
+	Attack        bool
 }
 
 func (s *Skill) DefaultMasterLevel() int {

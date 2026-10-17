@@ -52,7 +52,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 
 	skill := character.Skills().Get(req.Skill)
 	var skillLevel uint8
-	attacked, err := character.Attack(req.ToAttackInfo(), true, func() bool {
+	attacked, err := character.Attack(ctx.ActorContext, req.ToAttackInfo(), true, func() bool {
 		return skill != nil && character.Skills().CallHook(ctx.ActorContext, skill, "on_activating")
 	}, func() {
 		skillLevel = uint8(character.Skills().Level(req.Skill))

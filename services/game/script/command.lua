@@ -1531,6 +1531,14 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["보스"] = {
+		privilege = ROLE.User,
+		usage = "- 보스 대기실로 이동",
+		command = function(me, args)
+			me:map(123256780, 0)
+			return true
+		end,
+	},
 	["위치"] = {
 		privilege = ROLE.User,
 		usage = "- 현재 맵·좌표를 채팅으로 표시",
