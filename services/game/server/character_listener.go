@@ -1878,12 +1878,12 @@ func (l *CharacterListenerImpl) OnSummonAttack(ch *game.Character, summon *game.
 		}
 	}
 	packet := &response.SummonAttack{
-		CharacterID:   ch.GetID(),
-		SummonSkillID: uint32(summon.SkillID()),
-		Animation:     animation,
-		Targets:       respTargets,
+		CharacterID: ch.GetID(),
+		SummonOID:   summon.GetOID(),
+		Animation:   animation,
+		Targets:     respTargets,
 	}
-	ch.Broadcast(packet, &game.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(packet, nil)
 }
 
 func (l *CharacterListenerImpl) OnSummonSkill(ch *game.Character, summon *game.Summon, newStance uint8) {
@@ -1904,12 +1904,12 @@ func (l *CharacterListenerImpl) OnSummonDamaged(ch *game.Character, summon *game
 	}
 	packet := &response.DamageSummon{
 		CharacterID:   ch.GetID(),
-		SummonSkillID: uint32(summon.SkillID()),
+		SummonOID:     summon.GetOID(),
 		Unknown:       unknown,
 		Damage:        damage,
 		MonsterIDFrom: monsterIdFrom,
 	}
-	ch.Broadcast(packet, &game.ObjectBroadcastOption{WithMe: true})
+	ch.Broadcast(packet, nil)
 }
 
 func (l *CharacterListenerImpl) OnCarnivalStart(ch *game.Character, team constant.CarnivalTeam, persAvail, persTotal, friendAvail, friendTotal, enemyAvail, enemyTotal int) {

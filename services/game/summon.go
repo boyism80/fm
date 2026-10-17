@@ -65,6 +65,9 @@ type SummonAttackTarget struct {
 }
 
 func (s *Summon) Move(fragments []dto.MoveFragment) {
+	if s.movementType == constant.SummonMoveStationary {
+		return
+	}
 	start := s.position
 	for _, fragment := range fragments {
 		if move, ok := fragment.(*dto.AbsoluteLifeMovement); ok {

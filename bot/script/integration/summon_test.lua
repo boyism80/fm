@@ -10,6 +10,7 @@ local GAVIOTA = 5211002
 local BEHOLDER = 1321007
 local BEHOLDER_HEALING = 1320008
 local HEAL = 40
+local SNAIL = 100100
 
 local HP = 0x400
 local HIT_ENV = -3
@@ -149,13 +150,43 @@ local function gaviota_once(ctx)
 	return check(ctx, removed ~= false, "가비오타가 공격한 뒤에도 남음")
 end
 
+-- Another player sees the summon's attack under the summon's object id.
+local function attack_seen(ctx)
+	local outlaw, knight = ctx:bot(0), ctx:bot(1)
+	if setup(ctx, outlaw, OUTLAW, { OCTOPUS }) == false or setup(ctx, knight, DARK_KNIGHT, {}) == false then
+		return false
+	end
+	local octopus = summon(ctx, outlaw, OCTOPUS)
+	if octopus == false then
+		return false
+	end
+	local spawned = outlaw:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. SNAIL }, function(p)
+		return p.mob.mob_id == SNAIL
+	end, 5000)
+	if spawned == false then
+		return ctx:fail("달팽이 생성 응답 없음")
+	end
+
+	local seen = outlaw:request_on(knight, resp.summon_attack, req.summon_attack {
+		summon_oid = octopus.oid,
+		damages = { { oid = spawned.mob.oid, damage_pairs = { { damage = 1 } } } },
+	}, function(p)
+		return p.character_id == outlaw:id()
+	end, 3000)
+	if seen == false then
+		return ctx:fail("다른 플레이어에게 소환수 공격이 보이지 않음")
+	end
+	return check(ctx, seen.summon_oid == octopus.oid, string.format("소환수 공격의 소환수 번호 %d (기대 OID %d)", seen.summon_oid, octopus.oid))
+end
+
 test_suite {
-	name = "Summon: 고정형 소환수 맵 이동·비홀더스 힐링·가비오타 한 번 공격",
+	name = "Summon: 고정형 소환수 맵 이동·비홀더스 힐링·가비오타 한 번 공격·공격 표시",
 	bot_count = 2,
 
 	scenarios = {
 		map_change,
 		healing_interval,
 		gaviota_once,
+		attack_seen,
 	},
 }

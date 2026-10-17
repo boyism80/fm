@@ -917,11 +917,15 @@ func (ch *Character) SpawnMist(skill *SkillEntry, spec mistSpec) *Mist {
 	}
 
 	mist := &Mist{
-		objectCore: ObjectCore{position: ch.position},
-		causer:     ch.GetID(),
-		skillWz:    skill.wz,
-		skillLevel: uint8(skill.Level()),
-		skillDelay: 8,
+		objectCore:   ObjectCore{position: ch.position},
+		causer:       ch.GetID(),
+		skillWz:      skill.wz,
+		skillLevel:   uint8(skill.Level()),
+		carnivalTeam: constant.CarnivalTeamNone,
+		skillDelay:   8,
+	}
+	if team := ch.carnival.Team(); team != nil {
+		mist.carnivalTeam = team.teamID
 	}
 	mist.spread(m, spec)
 	return mist

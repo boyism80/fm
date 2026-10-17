@@ -26,6 +26,7 @@ type Mist struct {
 	skillLevel           uint8
 	mistType             constant.MistType
 	mobMist              bool
+	carnivalTeam         constant.CarnivalTeam
 	skillDelay           uint16
 	bounds               types.Rect[int32]
 	expiresAt            time.Time
@@ -110,6 +111,9 @@ func (mist *Mist) poisonTargets() []luax.Luable {
 	for _, obj := range mist.onMap.GetMobs() {
 		mob, ok := obj.(*Mob)
 		if !ok || !mob.IsAlive() || mob.buffs.Has(constant.MobBuffPoison) {
+			continue
+		}
+		if mob.carnivalTeam != constant.CarnivalTeamNone && mob.carnivalTeam == mist.carnivalTeam {
 			continue
 		}
 		pos := mob.GetPosition()

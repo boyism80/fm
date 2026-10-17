@@ -13,6 +13,9 @@ func (m *Map) Reset() {
 	m.KillAllMonsters(constant.MobDieAnimationTypeFadeOut)
 	_ = m.ReloadReactors()
 	m.RemoveAllFieldDrops()
+	for _, mist := range m.GetObjects(constant.ObjectTypeMist) {
+		m.RemoveMist(mist.GetOID())
+	}
 	m.ClearProperties()
 	m.ClearBlockedMobGen()
 	m.SetReactorGenEnabled(true)

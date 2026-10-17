@@ -4,7 +4,7 @@ import "github.com/boyism80/fm/stream"
 
 type DamageSummon struct {
 	CharacterID   uint32
-	SummonSkillID uint32
+	SummonOID     uint32
 	Unknown       uint8
 	Damage        uint32
 	MonsterIDFrom uint32
@@ -16,7 +16,7 @@ func (p *DamageSummon) Opcode() uint16 {
 
 func (p *DamageSummon) Serialize(w *stream.StreamWriter) error {
 	w.WriteU32(p.CharacterID)
-	w.WriteU32(p.SummonSkillID)
+	w.WriteU32(p.SummonOID)
 	w.WriteU8(p.Unknown)
 	w.WriteU32(p.Damage)
 	w.WriteU32(p.MonsterIDFrom)

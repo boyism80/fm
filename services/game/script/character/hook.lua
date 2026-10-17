@@ -166,7 +166,6 @@ return {
 					goto continue_char
 				end
 				ch:debuff(DebuffFlag.Poison, time, x, skill_id, skill_level)
-				ch:add_hp(-x)
 				::continue_char::
 			end
 		else

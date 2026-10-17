@@ -261,12 +261,13 @@ func (m *Mob) SpawnMist(skill *MobSkill, spec mistSpec) *Mist {
 	}
 
 	mist := &Mist{
-		objectCore:   ObjectCore{position: m.position},
+		position:     m.position,
 		causer:       causer,
 		skillWz:      skill.levelData.SkillWz,
 		mobLevelData: skill.levelData,
 		skillLevel:   skill.slot.Level,
 		mobMist:      true,
+		carnivalTeam: constant.CarnivalTeamNone,
 	}
 	mist.spread(mapInstance, spec)
 	return mist

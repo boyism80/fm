@@ -28,7 +28,6 @@ return {
 		end
 		for _, ch in ipairs(targets) do
 		    ch:debuff(DebuffFlag.Poison, time, x, skill:id(), skill:level())
-		    ch:add_hp(-x)
 		end
 		return true
 	end
