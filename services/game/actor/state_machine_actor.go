@@ -375,6 +375,9 @@ func (a *StateMachineActor) beginStop() {
 		return
 	}
 	a.lc.stopping = true
+	for _, m := range a.StateMachine.MapList() {
+		m.ClearObjectTimers()
+	}
 	a.timeoutVersion++
 	if a.timeoutCancel != nil {
 		a.timeoutCancel()

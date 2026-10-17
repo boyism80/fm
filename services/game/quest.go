@@ -112,7 +112,7 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 }
 
 func (qp *Quest) StartedMobKills() []uint16 {
-	if qp == nil || len(qp.wz.MobIDs) == 0 {
+	if qp == nil || qp.wz == nil || len(qp.wz.MobIDs) == 0 {
 		return nil
 	}
 	return qp.MobKillCountsOrdered()

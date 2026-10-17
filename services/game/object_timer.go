@@ -51,8 +51,12 @@ func (obj *ObjectCore) scheduleTimer(key string, entry *ObjectTimer, delay time.
 		return
 	}
 	k := key
+	gen := obj.timerGen.Load()
 	entry.nextFireAt = clock.Now().Add(delay)
 	entry.timer = time.AfterFunc(delay, func() {
+		if obj.timerGen.Load() != gen {
+			return
+		}
 		if gw := obj.gameWorld; gw != nil {
 			gw.Systems().Get[*SchedulerSystem]().RunObjectTimer(pid, obj.self, k)
 		}
@@ -97,6 +101,7 @@ func (obj *ObjectCore) GetTimerEntry(key string) *ObjectTimer {
 }
 
 func (obj *ObjectCore) ClearTimers() {
+	obj.timerGen.Add(1)
 	for key, entry := range obj.timers {
 		if entry != nil && entry.timer != nil {
 			entry.timer.Stop()

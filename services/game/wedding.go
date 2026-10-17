@@ -523,8 +523,6 @@ func (w *Wedding) InviteGuest(actx actor.Context, guestName string, marriageID u
 			w.owner.listener.OnMessage(w.owner, constant.MsgPopup, "청첩장을 보냈습니다.")
 		case internal.MarriageResult_MARRIAGE_RESULT_GUEST_ALREADY_INVITED:
 			w.owner.listener.OnMessage(w.owner, constant.MsgPopup, "대상은 이미 결혼식에 초대되었습니다.")
-		case internal.MarriageResult_MARRIAGE_RESULT_GUEST_FULL:
-			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultPartnerInventory)
 		default:
 			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultWrongName)
 		}

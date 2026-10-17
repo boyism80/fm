@@ -137,14 +137,22 @@ func (s *StateMachineSystem) Send(pid *actor.PID, msg interface{}) {
 	if pid == nil || msg == nil {
 		return
 	}
-	s.gw.Systems().Get[*c_actor.ActorRegistry]().Root().Send(pid, msg)
+	registry := s.gw.Systems().Get[*c_actor.ActorRegistry]()
+	if !registry.Running(pid) {
+		return
+	}
+	registry.Root().Send(pid, msg)
 }
 
 func (s *StateMachineSystem) ResumeLua(pid *actor.PID, root *lua.LState, thread *lua.LState, args []lua.LValue) {
 	if pid == nil || root == nil || thread == nil {
 		return
 	}
-	s.gw.Systems().Get[*c_actor.ActorRegistry]().Root().Send(pid, &ResumeLua{
+	registry := s.gw.Systems().Get[*c_actor.ActorRegistry]()
+	if !registry.Running(pid) {
+		return
+	}
+	registry.Root().Send(pid, &ResumeLua{
 		Root:   root,
 		Thread: thread,
 		Args:   args,

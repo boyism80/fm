@@ -1197,6 +1197,19 @@ func (m *Map) HasAliveMobs() bool {
 	return false
 }
 
+func (m *Map) ClearObjectTimers() {
+	for typ, objects := range m.objects {
+		if typ == constant.ObjectTypeCharacter {
+			continue
+		}
+		for _, obj := range objects {
+			if obj != nil {
+				obj.ClearTimers()
+			}
+		}
+	}
+}
+
 func (m *Map) GetObjects(filter constant.ObjectType) []Object {
 	out := make([]Object, 0)
 	for _, buckets := range m.objects {

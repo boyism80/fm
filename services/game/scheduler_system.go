@@ -30,7 +30,11 @@ func (s *SchedulerSystem) RunObjectTimer(pid *actor.PID, obj Object, key string)
 		ID:         obj.GetPK(),
 		Key:        key,
 	}
-	if root := s.gw.Systems().Get[*c_actor.ActorRegistry]().Root(); root != nil {
+	registry := s.gw.Systems().Get[*c_actor.ActorRegistry]()
+	if !registry.Running(pid) {
+		return
+	}
+	if root := registry.Root(); root != nil {
 		root.Send(pid, payload)
 	}
 }

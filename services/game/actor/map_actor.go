@@ -29,6 +29,7 @@ func (a *MapActor) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.StopTimers()
 		if a.Map != nil {
+			a.Map.ClearObjectTimers()
 			a.Map.ClearLuaRoot()
 		}
 	default:

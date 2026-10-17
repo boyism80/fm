@@ -29,6 +29,14 @@ func (r *ActorRegistry) Stop()        { r.system.GetSystem().Shutdown() }
 func (r *ActorRegistry) System() *actor.ActorSystem { return r.system.GetSystem() }
 func (r *ActorRegistry) Root() *actor.RootContext   { return r.system.GetRoot() }
 
+func (r *ActorRegistry) Running(pid *actor.PID) bool {
+	if pid == nil {
+		return false
+	}
+	_, ok := r.System().ProcessRegistry.Get(pid)
+	return ok
+}
+
 func (r *ActorRegistry) PredictPID(name string) *actor.PID {
 	return actor.NewPID(r.system.GetSystem().Address(), name)
 }

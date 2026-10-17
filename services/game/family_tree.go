@@ -199,16 +199,19 @@ func (t FamilyTree) Size() uint32 {
 // a character outside a family is its own leader node.
 func (t FamilyTree) Pedigree(id uint32) []*FamilyMember {
 	me := t.Member(id)
+	if me == nil {
+		return nil
+	}
 	leader := t.Leader()
 	if leader == nil {
 		leader = me
 	}
 	visible := []*FamilyMember{leader}
 	senior := t.Member(me.SeniorID())
-	if grand := t.Member(senior.SeniorID()); grand != nil {
-		visible = append(visible, grand)
-	}
 	if senior != nil {
+		if grand := t.Member(senior.SeniorID()); grand != nil {
+			visible = append(visible, grand)
+		}
 		visible = append(visible, senior)
 	}
 	visible = append(visible, me)

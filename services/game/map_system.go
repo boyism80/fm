@@ -241,7 +241,11 @@ func (s *MapSystem) Visit(m *Map, run func(ctx actor.Context)) {
 	if pid == nil {
 		return
 	}
-	s.gw.Systems().Get[*c_actor.ActorRegistry]().Root().Send(pid, &MapCall{Run: func(ctx actor.Context, _ []*Map) []lua.LValue {
+	registry := s.gw.Systems().Get[*c_actor.ActorRegistry]()
+	if !registry.Running(pid) {
+		return
+	}
+	registry.Root().Send(pid, &MapCall{Run: func(ctx actor.Context, _ []*Map) []lua.LValue {
 		run(ctx)
 		return nil
 	}})

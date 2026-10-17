@@ -1,6 +1,8 @@
 package game
 
 import (
+	"sync/atomic"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/types"
@@ -14,6 +16,7 @@ type ObjectCore struct {
 	onMap     *Map
 	section   *section
 	timers    map[string]*ObjectTimer
+	timerGen  atomic.Uint64
 }
 
 type objectCore = ObjectCore
@@ -53,6 +56,7 @@ type Object interface {
 	RescheduleTimer(key string) bool
 	SuspendTimers()
 	ResumeTimers(pid *actor.PID)
+	ClearTimers()
 }
 
 func (obj *ObjectCore) GetOID() uint32 {

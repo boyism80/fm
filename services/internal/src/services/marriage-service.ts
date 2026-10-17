@@ -331,9 +331,6 @@ export class MarriageService {
                     requestId,
                     system: true,
                 });
-                if (result === ParcelResult.PARCEL_RESULT_RECIPIENT_FULL) {
-                    return fail(MarriageResult.MARRIAGE_RESULT_GUEST_FULL);
-                }
                 if (result !== ParcelResult.PARCEL_RESULT_OK) {
                     return fail(MarriageResult.MARRIAGE_RESULT_INVALID_STATE);
                 }
