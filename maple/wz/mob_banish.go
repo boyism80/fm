@@ -4,6 +4,7 @@ type MobBanish struct {
 	Message string
 	MapID   int32
 	Portal  string
+	OnTouch bool
 }
 
 func parseMobBanish(banNode *node) *MobBanish {
@@ -41,5 +42,6 @@ func parseMobBanish(banNode *node) *MobBanish {
 		Message: msg,
 		MapID:   int32(mapID),
 		Portal:  portal,
+		OnTouch: banNode.Int("banType", 0) == 1,
 	}
 }

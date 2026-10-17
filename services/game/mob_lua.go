@@ -760,33 +760,8 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Character expected")
 				return 0
 			}
-			if mob.wz == nil || mob.wz.Banish == nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			b := mob.wz.Banish
-			if b.Message != "" && ch.listener != nil {
-				ch.listener.OnMessage(ch, constant.MsgPinkText, b.Message)
-			}
-			if ch.gameWorld == nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			targetMap := ch.gameWorld.Systems().Get[*MapSystem]().Find(mob.GetMap().StateMachine(), uint32(b.MapID))
-			if targetMap == nil || targetMap.wz == nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			spawnPoint := uint8(0)
-			if portal := targetMap.FindPortalByName(b.Portal); portal != nil && portal.wz != nil {
-				spawnPoint = portal.wz.ID
-			}
 			cfg, _ := luax.GetConfiguration(L)
-			if err := ch.Warp(cfg.ActorContext, targetMap, spawnPoint); err != nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			L.Push(lua.LBool(true))
+			L.Push(lua.LBool(mob.Banish(cfg.ActorContext, ch)))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {

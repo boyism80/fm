@@ -62,6 +62,16 @@ func (m *Mob) HasSkill(skillID uint32, level uint8) bool {
 	return false
 }
 
+// Attack takes the client's 0-based attack number; WZ names the first attack "attack1".
+func (m *Mob) Attack(number int) *MobAttack {
+	for i := range m.Attacks {
+		if m.Attacks[i].Index == number+1 {
+			return &m.Attacks[i]
+		}
+	}
+	return nil
+}
+
 func parseMobInfoSkills(skillRoot node) []MobSkillSlot {
 	var out []MobSkillSlot
 	for _, slotDir := range skillRoot.Children {
@@ -103,11 +113,8 @@ func parseMobAttackInfo(attackIndex int, info *node) *MobAttack {
 		MADamage:     info.Int("MADamage", 0),
 		Magic:        info.Int("magic", 0) > 0,
 	}
-	for _, ch := range info.Children {
-		if ch.Name == "deadlyAttack" {
-			attack.DeadlyAttack = true
-			break
-		}
+	if _, ok := info.IntOK("deadlyAttack"); ok || info.find("deadlyAttack") != nil {
+		attack.DeadlyAttack = true
 	}
 	rangeNode := info.find("range")
 	if rangeNode != nil {

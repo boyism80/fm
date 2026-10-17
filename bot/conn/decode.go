@@ -111,6 +111,24 @@ var decoders = func() []decoder {
 		newDecoder[response.DialogAccept](dialog(constant.DialogTypeAccept, constant.DialogTypeAcceptEscape)),
 		newDecoder[response.Dialog](func(body []byte) bool { return len(body) >= 6 }),
 		newDecoder[response.UpdateStats](nil),
+		newDecoder[response.GiveDebuff](func(body []byte) bool {
+			if len(body) < 4+constant.MaxBuffFlag*4 {
+				return false
+			}
+			for i := 0; i < constant.MaxBuffFlag; i++ {
+				v := binary.LittleEndian.Uint32(body[4+i*4:])
+				if v == 0 {
+					continue
+				}
+				for _, flag := range constant.AllDebuffFlags() {
+					if flag.Position == i+1 && flag.Mask == v {
+						return true
+					}
+				}
+				return false
+			}
+			return false
+		}),
 		newDecoder[response.OpenNpcShop](nil),
 		newDecoder[response.StorageError](func(body []byte) bool { return len(body) == 1 }),
 		newDecoder[response.Storage](nil),

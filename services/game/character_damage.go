@@ -245,11 +245,34 @@ func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
 }
 
 func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
+	m := ch.GetMap()
+	var mob *Mob
+	if m != nil && hit.MobOID != 0 {
+		mob = m.GetMob(hit.MobOID)
+	}
+
+	var attack *wz.MobAttack
+	if index, ok := hit.Type.MobAttackIndex(); ok && mob != nil && !mob.fake && hit.Damage > 0 {
+		attack = mob.wz.Attack(index)
+	}
+	switch {
+	case hit.Type == constant.IncomingHitCollide && hit.Damage >= 0 && mob != nil && !mob.fake && mob.wz.Banish != nil && mob.wz.Banish.OnTouch:
+		mob.Banish(actx, ch)
+	case attack != nil:
+		if attack.DiseaseSkill != 0 {
+			ch.debuffs.GiveMobSkill(attack.DiseaseSkill, attack.DiseaseLevel)
+		}
+		mp := mob.GetMp()
+		mob.SetMp(mp-min(mp, uint32(max(attack.MpCon, 0))), false)
+	case hit.Type == constant.IncomingHitMapDebuff && hit.SkillID != 0 && hit.SkillLevel != 0:
+		ch.debuffs.GiveMobSkill(hit.SkillID, hit.SkillLevel)
+	}
+
 	damage := int32(0)
 	if hit.Damage == -1 && hit.Type == constant.IncomingHitCollide {
 		ch.block(actx, hit)
 	} else {
-		damage = ch.hitDamage(hit)
+		damage = ch.hitDamage(hit, mob, attack)
 	}
 
 	if ch.invincible {
@@ -259,14 +282,10 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 	ch.TakeDamage(damage)
 }
 
-func (ch *Character) hitDamage(hit Hit) int32 {
+func (ch *Character) hitDamage(hit Hit, mob *Mob, attack *wz.MobAttack) int32 {
 	m := ch.GetMap()
 	if m == nil {
 		return hit.Damage
-	}
-	var mob *Mob
-	if hit.MobOID != 0 {
-		mob = m.GetMob(hit.MobOID)
 	}
 	if mob != nil && mob.fake {
 		return 0
@@ -289,6 +308,10 @@ func (ch *Character) hitDamage(hit Hit) int32 {
 	params := root.NewTable()
 	params.RawSetString("hit_type", lua.LNumber(int32(hit.Type)))
 	params.RawSetString("reflect_ratio", lua.LNumber(int32(hit.Reflect)))
+	if attack != nil {
+		params.RawSetString("deadly", lua.LBool(attack.DeadlyAttack))
+		params.RawSetString("mp_burn", lua.LNumber(attack.MpBurn))
+	}
 
 	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 	if err != nil {
@@ -386,7 +409,6 @@ func (ch *Character) OnKill(mobs []*Mob) {
 		scriptPath := fmt.Sprintf("script/mob/%d.lua", id)
 		mapInstance.runMobLuaHook(root, scriptPath, "on_mob_kill", ch, group)
 	}
-	mapInstance.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_kill", ch, all)
 	if ch.stateMachine != nil {
 		ch.stateMachine.CallHook("on_mob_kill", ch, all)
 	}

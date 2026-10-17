@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 )
 
@@ -39,9 +40,6 @@ func (m *Mob) grantKillExp() {
 				}
 				raw := m.ExpForDamage(dmg)
 				raw = raw * uint32(mobExpRate) / 100
-				if raw == 0 {
-					continue
-				}
 				rawByChar[cid] += uint64(raw)
 			}
 		} else {
@@ -51,27 +49,26 @@ func (m *Mob) grantKillExp() {
 				continue
 			}
 			for cid, raw := range partyRaw {
-				if raw == 0 {
-					continue
-				}
 				rawByChar[cid] += raw
 			}
 		}
 	}
 
+	// A receiver whose share rounds to zero still counts the kill.
 	for cid, rawTotal := range rawByChar {
-		if rawTotal == 0 {
-			continue
-		}
 		ch := mapInst.GetPlayer(cid)
 		if ch == nil || ch.GetMap() != mapInst || !ch.IsAlive() {
 			continue
 		}
-		raw := rawTotal
-		if raw > uint64(^uint32(0)) {
-			raw = uint64(^uint32(0))
+		if rawTotal > 0 {
+			raw := rawTotal
+			if raw > uint64(^uint32(0)) {
+				raw = uint64(^uint32(0))
+			}
+			ch.AddExp(ch.ComputeMobKillExp(uint32(raw)))
 		}
-		ch.AddExp(ch.ComputeMobKillExp(uint32(raw)))
+		ch.quests.RecordMobKill(m.wz.ID)
+		mapInst.runMobLuaHook(mapInst.GetLuaRoot(), constant.CharacterHookScriptPath, "on_mob_kill", ch, []luax.Luable{m})
 	}
 }
 
@@ -94,9 +91,6 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 		return map[uint32]uint64{}, nil
 	}
 	poolRaw := m.ExpForDamage(totDamage)
-	if poolRaw == 0 {
-		return map[uint32]uint64{}, nil
-	}
 	mobExpRate := m.expRate
 	if mobExpRate <= 0 {
 		mobExpRate = 100
@@ -193,11 +187,7 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 
 	out := make(map[uint32]uint64, len(rawAcc))
 	for rid, v := range rawAcc {
-		raw := uint32(math.Round(v))
-		if raw == 0 {
-			continue
-		}
-		out[rid] += uint64(raw)
+		out[rid] += uint64(math.Round(v))
 	}
 	return out, nil
 }

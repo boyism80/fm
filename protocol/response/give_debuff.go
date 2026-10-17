@@ -30,4 +30,16 @@ func (p *GiveDebuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *GiveDebuff) Deserialize(_ *stream.StreamReader) {}
+func (p *GiveDebuff) Deserialize(reader *stream.StreamReader) {
+	p.CharacterID = reader.Read32()
+	for i := 0; i < constant.MaxBuffFlag; i++ {
+		if v := reader.Read32(); v != 0 {
+			p.Debuff = constant.DebuffFlag{Mask: uint32(v), Position: i + 1}
+		}
+	}
+	if p.Debuff.Mask == constant.DebuffFlagPoison.Mask && p.Debuff.Position == constant.DebuffFlagPoison.Position {
+		p.X = reader.Read16()
+	}
+	p.SkillID = uint16(reader.Read16())
+	p.SkillLevel = uint16(reader.Read16())
+}

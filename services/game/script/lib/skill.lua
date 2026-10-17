@@ -208,44 +208,48 @@ M.apply_archer_puppet_unbuff = function(me, skill)
 	me:remove_summon(wz:id())
 end
 
-M.absorb_magic_guard = function(me, attacker, skill, damage)
+M.absorb_magic_guard = function(me, damage, params)
 	if damage == nil or damage <= 0 then
 		return damage
 	end
 
+	local infinity = me:buff_value(BuffFlag.Infinity) ~= nil
+	if params.deadly then
+		if not infinity and me:mp() > 1 then
+			me:add_mp(1 - me:mp())
+		end
+		return math.max(me:hp() - 1, 0)
+	end
+
 	local guard_percent = me:buff_value(BuffFlag.MagicGuard)
-	if guard_percent == nil or guard_percent <= 0 then
-		return damage
-	end
-
-	local current_mp = me:mp()
-	if current_mp == nil or current_mp <= 0 then
-		return damage
-	end
-
-	local mp_loss = math.floor(damage * (guard_percent / 100.0))
-	if mp_loss < 0 then
-		mp_loss = 0
-	end
-	if mp_loss > current_mp then
-		mp_loss = current_mp
-	end
-
+	local mp_burn = params.mp_burn or 0
+	local mp_loss = math.max(math.floor(damage * (guard_percent / 100.0)), 0) + mp_burn
 	local hp_loss = damage - mp_loss
-	if hp_loss < 0 then
-		hp_loss = 0
+	if infinity then
+		mp_loss = 0
+	elseif mp_loss > me:mp() then
+		mp_loss = me:mp()
+		hp_loss = damage - mp_loss + mp_burn
 	end
 
 	if mp_loss > 0 then
 		me:add_mp(-mp_loss)
 	end
 
-	return hp_loss
+	return math.max(hp_loss, 0)
 end
 
-M.absorb_meso_guard = function(me, attacker, skill, damage)
+M.absorb_meso_guard = function(me, damage, params)
 	if damage == nil or damage <= 0 then
 		return damage
+	end
+
+	local mp_loss = params.mp_burn or 0
+	if params.deadly then
+		mp_loss = math.max(me:mp() - 1, 0)
+	end
+	if mp_loss > 0 then
+		me:add_mp(-mp_loss)
 	end
 
 	local guard_percent = me:buff_value(BuffFlag.MesoGuard)
@@ -271,6 +275,23 @@ M.absorb_meso_guard = function(me, attacker, skill, damage)
 		me:meso(current_meso - meso_loss)
 	end
 	return hp_loss
+end
+
+M.take_hit = function(me, damage, params)
+	if damage == nil or damage <= 0 then
+		return damage
+	end
+	if params.deadly then
+		if me:mp() > 1 then
+			me:add_mp(1 - me:mp())
+		end
+		return math.max(me:hp() - 1, 0)
+	end
+	local mp_burn = params.mp_burn or 0
+	if mp_burn > 0 then
+		me:add_mp(-mp_burn)
+	end
+	return damage
 end
 
 return M

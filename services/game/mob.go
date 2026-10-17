@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -479,6 +480,25 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 }
 
+func (m *Mob) Banish(actx actor.Context, ch *Character) bool {
+	if m.wz.Banish == nil {
+		return false
+	}
+	b := m.wz.Banish
+	if b.Message != "" {
+		ch.listener.OnMessage(ch, constant.MsgPinkText, b.Message)
+	}
+	targetMap := ch.gameWorld.Systems().Get[*MapSystem]().Find(m.GetMap().StateMachine(), uint32(b.MapID))
+	if targetMap == nil || targetMap.wz == nil {
+		return false
+	}
+	spawnPoint := uint8(0)
+	if portal := targetMap.FindPortalByName(b.Portal); portal != nil && portal.wz != nil {
+		spawnPoint = portal.wz.ID
+	}
+	return ch.Warp(actx, targetMap, spawnPoint) == nil
+}
+
 func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 	if amount == 0 || m.GetHp() == 0 {
 		return false
@@ -586,7 +606,6 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 	}
 	if reward && attacker != nil {
 		if m.wz != nil {
-			attacker.quests.RecordMobKill(m.wz.ID)
 			if match := attacker.carnival.Match(); match != nil && m.wz != nil {
 				cpAmount := m.wz.CP
 				if cpAmount <= 0 {

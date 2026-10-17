@@ -131,10 +131,15 @@ return {
 		if me:buff_value(BuffFlag.DivineBody) ~= nil then
 			return 0
 		end
-		local d = skill_lib.absorb_magic_guard(me, attacker, skill, damage)
-		d = skill_lib.absorb_meso_guard(me, attacker, skill, d)
-		d = combat.reflect_incoming_damage(me, attacker, skill, d, params)
-		return d
+		local d
+		if (me:buff_value(BuffFlag.MagicGuard) or 0) > 0 then
+			d = skill_lib.absorb_magic_guard(me, damage, params)
+		elseif (me:buff_value(BuffFlag.MesoGuard) or 0) > 0 then
+			d = skill_lib.absorb_meso_guard(me, damage, params)
+		else
+			d = skill_lib.take_hit(me, damage, params)
+		end
+		return combat.reflect_incoming_damage(me, attacker, skill, d, params)
 	end,
 
 	on_poison = function(mist, targets)
