@@ -36,19 +36,15 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 	if req.SubSkillID == 0 {
 		return nil
 	}
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return nil
-	}
-	summon := mapInstance.GetSummon(req.SummonOID)
-	if summon == nil || summon.OwnerID() != character.GetID() {
+	summon := character.Summons().FindByOID(req.SummonOID)
+	if summon == nil {
 		return nil
 	}
 	skillEntry := character.Skills().Get(req.SubSkillID)
 	if skillEntry == nil {
 		return nil
 	}
-	root := mapInstance.GetLuaRoot()
+	root := character.GetMap().GetLuaRoot()
 	if root == nil {
 		return nil
 	}

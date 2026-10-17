@@ -47,6 +47,9 @@ local function unique_worn(ctx)
 	if setup(ctx, bot, "-") == false then
 		return false
 	end
+	if bot:force_instance_move(HENESYS, "다른 스위트가 치우는 바닥 아이템과 분리") == false then
+		return ctx:fail("인스턴스 맵 이동 실패")
+	end
 	local oid = spawn(ctx, bot, ONLY_CAP)
 	if oid == false then
 		return false

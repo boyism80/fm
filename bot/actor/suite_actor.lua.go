@@ -33,6 +33,7 @@ var requests = []outbound{
 	&request.PartyOperation{},
 	&request.Buddy{},
 	&request.AutoAssignAP{},
+	&request.SummonSkill{},
 	&request.GuildOperation{},
 	&request.SwitchChannel{},
 	&request.EnterCashShop{},

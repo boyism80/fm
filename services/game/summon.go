@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
 )
@@ -14,7 +15,6 @@ type Summon struct {
 	skillLevel   uint8
 	movementType constant.SummonMovementType
 	summonType   constant.SummonType
-	changedMap   bool
 }
 
 func (s *Summon) GetObjectType() constant.ObjectType {
@@ -64,18 +64,16 @@ type SummonAttackTarget struct {
 	Damage uint32
 }
 
-func (s *Summon) Spawn(animated bool) {
-	m := s.owner.GetMap()
-	if m == nil {
-		return
+func (s *Summon) Move(fragments []dto.MoveFragment) {
+	start := s.position
+	for _, fragment := range fragments {
+		if move, ok := fragment.(*dto.AbsoluteLifeMovement); ok {
+			s.Place(move.Position)
+		}
+		s.SetStance(fragment.GetStance())
 	}
-	pos := s.owner.position
-	s.position = pos
-	m.AddSummon(s)
-}
-
-func (s *Summon) Remove(animated bool) {
-	s.owner.summons.Remove(s, animated)
+	s.onMap.OnMoved(s, start)
+	s.owner.listener.OnSummonMove(s.owner, s, start, fragments)
 }
 
 func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) {

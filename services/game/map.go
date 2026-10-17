@@ -413,6 +413,10 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 			continue
 		}
 		m.RemoveSummon(summon.oid, false)
+		if summon.movementType != constant.SummonMoveFollow && summon.movementType != constant.SummonMoveCircleFollow {
+			character.summons.Remove(summon, false)
+			character.buffs.CancelBySource(int32(summon.skillID))
+		}
 	}
 
 	delete(m.objects[constant.ObjectTypeCharacter], playerID)
@@ -676,16 +680,6 @@ func (m *Map) RemoveSummon(oid uint32, animated bool) {
 		s.onMap = nil
 		s.oid = 0
 	}
-}
-
-func (m *Map) GetSummon(oid uint32) *Summon {
-	if m.objects[constant.ObjectTypeSummon] == nil {
-		return nil
-	}
-	if s, ok := m.objects[constant.ObjectTypeSummon][oid].(*Summon); ok {
-		return s
-	}
-	return nil
 }
 
 func (m *Map) AddMist(mist *Mist) {

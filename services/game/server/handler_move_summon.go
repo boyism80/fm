@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 )
@@ -26,28 +25,10 @@ func (h *MoveSummon) Handle(ctx *core.ClientContext, req *request.MoveSummon) er
 	if character == nil {
 		return nil
 	}
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return nil
-	}
-
-	summon := mapInstance.GetSummon(req.OID)
+	summon := character.Summons().FindByOID(req.OID)
 	if summon == nil {
 		return nil
 	}
-	if summon.OwnerID() != character.GetID() {
-		return nil
-	}
-
-	start := summon.GetPosition()
-	for _, m := range req.Fragments {
-		if move, ok := m.(*dto.AbsoluteLifeMovement); ok {
-			summon.Place(move.Position)
-		}
-		summon.SetStance(m.GetStance())
-	}
-
-	mapInstance.OnMoved(summon, start)
-	character.Listener().OnSummonMove(character, summon, start, req.Fragments)
+	summon.Move(req.Fragments)
 	return nil
 }

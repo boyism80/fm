@@ -20,13 +20,17 @@ type SummonSkill struct {
 func (*SummonSkill) Opcode() byte { return 0x8F }
 
 func (m *SummonSkill) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(m.SummonOID)
+	writer.WriteU32(m.SubSkillID)
+	if m.SubSkillID == skillIDBeholderBuff {
+		writer.WriteU8(0)
+		writer.WriteU8(m.BuffEffectIndex)
+	}
 	return nil
 }
 
 func (m *SummonSkill) Deserialize(reader *stream.StreamReader) {
 	m.SummonOID = reader.ReadU32()
-	if reader.Remaining() < 4 {
-	}
 	m.SubSkillID = reader.ReadU32()
 	switch m.SubSkillID {
 	case skillIDBeholderBuff:

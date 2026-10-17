@@ -71,19 +71,10 @@ func (sc *Summons) Remove(s *Summon, animated bool) {
 }
 
 func (sc *Summons) Attack(oid uint32, damages []dto.AttackPair) (*Summon, error) {
-	if sc.owner.GetMap() == nil {
-		return nil, nil
-	}
 	if sc.owner.Spectating() || !sc.owner.IsAlive() {
 		return nil, nil
 	}
-	var summon *Summon
-	for _, s := range sc.entries {
-		if s.oid == oid {
-			summon = s
-			break
-		}
-	}
+	summon := sc.FindByOID(oid)
 	if summon == nil {
 		return nil, nil
 	}
@@ -97,6 +88,19 @@ func (sc *Summons) Attack(oid uint32, damages []dto.AttackPair) (*Summon, error)
 
 func (sc *Summons) Get(skillID constant.SkillID) *Summon {
 	return sc.entries[skillID]
+}
+
+func (sc *Summons) FindByOID(oid uint32) *Summon {
+	m := sc.owner.GetMap()
+	if m == nil {
+		return nil
+	}
+	for _, s := range sc.entries {
+		if s.oid == oid && s.onMap == m {
+			return s
+		}
+	}
+	return nil
 }
 
 func (sc *Summons) All() []*Summon {

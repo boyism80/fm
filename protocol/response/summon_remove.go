@@ -23,4 +23,8 @@ func (p *RemoveSummon) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *RemoveSummon) Deserialize(*stream.StreamReader) {}
+func (p *RemoveSummon) Deserialize(reader *stream.StreamReader) {
+	p.OwnerID = reader.ReadU32()
+	p.OID = reader.ReadU32()
+	p.Animated = reader.ReadU8() == 4
+}

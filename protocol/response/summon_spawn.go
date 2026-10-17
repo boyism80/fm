@@ -39,4 +39,16 @@ func (p *SpawnSummon) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnSummon) Deserialize(*stream.StreamReader) {}
+func (p *SpawnSummon) Deserialize(reader *stream.StreamReader) {
+	p.OwnerID = reader.ReadU32()
+	p.OID = reader.ReadU32()
+	p.SkillID = constant.SkillID(reader.ReadU32())
+	p.SkillLevel = reader.ReadU8()
+	p.Position.X = reader.Read16()
+	p.Position.Y = reader.Read16()
+	reader.ReadU8()
+	reader.Read16()
+	p.MovementType = constant.SummonMovementType(reader.ReadU8())
+	p.SummonType = constant.SummonType(reader.ReadU8())
+	p.Animated = reader.ReadBool()
+}

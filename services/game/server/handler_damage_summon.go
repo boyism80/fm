@@ -25,19 +25,10 @@ func (h *DamageSummon) Handle(ctx *core.ClientContext, req *request.DamageSummon
 	if character == nil {
 		return nil
 	}
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return nil
-	}
-
-	summon := mapInstance.GetSummon(req.OID)
+	summon := character.Summons().FindByOID(req.OID)
 	if summon == nil {
 		return nil
 	}
-	if summon.OwnerID() != character.GetID() {
-		return nil
-	}
-
 	summon.TakeDamage(req.Unknown, req.Damage, req.MonsterIdFrom)
 	return nil
 }

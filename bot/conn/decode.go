@@ -214,6 +214,8 @@ var decoders = func() []decoder {
 			}
 			return false
 		}),
+		newDecoder[response.SpawnSummon](nil),
+		newDecoder[response.RemoveSummon](nil),
 		newDecoder[response.SpawnMob](nil),
 		newDecoder[response.DieMob](nil),
 		newDecoder[response.ApplyMobBuff](nil),
