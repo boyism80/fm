@@ -284,6 +284,11 @@ export class SocialService {
         }
     }
 
+    async pruneMessengers(world: number) {
+        await using lock = await this.distributedLockService.acquireWorldDataLock(world, MESSENGER_LOCK);
+        await this.prune(world, await this.rooms(world));
+    }
+
     async leaveMessenger(world: number, characterId: number) {
         await using lock = await this.distributedLockService.acquireWorldDataLock(world, MESSENGER_LOCK);
         for (const room of await this.rooms(world)) {
@@ -391,9 +396,10 @@ export class SocialService {
 
         let room: Room | undefined;
         if (req.roomId === 0) {
-            const roomId = await this.redis(world).incr(this.key(world, "messenger-sequence"));
-            if (roomId > 0xffffffff) {
-                throw new Error("Messenger ID exhausted");
+            const used = new Set(rooms.filter(r => r.members.length > 0).map(r => r.id));
+            let roomId = 1;
+            while (used.has(roomId)) {
+                roomId++;
             }
             room = { id: roomId, members: [], invites: [] };
         } else {

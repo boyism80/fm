@@ -31,6 +31,7 @@ import type { GuildBulletinBoardService } from "./services/guild-bulletin-board-
 import type { AllianceService } from "./services/alliance-service";
 import type { FamilyService } from "./services/family-service";
 import type { CashShopService } from "./services/cash-shop-service";
+import type { SocialService } from "./services/social-service";
 type ServerContainerCradle = {
     catalogController: CatalogGrpcController;
     authController: AuthGrpcController;
@@ -49,6 +50,7 @@ type ServerContainerCradle = {
     allianceService: AllianceService;
     familyService: FamilyService;
     cashShopService: CashShopService;
+    socialService: SocialService;
     grpcError: typeof grpcError;
 };
 
@@ -117,6 +119,12 @@ async function main() {
 
     await wzService.preload();
     await rabbitmqService.start();
+
+    try {
+        await container.resolve("socialService").pruneMessengers(internalConfig.app.world_id);
+    } catch (err) {
+        console.error("[social] messenger prune failed", err);
+    }
 
     const cashShopService = container.resolve("cashShopService");
     let settlingCashTransfers = false;

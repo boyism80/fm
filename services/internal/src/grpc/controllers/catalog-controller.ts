@@ -58,12 +58,18 @@ export class CatalogGrpcController {
         return redisAliveKey(`w${worldId}:${member}`);
     }
 
+    // The index lives only while some server keeps pinging, so it disappears once every server is down.
     private async heartbeat(worldId: number, member: string, online: number) {
         const { client } = this.internalContext.getRedisGlobalAccess(worldId);
+        const ttl = this.appConfiguration.getServerAliveTtlSeconds();
+        const now = Date.now();
+        const index = this.heartbeatIndex(worldId);
         await client
             .multi()
-            .set(this.heartbeatKey(worldId, member), String(online), "EX", this.appConfiguration.getServerAliveTtlSeconds())
-            .zadd(this.heartbeatIndex(worldId), Date.now(), member)
+            .set(this.heartbeatKey(worldId, member), String(online), "EX", ttl)
+            .zadd(index, now, member)
+            .zremrangebyscore(index, "-inf", now - ttl * 1000)
+            .expire(index, ttl)
             .exec();
     }
 
