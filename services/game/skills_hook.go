@@ -12,7 +12,7 @@ import (
 )
 
 func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, direction *uint8, params func(L *lua.LState) lua.LValue) bool {
-	if sc.owner.Spectating() {
+	if sc.owner.Spectating() || !sc.owner.IsAlive() {
 		return false
 	}
 	m := sc.owner.GetMap()

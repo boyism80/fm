@@ -119,6 +119,40 @@ local function mystic_door(ctx)
 	return check(ctx, rocks == 4, "미스틱 도어 사용 후 마법의 돌 개수가 다름: " .. rocks)
 end
 
+local function dead_mystic_door(ctx)
+	local bot = ctx:bot(0)
+	if setup(ctx, bot, 70, PRIEST, MAGIC_ROCK .. ":5") == false then
+		return false
+	end
+	if learn(ctx, bot, MYSTIC_DOOR) == false then
+		return false
+	end
+	if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+		return ctx:fail("마력 설정 실패")
+	end
+	if bot:map_move(HUNTING_GROUND) == false then
+		return ctx:fail("사냥터 이동 실패")
+	end
+	if pq.command(bot, "/체력바꾸기 0", "체력 설정") == false then
+		return ctx:fail("체력 설정 실패")
+	end
+
+	local p = bot:request(resp.spawn_door, req.active_skill { skill_id = MYSTIC_DOOR, skill_level = 1 }, function(p)
+		return p.owner_id == bot:id()
+	end, 2000)
+	if p ~= false then
+		return ctx:fail("죽은 캐릭터가 미스틱 도어를 엶")
+	end
+	local rocks = bot:items()[MAGIC_ROCK] or 0
+	if check(ctx, rocks == 5, "죽은 캐릭터의 마법의 돌이 소모됨: " .. rocks) == false then
+		return false
+	end
+	if pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false then
+		return ctx:fail("체력 복구 실패")
+	end
+	return true
+end
+
 local function gm_holy_symbol(ctx)
 	local bot = ctx:bot(1)
 	if setup(ctx, bot, 120, GM, "-") == false then
@@ -333,11 +367,12 @@ local function poison_mist(ctx)
 end
 
 test_suite {
-	name = "Skill: 미스틱 도어 맵 제한·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개",
+	name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개",
 	bot_count = 2,
 
 	scenarios = {
 		mystic_door,
+		dead_mystic_door,
 		gm_holy_symbol,
 		solo_holy_symbol,
 		shadow_web_front,
