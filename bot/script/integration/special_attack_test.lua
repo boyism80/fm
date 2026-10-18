@@ -131,7 +131,9 @@ local function hypnotize_damage(ctx)
 			source, target = mobs[2], mobs[1]
 			break
 		end
-		bot:send(req.normal_chat { message = "/쿨타임초기화" })
+		if pq.command(bot, "/쿨타임초기화", "쿨타임 초기화 완료") == false then
+			return ctx:fail("쿨타임 초기화 실패")
+		end
 	end
 	if source == nil then
 		return ctx:fail("하이퍼노타이즈 후 최면 피해가 들어가지 않음")
