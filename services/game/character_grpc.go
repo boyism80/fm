@@ -48,11 +48,12 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 			face:      p.GetFace(),
 			hair:      p.GetHair(),
 		},
-		level: uint8(p.GetLevel()),
-		class: constant.ClassType(p.GetClassId()),
-		role:  constant.CharacterRole(p.GetRole()),
-		gm:    GMMode{hidden: p.GetHidden()},
-		exp:   p.GetExp(),
+		level:        uint8(p.GetLevel()),
+		class:        constant.ClassType(p.GetClassId()),
+		role:         constant.CharacterRole(p.GetRole()),
+		gm:           GMMode{hidden: p.GetHidden()},
+		exp:          p.GetExp(),
+		expReachedAt: time.UnixMilli(p.GetExpReachedUnixMs()),
 
 		random: [3]stream.RandomStream{stream.NewRandomStream(), stream.NewRandomStream(), stream.NewRandomStream()},
 	}
@@ -233,6 +234,7 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		TeleportStones:    ch.teleportStones.regular.Registered(),
 		VipTeleportStones: ch.teleportStones.vip.Registered(),
 		SavedAtUnixMs:     clock.Now().UnixMilli(),
+		ExpReachedUnixMs:  ch.expReachedAt.UnixMilli(),
 	}
 	return &internal.CharacterSaveEntry{
 		Character:         pb,

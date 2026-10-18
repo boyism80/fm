@@ -38,6 +38,7 @@ type Character struct {
 	level          uint8
 	rank           Ranking
 	exp            uint32
+	expReachedAt   time.Time
 	stats          *Stats
 	points         *Points
 	mega           bool
@@ -757,6 +758,7 @@ func (ch *Character) addExpUnchecked(exp uint32) {
 	}
 	ch.family.gainProgress(exp)
 	ch.exp += exp
+	ch.expReachedAt = clock.Now()
 	ch.listener.OnExpGain(ch, exp)
 
 	if !ch.tryLevelUp() {
@@ -883,6 +885,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 
 	oldLevel := ch.level
 	ch.level = newLevel
+	ch.expReachedAt = clock.Now()
 	ch.listener.OnPartyMemberFieldsChanged(ch)
 	if newLevel < oldLevel {
 		if ch.gameWorld != nil {

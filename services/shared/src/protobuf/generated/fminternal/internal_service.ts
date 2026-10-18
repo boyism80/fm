@@ -2403,6 +2403,7 @@ export interface Character {
   familyProgress: string;
   populationHistory: PopulationHistory | undefined;
   familyReputation: { [key: number]: string };
+  expReachedUnixMs: number;
 }
 
 export interface Character_FamilyReputationEntry {
@@ -11768,6 +11769,7 @@ function createBaseCharacter(): Character {
     familyProgress: "0",
     populationHistory: undefined,
     familyReputation: {},
+    expReachedUnixMs: 0,
   };
 }
 
@@ -11905,6 +11907,9 @@ export const Character: MessageFns<Character> = {
     globalThis.Object.entries(message.familyReputation).forEach(([key, value]: [string, string]) => {
       Character_FamilyReputationEntry.encode({ key: key as any, value }, writer.uint32(338).fork()).join();
     });
+    if (message.expReachedUnixMs !== 0) {
+      writer.uint32(344).int64(message.expReachedUnixMs);
+    }
     return writer;
   },
 
@@ -12284,6 +12289,14 @@ export const Character: MessageFns<Character> = {
           }
           continue;
         }
+        case 43: {
+          if (tag !== 344) {
+            break;
+          }
+
+          message.expReachedUnixMs = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12453,6 +12466,11 @@ export const Character: MessageFns<Character> = {
           {},
         )
         : {},
+      expReachedUnixMs: isSet(object.expReachedUnixMs)
+        ? globalThis.Number(object.expReachedUnixMs)
+        : isSet(object.exp_reached_unix_ms)
+        ? globalThis.Number(object.exp_reached_unix_ms)
+        : 0,
     };
   },
 
@@ -12590,6 +12608,9 @@ export const Character: MessageFns<Character> = {
         });
       }
     }
+    if (message.expReachedUnixMs !== 0) {
+      obj.expReachedUnixMs = Math.round(message.expReachedUnixMs);
+    }
     return obj;
   },
 
@@ -12650,6 +12671,7 @@ export const Character: MessageFns<Character> = {
       },
       {},
     );
+    message.expReachedUnixMs = object.expReachedUnixMs ?? 0;
     return message;
   },
 };

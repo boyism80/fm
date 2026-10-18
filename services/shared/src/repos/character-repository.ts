@@ -7,7 +7,7 @@ import type { PopulationHistory } from "../protobuf/generated/fminternal/interna
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, family_progress, family_reputation, population_history, saved_at, deleted, created_at, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, family_progress, family_reputation, population_history, saved_at, exp_reached_at, deleted, created_at, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id, name = EXCLUDED.name, gender = EXCLUDED.gender,
@@ -21,14 +21,14 @@ const ON_CONFLICT_SET = `
   hp_ap_used = EXCLUDED.hp_ap_used, pet_hp_item = EXCLUDED.pet_hp_item, pet_mp_item = EXCLUDED.pet_mp_item,
   summoned_pet = EXCLUDED.summoned_pet, slot_limits = EXCLUDED.slot_limits, monster_book_cover = EXCLUDED.monster_book_cover,
   teleport_stones = EXCLUDED.teleport_stones, vip_teleport_stones = EXCLUDED.vip_teleport_stones, hidden = EXCLUDED.hidden,
-  family_progress = EXCLUDED.family_progress, family_reputation = EXCLUDED.family_reputation, population_history = EXCLUDED.population_history, saved_at = EXCLUDED.saved_at,
+  family_progress = EXCLUDED.family_progress, family_reputation = EXCLUDED.family_reputation, population_history = EXCLUDED.population_history, saved_at = EXCLUDED.saved_at, exp_reached_at = EXCLUDED.exp_reached_at,
   deleted = FALSE, updated_at = NOW()`;
 
 const INSERT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, family_progress, family_reputation, population_history, saved_at, deleted, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, family_progress, family_reputation, population_history, saved_at, exp_reached_at, deleted, updated_at`;
 
-const PER_ROW_PARAMS = 42;
+const PER_ROW_PARAMS = 43;
 
 const DEFAULT_SLOT_LIMITS = [32, 32, 32, 32, 32];
 
@@ -69,7 +69,7 @@ function rowValues(row: CharacterRow) {
         row.summoned_pet, row.slot_limits ?? DEFAULT_SLOT_LIMITS, row.monster_book_cover,
         row.teleport_stones ?? [], row.vip_teleport_stones ?? [], row.hidden, row.family_progress ?? "0",
         JSON.stringify(row.family_reputation ?? {}),
-        JSON.stringify(row.population_history ?? { last_given_at: null, given: {} }), row.saved_at,
+        JSON.stringify(row.population_history ?? { last_given_at: null, given: {} }), row.saved_at, row.exp_reached_at,
     ];
 }
 
@@ -102,7 +102,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
 
     override onUpsert(row: CharacterRow): RepositoryQuery {
         return {
-            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rowValues(row),
         };
     }
@@ -171,6 +171,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             vipTeleportStones: row.vip_teleport_stones ?? [],
             hidden: row.hidden,
             savedAtUnixMs: row.saved_at ? new Date(row.saved_at).getTime() : 0,
+            expReachedUnixMs: row.exp_reached_at ? new Date(row.exp_reached_at).getTime() : 0,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
@@ -219,6 +220,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             vip_teleport_stones: model.vipTeleportStones ?? [],
             hidden: model.hidden ?? false,
             saved_at: model.savedAtUnixMs ? new Date(model.savedAtUnixMs) : null,
+            exp_reached_at: new Date(model.expReachedUnixMs || Date.now()),
         };
     }
 }

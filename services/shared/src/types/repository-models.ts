@@ -90,6 +90,7 @@ export interface CharacterModel {
     vipTeleportStones?: number[];
     hidden?: boolean;
     savedAtUnixMs?: number;
+    expReachedUnixMs?: number;
     updatedAt?: Date;
 }
 
@@ -136,6 +137,7 @@ export type CharacterRow = {
     vip_teleport_stones: number[] | null;
     hidden: boolean;
     saved_at: Date | string | null;
+    exp_reached_at: Date | string;
     deleted?: boolean;
     created_at?: Date | string;
     updated_at?: Date | string;
@@ -403,6 +405,8 @@ export interface GuildModel {
     name: string;
     leaderCharacterId: number;
     gp: number;
+    weeklyGp: number;
+    gpWeek: number;
     capacity: number;
     notice: string;
     logo: GuildLogoModel;
@@ -420,6 +424,8 @@ export type GuildRow = {
     name: string;
     leader_character_id: number;
     gp: number;
+    weekly_gp: number;
+    gp_week: number;
     capacity: number;
     notice: string;
     logo: GuildLogoModel | null;

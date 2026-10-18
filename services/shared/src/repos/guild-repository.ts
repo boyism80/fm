@@ -12,7 +12,7 @@ import {
 } from "../types/guild-json";
 import { RequestRepository } from "./request-repository";
 
-const SELECT_COLS = `world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles,
+const SELECT_COLS = `world_id, guild_id, name, leader_character_id, gp, weekly_gp, gp_week, capacity, notice, logo, rank_titles,
   alliance_id, disbanded_at, created_at, updated_at, revision`;
 
 export type { GuildModel };
@@ -73,12 +73,14 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
 
     override onUpsert(row: GuildRow): RepositoryQuery {
         return {
-            text: `INSERT INTO guilds (world_id, guild_id, name, leader_character_id, gp, capacity, notice, logo, rank_titles, alliance_id, disbanded_at, created_at, updated_at, revision)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,NOW(),clock_timestamp(),1)
+            text: `INSERT INTO guilds (world_id, guild_id, name, leader_character_id, gp, weekly_gp, gp_week, capacity, notice, logo, rank_titles, alliance_id, disbanded_at, created_at, updated_at, revision)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::text[],$12,$13,NOW(),clock_timestamp(),1)
                    ON CONFLICT (world_id, guild_id) DO UPDATE
                    SET name = EXCLUDED.name,
                        leader_character_id = EXCLUDED.leader_character_id,
                        gp = EXCLUDED.gp,
+                       weekly_gp = EXCLUDED.weekly_gp,
+                       gp_week = EXCLUDED.gp_week,
                        capacity = EXCLUDED.capacity,
                        notice = EXCLUDED.notice,
                        logo = EXCLUDED.logo,
@@ -94,6 +96,8 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
                 row.name,
                 row.leader_character_id,
                 row.gp,
+                row.weekly_gp,
+                row.gp_week,
                 row.capacity,
                 row.notice,
                 row.logo,
@@ -126,6 +130,8 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             name: row.name,
             leaderCharacterId: row.leader_character_id,
             gp: row.gp,
+            weeklyGp: row.weekly_gp ?? 0,
+            gpWeek: row.gp_week ?? 0,
             capacity: row.capacity,
             notice: row.notice,
             logo: this.logoFromRow(row.logo),
@@ -160,6 +166,8 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             name: model.name,
             leader_character_id: model.leaderCharacterId,
             gp: model.gp,
+            weekly_gp: model.weeklyGp,
+            gp_week: model.gpWeek,
             capacity: model.capacity,
             notice: model.notice,
             logo: model.logo,

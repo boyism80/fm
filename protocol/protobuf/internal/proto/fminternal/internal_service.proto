@@ -683,6 +683,7 @@ message Character {
   uint64 family_progress = 40 [jstype = JS_STRING];
   PopulationHistory population_history = 41;
   map<uint32, string> family_reputation = 42;
+  int64 exp_reached_unix_ms = 43;
 }
 
 message PopulationHistory {

@@ -17,6 +17,7 @@ import { GuildBulletinBoardRepository } from "@fm/shared/repos/guild-bulletin-bo
 import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
 import { SessionRepository } from "@fm/shared/repos/session-repository";
 import type { GuildModel } from "@fm/shared/repos/guild-repository";
+import { guildWeek } from "@fm/shared/guild-week";
 import type { GuildMemberModel } from "@fm/shared/repos/guild-member-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
@@ -354,6 +355,8 @@ export class GuildService {
                         name: guildName,
                         leaderCharacterId,
                         gp: 0,
+                        weeklyGp: 0,
+                        gpWeek: 0,
                         capacity: DEFAULT_GUILD_CAPACITY,
                         notice: "",
                         logo: DEFAULT_GUILD_LOGO,
@@ -1248,9 +1251,17 @@ export class GuildService {
                 return { ok: true as const, guildId, gp: guild.gp, changed: 0 };
             }
 
+            // Only earned GP counts toward the weekly ranking; spending GP leaves the week's total alone.
+            const week = guildWeek(Date.now());
+            const weeklyGp = guild.gpWeek === week ? guild.weeklyGp : 0;
             const updatedGuild = await this.guildRepo.set(
                 worldId,
-                { ...guild, gp: nextGP },
+                {
+                    ...guild,
+                    gp: nextGP,
+                    weeklyGp: Math.min(GUILD_GP_MAX, weeklyGp + Math.max(0, nextGP - guild.gp)),
+                    gpWeek: week,
+                },
                 { txClient }
             );
             return {

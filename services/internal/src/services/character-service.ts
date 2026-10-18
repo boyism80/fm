@@ -100,6 +100,7 @@ type CharacterInput = {
     vipTeleportStones?: number[];
     hidden?: boolean;
     savedAtUnixMs?: number;
+    expReachedUnixMs?: number;
 };
 
 export type CharacterRowModel = CharacterModel;

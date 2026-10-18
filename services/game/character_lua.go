@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -545,6 +546,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				ch.exp = newExp
+				ch.expReachedAt = clock.Now()
 				ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 					constant.StatEXP: int32(ch.exp),
 				}, false)
