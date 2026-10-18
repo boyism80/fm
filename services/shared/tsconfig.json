@@ -16,6 +16,6 @@
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "../../infra/db/migrations/**/*.ts"],
   "exclude": ["node_modules"]
 }

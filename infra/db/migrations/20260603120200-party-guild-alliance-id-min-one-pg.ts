@@ -1,4 +1,4 @@
-import type { MigrationModule } from "../../src/sequelize-migration";
+import type { MigrationModule } from "@fm/shared/sequelize-migration";
 
 async function syncSequenceFromMax(
     queryInterface: import("sequelize").QueryInterface,

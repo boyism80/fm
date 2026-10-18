@@ -4,9 +4,6 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { Sequelize } from "sequelize";
 import type { MigrationModule } from "./sequelize-migration";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const migrationLockKey = 724900131;
 
 interface MigrationEntry {
@@ -19,7 +16,7 @@ function getDatabaseUrl(): string {
 }
 
 function getMigrationsDir(): string {
-    return path.join(__dirname, "..", "sequelize", "migrations");
+    return fileURLToPath(new URL("../../../infra/db/migrations", import.meta.url));
 }
 
 function toCanonicalName(fileName: string): string {

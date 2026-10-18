@@ -2,7 +2,7 @@ import grpc, { type handleUnaryCall } from "@grpc/grpc-js";
 import * as awilix from "awilix";
 import { InternalService } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { createAppContainer } from "./container";
-import { autoMigrateAllIfEnabled } from "./auto-migrate";
+import { autoMigrateAllIfEnabled } from "@fm/shared/auto-migrate";
 import { CatalogGrpcController } from "./grpc/controllers/catalog-controller";
 import { AuthGrpcController } from "./grpc/controllers/auth-controller";
 import { SessionGrpcController } from "./grpc/controllers/session-controller";

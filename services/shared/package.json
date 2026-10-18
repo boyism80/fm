@@ -8,19 +8,23 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "migrate": "tsx src/migrate.ts",
+    "migrate:undo": "tsx src/migrate-undo.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.12.0",
     "@grpc/grpc-js": "^1.12.4",
     "ioredis": "^5.10.1",
     "js-yaml": "^4.1.0",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "sequelize": "^6.37.8"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
 }

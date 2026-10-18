@@ -1,4 +1,4 @@
-import type { MigrationModule } from "../../src/sequelize-migration";
+import type { MigrationModule } from "@fm/shared/sequelize-migration";
 
 const migration: MigrationModule = {
     async up(queryInterface, Sequelize) {

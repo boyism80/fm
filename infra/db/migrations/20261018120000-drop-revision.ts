@@ -1,4 +1,4 @@
-import type { MigrationModule } from "../../src/sequelize-migration";
+import type { MigrationModule } from "@fm/shared/sequelize-migration";
 
 const TABLES = ["parties", "guilds", "alliances"];
 
