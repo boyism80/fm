@@ -99,7 +99,7 @@ export class CashShopGrpcController {
     async addCash(call: GrpcCall<AddCashRequest>, callback: GrpcCallback<AddCashReply>) {
         try {
             const req = call.request;
-            callback(null, await this.cashShopService.addCash(req.worldId, req.accountId, req.nxCash, req.maplePoint));
+            callback(null, await this.cashShopService.addCash(req.accountId, req.nxCash, req.maplePoint));
         } catch (err) {
             this.grpcError(err, callback);
         }

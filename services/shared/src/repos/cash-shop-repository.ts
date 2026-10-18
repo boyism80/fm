@@ -1,4 +1,4 @@
-import type { PoolClient } from "pg";
+import type { Pool, PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
 import type { InternalContext } from "../context/internal-context";
 import type { RepositoryTxOptions } from "../types/repository-contracts";
@@ -47,14 +47,21 @@ export enum CashTransferKind {
     PutIn = 3,
     InventorySlot = 4,
     Meso = 5,
+    Purchase = 6,
+    StorageSlot = 7,
+    CharacterSlot = 8,
+    Credit = 9,
 }
 
+// The database the request row lives in: a world data shard, or the unified database for requests made with a
+// balance change.
 export type CashTransferRequest = {
     request_id: string;
     source_id: number;
     target_id: number;
     kind: CashTransferKind;
     detail: unknown;
+    pool: Pool;
 };
 
 export class CashShopRepository {
@@ -64,6 +71,22 @@ export class CashShopRepository {
     constructor(internalContext: InternalContext, cashRequestRepository: CashRequestRepository) {
         this.ctx = internalContext;
         this.cashRequestRepo = cashRequestRepository;
+    }
+
+    // Balances are account-wide and live in the unified database; every balance change holds this lock.
+    async withBalanceLock<T>(accountId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+        return this.ctx.withPgClient(this.ctx.getPgUnifiedPool(), async (client) => {
+            await client.query("BEGIN");
+            try {
+                await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x6361736a, accountId]);
+                const result = await fn(client);
+                await client.query("COMMIT");
+                return result;
+            } catch (err) {
+                await client.query("ROLLBACK").catch(() => {});
+                throw err;
+            }
+        });
     }
 
     async withAccountLock<T>(
@@ -89,27 +112,43 @@ export class CashShopRepository {
         return this.ctx.withPgDataTransaction(worldId, accountId, fn, options);
     }
 
-    async queueTransfer(worldId: number, sourceId: number, targetId: number, kind: CashTransferKind, detail: unknown, client: PoolClient): Promise<void> {
+    async queueTransfer(sourceId: number, targetId: number, kind: CashTransferKind, detail: unknown, client: PoolClient): Promise<void> {
         await client.query(
             "INSERT INTO cash_transfer_requests (request_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5)",
             [randomUUID(), sourceId, targetId, kind, JSON.stringify(detail)]
         );
     }
 
+    // Queued in the unified database with a balance change, for the shards of one world.
+    async queueBalanceTransfer(worldId: number, sourceId: number, targetId: number, kind: CashTransferKind, detail: unknown, client: PoolClient): Promise<void> {
+        await client.query(
+            "INSERT INTO cash_transfer_requests (request_id, world_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5, $6)",
+            [randomUUID(), worldId, sourceId, targetId, kind, JSON.stringify(detail)]
+        );
+    }
+
     async pendingTransfers(worldId: number): Promise<CashTransferRequest[]> {
         const requests: CashTransferRequest[] = [];
+        const select = "SELECT request_id, source_id, target_id, kind, detail FROM cash_transfer_requests WHERE completed = FALSE";
         for (const pool of this.ctx.getPgDataPools(worldId)) {
-            const res = await pool.query(
-                "SELECT request_id, source_id, target_id, kind, detail FROM cash_transfer_requests WHERE completed = FALSE ORDER BY created_at LIMIT 100"
-            );
-            requests.push(...(res.rows as CashTransferRequest[]));
+            const res = await pool.query(`${select} AND world_id IS NULL ORDER BY created_at LIMIT 100`);
+            requests.push(...(res.rows as Omit<CashTransferRequest, "pool">[]).map((row) => ({ ...row, pool })));
         }
+        const unified = this.ctx.getPgUnifiedPool();
+        const res = await unified.query(`${select} AND world_id = $1 ORDER BY created_at LIMIT 100`, [worldId]);
+        requests.push(...(res.rows as Omit<CashTransferRequest, "pool">[]).map((row) => ({ ...row, pool: unified })));
         return requests;
     }
 
     async receiveTransfer(worldId: number, request: CashTransferRequest, fn: (client: PoolClient) => Promise<void>): Promise<void> {
         await this.ctx.withPgDataTransaction(worldId, request.target_id, async (client) => {
-            if (request.kind === CashTransferKind.Gift || request.kind === CashTransferKind.PutIn) {
+            if (
+                request.kind === CashTransferKind.Gift ||
+                request.kind === CashTransferKind.PutIn ||
+                request.kind === CashTransferKind.Purchase ||
+                request.kind === CashTransferKind.StorageSlot ||
+                request.kind === CashTransferKind.CharacterSlot
+            ) {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, request.target_id]);
             } else if (request.kind === CashTransferKind.InventorySlot || request.kind === CashTransferKind.Meso) {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, request.target_id]);
@@ -121,32 +160,28 @@ export class CashShopRepository {
         });
     }
 
-    async pendingGiftItemCount(worldId: number, accountId: number): Promise<number> {
+    // Items on their way into the account's locker of this world, from any queue.
+    async pendingLockerItemCount(worldId: number, accountId: number): Promise<number> {
+        const pending = `SELECT COALESCE(SUM(jsonb_array_length(detail->'items')), 0) AS count
+                         FROM cash_transfer_requests
+                         WHERE completed = FALSE AND kind = ANY($2::int[]) AND detail->>'accountId' = $1::text
+                           AND jsonb_typeof(detail->'items') = 'array'`;
+        const kinds = [CashTransferKind.Gift, CashTransferKind.Purchase];
         let count = 0;
         for (const pool of this.ctx.getPgDataPools(worldId)) {
-            const res = await pool.query(
-                `SELECT COALESCE(SUM(jsonb_array_length(detail->'items')), 0) AS count
-                 FROM cash_transfer_requests
-                 WHERE completed = FALSE AND kind = $2 AND target_id = $1 AND jsonb_typeof(detail->'items') = 'array'`,
-                [accountId, CashTransferKind.Gift]
-            );
+            const res = await pool.query(`${pending} AND world_id IS NULL`, [accountId, kinds]);
             count += Number(res.rows[0]?.count ?? 0);
         }
-        return count;
+        const res = await this.ctx.getPgUnifiedPool().query(`${pending} AND world_id = $3`, [accountId, kinds, worldId]);
+        return count + Number(res.rows[0]?.count ?? 0);
     }
 
-    async finishTransfer(worldId: number, request: CashTransferRequest): Promise<void> {
-        await this.ctx.getPgDataPool(worldId, request.source_id).query(
-            "UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1",
-            [request.request_id]
-        );
+    async finishTransfer(request: CashTransferRequest): Promise<void> {
+        await request.pool.query("UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1", [request.request_id]);
     }
 
-    async isTransferCompleted(worldId: number, request: CashTransferRequest): Promise<boolean> {
-        const res = await this.ctx.getPgDataPool(worldId, request.source_id).query(
-            "SELECT completed FROM cash_transfer_requests WHERE request_id = $1",
-            [request.request_id]
-        );
+    async isTransferCompleted(request: CashTransferRequest): Promise<boolean> {
+        const res = await request.pool.query("SELECT completed FROM cash_transfer_requests WHERE request_id = $1", [request.request_id]);
         const row = res.rows[0] as { completed: boolean } | undefined;
         return row?.completed === true;
     }
@@ -178,15 +213,15 @@ export class CashShopRepository {
         );
     }
 
-    async findBalance(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<CashBalance> {
-        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
+    async findBalance(accountId: number, options: RepositoryTxOptions = {}): Promise<CashBalance> {
+        const client = this.ctx.pgClient(this.ctx.getPgUnifiedPool(), options);
         const res = await client.query("SELECT nx_cash, maple_point FROM accounts WHERE id = $1", [accountId]);
         const row = res.rows[0] as { nx_cash: number; maple_point: number } | undefined;
         return { nxCash: row?.nx_cash ?? 0, maplePoint: row?.maple_point ?? 0 };
     }
 
-    async addBalance(worldId: number, accountId: number, delta: CashBalance, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
+    async addBalance(accountId: number, delta: CashBalance, options: RepositoryTxOptions = {}): Promise<void> {
+        const client = this.ctx.pgClient(this.ctx.getPgUnifiedPool(), options);
         await client.query(
             "UPDATE accounts SET nx_cash = nx_cash + $2, maple_point = maple_point + $3 WHERE id = $1",
             [accountId, delta.nxCash, delta.maplePoint]
@@ -316,4 +351,13 @@ export class CashShopRepository {
 
 export class CashRequestRepository extends RequestRepository {
     protected readonly kind = "cash";
+}
+
+// Requests whose effect is a balance change, recorded next to the balance in the unified database.
+export class CashBalanceRequestRepository extends RequestRepository {
+    protected readonly kind = "cash_balance";
+
+    protected override pool(): Pool {
+        return this.ctx.getPgUnifiedPool();
+    }
 }

@@ -25,7 +25,7 @@ import { StorageRepository } from "@fm/shared/repos/storage-repository";
 import { StorageItemRepository } from "@fm/shared/repos/storage-item-repository";
 import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository } from "@fm/shared/repos/parcel-repository";
 import { ShopOpenRequestRepository, ShopRepository } from "@fm/shared/repos/shop-repository";
-import { CashRequestRepository, CashShopRepository } from "@fm/shared/repos/cash-shop-repository";
+import { CashBalanceRequestRepository, CashRequestRepository, CashShopRepository } from "@fm/shared/repos/cash-shop-repository";
 import {
     MarriageRepository,
     MarriageRequestRepository,
@@ -106,6 +106,7 @@ export function createAppContainer() {
         shopOpenRequestRepository: awilix.asClass(ShopOpenRequestRepository).scoped(),
         cashShopRepository: awilix.asClass(CashShopRepository).scoped(),
         cashRequestRepository: awilix.asClass(CashRequestRepository).scoped(),
+        cashBalanceRequestRepository: awilix.asClass(CashBalanceRequestRepository).scoped(),
         marriageRepository: awilix.asClass(MarriageRepository).scoped(),
         marriageRequestRepository: awilix.asClass(MarriageRequestRepository).scoped(),
         weddingGiftSendRequestRepository: awilix.asClass(WeddingGiftSendRequestRepository).scoped(),
