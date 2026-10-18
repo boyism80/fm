@@ -5,3 +5,7 @@ const FIRST_WEEK_START_MS = Date.UTC(2025, 11, 31, 15);
 export function guildWeek(unixMs: number): number {
     return Math.floor((unixMs - FIRST_WEEK_START_MS) / WEEK_MS);
 }
+
+export function guildWeekStart(week: number): number {
+    return FIRST_WEEK_START_MS + week * WEEK_MS;
+}

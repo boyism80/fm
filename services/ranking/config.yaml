@@ -1,0 +1,83 @@
+app:
+  log_level: "info"
+
+# workers defaults to the CPU core count. world_groups defaults to every world in one group (id 0).
+ranking:
+  daily_hour: 1
+  range_multiplier: 4
+  world_groups:
+    - id: 0
+      worlds: [0]
+
+postgresql:
+  unified:
+    host: "127.0.0.1"
+    port: 5432
+    database: "fm"
+    username: "fm"
+    password: "admin"
+    ssl: false
+    pool:
+      min: 0
+      max: 2
+  worlds:
+    "0":
+      global:
+        host: "127.0.0.1"
+        port: 5432
+        database: "fm"
+        username: "fm"
+        password: "admin"
+        ssl: false
+        pool:
+          min: 0
+          max: 4
+      data:
+        - host: "127.0.0.1"
+          port: 5432
+          database: "fm"
+          username: "fm"
+          password: "admin"
+          ssl: false
+          pool:
+            min: 0
+            max: 2
+        - host: "127.0.0.1"
+          port: 5432
+          database: "fm"
+          username: "fm"
+          password: "admin"
+          ssl: false
+          pool:
+            min: 0
+            max: 2
+
+redis:
+  unified:
+    host: "127.0.0.1"
+    port: 6379
+    password: ""
+    db: 2
+    tls: false
+  worlds:
+    "0":
+      global:
+        host: "127.0.0.1"
+        port: 6379
+        password: ""
+        db: 0
+        tls: false
+      data:
+        - host: "127.0.0.1"
+          port: 6379
+          password: ""
+          db: 0
+          tls: false
+        - host: "127.0.0.1"
+          port: 6379
+          password: ""
+          db: 1
+          tls: false
+
+sequelize:
+  auto_migrate_on_startup: true

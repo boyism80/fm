@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "services/shared",
-    "services/internal"
+    "services/internal",
+    "services/ranking"
   ],
   "allowScripts": {
     "bcrypt@6.0.0": true,

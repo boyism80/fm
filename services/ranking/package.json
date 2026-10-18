@@ -1,0 +1,28 @@
+{
+  "name": "@fm/ranking",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "FM ranking scheduler: computes overall, fame, and weekly guild rankings across data shards",
+  "main": "src/server.ts",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@fm/shared": "*",
+    "ioredis": "^5.10.1",
+    "js-yaml": "^4.1.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}

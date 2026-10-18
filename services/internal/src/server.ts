@@ -21,7 +21,7 @@ import { CashShopGrpcController } from "./grpc/controllers/cash-shop-controller"
 import { SocialGrpcController } from "./grpc/controllers/social-controller";
 import { MarriageGrpcController } from "./grpc/controllers/marriage-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
-import { DailyLogFile } from "./log-file";
+import { DailyLogFile } from "@fm/shared/log-file";
 import type { AppConfiguration } from "@fm/shared/config/app-configuration";
 import type { InternalContext } from "@fm/shared/context/internal-context";
 import type { RabbitMQService } from "./services/rabbitmq-service";
