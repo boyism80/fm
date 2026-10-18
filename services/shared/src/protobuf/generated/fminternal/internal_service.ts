@@ -3594,6 +3594,46 @@ export interface GetRankingReply {
   entries: RankingEntry[];
 }
 
+export interface MedalRankingEntry {
+  characterId: number;
+  name: string;
+  score: number;
+}
+
+/** month is YYYYMM in KST, decided by the game server's clock. */
+export interface MedalRanking {
+  kind: string;
+  month: number;
+  entries: MedalRankingEntry[];
+}
+
+export interface SubmitMedalScoreRequest {
+  worldId: number;
+  kind: string;
+  month: number;
+  characterId: number;
+  name: string;
+  score: number;
+}
+
+export interface SubmitMedalScoreReply {
+  rank: number;
+  ranking: MedalRanking | undefined;
+}
+
+export interface ListMedalRankingsRequest {
+  worldId: number;
+}
+
+export interface ListMedalRankingsReply {
+  rankings: MedalRanking[];
+}
+
+export interface MedalRankingChanged {
+  ranking: MedalRanking | undefined;
+  previousHolderId: number;
+}
+
 export interface DisbandGuildRequest {
   worldId: number;
   characterId: number;
@@ -31569,6 +31609,630 @@ export const GetRankingReply: MessageFns<GetRankingReply> = {
   },
 };
 
+function createBaseMedalRankingEntry(): MedalRankingEntry {
+  return { characterId: 0, name: "", score: 0 };
+}
+
+export const MedalRankingEntry: MessageFns<MedalRankingEntry> = {
+  encode(message: MedalRankingEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.score !== 0) {
+      writer.uint32(24).uint64(message.score);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MedalRankingEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMedalRankingEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.score = longToNumber(reader.uint64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MedalRankingEntry {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      score: isSet(object.score) ? globalThis.Number(object.score) : 0,
+    };
+  },
+
+  toJSON(message: MedalRankingEntry): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.score !== 0) {
+      obj.score = Math.round(message.score);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MedalRankingEntry>, I>>(base?: I): MedalRankingEntry {
+    return MedalRankingEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MedalRankingEntry>, I>>(object: I): MedalRankingEntry {
+    const message = createBaseMedalRankingEntry();
+    message.characterId = object.characterId ?? 0;
+    message.name = object.name ?? "";
+    message.score = object.score ?? 0;
+    return message;
+  },
+};
+
+function createBaseMedalRanking(): MedalRanking {
+  return { kind: "", month: 0, entries: [] };
+}
+
+export const MedalRanking: MessageFns<MedalRanking> = {
+  encode(message: MedalRanking, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.kind !== "") {
+      writer.uint32(10).string(message.kind);
+    }
+    if (message.month !== 0) {
+      writer.uint32(16).uint32(message.month);
+    }
+    for (const v of message.entries) {
+      MedalRankingEntry.encode(v!, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MedalRanking {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMedalRanking();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.kind = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.month = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.entries.push(MedalRankingEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MedalRanking {
+    return {
+      kind: isSet(object.kind) ? globalThis.String(object.kind) : "",
+      month: isSet(object.month) ? globalThis.Number(object.month) : 0,
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => MedalRankingEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MedalRanking): unknown {
+    const obj: any = {};
+    if (message.kind !== "") {
+      obj.kind = message.kind;
+    }
+    if (message.month !== 0) {
+      obj.month = Math.round(message.month);
+    }
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => MedalRankingEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MedalRanking>, I>>(base?: I): MedalRanking {
+    return MedalRanking.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MedalRanking>, I>>(object: I): MedalRanking {
+    const message = createBaseMedalRanking();
+    message.kind = object.kind ?? "";
+    message.month = object.month ?? 0;
+    message.entries = object.entries?.map((e) => MedalRankingEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSubmitMedalScoreRequest(): SubmitMedalScoreRequest {
+  return { worldId: 0, kind: "", month: 0, characterId: 0, name: "", score: 0 };
+}
+
+export const SubmitMedalScoreRequest: MessageFns<SubmitMedalScoreRequest> = {
+  encode(message: SubmitMedalScoreRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.kind !== "") {
+      writer.uint32(18).string(message.kind);
+    }
+    if (message.month !== 0) {
+      writer.uint32(24).uint32(message.month);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(32).uint32(message.characterId);
+    }
+    if (message.name !== "") {
+      writer.uint32(42).string(message.name);
+    }
+    if (message.score !== 0) {
+      writer.uint32(48).uint64(message.score);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SubmitMedalScoreRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSubmitMedalScoreRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.kind = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.month = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.score = longToNumber(reader.uint64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SubmitMedalScoreRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      kind: isSet(object.kind) ? globalThis.String(object.kind) : "",
+      month: isSet(object.month) ? globalThis.Number(object.month) : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      score: isSet(object.score) ? globalThis.Number(object.score) : 0,
+    };
+  },
+
+  toJSON(message: SubmitMedalScoreRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.kind !== "") {
+      obj.kind = message.kind;
+    }
+    if (message.month !== 0) {
+      obj.month = Math.round(message.month);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.score !== 0) {
+      obj.score = Math.round(message.score);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SubmitMedalScoreRequest>, I>>(base?: I): SubmitMedalScoreRequest {
+    return SubmitMedalScoreRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SubmitMedalScoreRequest>, I>>(object: I): SubmitMedalScoreRequest {
+    const message = createBaseSubmitMedalScoreRequest();
+    message.worldId = object.worldId ?? 0;
+    message.kind = object.kind ?? "";
+    message.month = object.month ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.name = object.name ?? "";
+    message.score = object.score ?? 0;
+    return message;
+  },
+};
+
+function createBaseSubmitMedalScoreReply(): SubmitMedalScoreReply {
+  return { rank: 0, ranking: undefined };
+}
+
+export const SubmitMedalScoreReply: MessageFns<SubmitMedalScoreReply> = {
+  encode(message: SubmitMedalScoreReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rank !== 0) {
+      writer.uint32(8).uint32(message.rank);
+    }
+    if (message.ranking !== undefined) {
+      MedalRanking.encode(message.ranking, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SubmitMedalScoreReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSubmitMedalScoreReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.rank = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.ranking = MedalRanking.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SubmitMedalScoreReply {
+    return {
+      rank: isSet(object.rank) ? globalThis.Number(object.rank) : 0,
+      ranking: isSet(object.ranking) ? MedalRanking.fromJSON(object.ranking) : undefined,
+    };
+  },
+
+  toJSON(message: SubmitMedalScoreReply): unknown {
+    const obj: any = {};
+    if (message.rank !== 0) {
+      obj.rank = Math.round(message.rank);
+    }
+    if (message.ranking !== undefined) {
+      obj.ranking = MedalRanking.toJSON(message.ranking);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SubmitMedalScoreReply>, I>>(base?: I): SubmitMedalScoreReply {
+    return SubmitMedalScoreReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SubmitMedalScoreReply>, I>>(object: I): SubmitMedalScoreReply {
+    const message = createBaseSubmitMedalScoreReply();
+    message.rank = object.rank ?? 0;
+    message.ranking = (object.ranking !== undefined && object.ranking !== null)
+      ? MedalRanking.fromPartial(object.ranking)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseListMedalRankingsRequest(): ListMedalRankingsRequest {
+  return { worldId: 0 };
+}
+
+export const ListMedalRankingsRequest: MessageFns<ListMedalRankingsRequest> = {
+  encode(message: ListMedalRankingsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListMedalRankingsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListMedalRankingsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListMedalRankingsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ListMedalRankingsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListMedalRankingsRequest>, I>>(base?: I): ListMedalRankingsRequest {
+    return ListMedalRankingsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListMedalRankingsRequest>, I>>(object: I): ListMedalRankingsRequest {
+    const message = createBaseListMedalRankingsRequest();
+    message.worldId = object.worldId ?? 0;
+    return message;
+  },
+};
+
+function createBaseListMedalRankingsReply(): ListMedalRankingsReply {
+  return { rankings: [] };
+}
+
+export const ListMedalRankingsReply: MessageFns<ListMedalRankingsReply> = {
+  encode(message: ListMedalRankingsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.rankings) {
+      MedalRanking.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListMedalRankingsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListMedalRankingsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rankings.push(MedalRanking.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListMedalRankingsReply {
+    return {
+      rankings: globalThis.Array.isArray(object?.rankings)
+        ? object.rankings.map((e: any) => MedalRanking.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ListMedalRankingsReply): unknown {
+    const obj: any = {};
+    if (message.rankings?.length) {
+      obj.rankings = message.rankings.map((e) => MedalRanking.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListMedalRankingsReply>, I>>(base?: I): ListMedalRankingsReply {
+    return ListMedalRankingsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListMedalRankingsReply>, I>>(object: I): ListMedalRankingsReply {
+    const message = createBaseListMedalRankingsReply();
+    message.rankings = object.rankings?.map((e) => MedalRanking.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMedalRankingChanged(): MedalRankingChanged {
+  return { ranking: undefined, previousHolderId: 0 };
+}
+
+export const MedalRankingChanged: MessageFns<MedalRankingChanged> = {
+  encode(message: MedalRankingChanged, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ranking !== undefined) {
+      MedalRanking.encode(message.ranking, writer.uint32(10).fork()).join();
+    }
+    if (message.previousHolderId !== 0) {
+      writer.uint32(16).uint32(message.previousHolderId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MedalRankingChanged {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMedalRankingChanged();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.ranking = MedalRanking.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.previousHolderId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MedalRankingChanged {
+    return {
+      ranking: isSet(object.ranking) ? MedalRanking.fromJSON(object.ranking) : undefined,
+      previousHolderId: isSet(object.previousHolderId)
+        ? globalThis.Number(object.previousHolderId)
+        : isSet(object.previous_holder_id)
+        ? globalThis.Number(object.previous_holder_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: MedalRankingChanged): unknown {
+    const obj: any = {};
+    if (message.ranking !== undefined) {
+      obj.ranking = MedalRanking.toJSON(message.ranking);
+    }
+    if (message.previousHolderId !== 0) {
+      obj.previousHolderId = Math.round(message.previousHolderId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MedalRankingChanged>, I>>(base?: I): MedalRankingChanged {
+    return MedalRankingChanged.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MedalRankingChanged>, I>>(object: I): MedalRankingChanged {
+    const message = createBaseMedalRankingChanged();
+    message.ranking = (object.ranking !== undefined && object.ranking !== null)
+      ? MedalRanking.fromPartial(object.ranking)
+      : undefined;
+    message.previousHolderId = object.previousHolderId ?? 0;
+    return message;
+  },
+};
+
 function createBaseDisbandGuildRequest(): DisbandGuildRequest {
   return { worldId: 0, characterId: 0 };
 }
@@ -41173,6 +41837,28 @@ export const InternalService = {
     responseSerialize: (value: GetRankingReply): Buffer => Buffer.from(GetRankingReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): GetRankingReply => GetRankingReply.decode(value),
   },
+  submitMedalScore: {
+    path: "/fm.internal.Internal/SubmitMedalScore" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SubmitMedalScoreRequest): Buffer =>
+      Buffer.from(SubmitMedalScoreRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SubmitMedalScoreRequest => SubmitMedalScoreRequest.decode(value),
+    responseSerialize: (value: SubmitMedalScoreReply): Buffer =>
+      Buffer.from(SubmitMedalScoreReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SubmitMedalScoreReply => SubmitMedalScoreReply.decode(value),
+  },
+  listMedalRankings: {
+    path: "/fm.internal.Internal/ListMedalRankings" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ListMedalRankingsRequest): Buffer =>
+      Buffer.from(ListMedalRankingsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ListMedalRankingsRequest => ListMedalRankingsRequest.decode(value),
+    responseSerialize: (value: ListMedalRankingsReply): Buffer =>
+      Buffer.from(ListMedalRankingsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ListMedalRankingsReply => ListMedalRankingsReply.decode(value),
+  },
   listGuildBulletinBoardThreads: {
     path: "/fm.internal.Internal/ListGuildBulletinBoardThreads" as const,
     requestStream: false as const,
@@ -41778,6 +42464,8 @@ export interface InternalServer extends UntypedServiceImplementation {
   sendGuildMessage: handleUnaryCall<SendGuildMessageRequest, SendGuildMessageReply>;
   getGuildRanking: handleUnaryCall<GetGuildRankingRequest, GetGuildRankingReply>;
   getRanking: handleUnaryCall<GetRankingRequest, GetRankingReply>;
+  submitMedalScore: handleUnaryCall<SubmitMedalScoreRequest, SubmitMedalScoreReply>;
+  listMedalRankings: handleUnaryCall<ListMedalRankingsRequest, ListMedalRankingsReply>;
   listGuildBulletinBoardThreads: handleUnaryCall<
     ListGuildBulletinBoardThreadsRequest,
     ListGuildBulletinBoardThreadsReply
@@ -42982,6 +43670,36 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GetRankingReply) => void,
+  ): ClientUnaryCall;
+  submitMedalScore(
+    request: SubmitMedalScoreRequest,
+    callback: (error: ServiceError | null, response: SubmitMedalScoreReply) => void,
+  ): ClientUnaryCall;
+  submitMedalScore(
+    request: SubmitMedalScoreRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SubmitMedalScoreReply) => void,
+  ): ClientUnaryCall;
+  submitMedalScore(
+    request: SubmitMedalScoreRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SubmitMedalScoreReply) => void,
+  ): ClientUnaryCall;
+  listMedalRankings(
+    request: ListMedalRankingsRequest,
+    callback: (error: ServiceError | null, response: ListMedalRankingsReply) => void,
+  ): ClientUnaryCall;
+  listMedalRankings(
+    request: ListMedalRankingsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ListMedalRankingsReply) => void,
+  ): ClientUnaryCall;
+  listMedalRankings(
+    request: ListMedalRankingsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ListMedalRankingsReply) => void,
   ): ClientUnaryCall;
   listGuildBulletinBoardThreads(
     request: ListGuildBulletinBoardThreadsRequest,

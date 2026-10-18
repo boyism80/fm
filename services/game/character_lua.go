@@ -4345,6 +4345,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "unequip(parts | item | name): parts (EquipmentPart), item (equipment), or name (string) expected")
 				return 0
 			}
+			if L.GetTop() >= 3 && !L.ToBool(3) {
+				L.Push(lua.LBool(ch.inventory.RemoveEquipped(parts) != nil))
+				return 1
+			}
 			err := ch.inventory.Unequip(parts)
 			L.Push(lua.LBool(err == nil))
 			return 1

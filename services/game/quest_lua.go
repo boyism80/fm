@@ -110,6 +110,14 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(q.IsStarted()))
 			return 1
 		},
+		"expired": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			L.Push(lua.LBool(q.Expired()))
+			return 1
+		},
 		"completed": func(L *lua.LState) int {
 			q, ok := LuaCheckQuest(L, 1)
 			if !ok {

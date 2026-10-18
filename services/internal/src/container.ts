@@ -44,6 +44,7 @@ import { NoteRemoveRequestRepository } from "@fm/shared/repos/note-request-repos
 import { FamilyMoveRequestRepository } from "@fm/shared/repos/family-request-repository";
 import { PlayerNpcRepository } from "@fm/shared/repos/player-npc-repository";
 import { RankingRepository } from "@fm/shared/repos/ranking-repository";
+import { MedalRankingRepository } from "@fm/shared/repos/medal-ranking-repository";
 import { CharacterService } from "./services/character-service";
 import { WzService } from "./services/wz-service";
 import { BuffService } from "./services/buff-service";
@@ -68,6 +69,7 @@ import { SocialService } from "./services/social-service";
 import { MarriageService } from "./services/marriage-service";
 import { PlayerNpcService } from "./services/player-npc-service";
 import { RankingService } from "./services/ranking-service";
+import { MedalService } from "./services/medal-service";
 
 export function createAppContainer() {
     const internalConfig = loadConfig(process.env.FM_INTERNAL_CONFIG ?? fileURLToPath(new URL("../config.yaml", import.meta.url)));
@@ -129,6 +131,7 @@ export function createAppContainer() {
         familyMoveRequestRepository: awilix.asClass(FamilyMoveRequestRepository).scoped(),
         playerNpcRepository: awilix.asClass(PlayerNpcRepository).scoped(),
         rankingRepository: awilix.asClass(RankingRepository).scoped(),
+        medalRankingRepository: awilix.asClass(MedalRankingRepository).scoped(),
         characterService: awilix.asClass(CharacterService).transient(),
         wzService: awilix.asClass(WzService).singleton(),
         buffService: awilix.asClass(BuffService).transient(),
@@ -150,6 +153,7 @@ export function createAppContainer() {
         marriageService: awilix.asClass(MarriageService).transient(),
         playerNpcService: awilix.asClass(PlayerNpcService).transient(),
         rankingService: awilix.asClass(RankingService).transient(),
+        medalService: awilix.asClass(MedalService).transient(),
         socialService: awilix.asClass(SocialService).transient(),
         familyService: awilix.asClass(FamilyService).transient(),
     });

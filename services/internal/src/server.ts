@@ -21,6 +21,7 @@ import { CashShopGrpcController } from "./grpc/controllers/cash-shop-controller"
 import { SocialGrpcController } from "./grpc/controllers/social-controller";
 import { MarriageGrpcController } from "./grpc/controllers/marriage-controller";
 import { RankingGrpcController } from "./grpc/controllers/ranking-controller";
+import { MedalGrpcController } from "./grpc/controllers/medal-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
 import { DailyLogFile } from "@fm/shared/log-file";
 import type { AppConfiguration } from "@fm/shared/config/app-configuration";
@@ -167,6 +168,7 @@ async function main() {
         marriageController: awilix.asClass(MarriageGrpcController).scoped(),
         socialController: awilix.asClass(SocialGrpcController).scoped(),
         rankingController: awilix.asClass(RankingGrpcController).scoped(),
+        medalController: awilix.asClass(MedalGrpcController).scoped(),
     });
 
     const serviceImplementation: Record<string, handleUnaryCall<unknown, unknown>> = {};

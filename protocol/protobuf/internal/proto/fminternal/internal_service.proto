@@ -82,6 +82,8 @@ service Internal {
   rpc SendGuildMessage (SendGuildMessageRequest) returns (SendGuildMessageReply);
   rpc GetGuildRanking (GetGuildRankingRequest) returns (GetGuildRankingReply);
   rpc GetRanking (GetRankingRequest) returns (GetRankingReply);
+  rpc SubmitMedalScore (SubmitMedalScoreRequest) returns (SubmitMedalScoreReply);
+  rpc ListMedalRankings (ListMedalRankingsRequest) returns (ListMedalRankingsReply);
   rpc ListGuildBulletinBoardThreads (ListGuildBulletinBoardThreadsRequest) returns (ListGuildBulletinBoardThreadsReply);
   rpc ShowGuildBulletinBoardThread (ShowGuildBulletinBoardThreadRequest) returns (ShowGuildBulletinBoardThreadReply);
   rpc CreateGuildBulletinBoardThread (CreateGuildBulletinBoardThreadRequest) returns (CreateGuildBulletinBoardThreadReply);
@@ -1891,6 +1893,46 @@ message RankingEntry {
 
 message GetRankingReply {
   repeated RankingEntry entries = 1;
+}
+
+message MedalRankingEntry {
+  uint32 character_id = 1;
+  string name = 2;
+  uint64 score = 3;
+}
+
+// month is YYYYMM in KST, decided by the game server's clock.
+message MedalRanking {
+  string kind = 1;
+  uint32 month = 2;
+  repeated MedalRankingEntry entries = 3;
+}
+
+message SubmitMedalScoreRequest {
+  uint32 world_id = 1;
+  string kind = 2;
+  uint32 month = 3;
+  uint32 character_id = 4;
+  string name = 5;
+  uint64 score = 6;
+}
+
+message SubmitMedalScoreReply {
+  uint32 rank = 1;
+  MedalRanking ranking = 2;
+}
+
+message ListMedalRankingsRequest {
+  uint32 world_id = 1;
+}
+
+message ListMedalRankingsReply {
+  repeated MedalRanking rankings = 1;
+}
+
+message MedalRankingChanged {
+  MedalRanking ranking = 1;
+  uint32 previous_holder_id = 2;
 }
 
 message DisbandGuildRequest {

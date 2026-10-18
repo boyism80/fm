@@ -71,6 +71,7 @@ func (gs *GameServer) mqQueues() []mq.Queue {
 			d.Bind[globalMqNotice](gs)
 			d.Bind[playerNpcMqCreated](gs)
 			d.Bind[playerNpcMqRemoved](gs)
+			d.Bind[medalMqRankingChanged](gs)
 		}),
 		queue("parcel", []string{toChannel("parcel")}, func(d *mq.Dispatcher) {
 			d.Bind[parcelMqArrived](gs)
