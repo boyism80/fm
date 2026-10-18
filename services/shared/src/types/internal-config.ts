@@ -38,7 +38,6 @@ export interface InternalConfig {
     configPath: string;
     app: {
         log_level: string;
-        world_id: number;
         server_alive_ttl_seconds?: number;
         max_parcels?: number;
     };

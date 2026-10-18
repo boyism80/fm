@@ -2512,13 +2512,11 @@ export interface BeginGameTransitionReply {
 }
 
 export interface SetSecondPasswordRequest {
-  worldId: number;
   accountId: number;
   password: string;
 }
 
 export interface RemoveSecondPasswordRequest {
-  worldId: number;
   accountId: number;
   password: string;
 }
@@ -2929,7 +2927,6 @@ export interface LoginAccountReply {
   gender: number;
   isChatBlocked: boolean;
   chatBlockedUntilUnixMs: number;
-  characterSlotCount: number;
   role: number;
 }
 
@@ -3038,6 +3035,7 @@ export interface GetCharacterListReply {
 export interface CheckCharacterNameRequest {
   name: string;
   accountId: number;
+  worldId: number;
 }
 
 export interface CheckCharacterNameReply {
@@ -3066,6 +3064,7 @@ export interface CreateCharacterReply {
 export interface DeleteCharacterRequest {
   accountId: number;
   characterId: number;
+  worldId: number;
 }
 
 export interface DeleteCharacterReply {
@@ -14479,14 +14478,11 @@ export const BeginGameTransitionReply: MessageFns<BeginGameTransitionReply> = {
 };
 
 function createBaseSetSecondPasswordRequest(): SetSecondPasswordRequest {
-  return { worldId: 0, accountId: 0, password: "" };
+  return { accountId: 0, password: "" };
 }
 
 export const SetSecondPasswordRequest: MessageFns<SetSecondPasswordRequest> = {
   encode(message: SetSecondPasswordRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.worldId !== 0) {
-      writer.uint32(8).uint32(message.worldId);
-    }
     if (message.accountId !== 0) {
       writer.uint32(16).uint32(message.accountId);
     }
@@ -14503,14 +14499,6 @@ export const SetSecondPasswordRequest: MessageFns<SetSecondPasswordRequest> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.worldId = reader.uint32();
-          continue;
-        }
         case 2: {
           if (tag !== 16) {
             break;
@@ -14538,11 +14526,6 @@ export const SetSecondPasswordRequest: MessageFns<SetSecondPasswordRequest> = {
 
   fromJSON(object: any): SetSecondPasswordRequest {
     return {
-      worldId: isSet(object.worldId)
-        ? globalThis.Number(object.worldId)
-        : isSet(object.world_id)
-        ? globalThis.Number(object.world_id)
-        : 0,
       accountId: isSet(object.accountId)
         ? globalThis.Number(object.accountId)
         : isSet(object.account_id)
@@ -14554,9 +14537,6 @@ export const SetSecondPasswordRequest: MessageFns<SetSecondPasswordRequest> = {
 
   toJSON(message: SetSecondPasswordRequest): unknown {
     const obj: any = {};
-    if (message.worldId !== 0) {
-      obj.worldId = Math.round(message.worldId);
-    }
     if (message.accountId !== 0) {
       obj.accountId = Math.round(message.accountId);
     }
@@ -14571,7 +14551,6 @@ export const SetSecondPasswordRequest: MessageFns<SetSecondPasswordRequest> = {
   },
   fromPartial<I extends Exact<DeepPartial<SetSecondPasswordRequest>, I>>(object: I): SetSecondPasswordRequest {
     const message = createBaseSetSecondPasswordRequest();
-    message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
     message.password = object.password ?? "";
     return message;
@@ -14579,14 +14558,11 @@ export const SetSecondPasswordRequest: MessageFns<SetSecondPasswordRequest> = {
 };
 
 function createBaseRemoveSecondPasswordRequest(): RemoveSecondPasswordRequest {
-  return { worldId: 0, accountId: 0, password: "" };
+  return { accountId: 0, password: "" };
 }
 
 export const RemoveSecondPasswordRequest: MessageFns<RemoveSecondPasswordRequest> = {
   encode(message: RemoveSecondPasswordRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.worldId !== 0) {
-      writer.uint32(8).uint32(message.worldId);
-    }
     if (message.accountId !== 0) {
       writer.uint32(16).uint32(message.accountId);
     }
@@ -14603,14 +14579,6 @@ export const RemoveSecondPasswordRequest: MessageFns<RemoveSecondPasswordRequest
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.worldId = reader.uint32();
-          continue;
-        }
         case 2: {
           if (tag !== 16) {
             break;
@@ -14638,11 +14606,6 @@ export const RemoveSecondPasswordRequest: MessageFns<RemoveSecondPasswordRequest
 
   fromJSON(object: any): RemoveSecondPasswordRequest {
     return {
-      worldId: isSet(object.worldId)
-        ? globalThis.Number(object.worldId)
-        : isSet(object.world_id)
-        ? globalThis.Number(object.world_id)
-        : 0,
       accountId: isSet(object.accountId)
         ? globalThis.Number(object.accountId)
         : isSet(object.account_id)
@@ -14654,9 +14617,6 @@ export const RemoveSecondPasswordRequest: MessageFns<RemoveSecondPasswordRequest
 
   toJSON(message: RemoveSecondPasswordRequest): unknown {
     const obj: any = {};
-    if (message.worldId !== 0) {
-      obj.worldId = Math.round(message.worldId);
-    }
     if (message.accountId !== 0) {
       obj.accountId = Math.round(message.accountId);
     }
@@ -14671,7 +14631,6 @@ export const RemoveSecondPasswordRequest: MessageFns<RemoveSecondPasswordRequest
   },
   fromPartial<I extends Exact<DeepPartial<RemoveSecondPasswordRequest>, I>>(object: I): RemoveSecondPasswordRequest {
     const message = createBaseRemoveSecondPasswordRequest();
-    message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
     message.password = object.password ?? "";
     return message;
@@ -21661,15 +21620,7 @@ export const LoginAccountRequest: MessageFns<LoginAccountRequest> = {
 };
 
 function createBaseLoginAccountReply(): LoginAccountReply {
-  return {
-    status: 0,
-    accountId: 0,
-    gender: 0,
-    isChatBlocked: false,
-    chatBlockedUntilUnixMs: 0,
-    characterSlotCount: 0,
-    role: 0,
-  };
+  return { status: 0, accountId: 0, gender: 0, isChatBlocked: false, chatBlockedUntilUnixMs: 0, role: 0 };
 }
 
 export const LoginAccountReply: MessageFns<LoginAccountReply> = {
@@ -21688,9 +21639,6 @@ export const LoginAccountReply: MessageFns<LoginAccountReply> = {
     }
     if (message.chatBlockedUntilUnixMs !== 0) {
       writer.uint32(40).int64(message.chatBlockedUntilUnixMs);
-    }
-    if (message.characterSlotCount !== 0) {
-      writer.uint32(48).uint32(message.characterSlotCount);
     }
     if (message.role !== 0) {
       writer.uint32(56).uint32(message.role);
@@ -21745,14 +21693,6 @@ export const LoginAccountReply: MessageFns<LoginAccountReply> = {
           message.chatBlockedUntilUnixMs = longToNumber(reader.int64());
           continue;
         }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.characterSlotCount = reader.uint32();
-          continue;
-        }
         case 7: {
           if (tag !== 56) {
             break;
@@ -21789,11 +21729,6 @@ export const LoginAccountReply: MessageFns<LoginAccountReply> = {
         : isSet(object.chat_blocked_until_unix_ms)
         ? globalThis.Number(object.chat_blocked_until_unix_ms)
         : 0,
-      characterSlotCount: isSet(object.characterSlotCount)
-        ? globalThis.Number(object.characterSlotCount)
-        : isSet(object.character_slot_count)
-        ? globalThis.Number(object.character_slot_count)
-        : 0,
       role: isSet(object.role) ? globalThis.Number(object.role) : 0,
     };
   },
@@ -21815,9 +21750,6 @@ export const LoginAccountReply: MessageFns<LoginAccountReply> = {
     if (message.chatBlockedUntilUnixMs !== 0) {
       obj.chatBlockedUntilUnixMs = Math.round(message.chatBlockedUntilUnixMs);
     }
-    if (message.characterSlotCount !== 0) {
-      obj.characterSlotCount = Math.round(message.characterSlotCount);
-    }
     if (message.role !== 0) {
       obj.role = Math.round(message.role);
     }
@@ -21834,7 +21766,6 @@ export const LoginAccountReply: MessageFns<LoginAccountReply> = {
     message.gender = object.gender ?? 0;
     message.isChatBlocked = object.isChatBlocked ?? false;
     message.chatBlockedUntilUnixMs = object.chatBlockedUntilUnixMs ?? 0;
-    message.characterSlotCount = object.characterSlotCount ?? 0;
     message.role = object.role ?? 0;
     return message;
   },
@@ -22772,7 +22703,7 @@ export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
 };
 
 function createBaseCheckCharacterNameRequest(): CheckCharacterNameRequest {
-  return { name: "", accountId: 0 };
+  return { name: "", accountId: 0, worldId: 0 };
 }
 
 export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = {
@@ -22782,6 +22713,9 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
     }
     if (message.accountId !== 0) {
       writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(24).uint32(message.worldId);
     }
     return writer;
   },
@@ -22809,6 +22743,14 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
           message.accountId = reader.uint32();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -22826,6 +22768,11 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
         : isSet(object.account_id)
         ? globalThis.Number(object.account_id)
         : 0,
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
     };
   },
 
@@ -22837,6 +22784,9 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
     if (message.accountId !== 0) {
       obj.accountId = Math.round(message.accountId);
     }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
     return obj;
   },
 
@@ -22847,6 +22797,7 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
     const message = createBaseCheckCharacterNameRequest();
     message.name = object.name ?? "";
     message.accountId = object.accountId ?? 0;
+    message.worldId = object.worldId ?? 0;
     return message;
   },
 };
@@ -23251,7 +23202,7 @@ export const CreateCharacterReply: MessageFns<CreateCharacterReply> = {
 };
 
 function createBaseDeleteCharacterRequest(): DeleteCharacterRequest {
-  return { accountId: 0, characterId: 0 };
+  return { accountId: 0, characterId: 0, worldId: 0 };
 }
 
 export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
@@ -23261,6 +23212,9 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
     }
     if (message.characterId !== 0) {
       writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(24).uint32(message.worldId);
     }
     return writer;
   },
@@ -23288,6 +23242,14 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
           message.characterId = reader.uint32();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -23309,6 +23271,11 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
         : isSet(object.character_id)
         ? globalThis.Number(object.character_id)
         : 0,
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
     };
   },
 
@@ -23320,6 +23287,9 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
     }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
     return obj;
   },
 
@@ -23330,6 +23300,7 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
     const message = createBaseDeleteCharacterRequest();
     message.accountId = object.accountId ?? 0;
     message.characterId = object.characterId ?? 0;
+    message.worldId = object.worldId ?? 0;
     return message;
   },
 };

@@ -41,13 +41,11 @@ func (h *AuthSecondPassword) Handle(ctx *core.ClientContext, req *request.AuthSe
 		func(c context.Context) (*internal.SecondPasswordReply, error) {
 			if req.Mode == request.SecondPasswordModeSet {
 				return h.ls.systems.Get[*rpc.InternalConnection]().Client.SetSecondPassword(c, &internal.SetSecondPasswordRequest{
-					WorldId:   loginClient.GetWorldId(),
 					AccountId: accountID,
 					Password:  req.Password,
 				})
 			}
 			return h.ls.systems.Get[*rpc.InternalConnection]().Client.RemoveSecondPassword(c, &internal.RemoveSecondPasswordRequest{
-				WorldId:   loginClient.GetWorldId(),
 				AccountId: accountID,
 				Password:  req.Password,
 			})

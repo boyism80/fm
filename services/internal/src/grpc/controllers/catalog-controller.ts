@@ -1,3 +1,4 @@
+import type Redis from "ioredis";
 import type { AppConfiguration } from "@fm/shared/config/app-configuration";
 import type { InternalContext } from "@fm/shared/context/internal-context";
 import type {
@@ -50,23 +51,22 @@ export class CatalogGrpcController {
         return list.find((c) => c.channel_id === channelId);
     }
 
-    private heartbeatIndex(worldId: number) {
-        return redisAliveKey(`w${worldId}:index`);
+    private heartbeatIndex(scope: string) {
+        return redisAliveKey(`${scope}:index`);
     }
 
-    private heartbeatKey(worldId: number, member: string) {
-        return redisAliveKey(`w${worldId}:${member}`);
+    private heartbeatKey(scope: string, member: string) {
+        return redisAliveKey(`${scope}:${member}`);
     }
 
     // The index lives only while some server keeps pinging, so it disappears once every server is down.
-    private async heartbeat(worldId: number, member: string, online: number) {
-        const { client } = this.internalContext.getRedisGlobalAccess(worldId);
+    private async heartbeat(client: Redis, scope: string, member: string, online: number) {
         const ttl = this.appConfiguration.getServerAliveTtlSeconds();
         const now = Date.now();
-        const index = this.heartbeatIndex(worldId);
+        const index = this.heartbeatIndex(scope);
         await client
             .multi()
-            .set(this.heartbeatKey(worldId, member), String(online), "EX", ttl)
+            .set(this.heartbeatKey(scope, member), String(online), "EX", ttl)
             .zadd(index, now, member)
             .zremrangebyscore(index, "-inf", now - ttl * 1000)
             .expire(index, ttl)
@@ -75,7 +75,7 @@ export class CatalogGrpcController {
 
     private async liveServers(worldId: number, prefix: string): Promise<string[]> {
         const { client } = this.internalContext.getRedisGlobalAccess(worldId);
-        const index = this.heartbeatIndex(worldId);
+        const index = this.heartbeatIndex(`w${worldId}`);
         const expired = Date.now() - this.appConfiguration.getServerAliveTtlSeconds() * 1000;
         await client.zremrangebyscore(index, "-inf", expired);
         const members = await client.zrangebyscore(index, expired, "+inf");
@@ -84,7 +84,7 @@ export class CatalogGrpcController {
 
     private async onlineUsers(worldId: number, member: string): Promise<number | null> {
         const { client } = this.internalContext.getRedisGlobalAccess(worldId);
-        const raw = await client.get(this.heartbeatKey(worldId, member));
+        const raw = await client.get(this.heartbeatKey(`w${worldId}`, member));
         if (raw == null) {
             return null;
         }
@@ -96,16 +96,16 @@ export class CatalogGrpcController {
         const req = call.request;
         try {
             if (req.role === ServerRole.SERVER_ROLE_GAME) {
-                await this.heartbeat(req.worldId, `game:c${req.channelId}`, req.onlineUsers);
+                await this.heartbeat(this.internalContext.getRedisGlobalAccess(req.worldId).client, `w${req.worldId}`, `game:c${req.channelId}`, req.onlineUsers);
             } else if (req.role === ServerRole.SERVER_ROLE_CASH_SHOP) {
-                await this.heartbeat(req.worldId, `cashshop:cs${req.cashShopId}`, req.onlineUsers);
+                await this.heartbeat(this.internalContext.getRedisGlobalAccess(req.worldId).client, `w${req.worldId}`, `cashshop:cs${req.cashShopId}`, req.onlineUsers);
             } else if (req.role === ServerRole.SERVER_ROLE_LOGIN) {
                 const id = (req.loginInstanceId ?? "").trim();
                 if (!id) {
                     this.grpcError({ code: "INVALID_PAYLOAD", message: "login ping requires login_instance_id" }, callback);
                     return;
                 }
-                await this.heartbeat(this.appConfiguration.raw.app.world_id, `login:${id}`, 0);
+                await this.heartbeat(this.internalContext.getRedisUnifiedAccess().client, "login", id, 0);
             } else {
                 this.grpcError({ code: "INVALID_PAYLOAD", message: "ping requires role LOGIN, GAME or CASH_SHOP" }, callback);
                 return;

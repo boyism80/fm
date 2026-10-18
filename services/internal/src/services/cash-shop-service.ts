@@ -22,7 +22,7 @@ import {
     type RedeemCashCouponReply,
     type RedeemCashCouponRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type { AccountRepository } from "@fm/shared/repos/account-repository";
+import type { AccountWorldRepository } from "@fm/shared/repos/account-world-repository";
 import { CashTransferKind, type CashBalance, type CashRequestRepository, type CashShopRepository, type CashItemRow, type CashRingRow, type CashTransferRequest } from "@fm/shared/repos/cash-shop-repository";
 import type { CharacterRepository } from "@fm/shared/repos/character-repository";
 import type { StorageRepository } from "@fm/shared/repos/storage-repository";
@@ -56,7 +56,7 @@ const MAX_MESO = 2147483647;
 export class CashShopService {
     private readonly cashShopRepo: CashShopRepository;
     private readonly cashRequestRepo: CashRequestRepository;
-    private readonly accountRepo: AccountRepository;
+    private readonly accountWorldRepo: AccountWorldRepository;
     private readonly storageRepo: StorageRepository;
     private readonly inventoryRepo: InventoryRepository;
     private readonly characterRepo: CharacterRepository;
@@ -69,7 +69,7 @@ export class CashShopService {
     constructor(
         cashShopRepository: CashShopRepository,
         cashRequestRepository: CashRequestRepository,
-        accountRepository: AccountRepository,
+        accountWorldRepository: AccountWorldRepository,
         storageRepository: StorageRepository,
         inventoryRepository: InventoryRepository,
         characterRepository: CharacterRepository,
@@ -81,7 +81,7 @@ export class CashShopService {
     ) {
         this.cashShopRepo = cashShopRepository;
         this.cashRequestRepo = cashRequestRepository;
-        this.accountRepo = accountRepository;
+        this.accountWorldRepo = accountWorldRepository;
         this.storageRepo = storageRepository;
         this.inventoryRepo = inventoryRepository;
         this.characterRepo = characterRepository;
@@ -351,11 +351,11 @@ export class CashShopService {
     }
 
     async loadAccount(worldId: number, accountId: number, characterId: number) {
-        const [balance, items, wishlist, account, storage, gifts] = await Promise.all([
+        const [balance, items, wishlist, characterSlotCount, storage, gifts] = await Promise.all([
             this.cashShopRepo.findBalance(worldId, accountId),
             this.cashShopRepo.findItems(worldId, accountId),
             this.cashShopRepo.findWishlist(worldId, characterId),
-            this.accountRepo.get(worldId, accountId),
+            this.accountWorldRepo.findCharacterSlotCount(worldId, accountId),
             this.storageRepo.get(worldId, accountId),
             this.cashShopRepo.findGifts(worldId, accountId),
         ]);
@@ -374,7 +374,7 @@ export class CashShopService {
             maplePoint: balance.maplePoint,
             locker,
             wishlist,
-            characterSlotCount: account?.characterSlotCount ?? 0,
+            characterSlotCount,
             storageSlotCount: storage?.slots ?? DEFAULT_STORAGE_SLOTS,
             gifts: visibleGifts.map((row) => ({
                 serial: row.serial,
@@ -526,15 +526,11 @@ export class CashShopService {
                         break;
                     }
                     case CashSlotKind.CASH_SLOT_KIND_CHARACTER: {
-                        const account = await this.accountRepo.get(req.worldId, req.accountId, { txClient });
-                        if (account == null) {
-                            return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-                        }
-                        slots = account.characterSlotCount + req.amount;
+                        slots = (await this.accountWorldRepo.findCharacterSlotCount(req.worldId, req.accountId, { txClient })) + req.amount;
                         if (slots > req.max) {
                             return fail(CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
                         }
-                        await this.accountRepo.setCharacterSlotCount(req.worldId, req.accountId, slots, { txClient });
+                        await this.accountWorldRepo.setCharacterSlotCount(req.worldId, req.accountId, slots, { txClient });
                         break;
                     }
                     default:
@@ -560,9 +556,6 @@ export class CashShopService {
                     break;
                 case CashSlotKind.CASH_SLOT_KIND_STORAGE:
                     await this.storageRepo.invalidateCache(req.worldId, req.accountId);
-                    break;
-                case CashSlotKind.CASH_SLOT_KIND_CHARACTER:
-                    await this.accountRepo.invalidateCache(req.worldId, req.accountId);
                     break;
             }
         }

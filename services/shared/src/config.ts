@@ -106,19 +106,13 @@ function normalizePostgresqlWorldEntry(entry: RawWorldPgConfig | undefined, worl
     return { global, data };
 }
 
-function normalizePostgresql(rawPg: RawConfig["postgresql"], worldId: number): InternalConfig["postgresql"] {
+function normalizePostgresql(rawPg: RawConfig["postgresql"]): InternalConfig["postgresql"] {
     const pgObject = rawPg ?? {};
     const unified = pgObject.unified ? normalizePgEndpoint(pgObject.unified) : null;
     const worldsIn = pgObject.worlds ?? {};
     const worlds: Record<string, WorldPgConfig> = {};
     for (const key of Object.keys(worldsIn)) {
         worlds[key] = normalizePostgresqlWorldEntry(worldsIn[key], key);
-    }
-    const worldKey = String(worldId);
-    if (!worlds[worldKey]) {
-        throw new Error(
-            `postgresql.worlds["${worldKey}"] is missing (app.world_id=${worldId}). Define per-world global + data[] shards.`
-        );
     }
     return { unified, worlds };
 }
@@ -145,19 +139,13 @@ function normalizeRedisWorldEntry(entry: RawWorldRedisConfig | undefined, worldK
     return { global, data };
 }
 
-function normalizeRedis(rawRedis: RawConfig["redis"], worldId: number): InternalConfig["redis"] {
+function normalizeRedis(rawRedis: RawConfig["redis"]): InternalConfig["redis"] {
     const redisObject = rawRedis ?? {};
     const unified = redisObject.unified ? normalizeRedisEndpoint(redisObject.unified) : null;
     const worldsIn = redisObject.worlds ?? {};
     const worlds: Record<string, WorldRedisConfig> = {};
     for (const key of Object.keys(worldsIn)) {
         worlds[key] = normalizeRedisWorldEntry(worldsIn[key], key);
-    }
-    const worldKey = String(worldId);
-    if (!worlds[worldKey]) {
-        throw new Error(
-            `redis.worlds["${worldKey}"] is missing (app.world_id=${worldId}). Define per-world global + data[] shards.`
-        );
     }
     return { unified, worlds };
 }
@@ -221,11 +209,9 @@ export function withDefaults(raw: RawConfig): Omit<InternalConfig, "configPath">
     const appObject = doc.app ?? {};
     const app = {
         log_level: appObject.log_level ?? "info",
-        world_id: appObject.world_id ?? 0,
         server_alive_ttl_seconds: appObject.server_alive_ttl_seconds ?? 45,
         max_parcels: appObject.max_parcels ?? 50,
     };
-    const worldId = app.world_id;
     const grpcObject = doc.grpc ?? {};
     const rabbitmqObject = doc.rabbitmq ?? {};
     const cacheObject = doc.cache ?? {};
@@ -237,8 +223,8 @@ export function withDefaults(raw: RawConfig): Omit<InternalConfig, "configPath">
             host: grpcObject.host ?? "0.0.0.0",
             port: grpcObject.port ?? 50051,
         },
-        postgresql: normalizePostgresql(doc.postgresql, worldId),
-        redis: normalizeRedis(doc.redis, worldId),
+        postgresql: normalizePostgresql(doc.postgresql),
+        redis: normalizeRedis(doc.redis),
         game_servers: normalizeGameServers(doc.game_servers),
         rabbitmq: {
             ip: rabbitmqObject.ip ?? DEFAULT_RABBITMQ.ip,
@@ -264,8 +250,8 @@ export function withDefaults(raw: RawConfig): Omit<InternalConfig, "configPath">
     };
 }
 
-export function getPostgresqlWorld(cfg: Pick<InternalConfig, "app" | "postgresql">, worldId?: number): WorldPgConfig {
-    const worldKey = String(worldId ?? cfg.app.world_id);
+export function getPostgresqlWorld(cfg: Pick<InternalConfig, "postgresql">, worldId: number): WorldPgConfig {
+    const worldKey = String(worldId);
     const block = cfg.postgresql.worlds[worldKey];
     if (!block) {
         throw new Error(`No postgresql.worlds["${worldKey}"]`);
@@ -273,8 +259,8 @@ export function getPostgresqlWorld(cfg: Pick<InternalConfig, "app" | "postgresql
     return block;
 }
 
-export function getRedisWorld(cfg: Pick<InternalConfig, "app" | "redis">, worldId?: number): WorldRedisConfig {
-    const worldKey = String(worldId ?? cfg.app.world_id);
+export function getRedisWorld(cfg: Pick<InternalConfig, "redis">, worldId: number): WorldRedisConfig {
+    const worldKey = String(worldId);
     const block = cfg.redis.worlds[worldKey];
     if (!block) {
         throw new Error(`No redis.worlds["${worldKey}"]`);
@@ -282,11 +268,11 @@ export function getRedisWorld(cfg: Pick<InternalConfig, "app" | "redis">, worldI
     return block;
 }
 
-export function getPostgresGlobal(cfg: Pick<InternalConfig, "app" | "postgresql">, worldId?: number): PgEndpoint {
+export function getPostgresGlobal(cfg: Pick<InternalConfig, "postgresql">, worldId: number): PgEndpoint {
     return getPostgresqlWorld(cfg, worldId).global;
 }
 
-export function getRedisGlobal(cfg: Pick<InternalConfig, "app" | "redis">, worldId?: number): RedisEndpoint {
+export function getRedisGlobal(cfg: Pick<InternalConfig, "redis">, worldId: number): RedisEndpoint {
     return getRedisWorld(cfg, worldId).global;
 }
 

@@ -2,7 +2,9 @@ import bcrypt from "bcrypt";
 import { LoginAccountReply_Status } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "@fm/shared/context/internal-context";
 import type { AccountRepository } from "@fm/shared/repos/account-repository";
+import type { AccountWorldRepository } from "@fm/shared/repos/account-world-repository";
 import type { AccountModel } from "@fm/shared/types/repository-models";
+import type { PgEndpoint } from "@fm/shared/types/internal-config";
 import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import type { DistributedLockService } from "./distributed-lock-service";
 
@@ -20,53 +22,49 @@ export type SecondPasswordResult =
 export class AccountService {
     private readonly ctx: InternalContext;
     private readonly accountRepo: AccountRepository;
+    private readonly accountWorldRepo: AccountWorldRepository;
     private readonly unifiedRepo: UnifiedRepository;
     private readonly distributedLockService: DistributedLockService;
 
     constructor(
         internalContext: InternalContext,
         accountRepository: AccountRepository,
+        accountWorldRepository: AccountWorldRepository,
         unifiedRepository: UnifiedRepository,
         distributedLockService: DistributedLockService
     ) {
         this.ctx = internalContext;
         this.accountRepo = accountRepository;
+        this.accountWorldRepo = accountWorldRepository;
         this.unifiedRepo = unifiedRepository;
         this.distributedLockService = distributedLockService;
     }
 
-    private worldId() {
-        return this.ctx.appConfiguration.app.world_id;
-    }
-
     async loginAccount(loginId: string, password: string, macAddress: string | null, ipAddress: string | null, initialRole: number) {
-        const worldId = this.worldId();
         const identity = await this.unifiedRepo.findAccountByLoginId(loginId);
 
         if (!identity || identity.registered_at === null) {
             const accountId = identity ? identity.id : (await this.unifiedRepo.insertAccountIdentity(loginId)).id;
             const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
             const role = Number.isInteger(initialRole) ? initialRole : 0;
-            const newAccount = {
-                accountId,
-                loginId,
-                passwordHash,
-                gender: 0,
-                role,
-                isBanned: false,
-                banReason: null,
-                isChatBlocked: false,
-                chatBlockedUntil: null,
-                characterSlotCount: 6,
-                lastLoginIp: ipAddress ?? null,
-                macAddress: macAddress ?? null,
-                secondPasswordHash: null,
-                secondPasswordFailures: 0,
-                secondPasswordLockedUntil: null,
-            };
-            let saved: Awaited<ReturnType<AccountRepository["set"]>>;
+            let saved: AccountModel;
             try {
-                saved = await this.accountRepo.set(worldId, newAccount);
+                saved = await this.accountRepo.create({
+                    accountId,
+                    loginId,
+                    passwordHash,
+                    gender: 0,
+                    role,
+                    isBanned: false,
+                    banReason: null,
+                    isChatBlocked: false,
+                    chatBlockedUntil: null,
+                    lastLoginIp: ipAddress ?? null,
+                    macAddress: macAddress ?? null,
+                    secondPasswordHash: null,
+                    secondPasswordFailures: 0,
+                    secondPasswordLockedUntil: null,
+                });
                 await this.unifiedRepo.confirmAccountIdentity(accountId);
             } catch (err) {
                 await this.unifiedRepo.deletePendingAccountIdentity(accountId).catch(() => {});
@@ -79,13 +77,12 @@ export class AccountService {
                 role: saved.role,
                 isChatBlocked: saved.isChatBlocked,
                 chatBlockedUntil: saved.chatBlockedUntil,
-                characterSlotCount: saved.characterSlotCount,
             };
         }
 
-        const account = await this.accountRepo.get(worldId, identity.id);
+        const account = await this.accountRepo.get(identity.id);
         if (!account) {
-            throw new Error(`Account identity found but world data missing for id=${identity.id}`);
+            throw new Error(`Account identity found but account data missing for id=${identity.id}`);
         }
         if (account.isBanned) {
             return { status: LoginAccountReply_Status.BANNED, accountId: account.accountId, role: account.role ?? 0 };
@@ -96,7 +93,7 @@ export class AccountService {
             return { status: LoginAccountReply_Status.WRONG_PASSWORD, role: account.role ?? 0 };
         }
         if (macAddress || ipAddress) {
-            await this.accountRepo.setLogin(worldId, account.accountId, ipAddress ?? account.lastLoginIp ?? null, macAddress ?? account.macAddress ?? null);
+            await this.accountRepo.setLogin(account.accountId, ipAddress ?? account.lastLoginIp ?? null, macAddress ?? account.macAddress ?? null);
         }
 
         return {
@@ -106,26 +103,25 @@ export class AccountService {
             role: account.role,
             isChatBlocked: account.isChatBlocked,
             chatBlockedUntil: account.chatBlockedUntil,
-            characterSlotCount: account.characterSlotCount,
         };
     }
 
     async setAccountRole(accountId: number, role: number) {
-        const account = await this.accountRepo.get(this.worldId(), accountId);
+        const account = await this.accountRepo.get(accountId);
         if (!account) {
             return false;
         }
-        await this.accountRepo.setRole(this.worldId(), accountId, role);
+        await this.accountRepo.setRole(accountId, role);
         return true;
     }
 
-    async setSecondPassword(worldId: number, accountId: number, password: string): Promise<SecondPasswordResult> {
+    async setSecondPassword(accountId: number, password: string): Promise<SecondPasswordResult> {
         if (password.length < 4 || password.length > 16) {
             return "invalid";
         }
 
-        await using _lock = await this.distributedLockService.acquireWorldDataLock(worldId, `second_password:a${accountId}`);
-        const account = await this.accountRepo.get(worldId, accountId);
+        await using _lock = await this.distributedLockService.acquireUnifiedLock(`second_password:a${accountId}`);
+        const account = await this.accountRepo.get(accountId);
         if (!account) {
             return "invalid";
         }
@@ -134,13 +130,13 @@ export class AccountService {
         }
 
         const secondPasswordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-        await this.accountRepo.setSecondPassword(worldId, accountId, secondPasswordHash, 0, null);
+        await this.accountRepo.setSecondPassword(accountId, secondPasswordHash, 0, null);
         return "success";
     }
 
-    async removeSecondPassword(worldId: number, accountId: number, password: string): Promise<SecondPasswordResult> {
-        await using _lock = await this.distributedLockService.acquireWorldDataLock(worldId, `second_password:a${accountId}`);
-        const account = await this.accountRepo.get(worldId, accountId);
+    async removeSecondPassword(accountId: number, password: string): Promise<SecondPasswordResult> {
+        await using _lock = await this.distributedLockService.acquireUnifiedLock(`second_password:a${accountId}`);
+        const account = await this.accountRepo.get(accountId);
         if (!account) {
             return "invalid";
         }
@@ -148,18 +144,18 @@ export class AccountService {
             return "not_set";
         }
 
-        const verified = await this.checkSecondPassword(worldId, account, password);
+        const verified = await this.checkSecondPassword(account, password);
         if (verified !== "success") {
             return verified;
         }
 
-        await this.accountRepo.setSecondPassword(worldId, accountId, null, 0, null);
+        await this.accountRepo.setSecondPassword(accountId, null, 0, null);
         return "success";
     }
 
-    async authorizeCharacterSelection(worldId: number, accountId: number, password?: string): Promise<SecondPasswordResult> {
-        await using _lock = await this.distributedLockService.acquireWorldDataLock(worldId, `second_password:a${accountId}`);
-        const account = await this.accountRepo.get(worldId, accountId);
+    async authorizeCharacterSelection(accountId: number, password?: string): Promise<SecondPasswordResult> {
+        await using _lock = await this.distributedLockService.acquireUnifiedLock(`second_password:a${accountId}`);
+        const account = await this.accountRepo.get(accountId);
         if (!account) {
             return "invalid";
         }
@@ -169,10 +165,41 @@ export class AccountService {
         if (password == null) {
             return "invalid";
         }
-        return this.checkSecondPassword(worldId, account, password);
+        return this.checkSecondPassword(account, password);
     }
 
-    private async checkSecondPassword(worldId: number, account: AccountModel, password: string): Promise<SecondPasswordResult> {
+    // Accounts used to live in the data shards of the configured world. Each world's shards hand their slot counts
+    // to account_worlds, and shards other than the unified database hand their account rows to it.
+    async moveAccountsToUnified() {
+        const config = this.ctx.appConfiguration.postgresql;
+        const unified = config.unified ? AccountService.endpointKey(config.unified) : "";
+        for (const [worldKey, world] of Object.entries(config.worlds)) {
+            const worldId = Number(worldKey);
+            const pools = this.ctx.getPgDataPools(worldId);
+            const seen = new Set<string>();
+            for (let i = 0; i < world.data.length; i += 1) {
+                const key = AccountService.endpointKey(world.data[i]!);
+                const pool = pools[i]!;
+                if (seen.has(key)) {
+                    continue;
+                }
+                seen.add(key);
+                await this.accountWorldRepo.takeSlotsFromAccounts(worldId, pool);
+                if (key !== unified) {
+                    const moved = await this.accountRepo.moveFrom(pool);
+                    if (moved > 0) {
+                        console.log(`[account] moved ${moved} accounts from world ${worldId} shard ${key} to unified`);
+                    }
+                }
+            }
+        }
+    }
+
+    private static endpointKey(endpoint: PgEndpoint): string {
+        return `${endpoint.host}:${endpoint.port}/${endpoint.database}`;
+    }
+
+    private async checkSecondPassword(account: AccountModel, password: string): Promise<SecondPasswordResult> {
         const now = Date.now();
         const lockedUntil = account.secondPasswordLockedUntil ? new Date(account.secondPasswordLockedUntil).getTime() : 0;
         if (lockedUntil > now) {
@@ -182,14 +209,13 @@ export class AccountService {
         const match = await bcrypt.compare(password, account.secondPasswordHash!);
         if (match) {
             if (account.secondPasswordFailures !== 0 || account.secondPasswordLockedUntil) {
-                await this.accountRepo.setSecondPasswordFailures(worldId, account.accountId, 0, null);
+                await this.accountRepo.setSecondPasswordFailures(account.accountId, 0, null);
             }
             return "success";
         }
 
         const failures = lockedUntil > 0 && lockedUntil <= now ? 1 : account.secondPasswordFailures + 1;
         await this.accountRepo.setSecondPasswordFailures(
-            worldId,
             account.accountId,
             failures,
             failures >= SECOND_PASSWORD_MAX_FAILURES ? new Date(now + SECOND_PASSWORD_LOCK_MS).toISOString() : null

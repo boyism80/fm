@@ -54,8 +54,8 @@ export class SessionRepository {
         };
     }
 
-    async beginLogin(worldId: number, accountId: number, loginServerId: string, now: string, ttlSeconds: number) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+    async beginLogin(accountId: number, loginServerId: string, now: string, ttlSeconds: number) {
+        const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
         const script = `
 local key = KEYS[1]
@@ -97,7 +97,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         sourceCashShopId: number | null,
         debuffs: Debuff[]
     ) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
         const sourceCh = sourceChannelId != null && Number.isInteger(sourceChannelId) && sourceChannelId >= 0 ? sourceChannelId : -1;
         const sourceCs = sourceCashShopId != null && Number.isInteger(sourceCashShopId) && sourceCashShopId >= 0 ? sourceCashShopId : -1;
@@ -182,7 +182,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         now: string,
         ttlSeconds: number
     ) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
         const script = `
 local account_key = KEYS[1]
@@ -244,7 +244,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}, return_channel_id}
         now: string,
         ttlSeconds: number
     ) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
         const script = `
 local account_key = KEYS[1]
@@ -300,14 +300,13 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
     }
 
     async refresh(
-        worldId: number,
         accountId: number,
         loginTtl: number,
         transitionTtl: number,
         gameTtl: number,
         owner: { characterId: number; channelId?: number; cashShopId?: number } | null
     ) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
         const script = `
 local account_key = KEYS[1]
@@ -358,14 +357,13 @@ return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
     }
 
     async logout(
-        worldId: number,
         accountId: number,
         keep: boolean,
         requestChannelId?: number,
         ownerCharacterId?: number,
         requestCashShopId?: number
     ) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
         const ch =
             requestChannelId != null && Number.isInteger(requestChannelId) && requestChannelId >= 0
@@ -415,14 +413,14 @@ return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
         )) as Array<number | string>;
     }
 
-    async getAccountSession(worldId: number, accountId: number): Promise<AccountSession | null> {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+    async getAccountSession(accountId: number): Promise<AccountSession | null> {
+        const { client } = this.ctx.getRedisUnifiedAccess();
         const raw = await client.hgetall(this.accountKey(accountId));
         return this.accountHashToSession(raw);
     }
 
-    async getAccountSessionTtl(worldId: number, accountId: number): Promise<number> {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+    async getAccountSessionTtl(accountId: number): Promise<number> {
+        const { client } = this.ctx.getRedisUnifiedAccess();
         return client.ttl(this.accountKey(accountId));
     }
 
@@ -431,7 +429,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
         if (row == null) {
             return null;
         }
-        const account = await this.getAccountSession(worldId, row.accountId);
+        const account = await this.getAccountSession(row.accountId);
         if (account == null || account.worldId !== worldId || account.characterId !== characterId) {
             return null;
         }

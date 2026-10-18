@@ -6,6 +6,7 @@ import { InternalContext } from "@fm/shared/context/internal-context";
 import { CharacterRepository } from "@fm/shared/repos/character-repository";
 import { InventoryRepository } from "@fm/shared/repos/inventory-repository";
 import { AccountRepository } from "@fm/shared/repos/account-repository";
+import { AccountWorldRepository } from "@fm/shared/repos/account-world-repository";
 import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import { CharacterOverviewRepository } from "@fm/shared/repos/character-overview-repository";
 import { SkillRepository } from "@fm/shared/repos/skill-repository";
@@ -80,6 +81,7 @@ export function createAppContainer() {
         characterRepository: awilix.asClass(CharacterRepository).scoped(),
         inventoryRepository: awilix.asClass(InventoryRepository).scoped(),
         accountRepository: awilix.asClass(AccountRepository).scoped(),
+        accountWorldRepository: awilix.asClass(AccountWorldRepository).scoped(),
         unifiedRepository: awilix.asClass(UnifiedRepository).scoped(),
         characterOverviewRepository: awilix.asClass(CharacterOverviewRepository).scoped(),
         skillRepository: awilix.asClass(SkillRepository).scoped(),

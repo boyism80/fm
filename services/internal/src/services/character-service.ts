@@ -16,6 +16,7 @@ import { AccountSessionState, GuildErrorCode, PartyErrorCode } from "@fm/shared/
 import type { BuddyEntry, Buff, Character, CreateCharacterRequest, EnterGameReply, Inventory, Quest, SavedLocation, Skill } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { AccountRepository } from "@fm/shared/repos/account-repository";
+import { AccountWorldRepository } from "@fm/shared/repos/account-world-repository";
 import { CharacterOverviewRepository } from "@fm/shared/repos/character-overview-repository";
 import { CharacterRepository } from "@fm/shared/repos/character-repository";
 import type { CharacterModel } from "@fm/shared/repos/character-repository";
@@ -129,6 +130,7 @@ export class CharacterService {
     private readonly repo: CharacterRepository;
     private readonly overviewRepo: CharacterOverviewRepository;
     private readonly accountRepo: AccountRepository;
+    private readonly accountWorldRepo: AccountWorldRepository;
     private readonly unifiedRepo: UnifiedRepository;
     private readonly inventoryRepo: InventoryRepository;
     private readonly skillRepo: SkillRepository;
@@ -164,6 +166,7 @@ export class CharacterService {
         characterRepository: CharacterRepository,
         characterOverviewRepository: CharacterOverviewRepository,
         accountRepository: AccountRepository,
+        accountWorldRepository: AccountWorldRepository,
         unifiedRepository: UnifiedRepository,
         inventoryRepository: InventoryRepository,
         skillRepository: SkillRepository,
@@ -198,6 +201,7 @@ export class CharacterService {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
         this.accountRepo = accountRepository;
+        this.accountWorldRepo = accountWorldRepository;
         this.unifiedRepo = unifiedRepository;
         this.inventoryRepo = inventoryRepository;
         this.skillRepo = skillRepository;
@@ -228,10 +232,6 @@ export class CharacterService {
         this.cashShopService = cashShopService;
         this.socialService = socialService;
         this.ctx = internalContext;
-    }
-
-    private worldId() {
-        return this.app.app.world_id;
     }
 
     private assertWorld(worldId: number) {
@@ -555,15 +555,14 @@ export class CharacterService {
 
     async createCharacter(
         accountId: number,
-        worldId: number | undefined,
+        worldId: number,
         params: Pick<CreateCharacterRequest, "name" | "face" | "hair" | "skinColor" | "topItemId" | "bottomItemId" | "shoesItemId" | "weaponItemId">
     ) {
         const { name, face, hair, skinColor, topItemId, bottomItemId, shoesItemId, weaponItemId } = params;
-        const wid = worldId ?? this.worldId();
-        this.assertWorld(wid);
+        this.assertWorld(worldId);
         this.assertAccountId(accountId);
         this.validateCharacter({ name });
-        const session = await this.sessionRepo.getAccountSession(wid, accountId);
+        const session = await this.sessionRepo.getAccountSession(accountId);
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
             return { success: false, errorMsg: "로그인 상태가 아닙니다." };
         }
@@ -571,11 +570,11 @@ export class CharacterService {
             return { success: false, errorMsg: "사용할 수 없는 이름입니다." };
         }
 
-        await using _createCharacterLock = await this.distributedLockService.acquireWorldDataLock(wid, `create_character:a${accountId}`);
+        await using _createCharacterLock = await this.distributedLockService.acquireUnifiedLock(`create_character:a${accountId}`);
 
-        const overviewMap = await this.overviewRepo.getAll(wid, String(accountId));
-        const account = await this.accountRepo.get(wid, accountId);
-        const slotCount = account?.characterSlotCount ?? 6;
+        const overviewMap = await this.overviewRepo.getAll(worldId, String(accountId));
+        const account = await this.accountRepo.get(accountId);
+        const slotCount = await this.accountWorldRepo.findCharacterSlotCount(worldId, accountId);
         if (overviewMap.size >= slotCount) {
             return { success: false, errorMsg: "캐릭터 슬롯이 부족합니다." };
         }
@@ -584,7 +583,7 @@ export class CharacterService {
             return { success: false, errorMsg: "선택할 수 없는 외형입니다." };
         }
 
-        const characterId = await this.unifiedRepo.reserveCharacterName(name, accountId, wid);
+        const characterId = await this.unifiedRepo.reserveCharacterName(name, accountId, worldId);
         if (characterId === null) {
             return { success: false, errorMsg: "이미 사용 중인 이름입니다." };
         }
@@ -593,7 +592,7 @@ export class CharacterService {
         const character = {
             characterId,
             accountId,
-            worldId: wid,
+            worldId,
             name,
             gender,
             skinColor,
@@ -638,7 +637,7 @@ export class CharacterService {
         const overview = {
             characterId,
             accountId,
-            worldId: wid,
+            worldId,
             name,
             gender,
             skinColor,
@@ -657,19 +656,19 @@ export class CharacterService {
         };
 
         try {
-            await this.repo.set(wid, character);
-            await this.keyLayoutRepo.set(wid, {
+            await this.repo.set(worldId, character);
+            await this.keyLayoutRepo.set(worldId, {
                 characterId,
-                worldId: wid,
+                worldId,
                 keyLayoutJson: bindingsToJsonString(getDefaultKeyLayoutBindings()),
             });
-            await this.mountRepo.set(wid, { characterId, worldId: wid, level: 1, exp: 0, fatigue: 0 });
+            await this.mountRepo.set(worldId, { characterId, worldId, level: 1, exp: 0, fatigue: 0 });
 
             if (equips.length) {
                 const enhances = await Promise.all(equips.map((e) => this.wzService.getEnhanceChance(e.itemId)));
-                await this.inventoryRepo.replaceBySnapshot(wid, String(characterId), []);
+                await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), []);
                 await this.inventoryRepo.setAll(
-                    wid,
+                    worldId,
                     equips.map((e, idx) => ({
                         uniqueId: null,
                         ownerId: characterId,
@@ -687,15 +686,15 @@ export class CharacterService {
                 );
             }
 
-            await this.overviewRepo.set(wid, overview);
+            await this.overviewRepo.set(worldId, overview);
             await this.unifiedRepo.confirmCharacterName(name);
         } catch (err) {
             await Promise.allSettled([
-                this.repo.delete({ worldId: wid, characterId, accountId }),
-                this.keyLayoutRepo.delete({ worldId: wid, characterId }),
-                this.mountRepo.delete({ worldId: wid, characterId }),
-                this.inventoryRepo.replaceBySnapshot(wid, String(characterId), []),
-                this.overviewRepo.delete({ worldId: wid, accountId, characterId }),
+                this.repo.delete({ worldId, characterId, accountId }),
+                this.keyLayoutRepo.delete({ worldId, characterId }),
+                this.mountRepo.delete({ worldId, characterId }),
+                this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), []),
+                this.overviewRepo.delete({ worldId, accountId, characterId }),
                 this.unifiedRepo.releaseCharacterNameReservation(accountId),
             ]);
             throw err;
@@ -704,18 +703,17 @@ export class CharacterService {
         return { success: true, errorMsg: "", character: overview };
     }
 
-    async deleteCharacter(accountId: number, characterId: number): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean }> {
-        const worldId = this.worldId();
+    async deleteCharacter(accountId: number, characterId: number, worldId: number): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean }> {
         this.assertWorld(worldId);
         this.assertAccountId(accountId);
         this.assertCharacterId(characterId);
 
-        const session = await this.sessionRepo.getAccountSession(worldId, accountId);
+        const session = await this.sessionRepo.getAccountSession(accountId);
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
             return { success: false };
         }
 
-        const account = await this.accountRepo.get(worldId, accountId);
+        const account = await this.accountRepo.get(accountId);
         if (!account) {
             return { success: false };
         }

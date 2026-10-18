@@ -1,127 +1,107 @@
-import { redisCacheKey } from "../redis-cache-key";
-import { ValueRepository } from "./value-repository";
-import type { RepositoryQuery, RepositoryQueryValue, RepositoryTxOptions } from "../types/repository-contracts";
-import type { AccountDeleteModel, AccountModel, AccountRow } from "../types/repository-models";
+import type { Pool } from "pg";
+import type { InternalContext } from "../context/internal-context";
+import type { RepositoryQueryValue } from "../types/repository-contracts";
+import type { AccountModel, AccountRow } from "../types/repository-models";
 
 export type { AccountModel };
 
-export class AccountRepository extends ValueRepository<AccountModel, AccountRow, number> {
-    override getKey(model: AccountModel) {
-        return model.accountId;
+const MOVE_BATCH = 1000;
+
+// Account-wide data lives in the unified database. Character slots are per world (AccountWorldRepository).
+export class AccountRepository {
+    private readonly ctx: InternalContext;
+
+    constructor(internalContext: InternalContext) {
+        this.ctx = internalContext;
     }
 
-    override getTtlSeconds() {
-        return 300;
+    private pool() {
+        return this.ctx.getPgUnifiedPool();
     }
 
-    override getRedisKey(worldId: number, accountId: number) {
-        return redisCacheKey(`w${worldId}:account:${accountId}`);
+    async get(accountId: number): Promise<AccountModel | null> {
+        const { rows } = await this.pool().query("SELECT * FROM accounts WHERE id = $1", [accountId]);
+        const row = rows[0] as AccountRow | undefined;
+        if (!row) {
+            return null;
+        }
+        return AccountRepository.rowToModel(row);
     }
 
-    override onSelect(accountId: number): RepositoryQuery {
-        return {
-            text: "SELECT * FROM accounts WHERE id = $1",
-            values: [accountId],
-        };
+    async create(model: AccountModel): Promise<AccountModel> {
+        const { rows } = await this.pool().query(
+            `INSERT INTO accounts
+               (id, login_id, password_hash, gender, role, is_banned, ban_reason, is_chat_blocked, chat_blocked_until,
+                last_login_ip, mac_address, second_password_hash, second_password_failures, second_password_locked_until,
+                created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+             RETURNING *`,
+            [
+                model.accountId,
+                model.loginId,
+                model.passwordHash,
+                model.gender,
+                model.role ?? 0,
+                model.isBanned,
+                model.banReason ?? null,
+                model.isChatBlocked,
+                model.chatBlockedUntil ?? null,
+                model.lastLoginIp ?? null,
+                model.macAddress ?? null,
+                model.secondPasswordHash ?? null,
+                model.secondPasswordFailures,
+                model.secondPasswordLockedUntil ?? null,
+            ]
+        );
+        return AccountRepository.rowToModel(rows[0] as AccountRow);
     }
 
-    override onUpsert(row: AccountRow): RepositoryQuery {
-        return {
-            text: `INSERT INTO accounts
-                     (id, login_id, password_hash, gender, role, is_banned, ban_reason,
-                      is_chat_blocked, chat_blocked_until, character_slot_count, last_login_ip,
-                      mac_address, second_password_hash, second_password_failures,
-                      second_password_locked_until, created_at, updated_at)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),NOW())
-                   ON CONFLICT (id) DO UPDATE SET
-                     password_hash        = EXCLUDED.password_hash,
-                     gender               = EXCLUDED.gender,
-                     role                 = EXCLUDED.role,
-                     is_banned            = EXCLUDED.is_banned,
-                     ban_reason           = EXCLUDED.ban_reason,
-                     is_chat_blocked      = EXCLUDED.is_chat_blocked,
-                     chat_blocked_until   = EXCLUDED.chat_blocked_until,
-                     character_slot_count = EXCLUDED.character_slot_count,
-                     last_login_ip        = EXCLUDED.last_login_ip,
-                     mac_address          = EXCLUDED.mac_address,
-                     second_password_hash = EXCLUDED.second_password_hash,
-                     second_password_failures = EXCLUDED.second_password_failures,
-                     second_password_locked_until = EXCLUDED.second_password_locked_until,
-                     updated_at           = NOW()
-                   RETURNING *`,
-            values: [
-                row.id,
-                row.login_id,
-                row.password_hash,
-                row.gender,
-                row.role,
-                row.is_banned,
-                row.ban_reason ?? null,
-                row.is_chat_blocked,
-                row.chat_blocked_until ?? null,
-                row.character_slot_count,
-                row.last_login_ip ?? null,
-                row.mac_address ?? null,
-                row.second_password_hash ?? null,
-                row.second_password_failures,
-                row.second_password_locked_until ?? null,
-            ],
-        };
-    }
-
-    // An existing account is written column by column, never with set(). The second password state is
+    // An existing account is written column by column, never as a whole row. The second password state is
     // written under the `second_password:a{id}` lock and the other columns are not, so writing back a
     // whole stale row would undo failures and lockouts (or a login) recorded in the meantime.
-    async setSecondPassword(worldId: number, accountId: number, hash: string | null, failures: number, lockedUntil: string | null): Promise<void> {
+    async setSecondPassword(accountId: number, hash: string | null, failures: number, lockedUntil: string | null): Promise<void> {
         await this.update(
-            worldId,
             accountId,
             "second_password_hash = $2, second_password_failures = $3, second_password_locked_until = $4",
             [hash, failures, lockedUntil]
         );
     }
 
-    async setSecondPasswordFailures(worldId: number, accountId: number, failures: number, lockedUntil: string | null): Promise<void> {
-        await this.update(worldId, accountId, "second_password_failures = $2, second_password_locked_until = $3", [failures, lockedUntil]);
+    async setSecondPasswordFailures(accountId: number, failures: number, lockedUntil: string | null): Promise<void> {
+        await this.update(accountId, "second_password_failures = $2, second_password_locked_until = $3", [failures, lockedUntil]);
     }
 
-    async setLogin(worldId: number, accountId: number, lastLoginIp: string | null, macAddress: string | null): Promise<void> {
-        await this.update(worldId, accountId, "last_login_ip = $2, mac_address = $3", [lastLoginIp, macAddress]);
+    async setLogin(accountId: number, lastLoginIp: string | null, macAddress: string | null): Promise<void> {
+        await this.update(accountId, "last_login_ip = $2, mac_address = $3", [lastLoginIp, macAddress]);
     }
 
-    async setRole(worldId: number, accountId: number, role: number): Promise<void> {
-        await this.update(worldId, accountId, "role = $2", [role]);
+    async setRole(accountId: number, role: number): Promise<void> {
+        await this.update(accountId, "role = $2", [role]);
     }
 
-    async setCharacterSlotCount(worldId: number, accountId: number, count: number, options: RepositoryTxOptions = {}): Promise<void> {
-        await this.update(worldId, accountId, "character_slot_count = $2", [count], options);
+    private async update(accountId: number, columns: string, values: RepositoryQueryValue[]): Promise<void> {
+        await this.pool().query(`UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`, [accountId, ...values]);
     }
 
-    private async update(
-        worldId: number,
-        accountId: number,
-        columns: string,
-        values: RepositoryQueryValue[],
-        options: RepositoryTxOptions = {}
-    ): Promise<void> {
-        const pool = this.pool(worldId, accountId);
-        await this.query(
-            pool,
-            `UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`,
-            [accountId, ...values],
-            options
-        );
-        await this.invalidateAfterWrite(worldId, accountId, pool, options);
+    // Accounts used to live in a world data shard. Rows still there are copied to the unified database and
+    // removed from the shard, so the move happens once.
+    async moveFrom(shard: Pool): Promise<number> {
+        let moved = 0;
+        while (true) {
+            const { rows } = await shard.query(`SELECT * FROM accounts ORDER BY id LIMIT ${MOVE_BATCH}`);
+            if (rows.length === 0) {
+                return moved;
+            }
+            await this.pool().query(
+                "INSERT INTO accounts SELECT * FROM jsonb_populate_recordset(NULL::accounts, $1) ON CONFLICT (id) DO NOTHING",
+                [JSON.stringify(rows)]
+            );
+            await shard.query("DELETE FROM accounts WHERE id = ANY($1)", [(rows as AccountRow[]).map((row) => row.id)]);
+            moved += rows.length;
+        }
     }
 
-    override onDelete(row: AccountDeleteModel): RepositoryQuery {
-        return {
-            text: "DELETE FROM accounts WHERE id = $1",
-            values: [row.accountId],
-        };
-    }
-
-    override rowToModel(row: AccountRow): AccountModel {
+    private static rowToModel(row: AccountRow): AccountModel {
         return {
             accountId: row.id,
             loginId: row.login_id,
@@ -132,32 +112,11 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
             banReason: row.ban_reason ?? null,
             isChatBlocked: row.is_chat_blocked,
             chatBlockedUntil: row.chat_blocked_until ?? null,
-            characterSlotCount: row.character_slot_count,
             lastLoginIp: row.last_login_ip ?? null,
             macAddress: row.mac_address ?? null,
             secondPasswordHash: row.second_password_hash ?? null,
             secondPasswordFailures: row.second_password_failures,
             secondPasswordLockedUntil: row.second_password_locked_until ?? null,
-        };
-    }
-
-    override modelToRow(model: AccountModel): AccountRow {
-        return {
-            id: model.accountId,
-            login_id: model.loginId,
-            password_hash: model.passwordHash,
-            gender: model.gender,
-            role: model.role ?? 0,
-            is_banned: model.isBanned,
-            ban_reason: model.banReason ?? null,
-            is_chat_blocked: model.isChatBlocked,
-            chat_blocked_until: model.chatBlockedUntil ?? null,
-            character_slot_count: model.characterSlotCount,
-            last_login_ip: model.lastLoginIp ?? null,
-            mac_address: model.macAddress ?? null,
-            second_password_hash: model.secondPasswordHash ?? null,
-            second_password_failures: model.secondPasswordFailures,
-            second_password_locked_until: model.secondPasswordLockedUntil ?? null,
         };
     }
 }

@@ -11,6 +11,8 @@ type DatabaseOperation = { name: string; subject: string };
 type PoolLocation = { worldId: number; role: string };
 
 const PG_CONNECTION_TIMEOUT_MS = 10000;
+// Failures of the unified database are logged in the unified database under this world id.
+const UNIFIED_WORLD_ID = -1;
 
 function shardIndex(hash: number, shardCount: number): number {
     if (shardCount <= 1) {
@@ -49,9 +51,12 @@ export class InternalContext {
             cache: cfg.cache,
             sequelize: cfg.sequelize,
         };
-        this.pgUnified = this.config.postgresql.unified ? this.createPool(this.config.postgresql.unified, -1, "unified") : null;
+        this.pgUnified = this.config.postgresql.unified ? this.createPool(this.config.postgresql.unified, UNIFIED_WORLD_ID, "unified") : null;
         this.pgGlobal = {};
         this.pgFailureLog = {};
+        if (this.config.postgresql.unified) {
+            this.pgFailureLog[String(UNIFIED_WORLD_ID)] = InternalContext.createFailureLogPool(this.config.postgresql.unified);
+        }
         this.pgData = {};
         this.redisUnified = this.config.redis.unified ? InternalContext.createRedis(this.config.redis.unified) : null;
         this.redisGlobal = {};
@@ -128,8 +133,7 @@ export class InternalContext {
         }
         const operation = this.databaseOperation.getStore();
         const failure = error as { code?: string; message?: string };
-        const worldId = location.worldId >= 0 ? location.worldId : this.config.app.world_id;
-        await this.insertFailure(worldId, location.role, operation?.name ?? "query", operation?.subject ?? "", statement, failure.code ?? "", String(failure.message ?? error));
+        await this.insertFailure(location.worldId, location.role, operation?.name ?? "query", operation?.subject ?? "", statement, failure.code ?? "", String(failure.message ?? error));
     }
 
     private async insertFailure(worldId: number, role: string, operation: string, subject: string, statement: string, code: string, message: string): Promise<void> {
@@ -316,6 +320,10 @@ export class InternalContext {
         const pools: Pool[] = [];
         if (this.pgUnified) {
             pools.push(this.pgUnified);
+        }
+        const unifiedFailureLogPool = this.pgFailureLog[String(UNIFIED_WORLD_ID)];
+        if (unifiedFailureLogPool) {
+            pools.push(unifiedFailureLogPool);
         }
         for (const worldId of Object.keys(this.pgGlobal)) {
             const worldGlobalPool = this.pgGlobal[worldId];

@@ -83,10 +83,9 @@ export class SessionService {
         return [0, SessionErrorCode.SESSION_UNKNOWN];
     }
 
-    async beginLogin(worldId: number, accountId: number, loginServerId: string) {
+    async beginLogin(accountId: number, loginServerId: string) {
         const [ok, code] = this.atomicResultTuple(
             await this.repo.beginLogin(
-                worldId,
                 accountId,
                 loginServerId,
                 this.now(),
@@ -94,8 +93,8 @@ export class SessionService {
             )
         );
         if (ok !== 1) {
-            const existing = await this.repo.getAccountSession(worldId, accountId);
-            const ttl = await this.repo.getAccountSessionTtl(worldId, accountId);
+            const existing = await this.repo.getAccountSession(accountId);
+            const ttl = await this.repo.getAccountSessionTtl(accountId);
             console.log(
                 `[session] begin_login rejected account=${accountId} login_server=${loginServerId} code=${code}` +
                     ` existing_state=${existing?.state} existing_login_server=${existing?.loginServer?.id}` +
@@ -150,7 +149,7 @@ export class SessionService {
 
     async enterGame(worldId: number, row: CharacterModel, channelId: number, clientIp: string, callerGone: () => boolean): Promise<EnterGameReply> {
         const { accountId, characterId } = row;
-        const account = await this.repo.getAccountSession(worldId, accountId);
+        const account = await this.repo.getAccountSession(accountId);
         const gameToGameTransfer = account?.gameToGameTransfer === true;
         const [ok, code] = this.atomicResultTuple(
             await this.repo.enterGame(
@@ -198,7 +197,7 @@ export class SessionService {
 
     async enterCashShop(worldId: number, row: CharacterModel, cashShopId: number, clientIp: string, callerGone: () => boolean): Promise<EnterCashShopReply> {
         const { accountId, characterId } = row;
-        const account = await this.repo.getAccountSession(worldId, accountId);
+        const account = await this.repo.getAccountSession(accountId);
         const raw = await this.repo.enterCashShop(
             worldId,
             accountId,
@@ -240,12 +239,10 @@ export class SessionService {
     }
 
     async refresh(
-        worldId: number,
         accountId: number,
         owner: { characterId: number; channelId?: number; cashShopId?: number } | null
     ) {
         const raw = await this.repo.refresh(
-            worldId,
             accountId,
             this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
             this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
@@ -287,7 +284,7 @@ export class SessionService {
         const keep = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_LOGIN_SERVER && transferDisconnect;
         let channelId = options.channelId;
         if (keep === false && (channelId === undefined || !Number.isInteger(channelId) || channelId < 0)) {
-            const account = await this.repo.getAccountSession(worldId, accountId);
+            const account = await this.repo.getAccountSession(accountId);
             const sch = account?.channelId;
             if (sch != null && Number.isInteger(sch) && sch >= 0) {
                 channelId = sch;
@@ -298,7 +295,7 @@ export class SessionService {
             src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER;
         const ownerCharacterId = serverDisconnect ? options.characterId : undefined;
         const cashShopId = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER ? options.cashShopId : undefined;
-        const raw = await this.repo.logout(worldId, accountId, keep, channelId, ownerCharacterId, cashShopId);
+        const raw = await this.repo.logout(accountId, keep, channelId, ownerCharacterId, cashShopId);
         const [ok, code] = this.atomicResultTuple(raw);
         console.log(
             `[session] logout account=${accountId} source=${src} transfer=${transferDisconnect}` +

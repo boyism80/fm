@@ -114,7 +114,7 @@ export class SocialService {
     }
 
     private async session(world: number, character: CharacterModel) {
-        const account = await this.sessionRepository.getAccountSession(world, character.accountId);
+        const account = await this.sessionRepository.getAccountSession(character.accountId);
         if (account?.worldId !== world || account.characterId !== character.characterId) {
             return null;
         }

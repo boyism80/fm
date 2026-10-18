@@ -19,7 +19,6 @@ export interface AccountModel {
     banReason?: string | null;
     isChatBlocked: boolean;
     chatBlockedUntil?: string | null;
-    characterSlotCount: number;
     lastLoginIp?: string | null;
     macAddress?: string | null;
     secondPasswordHash?: string | null;
@@ -37,15 +36,12 @@ export type AccountRow = {
     ban_reason?: string | null;
     is_chat_blocked: boolean;
     chat_blocked_until?: string | null;
-    character_slot_count: number;
     last_login_ip?: string | null;
     mac_address?: string | null;
     second_password_hash?: string | null;
     second_password_failures: number;
     second_password_locked_until?: string | null;
 };
-
-export type AccountDeleteModel = { accountId: number };
 
 export interface CharacterModel {
     characterId: number;

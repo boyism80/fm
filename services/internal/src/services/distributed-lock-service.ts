@@ -2,6 +2,7 @@ import type { InternalContext } from "@fm/shared/context/internal-context";
 import {
     DistributedLock,
     DistributedLockMultiGuard,
+    redisLockKey,
     redisLockShardHash,
     redisWorldLockKey,
     type DistributedLockGuard,
@@ -15,6 +16,10 @@ export class DistributedLockService {
     constructor(internalContext: InternalContext, distributedLock: DistributedLock) {
         this.ctx = internalContext;
         this.lock = distributedLock;
+    }
+
+    acquireUnifiedLock(keyRest: string, options?: DistributedLockOptions): Promise<DistributedLockGuard> {
+        return this.lock.acquire(this.ctx.getRedisUnifiedAccess().client, redisLockKey(keyRest), options);
     }
 
     acquireWorldDataLock(worldId: number, keyRest: string, options?: DistributedLockOptions): Promise<DistributedLockGuard> {

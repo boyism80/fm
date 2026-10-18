@@ -245,7 +245,7 @@ export class CharacterGrpcController {
     @Method("checkCharacterName")
     async checkCharacterName(call: GrpcCall<CheckCharacterNameRequest>, callback: GrpcCallback<CheckCharacterNameReply>) {
         try {
-            const result = await this.characterOverviewService.checkCharacterName(call.request.name, call.request.accountId);
+            const result = await this.characterOverviewService.checkCharacterName(call.request.name, call.request.accountId, call.request.worldId);
             callback(null, { exists: result.exists });
         } catch (err) {
             this.grpcError(err, callback);
@@ -269,7 +269,7 @@ export class CharacterGrpcController {
     @Method("deleteCharacter")
     async deleteCharacter(call: GrpcCall<DeleteCharacterRequest>, callback: GrpcCallback<DeleteCharacterReply>) {
         try {
-            const result = await this.characterService.deleteCharacter(call.request.accountId, call.request.characterId);
+            const result = await this.characterService.deleteCharacter(call.request.accountId, call.request.characterId, call.request.worldId);
             callback(null, {
                 success: result.success,
                 secondPasswordSet: result.secondPasswordSet ?? false,

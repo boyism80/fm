@@ -28,7 +28,8 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 	log.Printf("Check name packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: ctx.Client.(*login.LoginClient).GetAccountId()}
+	loginClient := ctx.Client.(*login.LoginClient)
+	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: loginClient.GetAccountId(), WorldId: loginClient.GetWorldId()}
 
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CheckCharacterNameReply, error) {

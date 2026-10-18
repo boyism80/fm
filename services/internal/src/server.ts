@@ -31,6 +31,7 @@ import type { GuildBulletinBoardService } from "./services/guild-bulletin-board-
 import type { AllianceService } from "./services/alliance-service";
 import type { FamilyService } from "./services/family-service";
 import type { CashShopService } from "./services/cash-shop-service";
+import type { AccountService } from "./services/account-service";
 import type { SocialService } from "./services/social-service";
 type ServerContainerCradle = {
     catalogController: CatalogGrpcController;
@@ -50,6 +51,7 @@ type ServerContainerCradle = {
     allianceService: AllianceService;
     familyService: FamilyService;
     cashShopService: CashShopService;
+    accountService: AccountService;
     socialService: SocialService;
     grpcError: typeof grpcError;
 };
@@ -100,30 +102,26 @@ async function main() {
     const rabbitmqService = container.resolve("rabbitmqService");
     const wzService = container.resolve("wzService");
 
-    const wid = String(internalConfig.app.world_id);
-    const pgw = internalConfig.postgresql.worlds[wid];
-    const rgw = internalConfig.redis.worlds[wid];
-    if (!pgw || !rgw) {
-        throw new Error(`world configuration not found for world_id=${wid}`);
-    }
+    const worldIds = Object.keys(internalConfig.postgresql.worlds).map(Number);
     const pgUnified = internalConfig.postgresql.unified;
     console.log(
-        `fm internal: loaded ${internalConfig.configPath} | grpc ${internalConfig.grpc.host}:${internalConfig.grpc.port} | world ${wid} | ` +
-            `pg global ${pgw.global.host}:${pgw.global.port}/${pgw.global.database} | pg_data_shards ${pgw.data.length} | ` +
-            `redis global ${rgw.global.host}:${rgw.global.port} | redis_data_shards ${rgw.data.length} | ` +
+        `fm internal: loaded ${internalConfig.configPath} | grpc ${internalConfig.grpc.host}:${internalConfig.grpc.port} | worlds ${worldIds.join(",")} | ` +
             `character_cache_ttl_s ${appConfiguration.getCharacterCacheTtlSeconds()} | item_cache_ttl_s ${appConfiguration.getItemCacheTtlSeconds()}` +
             (pgUnified ? ` | pg_unified ${pgUnified.host}:${pgUnified.port}/${pgUnified.database}` : "") +
             ` | game_catalog_worlds ${Object.keys(internalConfig.game_servers?.worlds ?? {}).length}` +
             ` | rabbitmq ${internalConfig.rabbitmq?.ip}:${internalConfig.rabbitmq?.port}/${internalConfig.rabbitmq?.vhost}`
     );
 
+    await container.resolve("accountService").moveAccountsToUnified();
     await wzService.preload();
     await rabbitmqService.start();
 
-    try {
-        await container.resolve("socialService").pruneMessengers(internalConfig.app.world_id);
-    } catch (err) {
-        console.error("[social] messenger prune failed", err);
+    for (const worldId of worldIds) {
+        try {
+            await container.resolve("socialService").pruneMessengers(worldId);
+        } catch (err) {
+            console.error(`[social] messenger prune failed world=${worldId}`, err);
+        }
     }
 
     const cashShopService = container.resolve("cashShopService");
@@ -133,13 +131,14 @@ async function main() {
             return;
         }
         settlingCashTransfers = true;
-        try {
-            await cashShopService.settleTransfers(internalConfig.app.world_id);
-        } catch (err) {
-            console.error("[cash-shop] transfer scan failed", err);
-        } finally {
-            settlingCashTransfers = false;
+        for (const worldId of worldIds) {
+            try {
+                await cashShopService.settleTransfers(worldId);
+            } catch (err) {
+                console.error(`[cash-shop] transfer scan failed world=${worldId}`, err);
+            }
         }
+        settlingCashTransfers = false;
     };
     const cashTransferTimer = setInterval(settleCashTransfers, 15_000);
     cashTransferTimer.unref();

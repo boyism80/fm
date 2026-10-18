@@ -824,13 +824,13 @@ enum SecondPasswordStatus {
 }
 
 message SetSecondPasswordRequest {
-  uint32 world_id = 1;
+  reserved 1;
   uint32 account_id = 2;
   string password = 3;
 }
 
 message RemoveSecondPasswordRequest {
-  uint32 world_id = 1;
+  reserved 1;
   uint32 account_id = 2;
   string password = 3;
 }
@@ -1235,7 +1235,7 @@ message LoginAccountReply {
   uint32 gender = 3;
   bool is_chat_blocked = 4;
   int64 chat_blocked_until_unix_ms = 5;
-  uint32 character_slot_count = 6;
+  reserved 6;
   uint32 role = 7;
 }
 
@@ -1283,6 +1283,7 @@ message GetCharacterListReply {
 message CheckCharacterNameRequest {
   string name = 1;
   uint32 account_id = 2;
+  uint32 world_id = 3;
 }
 
 message CheckCharacterNameReply {
@@ -1311,6 +1312,7 @@ message CreateCharacterReply {
 message DeleteCharacterRequest {
   uint32 account_id = 1;
   uint32 character_id = 2;
+  uint32 world_id = 3;
 }
 
 message DeleteCharacterReply {

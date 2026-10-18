@@ -113,7 +113,7 @@ export class SessionGrpcController {
                 return;
             }
 
-            const result = await this.accountService.authorizeCharacterSelection(worldId, accountId, call.request.secondPassword);
+            const result = await this.accountService.authorizeCharacterSelection(accountId, call.request.secondPassword);
             let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
             switch (result) {
                 case "success":
@@ -246,7 +246,7 @@ export class SessionGrpcController {
             } else if (characterId != null && channelId != null) {
                 owner = { characterId, channelId };
             }
-            const result = await this.sessionService.refresh(call.request.worldId, call.request.accountId, owner);
+            const result = await this.sessionService.refresh(call.request.accountId, owner);
             callback(null, {
                 ok: result.ok,
                 errorCode: result.code ?? SessionErrorCode.SESSION_UNKNOWN,

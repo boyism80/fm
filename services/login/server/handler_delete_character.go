@@ -29,7 +29,8 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 	log.Printf("Delete character packet received from %s - Character ID: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.ID)
 
-	accountId := ctx.Client.(*login.LoginClient).GetAccountId()
+	loginClient := ctx.Client.(*login.LoginClient)
+	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
 		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
 		return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
@@ -37,7 +38,7 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.DeleteCharacterReply, error) {
-			return h.ls.systems.Get[*rpc.InternalConnection]().Client.DeleteCharacter(c, &internal.DeleteCharacterRequest{AccountId: accountId, CharacterId: req.ID})
+			return h.ls.systems.Get[*rpc.InternalConnection]().Client.DeleteCharacter(c, &internal.DeleteCharacterRequest{AccountId: accountId, CharacterId: req.ID, WorldId: loginClient.GetWorldId()})
 		}, func(reply *internal.DeleteCharacterReply) error {
 			if reply.GetSecondPasswordSet() {
 				_ = ctx.Client.Send(&response.Notice{

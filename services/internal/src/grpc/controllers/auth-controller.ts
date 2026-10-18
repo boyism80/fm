@@ -14,7 +14,7 @@ import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type LoginAccountCall = { request: LoginAccountRequest };
-type InternalConfig = { app: { world_id: number }; grpc: { host: string; port: number } };
+type InternalConfig = { grpc: { host: string; port: number } };
 
 @Controller("authController")
 export class AuthGrpcController {
@@ -48,7 +48,6 @@ export class AuthGrpcController {
             if (result.status === LoginAccountReply_Status.SUCCESS || result.status === LoginAccountReply_Status.REGISTERED) {
                 const accountId = result.accountId ?? 0;
                 const begin = await this.sessionService.beginLogin(
-                    this.internalConfig.app.world_id,
                     accountId,
                     `${this.internalConfig.grpc.host}:${this.internalConfig.grpc.port}`
                 );
@@ -59,7 +58,6 @@ export class AuthGrpcController {
                         gender: 0,
                         isChatBlocked: false,
                         chatBlockedUntilUnixMs: 0,
-                        characterSlotCount: 6,
                         role: result.role ?? 0,
                     });
                     return;
@@ -72,7 +70,6 @@ export class AuthGrpcController {
                 gender: result.gender ?? 0,
                 isChatBlocked: result.isChatBlocked ?? false,
                 chatBlockedUntilUnixMs: blockedUntil,
-                characterSlotCount: result.characterSlotCount ?? 6,
                 role: result.role ?? 0,
             });
         } catch (err) {
@@ -93,11 +90,7 @@ export class AuthGrpcController {
     @Method("setSecondPassword")
     async setSecondPassword(call: GrpcCall<SetSecondPasswordRequest>, callback: GrpcCallback<SecondPasswordReply>) {
         try {
-            const result = await this.accountService.setSecondPassword(
-                call.request.worldId >>> 0,
-                call.request.accountId >>> 0,
-                call.request.password
-            );
+            const result = await this.accountService.setSecondPassword(call.request.accountId >>> 0, call.request.password);
             let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
             switch (result) {
                 case "success":
@@ -122,11 +115,7 @@ export class AuthGrpcController {
     @Method("removeSecondPassword")
     async removeSecondPassword(call: GrpcCall<RemoveSecondPasswordRequest>, callback: GrpcCallback<SecondPasswordReply>) {
         try {
-            const result = await this.accountService.removeSecondPassword(
-                call.request.worldId >>> 0,
-                call.request.accountId >>> 0,
-                call.request.password
-            );
+            const result = await this.accountService.removeSecondPassword(call.request.accountId >>> 0, call.request.password);
             let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
             switch (result) {
                 case "success":
