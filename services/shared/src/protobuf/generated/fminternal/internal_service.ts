@@ -1299,6 +1299,51 @@ export function guildErrorCodeToJSON(object: GuildErrorCode): string {
   }
 }
 
+export enum RankingKind {
+  RANKING_KIND_UNSPECIFIED = 0,
+  RANKING_KIND_OVERALL = 1,
+  RANKING_KIND_FAME = 2,
+  RANKING_KIND_GUILD = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function rankingKindFromJSON(object: any): RankingKind {
+  switch (object) {
+    case 0:
+    case "RANKING_KIND_UNSPECIFIED":
+      return RankingKind.RANKING_KIND_UNSPECIFIED;
+    case 1:
+    case "RANKING_KIND_OVERALL":
+      return RankingKind.RANKING_KIND_OVERALL;
+    case 2:
+    case "RANKING_KIND_FAME":
+      return RankingKind.RANKING_KIND_FAME;
+    case 3:
+    case "RANKING_KIND_GUILD":
+      return RankingKind.RANKING_KIND_GUILD;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RankingKind.UNRECOGNIZED;
+  }
+}
+
+export function rankingKindToJSON(object: RankingKind): string {
+  switch (object) {
+    case RankingKind.RANKING_KIND_UNSPECIFIED:
+      return "RANKING_KIND_UNSPECIFIED";
+    case RankingKind.RANKING_KIND_OVERALL:
+      return "RANKING_KIND_OVERALL";
+    case RankingKind.RANKING_KIND_FAME:
+      return "RANKING_KIND_FAME";
+    case RankingKind.RANKING_KIND_GUILD:
+      return "RANKING_KIND_GUILD";
+    case RankingKind.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum AllianceErrorCode {
   ALLIANCE_ERROR_NONE = 0,
   ALLIANCE_ERROR_UNKNOWN = 1,
@@ -3527,6 +3572,26 @@ export interface GuildRankingEntry {
 
 export interface GetGuildRankingReply {
   entries: GuildRankingEntry[];
+}
+
+export interface GetRankingRequest {
+  kind: RankingKind;
+  worldId: number;
+  count: number;
+}
+
+export interface RankingEntry {
+  rank: number;
+  subjectId: number;
+  name: string;
+  worldId: number;
+  classId: number;
+  level: number;
+  value: number;
+}
+
+export interface GetRankingReply {
+  entries: RankingEntry[];
 }
 
 export interface DisbandGuildRequest {
@@ -31178,6 +31243,332 @@ export const GetGuildRankingReply: MessageFns<GetGuildRankingReply> = {
   },
 };
 
+function createBaseGetRankingRequest(): GetRankingRequest {
+  return { kind: 0, worldId: 0, count: 0 };
+}
+
+export const GetRankingRequest: MessageFns<GetRankingRequest> = {
+  encode(message: GetRankingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.kind !== 0) {
+      writer.uint32(8).int32(message.kind);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(16).uint32(message.worldId);
+    }
+    if (message.count !== 0) {
+      writer.uint32(24).uint32(message.count);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRankingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRankingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.count = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRankingRequest {
+    return {
+      kind: isSet(object.kind) ? rankingKindFromJSON(object.kind) : 0,
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+    };
+  },
+
+  toJSON(message: GetRankingRequest): unknown {
+    const obj: any = {};
+    if (message.kind !== 0) {
+      obj.kind = rankingKindToJSON(message.kind);
+    }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetRankingRequest>, I>>(base?: I): GetRankingRequest {
+    return GetRankingRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetRankingRequest>, I>>(object: I): GetRankingRequest {
+    const message = createBaseGetRankingRequest();
+    message.kind = object.kind ?? 0;
+    message.worldId = object.worldId ?? 0;
+    message.count = object.count ?? 0;
+    return message;
+  },
+};
+
+function createBaseRankingEntry(): RankingEntry {
+  return { rank: 0, subjectId: 0, name: "", worldId: 0, classId: 0, level: 0, value: 0 };
+}
+
+export const RankingEntry: MessageFns<RankingEntry> = {
+  encode(message: RankingEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rank !== 0) {
+      writer.uint32(8).uint64(message.rank);
+    }
+    if (message.subjectId !== 0) {
+      writer.uint32(16).uint32(message.subjectId);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(32).uint32(message.worldId);
+    }
+    if (message.classId !== 0) {
+      writer.uint32(40).uint32(message.classId);
+    }
+    if (message.level !== 0) {
+      writer.uint32(48).uint32(message.level);
+    }
+    if (message.value !== 0) {
+      writer.uint32(56).uint64(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RankingEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRankingEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.rank = longToNumber(reader.uint64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.subjectId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.classId = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.value = longToNumber(reader.uint64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RankingEntry {
+    return {
+      rank: isSet(object.rank) ? globalThis.Number(object.rank) : 0,
+      subjectId: isSet(object.subjectId)
+        ? globalThis.Number(object.subjectId)
+        : isSet(object.subject_id)
+        ? globalThis.Number(object.subject_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      classId: isSet(object.classId)
+        ? globalThis.Number(object.classId)
+        : isSet(object.class_id)
+        ? globalThis.Number(object.class_id)
+        : 0,
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: RankingEntry): unknown {
+    const obj: any = {};
+    if (message.rank !== 0) {
+      obj.rank = Math.round(message.rank);
+    }
+    if (message.subjectId !== 0) {
+      obj.subjectId = Math.round(message.subjectId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.classId !== 0) {
+      obj.classId = Math.round(message.classId);
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RankingEntry>, I>>(base?: I): RankingEntry {
+    return RankingEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RankingEntry>, I>>(object: I): RankingEntry {
+    const message = createBaseRankingEntry();
+    message.rank = object.rank ?? 0;
+    message.subjectId = object.subjectId ?? 0;
+    message.name = object.name ?? "";
+    message.worldId = object.worldId ?? 0;
+    message.classId = object.classId ?? 0;
+    message.level = object.level ?? 0;
+    message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetRankingReply(): GetRankingReply {
+  return { entries: [] };
+}
+
+export const GetRankingReply: MessageFns<GetRankingReply> = {
+  encode(message: GetRankingReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.entries) {
+      RankingEntry.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRankingReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRankingReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.entries.push(RankingEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRankingReply {
+    return {
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => RankingEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetRankingReply): unknown {
+    const obj: any = {};
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => RankingEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetRankingReply>, I>>(base?: I): GetRankingReply {
+    return GetRankingReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetRankingReply>, I>>(object: I): GetRankingReply {
+    const message = createBaseGetRankingReply();
+    message.entries = object.entries?.map((e) => RankingEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 function createBaseDisbandGuildRequest(): DisbandGuildRequest {
   return { worldId: 0, characterId: 0 };
 }
@@ -40773,6 +41164,15 @@ export const InternalService = {
       Buffer.from(GetGuildRankingReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): GetGuildRankingReply => GetGuildRankingReply.decode(value),
   },
+  getRanking: {
+    path: "/fm.internal.Internal/GetRanking" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GetRankingRequest): Buffer => Buffer.from(GetRankingRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetRankingRequest => GetRankingRequest.decode(value),
+    responseSerialize: (value: GetRankingReply): Buffer => Buffer.from(GetRankingReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetRankingReply => GetRankingReply.decode(value),
+  },
   listGuildBulletinBoardThreads: {
     path: "/fm.internal.Internal/ListGuildBulletinBoardThreads" as const,
     requestStream: false as const,
@@ -41377,6 +41777,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   gainGuildGp: handleUnaryCall<GainGuildGPRequest, GainGuildGPReply>;
   sendGuildMessage: handleUnaryCall<SendGuildMessageRequest, SendGuildMessageReply>;
   getGuildRanking: handleUnaryCall<GetGuildRankingRequest, GetGuildRankingReply>;
+  getRanking: handleUnaryCall<GetRankingRequest, GetRankingReply>;
   listGuildBulletinBoardThreads: handleUnaryCall<
     ListGuildBulletinBoardThreadsRequest,
     ListGuildBulletinBoardThreadsReply
@@ -42566,6 +42967,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GetGuildRankingReply) => void,
+  ): ClientUnaryCall;
+  getRanking(
+    request: GetRankingRequest,
+    callback: (error: ServiceError | null, response: GetRankingReply) => void,
+  ): ClientUnaryCall;
+  getRanking(
+    request: GetRankingRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetRankingReply) => void,
+  ): ClientUnaryCall;
+  getRanking(
+    request: GetRankingRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetRankingReply) => void,
   ): ClientUnaryCall;
   listGuildBulletinBoardThreads(
     request: ListGuildBulletinBoardThreadsRequest,

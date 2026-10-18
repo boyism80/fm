@@ -4,8 +4,11 @@ import type { CharacterOverviewModel, CharacterOverviewRepository } from "@fm/sh
 import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import type { WzService } from "./wz-service";
 import type { DistributedLockService } from "./distributed-lock-service";
+import type { CharacterRank, RankingService } from "./ranking-service";
 
-export type CharacterOverviewListItem = CharacterOverviewModel;
+export type CharacterOverviewListItem = CharacterOverviewModel & CharacterRank;
+
+const NO_RANK: CharacterRank = { rank: 0, rankDiff: 0, classRank: 0, classRankDiff: 0 };
 
 export class CharacterOverviewService {
     private readonly unifiedRepo: UnifiedRepository;
@@ -14,6 +17,7 @@ export class CharacterOverviewService {
     private readonly accountWorldRepo: AccountWorldRepository;
     private readonly wzService: WzService;
     private readonly distributedLockService: DistributedLockService;
+    private readonly rankingService: RankingService;
 
     constructor(
         unifiedRepository: UnifiedRepository,
@@ -21,7 +25,8 @@ export class CharacterOverviewService {
         accountRepository: AccountRepository,
         accountWorldRepository: AccountWorldRepository,
         wzService: WzService,
-        distributedLockService: DistributedLockService
+        distributedLockService: DistributedLockService,
+        rankingService: RankingService
     ) {
         this.unifiedRepo = unifiedRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -29,11 +34,14 @@ export class CharacterOverviewService {
         this.accountWorldRepo = accountWorldRepository;
         this.wzService = wzService;
         this.distributedLockService = distributedLockService;
+        this.rankingService = rankingService;
     }
 
     async getCharacterList(accountId: number, worldId: number): Promise<{ characters: CharacterOverviewListItem[]; slotCount: number; hasSecondPassword: boolean }> {
         const overviewMap = await this.overviewRepo.getAll(worldId, String(accountId));
-        const characters = [...overviewMap.values()] as CharacterOverviewListItem[];
+        const overviews = [...overviewMap.values()];
+        const ranks = await this.rankingService.characterRanks(overviews.map((overview) => overview.characterId));
+        const characters = overviews.map((overview) => ({ ...overview, ...(ranks.get(overview.characterId) ?? NO_RANK) }));
         const account = await this.accountRepo.get(accountId);
         const slotCount = await this.accountWorldRepo.findCharacterSlotCount(worldId, accountId);
         return { characters, slotCount, hasSecondPassword: account?.secondPasswordHash != null };

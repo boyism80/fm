@@ -40,6 +40,18 @@ export type PublishedRound = {
     table: string;
 };
 
+export type RankingEntry = {
+    roundId: number;
+    filter: string;
+    rankNo: number;
+    subjectId: number;
+    name: string;
+    worldId: number;
+    classId: number | null;
+    level: number | null;
+    value: number;
+};
+
 type InputRow = {
     k1: string;
     k2: string;
@@ -55,6 +67,24 @@ type InputRow = {
     value: string;
 };
 
+type EntryRow = {
+    round_id: string;
+    filter: string;
+    rank_no: string;
+    subject_id: string;
+    name: string;
+    world_id: number;
+    class_id: number | null;
+    level: number | null;
+    value: string;
+};
+
+// The current round and the one before it stay published, so a reader that picked a round just before the next
+// one was published still finds it.
+export const KEPT_ROUNDS = 2;
+
+const CURRENT_TTL_SEC = 10 * 60;
+const ENTRY_COLUMNS = "round_id, filter, rank_no, subject_id, name, world_id, class_id, level, value";
 const DELETE_BATCH = 10000;
 const KEY_COLUMNS = "(k1, k2, k3, k4)";
 const ROUND_TABLE = /^ranking_entry_(overall|fame|guild)_(\d+)_(\w+)$/;
@@ -131,6 +161,40 @@ export class RankingRepository {
              WHERE i.inhparent = 'ranking_entry'::regclass`
         );
         return RankingRepository.rounds(rows as Array<{ relname: string }>, kind).sort((a, b) => b.roundId - a.roundId);
+    }
+
+    // Newest first: the current round, then the one before it.
+    async currentRounds(kind: RankingKind): Promise<number[]> {
+        const cached = await this.ctx.getRedisUnifiedAccess().client.get(RankingRepository.currentKey(kind));
+        if (cached !== null) {
+            return JSON.parse(cached) as number[];
+        }
+        const roundIds = (await this.publishedRounds(kind)).slice(0, KEPT_ROUNDS).map((round) => round.roundId);
+        await this.setCurrentRounds(kind, roundIds);
+        return roundIds;
+    }
+
+    async setCurrentRounds(kind: RankingKind, roundIds: number[]): Promise<void> {
+        await this.ctx.getRedisUnifiedAccess().client.set(RankingRepository.currentKey(kind), JSON.stringify(roundIds), "EX", CURRENT_TTL_SEC);
+    }
+
+    async top(roundId: number, filter: string, count: number): Promise<RankingEntry[]> {
+        const { rows } = await this.unified().query(
+            `SELECT ${ENTRY_COLUMNS} FROM ranking_entry
+             WHERE round_id = $1 AND filter = $2 AND rank_no BETWEEN 1 AND $3
+             ORDER BY rank_no`,
+            [roundId, filter, count]
+        );
+        return (rows as EntryRow[]).map(RankingRepository.entry);
+    }
+
+    async subjectEntries(roundIds: number[], subjectIds: number[]): Promise<RankingEntry[]> {
+        const { rows } = await this.unified().query(
+            `SELECT ${ENTRY_COLUMNS} FROM ranking_entry
+             WHERE round_id = ANY($1::bigint[]) AND subject_id = ANY($2::bigint[])`,
+            [roundIds, subjectIds]
+        );
+        return (rows as EntryRow[]).map(RankingRepository.entry);
     }
 
     async unattachedTables(kind: RankingKind): Promise<PublishedRound[]> {
@@ -222,6 +286,24 @@ export class RankingRepository {
                 return;
             }
         }
+    }
+
+    private static currentKey(kind: RankingKind) {
+        return `fm:ranking:${kind}:current`;
+    }
+
+    private static entry(row: EntryRow): RankingEntry {
+        return {
+            roundId: Number(row.round_id),
+            filter: row.filter,
+            rankNo: Number(row.rank_no),
+            subjectId: Number(row.subject_id),
+            name: row.name,
+            worldId: row.world_id,
+            classId: row.class_id,
+            level: row.level,
+            value: Number(row.value),
+        };
     }
 
     private static rounds(rows: Array<{ relname: string }>, kind: RankingKind): PublishedRound[] {

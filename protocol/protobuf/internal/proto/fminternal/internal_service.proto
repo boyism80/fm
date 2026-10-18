@@ -81,6 +81,7 @@ service Internal {
   rpc GainGuildGP (GainGuildGPRequest) returns (GainGuildGPReply);
   rpc SendGuildMessage (SendGuildMessageRequest) returns (SendGuildMessageReply);
   rpc GetGuildRanking (GetGuildRankingRequest) returns (GetGuildRankingReply);
+  rpc GetRanking (GetRankingRequest) returns (GetRankingReply);
   rpc ListGuildBulletinBoardThreads (ListGuildBulletinBoardThreadsRequest) returns (ListGuildBulletinBoardThreadsReply);
   rpc ShowGuildBulletinBoardThread (ShowGuildBulletinBoardThreadRequest) returns (ShowGuildBulletinBoardThreadReply);
   rpc CreateGuildBulletinBoardThread (CreateGuildBulletinBoardThreadRequest) returns (CreateGuildBulletinBoardThreadReply);
@@ -1863,6 +1864,33 @@ message GuildRankingEntry {
 
 message GetGuildRankingReply {
   repeated GuildRankingEntry entries = 1;
+}
+
+enum RankingKind {
+  RANKING_KIND_UNSPECIFIED = 0;
+  RANKING_KIND_OVERALL = 1;
+  RANKING_KIND_FAME = 2;
+  RANKING_KIND_GUILD = 3;
+}
+
+message GetRankingRequest {
+  RankingKind kind = 1;
+  uint32 world_id = 2;
+  uint32 count = 3;
+}
+
+message RankingEntry {
+  uint64 rank = 1;
+  uint32 subject_id = 2;
+  string name = 3;
+  uint32 world_id = 4;
+  uint32 class_id = 5;
+  uint32 level = 6;
+  uint64 value = 7;
+}
+
+message GetRankingReply {
+  repeated RankingEntry entries = 1;
 }
 
 message DisbandGuildRequest {

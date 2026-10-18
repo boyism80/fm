@@ -493,10 +493,6 @@ export class CharacterService {
                     classId: character.classId,
                     mapId: character.mapId,
                     spawnPoint: character.spawnPoint,
-                    rank: 0,
-                    rankDiff: 0,
-                    classRank: 0,
-                    classRankDiff: 0,
                     baseLooks: baseLooks ?? {},
                     overlays: overlays ?? {},
                 };
@@ -647,10 +643,6 @@ export class CharacterService {
             classId: 0,
             mapId: DEFAULT_MAP_ID,
             spawnPoint: DEFAULT_SPAWN,
-            rank: 0,
-            rankDiff: 0,
-            classRank: 0,
-            classRankDiff: 0,
             baseLooks,
             overlays: {},
         };

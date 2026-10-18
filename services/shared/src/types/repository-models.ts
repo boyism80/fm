@@ -154,10 +154,6 @@ export interface CharacterOverviewModel {
     classId: number;
     mapId: number;
     spawnPoint: number;
-    rank: number;
-    rankDiff: number;
-    classRank: number;
-    classRankDiff: number;
     baseLooks: Record<string, number> | Record<number, number>;
     overlays: Record<string, number> | Record<number, number>;
 }
@@ -175,10 +171,6 @@ export type CharacterOverviewRow = {
     class_id: number;
     map_id: number;
     spawn_point: number;
-    rank: number;
-    rank_diff: number;
-    class_rank: number;
-    class_rank_diff: number;
     base_looks: string | Record<string, number> | Record<number, number>;
     overlays: string | Record<string, number> | Record<number, number>;
     deleted?: boolean;

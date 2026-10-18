@@ -7,7 +7,6 @@ const ROUND_TTL_SEC = 48 * 60 * 60;
 const LOCK_TTL_SEC = 10 * 60;
 const NODE_TTL_MS = 30 * 1000;
 const NODES_KEY_TTL_SEC = 60;
-const CURRENT_TTL_SEC = 10 * 60;
 const NODES_KEY = "fm:ranking:nodes";
 
 export type RankingPhase = "freezing" | "counting" | "ranking";
@@ -89,10 +88,6 @@ export class WorkTable {
 
     private runningKey(kind: RankingKind) {
         return `fm:ranking:${kind}:running`;
-    }
-
-    private currentKey(kind: RankingKind) {
-        return `fm:ranking:${kind}:current`;
     }
 
     private lockKey(kind: RankingKind) {
@@ -221,10 +216,6 @@ export class WorkTable {
         });
         multi.expire(todo, ROUND_TTL_SEC);
         await multi.exec();
-    }
-
-    async setCurrent(kind: RankingKind, roundIds: number[]): Promise<void> {
-        await this.redis.set(this.currentKey(kind), JSON.stringify(roundIds), "EX", CURRENT_TTL_SEC);
     }
 
     async lock(kind: RankingKind): Promise<string | null> {

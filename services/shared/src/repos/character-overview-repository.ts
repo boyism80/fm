@@ -4,24 +4,20 @@ import type { RepositoryQuery, CharacterLooksQuery } from "../types/repository-c
 import type { CharacterOverviewModel, CharacterOverviewRow } from "../types/repository-models";
 
 const SELECT_COLS = `character_id, account_id, world_id, name, gender, skin_color, face, hair,
-  level, class_id, map_id, spawn_point, rank, rank_diff, class_rank, class_rank_diff,
-  base_looks, overlays, deleted, updated_at`;
+  level, class_id, map_id, spawn_point, base_looks, overlays, deleted, updated_at`;
 
 const INSERT_COLS = `character_id, account_id, world_id, name, gender, skin_color, face, hair,
-  level, class_id, map_id, spawn_point, rank, rank_diff, class_rank, class_rank_diff,
-  base_looks, overlays, deleted, updated_at`;
+  level, class_id, map_id, spawn_point, base_looks, overlays, deleted, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id,
   name = EXCLUDED.name, gender = EXCLUDED.gender, skin_color = EXCLUDED.skin_color,
   face = EXCLUDED.face, hair = EXCLUDED.hair, level = EXCLUDED.level,
   class_id = EXCLUDED.class_id, map_id = EXCLUDED.map_id, spawn_point = EXCLUDED.spawn_point,
-  rank = EXCLUDED.rank, rank_diff = EXCLUDED.rank_diff,
-  class_rank = EXCLUDED.class_rank, class_rank_diff = EXCLUDED.class_rank_diff,
   base_looks = EXCLUDED.base_looks, overlays = EXCLUDED.overlays,
   deleted = FALSE, updated_at = NOW()`;
 
-const PER_ROW_PARAMS = 18;
+const PER_ROW_PARAMS = 14;
 
 export type { CharacterOverviewModel };
 
@@ -46,7 +42,6 @@ function rowValues(row: CharacterOverviewRow) {
         row.character_id, row.account_id, row.world_id, row.name,
         row.gender, row.skin_color, row.face, row.hair,
         row.level, row.class_id, row.map_id, row.spawn_point,
-        row.rank, row.rank_diff, row.class_rank, row.class_rank_diff,
         looksFromRow(row.base_looks),
         looksFromRow(row.overlays),
     ];
@@ -114,10 +109,6 @@ export class CharacterOverviewRepository extends HashRepository<CharacterOvervie
             classId: row.class_id,
             mapId: row.map_id,
             spawnPoint: row.spawn_point,
-            rank: row.rank,
-            rankDiff: row.rank_diff,
-            classRank: row.class_rank,
-            classRankDiff: row.class_rank_diff,
             baseLooks: typeof row.base_looks === "string" ? JSON.parse(row.base_looks) : (row.base_looks ?? {}),
             overlays: typeof row.overlays === "string" ? JSON.parse(row.overlays) : (row.overlays ?? {}),
         };
@@ -137,10 +128,6 @@ export class CharacterOverviewRepository extends HashRepository<CharacterOvervie
             class_id: model.classId,
             map_id: model.mapId,
             spawn_point: model.spawnPoint,
-            rank: model.rank ?? 0,
-            rank_diff: model.rankDiff ?? 0,
-            class_rank: model.classRank ?? 0,
-            class_rank_diff: model.classRankDiff ?? 0,
             base_looks: model.baseLooks ?? {},
             overlays: model.overlays ?? {},
         };

@@ -36,7 +36,6 @@ type Character struct {
 	name           string
 	look           Look
 	level          uint8
-	rank           Ranking
 	exp            uint32
 	expReachedAt   time.Time
 	stats          *Stats

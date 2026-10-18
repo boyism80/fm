@@ -6,10 +6,12 @@ import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
 import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
 import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
 import { grpcMapper } from "../mappers";
-import type { CharacterOverviewListItem, CharacterOverviewService } from "../../services/character-overview-service";
+import type { CharacterOverviewService } from "../../services/character-overview-service";
+import type { CharacterRank } from "../../services/ranking-service";
 import type { CharacterService, SaveCharacterEntry } from "../../services/character-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import type { CharacterModel } from "@fm/shared/repos/character-repository";
+import type { CharacterOverviewModel } from "@fm/shared/repos/character-overview-repository";
 import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
 import type { SkillModel } from "@fm/shared/repos/skill-repository";
 import type { BuffModel } from "@fm/shared/repos/buff-repository";
@@ -38,9 +40,6 @@ import type {
     Skill,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { Controller, Method } from "../grpc-method-decorator";
-
-type CharacterListResult = Awaited<ReturnType<CharacterOverviewService["getCharacterList"]>>;
-type CharacterListItem = CharacterListResult["characters"][number];
 
 function protoMapToObject(protoMap: Record<number, number> | undefined): Record<string, number> {
     const obj: Record<string, number> = {};
@@ -157,7 +156,7 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
     };
 }
 
-function makeCharacterOverview(model: CharacterListItem): CharacterOverview {
+function makeCharacterOverview(model: CharacterOverviewModel & Partial<CharacterRank>): CharacterOverview {
     return {
         characterId: model.characterId,
         name: model.name,

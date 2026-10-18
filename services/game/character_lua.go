@@ -3280,6 +3280,36 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.gameWorld.Systems().Get[*GuildSystem]().ShowRankingAsync(cfg.ActorContext, ch, uint32(npc))
 			return 0
 		},
+		"overall_ranking": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			count := uint32(L.CheckInt(2))
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			promise := ch.gameWorld.Systems().Get[*InternalSystem]().GetRankingAsync(cfg.ActorContext, internal.RankingKind_RANKING_KIND_OVERALL, count)
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(reply *internal.GetRankingReply, err error) []lua.LValue {
+				if err != nil {
+					return []lua.LValue{lua.LNil}
+				}
+				tbl := L.NewTable()
+				for _, e := range reply.GetEntries() {
+					entry := L.NewTable()
+					entry.RawSetString("rank", lua.LNumber(e.GetRank()))
+					entry.RawSetString("name", lua.LString(e.GetName()))
+					entry.RawSetString("level", lua.LNumber(e.GetLevel()))
+					entry.RawSetString("class", lua.LNumber(e.GetClassId()))
+					tbl.Append(entry)
+				}
+				return []lua.LValue{tbl}
+			})
+		},
 		"gain_guild_gp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

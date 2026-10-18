@@ -3,7 +3,7 @@ import type { Pool } from "pg";
 import type { InternalContext } from "@fm/shared/context/internal-context";
 import { guildWeek, guildWeekStart } from "@fm/shared/guild-week";
 import { JOB_GROUP_SQL, JOB_ID_SQL, RANKED_CLASS_SQL, rankingFilters, type RankingKind, type WorldGroups } from "@fm/shared/ranking-filters";
-import { RankingRepository, type RankingBounds, type RankingKeys, type RankingRow } from "@fm/shared/repos/ranking-repository";
+import { KEPT_ROUNDS, RankingRepository, type RankingBounds, type RankingKeys, type RankingRow } from "@fm/shared/repos/ranking-repository";
 import { RangeReader } from "./range-reader";
 import { WorkTable, type RangeStep, type RunningRound } from "./work-table";
 
@@ -17,7 +17,6 @@ const RANGE_LEASE_MS = 15 * 60 * 1000;
 const SAMPLES_PER_RANGE = 32;
 const WRITE_BATCH = 5000;
 const OVERALL_MIN_LEVEL = 10;
-const KEPT_ROUNDS = 2;
 
 export type RankingSchedulerOptions = {
     dailyHour: number;
@@ -343,7 +342,7 @@ export class RankingScheduler {
 
         await this.rankings.attach(table, running.roundId);
         const published = await this.rankings.publishedRounds(run.kind);
-        await this.work.setCurrent(run.kind, published.slice(0, KEPT_ROUNDS).map((round) => round.roundId));
+        await this.rankings.setCurrentRounds(run.kind, published.slice(0, KEPT_ROUNDS).map((round) => round.roundId));
         await this.work.clearRound(run.kind, running);
         console.log(`[ranking] kind=${run.kind} period=${run.period} round=${running.roundId} published filters=${totals.size}`);
 
