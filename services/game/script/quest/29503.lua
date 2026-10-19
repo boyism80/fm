@@ -14,10 +14,6 @@ local TOWNS = {
 	"리스항구 기부왕",
 }
 
-local function ranking_text(kind)
-	return medal.ranking_text(kind, " 메소", true) .. "\r\n\r\n현 기부왕의 기부액수는 공개할 수 없으니 이해해 주시오. \r\n그리고 매월 초에 기록이 초기화된다는 것도 잊지 마시오."
-end
-
 return {
 	on_start = function(me, npc)
 		local q = me:quest(quest_id)
@@ -34,7 +30,7 @@ return {
 		if me:dialog(npc, "#v" .. item .. "# #e#b#t" .. item .. "##k\r\n\r\n - 제한시간 1시간\r\n - 마을에 최고액을 기부\r\n\r\n#n이 훈장의 주인이 될 자격이 있는지 시험해 보시겠소?", false, true) == false then
 			return
 		end
-		if me:dialog(npc, ranking_text(donor.kind), true, true) == false then
+		if me:dialog(npc, medal.ranking_text(donor.kind), true, true) == false then
 			return
 		end
 		q:start(npc, true)
@@ -61,7 +57,7 @@ return {
 		if sel == 1 then
 			local town = me:dialog_list(npc, "어느 마을의 랭킹을 보고 싶소?", TOWNS)
 			if town ~= nil then
-				me:dialog(npc, ranking_text(medal.DONORS[town].kind))
+				me:dialog(npc, medal.ranking_text(medal.DONORS[town].kind))
 			end
 			return
 		end

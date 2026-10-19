@@ -6,10 +6,6 @@ local quest_id = 29500
 local COOLDOWN_RECORD = "idol_star_challenge"
 local COOLDOWN_SEC = 30 * 24 * 60 * 60
 
-local function ranking_text()
-	return medal.ranking_text(medal.IDOL_STAR, "") .. medal.RESET_NOTICE
-end
-
 return {
 	on_start = function(me, npc)
 		local q = me:quest(quest_id)
@@ -21,7 +17,7 @@ return {
 		if me:dialog(npc, "#v" .. item .. "# #e#b#t" .. item .. "##k\r\n\r\n - 인기도 랭킹 1위\r\n\r\n#n이 훈장의 주인이 될 자격이 있는지 시험해 보시겠소?", false, true) == false then
 			return
 		end
-		if me:dialog(npc, ranking_text(), true, true) == false then
+		if me:dialog(npc, medal.ranking_text(medal.IDOL_STAR), true, true) == false then
 			return
 		end
 		if not me:dialog_accept(npc, "자, 업적을 달성하면 나에게 돌아오시오. 업적을 달성하고 나서 나에게 와서 확인을 받아야만 인정받을 수 있다는 것을 꼭 명심하시오. 그리고 이 도전을 완료하거나 포기하지 않는 이상 다른 칭호에 도전할 수는 없다는 것도 알아두시오. 그리고 여기서 도전을 수락하면, 1달 동안 아이돌 스타에 도전 할 수 없으니 신중하게 선택하시오.") then
@@ -51,7 +47,7 @@ return {
 			return
 		end
 		if sel == 1 then
-			me:dialog(npc, ranking_text())
+			me:dialog(npc, medal.ranking_text(medal.IDOL_STAR))
 			return
 		end
 		if sel == 2 then

@@ -29,7 +29,7 @@ func (h *medalMqRankingChanged) Handle(_ actor.Context, raw json.RawMessage) err
 	medals := h.gs.systems.Get[*game.MedalSystem]()
 	medals.Set(game.NewMedalRankingFromInternalProto(evt.GetRanking()))
 	if evt.GetPreviousHolderId() != 0 {
-		medals.Revoke(evt.GetPreviousHolderId(), evt.GetRanking().GetKind())
+		medals.Revoke(evt.GetPreviousHolderId())
 	}
 	return nil
 }

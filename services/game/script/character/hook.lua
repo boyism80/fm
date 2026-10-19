@@ -61,8 +61,8 @@ return {
 		medal.check(me)
 	end,
 
-	on_medal_lost = function(me, kind)
-		medal.revoke(me, kind)
+	on_medal_lost = function(me)
+		medal.check(me)
 	end,
 
 	on_map_leave = function(me, map)

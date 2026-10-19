@@ -347,7 +347,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 		m.AddSummon(summon)
 	}
 
-	m.callMapLifecycleScript(character, "on_map_enter")
+	m.callMapLifecycleScript(ctx, character, "on_map_enter")
 	if character.stateMachine != nil {
 		character.stateMachine.HandlePlayerMapEnter(character, m)
 	}
@@ -356,7 +356,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	return nil
 }
 
-func (m *Map) callMapLifecycleScript(character *Character, hook string) {
+func (m *Map) callMapLifecycleScript(ctx actor.Context, character *Character, hook string) {
 	if m == nil || character == nil || character.gameWorld == nil {
 		return
 	}
@@ -371,6 +371,7 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	if err != nil {
 		return
 	}
+	luax.SetConfiguration(thread, luax.Configuration{ActorContext: ctx, ActorPID: m.LogicActorPID()})
 	luax.CallAsync(nil, root, thread, hook, character, m)
 
 	mapScriptPath := fmt.Sprintf("script/map/%d.lua", m.TemplateID())
@@ -407,7 +408,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	}
 	character.lieDetector.Escape()
 
-	m.callMapLifecycleScript(character, "on_map_leave")
+	m.callMapLifecycleScript(nil, character, "on_map_leave")
 
 	for _, summon := range character.summons.All() {
 		if summon == nil || summon.onMap != m || summon.oid == 0 {

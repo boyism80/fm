@@ -11,8 +11,9 @@ import (
 func registerMedalLuaFuncs(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterFunc(luaState, "medal_ranking", func(L *lua.LState) int {
 		kind := L.CheckString(1)
+		entries, valid := gs.systems.Get[*game.MedalSystem]().Entries(kind)
 		tbl := L.NewTable()
-		for _, entry := range gs.systems.Get[*game.MedalSystem]().Entries(kind) {
+		for _, entry := range entries {
 			row := L.NewTable()
 			row.RawSetString("character_id", lua.LNumber(entry.CharacterID))
 			row.RawSetString("name", lua.LString(entry.Name))
@@ -20,7 +21,24 @@ func registerMedalLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			tbl.Append(row)
 		}
 		L.Push(tbl)
-		return 1
+		L.Push(lua.LBool(valid))
+		return 2
+	})
+
+	luax.RegisterFunc(luaState, "refresh_medal_rankings", func(L *lua.LState) int {
+		cfg, ok := luax.GetConfiguration(L)
+		if !ok || cfg.ActorContext == nil {
+			L.Push(lua.LFalse)
+			return 1
+		}
+		promise := gs.systems.Get[*game.MedalSystem]().RefreshAsync(cfg.ActorContext)
+		return game.LuaYieldPromise(L, gs, promise, func(_ bool, err error) []lua.LValue {
+			if err != nil {
+				log.Printf("refresh medal rankings: %v", err)
+				return []lua.LValue{lua.LFalse}
+			}
+			return []lua.LValue{lua.LTrue}
+		})
 	})
 
 	luax.RegisterFunc(luaState, "submit_medal_score", func(L *lua.LState) int {

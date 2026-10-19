@@ -6,10 +6,6 @@ local quest_id = 29400
 local MEDAL = 1142004
 local GOAL = 100000
 
-local function ranking_text()
-	return medal.ranking_text(medal.EXPERT_HUNTER, " 마리") .. medal.RESET_NOTICE
-end
-
 return {
 	on_start = function(me, npc)
 		local q = me:quest(quest_id)
@@ -20,7 +16,7 @@ return {
 		if me:dialog(npc, "#v" .. MEDAL .. "# #e#b#t" .. MEDAL .. "##k\r\n\r\n - 제한시간 30일\r\n - 몬스터 100,000마리 사냥\r\n#n※ 자신의 레벨 이상의 몬스터만 인정\r\n   (120레벨 이상의 캐릭터는 120레벨 이상의 몬스터 인정)\r\n\r\n이 훈장의 주인이 될 자격이 있는지 시험해 보시겠소?", false, true) == false then
 			return
 		end
-		if me:dialog(npc, ranking_text(), true, true) == false then
+		if me:dialog(npc, medal.ranking_text(medal.EXPERT_HUNTER), true, true) == false then
 			return
 		end
 		if me:dialog(npc, "자, 30일의 시간을 줄테니 사냥을 마치고 나에게 돌아오시오. 제한시간 내에 나에게 와서 확인을 받아야만 인정받을 수 있다는 것을 꼭 명심하시오. 그리고 이 도전을 완료하거나 포기하지 않는 이상 다른 칭호에 도전할 수는 없다는 것도 알아두시오.", true, true) == false then
@@ -49,7 +45,7 @@ return {
 			return
 		end
 		if sel == 1 then
-			me:dialog(npc, ranking_text())
+			me:dialog(npc, medal.ranking_text(medal.EXPERT_HUNTER))
 			return
 		end
 		if mon < GOAL then

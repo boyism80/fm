@@ -31,13 +31,14 @@ type MedalRanking struct {
 	Entries []MedalRankingEntry
 }
 
-// MedalSystem keeps the world's title medal boards; quest scripts on any actor read them and the MQ consumer
-// replaces them.
+// MedalSystem keeps a copy of the boards for display; a medal is given or taken back only on internal's answer.
 type MedalSystem struct {
 	gw     GameWorld
 	client internal.InternalClient
 	mu     sync.Mutex
 	boards map[string]*MedalRanking
+	// A kind missing from the last full list had no board in this season.
+	listedMonth uint32
 }
 
 func NewMedalSystem(gw GameWorld, conn *rpc.InternalConnection) *MedalSystem {
@@ -45,7 +46,6 @@ func NewMedalSystem(gw GameWorld, conn *rpc.InternalConnection) *MedalSystem {
 }
 
 func (s *MedalSystem) Start() error {
-	// A channel can boot before internal listens; the boards would stay empty until the next submit.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	reply, err := s.client.ListMedalRankings(ctx, &internal.ListMedalRankingsRequest{WorldId: s.gw.GetWorldID()}, grpc.WaitForReady(true))
 	cancel()
@@ -53,9 +53,7 @@ func (s *MedalSystem) Start() error {
 		log.Printf("list medal rankings: %v", err)
 		return nil
 	}
-	for _, pb := range reply.GetRankings() {
-		s.Set(NewMedalRankingFromInternalProto(pb))
-	}
+	s.list(reply.GetRankings())
 	return nil
 }
 
@@ -66,15 +64,15 @@ func (s *MedalSystem) month() uint32 {
 	return uint32(now.Year()*100 + int(now.Month()))
 }
 
-// The boards reset when the KST month changes, so a board from an earlier month is empty.
-func (s *MedalSystem) Entries(kind string) []MedalRankingEntry {
+func (s *MedalSystem) Entries(kind string) ([]MedalRankingEntry, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	month := s.month()
 	board := s.boards[kind]
-	if board == nil || board.Month != s.month() {
-		return nil
+	if board != nil && board.Month == month {
+		return board.Entries, true
 	}
-	return board.Entries
+	return nil, s.listedMonth == month
 }
 
 func (s *MedalSystem) SubmitAsync(actorCtx actor.Context, ch *Character, kind string, score uint64) *async.Promise[uint32] {
@@ -97,17 +95,45 @@ func (s *MedalSystem) SubmitAsync(actorCtx actor.Context, ch *Character, kind st
 	})
 }
 
-// Set is idempotent: the channel that submitted the score also receives its MQ notice.
-func (s *MedalSystem) Set(board *MedalRanking) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if current := s.boards[board.Kind]; current != nil && current.Month > board.Month {
-		return
-	}
-	s.boards[board.Kind] = board
+func (s *MedalSystem) RefreshAsync(actorCtx actor.Context) *async.Promise[bool] {
+	req := &internal.ListMedalRankingsRequest{WorldId: s.gw.GetWorldID()}
+	return async.NewTask(actorCtx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.ListMedalRankingsReply, error) {
+			return s.client.ListMedalRankings(c, req)
+		},
+		nil,
+	).Then(func(reply *internal.ListMedalRankingsReply) (bool, error) {
+		s.list(reply.GetRankings())
+		return true, nil
+	})
 }
 
-func (s *MedalSystem) Revoke(characterID uint32, kind string) {
+// Set is idempotent: the channel that submitted the score also receives its MQ notice.
+func (s *MedalSystem) Set(ranking *MedalRanking) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if current := s.boards[ranking.Kind]; current != nil && current.Month > ranking.Month {
+		return
+	}
+	s.boards[ranking.Kind] = ranking
+}
+
+// Internal keeps earlier seasons until a new submit prunes them.
+func (s *MedalSystem) list(rankings []*internal.MedalRanking) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.listedMonth = s.month()
+	boards := make(map[string]*MedalRanking)
+	for _, pb := range rankings {
+		ranking := NewMedalRankingFromInternalProto(pb)
+		if current := boards[ranking.Kind]; current == nil || current.Month < ranking.Month {
+			boards[ranking.Kind] = ranking
+		}
+	}
+	s.boards = boards
+}
+
+func (s *MedalSystem) Revoke(characterID uint32) {
 	s.gw.Systems().Get[*DispatchSystem]().Visit(characterID, func(actorCtx actor.Context, ch *Character) {
 		if ch == nil || ch.LoggedOut() {
 			return
@@ -125,7 +151,8 @@ func (s *MedalSystem) Revoke(characterID uint32, kind string) {
 			log.Printf("on_medal_lost: %v", err)
 			return
 		}
-		luax.CallAsync(actorCtx, root, thread, "on_medal_lost", ch, kind).OnError(func(err error) {
+		luax.SetConfiguration(thread, luax.Configuration{ActorContext: actorCtx, ActorPID: m.LogicActorPID()})
+		luax.CallAsync(actorCtx, root, thread, "on_medal_lost", ch).OnError(func(err error) {
 			log.Printf("on_medal_lost: %v", err)
 		})
 	})
