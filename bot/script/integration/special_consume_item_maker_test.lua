@@ -53,7 +53,7 @@ end
 
 local function skill_book_unlock(ctx)
 	local bot = ctx:bot(0)
-	if setup(ctx, bot, 112, 0, RUSH_BOOK .. ":2") == false then
+	if setup(ctx, bot, 112, 0, RUSH_BOOK .. ":1") == false then
 		return false
 	end
 	local result = bot:request(resp.use_skill_book, req.use_skill_book {
@@ -63,8 +63,11 @@ local function skill_book_unlock(ctx)
 	if result == false or not result.can_use or not result.success or result.skill_id ~= RUSH or result.master_level ~= 10 then
 		return ctx:fail("배우지 않은 스킬의 마스터 레벨을 열지 못함")
 	end
-	if (bot:items()[RUSH_BOOK] or 0) ~= 1 then
-		return ctx:fail("러시 스킬북이 한 권 소비되지 않음")
+	if (bot:items()[RUSH_BOOK] or 0) ~= 0 then
+		return ctx:fail("러시 스킬북이 소비되지 않음")
+	end
+	if pq.command(bot, "/아이템생성 " .. RUSH_BOOK, "아이템 생성:") == false then
+		return ctx:fail("러시 스킬북을 다시 만들지 못함")
 	end
 	result = bot:request(resp.use_skill_book, req.use_skill_book {
 		slot = bot:slot(RUSH_BOOK) or 0,

@@ -207,6 +207,11 @@ func (qp *Quest) CanRestoreLostItem(ch *Character, itemID uint32) bool {
 	if ch.inventory.HasItem(itemID) {
 		return false
 	}
+	for _, eq := range ch.inventory.equipped {
+		if eq != nil && eq.GetModel().GetID() == itemID {
+			return false
+		}
+	}
 	for _, item := range qp.wz.Start.Actions.Item {
 		if item.ItemID == itemID && item.Count > 0 {
 			return true
