@@ -219,6 +219,15 @@ func (ch *Character) FindInventory(serial uint64, invType constant.InventoryType
 	return ItemRecord{}, false
 }
 
+func (ch *Character) HasItem(itemID uint32) bool {
+	for _, item := range ch.inventory {
+		if item.itemID == itemID {
+			return true
+		}
+	}
+	return false
+}
+
 func (ch *Character) FreeSlot(invType constant.InventoryType) (int16, bool) {
 	used := make(map[int16]bool)
 	for _, item := range ch.inventory {
