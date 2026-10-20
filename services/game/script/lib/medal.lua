@@ -143,17 +143,18 @@ end
 
 -- Taking a medal back cannot be undone, so the channel's copy only raises the suspicion and internal decides.
 function M.check(me)
-	local suspects = {}
 	for kind in pairs(MEDALS) do
 		if M.owns(me, kind) and not holds_first(me, kind) then
-			suspects[#suspects + 1] = kind
+			recheck_medals(me)
+			return
 		end
 	end
-	if #suspects == 0 or not refresh_medal_rankings() then
-		return
-	end
-	for _, kind in ipairs(suspects) do
-		if not holds_first(me, kind) then
+end
+
+-- Runs after recheck_medals, on the boards internal just sent.
+function M.take_back_lost(me)
+	for kind in pairs(MEDALS) do
+		if M.owns(me, kind) and not holds_first(me, kind) then
 			take_back(me, kind)
 		end
 	end

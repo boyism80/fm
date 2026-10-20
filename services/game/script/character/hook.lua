@@ -65,6 +65,10 @@ return {
 		medal.check(me)
 	end,
 
+	on_medal_rechecked = function(me)
+		medal.take_back_lost(me)
+	end,
+
 	on_map_leave = function(me, map)
 		if me == nil or map == nil then
 			return

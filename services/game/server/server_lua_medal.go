@@ -41,6 +41,20 @@ func registerMedalLuaFuncs(gs *GameServer, luaState *lua.LState) {
 		})
 	})
 
+	luax.RegisterFunc(luaState, "recheck_medals", func(L *lua.LState) int {
+		ch, ok := L.CheckUserData(1).Value.(*game.Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		cfg, ok := luax.GetConfiguration(L)
+		if !ok || cfg.ActorContext == nil {
+			return 0
+		}
+		gs.systems.Get[*game.MedalSystem]().Recheck(cfg.ActorContext, ch.GetID())
+		return 0
+	})
+
 	luax.RegisterFunc(luaState, "submit_medal_score", func(L *lua.LState) int {
 		ch, ok := L.CheckUserData(1).Value.(*game.Character)
 		if !ok {

@@ -134,6 +134,20 @@ func (s *MedalSystem) list(rankings []*internal.MedalRanking) {
 }
 
 func (s *MedalSystem) Revoke(characterID uint32) {
+	s.callHook(characterID, "on_medal_lost")
+}
+
+// The character may change maps while internal answers, so the medals are taken back on the actor that holds it by then.
+func (s *MedalSystem) Recheck(actorCtx actor.Context, characterID uint32) {
+	s.RefreshAsync(actorCtx).Do(func(bool) error {
+		s.callHook(characterID, "on_medal_rechecked")
+		return nil
+	}).OnError(func(err error) {
+		log.Printf("refresh medal rankings: %v", err)
+	})
+}
+
+func (s *MedalSystem) callHook(characterID uint32, hook string) {
 	s.gw.Systems().Get[*DispatchSystem]().Visit(characterID, func(actorCtx actor.Context, ch *Character) {
 		if ch == nil || ch.LoggedOut() {
 			return
@@ -148,12 +162,12 @@ func (s *MedalSystem) Revoke(characterID uint32) {
 		}
 		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 		if err != nil {
-			log.Printf("on_medal_lost: %v", err)
+			log.Printf("%s: %v", hook, err)
 			return
 		}
 		luax.SetConfiguration(thread, luax.Configuration{ActorContext: actorCtx, ActorPID: m.LogicActorPID()})
-		luax.CallAsync(actorCtx, root, thread, "on_medal_lost", ch).OnError(func(err error) {
-			log.Printf("on_medal_lost: %v", err)
+		luax.CallAsync(actorCtx, root, thread, hook, ch).OnError(func(err error) {
+			log.Printf("%s: %v", hook, err)
 		})
 	})
 }
