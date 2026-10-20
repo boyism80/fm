@@ -819,6 +819,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mapInstance.MapMessage(constant.MsgPinkText, message)
 			return 0
 		},
+		"ox_quiz": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mapInstance.ShowOXQuiz(L.ToBool(2), uint8(L.CheckInt(3)), uint16(L.CheckInt(4)))
+			return 0
+		},
 		"weather": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

@@ -1811,6 +1811,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(ch.SetChalkboard(L.CheckString(2))))
 			return 1
 		},
+		"close_chalkboard": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.CloseChalkboard()
+			return 0
+		},
 		"place_message_box": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -2416,6 +2426,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				Height: height,
 			}, types.SEND_POLICY_ENCRYPT)
 			return 0
+		},
+		"forbidden": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.Forbidden(L.CheckString(2))))
+			return 1
 		},
 		"role": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -4808,6 +4828,27 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			added := ch.AddTimer(key, time.Duration(intervalMs)*time.Millisecond, repeat, callback)
 			L.Push(lua.LBool(added))
 			return 1
+		},
+		"event_instructions": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.listener.OnEventInstructions(ch)
+			return 0
+		},
+		"stop_clock": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.RemoveTimer(clockTimer)
+			ch.listener.OnStopClock(ch)
+			return 0
 		},
 		"clock": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

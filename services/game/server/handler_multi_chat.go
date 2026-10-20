@@ -10,6 +10,7 @@ import (
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -58,6 +59,10 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 		return nil
 	}
 	if len(strings.TrimSpace(req.Message)) == 0 {
+		return nil
+	}
+	if ch.Forbidden("chat") {
+		ch.Listener().OnMessage(ch, constant.MsgPinkText, "대화 금지 상태이므로 채팅이 불가능합니다.")
 		return nil
 	}
 	mode := pconst.MultiChatMode(req.Type)

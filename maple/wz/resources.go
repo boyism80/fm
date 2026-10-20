@@ -187,6 +187,7 @@ type Resources struct {
 	QuestItems              map[uint32]uint32
 	CarnivalSkills          map[uint32]*CarnivalSkill
 	CarnivalGuardians       map[uint32]*CarnivalGuardian
+	OXQuestions             []OXQuestion
 	questsByStartFieldEnter map[uint32][]*Quest
 	questsByAutoStart       []*Quest
 	questsByAutoStartInfo   map[uint32][]*Quest
@@ -470,6 +471,11 @@ func NewResources(wzPath string) *Resources {
 	if err != nil {
 		log.Printf("Failed to load Commodity.img.xml: %v", err)
 		commodities = map[uint32]*Commodity{}
+	}
+
+	oxQuestions, err := loadOXQuiz(filepath.Join(wzPath, "Etc.wz", "OXQuiz.img.xml"))
+	if err != nil {
+		log.Printf("Failed to load OXQuiz.img.xml: %v", err)
 	}
 
 	items := map[uint32]Item{}
@@ -886,6 +892,7 @@ func NewResources(wzPath string) *Resources {
 		MobSkills:         mobSkills,
 		CarnivalSkills:    mcSkills,
 		CarnivalGuardians: mcGuardians,
+		OXQuestions:       oxQuestions,
 		Shops:             shops,
 		Commodities:       commodities,
 		Quests:            quests,

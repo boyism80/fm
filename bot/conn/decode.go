@@ -252,6 +252,8 @@ var decoders = func() []decoder {
 			return len(body) > 0 && response.EnvironmentChangeMode(body[0]) == response.EnvironmentChangeModeTremble
 		}),
 		newDecoder[response.EnvironmentChange](func(body []byte) bool { return len(body) > 0 }),
+		newDecoder[response.OXQuiz](nil),
+		newDecoder[response.EventInstructions](nil),
 		newDecoder[response.SpawnReactor](nil),
 		newDecoder[response.TriggerReactor](nil),
 		newDecoder[response.DestroyReactor](nil),

@@ -35,6 +35,7 @@ type MapListener interface {
 	OnReactorTriggered(mapInstance *Map, reactor *Reactor, stance int32)
 	OnMusicChanged(mapInstance *Map, song string)
 	OnWeather(mapInstance *Map, itemID uint32, message string)
+	OnOXQuiz(mapInstance *Map, ask bool, set uint8, id uint16)
 	OnSongPlayed(mapInstance *Map, itemID uint32, name string)
 	OnYellowChat(mapInstance *Map, message string)
 	OnWeddingEffect(mapInstance *Map, groomID uint32, brideID uint32)
@@ -1526,4 +1527,10 @@ func (m *Map) StateMachine() *StateMachine {
 		return nil
 	}
 	return m.stateMachine
+}
+
+// An event script forbids an action on its maps with the state machine property "forbid_<action>".
+func (m *Map) Forbids(action string) bool {
+	sm := m.StateMachine()
+	return sm != nil && sm.GetProperty("forbid_"+action) == "true"
 }

@@ -16,7 +16,14 @@ return {
 			return
 		end
 
-		if next(me:item(ANCIENT_SCROLL)) == nil then
+		-- In a channel event's winner map, each winner of that run is rewarded once.
+		local sm = me:state_machine()
+		local eligible = true
+		if sm ~= nil then
+			eligible = sm:get_property("winner:" .. me:id()) == "true"
+				and sm:get_property("rewarded:" .. me:id()) ~= "true"
+		end
+		if eligible and next(me:item(ANCIENT_SCROLL)) == nil then
 			local code = me:exchange(nil, {
 				item = { [ANCIENT_SCROLL] = 1 },
 				period = { [ANCIENT_SCROLL] = ANCIENT_SCROLL_MINUTES },
@@ -25,6 +32,9 @@ return {
 				me:dialog(npc, "인벤토리 공간이 부족하신 건 아닌가요? 다시 한번 확인해 주세요~")
 				return
 			end
+		end
+		if sm ~= nil then
+			sm:set_property("rewarded:" .. me:id(), "true")
 		end
 
 		local back = me:saved_location("EVENT")

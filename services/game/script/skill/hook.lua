@@ -322,6 +322,14 @@ return {
 	on_unpassive = function(me, skill)
 	end,
 
+	can_activate = function(me, skill, params)
+		if me:forbidden("skill") then
+			me:message("이곳에서 스킬을 사용할 수 없습니다.", Msg.PinkText)
+			return false
+		end
+		return true
+	end,
+
 	on_activating = function(me, skill, params)
 		return default_skill_cost(me, skill)
 	end,

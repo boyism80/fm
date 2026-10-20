@@ -318,6 +318,14 @@ func (l *MapListenerImpl) OnWeather(mapInstance *game.Map, itemID uint32, messag
 	}, nil)
 }
 
+func (l *MapListenerImpl) OnOXQuiz(mapInstance *game.Map, ask bool, set uint8, id uint16) {
+	mapInstance.Broadcast(&response.OXQuiz{
+		Ask: ask,
+		Set: set,
+		ID:  id,
+	}, nil)
+}
+
 func (l *MapListenerImpl) OnSongPlayed(mapInstance *game.Map, itemID uint32, name string) {
 	mapInstance.Broadcast(&response.CashSong{
 		ItemID: itemID,

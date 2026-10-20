@@ -1,4 +1,5 @@
 local ex = require("script/lib/expedition")
+local channel_event = require("script/lib/channel_event")
 
 local function string_split(s, sep)
 	sep = sep or " "
@@ -2514,6 +2515,43 @@ local command_funcs = {
 				me:message(string.format('시간역전 적용 요청: %s', value))
 			else
 				me:message(string.format('시간역전 실패: %s', error_message or 'unknown error'))
+			end
+			return true
+		end,
+	},
+	["일정이벤트"] = {
+		privilege = ROLE.Admin,
+		usage = "<OX> - 이 채널에서 이벤트 참가 모집 시작",
+		command = function(me, args)
+			local ok, err = channel_event.schedule(args[1])
+			if ok then
+				me:message("이벤트 참가 모집을 시작했습니다.")
+			else
+				me:message("이벤트를 시작하지 못했습니다: " .. tostring(err))
+			end
+			return true
+		end,
+	},
+	["이벤트시작"] = {
+		privilege = ROLE.Admin,
+		usage = "- 참가 모집을 마감하고 30초 뒤 이벤트 시작",
+		command = function(me, args)
+			if channel_event.close() then
+				me:message("참가 모집을 마감했습니다.")
+			else
+				me:message("모집 중인 이벤트가 없습니다.")
+			end
+			return true
+		end,
+	},
+	["이벤트취소"] = {
+		privilege = ROLE.Admin,
+		usage = "- 진행 중인 이벤트를 취소하고 참가자를 내보냄",
+		command = function(me, args)
+			if channel_event.cancel() then
+				me:message("이벤트를 취소했습니다.")
+			else
+				me:message("진행 중인 이벤트가 없습니다.")
 			end
 			return true
 		end,

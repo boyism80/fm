@@ -5,13 +5,18 @@ import "github.com/boyism80/fm/maple/constant"
 const chatLimit = 70
 
 func (ch *Character) Chat(message string, dontRecordHistory bool) {
-	if ch.GetMap() == nil {
+	if ch.GetMap() == nil || ch.Forbidden("chat") {
 		return
 	}
 	if !ch.HasRoleAtLeast(constant.RoleAdmin) && !ClientText(message).Valid(chatLimit) {
 		return
 	}
 	ch.listener.OnChat(ch, message, false, dontRecordHistory)
+}
+
+// Forbidden is an event map rule; game masters running the event are not bound by it.
+func (ch *Character) Forbidden(action string) bool {
+	return !ch.HasRoleAtLeast(constant.RoleAdmin) && ch.GetMap().Forbids(action)
 }
 
 func (ch *Character) CloseChalkboard() {

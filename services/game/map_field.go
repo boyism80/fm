@@ -33,6 +33,10 @@ func (m *Map) Weather(itemID uint32, message string) {
 	m.listener.OnWeather(m, itemID, message)
 }
 
+func (m *Map) ShowOXQuiz(ask bool, set uint8, id uint16) {
+	m.listener.OnOXQuiz(m, ask, set, id)
+}
+
 // The client has no way to stop a song, so a map plays one at a time until it ends.
 func (m *Map) PlaySong(itemID uint32, name string) bool {
 	now := clock.Now()

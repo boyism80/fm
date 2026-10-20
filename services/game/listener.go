@@ -101,6 +101,7 @@ type CharacterListener interface {
 	OnChargeSkillCancelled(ch *Character, skillID uint32)
 	OnClock(ch *Character, seconds int32)
 	OnStopClock(ch *Character)
+	OnEventInstructions(ch *Character)
 	OnPartyCreated(ch *Character, partyID uint32)
 	OnShowGuildInfo(ch *Character)
 	OnShowAllianceInfo(ch *Character)

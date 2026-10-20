@@ -196,6 +196,10 @@ func (l *CharacterListenerImpl) OnStopClock(ch *game.Character) {
 	ch.Send(&response.StopClock{}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnEventInstructions(ch *game.Character) {
+	ch.Send(&response.EventInstructions{}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnPartyCreated(ch *game.Character, partyID uint32) {
 	ch.Send(&response.PartyCreated{
 		PartyID: partyID,
