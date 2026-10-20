@@ -5,12 +5,9 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/luax"
-	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type Attack struct {
@@ -24,111 +21,17 @@ func (Attack) New(gs *GameServer) *Attack {
 }
 
 func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
-	client, ok := ctx.Client.(*client.GameClient)
+	gameClient, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
 		return fmt.Errorf("client is not a GameClient")
 	}
 
-	character := client.GetCharacter()
+	character := gameClient.GetCharacter()
 	if character == nil {
 		log.Printf("Character is nil for client")
 		return fmt.Errorf("character is nil")
 	}
 
-	if character.Spectating() {
-		return nil
-	}
-
-	if !character.IsAlive() {
-		return nil
-	}
-
-	if character.GetMap() == nil {
-		log.Printf("Character is not in a map")
-		return fmt.Errorf("character is not in a map")
-	}
-
-	var skill *game.SkillEntry
-	if req.Skill != 0 {
-		skill = character.Skills().Get(req.Skill)
-	}
-	var skillLevel uint8
-	attacked, err := character.Attack(ctx.ActorContext, req.ToAttackInfo(), false, func() bool {
-		return skill != nil && character.Skills().CallHook(ctx.ActorContext, skill, "on_activating")
-	}, func() {
-		if req.Skill != 0 {
-			skillLevel = uint8(character.Skills().Level(req.Skill))
-		}
-		CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, false)
-	})
-	if err != nil {
-		return err
-	}
-	if !attacked {
-		character.Listener().OnUpdateStats(character, nil, true)
-		return nil
-	}
-
-	character.Listener().OnAttack(character, req, skillLevel)
-	if skill != nil {
-		character.Skills().CallHook(ctx.ActorContext, skill, "on_activated")
-	}
-	return nil
-}
-
-func buildDamagesTable(L *lua.LState, character *game.Character, damages []dto.AttackPair) *lua.LTable {
-	tbl := L.NewTable()
-	if character == nil {
-		return tbl
-	}
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return tbl
-	}
-	for _, ap := range damages {
-		mob := mapInstance.GetMob(ap.OID)
-		if mob == nil {
-			continue
-		}
-		hits := L.NewTable()
-		for i, dp := range ap.DamagePairs {
-			hits.RawSetInt(i+1, lua.LNumber(dp.Damage))
-		}
-		tbl.RawSet(luax.NewLuable(L, mob), hits)
-	}
-	return tbl
-}
-
-func readDamagesFromLuaTableInto(damagesTable *lua.LTable, damages []dto.AttackPair) {
-	oidToPairs := make(map[uint32][]dto.DamagePair)
-	damagesTable.ForEach(func(key lua.LValue, value lua.LValue) {
-		ud, ok := key.(*lua.LUserData)
-		if !ok || ud.Value == nil {
-			return
-		}
-		mob, ok := ud.Value.(*game.Mob)
-		if !ok {
-			return
-		}
-		oid := mob.GetOID()
-		hitsTbl, ok := value.(*lua.LTable)
-		if !ok {
-			return
-		}
-		n := hitsTbl.Len()
-		pairs := make([]dto.DamagePair, 0, n)
-		for i := 1; i <= n; i++ {
-			lv := hitsTbl.RawGetInt(i)
-			if num, ok := lv.(lua.LNumber); ok {
-				pairs = append(pairs, dto.DamagePair{Damage: uint32(num), Unknown: false})
-			}
-		}
-		oidToPairs[oid] = pairs
-	})
-	for i := range damages {
-		if pairs, ok := oidToPairs[damages[i].OID]; ok {
-			damages[i].DamagePairs = pairs
-		}
-	}
+	return character.Attack(ctx.ActorContext, game.AttackClose, req)
 }

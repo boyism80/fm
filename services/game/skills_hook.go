@@ -27,6 +27,21 @@ func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, dir
 	if entry == nil || entry.Level() <= 0 || entry.Level() != int(level) {
 		return false
 	}
+
+	args := params(root)
+	if !sc.use(actx, entry, func() bool {
+		return sc.CallHook(actx, entry, "on_activated", args)
+	}, args) {
+		return false
+	}
+	sc.owner.listener.OnShowSkillEffect(sc.owner, pconst.SkillEffectTypeCast, skillID, level, direction)
+	sc.owner.listener.OnUpdateStats(sc.owner, nil, true)
+	return true
+}
+
+// use is the gate every skill use passes, active or attack. The item is checked before on_activating
+// spends HP/MP and taken only after the effect succeeds.
+func (sc *Skills) use(actx actor.Context, entry *SkillEntry, effect func() bool, args ...interface{}) bool {
 	levelData := entry.wz.GetLevelData(entry.Level())
 	if levelData == nil {
 		return false
@@ -34,33 +49,26 @@ func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, dir
 	if levelData.Cooldown > 0 && entry.IsCooling() {
 		return false
 	}
-
-	args := params(root)
-	if !sc.CallHook(actx, entry, "can_activate", args) {
+	if !sc.CallHook(actx, entry, "can_activate", args...) {
 		return false
 	}
-	if !sc.CallHook(actx, entry, "on_activating", args) {
+	itemCost := levelData.ItemCon != 0 && levelData.ItemConNo > 0
+	if itemCost && !sc.owner.inventory.HasItemCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
 		return false
 	}
-	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
-		if !sc.owner.inventory.HasItemCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
-			return false
-		}
-	}
-	if !sc.CallHook(actx, entry, "on_activated", args) {
+	if !sc.CallHook(actx, entry, "on_activating", args...) {
 		return false
 	}
-	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
-		if !sc.owner.inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
-			return false
-		}
+	if effect != nil && !effect() {
+		return false
+	}
+	if itemCost && !sc.owner.inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+		return false
 	}
 
 	if levelData.Cooldown > 0 && !entry.wz.ManualCooldown {
 		entry.StartCooldown(levelData.Cooldown)
 	}
-	sc.owner.listener.OnShowSkillEffect(sc.owner, pconst.SkillEffectTypeCast, skillID, level, direction)
-	sc.owner.listener.OnUpdateStats(sc.owner, nil, true)
 	return true
 }
 

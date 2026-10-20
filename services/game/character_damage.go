@@ -23,18 +23,72 @@ type Hit struct {
 	Reflect    uint8
 }
 
-// Attack validates the reported hits before skill costs and server attack hooks.
-func (ch *Character) Attack(actx actor.Context, info dto.AttackInfo, magic bool, activating func() bool, attacking func()) (bool, error) {
-	if ch.GetMap() == nil {
-		return false, fmt.Errorf("attacker has no map")
-	}
+type AttackKind uint8
+
+const (
+	AttackClose AttackKind = iota
+	AttackRanged
+	AttackMagic
+	AttackEnergy
+)
+
+// Attack runs one attack packet: validation, skill costs, server attack hooks, damage, then the client update.
+func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.AttackPayload) error {
 	if ch.Spectating() || !ch.IsAlive() {
-		return false, nil
+		return nil
+	}
+	if ch.GetMap() == nil {
+		return fmt.Errorf("attacker has no map")
+	}
+
+	info := payload.ToAttackInfo()
+	var skill *SkillEntry
+	if info.Skill != 0 {
+		skill = ch.skills.Get(info.Skill)
+	}
+	attacked, err := ch.strike(actx, kind, info, skill)
+	if err != nil {
+		return err
+	}
+	if !attacked {
+		ch.listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
+	skillLevel := uint8(ch.skills.Level(info.Skill))
+	switch kind {
+	case AttackClose:
+		ch.listener.OnAttack(ch, payload, skillLevel)
+	case AttackRanged:
+		ch.listener.OnRangedAttack(ch, payload, skillLevel)
+	case AttackMagic:
+		ch.listener.OnMagicAttack(ch, payload, skillLevel)
+	case AttackEnergy:
+		ch.listener.OnEnergyAttack(ch, payload)
+	}
+	if skill != nil {
+		ch.skills.CallHook(actx, skill, "on_activated")
+	}
+	return nil
+}
+
+// strike validates the reported hits before skill costs and server attack hooks.
+func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.AttackInfo, skill *SkillEntry) (bool, error) {
+	switch kind {
+	case AttackMagic:
+		if info.Skill == 0 {
+			return false, nil
+		}
+	case AttackEnergy:
+		_, energy, active := ch.buffs.GetBuffValue(constant.BuffFlagEnergyCharge)
+		if !active || energy < 10000 || info.Skill != 0 {
+			return false, nil
+		}
 	}
 
 	var err error
 	switch {
-	case magic:
+	case kind == AttackMagic:
 		err = NewMagicValidator(ch).Validate(info)
 	case constant.SkillID(info.Skill) == constant.SkillMesoExplosion:
 		err = NewMesoExplosionValidator(ch).Validate(info)
@@ -45,14 +99,14 @@ func (ch *Character) Attack(actx actor.Context, info dto.AttackInfo, magic bool,
 		return false, err
 	}
 
-	if info.Skill != 0 && !ch.skills.UseAttack(actx, info.Skill, activating) {
+	if info.Skill != 0 && !ch.skills.UseAttack(actx, skill) {
 		return false, nil
 	}
 	if info.Ranged && !ch.shoot(info) {
 		return false, nil
 	}
 
-	attacking()
+	ch.callAttackHooks(actx, kind, skill, info.Damages)
 	ch.damageTo(info.Damages)
 	if len(info.Damages) > 0 {
 		ch.lieDetector.huntedAt = clock.Now()
@@ -61,6 +115,69 @@ func (ch *Character) Attack(actx actor.Context, info dto.AttackInfo, magic bool,
 		ch.ExplodeMesos(info.MesoOIDs)
 	}
 	return true, nil
+}
+
+// Scripts may change the reported damage, so the hits are read back from the table they edited.
+func (ch *Character) callAttackHooks(actx actor.Context, kind AttackKind, skill *SkillEntry, damages []dto.AttackPair) {
+	root := ch.GetMap().GetLuaRoot()
+	if root == nil {
+		return
+	}
+
+	damagesTable := ch.damagesTable(root, damages)
+	attackInfoTable := root.NewTable()
+	attackInfoTable.RawSetString("magic", lua.LBool(kind == AttackMagic))
+	attackInfoTable.RawSetString("ranged", lua.LBool(kind == AttackRanged))
+	ch.skills.CallHook(actx, skill, "on_attack", damagesTable, attackInfoTable)
+
+	oidToPairs := make(map[uint32][]dto.DamagePair)
+	damagesTable.ForEach(func(key lua.LValue, value lua.LValue) {
+		ud, ok := key.(*lua.LUserData)
+		if !ok || ud.Value == nil {
+			return
+		}
+		mob, ok := ud.Value.(*Mob)
+		if !ok {
+			return
+		}
+		hitsTbl, ok := value.(*lua.LTable)
+		if !ok {
+			return
+		}
+		n := hitsTbl.Len()
+		pairs := make([]dto.DamagePair, 0, n)
+		for i := 1; i <= n; i++ {
+			if num, ok := hitsTbl.RawGetInt(i).(lua.LNumber); ok {
+				pairs = append(pairs, dto.DamagePair{Damage: uint32(num), Unknown: false})
+			}
+		}
+		oidToPairs[mob.GetOID()] = pairs
+	})
+	for i := range damages {
+		if pairs, ok := oidToPairs[damages[i].OID]; ok {
+			damages[i].DamagePairs = pairs
+		}
+	}
+}
+
+func (ch *Character) damagesTable(L *lua.LState, damages []dto.AttackPair) *lua.LTable {
+	tbl := L.NewTable()
+	m := ch.GetMap()
+	if m == nil {
+		return tbl
+	}
+	for _, ap := range damages {
+		mob := m.GetMob(ap.OID)
+		if mob == nil {
+			continue
+		}
+		hits := L.NewTable()
+		for i, dp := range ap.DamagePairs {
+			hits.RawSetInt(i+1, lua.LNumber(dp.Damage))
+		}
+		tbl.RawSet(luax.NewLuable(L, mob), hits)
+	}
+	return tbl
 }
 
 func (ch *Character) shoot(info dto.AttackInfo) bool {
@@ -116,14 +233,6 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 		count *= 2
 	}
 	return ch.inventory.useAmmo(int16(info.Slot), uint16(count))
-}
-
-func (ch *Character) EnergyAttack(info dto.AttackInfo, attacking func()) (bool, error) {
-	_, energy, active := ch.buffs.GetBuffValue(constant.BuffFlagEnergyCharge)
-	if !active || energy < 10000 || info.Skill != 0 {
-		return false, nil
-	}
-	return ch.Attack(nil, info, false, nil, attacking)
 }
 
 func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {
