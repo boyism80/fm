@@ -8,6 +8,7 @@ import {
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository, type ParcelRow } from "@fm/shared/repos/parcel-repository";
+import type { CharacterRepository } from "@fm/shared/repos/character-repository";
 import { RequestStatus } from "@fm/shared/repos/request-repository";
 import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import { SessionRepository } from "@fm/shared/repos/session-repository";
@@ -35,6 +36,7 @@ export class ParcelService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
+    private readonly characterRepo: CharacterRepository;
 
     constructor(
         appConfiguration: AppConfiguration,
@@ -44,7 +46,8 @@ export class ParcelService {
         parcelClaimRequestRepository: ParcelClaimRequestRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
-        rabbitmqService: RabbitMQService
+        rabbitmqService: RabbitMQService,
+        characterRepository: CharacterRepository
     ) {
         this.app = appConfiguration;
         this.parcelRepo = parcelRepository;
@@ -54,6 +57,7 @@ export class ParcelService {
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
+        this.characterRepo = characterRepository;
     }
 
     private arrivedAt(row: ParcelRow): number {
@@ -101,6 +105,9 @@ export class ParcelService {
             }
             if (input.system === false && input.senderAccountId !== 0 && entry.account_id === input.senderAccountId) {
                 return ParcelResult.PARCEL_RESULT_SAME_ACCOUNT;
+            }
+            if ((await this.characterRepo.get(input.worldId, entry.character_id)) == null) {
+                return ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND;
             }
             receiverId = entry.character_id;
         }
