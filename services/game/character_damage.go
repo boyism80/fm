@@ -99,10 +99,19 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 		return false, err
 	}
 
+	// The projectiles are counted before the skill costs, so a shot that cannot leave costs nothing.
+	var ammo uint16
+	if info.Ranged {
+		count, ok := ch.ammo(info)
+		if !ok {
+			return false, nil
+		}
+		ammo = count
+	}
 	if info.Skill != 0 && !ch.skills.UseAttack(actx, skill) {
 		return false, nil
 	}
-	if info.Ranged && !ch.shoot(info) {
+	if ammo > 0 && !ch.inventory.useAmmo(int16(info.Slot), ammo) {
 		return false, nil
 	}
 
@@ -180,18 +189,19 @@ func (ch *Character) damagesTable(L *lua.LState, damages []dto.AttackPair) *lua.
 	return tbl
 }
 
-func (ch *Character) shoot(info dto.AttackInfo) bool {
+// ammo is how many projectiles a ranged attack takes from info.Slot; 0 when it takes none.
+func (ch *Character) ammo(info dto.AttackInfo) (uint16, bool) {
 	switch constant.SkillID(info.Skill) {
 	case constant.SkillShadowMeso, constant.SkillBarrage, constant.SkillSoulBlade, constant.SkillSpark, constant.SkillSharkWave, constant.SkillShowdown4221003:
-		return true
+		return 0, true
 	}
 	weapon := ch.inventory.equipped[constant.EquipmentPartsWeapon]
 	if weapon == nil {
-		return true
+		return 0, true
 	}
 	weaponModel, ok := weapon.GetModel().(*wz.Weapon)
 	if !ok {
-		return true
+		return 0, true
 	}
 
 	var ammo constant.ConsumeType
@@ -205,21 +215,21 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 	case constant.WeaponTypeGun:
 		ammo = constant.ConsumeTypeBullet
 	default:
-		return true
+		return 0, true
 	}
 	if ch.buffs.Has(constant.BuffFlagSoulArrow) && (ammo == constant.ConsumeTypeArrowBow || ammo == constant.ConsumeTypeArrowCrossBow) {
-		return true
+		return 0, true
 	}
 	item := ch.inventory.GetItem(constant.InventoryTypeConsume, int16(info.Slot))
 	if item == nil {
-		return false
+		return 0, false
 	}
 	projectile, ok := item.GetModel().(*wz.Consume)
 	if !ok || projectile.ConsumeType != ammo {
-		return false
+		return 0, false
 	}
 	if ch.buffs.Has(constant.BuffFlagSpiritClaw) && ammo == constant.ConsumeTypeShuriken {
-		return true
+		return 0, true
 	}
 
 	count := 1
@@ -232,7 +242,10 @@ func (ch *Character) shoot(info dto.AttackInfo) bool {
 	if ch.buffs.Has(constant.BuffFlagShadowPartner) {
 		count *= 2
 	}
-	return ch.inventory.useAmmo(int16(info.Slot), uint16(count))
+	if item.GetCount() < uint16(count) {
+		return 0, false
+	}
+	return uint16(count), true
 }
 
 func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {
