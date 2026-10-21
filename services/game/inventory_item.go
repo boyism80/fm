@@ -171,8 +171,8 @@ func (inv *Inventory) HasItem(itemID uint32) bool {
 	return false
 }
 
-func (inv *Inventory) hasOnlyItem(model wz.Item) bool {
-	if model == nil || model.GetTraits()&constant.ItemTraitOnly == 0 {
+func (inv *Inventory) hasUniqueItem(model wz.Item) bool {
+	if model == nil || model.GetTraits()&constant.ItemTraitUnique == 0 {
 		return false
 	}
 	if inv.HasItem(model.GetID()) {

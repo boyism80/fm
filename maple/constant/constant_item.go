@@ -33,7 +33,7 @@ const (
 	ItemTraitCash
 	ItemTraitQuest
 	ItemTraitTradeBlock
-	ItemTraitOnly
+	ItemTraitUnique
 	ItemTraitAccountSharable
 	ItemTraitEquipTradeBlock
 	ItemTraitConsumeOnPickup

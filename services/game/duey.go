@@ -247,7 +247,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 			return ErrDueyInvalid
 		}
 		parcel.Item = held.BuildRPC(0, 0)
-		oneOfAKind = held.GetModel().GetTraits()&constant.ItemTraitOnly != 0
+		oneOfAKind = held.GetModel().GetTraits()&constant.ItemTraitUnique != 0
 		detail.Item, _ = json.Marshal(parcel.Item)
 	}
 	paid := false
@@ -497,7 +497,7 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 	if parcel.item == nil {
 		return nil
 	}
-	if d.owner.inventory.hasOnlyItem(parcel.item.GetModel()) {
+	if d.owner.inventory.hasUniqueItem(parcel.item.GetModel()) {
 		return ErrDueyOnlyHeld
 	}
 	spec := ExchangeSpec{

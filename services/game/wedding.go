@@ -822,7 +822,7 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 		return ErrWeddingGiftEmpty
 	}
-	if w.owner.inventory.hasOnlyItem(gift.item.GetModel()) {
+	if w.owner.inventory.hasUniqueItem(gift.item.GetModel()) {
 		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftOneOfAKind, nil, nil)
 		return nil
 	}
@@ -872,7 +872,7 @@ func (w *Wedding) receiveClaimed(id uint64, pb *internal.WeddingGift) bool {
 		return false
 	}
 	model := item.GetModel()
-	if w.owner.inventory.hasOnlyItem(model) || !w.owner.inventory.canReceive(model.GetID(), item.GetCount()) {
+	if w.owner.inventory.hasUniqueItem(model) || !w.owner.inventory.canReceive(model.GetID(), item.GetCount()) {
 		w.owner.unsettled.Find(id).inFlight = false
 		return false
 	}

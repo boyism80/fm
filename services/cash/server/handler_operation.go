@@ -221,7 +221,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *cash.Charac
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	if wzItem.GetTraits()&gconstant.ItemTraitOnly != 0 && character.HasItem(commodity.ItemID) {
+	if wzItem.GetTraits()&gconstant.ItemTraitUnique != 0 && character.HasItem(commodity.ItemID) {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
@@ -359,7 +359,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *cash.Character, 
 		fail(constant.CashShopFailureUnknown)
 		return
 	}
-	if model.GetTraits()&gconstant.ItemTraitOnly != 0 && character.HasItem(model.GetID()) {
+	if model.GetTraits()&gconstant.ItemTraitUnique != 0 && character.HasItem(model.GetID()) {
 		fail(constant.CashShopFailureUnknown)
 		return
 	}

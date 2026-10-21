@@ -24,7 +24,7 @@ func (model *ItemCore) setTradeFlags(info *node) {
 		model.Traits |= constant.ItemTraitTradeBlock
 	}
 	if info.Int("only", 0) == 1 {
-		model.Traits |= constant.ItemTraitOnly
+		model.Traits |= constant.ItemTraitUnique
 	}
 	if info.Int("accountSharable", 0) == 1 {
 		model.Traits |= constant.ItemTraitAccountSharable

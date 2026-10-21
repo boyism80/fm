@@ -116,10 +116,10 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 				return ExchangeLackCapacity
 			}
 			traits := model.GetTraits()
-			if traits&constant.ItemTraitOnly == 0 || traits&constant.ItemTraitPartyQuest != 0 {
+			if traits&constant.ItemTraitUnique == 0 || traits&constant.ItemTraitPartyQuest != 0 {
 				continue
 			}
-			if count > 1 || (spec.Cost.Items[id] == 0 && ch.inventory.hasOnlyItem(model)) {
+			if count > 1 || (spec.Cost.Items[id] == 0 && ch.inventory.hasUniqueItem(model)) {
 				return ExchangeLackCapacity
 			}
 		}

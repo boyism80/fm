@@ -77,7 +77,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	if !item.Storable() {
 		return ErrStorageNotStorable
 	}
-	if model.GetTraits()&constant.ItemTraitOnly != 0 && s.has(invType, itemID) {
+	if model.GetTraits()&constant.ItemTraitUnique != 0 && s.has(invType, itemID) {
 		return ErrStorageNotStorable
 	}
 	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
@@ -108,7 +108,7 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 		return ErrStorageItemNotFound
 	}
 	item := items[index]
-	if s.owner.inventory.hasOnlyItem(item.GetModel()) {
+	if s.owner.inventory.hasUniqueItem(item.GetModel()) {
 		return ErrStorageNotStorable
 	}
 

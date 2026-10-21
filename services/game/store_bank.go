@@ -135,7 +135,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 	rewards := map[uint32]uint16{}
 	for _, listed := range sb.items {
 		model := listed.item.GetModel()
-		if sb.owner.inventory.hasOnlyItem(model) {
+		if sb.owner.inventory.hasUniqueItem(model) {
 			return pconst.StoreBankResultOnlyOne
 		}
 		rewards[model.GetID()] += listed.count()
