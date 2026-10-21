@@ -2,6 +2,7 @@
 
 local GAMES = {
 	ox_quiz = require("script/lib/event/ox_quiz"),
+	ola_ola = require("script/lib/event/ola_ola"),
 }
 
 local WINNER_MAP = 109050000
@@ -71,6 +72,9 @@ local hooks = {
 	on_prepare = function(sm)
 		set_phase(sm, "recruiting")
 		set_rules(sm, true)
+		if game(sm).prepare ~= nil then
+			game(sm).prepare(sm)
+		end
 		world_notice(string.format("GM 이벤트 [%s]가 잠시 후 %d채널에서 시작됩니다! 해당 채널의 리스항구, 사우스페리, 오르비스, 루디브리엄에서 이벤트 NPC를 통해 참가할 수 있습니다!", sm:get_property("name"), channel_id() + 1), Msg.LightBlueText)
 		sm:after("close", RECRUIT_MS, "on_close")
 	end,
@@ -104,10 +108,14 @@ local hooks = {
 		set_phase(sm, "finished")
 		set_rules(sm, false)
 		local winners = 0
+		for _, player in ipairs(sm:players()) do
+			if sm:get_property("winner:" .. player:id()) == "true" then
+				winners = winners + 1
+			end
+		end
 		for _, player in ipairs(event_players(sm)) do
 			player:stop_clock()
 			if sm:get_property("winner:" .. player:id()) == "true" then
-				winners = winners + 1
 				player:map(sm:map(WINNER_MAP))
 			else
 				player:map(LOSER_MAP)
