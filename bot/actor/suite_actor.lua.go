@@ -86,6 +86,7 @@ var requests = []outbound{
 	&request.MonsterBookCover{},
 	&request.TeleportStoneList{},
 	&request.UseTeleportStone{},
+	&request.UseReturnScroll{},
 	&request.MoveItem{},
 	&request.Whisper{},
 	&request.Messenger{},

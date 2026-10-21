@@ -105,7 +105,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 		finish()
 		return
 	}
-	item := t.owner.inventory.tabs[invType].Get(uint8(slot))
+	item := t.owner.inventory.GetItem(invType, slot)
 	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
 		finish()
 		return
@@ -116,7 +116,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 	}
 
 	consume := func(actor.Context) {
-		item := t.owner.inventory.tabs[invType].Get(uint8(slot))
+		item := t.owner.inventory.GetItem(invType, slot)
 		if item != nil && item.GetModel().GetID() == itemID {
 			t.owner.inventory.RemoveItem(invType, slot, 1)
 		}

@@ -17,7 +17,7 @@ func (ch *Character) Scroll(actx actor.Context, scrollSlot int16, targetSlot int
 		return ErrCannotScroll
 	}
 	useInventory := ch.inventory.tabs[constant.InventoryTypeConsume]
-	scrollItem, ok := useInventory.Get(uint8(scrollSlot)).(*Consume)
+	scrollItem, ok := ch.inventory.GetItem(constant.InventoryTypeConsume, scrollSlot).(*Consume)
 	if !ok {
 		return ErrCannotScroll
 	}
@@ -31,7 +31,7 @@ func (ch *Character) Scroll(actx actor.Context, scrollSlot int16, targetSlot int
 	if targetSlot < 0 {
 		target = ch.inventory.equipped[constant.EquipmentPartsType(targetSlot)]
 	} else {
-		target, _ = equipInventory.Get(uint8(targetSlot)).(Equipment)
+		target, _ = ch.inventory.GetItem(constant.InventoryTypeEquipment, targetSlot).(Equipment)
 	}
 	if target == nil {
 		return ErrCannotScroll

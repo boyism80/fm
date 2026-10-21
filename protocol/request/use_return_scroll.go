@@ -13,6 +13,9 @@ type UseReturnScroll struct {
 func (*UseReturnScroll) Opcode() byte { return 0x44 }
 
 func (p *UseReturnScroll) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU16(p.Slot)
+	writer.WriteU32(p.ItemID)
 	return nil
 }
 

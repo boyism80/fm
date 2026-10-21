@@ -8,6 +8,9 @@ local AMORIA = 680000000
 local STONE = 5040000
 local VIP_STONE = 5041000
 local CONSUME_STONE = 2320000
+local RETURN_SCROLL = 2030000
+local FORGED_SLOT_OFFSET = 256
+local HENESYS_FIELD = 100010000
 local EMPTY = 999999999
 
 local RESULT_LIST = 3
@@ -247,8 +250,62 @@ local function persistence(ctx)
 	return check(ctx, #vip == 10 and contains(vip, ORBIS), "채널 이동 후 VIP 목록이 다름")
 end
 
+-- A slot above 255 reads as the same slot truncated to a byte, but it cannot be removed: the use must be refused.
+local function forged_slot(ctx)
+	local bot = ctx:bot(1)
+	if setup(ctx, bot, STONE .. ":3," .. RETURN_SCROLL .. ":3") == false then
+		return false
+	end
+	if move(ctx, bot, HENESYS) == false then
+		return false
+	end
+	if register(ctx, bot, false, "헤네시스") == false then
+		return false
+	end
+	if move(ctx, bot, ELLINIA) == false then
+		return false
+	end
+
+	local forged = bot:slot(STONE) + FORGED_SLOT_OFFSET
+	bot:request(resp.update_stats, req.use_cash_item { slot = forged, item_id = STONE, target = { map_id = HENESYS } }, nil, 2000)
+	ctx:sleep(1500)
+	if check(ctx, bot:map() == ELLINIA, "위조 슬롯으로 순간이동의 돌이 쓰임: " .. bot:map()) == false then
+		return false
+	end
+	if check(ctx, (bot:items()[STONE] or 0) == 3, "위조 슬롯으로 순간이동의 돌 개수가 바뀜") == false then
+		return false
+	end
+
+	if move(ctx, bot, HENESYS_FIELD) == false then
+		return false
+	end
+	local scroll_slot = bot:slot(RETURN_SCROLL)
+	bot:request(resp.update_stats, req.use_return_scroll { slot = scroll_slot + FORGED_SLOT_OFFSET, item_id = RETURN_SCROLL }, nil, 2000)
+	ctx:sleep(1500)
+	if check(ctx, bot:map() == HENESYS_FIELD, "위조 슬롯으로 귀환 주문서가 쓰임: " .. bot:map()) == false then
+		return false
+	end
+	if check(ctx, (bot:items()[RETURN_SCROLL] or 0) == 3, "위조 슬롯으로 귀환 주문서 개수가 바뀜") == false then
+		return false
+	end
+	if bot:request(resp.warp, req.use_return_scroll { slot = scroll_slot, item_id = RETURN_SCROLL }, nil, 3000) == false then
+		return ctx:fail("올바른 슬롯의 귀환 주문서가 쓰이지 않음")
+	end
+	ctx:sleep(500)
+	if check(ctx, (bot:items()[RETURN_SCROLL] or 0) == 2, "귀환 주문서가 1개 줄지 않음") == false then
+		return false
+	end
+	if move(ctx, bot, ELLINIA) == false then
+		return false
+	end
+
+	local before = bot:items()[STONE] or 0
+	local p = use(ctx, bot, STONE, { map_id = HENESYS }, "올바른 슬롯")
+	return p ~= false and expect_moved(ctx, bot, p, STONE, before, HENESYS, "올바른 슬롯")
+end
+
 test_suite {
-	name = "Teleport stone: 등록·삭제·이동·저장",
+	name = "Teleport stone: 등록·삭제·이동·저장·위조 슬롯 거절",
 	bot_count = 2,
 
 	scenarios = {
@@ -256,5 +313,6 @@ test_suite {
 		move_by_map,
 		move_by_name,
 		persistence,
+		forged_slot,
 	},
 }

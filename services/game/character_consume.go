@@ -84,7 +84,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 }
 
 func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
-	item := ch.inventory.tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+	item := ch.inventory.GetItem(constant.InventoryTypeConsume, slot)
 	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID || item.GetModel().GetTraits()&constant.ItemTraitCatchItem == 0 {
 		return
 	}
@@ -119,7 +119,7 @@ func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
 }
 
 func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint32) error {
-	item := ch.inventory.tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+	item := ch.inventory.GetItem(constant.InventoryTypeConsume, slot)
 	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
 		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
@@ -161,7 +161,7 @@ func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint3
 	}
 
 	err = ch.gameWorld.Systems().Get[*MapSystem]().Warp(ctx, ch, target, 0, func(actor.Context) {
-		item := ch.inventory.tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+		item := ch.inventory.GetItem(constant.InventoryTypeConsume, slot)
 		if item != nil && item.GetModel().GetID() == itemID {
 			ch.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
 		}
