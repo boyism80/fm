@@ -66,11 +66,9 @@ export type CashTransferRequest = {
 
 export class CashShopRepository {
     private readonly ctx: InternalContext;
-    private readonly cashRequestRepo: CashRequestRepository;
 
-    constructor(internalContext: InternalContext, cashRequestRepository: CashRequestRepository) {
+    constructor(internalContext: InternalContext) {
         this.ctx = internalContext;
-        this.cashRequestRepo = cashRequestRepository;
     }
 
     // Balances are account-wide and live in the unified database; every balance change holds this lock.
@@ -152,9 +150,6 @@ export class CashShopRepository {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, request.target_id]);
             } else if (request.kind === CashTransferKind.InventorySlot || request.kind === CashTransferKind.Meso) {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, request.target_id]);
-            }
-            if ((await this.cashRequestRepo.reserve(worldId, request.target_id, request.request_id, {}, client)) === false) {
-                return;
             }
             await fn(client);
         });
@@ -350,7 +345,8 @@ export class CashShopRepository {
     }
 }
 
-export class CashRequestRepository extends RequestRepository {
+// A transfer records whether it was placed or found the locker full, so every later settle follows the first decision.
+export class CashRequestRepository extends RequestRepository<{ full?: boolean }> {
     protected readonly kind = "cash";
 }
 

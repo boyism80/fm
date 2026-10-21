@@ -45,12 +45,6 @@ import type { DistributedLockService } from "./distributed-lock-service";
 
 const LOCKER_CAPACITY = 100;
 
-class LockerFull extends Error {
-    constructor() {
-        super("locker full");
-    }
-}
-
 enum TransferOutcome {
     Placed = 0,
     Full = 1,
@@ -226,23 +220,21 @@ export class CashShopService {
         place: (txClient: PoolClient) => Promise<TransferOutcome.Placed | TransferOutcome.Full>
     ): Promise<TransferOutcome> {
         let result: TransferOutcome = TransferOutcome.Skipped;
-        try {
-            await this.cashShopRepo.receiveTransfer(worldId, request, async (txClient) => {
-                if (await this.cashShopRepo.isTransferCompleted(request)) {
-                    result = TransferOutcome.Done;
-                    return;
-                }
-                result = await place(txClient);
-                if (result === TransferOutcome.Full) {
-                    throw new LockerFull();
-                }
-            });
-        } catch (err) {
-            if (err instanceof LockerFull) {
-                return TransferOutcome.Full;
+        // Placed and full are both recorded under the request id in the receiving shard, under its lock, so a
+        // settle that comes later never places what another already refunds, or refunds what it placed.
+        await this.cashShopRepo.receiveTransfer(worldId, request, async (txClient) => {
+            const recorded = await this.cashRequestRepo.find(worldId, request.target_id, request.request_id, { txClient });
+            if (recorded != null) {
+                result = recorded.outcome.full === true ? TransferOutcome.Full : TransferOutcome.Skipped;
+                return;
             }
-            throw err;
-        }
+            if (await this.cashShopRepo.isTransferCompleted(request)) {
+                result = TransferOutcome.Done;
+                return;
+            }
+            result = await place(txClient);
+            await this.cashRequestRepo.insert(worldId, request.target_id, request.request_id, result === TransferOutcome.Full ? { full: true } : {}, txClient);
+        });
         return result;
     }
 
