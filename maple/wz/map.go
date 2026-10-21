@@ -70,8 +70,11 @@ type Map struct {
 	Cloud        int
 	ReturnMapId  int
 	ForcedReturn uint32
-	FieldLimit   constant.FieldLimit
-	FieldType    FieldType
+	// OnFirstUserEnter and OnUserEnter name scripts under script/map_enter.
+	OnFirstUserEnter string
+	OnUserEnter      string
+	FieldLimit       constant.FieldLimit
+	FieldType        FieldType
 
 	Continent         uint32
 	FreeMarket        bool

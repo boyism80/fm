@@ -1064,6 +1064,13 @@ func (l *CharacterListenerImpl) OnPlayPortalSound(ch *game.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnMapEffect(ch *game.Character, path string) {
+	ch.Send(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeMapEffect,
+		Env:  path,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnQuestProgress(ch *game.Character, qp *game.Quest) {
 	status, ok := qp.BuildS2C()
 	if !ok {

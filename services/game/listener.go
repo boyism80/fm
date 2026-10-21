@@ -168,6 +168,7 @@ type CharacterListener interface {
 	OnShowQuestCompletion(ch *Character, questID uint32)
 	OnPlaySound(ch *Character, sound string, broadcast bool)
 	OnPlayPortalSound(ch *Character)
+	OnMapEffect(ch *Character, path string)
 	OnItemGainFailed(ch *Character, mode constant.ItemGainFailedType)
 	OnInventorySlotUpdated(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)
 	OnInventorySlotAdded(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)

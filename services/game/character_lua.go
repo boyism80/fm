@@ -2410,6 +2410,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.CreateCashCoupons(cfg.ActorContext, kind, value, count)
 			return 0
 		},
+		"map_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.listener.OnMapEffect(ch, L.CheckString(2))
+			return 0
+		},
 		"show_instruction": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

@@ -101,6 +101,7 @@ type Map struct {
 	wz                *wz.Map
 	id                uint32
 	instance          *instanceState
+	activated         bool
 	objects           map[constant.ObjectType]map[uint32]Object
 	sections          *sectionGrid
 	controllerTable   *ControllerTable
@@ -349,6 +350,13 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	m.callMapLifecycleScript(ctx, character, "on_map_enter")
+	if name := m.wz.OnFirstUserEnter; name != "" && !m.activated {
+		m.activated = true
+		m.callMapEnterScript(ctx, character, name, "on_activate")
+	}
+	if name := m.wz.OnUserEnter; name != "" {
+		m.callMapEnterScript(ctx, character, name, "on_enter")
+	}
 	if character.stateMachine != nil {
 		character.stateMachine.HandlePlayerMapEnter(character, m)
 	}
@@ -388,6 +396,28 @@ func (m *Map) callMapLifecycleScript(ctx actor.Context, character *Character, ho
 		ActorPID: m.LogicActorPID(),
 	})
 	luax.CallAsync(nil, root, mapThread, hook, character, m)
+}
+
+// callMapEnterScript runs the script the map's WZ info names. on_activate runs once per Map, when its first player enters.
+// A name without a script is a legacy one that did nothing.
+func (m *Map) callMapEnterScript(ctx actor.Context, character *Character, name string, hook string) {
+	if character.GetMap() != m {
+		return
+	}
+	root := m.GetLuaRoot()
+	if root == nil {
+		return
+	}
+	thread, err := luax.NewThread(root, fmt.Sprintf("script/map_enter/%s.lua", name))
+	if err != nil {
+		return
+	}
+	if !luax.HasFunc(thread, hook) {
+		luax.Close(thread)
+		return
+	}
+	luax.SetConfiguration(thread, luax.Configuration{ActorContext: ctx, ActorPID: m.LogicActorPID()})
+	luax.CallAsync(nil, root, thread, hook, character, m)
 }
 
 func (m *Map) RemovePlayer(playerID uint32) error {
