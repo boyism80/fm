@@ -455,6 +455,9 @@ func ParseCreateMaps(tbl *lua.LTable) ([]StateMachineMapSpec, error) {
 	if parseErr != nil {
 		return nil, parseErr
 	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("on_create must return a non-empty map id array")
+	}
 	return out, nil
 }
 

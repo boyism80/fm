@@ -490,7 +490,6 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	registerPlayerNpcLuaFuncs(gs, luaState)
 	registerMedalLuaFuncs(gs, luaState)
 	registerChannelEventLuaFuncs(gs, luaState)
-	registerFireWorksLuaFuncs(gs, luaState)
 	game.RegisterCarnivalLua(gs, luaState)
 	game.RegisterExpeditionLua(gs, luaState)
 

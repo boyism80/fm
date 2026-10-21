@@ -1,6 +1,5 @@
 local ex = require("script/lib/expedition")
 local channel_event = require("script/lib/channel_event")
-local fireworks = require("script/lib/fireworks")
 
 local function string_split(s, sep)
 	sep = sep or " "
@@ -2517,23 +2516,6 @@ local command_funcs = {
 			else
 				me:message(string.format('시간역전 실패: %s', error_message or 'unknown error'))
 			end
-			return true
-		end,
-	},
-	["햇살기부"] = {
-		privilege = ROLE.Admin,
-		usage = "<개수> - 따스한 햇살을 단풍나무 언덕에 기부",
-		command = function(me, args)
-			local count = tonumber(args[1])
-			if count == nil or count < 1 then
-				me:message("기부할 개수를 입력해 주세요.")
-				return true
-			end
-			if not fireworks.give(me, "sun", math.floor(count)) then
-				me:message("따스한 햇살이 부족합니다.")
-				return true
-			end
-			me:message(string.format("단풍나무 언덕 진행도: %s%%", fireworks.percentage("sun")))
 			return true
 		end,
 	},
