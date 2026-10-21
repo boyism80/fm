@@ -105,13 +105,17 @@ function M.ranking_text(kind)
 	return "현재 순위\r\n\r\n" .. table.concat(lines, "\r\n") .. notice
 end
 
-function M.owns(me, kind)
-	local item_id = MEDALS[kind].item
+-- Medals are one of a kind, so a worn or carried one blocks another of the same id.
+function M.holds(me, item_id)
 	local equipped = me:equipped(EquipmentPart.Medal)
 	if equipped ~= nil and equipped:wz():id() == item_id then
 		return true
 	end
 	return next(me:item(item_id)) ~= nil
+end
+
+function M.owns(me, kind)
+	return M.holds(me, MEDALS[kind].item)
 end
 
 function M.reward(me, kind, rank)
