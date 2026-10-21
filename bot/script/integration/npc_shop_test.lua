@@ -5,6 +5,11 @@ local SHOP_NPC = 1001000
 local STAR = 2070000
 local ROGUE = 400
 local SHOP_LEAVE = 3
+local EL_NATH_SHOP_MAP = 221022000
+local EXPENSIVE_SHOP_NPC = 2041016
+local EXPENSIVE_ITEM = 4031348
+local EXPENSIVE_PRICE = 10000000
+local OVERFLOWING_QUANTITY = 430
 local OTHER_CHANNEL = 1
 local HOME_CHANNEL = 0
 
@@ -49,6 +54,35 @@ local function recharge_and_sell(ctx)
 	return check(ctx, stars == 0 and bot:meso() == 200130, string.format("표창 500개 판매 결과가 다름: 표창 %d, 메소 %d (기대 0, 200130)", stars, bot:meso()))
 end
 
+-- 10,000,000 x 430 wraps to a few million as an int32, so the purchase has to be refused.
+local function price_overflow(ctx)
+	local bot = ctx:bot(0)
+	if pq.command(bot, "/봇초기화 30 0 20000000 -", "봇초기화 완료") == false then
+		return ctx:fail("봇 초기화 실패")
+	end
+	if bot:map() ~= EL_NATH_SHOP_MAP and bot:map_move(EL_NATH_SHOP_MAP) == false then
+		return ctx:fail("상점 맵 이동 실패")
+	end
+	local oid = pq.npc(ctx, bot, EXPENSIVE_SHOP_NPC)
+	if oid == false then
+		return false
+	end
+	if bot:request(resp.open_npc_shop, req.npc_click { oid = oid }, nil, 5000) == false then
+		return ctx:fail("상점이 열리지 않음")
+	end
+
+	bot:shop_buy(EXPENSIVE_ITEM, 1)
+	ctx:sleep(500)
+	local meso = 20000000 - EXPENSIVE_PRICE
+	if check(ctx, bot:meso() == meso and (bot:items()[EXPENSIVE_ITEM] or 0) == 1, string.format("한 개 구매 결과가 다름: 메소 %d, 아이템 %d", bot:meso(), bot:items()[EXPENSIVE_ITEM] or 0)) == false then
+		return false
+	end
+
+	bot:shop_buy(EXPENSIVE_ITEM, OVERFLOWING_QUANTITY)
+	ctx:sleep(500)
+	return check(ctx, bot:meso() == meso and (bot:items()[EXPENSIVE_ITEM] or 0) == 1, string.format("가격이 넘치는 구매가 거절되지 않음: 메소 %d, 아이템 %d", bot:meso(), bot:items()[EXPENSIVE_ITEM] or 0))
+end
+
 local function busy_while_open(ctx)
 	local bot = ctx:bot(0)
 	local oid = pq.npc(ctx, bot, SHOP_NPC)
@@ -79,11 +113,12 @@ local function busy_while_open(ctx)
 end
 
 test_suite {
-	name = "NpcShop: 표창 충전·판매 가격",
+	name = "NpcShop: 표창 충전·판매 가격·가격 넘침 구매 거절",
 	bot_count = 1,
 
 	scenarios = {
 		recharge_and_sell,
 		busy_while_open,
+		price_overflow,
 	},
 }

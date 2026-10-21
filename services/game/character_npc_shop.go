@@ -25,6 +25,9 @@ func (d *Dialog) Buy(shop *wz.Shop, itemID uint32, count uint16) {
 		price = shopItem.Price
 		count = model.GetCapacity()
 	}
+	if price > math.MaxInt32 {
+		return
+	}
 	spec := ExchangeSpec{
 		Cost:   ExchangeSide{Meso: int32(price)},
 		Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}},
