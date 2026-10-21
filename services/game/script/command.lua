@@ -2519,6 +2519,14 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["치트점수"] = {
+		privilege = ROLE.Admin,
+		usage = "- 내 치트 의심 점수와 위반 횟수",
+		command = function(me, args)
+			me:message("치트 점수: " .. me:cheat_report(), Msg.Notice)
+			return true
+		end,
+	},
 	["일정이벤트"] = {
 		privilege = ROLE.Admin,
 		usage = "<OX> - 이 채널에서 이벤트 참가 모집 시작",

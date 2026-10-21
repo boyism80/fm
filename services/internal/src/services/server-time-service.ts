@@ -31,6 +31,7 @@ export class ServerTimeService {
         megaEar: boolean,
         nextLines: string[],
         item: Buffer,
+        adminsOnly: boolean,
     ): Promise<boolean> {
         if (!Number.isFinite(worldId) || worldId < 0) {
             return false;
@@ -57,6 +58,7 @@ export class ServerTimeService {
             mega_ear: megaEar,
             next_lines: nextLines,
             item: item.toString("base64"),
+            admins_only: adminsOnly,
         });
         return true;
     }

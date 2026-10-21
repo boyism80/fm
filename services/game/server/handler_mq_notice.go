@@ -34,6 +34,7 @@ func (h *globalMqNotice) Handle(_ actor.Context, raw json.RawMessage) error {
 		MegaEar         bool     `json:"mega_ear"`
 		NextLines       []string `json:"next_lines"`
 		Item            []byte   `json:"item"`
+		AdminsOnly      bool     `json:"admins_only"`
 	}
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil
@@ -42,6 +43,10 @@ func (h *globalMqNotice) Handle(_ actor.Context, raw json.RawMessage) error {
 		return nil
 	}
 	if payload.SourceChannelID == h.gs.config.ChannelId {
+		return nil
+	}
+	if payload.AdminsOnly {
+		h.gs.systems.Get[*game.NoticeSystem]().NotifyAdmins(payload.Message)
 		return nil
 	}
 	messageType := constant.ServerMessageType(payload.MessageType)

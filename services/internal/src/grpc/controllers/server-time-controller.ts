@@ -51,6 +51,7 @@ export class ServerTimeGrpcController {
                 req.megaEar === true,
                 req.nextLines ?? [],
                 req.item ?? Buffer.alloc(0),
+                req.adminsOnly === true,
             );
             callback(null, { ok });
         } catch (err) {

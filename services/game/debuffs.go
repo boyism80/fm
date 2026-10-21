@@ -36,14 +36,12 @@ func (d *Debuffs) Add(holder *Debuff) {
 		return
 	}
 	d.owner.RemoveTimer(d.timerKey(holder.flag))
-	d.owner.damageHistory.changing()
 	d.entries[holder.flag] = holder
 	if holder.duration > 0 {
 		flag := holder.flag
 		d.owner.AddTimer(d.timerKey(flag), holder.duration, false, func() {
 			d.owner.RemoveTimer(d.timerKey(flag))
 			if _, ok := d.entries[flag]; ok {
-				d.owner.damageHistory.changing()
 				delete(d.entries, flag)
 				d.owner.listener.OnDebuffRemoved(d.owner, []constant.DebuffFlag{flag})
 			}
@@ -86,7 +84,6 @@ func (d *Debuffs) Remove(flags ...constant.DebuffFlag) {
 	for _, flag := range flags {
 		d.owner.RemoveTimer(d.timerKey(flag))
 		if _, ok := d.entries[flag]; ok {
-			d.owner.damageHistory.changing()
 			delete(d.entries, flag)
 			removed = append(removed, flag)
 		}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core/client"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
@@ -31,6 +32,8 @@ type BaseClient struct {
 	recvEncryption *crypt.Encryption
 	lastPingAt     time.Time
 	pongReceived   atomic.Bool
+	latencyMu      sync.Mutex
+	latency        latencySamples
 }
 
 func (c *BaseClient) GetConnection() net.Conn {
@@ -110,12 +113,14 @@ func (c *BaseClient) Close() {
 
 func (c *BaseClient) MarkPongReceived() {
 	c.pongReceived.Store(true)
+	c.recordPong(clock.Now())
 }
 
 func (c *BaseClient) NextPingAction(now time.Time, interval time.Duration) (sendPing bool, disconnect bool) {
 	if c.lastPingAt.IsZero() {
 		c.lastPingAt = now
 		c.pongReceived.Store(false)
+		c.recordPing(now)
 		return true, false
 	}
 
@@ -129,6 +134,7 @@ func (c *BaseClient) NextPingAction(now time.Time, interval time.Duration) (send
 
 	c.lastPingAt = now
 	c.pongReceived.Store(false)
+	c.recordPing(now)
 	return true, false
 }
 

@@ -3035,6 +3035,15 @@ export interface SetAccountRoleReply {
   ok: boolean;
 }
 
+export interface SetAccountBannedRequest {
+  accountId: number;
+  reason: string;
+}
+
+export interface SetAccountBannedReply {
+  ok: boolean;
+}
+
 export interface CharacterOverview {
   characterId: number;
   name: string;
@@ -3980,6 +3989,7 @@ export interface BroadcastNoticeRequest {
   megaEar: boolean;
   nextLines: string[];
   item: Buffer;
+  adminsOnly: boolean;
 }
 
 export interface BroadcastNoticeReply {
@@ -22014,6 +22024,144 @@ export const SetAccountRoleReply: MessageFns<SetAccountRoleReply> = {
   },
 };
 
+function createBaseSetAccountBannedRequest(): SetAccountBannedRequest {
+  return { accountId: 0, reason: "" };
+}
+
+export const SetAccountBannedRequest: MessageFns<SetAccountBannedRequest> = {
+  encode(message: SetAccountBannedRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.accountId !== 0) {
+      writer.uint32(8).uint32(message.accountId);
+    }
+    if (message.reason !== "") {
+      writer.uint32(18).string(message.reason);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAccountBannedRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAccountBannedRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetAccountBannedRequest {
+    return {
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+    };
+  },
+
+  toJSON(message: SetAccountBannedRequest): unknown {
+    const obj: any = {};
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.reason !== "") {
+      obj.reason = message.reason;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetAccountBannedRequest>, I>>(base?: I): SetAccountBannedRequest {
+    return SetAccountBannedRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetAccountBannedRequest>, I>>(object: I): SetAccountBannedRequest {
+    const message = createBaseSetAccountBannedRequest();
+    message.accountId = object.accountId ?? 0;
+    message.reason = object.reason ?? "";
+    return message;
+  },
+};
+
+function createBaseSetAccountBannedReply(): SetAccountBannedReply {
+  return { ok: false };
+}
+
+export const SetAccountBannedReply: MessageFns<SetAccountBannedReply> = {
+  encode(message: SetAccountBannedReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAccountBannedReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAccountBannedReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetAccountBannedReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: SetAccountBannedReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetAccountBannedReply>, I>>(base?: I): SetAccountBannedReply {
+    return SetAccountBannedReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetAccountBannedReply>, I>>(object: I): SetAccountBannedReply {
+    const message = createBaseSetAccountBannedReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
 function createBaseCharacterOverview(): CharacterOverview {
   return {
     characterId: 0,
@@ -38043,6 +38191,7 @@ function createBaseBroadcastNoticeRequest(): BroadcastNoticeRequest {
     megaEar: false,
     nextLines: [],
     item: Buffer.alloc(0),
+    adminsOnly: false,
   };
 }
 
@@ -38068,6 +38217,9 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
     }
     if (message.item.length !== 0) {
       writer.uint32(58).bytes(message.item);
+    }
+    if (message.adminsOnly !== false) {
+      writer.uint32(64).bool(message.adminsOnly);
     }
     return writer;
   },
@@ -38135,6 +38287,14 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
           message.item = Buffer.from(reader.bytes());
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.adminsOnly = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -38173,6 +38333,11 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
         ? object.next_lines.map((e: any) => globalThis.String(e))
         : [],
       item: isSet(object.item) ? Buffer.from(bytesFromBase64(object.item)) : Buffer.alloc(0),
+      adminsOnly: isSet(object.adminsOnly)
+        ? globalThis.Boolean(object.adminsOnly)
+        : isSet(object.admins_only)
+        ? globalThis.Boolean(object.admins_only)
+        : false,
     };
   },
 
@@ -38199,6 +38364,9 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
     if (message.item.length !== 0) {
       obj.item = base64FromBytes(message.item);
     }
+    if (message.adminsOnly !== false) {
+      obj.adminsOnly = message.adminsOnly;
+    }
     return obj;
   },
 
@@ -38214,6 +38382,7 @@ export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
     message.megaEar = object.megaEar ?? false;
     message.nextLines = object.nextLines?.map((e) => e) || [];
     message.item = object.item ?? Buffer.alloc(0);
+    message.adminsOnly = object.adminsOnly ?? false;
     return message;
   },
 };
@@ -41395,6 +41564,17 @@ export const InternalService = {
     responseSerialize: (value: SetAccountRoleReply): Buffer => Buffer.from(SetAccountRoleReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SetAccountRoleReply => SetAccountRoleReply.decode(value),
   },
+  setAccountBanned: {
+    path: "/fm.internal.Internal/SetAccountBanned" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetAccountBannedRequest): Buffer =>
+      Buffer.from(SetAccountBannedRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetAccountBannedRequest => SetAccountBannedRequest.decode(value),
+    responseSerialize: (value: SetAccountBannedReply): Buffer =>
+      Buffer.from(SetAccountBannedReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SetAccountBannedReply => SetAccountBannedReply.decode(value),
+  },
   setSecondPassword: {
     path: "/fm.internal.Internal/SetSecondPassword" as const,
     requestStream: false as const,
@@ -42421,6 +42601,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   findPopularShopSearches: handleUnaryCall<FindPopularShopSearchesRequest, FindPopularShopSearchesReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
   setAccountRole: handleUnaryCall<SetAccountRoleRequest, SetAccountRoleReply>;
+  setAccountBanned: handleUnaryCall<SetAccountBannedRequest, SetAccountBannedReply>;
   setSecondPassword: handleUnaryCall<SetSecondPasswordRequest, SecondPasswordReply>;
   removeSecondPassword: handleUnaryCall<RemoveSecondPasswordRequest, SecondPasswordReply>;
   authorizeCharacterSelection: handleUnaryCall<AuthorizeCharacterSelectionRequest, AuthorizeCharacterSelectionReply>;
@@ -43025,6 +43206,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SetAccountRoleReply) => void,
+  ): ClientUnaryCall;
+  setAccountBanned(
+    request: SetAccountBannedRequest,
+    callback: (error: ServiceError | null, response: SetAccountBannedReply) => void,
+  ): ClientUnaryCall;
+  setAccountBanned(
+    request: SetAccountBannedRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SetAccountBannedReply) => void,
+  ): ClientUnaryCall;
+  setAccountBanned(
+    request: SetAccountBannedRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SetAccountBannedReply) => void,
   ): ClientUnaryCall;
   setSecondPassword(
     request: SetSecondPasswordRequest,

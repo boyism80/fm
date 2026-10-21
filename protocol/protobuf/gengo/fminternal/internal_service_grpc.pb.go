@@ -52,6 +52,7 @@ const (
 	Internal_FindPopularShopSearches_FullMethodName        = "/fm.internal.Internal/FindPopularShopSearches"
 	Internal_LoginAccount_FullMethodName                   = "/fm.internal.Internal/LoginAccount"
 	Internal_SetAccountRole_FullMethodName                 = "/fm.internal.Internal/SetAccountRole"
+	Internal_SetAccountBanned_FullMethodName               = "/fm.internal.Internal/SetAccountBanned"
 	Internal_SetSecondPassword_FullMethodName              = "/fm.internal.Internal/SetSecondPassword"
 	Internal_RemoveSecondPassword_FullMethodName           = "/fm.internal.Internal/RemoveSecondPassword"
 	Internal_AuthorizeCharacterSelection_FullMethodName    = "/fm.internal.Internal/AuthorizeCharacterSelection"
@@ -186,6 +187,7 @@ type InternalClient interface {
 	FindPopularShopSearches(ctx context.Context, in *FindPopularShopSearchesRequest, opts ...grpc.CallOption) (*FindPopularShopSearchesReply, error)
 	LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error)
 	SetAccountRole(ctx context.Context, in *SetAccountRoleRequest, opts ...grpc.CallOption) (*SetAccountRoleReply, error)
+	SetAccountBanned(ctx context.Context, in *SetAccountBannedRequest, opts ...grpc.CallOption) (*SetAccountBannedReply, error)
 	SetSecondPassword(ctx context.Context, in *SetSecondPasswordRequest, opts ...grpc.CallOption) (*SecondPasswordReply, error)
 	RemoveSecondPassword(ctx context.Context, in *RemoveSecondPasswordRequest, opts ...grpc.CallOption) (*SecondPasswordReply, error)
 	AuthorizeCharacterSelection(ctx context.Context, in *AuthorizeCharacterSelectionRequest, opts ...grpc.CallOption) (*AuthorizeCharacterSelectionReply, error)
@@ -615,6 +617,16 @@ func (c *internalClient) SetAccountRole(ctx context.Context, in *SetAccountRoleR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetAccountRoleReply)
 	err := c.cc.Invoke(ctx, Internal_SetAccountRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SetAccountBanned(ctx context.Context, in *SetAccountBannedRequest, opts ...grpc.CallOption) (*SetAccountBannedReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetAccountBannedReply)
+	err := c.cc.Invoke(ctx, Internal_SetAccountBanned_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1608,6 +1620,7 @@ type InternalServer interface {
 	FindPopularShopSearches(context.Context, *FindPopularShopSearchesRequest) (*FindPopularShopSearchesReply, error)
 	LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error)
 	SetAccountRole(context.Context, *SetAccountRoleRequest) (*SetAccountRoleReply, error)
+	SetAccountBanned(context.Context, *SetAccountBannedRequest) (*SetAccountBannedReply, error)
 	SetSecondPassword(context.Context, *SetSecondPasswordRequest) (*SecondPasswordReply, error)
 	RemoveSecondPassword(context.Context, *RemoveSecondPasswordRequest) (*SecondPasswordReply, error)
 	AuthorizeCharacterSelection(context.Context, *AuthorizeCharacterSelectionRequest) (*AuthorizeCharacterSelectionReply, error)
@@ -1811,6 +1824,9 @@ func (UnimplementedInternalServer) LoginAccount(context.Context, *LoginAccountRe
 }
 func (UnimplementedInternalServer) SetAccountRole(context.Context, *SetAccountRoleRequest) (*SetAccountRoleReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetAccountRole not implemented")
+}
+func (UnimplementedInternalServer) SetAccountBanned(context.Context, *SetAccountBannedRequest) (*SetAccountBannedReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetAccountBanned not implemented")
 }
 func (UnimplementedInternalServer) SetSecondPassword(context.Context, *SetSecondPasswordRequest) (*SecondPasswordReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSecondPassword not implemented")
@@ -2708,6 +2724,24 @@ func _Internal_SetAccountRole_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).SetAccountRole(ctx, req.(*SetAccountRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SetAccountBanned_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetAccountBannedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetAccountBanned(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetAccountBanned_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetAccountBanned(ctx, req.(*SetAccountBannedRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4560,6 +4594,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetAccountRole",
 			Handler:    _Internal_SetAccountRole_Handler,
+		},
+		{
+			MethodName: "SetAccountBanned",
+			Handler:    _Internal_SetAccountBanned_Handler,
 		},
 		{
 			MethodName: "SetSecondPassword",

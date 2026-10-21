@@ -901,6 +901,11 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			})
 			return L.Yield()
 		},
+		"set_pong_delay": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			b.SetPongDelay(time.Duration(L.CheckInt(2)) * time.Millisecond)
+			return 0
+		},
 		"drop": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			itemID := uint32(L.CheckInt(2))

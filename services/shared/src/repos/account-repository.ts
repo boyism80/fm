@@ -79,6 +79,10 @@ export class AccountRepository {
         await this.update(accountId, "role = $2", [role]);
     }
 
+    async setBanned(accountId: number, reason: string): Promise<void> {
+        await this.update(accountId, "is_banned = TRUE, ban_reason = $2", [reason]);
+    }
+
     private async update(accountId: number, columns: string, values: RepositoryQueryValue[]): Promise<void> {
         await this.pool().query(`UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`, [accountId, ...values]);
     }

@@ -25,3 +25,8 @@ lua:
   always_reload: true
 duey:
   identity_prompt: false
+anticheat:
+  threshold: 100
+  action: notify
+  lag_rtt_ms: 300
+  lag_weight: 0.5

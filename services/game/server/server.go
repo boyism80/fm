@@ -57,6 +57,7 @@ type GameConfig struct {
 	Dev                              bool
 	LuaAlwaysReload                  bool
 	DueyIdentityPrompt               bool
+	AntiCheat                        config.GameAntiCheat
 }
 
 func NewGameServer(config *GameConfig) (*GameServer, error) {
@@ -170,6 +171,10 @@ func (gs *GameServer) GetMesoRate() int {
 
 func (gs *GameServer) DueyIdentityPrompt() bool {
 	return gs.config.DueyIdentityPrompt
+}
+
+func (gs *GameServer) AntiCheat() config.GameAntiCheat {
+	return gs.config.AntiCheat
 }
 
 func (gs *GameServer) NewUniqueID() uint64 {

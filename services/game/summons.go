@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"github.com/asynkron/protoactor-go/actor"
 	"time"
 
 	"github.com/boyism80/fm/maple/constant"
@@ -70,7 +71,7 @@ func (sc *Summons) Remove(s *Summon, animated bool) {
 	delete(sc.entries, s.skillID)
 }
 
-func (sc *Summons) Attack(oid uint32, damages []dto.AttackPair) (*Summon, error) {
+func (sc *Summons) Attack(actx actor.Context, oid uint32, damages []dto.AttackPair) (*Summon, error) {
 	if sc.owner.Spectating() || !sc.owner.IsAlive() {
 		return nil, nil
 	}
@@ -78,7 +79,9 @@ func (sc *Summons) Attack(oid uint32, damages []dto.AttackPair) (*Summon, error)
 	if summon == nil {
 		return nil, nil
 	}
+	sc.owner.cheat.PaceSummon(actx, summon)
 	if err := NewSummonValidator(sc.owner, summon).Validate(damages); err != nil {
+		sc.owner.cheat.Rejected(actx, dto.AttackInfo{AttackHeader: dto.AttackHeader{Skill: uint32(summon.skillID)}}, err)
 		return nil, err
 	}
 

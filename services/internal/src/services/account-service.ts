@@ -115,6 +115,15 @@ export class AccountService {
         return true;
     }
 
+    async setAccountBanned(accountId: number, reason: string) {
+        const account = await this.accountRepo.get(accountId);
+        if (!account) {
+            return false;
+        }
+        await this.accountRepo.setBanned(accountId, reason);
+        return true;
+    }
+
     async setSecondPassword(accountId: number, password: string): Promise<SecondPasswordResult> {
         if (password.length < 4 || password.length > 16) {
             return "invalid";

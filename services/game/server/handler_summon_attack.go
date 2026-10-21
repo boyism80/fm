@@ -27,7 +27,7 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 		return nil
 	}
 
-	summon, err := character.Summons().Attack(req.SummonOID, req.Damages)
+	summon, err := character.Summons().Attack(ctx.ActorContext, req.SummonOID, req.Damages)
 	if err != nil {
 		return err
 	}

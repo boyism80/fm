@@ -46,6 +46,27 @@ func (s *InternalSystem) BroadcastNoticeAsync(ctx actor.Context, ch *Character, 
 	)
 }
 
+func (s *InternalSystem) NotifyAdminsAsync(ctx actor.Context, message string) *async.Promise[*internal.BroadcastNoticeReply] {
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.BroadcastNoticeReply, error) {
+			return s.client.BroadcastNotice(c, &internal.BroadcastNoticeRequest{
+				WorldId:         s.gw.GetWorldID(),
+				SourceChannelId: uint32(s.gw.GetChannelID()),
+				MessageType:     uint32(constant.MsgNotice),
+				Message:         message,
+				AdminsOnly:      true,
+			})
+		},
+		func(reply *internal.BroadcastNoticeReply) error {
+			if !reply.GetOk() {
+				return fmt.Errorf("notify admins failed")
+			}
+			s.gw.Systems().Get[*NoticeSystem]().NotifyAdmins(message)
+			return nil
+		},
+	)
+}
+
 func (s *InternalSystem) BroadcastMegaphoneAsync(ctx actor.Context, ch *Character, megaphone *response.Megaphone) *async.Promise[*internal.BroadcastNoticeReply] {
 	if ctx == nil {
 		p := async.NewDeferred[*internal.BroadcastNoticeReply](ctx)
@@ -98,6 +119,24 @@ func (s *InternalSystem) SetAccountRoleAsync(ctx actor.Context, ch *Character, r
 		func(reply *internal.SetAccountRoleReply) error {
 			if !reply.GetOk() {
 				return fmt.Errorf("set account role failed")
+			}
+			return nil
+		},
+	)
+}
+
+func (s *InternalSystem) SetAccountBannedAsync(ctx actor.Context, ch *Character, reason string) *async.Promise[*internal.SetAccountBannedReply] {
+	accountID := ch.accountID
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.SetAccountBannedReply, error) {
+			return s.client.SetAccountBanned(c, &internal.SetAccountBannedRequest{
+				AccountId: accountID,
+				Reason:    reason,
+			})
+		},
+		func(reply *internal.SetAccountBannedReply) error {
+			if !reply.GetOk() {
+				return fmt.Errorf("set account banned failed")
 			}
 			return nil
 		},

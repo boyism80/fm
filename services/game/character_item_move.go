@@ -21,7 +21,6 @@ func (ch *Character) canEquip(required wz.RequiredStats) bool {
 func (ch *Character) Equip(actx actor.Context, slot int16, parts constant.EquipmentPartsType) error {
 	before := ch.inventory.equipped[parts]
 	after, _ := ch.inventory.GetItem(constant.InventoryTypeEquipment, slot).(Equipment)
-	ch.damageHistory.changing()
 	if err := ch.inventory.Equip(slot, parts); err != nil {
 		return err
 	}
@@ -31,7 +30,6 @@ func (ch *Character) Equip(actx actor.Context, slot int16, parts constant.Equipm
 
 func (ch *Character) Unequip(actx actor.Context, parts constant.EquipmentPartsType, slot int16) error {
 	before := ch.inventory.equipped[parts]
-	ch.damageHistory.changing()
 	if err := ch.inventory.UnequipToSlot(parts, slot); err != nil {
 		return err
 	}

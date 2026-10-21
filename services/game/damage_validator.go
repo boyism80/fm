@@ -1,6 +1,7 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -9,6 +10,8 @@ import (
 	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/protocol/dto"
 )
+
+var ErrDamageExceedsMaximum = errors.New("damage exceeds maximum")
 
 // attackValidator bounds client-reported damage by a maximum computed only from
 // server-owned state. Validate before activation hooks consume HP, combo
@@ -65,34 +68,7 @@ func (v attackValidator) checkShape(info dto.AttackInfo, maxTargets int) error {
 	return nil
 }
 
-// maximums bounds each hit by the loosest of the current state and the states
-// the character left within damageHistoryWindow, because the client may have
-// sent the attack from any of them.
 func (v attackValidator) maximums(damages []dto.AttackPair, maxHits int, a attack, maximum func(attack) (uint32, error)) ([]dto.AttackPair, error) {
-	bounds, err := v.hitMaximums(damages, maxHits, a, maximum)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, past := range v.ch.damageHistory.recent() {
-		older := a
-		older.stats = past.stats
-		older.modifiers = a.modifiers.base(past.modifiers)
-		// A state that cannot be evaluated only loses its extra room.
-		olderBounds, err := v.hitMaximums(damages, maxHits, older, maximum)
-		if err != nil {
-			continue
-		}
-		for ti := range bounds {
-			for hi := range bounds[ti].DamagePairs {
-				bounds[ti].DamagePairs[hi].Damage = max(bounds[ti].DamagePairs[hi].Damage, olderBounds[ti].DamagePairs[hi].Damage)
-			}
-		}
-	}
-	return bounds, nil
-}
-
-func (v attackValidator) hitMaximums(damages []dto.AttackPair, maxHits int, a attack, maximum func(attack) (uint32, error)) ([]dto.AttackPair, error) {
 	bounds := make([]dto.AttackPair, len(damages))
 	modifiers := a.modifiers
 	a.targets = len(damages)
@@ -138,7 +114,7 @@ func (v attackValidator) checkDamage(damages, bounds []dto.AttackPair) error {
 		for hi, pair := range ap.DamagePairs {
 			upper := bounds[i].DamagePairs[hi].Damage
 			if pair.Damage > upper {
-				return fmt.Errorf("damage exceeds maximum: target=%d hit=%d actual=%d maximum=%d", ap.OID, hi, pair.Damage, upper)
+				return fmt.Errorf("%w: target=%d hit=%d actual=%d maximum=%d", ErrDamageExceedsMaximum, ap.OID, hi, pair.Damage, upper)
 			}
 		}
 	}

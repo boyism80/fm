@@ -6,6 +6,8 @@ import type {
     LoginAccountRequest,
     SetAccountRoleReply,
     SetAccountRoleRequest,
+    SetAccountBannedReply,
+    SetAccountBannedRequest,
     SecondPasswordReply,
     SetSecondPasswordRequest,
     RemoveSecondPasswordRequest,
@@ -81,6 +83,16 @@ export class AuthGrpcController {
     async setAccountRole(call: GrpcCall<SetAccountRoleRequest>, callback: GrpcCallback<SetAccountRoleReply>) {
         try {
             const ok = await this.accountService.setAccountRole(call.request.accountId >>> 0, call.request.role >>> 0);
+            callback(null, { ok });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("setAccountBanned")
+    async setAccountBanned(call: GrpcCall<SetAccountBannedRequest>, callback: GrpcCallback<SetAccountBannedReply>) {
+        try {
+            const ok = await this.accountService.setAccountBanned(call.request.accountId >>> 0, call.request.reason);
             callback(null, { ok });
         } catch (err) {
             this.grpcError(err, callback);

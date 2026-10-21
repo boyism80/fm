@@ -117,6 +117,10 @@ func (b *Bot) Send(pkt outbound) error {
 	return b.conn.Send(pkt)
 }
 
+func (b *Bot) SetPongDelay(d time.Duration) {
+	b.conn.SetPongDelay(d)
+}
+
 func (b *Bot) Close() {
 	if b.conn == nil {
 		return

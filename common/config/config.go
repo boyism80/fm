@@ -122,6 +122,7 @@ type Game struct {
 	Dev        bool             `yaml:"dev"`
 	Lua        GameLuaConfig    `yaml:"lua"`
 	Duey       GameDueyConfig   `yaml:"duey"`
+	AntiCheat  GameAntiCheat    `yaml:"anticheat"`
 }
 
 type GameRates struct {
@@ -136,6 +137,20 @@ type GameLuaConfig struct {
 
 type GameDueyConfig struct {
 	IdentityPrompt bool `yaml:"identity_prompt"`
+}
+
+type GameAntiCheat struct {
+	Threshold int `yaml:"threshold"`
+	// Action is one of log, notify, disconnect, suspend (ban the account and disconnect).
+	Action             string                          `yaml:"action"`
+	LagRTTMilliseconds int                             `yaml:"lag_rtt_ms"`
+	LagWeight          float64                         `yaml:"lag_weight"`
+	Offenses           map[string]GameAntiCheatOffense `yaml:"offenses"`
+}
+
+type GameAntiCheatOffense struct {
+	Points          int `yaml:"points"`
+	ValiditySeconds int `yaml:"validity_seconds"`
 }
 
 func LoadLogin(path string) (*Login, error) {
@@ -239,6 +254,18 @@ func LoadGame(path string) (*Game, error) {
 	}
 	if g.Rate.Meso == 0 {
 		g.Rate.Meso = 1
+	}
+	if g.AntiCheat.Threshold <= 0 {
+		g.AntiCheat.Threshold = 100
+	}
+	if g.AntiCheat.Action == "" {
+		g.AntiCheat.Action = "notify"
+	}
+	if g.AntiCheat.LagRTTMilliseconds <= 0 {
+		g.AntiCheat.LagRTTMilliseconds = 300
+	}
+	if g.AntiCheat.LagWeight <= 0 {
+		g.AntiCheat.LagWeight = 0.5
 	}
 	if g.RabbitMQ.IP == "" {
 		g.RabbitMQ.IP = "127.0.0.1"

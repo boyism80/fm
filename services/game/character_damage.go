@@ -34,15 +34,21 @@ const (
 
 // Attack runs one attack packet: validation, skill costs, server attack hooks, damage, then the client update.
 func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.AttackPayload) error {
-	if ch.Spectating() || !ch.IsAlive() {
+	if ch.Spectating() {
+		return nil
+	}
+	info := payload.ToAttackInfo()
+	if !ch.IsAlive() {
+		if ch.GetMap() != nil {
+			ch.cheat.Register(actx, CheatAttackWhileDead, info, "attacked while dead")
+		}
 		return nil
 	}
 	if ch.GetMap() == nil {
 		return fmt.Errorf("attacker has no map")
 	}
 
-	info := payload.ToAttackInfo()
-	ch.attackAudit.observe(info)
+	ch.cheat.Pace(actx, info)
 	var skill *SkillEntry
 	if info.Skill != 0 {
 		skill = ch.skills.Get(info.Skill)
@@ -97,7 +103,7 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 		err = NewPhysicalValidator(ch).Validate(info)
 	}
 	if err != nil {
-		ch.attackAudit.violation("damage", info, "%v", err)
+		ch.cheat.Rejected(actx, info, err)
 		return false, err
 	}
 

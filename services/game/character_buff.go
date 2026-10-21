@@ -206,8 +206,6 @@ func (bc *Buffs) add(entity Buff) (removed []Buff) {
 		return nil
 	}
 
-	bc.owner.damageHistory.changing()
-
 	conflicts := make(map[Buff]struct{})
 	for _, flag := range entity.GetFlags() {
 		if existing := bc.byFlag[flag]; existing != nil && existing != entity {
@@ -239,8 +237,6 @@ func (bc *Buffs) remove(flags []constant.BuffFlag) (removed []Buff, removedFlags
 	if len(flags) == 0 {
 		return nil, nil
 	}
-
-	bc.owner.damageHistory.changing()
 
 	targets := make(map[Buff]struct{})
 	for _, flag := range flags {
@@ -447,7 +443,6 @@ func (bc *Buffs) SetBuffValue(flag constant.BuffFlag, value int32) (Buff, bool) 
 	if values == nil {
 		return nil, false
 	}
-	bc.owner.damageHistory.changing()
 	values[flag] = value
 	bc.owner.listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(clock.Now()), map[constant.BuffFlag]int32{flag: value})
 	return entity, true

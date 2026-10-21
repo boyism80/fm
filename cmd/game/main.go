@@ -58,6 +58,11 @@ lua:
   always_reload: false
 duey:
   identity_prompt: false
+anticheat:
+  threshold: 100
+  action: notify
+  lag_rtt_ms: 300
+  lag_weight: 0.5
 `))
 		log.Println("Notes:")
 		log.Println("  - internal.heartbeat_interval_seconds: periodic Ping to internal (seconds); omit or 0 to disable loop.")
@@ -115,6 +120,7 @@ duey:
 		Dev:                              g.Dev,
 		LuaAlwaysReload:                  g.Lua.AlwaysReload,
 		DueyIdentityPrompt:               g.Duey.IdentityPrompt,
+		AntiCheat:                        g.AntiCheat,
 	}
 
 	gs, err := server.NewGameServer(srvCfg)

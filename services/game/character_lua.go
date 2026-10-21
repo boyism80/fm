@@ -1685,6 +1685,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.dialog.AskNumber(L, min, max)
 			return L.Yield(lua.LNumber(0))
 		},
+		"cheat_report": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LString(ch.cheat.Report()))
+			return 1
+		},
 		"message": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

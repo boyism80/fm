@@ -39,6 +39,7 @@ service Internal {
   rpc FindPopularShopSearches (FindPopularShopSearchesRequest) returns (FindPopularShopSearchesReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc SetAccountRole (SetAccountRoleRequest) returns (SetAccountRoleReply);
+  rpc SetAccountBanned (SetAccountBannedRequest) returns (SetAccountBannedReply);
   rpc SetSecondPassword (SetSecondPasswordRequest) returns (SecondPasswordReply);
   rpc RemoveSecondPassword (RemoveSecondPasswordRequest) returns (SecondPasswordReply);
   rpc AuthorizeCharacterSelection (AuthorizeCharacterSelectionRequest) returns (AuthorizeCharacterSelectionReply);
@@ -1251,6 +1252,15 @@ message SetAccountRoleReply {
   bool ok = 1;
 }
 
+message SetAccountBannedRequest {
+  uint32 account_id = 1;
+  string reason = 2;
+}
+
+message SetAccountBannedReply {
+  bool ok = 1;
+}
+
 message CharacterOverview {
   uint32 character_id = 1;
   string name = 2;
@@ -2317,6 +2327,7 @@ message BroadcastNoticeRequest {
   bool mega_ear = 5;
   repeated string next_lines = 6;
   bytes item = 7;
+  bool admins_only = 8;
 }
 
 message BroadcastNoticeReply {

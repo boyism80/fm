@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/boyism80/fm/core/crypt"
@@ -21,11 +22,16 @@ type outbound interface {
 }
 
 type Conn struct {
-	nc   net.Conn
-	br   *bufio.Reader
-	mu   sync.Mutex
-	send crypt.Encryption
-	recv crypt.Encryption
+	nc        net.Conn
+	br        *bufio.Reader
+	mu        sync.Mutex
+	send      crypt.Encryption
+	recv      crypt.Encryption
+	pongDelay atomic.Int64
+}
+
+func (c *Conn) SetPongDelay(d time.Duration) {
+	c.pongDelay.Store(int64(d))
 }
 
 func Dial(addr string) (*Conn, error) {
@@ -97,6 +103,7 @@ func (c *Conn) Read() (uint16, []byte, error) {
 			return 0, nil, err
 		}
 		if opcode == (&response.Ping{}).Opcode() {
+			time.Sleep(time.Duration(c.pongDelay.Load()))
 			if err := c.Send(&request.Pong{}); err != nil {
 				return 0, nil, err
 			}
