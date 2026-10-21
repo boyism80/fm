@@ -14,14 +14,6 @@ local function group()
 	return state_machine(GROUP)
 end
 
-function M.phase()
-	local phase = group():get_property("phase")
-	if phase == "" then
-		return "idle"
-	end
-	return phase
-end
-
 function M.machine()
 	local sm = group():get(ID)
 	if sm == nil or sm:disposed() then
@@ -30,21 +22,29 @@ function M.machine()
 	return sm
 end
 
+-- The machine holds the slot from the moment it is created; it writes its own phase once its maps exist.
+function M.phase()
+	local sm = M.machine()
+	if sm == nil then
+		return "idle"
+	end
+	local phase = sm:get_property("phase")
+	if phase == "" then
+		return "scheduled"
+	end
+	return phase
+end
+
 function M.schedule(key)
 	local game = M.GAMES[string.upper(key or "")]
 	if game == nil then
 		return false, "알 수 없는 이벤트입니다."
 	end
-	if M.phase() ~= "idle" then
+	if M.machine() ~= nil then
 		return false, "이 채널에서 이미 이벤트가 진행 중입니다."
 	end
-	-- The machine sets "recruiting" once its maps exist; "scheduled" holds the slot until then.
-	group():set_property("phase", "scheduled")
-	group():set_property("kind", game.kind)
-	group():set_property("name", game.name)
-	local sm, err = group():start_persistent(ID)
+	local sm, err = group():start_persistent(ID, { kind = game.kind, name = game.name })
 	if sm == nil then
-		group():set_property("phase", "idle")
 		return false, err
 	end
 	return true

@@ -223,14 +223,14 @@ func (g *StateMachineGroup) Init() {
 	g.CallGroupHook("on_init", g)
 }
 
-func (g *StateMachineGroup) StartPersistent(id string) (*StateMachine, error) {
+func (g *StateMachineGroup) StartPersistent(id string, props map[string]string) (*StateMachine, error) {
 	if g == nil {
 		return nil, fmt.Errorf("state machine group is nil")
 	}
 	if id == "" {
 		id = "persistent"
 	}
-	sm, err := g.Create(id, CreateOpts{})
+	sm, err := g.Create(id, CreateOpts{props: props})
 	if err != nil {
 		return nil, err
 	}
@@ -240,12 +240,15 @@ func (g *StateMachineGroup) StartPersistent(id string) (*StateMachine, error) {
 
 type StartPartyOpts struct {
 	maxLevel int
+	props    map[string]string
 }
 
 type CreateOpts struct {
 	leader     *Character
 	party      *Party
 	scaleLevel int
+	// props are the machine's starting properties; they live and die with the machine, so a failed create leaves nothing behind.
+	props map[string]string
 }
 
 func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, error) {
@@ -260,6 +263,9 @@ func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, e
 	}
 
 	sm := NewStateMachine(id, g)
+	for k, v := range opts.props {
+		sm.props[k] = v
+	}
 	sm.party = opts.party
 	sm.leader = opts.leader
 	sm.scaleLevel = opts.scaleLevel
@@ -387,6 +393,7 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 		leader:     leader,
 		party:      party,
 		scaleLevel: scale,
+		props:      opts.props,
 	})
 	if err != nil {
 		return nil, err
@@ -418,6 +425,7 @@ func (g *StateMachineGroup) StartSolo(player *Character, opts StartPartyOpts) (*
 	sm, err := g.Create(id, CreateOpts{
 		leader:     player,
 		scaleLevel: scale,
+		props:      opts.props,
 	})
 	if err != nil {
 		return nil, err

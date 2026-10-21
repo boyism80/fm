@@ -12,16 +12,17 @@ local WINNER_STAY_MS = 600000
 local MAX_PLAYERS = 50
 local RULES = { "chat", "skill", "chalkboard" }
 
+-- kind and name come from the start call; the machine's properties vanish with it, so a failed create leaves no state.
 local function game(sm)
-	return GAMES[sm:group():get_property("kind")]
+	return GAMES[sm:get_property("kind")]
 end
 
 local function set_phase(sm, phase)
-	sm:group():set_property("phase", phase)
+	sm:set_property("phase", phase)
 end
 
 local function phase(sm)
-	return sm:group():get_property("phase")
+	return sm:get_property("phase")
 end
 
 local function set_rules(sm, on)
@@ -57,7 +58,6 @@ end
 local hooks = {
 	on_init = function(group)
 		group:max_machines(1)
-		group:set_property("phase", "idle")
 	end,
 
 	on_create = function(sm)
@@ -71,7 +71,7 @@ local hooks = {
 	on_prepare = function(sm)
 		set_phase(sm, "recruiting")
 		set_rules(sm, true)
-		world_notice(string.format("GM 이벤트 [%s]가 잠시 후 %d채널에서 시작됩니다! 해당 채널의 리스항구, 사우스페리, 오르비스, 루디브리엄에서 이벤트 NPC를 통해 참가할 수 있습니다!", sm:group():get_property("name"), channel_id() + 1), Msg.LightBlueText)
+		world_notice(string.format("GM 이벤트 [%s]가 잠시 후 %d채널에서 시작됩니다! 해당 채널의 리스항구, 사우스페리, 오르비스, 루디브리엄에서 이벤트 NPC를 통해 참가할 수 있습니다!", sm:get_property("name"), channel_id() + 1), Msg.LightBlueText)
 		sm:after("close", RECRUIT_MS, "on_close")
 	end,
 
@@ -133,13 +133,6 @@ local hooks = {
 		if phase(sm) == "finished" and #sm:players() == 0 then
 			sm:finish(0)
 		end
-	end,
-
-	on_finish = function(sm)
-		local group = sm:group()
-		group:set_property("phase", "idle")
-		group:set_property("kind", "")
-		group:set_property("name", "")
 	end,
 }
 

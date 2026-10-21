@@ -2525,7 +2525,7 @@ local command_funcs = {
 		command = function(me, args)
 			local ok, err = channel_event.schedule(args[1])
 			if ok then
-				me:message("이벤트 참가 모집을 시작했습니다.")
+				me:message("이벤트를 준비합니다. 준비가 끝나면 월드 공지와 함께 모집이 시작됩니다.")
 			else
 				me:message("이벤트를 시작하지 못했습니다: " .. tostring(err))
 			end

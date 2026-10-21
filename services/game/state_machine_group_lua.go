@@ -240,10 +240,10 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				party = leader.gameWorld.Systems().Get[*PartySystem]().Get(*pid)
 			}
 			maxLevel := 0
-			if L.GetTop() >= 4 {
+			if L.GetTop() >= 4 && L.Get(4).Type() == lua.LTNumber {
 				maxLevel = L.CheckInt(4)
 			}
-			sm, err := group.StartParty(leader, party, StartPartyOpts{maxLevel: maxLevel})
+			sm, err := group.StartParty(leader, party, StartPartyOpts{maxLevel: maxLevel, props: ParseMachineProps(L)})
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))
@@ -266,10 +266,10 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			maxLevel := 0
-			if L.GetTop() >= 3 {
+			if L.GetTop() >= 3 && L.Get(3).Type() == lua.LTNumber {
 				maxLevel = L.CheckInt(3)
 			}
-			sm, err := group.StartSolo(player, StartPartyOpts{maxLevel: maxLevel})
+			sm, err := group.StartSolo(player, StartPartyOpts{maxLevel: maxLevel, props: ParseMachineProps(L)})
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))
@@ -286,10 +286,10 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			id := "persistent"
-			if L.GetTop() >= 2 && L.Get(2).Type() != lua.LTNil {
+			if L.GetTop() >= 2 && L.Get(2).Type() == lua.LTString {
 				id = L.CheckString(2)
 			}
-			sm, err := group.StartPersistent(id)
+			sm, err := group.StartPersistent(id, ParseMachineProps(L))
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))
@@ -299,4 +299,21 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 	}
+}
+
+// ParseMachineProps copies the first table among a start call's arguments into the machine's starting properties.
+// The table belongs to the caller's Lua state, so only its string-convertible values cross over.
+func ParseMachineProps(L *lua.LState) map[string]string {
+	for i := 2; i <= L.GetTop(); i++ {
+		tbl, ok := L.Get(i).(*lua.LTable)
+		if !ok {
+			continue
+		}
+		props := make(map[string]string)
+		tbl.ForEach(func(k, v lua.LValue) {
+			props[k.String()] = v.String()
+		})
+		return props
+	}
+	return nil
 }
