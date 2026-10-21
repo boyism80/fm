@@ -42,6 +42,7 @@ func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.Att
 	}
 
 	info := payload.ToAttackInfo()
+	ch.attackAudit.observe(info)
 	var skill *SkillEntry
 	if info.Skill != 0 {
 		skill = ch.skills.Get(info.Skill)
@@ -96,6 +97,7 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 		err = NewPhysicalValidator(ch).Validate(info)
 	}
 	if err != nil {
+		ch.attackAudit.violation("damage", info, "%v", err)
 		return false, err
 	}
 

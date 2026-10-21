@@ -55,6 +55,7 @@ func (s *Stats) canAdd(stat constant.StatType, amount uint16) bool {
 }
 
 func (s *Stats) add(stat constant.StatType, amount uint16, statUpdate map[constant.Stat]int32) {
+	s.owner.damageHistory.changing()
 	switch stat {
 	case constant.StatTypeStr:
 		newStr := s.base.str + amount

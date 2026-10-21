@@ -203,11 +203,21 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		}
 	}
 
-	if berserk := ch.skills.LevelData(constant.SkillBerserk); s.Class == constant.ClassDarkKnight && berserk != nil {
-		if float64(ch.GetHp()) <= math.Trunc(float64(ch.GetMaxHp())*float64(berserk.X)/100) {
-			b.Berserk = float64(berserk.Damage)
-		}
+	if ch.berserkActive(ch.GetHp()) {
+		b.Berserk = float64(ch.skills.LevelData(constant.SkillBerserk).Damage)
 	}
 
 	return s, b
+}
+
+// berserkActive reports whether the dark knight's berserk bonus applies at the given HP.
+func (ch *Character) berserkActive(hp uint32) bool {
+	if ch.class != constant.ClassDarkKnight {
+		return false
+	}
+	berserk := ch.skills.LevelData(constant.SkillBerserk)
+	if berserk == nil {
+		return false
+	}
+	return float64(hp) <= math.Trunc(float64(ch.GetMaxHp())*float64(berserk.X)/100)
 }

@@ -73,6 +73,8 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.messenger = &Messenger{owner: ch}
 	ch.dialog = NewDialog(ch)
 	ch.buffs = NewBuffs(ch)
+	ch.damageHistory = &damageHistory{owner: ch}
+	ch.attackAudit = &attackAudit{owner: ch}
 	ch.debuffs = &Debuffs{owner: ch, entries: make(map[constant.DebuffFlag]*Debuff)}
 	ch.skills = NewSkills(ch)
 	ch.quests = NewQuests(ch)

@@ -67,6 +67,8 @@ type Character struct {
 	chair          uint32
 	lastHeal       lastHeal
 	buffs          *Buffs
+	damageHistory  *damageHistory
+	attackAudit    *attackAudit
 	debuffs        *Debuffs
 	summons        *Summons
 	pets           *Pets
@@ -286,6 +288,9 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 	wasAlive := ch.IsAlive()
 	if max := ch.GetMaxHp(); v > max {
 		v = max
+	}
+	if ch.GetMap() != nil && ch.berserkActive(ch.hp) != ch.berserkActive(v) {
+		ch.damageHistory.changing()
 	}
 	ch.hp = v
 	if notify {
@@ -883,6 +888,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	}
 
 	oldLevel := ch.level
+	ch.damageHistory.changing()
 	ch.level = newLevel
 	ch.expReachedAt = clock.Now()
 	ch.listener.OnPartyMemberFieldsChanged(ch)
