@@ -306,7 +306,7 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 	luax.CallAsync(ctx, a.luaRoot, thread, "on_create", a.StateMachine).Do(func(vals []lua.LValue) error {
 		msg := &game.CreateStateMachineMaps{}
 		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
-			msg.Err = "on_create must return a non-empty map id array"
+			msg.Err = "on_create must return a map id array"
 		} else if tbl, ok := vals[0].(*lua.LTable); !ok {
 			msg.Err = "on_create must return a table"
 		} else if specs, err := game.ParseCreateMaps(tbl); err != nil {
