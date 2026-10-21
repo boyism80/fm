@@ -171,7 +171,24 @@ func (inv *Inventory) HasItem(itemID uint32) bool {
 	return false
 }
 
+// hasUniqueItem also counts what the character put in a trade or shop, which returns to the inventory if the room is cancelled.
 func (inv *Inventory) hasUniqueItem(model wz.Item) bool {
+	if inv.carriesUniqueItem(model) {
+		return true
+	}
+	if model == nil || model.GetTraits()&constant.ItemTraitUnique == 0 {
+		return false
+	}
+	for _, held := range inv.owner.escrow.items {
+		if held.item.GetModel().GetID() == model.GetID() {
+			return true
+		}
+	}
+	return false
+}
+
+// carriesUniqueItem looks at the inventory and the worn equipment only.
+func (inv *Inventory) carriesUniqueItem(model wz.Item) bool {
 	if model == nil || model.GetTraits()&constant.ItemTraitUnique == 0 {
 		return false
 	}

@@ -284,7 +284,8 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 				continue
 			}
 			model := item.GetModel()
-			if side.ch.inventory.hasUniqueItem(model) || (model.GetTraits()&constant.ItemTraitUnique != 0 && rewards[model.GetID()] > 0) {
+			// The receiver's own offer leaves with the trade, so only what the receiver carries counts.
+			if side.ch.inventory.carriesUniqueItem(model) || (model.GetTraits()&constant.ItemTraitUnique != 0 && rewards[model.GetID()] > 0) {
 				return pconst.MiniRoomLeaveTradeOnly
 			}
 			rewards[model.GetID()] += item.GetCount()
