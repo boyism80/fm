@@ -245,13 +245,19 @@ export class CashShopRepository {
         );
     }
 
+    // An unopened gift is the item itself, so it leaves with the item on every path out of the locker.
     async deleteItem(worldId: number, accountId: number, serial: string, options: RepositoryTxOptions = {}): Promise<CashItemRow | null> {
         const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         const res = await client.query(
             "DELETE FROM cash_items WHERE account_id = $1 AND serial = $2 RETURNING serial, account_id, item",
             [accountId, serial]
         );
-        return (res.rows[0] as CashItemRow | undefined) ?? null;
+        const row = (res.rows[0] as CashItemRow | undefined) ?? null;
+        if (row == null) {
+            return null;
+        }
+        await client.query("DELETE FROM cash_gifts WHERE account_id = $1 AND serial = $2", [accountId, serial]);
+        return row;
     }
 
     async insertGift(worldId: number, accountId: number, gift: CashGiftRow, options: RepositoryTxOptions = {}): Promise<void> {
@@ -268,11 +274,6 @@ export class CashShopRepository {
             [accountId]
         );
         return res.rows as CashGiftRow[];
-    }
-
-    async deleteGift(worldId: number, accountId: number, serial: string, options: RepositoryTxOptions = {}): Promise<void> {
-        const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
-        await client.query("DELETE FROM cash_gifts WHERE account_id = $1 AND serial = $2", [accountId, serial]);
     }
 
     async deleteItems(worldId: number, accountId: number, serials: string[]): Promise<void> {

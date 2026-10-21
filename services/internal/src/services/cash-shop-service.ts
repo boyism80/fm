@@ -557,7 +557,6 @@ export class CashShopService {
                 return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
             }
 
-            await this.cashShopRepo.deleteGift(worldId, accountId, String(item.uniqueId), { txClient });
             await this.cashShopRepo.queueTransfer(accountId, characterId, CashTransferKind.TakeOut, item, txClient);
             return CashShopResult.CASH_SHOP_RESULT_OK;
         });
