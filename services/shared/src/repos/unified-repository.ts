@@ -146,11 +146,13 @@ export class UnifiedRepository {
         });
     }
 
-    async confirmCharacterName(name: string): Promise<void> {
-        await this.pool().query(
-            `UPDATE character_name_registry SET reserved_at = NULL WHERE LOWER(name) = LOWER($1) AND reserved_at IS NOT NULL`,
-            [name]
+    // A logout can release the reservation while the character is being created; false means it is gone.
+    async confirmCharacterName(characterId: number): Promise<boolean> {
+        const { rowCount } = await this.pool().query(
+            `UPDATE character_name_registry SET reserved_at = NULL WHERE character_id = $1 AND reserved_at IS NOT NULL`,
+            [characterId]
         );
+        return rowCount === 1;
     }
 
     async refreshCharacterNameReservation(accountId: number): Promise<void> {

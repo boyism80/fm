@@ -679,7 +679,9 @@ export class CharacterService {
             }
 
             await this.overviewRepo.set(worldId, overview);
-            await this.unifiedRepo.confirmCharacterName(name);
+            if ((await this.unifiedRepo.confirmCharacterName(characterId)) === false) {
+                throw new Error(`name reservation for ${name} was released during creation`);
+            }
         } catch (err) {
             await Promise.allSettled([
                 this.repo.delete({ worldId, characterId, accountId }),
