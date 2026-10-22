@@ -78,22 +78,26 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, i
 		extra.RawSetString("inventory", lua.LNumber(input.AttachedType))
 		extra.RawSetString("slot", lua.LNumber(input.AttachedSlot))
 	}
+	// The item is taken before the script can wait on another server, so a save during the wait (logout, channel change) never keeps it.
+	ch.inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)
+	refund := func() {
+		ch.gameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
+			ch.inventory.restoreItem(constant.InventoryTypeCash, slot, item)
+			finish()
+		})
+	}
 	luax.CallAsync(ctx, m.GetLuaRoot(), thread, "on_cash", ch, itemID, input.Text, input.Ear, input.PetSN, extra).Do(func(vals []lua.LValue) error {
 		if len(vals) == 0 || vals[0] != lua.LTrue {
-			finish()
+			refund()
 			return nil
 		}
 		ch.gameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
-			item := ch.inventory.GetItem(constant.InventoryTypeCash, slot)
-			if item != nil && item.GetModel().GetID() == itemID {
-				ch.inventory.RemoveItem(constant.InventoryTypeCash, slot, 1)
-			}
 			finish()
 		})
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("cash item script %s: %v", scriptPath, err)
-		finish()
+		refund()
 	})
 }
 

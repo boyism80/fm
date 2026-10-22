@@ -108,6 +108,24 @@ func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, cou
 	return true
 }
 
+// restoreItem gives back one of item, taken from slot by RemoveItem for a use that failed.
+func (inv *Inventory) restoreItem(invType constant.InventoryType, slot int16, item Item) {
+	ch := inv.owner
+	current := inv.GetItem(invType, slot)
+	if current == item {
+		item.Increase(1)
+		ch.listener.OnInventorySlotUpdated(ch, invType, slot, item)
+		return
+	}
+	if current == nil && inv.tabs[invType].Add(uint8(slot), item) == nil {
+		ch.listener.OnInventorySlotAdded(ch, invType, slot, item)
+		return
+	}
+	if _, err := inv.addItemUnchecked(item, true); err != nil {
+		log.Printf("restore item %d for character %d: %v", item.GetModel().GetID(), ch.GetID(), err)
+	}
+}
+
 // useAmmo keeps a used-up rechargeable in its slot so it can be recharged at a shop.
 func (inv *Inventory) useAmmo(slot int16, count uint16) bool {
 	item := inv.GetItem(constant.InventoryTypeConsume, slot)
