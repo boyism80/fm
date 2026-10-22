@@ -2265,10 +2265,13 @@ local command_funcs = {
 	},
 	["맵리셋"] = {
 		privilege = ROLE.Admin,
-		usage = "- 현재 맵 리셋",
+		usage = "[인스턴스] - 현재 맵 리셋 (인스턴스: 인스턴스 맵일 때만)",
 		command = function(me, args)
 			local m = me:map()
 			if m == nil then
+				return true
+			end
+			if args[1] == "인스턴스" and not m:is_instance() then
 				return true
 			end
 			m:reset()

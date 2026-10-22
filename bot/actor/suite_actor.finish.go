@@ -28,9 +28,10 @@ func (a *SuiteActor) cleanup() {
 			continue
 		}
 		commands := []string{"/인벤토리초기화", "/메소초기화"}
+		// A public map may still be in use by another suite, so only an instance map is reset.
 		if !reset[b.Map] {
 			reset[b.Map] = true
-			commands = append(commands, "/맵리셋")
+			commands = append(commands, "/맵리셋 인스턴스")
 		}
 		for _, text := range commands {
 			if err := a.Command(b, text); err != nil {
