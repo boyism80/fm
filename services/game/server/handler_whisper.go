@@ -6,6 +6,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
@@ -43,6 +44,11 @@ func (h *Whisper) Handle(ctx *core.ClientContext, req *request.Whisper) error {
 	case internal.WhisperMode_WHISPER_MODE_FIND, internal.WhisperMode_WHISPER_MODE_SEND, internal.WhisperMode_WHISPER_MODE_FIND_BUDDY:
 	default:
 		fail()
+		return nil
+	}
+	// Finding a character stays open during an event; only sending a whisper counts as chat.
+	if req.Mode == internal.WhisperMode_WHISPER_MODE_SEND && ch.Forbidden("chat") {
+		ch.Listener().OnMessage(ch, constant.MsgPinkText, "대화 금지 상태이므로 채팅이 불가능합니다.")
 		return nil
 	}
 	if !game.ClientText(req.Target).Valid(13) || (req.Mode == internal.WhisperMode_WHISPER_MODE_SEND && !game.ClientText(req.Message).Valid(200)) {
