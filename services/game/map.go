@@ -1536,11 +1536,34 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedNoOwnership
 		}
 
+		var sharers []*Character
+		if partyID := character.party.ID(); partyID != nil {
+			if party := m.gameWorld.Systems().Get[*PartySystem]().Get(*partyID); party != nil {
+				for _, pm := range party.members {
+					if pm == nil || pm.characterID == character.GetID() {
+						continue
+					}
+					member := m.GetPlayer(pm.characterID)
+					if member == nil || member.Trading() {
+						continue
+					}
+					sharers = append(sharers, member)
+				}
+			}
+		}
+
 		mesoCount := item.GetCount32()
+		var share int32
+		if len(sharers) > 0 {
+			share = mesoCount * 40 / 100 / int32(len(sharers))
+		}
 		beforeMeso := character.inventory.meso
-		character.inventory.GainMeso(mesoCount)
+		character.inventory.GainMeso(mesoCount - share*int32(len(sharers)))
 		if character.inventory.meso == beforeMeso {
 			return constant.LootFailedMesoFull
+		}
+		for _, member := range sharers {
+			member.inventory.GainMeso(share)
 		}
 		return constant.LootSuccess
 
