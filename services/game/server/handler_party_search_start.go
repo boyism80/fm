@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
@@ -33,6 +34,11 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 
 	ch := client.GetCharacter()
 	if ch == nil {
+		return nil
+	}
+
+	if m := ch.GetMap(); m == nil || !ch.IsAlive() || m.BlocksTeleportStone() {
+		ch.Listener().OnMessage(ch, constant.MsgPinkText, "이곳에서는 파티 찾기를 시도할 수 없습니다. 요청이 무시되었습니다.")
 		return nil
 	}
 
