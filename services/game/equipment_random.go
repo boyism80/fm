@@ -80,3 +80,35 @@ func (c *EquipmentCore) RandomizeStats(model wz.Equipment) {
 		c.bonusStats.MaxMP = c.rollBonusDelta(ab.MaxMP, rDefHPMP)
 	}
 }
+
+// A black crystal (option) or dark crystal (stat) moves each attack or main stat the result already has up or down.
+func (c *EquipmentCore) RandomizeMakerOption(model wz.Equipment, option int16, stat int16) {
+	if option == 0 && stat == 0 {
+		return
+	}
+	if c.bonusStats == nil {
+		c.bonusStats = &EquipmentBonusStats{}
+	}
+	ab := model.GetAbility()
+	for _, s := range []struct {
+		base  uint16
+		bonus *int16
+		shift int16
+	}{
+		{ab.PAD, &c.bonusStats.PAD, option},
+		{ab.MAD, &c.bonusStats.MAD, option},
+		{ab.Str, &c.bonusStats.Str, stat},
+		{ab.Dex, &c.bonusStats.Dex, stat},
+		{ab.Int, &c.bonusStats.Int, stat},
+		{ab.Luk, &c.bonusStats.Luk, stat},
+	} {
+		if s.shift == 0 || int(s.base)+int(*s.bonus) <= 0 {
+			continue
+		}
+		if rand.Intn(2) == 0 {
+			*s.bonus += s.shift
+		} else {
+			*s.bonus -= s.shift
+		}
+	}
+}

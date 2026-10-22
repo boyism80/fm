@@ -64,17 +64,15 @@ func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32)
 		cost.Items[recipe.Catalyst]++
 		rate += 5
 	}
-	bonus := make(map[string]int16)
+	gems := make([]wz.Item, 0, len(enhancers))
 	for _, enhancerID := range enhancers {
 		model := resources.Items[enhancerID]
-		if model == nil || len(model.GetMakerBonus()) == 0 {
+		if model == nil || model.GetTraits()&constant.ItemTraitMakerGem == 0 {
 			return
 		}
 		cost.Items[enhancerID]++
 		rate += 3 * (int(enhancerID%10) + 1)
-		for stat, value := range model.GetMakerBonus() {
-			bonus[stat] += value
-		}
+		gems = append(gems, model)
 	}
 
 	// The client shows and checks this price before sending the request.
@@ -115,14 +113,18 @@ func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32)
 			return
 		}
 		if equipment, ok := item.(Equipment); ok {
+			model, ok := equipment.GetModel().(wz.Equipment)
+			if !ok {
+				return
+			}
 			if catalyst {
-				model, ok := equipment.GetModel().(wz.Equipment)
-				if !ok {
-					return
-				}
 				equipment.GetEquipmentCore().RandomizeStats(model)
 			}
-			equipment.GetEquipmentCore().AddBonus(bonus)
+			for _, gem := range gems {
+				bonus := gem.GetMakerBonus()
+				equipment.GetEquipmentCore().AddBonus(bonus)
+				equipment.GetEquipmentCore().RandomizeMakerOption(model, bonus["randOption"], bonus["randStat"])
+			}
 		}
 		made = item
 	}

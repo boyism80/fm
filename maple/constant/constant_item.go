@@ -48,6 +48,7 @@ const (
 	ItemTraitNotSale
 	ItemTraitPartyQuest
 	ItemTraitScroll
+	ItemTraitMakerGem
 )
 
 const ChaosScrollRange = 5

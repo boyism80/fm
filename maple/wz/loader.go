@@ -841,9 +841,15 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 						model.MakerBonus = make(map[string]int16)
 					}
 					model.MakerBonus[makerBonusStats[intField.Name]] = int16(intField.Value)
+					model.Traits |= constant.ItemTraitMakerGem
+				case "randOption", "randStat":
+					if model.MakerBonus == nil {
+						model.MakerBonus = make(map[string]int16)
+					}
+					model.MakerBonus[intField.Name] = int16(intField.Value)
+					model.Traits |= constant.ItemTraitMakerGem
 				case "incReqLevel":
-				case "randOption":
-				case "randStat":
+					model.Traits |= constant.ItemTraitMakerGem
 				case "quest":
 					if intField.Value == 1 {
 						model.Traits |= constant.ItemTraitQuest
