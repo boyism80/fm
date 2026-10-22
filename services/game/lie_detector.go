@@ -96,6 +96,11 @@ func (ch *Character) testLieDetector(targetName string, skill bool) error {
 		ch.listener.OnLieDetectorResult(ch, pconst.LieDetectorResultNotFound, false)
 		return ErrLieDetectorInvalid
 	}
+	// An item cannot pull a member out of a party quest or event; the GM skill still can.
+	if !skill && target.stateMachine != nil {
+		ch.listener.OnMessage(ch, constant.MsgPinkText, "이곳에서는 거짓말 탐지기를 사용할 수 없습니다.")
+		return ErrLieDetectorInvalid
+	}
 
 	err := target.lieDetector.Start(ch, skill)
 	switch {
