@@ -6,6 +6,37 @@ local MAX_LEVEL = 50
 local RANKING_QUEST = 1301
 local COIN_ID = 4001129
 
+local function weapons(list)
+	local entries = {}
+	for i, row in ipairs(list) do
+		entries[i] = { item = row[1], coin = row[2], random = true }
+	end
+	return entries
+end
+
+local COIN_EXCHANGE = {
+	{ label = "#t1122007#(50 코인)", entries = { { item = 1122007, coin = 50, random = true } } },
+	{ label = "#t2041211#(40 코인)", entries = { { item = 2041211, coin = 40 } } },
+	{ label = "전사용 무기 (한손검·두손검·도끼)", entries = weapons({
+		{ 1302004, 7 }, { 1402006, 7 }, { 1302009, 10 }, { 1402007, 10 }, { 1302010, 20 }, { 1402003, 20 },
+		{ 1312006, 7 }, { 1412004, 7 }, { 1312007, 10 }, { 1412005, 10 }, { 1312008, 20 }, { 1412003, 20 },
+	}) },
+	{ label = "전사용 무기 (둔기·창·폴암)", entries = weapons({
+		{ 1322015, 7 }, { 1422008, 7 }, { 1322016, 10 }, { 1422007, 10 }, { 1322017, 20 }, { 1422005, 20 },
+		{ 1432003, 7 }, { 1442003, 7 }, { 1432005, 10 }, { 1442009, 10 }, { 1442005, 20 }, { 1432004, 20 },
+	}) },
+	{ label = "마법사용 무기", entries = weapons({
+		{ 1372001, 7 }, { 1382018, 7 }, { 1372012, 10 }, { 1382019, 10 }, { 1382001, 20 }, { 1372007, 20 },
+	}) },
+	{ label = "궁수용 무기", entries = weapons({
+		{ 1452006, 7 }, { 1452007, 10 }, { 1452008, 20 }, { 1462005, 7 }, { 1462006, 10 }, { 1462007, 20 },
+	}) },
+	{ label = "도적용 무기", entries = weapons({
+		{ 1472013, 7 }, { 1472017, 10 }, { 1472021, 20 }, { 1332014, 7 }, { 1332031, 10 }, { 1332011, 10 },
+		{ 1332016, 20 }, { 1332003, 20 },
+	}) },
+}
+
 local function reward_for_cp(total_cp, winner)
 	if total_cp >= 501 then
 		if winner then
@@ -81,16 +112,38 @@ return {
 		elseif sel == 2 then
 			me:dialog(npc, "직접 그 전율을 느껴보기 전에는 이것이 무엇인지 알 수 없지.")
 		elseif sel == 3 then
-			local code = me:exchange({ item = { [COIN_ID] = 50 } }, { item = { [1122007] = 1 }, random = true })
+			local labels = {}
+			for i, category in ipairs(COIN_EXCHANGE) do
+				labels[i] = category.label
+			end
+			local pick = me:dialog_list(npc, "교환하고 싶은 아이템을 선택하게나.", labels)
+			if pick == nil then
+				return
+			end
+			local entries = COIN_EXCHANGE[pick].entries
+			local entry = entries[1]
+			if #entries > 1 then
+				local choices = {}
+				for i, e in ipairs(entries) do
+					choices[i] = "#z" .. e.item .. "#(" .. e.coin .. " 코인)"
+				end
+				local index = me:dialog_list(npc, "교환하고 싶은 무기를 선택해보라구. 내가 주는 무기는 기본보다 좋은 경우가 많지.", choices)
+				if index == nil then
+					return
+				end
+				entry = entries[index]
+			end
+
+			local code = me:exchange({ item = { [COIN_ID] = entry.coin } }, { item = { [entry.item] = 1 }, random = entry.random })
 			if code == ExchangeResult.LackCapacity then
-				me:dialog(npc, "장비창에 빈 칸이 없는 것 같군. 확인해 보게나.")
+				me:dialog(npc, "인벤토리에 빈 칸이 없는 것 같군. 확인해 보게나.")
 				return
 			end
 			if code ~= ExchangeResult.OK then
 				me:dialog(npc, "#b#t" .. COIN_ID .. "##k이 부족한 것 같군.")
 				return
 			end
-			me:dialog(npc, "여기 #b#t1122007##k일세. 잘 사용하게나.")
+			me:dialog(npc, "여기 #b#t" .. entry.item .. "##k일세. 잘 사용하게나.")
 		end
 	end
 }
