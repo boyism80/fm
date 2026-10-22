@@ -117,6 +117,14 @@ local function ours(result, names)
 	return out
 end
 
+-- The owl is a one-per-character item, so the finder gets a new one after each search that uses it.
+local function give_owl(ctx, bot)
+	if pq.command(bot, "/아이템생성 " .. OWL, "아이템 생성:") == false then
+		return ctx:fail(bot:name() .. " 부엉이 생성 실패")
+	end
+	return true
+end
+
 local function search(ctx, bot, request, what)
 	local p = bot:request(resp.shop_scanner_result, request, nil, 5000)
 	if p == false then
@@ -135,7 +143,7 @@ local function search_flow(ctx)
 	if setup(ctx, merchant, 0, PERSONAL_PERMIT .. ":1," .. TARGET .. ":10") == false then
 		return false
 	end
-	if setup(ctx, finder, 100000, OWL .. ":3," .. CASH_OWL .. ":2") == false then
+	if setup(ctx, finder, 100000, OWL .. ":1," .. CASH_OWL .. ":2") == false then
 		return false
 	end
 	if clear_store_bank(ctx, seller) == false or clear_store_bank(ctx, merchant) == false then
@@ -172,7 +180,7 @@ local function search_flow(ctx)
 		return false
 	end
 	ctx:sleep(300)
-	if has(ctx, finder, OWL, 2) == false then
+	if has(ctx, finder, OWL, 0) == false or give_owl(ctx, finder) == false then
 		return false
 	end
 
@@ -185,6 +193,9 @@ local function search_flow(ctx)
 		return false
 	end
 	ctx:sleep(300)
+	if has(ctx, finder, OWL, 0) == false or give_owl(ctx, finder) == false then
+		return false
+	end
 
 	p = search(ctx, finder, owl(MISSING, false), "없는 아이템")
 	if p == false then
