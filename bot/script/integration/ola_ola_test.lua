@@ -39,7 +39,7 @@ local function ola_ola(ctx)
 	if pq.command(bot, "/봇초기화 30 0 0 - -", "봇초기화 완료") == false then
 		return ctx:fail("봇 초기화 실패")
 	end
-	if bot:map() ~= LITH_HARBOR and bot:map_move(LITH_HARBOR) == false then
+	if bot:instance_move(LITH_HARBOR) == false then
 		return ctx:fail("리스항구 이동 실패")
 	end
 

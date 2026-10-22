@@ -5,7 +5,7 @@ local DIALOGS = { resp.dialog, resp.dialog_yes_no, resp.dialog_accept, resp.dial
 local LAB_HALL = 926130100
 
 local function setup(ctx, bot, args, map_id)
-	if route.travel(ctx, bot, map_id) == false then
+	if route.travel_instance(ctx, bot, map_id) == false then
 		return ctx:fail("맵 이동 실패: " .. map_id)
 	end
 	if pq.command(bot, "/봇초기화 " .. args, "봇초기화 완료") == false then

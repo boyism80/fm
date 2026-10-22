@@ -180,7 +180,7 @@ local function normal_flow(ctx)
 		return false
 	end
 
-	if sender:map_move(HENESYS) == false then
+	if sender:instance_move(HENESYS) == false then
 		return ctx:fail("헤네시스 이동 실패")
 	end
 	local oid = pq.npc(ctx, sender, DUEY)

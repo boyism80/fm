@@ -133,7 +133,7 @@ test_suite {
 			if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 				return ctx:fail(bot:name() .. " 플레이어 모드 설정 실패")
 			end
-			if bot:map_move(LOBBY) == false then
+			if bot:instance_move(LOBBY) == false then
 				return false
 			end
 		end

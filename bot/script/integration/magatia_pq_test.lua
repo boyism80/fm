@@ -380,7 +380,7 @@ end
 
 local function enter_town(ctx, path)
 	for i = 0, ctx:bot_count() - 1 do
-		if ctx:bot(i):map_move(path.town) == false then
+		if ctx:bot(i):instance_move(path.town) == false then
 			return false
 		end
 	end

@@ -21,7 +21,7 @@ local function setup(ctx, bot)
 	if pq.command(bot, "/몬스터북초기화", "몬스터북 초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 몬스터북 초기화 실패")
 	end
-	if bot:map_move(HENESYS_PARK) == false then
+	if bot:instance_move(HENESYS_PARK) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패")
 	end
 	return true

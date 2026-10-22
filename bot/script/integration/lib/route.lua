@@ -195,12 +195,10 @@ local function find(bot, map_id)
 	return nil
 end
 
-function M.travel(ctx, bot, map_id)
-	if bot:map() == map_id then
-		return true
-	end
+-- Takes the NPC and ride hops a portal cannot, then arrive moves the bot onto the map itself.
+local function reach(ctx, bot, map_id, arrive)
 	if bot:walkable(map_id) then
-		return bot:map_move(map_id)
+		return arrive(map_id)
 	end
 
 	local hops = find(bot, map_id)
@@ -219,7 +217,23 @@ function M.travel(ctx, bot, map_id)
 			return false
 		end
 	end
-	return bot:map_move(map_id)
+	return arrive(map_id)
+end
+
+function M.travel(ctx, bot, map_id)
+	if bot:map() == map_id then
+		return true
+	end
+	return reach(ctx, bot, map_id, function(id)
+		return bot:map_move(id)
+	end)
+end
+
+-- Arrives in the seat's own copy of the map, so suites running at the same time never share its drops, mobs or effects.
+function M.travel_instance(ctx, bot, map_id)
+	return reach(ctx, bot, map_id, function(id)
+		return bot:instance_move(id)
+	end)
 end
 
 return M

@@ -37,7 +37,7 @@ local function setup(ctx, bot, meso, items)
 end
 
 local function open(ctx, bot, map, keeper)
-	if route.travel(ctx, bot, map) == false then
+	if route.travel_instance(ctx, bot, map) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패: " .. map)
 	end
 	local oid = pq.npc(ctx, bot, keeper)
@@ -404,7 +404,7 @@ local function closed_on_leave(ctx)
 	if open(ctx, bot, HENESYS_PARK, KEEPER) == false then
 		return false
 	end
-	if route.travel(ctx, bot, HENESYS) == false then
+	if route.travel_instance(ctx, bot, HENESYS) == false then
 		return ctx:fail("창고를 연 채로 맵 이동 실패")
 	end
 	if ignored(ctx, bot, store_request(bot, SHELL, 1), "맵을 떠난 뒤 보관") == false then

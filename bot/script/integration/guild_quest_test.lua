@@ -41,7 +41,7 @@ test_suite {
 			if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 				return ctx:fail(bot:name() .. " 플레이어 모드 설정 실패")
 			end
-			if bot:map_move(GUILD_HQ) == false then
+			if bot:instance_move(GUILD_HQ) == false then
 				return ctx:fail(bot:name() .. " 길드 본부 이동 실패")
 			end
 		end
@@ -74,7 +74,7 @@ test_suite {
 		end,
 		function(ctx)
 			for i = 0, ctx:bot_count() - 1 do
-				if ctx:bot(i):map_move(CAMP) == false then
+				if ctx:bot(i):instance_move(CAMP) == false then
 					return ctx:fail(ctx:bot(i):name() .. " 유적발굴단 캠프 이동 실패")
 				end
 			end
@@ -99,7 +99,7 @@ test_suite {
 		end,
 		function(ctx)
 			for i = ctx:bot_count() - 1, 0, -1 do
-				if ctx:bot(i):map_move(CAMP) == false then
+				if ctx:bot(i):instance_move(CAMP) == false then
 					return ctx:fail(ctx:bot(i):name() .. " 캠프로 돌아가기 실패")
 				end
 			end

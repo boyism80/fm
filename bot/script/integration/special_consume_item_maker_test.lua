@@ -87,7 +87,7 @@ local function summon_bag(ctx)
 	if setup(ctx, bot, 0, 0, SUMMON_BAG .. ":2") == false then
 		return false
 	end
-	if route.travel(ctx, bot, 910000000) == false then
+	if route.travel_instance(ctx, bot, 910000000) == false then
 		return ctx:fail("자유시장 이동 실패")
 	end
 	local blocked = bot:request(resp.spawn_mob, req.use_summon_bag {
@@ -98,7 +98,7 @@ local function summon_bag(ctx)
 		return ctx:fail("자유시장에서 소환 가방이 사용됨")
 	end
 
-	if bot:map_move(100000000) == false then
+	if bot:instance_move(100000000) == false then
 		return ctx:fail("소환 가방 시험 맵 이동 실패")
 	end
 	local spawned = bot:request(resp.spawn_mob, req.use_summon_bag {

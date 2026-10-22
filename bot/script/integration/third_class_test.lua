@@ -103,7 +103,7 @@ local function first(p)
 end
 
 local function visit(ctx, bot, map_id, template, pick)
-	if bot:map_move(map_id) == false then
+	if bot:instance_move(map_id) == false then
 		return ctx:fail("맵 이동 실패: " .. map_id)
 	end
 	return talk(ctx, bot, template, pick or first)

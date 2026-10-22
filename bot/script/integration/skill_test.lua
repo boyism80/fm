@@ -1,6 +1,8 @@
 local pq = require("script/integration/lib/party_quest")
 
 local HUNTING_GROUND = 104040000
+-- The GM holy symbol reaches every player on the map, so the GM measures it alone, away from the other bots.
+local GM_GROUND = 104040001
 local NO_DOOR_MAP = 100000005
 local STONE_GOLEM = 5130101
 local MAGIC_ROCK = 4006000
@@ -94,7 +96,7 @@ local function mystic_door(ctx)
 		return ctx:fail("마력 설정 실패")
 	end
 
-	if bot:map_move(NO_DOOR_MAP) == false then
+	if bot:instance_move(NO_DOOR_MAP) == false then
 		return ctx:fail("미스틱 도어 금지 맵 이동 실패")
 	end
 	if cast(ctx, bot, MYSTIC_DOOR) == false then
@@ -106,7 +108,7 @@ local function mystic_door(ctx)
 		return false
 	end
 
-	if bot:map_move(HUNTING_GROUND) == false then
+	if bot:instance_move(HUNTING_GROUND) == false then
 		return ctx:fail("사냥터 이동 실패")
 	end
 	local p = bot:request(resp.spawn_door, req.active_skill { skill_id = MYSTIC_DOOR, skill_level = 1 }, function(p)
@@ -130,7 +132,7 @@ local function dead_mystic_door(ctx)
 	if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
 		return ctx:fail("마력 설정 실패")
 	end
-	if bot:map_move(HUNTING_GROUND) == false then
+	if bot:instance_move(HUNTING_GROUND) == false then
 		return ctx:fail("사냥터 이동 실패")
 	end
 	if pq.command(bot, "/체력바꾸기 0", "체력 설정") == false then
@@ -161,7 +163,7 @@ local function gm_holy_symbol(ctx)
 	if learn(ctx, bot, GM_HOLY_SYMBOL) == false then
 		return false
 	end
-	if bot:instance_move(HUNTING_GROUND) == false then
+	if bot:instance_move(GM_GROUND) == false then
 		return ctx:fail("사냥터 이동 실패")
 	end
 

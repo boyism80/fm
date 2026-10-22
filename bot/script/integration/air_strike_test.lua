@@ -47,7 +47,7 @@ test_suite {
 		if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 			return ctx:fail("플레이어 모드 설정 실패")
 		end
-		return bot:map_move(JONATHAN_ROOM)
+		return bot:instance_move(JONATHAN_ROOM)
 	end,
 
 	scenarios = {
@@ -83,7 +83,7 @@ test_suite {
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
-			if bot:map_move(JONATHAN_ROOM) == false then
+			if bot:instance_move(JONATHAN_ROOM) == false then
 				return ctx:fail("조나단의 방 이동 실패")
 			end
 			local oid = pq.npc(ctx, bot, JONATHAN)

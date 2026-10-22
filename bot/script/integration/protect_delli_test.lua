@@ -30,7 +30,7 @@ test_suite {
 		if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 			return ctx:fail("플레이어 모드 설정 실패")
 		end
-		return bot:map_move(TRAINING_ROOM)
+		return bot:instance_move(TRAINING_ROOM)
 	end,
 
 	scenarios = {
@@ -106,7 +106,7 @@ test_suite {
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
-			if bot:map_move(TRAINING_ROOM) == false then
+			if bot:instance_move(TRAINING_ROOM) == false then
 				return ctx:fail("훈련장으로 돌아가기 실패")
 			end
 			return true

@@ -111,7 +111,7 @@ local function summon_pace(ctx)
 	if pq.command(outlaw, "/스킬레벨 " .. OCTOPUS .. " 1", "스킬레벨 설정") == false or pq.command(outlaw, "/마력바꾸기 5000", "마력 설정: 5000") == false then
 		return ctx:fail("스킬 준비 실패")
 	end
-	if outlaw:map_move(SUMMON_MAP) == false then
+	if outlaw:instance_move(SUMMON_MAP) == false then
 		return ctx:fail("맵 이동 실패")
 	end
 	local summon = outlaw:request(resp.spawn_summon, req.active_skill { skill_id = OCTOPUS, skill_level = 1 }, function(p)

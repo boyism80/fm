@@ -32,7 +32,7 @@ local function setup(ctx, bot, items)
 	if pq.command(bot, "/봇초기화 30 0 10000 " .. items .. " -", "봇초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 봇 초기화 실패")
 	end
-	if bot:map_move(HENESYS_PARK) == false then
+	if bot:instance_move(HENESYS_PARK) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패")
 	end
 	return true

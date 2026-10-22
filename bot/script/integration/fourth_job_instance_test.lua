@@ -5,7 +5,7 @@ local function setup(ctx, bot, args, map_id)
 	if pq.command(bot, "/봇초기화 120 " .. args, "봇초기화 완료") == false then
 		return ctx:fail("봇 초기화 실패: " .. args)
 	end
-	if route.travel(ctx, bot, map_id) == false then
+	if route.travel_instance(ctx, bot, map_id) == false then
 		return ctx:fail("맵 이동 실패: " .. map_id)
 	end
 	return true

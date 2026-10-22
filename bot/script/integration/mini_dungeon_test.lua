@@ -45,7 +45,7 @@ local function explore(ctx, dungeon)
 	local leader = ctx:bot(0)
 	local member = ctx:bot(1)
 	for i = 0, ctx:bot_count() - 1 do
-		if route.travel(ctx, ctx:bot(i), dungeon.base) == false then
+		if route.travel_instance(ctx, ctx:bot(i), dungeon.base) == false then
 			return ctx:fail(dungeon.name .. " 입구로 이동 실패")
 		end
 	end
@@ -75,7 +75,7 @@ local scenarios = {
 	function(ctx)
 		local member = ctx:bot(1)
 		local dungeon = DUNGEONS[1]
-		if member:map_move(dungeon.base) == false then
+		if member:instance_move(dungeon.base) == false then
 			return ctx:fail("돼지 미니던전 입구로 이동 실패")
 		end
 		if pq.move(member, dungeon.entry[1], dungeon.entry[2]) == false then

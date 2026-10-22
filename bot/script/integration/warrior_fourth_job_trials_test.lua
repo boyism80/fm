@@ -15,7 +15,7 @@ local TYLUS_PROOF = 4031495
 local PROTECT_SECONDS = 5
 
 local function enter_protect(ctx, bot)
-	if bot:map_move(ELDER_HOUSE) == false then
+	if bot:instance_move(ELDER_HOUSE) == false then
 		return ctx:fail("장로의 관저 이동 실패")
 	end
 	local oid = pq.npc(ctx, bot, TYLUS_NPC)
@@ -63,7 +63,7 @@ test_suite {
 			if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 				return ctx:fail(bot:name() .. " 플레이어 모드 설정 실패")
 			end
-			if bot:map_move(RUSH_ENTRY) == false then
+			if bot:instance_move(RUSH_ENTRY) == false then
 				return ctx:fail(bot:name() .. " 러시 입장 맵 이동 실패")
 			end
 		end
@@ -122,7 +122,7 @@ test_suite {
 			if pq.command(bot, command, "봇초기화 완료") == false then
 				return ctx:fail("버서크 시험 봇 초기화 실패")
 			end
-			if bot:map_move(BERSERK_ENTRY) == false then
+			if bot:instance_move(BERSERK_ENTRY) == false then
 				return ctx:fail("버서크 입장 맵 이동 실패")
 			end
 			if pq.portal(ctx, bot, "in00", BERSERK_FIELD) == false then

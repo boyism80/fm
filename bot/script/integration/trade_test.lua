@@ -37,7 +37,7 @@ local function setup(ctx, bot, meso, items)
 	if pq.command(bot, text, "봇초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 봇 초기화 실패")
 	end
-	if bot:map() ~= LITH_HARBOR and bot:map_move(LITH_HARBOR) == false then
+	if bot:instance_move(LITH_HARBOR) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패")
 	end
 	return true
@@ -286,7 +286,7 @@ local function invitee_moves(ctx)
 	if check(ctx, b:map() == 100000000, "초대받은 캐릭터 이동이 끝나지 않음") == false then
 		return false
 	end
-	if b:map_move(LITH_HARBOR) == false then
+	if b:instance_move(LITH_HARBOR) == false then
 		return ctx:fail("초대받은 캐릭터 복귀 실패")
 	end
 	ctx:sleep(300)

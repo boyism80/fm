@@ -49,7 +49,7 @@ local function setup(ctx, bot)
 	if pq.command(bot, string.format("/봇초기화 50 0 %d - -", MESO), "봇초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 봇 초기화 실패")
 	end
-	if bot:map() ~= GUILD_HQ and bot:map_move(GUILD_HQ) == false then
+	if bot:instance_move(GUILD_HQ) == false then
 		return ctx:fail(bot:name() .. " 길드 본부 이동 실패")
 	end
 	return true

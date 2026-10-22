@@ -37,7 +37,7 @@ local function advance(ctx, path)
 	if pq.command(bot, "/봇초기화 30 " .. path.class .. " 0 - -", "봇초기화 완료") == false then
 		return ctx:fail("봇 초기화 실패")
 	end
-	if bot:map_move(path.master_map) == false then
+	if bot:instance_move(path.master_map) == false then
 		return ctx:fail("전직관에게 이동 실패: " .. path.master_map)
 	end
 	if talk(ctx, bot, path.master, {}) == false then
@@ -47,7 +47,7 @@ local function advance(ctx, path)
 		return ctx:fail("추천서를 받지 못함: " .. path.letter)
 	end
 
-	if bot:map_move(path.instructor_map) == false then
+	if bot:instance_move(path.instructor_map) == false then
 		return ctx:fail("전직 교관에게 이동 실패: " .. path.instructor_map)
 	end
 	if talk(ctx, bot, path.instructor, {}) == false then
@@ -69,7 +69,7 @@ local function advance(ctx, path)
 		return ctx:fail("영웅의 증거와 검은 구슬 교환 실패")
 	end
 
-	if bot:map_move(path.master_map) == false then
+	if bot:instance_move(path.master_map) == false then
 		return ctx:fail("전직관에게 돌아가지 못함")
 	end
 	local said = talk(ctx, bot, path.master, { path.choose, 0 })

@@ -34,7 +34,7 @@ local function setup(ctx, bot, class, skills)
 	if pq.command(bot, "/마력바꾸기 5000", "마력 설정: 5000") == false then
 		return ctx:fail(bot:name() .. " 마력 설정 실패")
 	end
-	if bot:map_move(HENESYS) == false then
+	if bot:instance_move(HENESYS) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패")
 	end
 	return true
@@ -53,8 +53,8 @@ local function summon(ctx, bot, skill_id)
 	return p
 end
 
-local function reappears(bot, skill_id)
-	local moved = bot:request(resp.spawn_summon, req.normal_chat { message = "/맵이동 " .. PARK }, function(p)
+local function reappears(ctx, bot, skill_id)
+	local moved = bot:request(resp.spawn_summon, req.normal_chat { message = string.format("/인스턴스이동 %d %d", PARK, ctx:seat()) }, function(p)
 		return p.owner_id == bot:id() and p.skill_id == skill_id
 	end, 3000)
 	return moved ~= false
@@ -70,13 +70,13 @@ local function map_change(ctx)
 		return false
 	end
 
-	if check(ctx, reappears(outlaw, OCTOPUS) == false, "문어가 맵 이동을 따라옴") == false then
+	if check(ctx, reappears(ctx, outlaw, OCTOPUS) == false, "문어가 맵 이동을 따라옴") == false then
 		return false
 	end
 	if check(ctx, outlaw:map() == PARK, "문어 주인 맵 이동 실패") == false then
 		return false
 	end
-	return check(ctx, reappears(knight, BEHOLDER), "비홀더가 맵 이동을 따라오지 않음")
+	return check(ctx, reappears(ctx, knight, BEHOLDER), "비홀더가 맵 이동을 따라오지 않음")
 end
 
 local function heal(bot, oid)

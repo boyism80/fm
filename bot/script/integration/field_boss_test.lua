@@ -87,7 +87,7 @@ test_suite {
 	scenarios = {
 		function(ctx)
 			local bot = ctx:bot(0)
-			if route.travel(ctx, bot, 701010321) == false then
+			if route.travel_instance(ctx, bot, 701010321) == false then
 				return ctx:fail("검은 숲으로 이동 실패")
 			end
 			if click_warp(ctx, bot, 9310005, 701010322) == false then
@@ -103,7 +103,7 @@ test_suite {
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
-			if route.travel(ctx, bot, 741020100) == false then
+			if route.travel_instance(ctx, bot, 741020100) == false then
 				return ctx:fail("야시장 뒷골목으로 이동 실패")
 			end
 			if click_next(ctx, bot, 9330028, 741020101) == false then

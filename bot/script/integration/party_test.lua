@@ -19,7 +19,7 @@ local function setup(ctx, bot)
 	if pq.command(bot, "/봇초기화 30 0 0 -", "봇초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 봇 초기화 실패")
 	end
-	if bot:map_move(HENESYS) == false then
+	if bot:instance_move(HENESYS) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패")
 	end
 	return true
@@ -44,7 +44,7 @@ local function leader_flow(ctx)
 		return false
 	end
 
-	if b:map_move(PARK) == false then
+	if b:instance_move(PARK) == false then
 		return ctx:fail("다른 맵 이동 실패")
 	end
 	ctx:sleep(1000)
@@ -62,7 +62,7 @@ local function leader_flow(ctx)
 	if b:transfer(0) == false then
 		return ctx:fail("원래 채널 복귀 실패")
 	end
-	if b:map_move(HENESYS) == false then
+	if b:instance_move(HENESYS) == false then
 		return ctx:fail("같은 맵 복귀 실패")
 	end
 	ctx:sleep(1000)

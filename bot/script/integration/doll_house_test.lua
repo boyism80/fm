@@ -21,7 +21,7 @@ test_suite {
 		if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
 			return ctx:fail("플레이어 모드 설정 실패")
 		end
-		return bot:map_move(EOS_100)
+		return bot:instance_move(EOS_100)
 	end,
 
 	scenarios = {

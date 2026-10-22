@@ -58,7 +58,7 @@ test_suite {
 			if pq.command(bot, "/봇초기화 30 0 0 " .. items .. " -", "봇초기화 완료") == false then
 				return ctx:fail("봇 초기화 실패")
 			end
-			if bot:map_move(maps[i + 1]) == false then
+			if bot:instance_move(maps[i + 1]) == false then
 				return ctx:fail("맵 이동 실패: " .. maps[i + 1])
 			end
 		end

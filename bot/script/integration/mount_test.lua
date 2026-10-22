@@ -32,7 +32,7 @@ local function setup(ctx, bot, level, class, items)
 	if pq.command(bot, "/봇초기화 " .. level .. " " .. class .. " 0 " .. items, "봇초기화 완료") == false then
 		return ctx:fail(bot:name() .. " 봇 초기화 실패")
 	end
-	if bot:map_move(HENESYS_PARK) == false then
+	if bot:instance_move(HENESYS_PARK) == false then
 		return ctx:fail(bot:name() .. " 맵 이동 실패")
 	end
 	return true
@@ -293,7 +293,7 @@ local function no_mount_map(ctx)
 	if riding(ctx, bot, TAMING_MOB, "탑승") == false then
 		return false
 	end
-	if route.travel(ctx, bot, NO_MOUNT_MAP) == false then
+	if route.travel_instance(ctx, bot, NO_MOUNT_MAP) == false then
 		return ctx:fail("탈것 금지 맵 이동 실패")
 	end
 	return riding(ctx, bot, 0, "탈것 금지 맵 진입")

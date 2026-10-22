@@ -26,7 +26,7 @@ local function recharge_and_sell(ctx)
 	if pq.command(bot, "/봇초기화 30 " .. ROGUE .. " 200000 " .. STAR .. ":100", "봇초기화 완료") == false then
 		return ctx:fail("봇 초기화 실패")
 	end
-	if bot:map() ~= LITH_WEAPON_SHOP and bot:map_move(LITH_WEAPON_SHOP) == false then
+	if bot:instance_move(LITH_WEAPON_SHOP) == false then
 		return ctx:fail("무기 상점 이동 실패")
 	end
 	local oid = pq.npc(ctx, bot, SHOP_NPC)
@@ -60,7 +60,7 @@ local function price_overflow(ctx)
 	if pq.command(bot, "/봇초기화 30 0 20000000 -", "봇초기화 완료") == false then
 		return ctx:fail("봇 초기화 실패")
 	end
-	if bot:map() ~= EL_NATH_SHOP_MAP and bot:map_move(EL_NATH_SHOP_MAP) == false then
+	if bot:instance_move(EL_NATH_SHOP_MAP) == false then
 		return ctx:fail("상점 맵 이동 실패")
 	end
 	local oid = pq.npc(ctx, bot, EXPENSIVE_SHOP_NPC)
