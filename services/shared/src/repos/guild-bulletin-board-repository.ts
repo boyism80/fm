@@ -267,6 +267,20 @@ export class GuildBulletinBoardRepository {
                 throw new Error(`guild not found for bulletin thread: world=${worldId} guild=${input.guildId}`);
             }
 
+            // A guild has one notice; a new one replaces it with its replies.
+            if (input.isNotice) {
+                await client.query(
+                    `DELETE FROM guild_bulletin_board_replies
+                     WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
+                    [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID]
+                );
+                await client.query(
+                    `DELETE FROM guild_bulletin_board_threads
+                     WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
+                    [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID]
+                );
+            }
+
             const nextRes = await client.query(
                 `SELECT
                     CASE

@@ -333,6 +333,10 @@ export class GuildBulletinBoardService {
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };
         }
+        // A new notice replaces the guild's current one, so only those who run the guild may write it.
+        if (notice && !this.canChangeMemberRank(membership.member.guildRank)) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
+        }
 
         if (!this.isValidBulletinIcon(icon)) {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_INVALID_BULLETIN_CONTENT };
