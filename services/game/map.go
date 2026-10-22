@@ -124,6 +124,7 @@ type Map struct {
 	portals           map[uint8]*Portal
 	portalsByName     map[string]*Portal
 	song              mapSong
+	weather           mapWeather
 }
 
 type BroadcastOption struct {

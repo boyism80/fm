@@ -9,10 +9,19 @@ import (
 
 const songDuration = 5 * time.Minute
 
+// A started weather stays this long; the client keeps it until the map clears it.
+const weatherDuration = 30 * time.Second
+
 type mapSong struct {
 	itemID uint32
 	name   string
 	until  time.Time
+}
+
+type mapWeather struct {
+	itemID  uint32
+	message string
+	until   time.Time
 }
 
 func (m *Map) ChangeMusic(song string) {
@@ -31,6 +40,32 @@ func (m *Map) MapMessage(messageType constant.ServerMessageType, message string)
 
 func (m *Map) Weather(itemID uint32, message string) {
 	m.listener.OnWeather(m, itemID, message)
+}
+
+// StartWeather shows a weather message for weatherDuration, to the map and to whoever enters meanwhile.
+func (m *Map) StartWeather(itemID uint32, message string) bool {
+	now := clock.Now()
+	if now.Before(m.weather.until) {
+		return false
+	}
+	until := now.Add(weatherDuration)
+	m.weather = mapWeather{itemID: itemID, message: message, until: until}
+	m.listener.OnWeather(m, itemID, message)
+	m.After(weatherDuration, func() {
+		if m.weather.until != until {
+			return
+		}
+		m.weather = mapWeather{}
+		m.listener.OnWeather(m, 0, "")
+	})
+	return true
+}
+
+func (m *Map) CurrentWeather() (uint32, string, bool) {
+	if !clock.Now().Before(m.weather.until) {
+		return 0, "", false
+	}
+	return m.weather.itemID, m.weather.message, true
 }
 
 func (m *Map) ShowOXQuiz(ask bool, set uint8, id uint16) {

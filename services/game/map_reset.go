@@ -17,6 +17,7 @@ func (m *Map) Reset() {
 		m.RemoveMist(mist.GetOID())
 	}
 	m.song = mapSong{}
+	m.weather = mapWeather{}
 	m.ClearProperties()
 	m.ClearBlockedMobGen()
 	m.SetReactorGenEnabled(true)

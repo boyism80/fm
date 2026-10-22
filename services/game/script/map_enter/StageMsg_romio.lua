@@ -14,7 +14,7 @@ return {
 	on_activate = function(me, map)
 		local hint = HINTS[map:wz():id()]
 		if hint ~= nil then
-			map:weather(5120021, hint)
+			map:start_weather(5120021, hint)
 		end
 	end,
 }
