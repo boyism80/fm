@@ -84,9 +84,10 @@ type ItemSlot struct {
 }
 
 type Drop struct {
-	ItemID uint32
-	Meso   int32
-	Owner  uint32
+	ItemID   uint32
+	Meso     int32
+	Owner    uint32
+	Position types.Point[int16]
 }
 
 func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
@@ -257,9 +258,9 @@ func (b *Bot) Update(pkt any) {
 	case *response.DieMob:
 		delete(b.Mobs, p.OID)
 	case *response.SpawnItem:
-		b.Drops[p.ID] = Drop{ItemID: p.ItemModel.GetID(), Owner: p.OwnerID}
+		b.Drops[p.ID] = Drop{ItemID: p.ItemModel.GetID(), Owner: p.OwnerID, Position: types.Point[int16]{X: p.Position.X, Y: p.Position.Y}}
 	case *response.SpawnMeso:
-		b.Drops[p.ID] = Drop{Meso: p.Count, Owner: p.OwnerID}
+		b.Drops[p.ID] = Drop{Meso: p.Count, Owner: p.OwnerID, Position: types.Point[int16]{X: p.Position.X, Y: p.Position.Y}}
 	case *response.RemoveItem:
 		delete(b.Drops, p.OID)
 	case *response.SpawnReactor:

@@ -893,6 +893,8 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				drop.RawSetString("item", lua.LNumber(d.ItemID))
 				drop.RawSetString("meso", lua.LNumber(d.Meso))
 				drop.RawSetString("owner", lua.LNumber(d.Owner))
+				drop.RawSetString("x", lua.LNumber(d.Position.X))
+				drop.RawSetString("y", lua.LNumber(d.Position.Y))
 				t.Append(drop)
 			}
 			L.Push(t)
@@ -902,6 +904,14 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			b := a.checkBot(L)
 			oid := uint32(L.CheckInt(2))
 			pos, _ := b.Position(a.wz)
+			// The server refuses a pickup reported away from the drop, so the bot steps onto it first like a client.
+			if drop, ok := b.Drops[oid]; ok {
+				pos = drop.Position
+				if err := b.Move(pos, 0); err != nil {
+					L.Push(lua.LFalse)
+					return 1
+				}
+			}
 			a.park(L)
 			a.Request(L, b, b, &request.ItemLoot{Position: pos, OID: oid}, a.timeout(), func(p any) bool {
 				remove, ok := p.(*response.RemoveItem)

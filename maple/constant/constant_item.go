@@ -14,6 +14,8 @@ const (
 const (
 	ItemShurikenBase uint32 = 2070000
 	ItemBulletBase   uint32 = 2330000
+	// Picking up the Longinus Spear skips the client-reported range check, as in the original server.
+	ItemLonginusSpear uint32 = 4001025
 )
 
 type ItemTrait uint32

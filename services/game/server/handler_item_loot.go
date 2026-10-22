@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
 )
 
@@ -50,6 +51,14 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		log.Printf("Loot object not found for OID %d", req.OID)
 		character.Listener().OnUpdateStats(character, nil, true)
 		return fmt.Errorf("item not found")
+	}
+
+	item, isItem := obj.(game.Item)
+	clientRangeExempt := isItem && item.GetModel().GetID() == constant.ItemLonginusSpear
+	if (!clientRangeExempt && req.Position.DistanceSq(obj.GetPosition()) > constant.LootClientRange*constant.LootClientRange) ||
+		character.GetPosition().DistanceSq(obj.GetPosition()) > constant.LootRange*constant.LootRange {
+		character.Listener().OnUpdateStats(character, nil, true)
+		return nil
 	}
 
 	reason := mapInstance.LootItem(obj, character, req.Position)

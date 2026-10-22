@@ -12,3 +12,8 @@ const (
 	LootPartial             LootResult = 6
 	LootFailedTrading       LootResult = 7
 )
+
+const (
+	LootClientRange = 71
+	LootRange       = 800
+)

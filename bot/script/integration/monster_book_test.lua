@@ -38,8 +38,8 @@ local function drop_card(ctx, bot)
 	if drop == nil then
 		return ctx:fail("떨어진 카드를 찾지 못함")
 	end
-	local x, y = bot:position()
-	return req.item_loot { position = { x = x, y = y }, oid = drop.oid }
+	bot:move(drop.x, drop.y)
+	return req.item_loot { position = { x = drop.x, y = drop.y }, oid = drop.oid }
 end
 
 local function profile(ctx, bot, what)
