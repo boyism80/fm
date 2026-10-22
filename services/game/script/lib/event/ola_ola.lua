@@ -45,6 +45,7 @@ function M.start(sm)
 		player:message("포탈이 열렸습니다. 포탈 위에서 ↑를 눌러주세요.", Msg.Notice)
 		player:clock(DURATION_MS / 1000)
 	end
+	sm:set_property("clock_until", tostring(now() + DURATION_MS / 1000))
 	sm:after("ola", DURATION_MS, "on_ola_end")
 end
 

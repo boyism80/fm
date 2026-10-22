@@ -103,10 +103,22 @@ local hooks = {
 		game(sm).start(sm)
 	end,
 
+	-- The client drops the clock with the field, so a game that runs on a clock_until keeps it on every event map.
+	on_changed_map = function(sm, player, map_id)
+		if map_id == WINNER_MAP then
+			return
+		end
+		local left = (tonumber(sm:get_property("clock_until")) or 0) - now()
+		if left > 0 then
+			player:clock(left)
+		end
+	end,
+
 	-- The game marks its winners with the "winner:<id>" property before it calls this.
 	on_game_over = function(sm)
 		set_phase(sm, "finished")
 		set_rules(sm, false)
+		sm:set_property("clock_until", "")
 		local winners = 0
 		for _, player in ipairs(sm:players()) do
 			if sm:get_property("winner:" .. player:id()) == "true" then
