@@ -137,11 +137,24 @@ func (p *Points) SetSP(v uint16, notify bool) {
 }
 
 func (p *Points) DistributeSkill(skillID uint32) bool {
-	if p.sp == 0 {
-		return false
-	}
 	wzSkill := p.owner.gameWorld.GetResources().GetSkill(skillID)
 	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.class) {
+		return false
+	}
+
+	// The distributable beginner skills share their own budget, level - 1 up to 6, instead of SP.
+	beginner := wzSkill.Beginner && wzSkill.Distributable
+	if beginner {
+		used := 0
+		p.owner.skills.ForEach(func(_ uint32, entry *SkillEntry) {
+			if entry.wz.Beginner && entry.wz.Distributable {
+				used += entry.Level()
+			}
+		})
+		if used >= min(int(p.owner.level)-1, 6) {
+			return false
+		}
+	} else if p.sp == 0 {
 		return false
 	}
 
@@ -157,7 +170,9 @@ func (p *Points) DistributeSkill(skillID uint32) bool {
 		return false
 	}
 
-	p.sp--
+	if !beginner {
+		p.sp--
+	}
 	if skillEntry.Level() == 0 {
 		skillEntry.SetLevel(1)
 		p.owner.skills.Bind(skillID, skillEntry)
