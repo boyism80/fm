@@ -367,9 +367,6 @@ func matchesQuestClass(classID constant.ClassType, codes []int) bool {
 		if code == class {
 			return true
 		}
-		if code%100 == 0 && class/100 == code/100 {
-			return true
-		}
 	}
 	return false
 }
