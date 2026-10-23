@@ -37,8 +37,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 		return nil
 	}
 
-	if m := ch.GetMap(); m == nil || !ch.IsAlive() || m.BlocksTeleportStone() {
-		ch.Listener().OnMessage(ch, constant.MsgPinkText, "이곳에서는 파티 찾기를 시도할 수 없습니다. 요청이 무시되었습니다.")
+	if !h.canSearch(ch) {
 		return nil
 	}
 
@@ -82,7 +81,9 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
 				ch.Party().Join(*reply.PartyId, reply.GetParty().GetRevision())
 				ch.Listener().OnPartyCreated(ch, *reply.PartyId)
-				ch.Party().SetSearch(cfg)
+				if h.canSearch(ch) {
+					ch.Party().SetSearch(cfg)
+				}
 				return nil
 			},
 		)
@@ -91,4 +92,12 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 		ch.Party().SetSearch(cfg)
 	}
 	return nil
+}
+
+func (h *PartySearchStart) canSearch(ch *game.Character) bool {
+	if m := ch.GetMap(); m == nil || !ch.IsAlive() || m.BlocksTeleportStone() {
+		ch.Listener().OnMessage(ch, constant.MsgPinkText, "이곳에서는 파티 찾기를 시도할 수 없습니다. 요청이 무시되었습니다.")
+		return false
+	}
+	return true
 }
