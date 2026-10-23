@@ -99,6 +99,12 @@ func (ch *Character) UseRewardBox(slot int16, itemID uint32) {
 	if !ok || box.RewardProb == 0 {
 		return
 	}
+	for _, invType := range []constant.InventoryType{constant.InventoryTypeEquipment, constant.InventoryTypeConsume, constant.InventoryTypeInstallation, constant.InventoryTypeETC} {
+		if ch.inventory.tabs[invType].EmptySlotCount() == 0 {
+			ch.listener.OnMessage(ch, constant.MsgPopup, "인벤토리 공간이 부족합니다.")
+			return
+		}
+	}
 
 	var reward wz.RewardEntry
 	pick := rand.Intn(box.RewardProb)
