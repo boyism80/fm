@@ -113,21 +113,16 @@ func (s *AllianceSystem) BroadcastNoticeChanged(alliancePb *internal.Alliance, n
 	if info == nil {
 		return
 	}
+	msg := ""
+	if notice != "" {
+		msg = gameconst.AllianceNoticeChangedMessagePrefix + notice
+	}
 	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		s.callOnlineMember(memberID, func(ch *Character) {
 			ch.listener.OnAllianceNoticeChanged(ch, info)
-		})
-	})
-	if notice == "" {
-		return
-	}
-	msg := gameconst.AllianceNoticeChangedMessagePrefix + notice
-	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
-		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
-			if ch == nil {
-				return
+			if msg != "" {
+				ch.listener.OnMessage(ch, gameconst.MsgPopup, msg)
 			}
-			ch.listener.OnMessage(ch, gameconst.MsgPopup, msg)
 		})
 	})
 }
@@ -149,15 +144,10 @@ func (s *AllianceSystem) BroadcastLeaderChanged(alliancePb *internal.Alliance, o
 	s.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		s.callOnlineMember(memberID, func(ch *Character) {
 			ch.listener.OnAllianceLeaderChanged(ch, allianceID, oldLeaderID, newLeaderID, info, guilds)
-		})
-		if leaderNotice != "" {
-			s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
-				if ch == nil {
-					return
-				}
+			if leaderNotice != "" {
 				ch.listener.OnMessage(ch, gameconst.MsgPinkText, leaderNotice)
-			})
-		}
+			}
+		})
 	})
 }
 
