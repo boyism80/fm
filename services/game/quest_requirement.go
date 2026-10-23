@@ -48,6 +48,12 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 		return false
 	}
 	for itemID, count := range req.Item {
+		if count <= 0 {
+			if qc.owner.inventory.HasItem(itemID) {
+				return false
+			}
+			continue
+		}
 		if !qc.owner.inventory.HasItemCount(itemID, uint16(count)) {
 			return false
 		}
