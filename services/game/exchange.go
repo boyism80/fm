@@ -5,6 +5,7 @@ import (
 
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
+	"github.com/boyism80/fm/util"
 )
 
 type ExchangeResult int
@@ -37,6 +38,22 @@ type ExchangeSide struct {
 type ExchangeSpec struct {
 	Cost   ExchangeSide
 	Reward ExchangeSide
+}
+
+// addItem counts count of the item; rechargeable and expiring items arrive as their own stack.
+func (side *ExchangeSide) addItem(item Item, count uint16) {
+	model := item.GetModel()
+	if side.Items == nil {
+		side.Items = make(map[uint32]uint16)
+	}
+	side.Items[model.GetID()] += count
+	if model.GetTraits()&constant.ItemTraitRechargeable == 0 && item.GetExpiration().Equal(util.TimeMax) {
+		return
+	}
+	if side.Stacks == nil {
+		side.Stacks = make(map[uint32][]uint16)
+	}
+	side.Stacks[model.GetID()] = append(side.Stacks[model.GetID()], count)
 }
 
 func exchangeItemsEmpty(items map[uint32]uint16) bool {

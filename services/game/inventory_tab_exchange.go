@@ -107,13 +107,14 @@ func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, co
 			return ExchangeLackCapacity
 		}
 		capacity := max(int(model.GetCapacity()), 1)
-		if len(stacks[id]) > 0 {
-			for _, stack := range stacks[id] {
-				requiredSlots += (int(stack) + capacity - 1) / capacity
-			}
+		need := int(count)
+		for _, stack := range stacks[id] {
+			requiredSlots += (int(stack) + capacity - 1) / capacity
+			need -= int(stack)
+		}
+		if need <= 0 {
 			continue
 		}
-		need := int(count)
 		if capacity > 1 && model.GetTraits()&constant.ItemTraitRechargeable == 0 && period[id] == 0 {
 			for _, slot := range slotsByID[id] {
 				snap, ok := slots[slot]

@@ -278,25 +278,21 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 			return pconst.MiniRoomLeaveTradeFail
 		}
 		giver := t.sides[1-i]
-		rewards := make(map[uint32]uint16)
-		stacks := make(map[uint32][]uint16)
+		var reward ExchangeSide
 		for _, item := range giver.items {
 			if item == nil {
 				continue
 			}
 			model := item.GetModel()
 			// The receiver's own offer leaves with the trade, so only what the receiver carries counts.
-			if side.ch.inventory.carriesUniqueItem(model) || (model.GetTraits()&constant.ItemTraitUnique != 0 && rewards[model.GetID()] > 0) {
+			if side.ch.inventory.carriesUniqueItem(model) || (model.GetTraits()&constant.ItemTraitUnique != 0 && reward.Items[model.GetID()] > 0) {
 				return pconst.MiniRoomLeaveTradeOnly
 			}
-			rewards[model.GetID()] += item.GetCount()
-			if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
-				stacks[model.GetID()] = append(stacks[model.GetID()], item.GetCount())
-			}
+			reward.addItem(item, item.GetCount())
 		}
 		meso := giver.ch.escrow.meso
-		spec := ExchangeSpec{Reward: ExchangeSide{Items: rewards, Stacks: stacks, Meso: meso - t.tax(meso)}}
-		if spec.Valid(side.ch, nil) != ExchangeOK {
+		reward.Meso = meso - t.tax(meso)
+		if (ExchangeSpec{Reward: reward}).Valid(side.ch, nil) != ExchangeOK {
 			return pconst.MiniRoomLeaveTradeFail
 		}
 	}

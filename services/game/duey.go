@@ -500,11 +500,8 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 	if d.owner.inventory.hasUniqueItem(parcel.item.GetModel()) {
 		return ErrDueyOnlyHeld
 	}
-	spec := ExchangeSpec{
-		Reward: ExchangeSide{
-			Items: map[uint32]uint16{parcel.item.GetModel().GetID(): parcel.item.GetCount()},
-		},
-	}
+	var spec ExchangeSpec
+	spec.Reward.addItem(parcel.item, parcel.item.GetCount())
 	if spec.Valid(d.owner, d.owner.escrow) != ExchangeOK {
 		return ErrInventoryFull
 	}
