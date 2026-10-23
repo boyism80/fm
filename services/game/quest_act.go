@@ -66,9 +66,6 @@ func (qc *Quests) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts
 	if len(actions.Quests) > 0 {
 		qc.updateLinkedQuests(actions.Quests)
 	}
-	if actions.InfoNumber > 0 {
-		qc.completeLinkedQuest(actions.InfoNumber)
-	}
 	if actions.NPCAct != "" {
 		qc.broadcastNpcAct(opts.npcID, actions.NPCAct)
 	}
@@ -264,39 +261,30 @@ func (qc *Quests) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
 	for questID, state := range quests {
 		switch state {
 		case wz.QuestStatusNotStarted:
-			qc.Remove(questID)
+			qc.Clear(questID)
 		case wz.QuestStatusStarted:
 			existing := qc.Get(questID)
 			if existing == nil {
-				qc.Create(questID, QuestStatusStarted)
-			} else {
-				existing.status = QuestStatusStarted
+				existing = qc.Create(questID, QuestStatusStarted)
+				if existing == nil {
+					continue
+				}
 			}
+			existing.status = QuestStatusStarted
+			qc.owner.listener.OnQuestStarted(qc.owner, existing, 0)
 		case wz.QuestStatusCompleted:
 			existing := qc.Get(questID)
 			if existing == nil {
-				created := qc.Create(questID, QuestStatusCompleted)
-				if created != nil {
-					created.completionTime = clock.Now()
+				existing = qc.Create(questID, QuestStatusCompleted)
+				if existing == nil {
+					continue
 				}
-			} else {
-				existing.status = QuestStatusCompleted
-				existing.completionTime = clock.Now()
 			}
+			existing.status = QuestStatusCompleted
+			existing.completionTime = clock.Now()
+			qc.owner.listener.OnQuestCompleted(qc.owner, existing, 0, 0)
 		}
 	}
-}
-
-func (qc *Quests) completeLinkedQuest(refID uint32) {
-	if qc == nil || refID == 0 {
-		return
-	}
-	refQP := qc.Get(refID)
-	if refQP == nil || !refQP.IsStarted() {
-		return
-	}
-	refQP.status = QuestStatusCompleted
-	refQP.completionTime = clock.Now()
 }
 
 func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID constant.ClassType, items []wz.QuestActionItem, selection *uint32) {
