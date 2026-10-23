@@ -206,7 +206,7 @@ func (r *shopRoom) holds(itemID uint32) bool {
 }
 
 func (inv *Inventory) takeShopItem(invType constant.InventoryType, slot int16, bundles uint16, perBundle uint16, price int32) (*ShopItem, error) {
-	if bundles == 0 || perBundle == 0 || price <= 0 {
+	if price <= 0 {
 		return nil, ErrMiniRoomInvalid
 	}
 
@@ -220,6 +220,8 @@ func (inv *Inventory) takeShopItem(invType constant.InventoryType, slot int16, b
 	if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
 		bundles = 1
 		perBundle = item.GetCount()
+	} else if bundles == 0 || perBundle == 0 {
+		return nil, ErrMiniRoomInvalid
 	}
 	total := int(bundles) * int(perBundle)
 	if total > ShopMaxBundleTotal || total > int(item.GetCount()) {

@@ -15,16 +15,23 @@ type itemSlotSnapshot struct {
 }
 
 func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, cost map[uint32]uint16, reward map[uint32]uint16, stacks map[uint32][]uint16, period map[uint32]time.Duration, modelOf func(uint32) wz.Item, escrow *Escrow) ExchangeResult {
+	hasReward := false
+	for id, count := range reward {
+		if count > 0 || len(stacks[id]) > 0 {
+			hasReward = true
+			break
+		}
+	}
 	if inv == nil {
 		if !exchangeItemsEmpty(cost) {
 			return ExchangeLackCost
 		}
-		if !exchangeItemsEmpty(reward) {
+		if hasReward {
 			return ExchangeLackCapacity
 		}
 		return ExchangeOK
 	}
-	if exchangeItemsEmpty(cost) && exchangeItemsEmpty(reward) {
+	if exchangeItemsEmpty(cost) && !hasReward {
 		return ExchangeOK
 	}
 
@@ -47,7 +54,7 @@ func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, co
 	if escrow != nil {
 		var ok bool
 		blocked, hold, ok = escrow.claim(invType)
-		if !ok && !exchangeItemsEmpty(reward) {
+		if !ok && hasReward {
 			return ExchangeLackCapacity
 		}
 		for slot := range blocked {
@@ -99,7 +106,7 @@ func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, co
 
 	requiredSlots := 0
 	for id, count := range reward {
-		if count == 0 {
+		if count == 0 && len(stacks[id]) == 0 {
 			continue
 		}
 		model := modelOf(id)
@@ -107,15 +114,20 @@ func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, co
 			return ExchangeLackCapacity
 		}
 		capacity := max(int(model.GetCapacity()), 1)
+		rechargeable := model.GetTraits()&constant.ItemTraitRechargeable != 0
 		need := int(count)
 		for _, stack := range stacks[id] {
-			requiredSlots += (int(stack) + capacity - 1) / capacity
+			if rechargeable {
+				requiredSlots++
+			} else {
+				requiredSlots += (int(stack) + capacity - 1) / capacity
+			}
 			need -= int(stack)
 		}
 		if need <= 0 {
 			continue
 		}
-		if capacity > 1 && model.GetTraits()&constant.ItemTraitRechargeable == 0 && period[id] == 0 {
+		if capacity > 1 && !rechargeable && period[id] == 0 {
 			for _, slot := range slotsByID[id] {
 				snap, ok := slots[slot]
 				if !ok || snap.expires {
@@ -123,6 +135,10 @@ func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, co
 				}
 				need -= min(need, max(capacity-int(snap.count), 0))
 			}
+		}
+		if rechargeable {
+			requiredSlots++
+			continue
 		}
 		requiredSlots += (need + capacity - 1) / capacity
 	}

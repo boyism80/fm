@@ -379,6 +379,25 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 	model := item.GetModel()
 	requestedCount := item.GetCount()
 
+	// A rechargeable takes one slot whatever its count, even zero or above its slot max.
+	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
+		slot, ok := inv.owner.escrow.gainSlot(invenType, item)
+		if !ok {
+			if allOrNothing {
+				return nil, fmt.Errorf("no available slot found")
+			}
+			return nil, nil
+		}
+		placed := item.Clone(requestedCount)
+		inven.items[int16(slot)] = placed
+		ch.listener.OnInventorySlotAdded(ch, invenType, int16(slot), placed)
+		inv.runGainHook(model.GetID())
+		if requestedCount > 0 {
+			ch.listener.OnShowItemGain(ch, model.GetID(), uint32(requestedCount), constant.ShowItemGainTypeStatus)
+		}
+		return []Item{placed}, nil
+	}
+
 	remainingCount := requestedCount
 	var addedCount uint16
 

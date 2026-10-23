@@ -82,8 +82,7 @@ func (s *Storage) Store(slot int16, itemID uint32, count uint16) error {
 	}
 	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
 		count = item.GetCount()
-	}
-	if count == 0 || item.GetCount() < count {
+	} else if count == 0 || item.GetCount() < count {
 		return ErrStorageItemNotFound
 	}
 	if (ExchangeSpec{Cost: ExchangeSide{Meso: s.storeFee}}).Valid(s.owner, s.owner.escrow) != ExchangeOK {

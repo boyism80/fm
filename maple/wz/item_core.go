@@ -1,7 +1,6 @@
 package wz
 
 import (
-	"math"
 	"slices"
 
 	"github.com/boyism80/fm/maple/constant"
@@ -115,7 +114,8 @@ func (model *ItemCore) SellPrice(quantity uint16) int {
 	if model.Traits&constant.ItemTraitRechargeable == 0 {
 		return model.Price * int(quantity)
 	}
-	return int(math.Ceil(float64(model.Price) / float64(model.GetCapacity()) * float64(quantity)))
+	// A rechargeable sells for its whole price however many are left, even zero.
+	return model.Price
 }
 
 func (model *ItemCore) GetCapacity() uint16 {

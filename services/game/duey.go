@@ -212,11 +212,10 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		if !item.Tradable() {
 			return ErrDueyNotSendable
 		}
-		if count == 0 || item.GetCount() < uint16(count) {
-			return ErrDueyInvalid
-		}
 		if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
 			count = int16(item.GetCount())
+		} else if count == 0 || item.GetCount() < uint16(count) {
+			return ErrDueyInvalid
 		}
 	}
 	if item == nil && meso == 0 {
