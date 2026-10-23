@@ -10,6 +10,8 @@ const AllianceNoticeChangedMessagePrefix = "길드 연합 공지사항 : "
 
 const AllianceLeaderChangedMessageSuffix = " 님이 새로운 길드 연합장이 되었습니다."
 
+const AllianceAcceptFailedMessage = "길드 연합에 가입할 수 없습니다."
+
 const AllianceCreateMesoCost int32 = 5_000_000
 
 const AllianceIncreaseCapacityMesoCost int32 = 5_000_000

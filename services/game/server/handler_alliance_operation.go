@@ -401,6 +401,12 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *game
 				log.Printf("AllianceOperation(accept invite): failed character=%d alliance=%d guild=%d code=%v",
 					charID, allianceID, guildID, reply.GetErrorCode())
 			}
+			h.gs.systems.Get[*game.DispatchSystem]().Visit(charID, func(_ actor.Context, ch *game.Character) {
+				if ch == nil {
+					return
+				}
+				ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceAcceptFailedMessage)
+			})
 			return nil
 		}
 		h.gs.systems.Get[*game.GuildSystem]().ClearAllianceInvite(guildID, allianceID)
