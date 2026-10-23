@@ -112,7 +112,7 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 	}
 
 	spec := ExchangeSpec{Cost: ExchangeSide{Meso: s.takeOutFee}}
-	spec.Reward.addItem(item, item.GetCount())
+	spec.Reward.include(item, item.GetCount())
 	switch spec.Valid(s.owner, s.owner.escrow) {
 	case ExchangeLackCost:
 		return ErrStorageNotEnoughMeso

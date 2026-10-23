@@ -3,8 +3,8 @@ package game
 import (
 	"time"
 
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/maple/constant"
-	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/util"
 )
 
@@ -22,9 +22,13 @@ type ExchangeSkill struct {
 	MasterLevel int
 }
 
+type exchangeObject struct {
+	item  Item
+	count uint16
+}
+
 type ExchangeSide struct {
 	Items      map[uint32]uint16
-	Stacks     map[uint32][]uint16
 	Period     map[uint32]time.Duration
 	Meso       int32
 	Exp        uint32
@@ -33,6 +37,7 @@ type ExchangeSide struct {
 	Skills     []ExchangeSkill
 	Randomize  bool
 	Bonus      map[string]int16
+	objects    []exchangeObject
 }
 
 type ExchangeSpec struct {
@@ -40,20 +45,9 @@ type ExchangeSpec struct {
 	Reward ExchangeSide
 }
 
-// addItem counts count of the item; rechargeable and expiring items arrive as their own stack.
-func (side *ExchangeSide) addItem(item Item, count uint16) {
-	model := item.GetModel()
-	if side.Items == nil {
-		side.Items = make(map[uint32]uint16)
-	}
-	side.Items[model.GetID()] += count
-	if model.GetTraits()&constant.ItemTraitRechargeable == 0 && item.GetExpiration().Equal(util.TimeMax) {
-		return
-	}
-	if side.Stacks == nil {
-		side.Stacks = make(map[uint32][]uint16)
-	}
-	side.Stacks[model.GetID()] = append(side.Stacks[model.GetID()], count)
+// include adds count of an existing item; its kind and expiration decide its slots, as when it is added.
+func (side *ExchangeSide) include(item Item, count uint16) {
+	side.objects = append(side.objects, exchangeObject{item: item, count: count})
 }
 
 func exchangeItemsEmpty(items map[uint32]uint16) bool {
@@ -69,7 +63,7 @@ func exchangeItemsEmpty(items map[uint32]uint16) bool {
 }
 
 func (side ExchangeSide) isEmpty() bool {
-	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && side.SkillPoint == 0 && exchangeItemsEmpty(side.Items) && len(side.Stacks) == 0 && len(side.Skills) == 0
+	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && side.SkillPoint == 0 && exchangeItemsEmpty(side.Items) && len(side.objects) == 0 && len(side.Skills) == 0
 }
 
 func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
@@ -92,62 +86,115 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 	if result := ch.stats.validatePopulation(spec.Cost.Population, spec.Reward.Population); result != ExchangeOK {
 		return result
 	}
-
-	modelOf := ch.itemModel
-	costByInv := groupExchangeItemsByInventory(spec.Cost.Items, modelOf)
-	rewardByInv := groupExchangeItemsByInventory(spec.Reward.Items, modelOf)
-
-	invTypes := make(map[constant.InventoryType]struct{})
-	for invType := range costByInv {
-		invTypes[invType] = struct{}{}
-	}
-	for invType := range rewardByInv {
-		invTypes[invType] = struct{}{}
+	if result := spec.validateItems(ch, escrow); result != ExchangeOK {
+		return result
 	}
 
-	for invType := range invTypes {
-		inv := ch.inventory.tabs[invType]
-		cost := costByInv[invType]
-		reward := rewardByInv[invType]
-		if result := inv.validateItemExchange(invType, cost, reward, spec.Reward.Stacks, spec.Reward.Period, modelOf, escrow); result != ExchangeOK {
-			return result
-		}
-	}
-
-	if !exchangeItemsEmpty(spec.Cost.Items) {
-		for id, count := range spec.Cost.Items {
-			if count == 0 {
-				continue
-			}
-			if modelOf(id) == nil {
-				return ExchangeLackCost
-			}
-		}
-	}
 	// A trade passes no escrow: what the receiver offered leaves with the trade.
 	holdsUnique := ch.inventory.hasUniqueItem
 	if escrow == nil {
 		holdsUnique = ch.inventory.carriesUniqueItem
 	}
-	if !exchangeItemsEmpty(spec.Reward.Items) {
-		for id, count := range spec.Reward.Items {
-			if count == 0 {
-				continue
-			}
-			model := modelOf(id)
-			if model == nil {
-				return ExchangeLackCapacity
-			}
-			traits := model.GetTraits()
-			if traits&constant.ItemTraitUnique == 0 || traits&constant.ItemTraitPartyQuest != 0 {
-				continue
-			}
-			if count > 1 || (spec.Cost.Items[id] == 0 && holdsUnique(model)) {
-				return ExchangeLackCapacity
-			}
+	rewards := make(map[uint32]uint16, len(spec.Reward.Items)+len(spec.Reward.objects))
+	for id, count := range spec.Reward.Items {
+		rewards[id] += count
+	}
+	for _, obj := range spec.Reward.objects {
+		rewards[obj.item.GetModel().GetID()] += obj.count
+	}
+	for id, count := range rewards {
+		if count == 0 {
+			continue
+		}
+		model := ch.itemModel(id)
+		if model == nil {
+			return ExchangeLackCapacity
+		}
+		traits := model.GetTraits()
+		if traits&constant.ItemTraitUnique == 0 || traits&constant.ItemTraitPartyQuest != 0 {
+			continue
+		}
+		if count > 1 || (spec.Cost.Items[id] == 0 && holdsUnique(model)) {
+			return ExchangeLackCapacity
 		}
 	}
 
+	return ExchangeOK
+}
+
+// validateItems runs the cost and the reward through a slot plan of each tab, the same plan a real add uses.
+func (spec ExchangeSpec) validateItems(ch *Character, escrow *Escrow) ExchangeResult {
+	type tabPlan struct {
+		plan *slotPlan
+		ok   bool
+	}
+	plans := make(map[constant.InventoryType]tabPlan)
+	planOf := func(invType constant.InventoryType, reward bool) (*slotPlan, ExchangeResult) {
+		tp, made := plans[invType]
+		if !made {
+			if tab := ch.inventory.tabs[invType]; tab != nil {
+				tp.plan, tp.ok = newSlotPlan(tab, invType, escrow)
+			}
+			plans[invType] = tp
+		}
+		switch {
+		case tp.plan == nil && reward:
+			return nil, ExchangeLackCapacity
+		case tp.plan == nil:
+			return nil, ExchangeLackCost
+		case !tp.ok && reward:
+			return nil, ExchangeLackCapacity
+		}
+		return tp.plan, ExchangeOK
+	}
+
+	for id, count := range spec.Cost.Items {
+		if count == 0 {
+			continue
+		}
+		model := ch.itemModel(id)
+		if model == nil {
+			return ExchangeLackCost
+		}
+		p, result := planOf(model.GetInventoryType(), false)
+		if result != ExchangeOK {
+			return result
+		}
+		if !p.take(id, count) {
+			return ExchangeLackCost
+		}
+	}
+
+	for id, count := range spec.Reward.Items {
+		if count == 0 {
+			continue
+		}
+		model := ch.itemModel(id)
+		if model == nil {
+			return ExchangeLackCapacity
+		}
+		p, result := planOf(model.GetInventoryType(), true)
+		if result != ExchangeOK {
+			return result
+		}
+		expiration := util.TimeMax
+		if period := spec.Reward.Period[id]; period > 0 {
+			expiration = clock.Now().Add(period)
+		}
+		if _, fits := p.place(model, count, expiration); !fits {
+			return ExchangeLackCapacity
+		}
+	}
+	for _, obj := range spec.Reward.objects {
+		model := obj.item.GetModel()
+		p, result := planOf(model.GetInventoryType(), true)
+		if result != ExchangeOK {
+			return result
+		}
+		if _, fits := p.place(model, obj.count, obj.item.GetExpiration()); !fits {
+			return ExchangeLackCapacity
+		}
+	}
 	return ExchangeOK
 }
 
@@ -180,23 +227,4 @@ func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
 		}
 	}
 	return ExchangeOK
-}
-
-func groupExchangeItemsByInventory(items map[uint32]uint16, modelOf func(uint32) wz.Item) map[constant.InventoryType]map[uint32]uint16 {
-	if len(items) == 0 {
-		return nil
-	}
-	out := make(map[constant.InventoryType]map[uint32]uint16)
-	for id, count := range items {
-		model := modelOf(id)
-		if model == nil {
-			continue
-		}
-		invType := model.GetInventoryType()
-		if out[invType] == nil {
-			out[invType] = make(map[uint32]uint16)
-		}
-		out[invType][id] += count
-	}
-	return out
 }

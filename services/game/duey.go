@@ -500,7 +500,7 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 		return ErrDueyOnlyHeld
 	}
 	var spec ExchangeSpec
-	spec.Reward.addItem(parcel.item, parcel.item.GetCount())
+	spec.Reward.include(parcel.item, parcel.item.GetCount())
 	if spec.Valid(d.owner, d.owner.escrow) != ExchangeOK {
 		return ErrInventoryFull
 	}

@@ -369,68 +369,44 @@ func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems
 	}
 
 	model := item.GetModel()
-	requestedCount := item.GetCount()
-
-	// A rechargeable takes one slot whatever its count, even zero or above its slot max.
-	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
-		slot, ok := inv.owner.escrow.gainSlot(invenType, item)
-		if !ok {
-			if allOrNothing {
-				return nil, fmt.Errorf("no available slot found")
-			}
-			return nil, nil
+	if item.GetCount() == 0 && model.GetTraits()&constant.ItemTraitRechargeable == 0 {
+		return nil, nil
+	}
+	var placements []placement
+	fits := false
+	if plan, ok := newSlotPlan(inven, invenType, ch.escrow); ok {
+		placements, fits = plan.place(model, item.GetCount(), item.GetExpiration())
+	}
+	if len(placements) == 0 || (allOrNothing && !fits) {
+		if allOrNothing {
+			return nil, fmt.Errorf("no available slot found")
 		}
-		placed := item.Clone(requestedCount)
-		inven.items[int16(slot)] = placed
-		ch.listener.OnInventorySlotAdded(ch, invenType, int16(slot), placed)
-		inv.runGainHook(model.GetID())
-		if requestedCount > 0 {
-			ch.listener.OnShowItemGain(ch, model.GetID(), uint32(requestedCount), constant.ShowItemGainTypeStatus)
-		}
-		return []Item{placed}, nil
+		return nil, nil
 	}
 
-	remainingCount := requestedCount
 	var addedCount uint16
-
-	for remainingCount > 0 {
-		slot, ok := inv.owner.escrow.gainSlot(invenType, item)
-		if !ok {
-			if allOrNothing && addedCount == 0 {
-				return nil, fmt.Errorf("no available slot found")
-			}
-			break
-		}
-
-		exists, ok := inven.items[int16(slot)]
-		cap := uint16(0)
-		var slotItem Item
-		if ok {
-			cap = min(model.GetCapacity()-exists.GetCount(), remainingCount)
-			exists.Increase(cap)
-			slotItem = exists
-			ch.listener.OnInventorySlotUpdated(ch, invenType, int16(slot), exists)
+	for _, p := range placements {
+		if p.merge {
+			exists := inven.items[p.slot]
+			exists.Increase(p.count)
+			ch.listener.OnInventorySlotUpdated(ch, invenType, p.slot, exists)
+			addedItems = append(addedItems, exists)
 		} else {
-			cap = min(model.GetCapacity(), remainingCount)
-			placed := item.Clone(cap)
-			inven.items[int16(slot)] = placed
-			slotItem = placed
-			ch.listener.OnInventorySlotAdded(ch, invenType, int16(slot), placed)
+			placed := item.Clone(p.count)
+			inven.items[p.slot] = placed
+			ch.listener.OnInventorySlotAdded(ch, invenType, p.slot, placed)
+			addedItems = append(addedItems, placed)
 		}
-		addedItems = append(addedItems, slotItem)
-		remainingCount -= cap
-		addedCount += cap
+		addedCount += p.count
+	}
+	if !fits {
+		item.SetCount(item.GetCount() - addedCount)
 	}
 
-	if !allOrNothing && addedCount < requestedCount {
-		item.SetCount(remainingCount)
-	}
-
+	inv.runGainHook(model.GetID())
 	if addedCount > 0 {
-		inv.runGainHook(model.GetID())
 		ch.listener.OnShowItemGain(ch, model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
 	}
-
 	return addedItems, nil
 }
 
@@ -545,7 +521,7 @@ func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
-	destSlot, ok := inv.owner.escrow.gainSlot(constant.InventoryTypeEquipment, inv.equipped[parts])
+	destSlot, ok := inv.slotFor(constant.InventoryTypeEquipment, inv.equipped[parts])
 	if !ok {
 		return ErrInventoryFull
 	}
@@ -587,7 +563,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	case constant.EquipmentPartsTop:
 		if newEq.GetModel().(wz.Equipment).GetEquipmentType() == constant.EquipmentTypeLongcoat {
 			if equipments[constant.EquipmentPartsPants] != nil {
-				storageSlot, isFree := inv.owner.escrow.gainSlot(constant.InventoryTypeEquipment, equipments[constant.EquipmentPartsPants])
+				storageSlot, isFree := inv.slotFor(constant.InventoryTypeEquipment, equipments[constant.EquipmentPartsPants])
 				if !isFree {
 					return ErrInventoryFull
 				}
@@ -600,7 +576,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 		topEq := equipments[constant.EquipmentPartsTop]
 		if topEq != nil {
 			if topEq.GetModel().(wz.Equipment).GetEquipmentType() == constant.EquipmentTypeLongcoat {
-				storageSlot, isFree := inv.owner.escrow.gainSlot(constant.InventoryTypeEquipment, topEq)
+				storageSlot, isFree := inv.slotFor(constant.InventoryTypeEquipment, topEq)
 				if swap && !isFree {
 					return ErrInventoryFull
 				}
@@ -692,6 +668,6 @@ func (inv *Inventory) canReceive(itemID uint32, count uint16) bool {
 
 func (inv *Inventory) canReceiveItem(item Item) bool {
 	var spec ExchangeSpec
-	spec.Reward.addItem(item, item.GetCount())
+	spec.Reward.include(item, item.GetCount())
 	return spec.Valid(inv.owner, inv.owner.escrow) == ExchangeOK
 }

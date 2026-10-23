@@ -97,6 +97,9 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 		}
 		ch.inventory.addItemUnchecked(item, true)
 	}
+	for _, obj := range side.objects {
+		ch.inventory.addItemUnchecked(obj.item.Clone(obj.count), true)
+	}
 	if side.Exp > 0 {
 		ch.addExpUnchecked(side.Exp)
 	}

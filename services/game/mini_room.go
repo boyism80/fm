@@ -255,7 +255,7 @@ func (inv *Inventory) collectShopGoods(meso int32, items []*ShopItem) (int32, []
 	var kept []*ShopItem
 	for _, listed := range items {
 		var spec ExchangeSpec
-		spec.Reward.addItem(listed.item, listed.count())
+		spec.Reward.include(listed.item, listed.count())
 		if inv.hasUniqueItem(listed.item.GetModel()) || spec.Valid(inv.owner, inv.owner.escrow) != ExchangeOK {
 			kept = append(kept, listed)
 			continue
@@ -277,7 +277,7 @@ func (r *shopRoom) unlist(ch *Character, index uint16) error {
 			return ErrMiniRoomOnlyHeld
 		}
 		var spec ExchangeSpec
-		spec.Reward.addItem(listed.item, listed.count())
+		spec.Reward.include(listed.item, listed.count())
 		if spec.Valid(ch, ch.escrow) != ExchangeOK {
 			return ErrInventoryFull
 		}
@@ -314,7 +314,7 @@ func (r *shopRoom) sell(ch *Character, index uint16, bundles uint16, held int32)
 	}
 	count := bundles * listed.perBundle
 	spec := ExchangeSpec{Cost: ExchangeSide{Meso: int32(total)}}
-	spec.Reward.addItem(listed.item, count)
+	spec.Reward.include(listed.item, count)
 	if spec.Valid(ch, ch.escrow) != ExchangeOK {
 		return nil, 0, 0, &MiniRoomBuyError{Result: pconst.MiniRoomBuyInventoryFull}
 	}

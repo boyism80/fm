@@ -279,16 +279,23 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 		}
 		giver := t.sides[1-i]
 		var reward ExchangeSide
+		uniques := make(map[uint32]struct{})
 		for _, item := range giver.items {
 			if item == nil {
 				continue
 			}
 			model := item.GetModel()
 			// The receiver's own offer leaves with the trade, so only what the receiver carries counts.
-			if side.ch.inventory.carriesUniqueItem(model) || (model.GetTraits()&constant.ItemTraitUnique != 0 && reward.Items[model.GetID()] > 0) {
+			if side.ch.inventory.carriesUniqueItem(model) {
 				return pconst.MiniRoomLeaveTradeOnly
 			}
-			reward.addItem(item, item.GetCount())
+			if model.GetTraits()&constant.ItemTraitUnique != 0 {
+				if _, twice := uniques[model.GetID()]; twice {
+					return pconst.MiniRoomLeaveTradeOnly
+				}
+				uniques[model.GetID()] = struct{}{}
+			}
+			reward.include(item, item.GetCount())
 		}
 		meso := giver.ch.escrow.meso
 		reward.Meso = meso - t.tax(meso)

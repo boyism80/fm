@@ -137,7 +137,7 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 		if sb.owner.inventory.hasUniqueItem(listed.item.GetModel()) {
 			return pconst.StoreBankResultOnlyOne
 		}
-		reward.addItem(listed.item, listed.count())
+		reward.include(listed.item, listed.count())
 	}
 	if (ExchangeSpec{Reward: reward}).Valid(sb.owner, sb.owner.escrow) != ExchangeOK {
 		return pconst.StoreBankResultInventoryFull
