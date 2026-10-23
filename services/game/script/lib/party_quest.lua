@@ -99,6 +99,13 @@ function M.gain_item(me, id, n)
     return me:mkitem(id, n)
 end
 
+function M.has_empty_slots(me, n)
+    return me:empty_slots(InventoryType.Equipment) >= n
+        and me:empty_slots(InventoryType.Use) >= n
+        and me:empty_slots(InventoryType.Installation) >= n
+        and me:empty_slots(InventoryType.Etc) >= n
+end
+
 function M.shuffle(str)
     if str == nil or str == "" then
         return ""

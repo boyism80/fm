@@ -113,6 +113,10 @@ return {
     on_click = function(me, npc)
         me:dialog(npc,
             "모든 스테이지를 클리어 하고 이곳까지 오시다니 대단하시군요. 클리어를 축하드리며 작은 선물을 준비했습니다. 선물을 받으시기 전에 미리 아이템 소비창이나 기타창에 빈 칸이 하나 이상 있는지 확인해 주세요~")
+        if not pq.has_empty_slots(me, 2) then
+            me:dialog(npc, "장비, 소비, 설치, 기타 탭을 최소 2칸 이상 비우신 후 다시 말을 걸어주세요.")
+            return
+        end
         local rnum = math.random(0, 250)
         local reward = rewards[rnum] or DEFAULT
         local item = pq.gain_item(me, reward.id, reward.n)

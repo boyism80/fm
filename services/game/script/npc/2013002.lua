@@ -150,6 +150,10 @@ local function handle_reward(me, npc)
         return
     end
     me:dialog(npc, "저를 구해주시고 여기까지 오신 여러분들께 다시 한번 진심으로 감사드립니다. 여러분들의 여행에 도움이 되도록 작은 선물을 준비했으니 인벤토리에 빈 공간이 있는지 확인해 주세요.")
+    if not pq.has_empty_slots(me, 2) then
+        me:dialog(npc, "인벤토리 공간은 최소 두칸씩 비우신 후 다시 말을 걸어주세요.")
+        return
+    end
     local item_id, count = pick_reward()
     local code = me:exchange({}, { item = { [item_id] = count, [FEATHER] = 1 } })
     if code == ExchangeResult.LackCapacity then

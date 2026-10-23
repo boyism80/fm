@@ -139,6 +139,10 @@ local function handle_rope_stage(me, npc, sm, map, prop_key, template, area_coun
 end
 
 local function give_bonus(me, npc)
+    if not pq.has_empty_slots(me, 1) then
+        me:dialog(npc, "인벤토리 공간을 확보하신 후 다시 말을 걸어주세요.")
+        return
+    end
     local reward = bonus_rewards[math.random(1, #bonus_rewards)]
     local item = pq.gain_item(me, reward.id, reward.n)
     if item == nil then
