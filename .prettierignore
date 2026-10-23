@@ -1,0 +1,6 @@
+node_modules
+dist
+old
+wz_lookup
+resources
+services/shared/src/protobuf/generated

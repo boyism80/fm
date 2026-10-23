@@ -1,0 +1,28 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+
+[*.go]
+indent_style = tab
+
+[*.ts]
+indent_style = space
+indent_size = 4
+
+[*.lua]
+indent_style = space
+indent_size = 4
+tab_width = 4
+quote_style = none
+continuation_indent = 4
+max_line_length = 120
+call_arg_parentheses = keep
+align_continuous_assign_statement = true
+align_continuous_rect_table_field = true
+align_continuous_line_space = 1
+align_array_table = false
+line_space_after_function_statement = keep
+line_space_around_block = keep
