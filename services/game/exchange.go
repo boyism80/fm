@@ -107,6 +107,11 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 			}
 		}
 	}
+	// A trade passes no escrow: what the receiver offered leaves with the trade.
+	holdsUnique := ch.inventory.hasUniqueItem
+	if escrow == nil {
+		holdsUnique = ch.inventory.carriesUniqueItem
+	}
 	if !exchangeItemsEmpty(spec.Reward.Items) {
 		for id, count := range spec.Reward.Items {
 			if count == 0 {
@@ -120,7 +125,7 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 			if traits&constant.ItemTraitUnique == 0 || traits&constant.ItemTraitPartyQuest != 0 {
 				continue
 			}
-			if count > 1 || (spec.Cost.Items[id] == 0 && ch.inventory.hasUniqueItem(model)) {
+			if count > 1 || (spec.Cost.Items[id] == 0 && holdsUnique(model)) {
 				return ExchangeLackCapacity
 			}
 		}
