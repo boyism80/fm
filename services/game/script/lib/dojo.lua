@@ -147,6 +147,11 @@ function M.advance(sm, floor)
 	end
 	sm:set_property(key, "1")
 	local players = M.players_on(sm, floor)
+	for _, player in ipairs(players) do
+		if not player:is_alive() then
+			player:hp(50)
+		end
+	end
 	if not M.is_rest(floor) then
 		M.grant_points(players, floor)
 		M.record_floor(players, floor)
