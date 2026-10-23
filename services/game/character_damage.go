@@ -415,6 +415,9 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 	if ch.invincible {
 		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{}, true)
 	} else {
+		if mob != nil && damage > 0 {
+			ch.dojo.AddEnergy(2)
+		}
 		ch.TakeDamage(damage)
 	}
 
@@ -498,7 +501,6 @@ func (ch *Character) block(actx actor.Context, hit Hit) {
 
 func (ch *Character) TakeDamage(damage int32) {
 	if damage > 0 {
-		ch.dojo.AddEnergy(2)
 		ch.mount.takeDamage(damage)
 	}
 
