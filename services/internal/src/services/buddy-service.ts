@@ -291,6 +291,9 @@ export class BuddyService {
         this.assertWorld(worldId);
         this.assertCharacterId(accepterCharacterId);
         this.assertCharacterId(requesterCharacterId);
+        if (accepterCharacterId === requesterCharacterId) {
+            return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_CANNOT_ADD_SELF };
+        }
 
         const firstCharacterId =
             requesterCharacterId < accepterCharacterId ? requesterCharacterId : accepterCharacterId;

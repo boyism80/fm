@@ -73,6 +73,9 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 
 	case pconst.BuddyAccept:
 		requesterID := req.CharacterID
+		if requesterID == charID {
+			return nil
+		}
 		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 			func(c context.Context) (*internal.AcceptBuddyReply, error) {
 				return h.gs.systems.Get[*rpc.InternalConnection]().Client.AcceptBuddy(c, &internal.AcceptBuddyRequest{

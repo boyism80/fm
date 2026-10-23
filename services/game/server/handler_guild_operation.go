@@ -275,7 +275,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 		targetID := req.CharacterID
-		if targetID == 0 {
+		if targetID == 0 || targetID == charID {
 			return nil
 		}
 		guildID, inGuild := ch.Guild().ID()

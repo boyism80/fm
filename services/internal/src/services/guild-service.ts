@@ -872,6 +872,9 @@ export class GuildService {
         if (!parsedRank) {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_INVALID_MEMBER_RANK };
         }
+        if (requesterCharacterId === targetCharacterId) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
+        }
 
         const firstCharacterId = requesterCharacterId < targetCharacterId ? requesterCharacterId : targetCharacterId;
         const secondCharacterId = requesterCharacterId < targetCharacterId ? targetCharacterId : requesterCharacterId;
