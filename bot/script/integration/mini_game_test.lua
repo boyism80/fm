@@ -90,8 +90,8 @@ end
 local function move(ctx, bot, other, x, y, stone)
     local p = bot:request_on(other, resp.mini_game_move_omok,
         req.mini_room { mode = MODE.move_omok, x = x, y = y, stone = stone }, function(p)
-        return p.x == x and p.y == y
-    end, 5000)
+            return p.x == x and p.y == y
+        end, 5000)
     if p == false then
         return ctx:fail(string.format("%s 오목 착수 (%d, %d) 알림 없음", bot:name(), x, y))
     end
@@ -213,8 +213,8 @@ end
 local function pick(ctx, bot, other, first_pick, card)
     local p = bot:request_on(other, resp.mini_game_select_card,
         req.mini_room { mode = MODE.select_card, first_pick = first_pick, card = card }, function(p)
-        return p.card == card
-    end, 5000)
+            return p.card == card
+        end, 5000)
     if p == false then
         return ctx:fail(string.format("%s 카드 %d 선택 알림 없음", bot:name(), card))
     end

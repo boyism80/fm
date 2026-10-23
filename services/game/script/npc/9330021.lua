@@ -10,9 +10,9 @@ return {
             HAIR_COUPON ..
             "# #t" ..
             HAIR_COUPON .. "##k 또는 #b#i" .. COLOR_COUPON .. "# #t" .. COLOR_COUPON .. "##k 만 있다면 멋진 헤어스타일로 바꿔드리지~", {
-            "머리 스타일 바꾸기",
-            "머리 색깔 염색하기",
-        })
+                "머리 스타일 바꾸기",
+                "머리 색깔 염색하기",
+            })
         if sel == nil then
             return
         end

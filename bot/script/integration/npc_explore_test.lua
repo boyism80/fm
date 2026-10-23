@@ -487,7 +487,7 @@ local function explore(ctx, bot, entry)
             if #queue > 0 then
                 seen.capped = true
                 lines[#lines + 1] = string.format("  [%s%s] 경로 상한 %d 도달, 남은 분기 %d", here, profile.name, MAX_PATHS, #
-                queue)
+                    queue)
             end
         end
     end

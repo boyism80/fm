@@ -11,9 +11,9 @@ local TIERS = {
 return {
     on_click = function(me, npc)
         local message = "#i" ..
-        TICKET ..
-        "# #b#z" ..
-        TICKET .. "##k1개로 진귀한 아이템을 교환해드려요! \r\n #i" .. TICKET .. "# #b#z" .. TICKET .. "##k은 핫타임 으로 획득합니다.\r\n"
+            TICKET ..
+            "# #b#z" ..
+            TICKET .. "##k1개로 진귀한 아이템을 교환해드려요! \r\n #i" .. TICKET .. "# #b#z" .. TICKET .. "##k은 핫타임 으로 획득합니다.\r\n"
         local sel = me:dialog_list(npc, message, {
             "#b#z" .. TICKET .. "#을 사용한다.",
         })

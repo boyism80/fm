@@ -28,8 +28,8 @@ end
 local function change_leader_refused(ctx, leader, target, code, what)
     local p = leader:request(resp.party_status_message,
         req.party_operation { operation = PARTY.ChangeLeader, target_character_id = target:id() }, function(p)
-        return p.code == code
-    end, 5000)
+            return p.code == code
+        end, 5000)
     return check(ctx, p ~= false, string.format("%s 파티장 위임이 거절되지 않음 (기대 코드 %d)", what, code))
 end
 

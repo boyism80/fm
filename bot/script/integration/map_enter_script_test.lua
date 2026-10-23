@@ -15,16 +15,16 @@ local function stage_hint(ctx)
     local bot = ctx:bot(0)
     local hint = bot:request(resp.weather,
         req.normal_chat { message = string.format("/인스턴스이동 %d %d", KERNING_PQ_STAGE, INSTANCE_KEY) }, function(p)
-        return p.message:find("쿠폰", 1, true) ~= nil
-    end, 5000)
+            return p.message:find("쿠폰", 1, true) ~= nil
+        end, 5000)
     if check(ctx, hint ~= false, "첫 입장에 단계 안내 문구가 오지 않음") == false then
         return false
     end
 
     hint = bot:request(resp.weather,
         req.normal_chat { message = string.format("/인스턴스이동 %d %d", ROMEO_STAGE, INSTANCE_KEY) }, function(p)
-        return p.message:find("스위치", 1, true) ~= nil
-    end, 5000)
+            return p.message:find("스위치", 1, true) ~= nil
+        end, 5000)
     return check(ctx, hint ~= false, "로미오 단계 안내 문구가 오지 않음")
 end
 
@@ -33,8 +33,8 @@ local function title_effect(ctx)
     local bot = ctx:bot(0)
     local effect = bot:request(resp.environment_change,
         req.normal_chat { message = string.format("/인스턴스이동 %d %d", NEO_CITY, INSTANCE_KEY) }, function(p)
-        return p.env == "temaD/enter/neoCity1"
-    end, 5000)
+            return p.env == "temaD/enter/neoCity1"
+        end, 5000)
     return check(ctx, effect ~= false, "입장 제목 효과가 오지 않음")
 end
 

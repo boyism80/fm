@@ -326,8 +326,8 @@ test_suite {
             end
             local notice = leader:request_on(member, resp.notice,
                 req.warp { target = 0xFFFFFFFF, portal_name = "out001" }, function(p)
-                return p.message:find("수련점수를 3점", 1, true) ~= nil
-            end, 5000)
+                    return p.message:find("수련점수를 3점", 1, true) ~= nil
+                end, 5000)
             if notice == false then
                 return ctx:fail("파티원이 수련점수를 받지 못함")
             end

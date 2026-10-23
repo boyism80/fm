@@ -79,7 +79,8 @@ local function claim_belt(me, npc)
     end
     if points < belt.points or me:level() < belt.level then
         local text = string.format(
-        "#i%d:# #b#t%d##k를 받기 위해서는 #b%d 레벨#k 이상이어야 하며, 누적 수련점수 %d 점이 필요해.\r\n\r\n네가 이 허리띠를 받으려면 ", belt.item, belt.item,
+            "#i%d:# #b#t%d##k를 받기 위해서는 #b%d 레벨#k 이상이어야 하며, 누적 수련점수 %d 점이 필요해.\r\n\r\n네가 이 허리띠를 받으려면 ", belt.item,
+            belt.item,
             belt.level, belt.points)
         if points < belt.points then
             text = text .. string.format("수련점수를 #r%d#k점이나 더 쌓아야 한다고.", belt.points - points)

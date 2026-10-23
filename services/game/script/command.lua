@@ -445,7 +445,8 @@ local function fault_command(label, key_name, fault)
     return {
         privilege = ROLE.Admin,
         usage = string.format(
-        "<%s> [on|lost|timeout|off] - on: 요청 미전송, lost: 요청 처리 후 응답 유실, timeout: 응답 없이 대기. 모두 지연 후 적용 (테스트용)", key_name),
+            "<%s> [on|lost|timeout|off] - on: 요청 미전송, lost: 요청 처리 후 응답 유실, timeout: 응답 없이 대기. 모두 지연 후 적용 (테스트용)",
+            key_name),
         command = function(me, args)
             local key = args[1]
             if key == nil then

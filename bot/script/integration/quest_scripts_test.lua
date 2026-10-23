@@ -156,8 +156,8 @@ local function run(ctx, bot, entry)
         if started(bot, quest) == false then
             local p = bot:request(resp.update_quest,
                 req.quest_action { mode = START, quest_id = quest, npcid = entry.start.npc }, function(p)
-                return p.quest_status.quest_id == quest and p.quest_status.status == 1
-            end, 5000)
+                    return p.quest_status.quest_id == quest and p.quest_status.status == 1
+                end, 5000)
             if p == false then
                 log("info", where .. ": 일반 시작 실패로 on_end 생략")
                 return

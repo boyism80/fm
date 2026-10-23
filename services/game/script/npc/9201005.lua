@@ -60,7 +60,8 @@ local function start(me, npc)
     sm:enter_player(groom)
     sm:start()
     me:message(
-    marriage:groom_name() .. "님과 " .. marriage:bride_name() .. "님의 결혼이 " .. (channel_id() + 1) .. "채널 대성당에서 시작되려 합니다.",
+        marriage:groom_name() ..
+        "님과 " .. marriage:bride_name() .. "님의 결혼이 " .. (channel_id() + 1) .. "채널 대성당에서 시작되려 합니다.",
         Msg.PinkText, MessageScope.World)
 end
 

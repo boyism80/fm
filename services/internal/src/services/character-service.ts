@@ -489,27 +489,25 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld
-                .get(wid)
-                ?.push({
-                    character,
-                    baseLooks,
-                    overlays,
-                    inventory,
-                    skills,
-                    buffs,
-                    quests,
-                    savedLocations,
-                    records,
-                    accountRecords,
-                    monsterBook,
-                    keyLayout,
-                    skillMacros,
-                    mount,
-                    storage,
-                    claimedShops,
-                    unsettledRequests,
-                });
+            byWorld.get(wid)?.push({
+                character,
+                baseLooks,
+                overlays,
+                inventory,
+                skills,
+                buffs,
+                quests,
+                savedLocations,
+                records,
+                accountRecords,
+                monsterBook,
+                keyLayout,
+                skillMacros,
+                mount,
+                storage,
+                claimedShops,
+                unsettledRequests,
+            });
         }
 
         for (const [worldId, group] of byWorld) {

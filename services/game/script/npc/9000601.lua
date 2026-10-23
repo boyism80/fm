@@ -11,10 +11,10 @@ local TIERS = {
 return {
     on_click = function(me, npc)
         local message = "#i" ..
-        BUNGEOPPANG ..
-        "# #b#z" ..
-        BUNGEOPPANG ..
-        "##k으로 진귀한 아이템을 교환해드려요! \r\n #i" .. BUNGEOPPANG .. "# #b#z" .. BUNGEOPPANG .. "##k는 퀘스트로 획득합니다.\r\n"
+            BUNGEOPPANG ..
+            "# #b#z" ..
+            BUNGEOPPANG ..
+            "##k으로 진귀한 아이템을 교환해드려요! \r\n #i" .. BUNGEOPPANG .. "# #b#z" .. BUNGEOPPANG .. "##k는 퀘스트로 획득합니다.\r\n"
         local sel = me:dialog_list(npc, message, {
             "#b#z" .. BUNGEOPPANG .. "#을 사용한다.",
         })

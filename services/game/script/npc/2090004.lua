@@ -57,7 +57,7 @@ return {
             end
             local item = SCROLLS[item_sel]
             local prompt = "흐음. #t" ..
-            item .. "#를 만들어 보고 싶은가?  #t" .. item .. "#를 만들기 위해선 #b#t4001124##k과 #b강철의 원석 10개#k가 필요하다네."
+                item .. "#를 만들어 보고 싶은가?  #t" .. item .. "#를 만들기 위해선 #b#t4001124##k과 #b강철의 원석 10개#k가 필요하다네."
             prompt = prompt .. "\r\n#i" .. MARBLE .. "# #t" .. MARBLE .. "# 100개"
             prompt = prompt .. "\r\n#i4010001# #t4010001# 10개"
             if not me:dialog_yes_no(npc, prompt) then

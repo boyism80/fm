@@ -186,8 +186,8 @@ local function triple_megaphone(ctx)
 
     local heard = sender:request_on(receiver, resp.megaphone,
         use(sender, TRIPLE_MEGAPHONE, { lines = { "첫째 줄", "둘째 줄", "셋째 줄" }, ear = true }), function(p)
-        return p.type == MSG_TRIPLE_MEGAPHONE and p.lines[1]:find("첫째 줄", 1, true) ~= nil
-    end, 5000)
+            return p.type == MSG_TRIPLE_MEGAPHONE and p.lines[1]:find("첫째 줄", 1, true) ~= nil
+        end, 5000)
     if heard == false then
         return ctx:fail("세 줄 확성기가 전달되지 않음")
     end

@@ -6,10 +6,24 @@ local GOODS = {
     { item = 4006000, cost = 3000, desc = "강력한 마법을 사용하는데 필요한 아이템일세" },
     { item = 4006001, cost = 3000, desc = "강력한 소환 마법 아이템을 사용하는데 필요한 아이템일세" },
 }
-local ELIXIR = { item = 2000004, cost = 3800, max = 150, record = "alchemist.elixir", name = "엘릭서", desc =
-"HP와 MP를 최대 HP/MP의 50% 만큼 회복하는 아이템일세" }
-local POWER_ELIXIR = { item = 2000005, cost = 6800, max = 40, record = "alchemist.power_elixir", name = "파워 엘릭서", desc =
-"HP와 MP를 모두 회복하는 아이템일세" }
+local ELIXIR = {
+    item = 2000004,
+    cost = 3800,
+    max = 150,
+    record = "alchemist.elixir",
+    name = "엘릭서",
+    desc =
+    "HP와 MP를 최대 HP/MP의 50% 만큼 회복하는 아이템일세"
+}
+local POWER_ELIXIR = {
+    item = 2000005,
+    cost = 6800,
+    max = 40,
+    record = "alchemist.power_elixir",
+    name = "파워 엘릭서",
+    desc =
+    "HP와 MP를 모두 회복하는 아이템일세"
+}
 
 return {
     on_click = function(me, npc)

@@ -118,8 +118,8 @@ return {
         elseif sel == 3 then
             local craft = me:dialog_list(npc,
                 "나의 배고픔을 달래 주던 #b#h ##k님이잖아! 그동안 고마웠다는 표시로 #b여신의 깃털을 여신의 아이템으로#k 만들어 줄게. 뭘 만들어 줄까?#b\r\n", {
-                "여신의 팔찌 #r(여신의 깃털 10개 필요)",
-            })
+                    "여신의 팔찌 #r(여신의 깃털 10개 필요)",
+                })
             if craft == 1 then
                 claim_bracelet(me, npc)
             end

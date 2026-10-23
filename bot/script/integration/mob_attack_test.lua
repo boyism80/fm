@@ -59,8 +59,8 @@ local function diseases(ctx)
 
     local sealed = actor:request_on(observer, resp.give_debuff,
         req.damaged { type = HIT_MAP_DEBUFF, damage = 1, level = 1, skill_id = SEAL }, function(p)
-        return p.character_id == actor:id() and p.skill_id == SEAL
-    end, 5000)
+            return p.character_id == actor:id() and p.skill_id == SEAL
+        end, 5000)
     if sealed == false then
         return ctx:fail("맵 디버프 피격에 봉인이 걸리지 않음")
     end

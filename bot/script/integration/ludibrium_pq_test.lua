@@ -158,8 +158,8 @@ test_suite {
             end
             local warp = leader:request(resp.warp,
                 req.dialog { dialog_type = DIALOG_LIST, next = true, selected = #dlg.selections - 1 }, function(p)
-                return p.character.map == START
-            end, 15000)
+                    return p.character.map == START
+                end, 15000)
             if warp == false then
                 return ctx:fail("1스테이지 입장 실패")
             end
@@ -188,8 +188,8 @@ test_suite {
                 for _ = 1, 10 do
                     local p, name = leader:request({ resp.trigger_reactor, resp.warp },
                         req.damage_reactor { oid = box.oid, hit_side = 3 }, function(p, name)
-                        return name == resp.warp or p.reactor.oid == box.oid
-                    end)
+                            return name == resp.warp or p.reactor.oid == box.oid
+                        end)
                     if p == false then
                         return ctx:fail("추방 상자 타격 응답 없음")
                     end

@@ -18,7 +18,7 @@ return {
         local lines = {}
         for _, entry in ipairs(entries) do
             lines[#lines + 1] = entry.rank ..
-            "위 #e#b" .. entry.name .. "#k#n  Lv. #r" .. entry.level .. "#k  " .. class_names.name(entry.class)
+                "위 #e#b" .. entry.name .. "#k#n  Lv. #r" .. entry.level .. "#k  " .. class_names.name(entry.class)
         end
         me:dialog(npc,
             "이 월드에서 가장 뛰어난 모험가들의 이름이 새겨진 신비로운 바위다.\r\n랭킹은 #r" ..

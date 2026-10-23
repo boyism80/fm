@@ -316,8 +316,8 @@ local function enter_lobby(ctx, bot, selected)
     end
     local p, name = bot:request({ resp.warp, resp.dialog },
         req.dialog { dialog_type = DIALOG.list, next = true, selected = selected }, function(p, name)
-        return name == resp.dialog or p.character.map == LOBBY
-    end, 5000)
+            return name == resp.dialog or p.character.map == LOBBY
+        end, 5000)
     if p == false or name == resp.dialog then
         bot:dialog(false)
         return ctx:fail(bot:name() .. " 웨딩홀 로비로 이동하지 않음: " .. (p and tostring(p.text) or "응답 없음"))
@@ -362,8 +362,8 @@ local function ceremony(ctx)
     end
     local given = guest:request(resp.wedding_gift,
         req.wedding_present { mode = GIFT_MODE.give, slot = guest:slot(GIFT), item_id = GIFT, count = 2 }, function(p)
-        return p.mode == GIFT_MODE.given
-    end, 5000)
+            return p.mode == GIFT_MODE.given
+        end, 5000)
     if given == false then
         return ctx:fail("결혼 선물 전달 결과가 오지 않음")
     end
@@ -537,8 +537,8 @@ local function gifts(ctx)
     end
     local received = groom:request(resp.wedding_gift,
         req.wedding_present { mode = GIFT_MODE.receive, inventory_type = ETC, index = 0 }, function(p)
-        return p.mode == GIFT_MODE.received
-    end, 5000)
+            return p.mode == GIFT_MODE.received
+        end, 5000)
     if received == false then
         return ctx:fail("결혼 선물 수령 결과가 오지 않음")
     end
@@ -552,8 +552,8 @@ local function gifts(ctx)
     end
     local failed = groom:request(resp.wedding_gift,
         req.wedding_present { mode = GIFT_MODE.receive, inventory_type = ETC, index = 0 }, function(p)
-        return p.mode == GIFT_MODE.receive_fail
-    end, 5000)
+            return p.mode == GIFT_MODE.receive_fail
+        end, 5000)
     fault.rpc(groom, "ClaimWeddingGift", "off")
     if failed == false then
         return ctx:fail("장애 중 결혼 선물 수령 실패 결과가 오지 않음")

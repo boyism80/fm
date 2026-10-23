@@ -61,8 +61,8 @@ end
 local function drop(ctx, bot, item_id)
     local p = bot:request(resp.spawn_item,
         req.move_item { inventory_type = ETC, source = bot:slot(item_id) or 0, dest = 0, count = 1 }, function(p)
-        return p.owner_id == bot:id() and p.item_model.id == item_id
-    end, 3000)
+            return p.owner_id == bot:id() and p.item_model.id == item_id
+        end, 3000)
     if p == false then
         return ctx:fail(bot:name() .. " 아이템 버리기 실패: " .. item_id)
     end

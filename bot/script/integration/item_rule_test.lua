@@ -88,8 +88,8 @@ local function scroll_only(ctx)
 
     local p = bot:request(resp.update_stats,
         req.enhance_equipment { scroll_slot = bot:slot(POTION) or 0, target_slot = CAP_SLOT }, function(p)
-        return p.unlock_action
-    end, 3000)
+            return p.unlock_action
+        end, 3000)
     if check(ctx, p ~= false, "물약을 주문서로 쓴 요청이 거절되지 않음") == false then
         return false
     end

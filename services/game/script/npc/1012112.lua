@@ -129,8 +129,8 @@ return {
         if party == nil then
             local selected = me:dialog_list(npc,
                 "안녕하세요? 저는 토리라고 합니다. 이 안은 달맞이꽃이 피어나는 아름다운 언덕이에요. 그런데 그 곳에 살고 있는 어흥이라는 호랑이가 몹시 배가 고파 먹을 것을 찾고 있다고 하네요.", {
-                "떡 20개를 가져 왔어요.",
-            })
+                    "떡 20개를 가져 왔어요.",
+                })
             if selected == 1 then
                 rice_cake_reward(me, npc)
             end

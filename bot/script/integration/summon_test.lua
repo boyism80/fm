@@ -56,8 +56,8 @@ end
 local function reappears(ctx, bot, skill_id)
     local moved = bot:request(resp.spawn_summon,
         req.normal_chat { message = string.format("/인스턴스이동 %d %d", PARK, ctx:seat()) }, function(p)
-        return p.owner_id == bot:id() and p.skill_id == skill_id
-    end, 3000)
+            return p.owner_id == bot:id() and p.skill_id == skill_id
+        end, 3000)
     return moved ~= false
 end
 

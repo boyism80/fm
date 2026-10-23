@@ -18,7 +18,7 @@ local function drop_text(me, mob_id)
                 end
             end
             local line = (#lines + 1) ..
-            ") #v" .. item_id .. "#" .. label .. " - " .. string.format("%g", d.prob * 100) .. "% chance. "
+                ") #v" .. item_id .. "#" .. label .. " - " .. string.format("%g", d.prob * 100) .. "% chance. "
             if d.quest > 0 then
                 line = line .. "Requires quest " .. d.quest .. " to be started."
             end
@@ -29,16 +29,16 @@ local function drop_text(me, mob_id)
         return "No drops was returned."
     end
     return "Drops for #o" ..
-    mob_id .. "#\r\n--------------------------------------\r\n" .. table.concat(lines, "\r\n") .. "\r\n"
+        mob_id .. "#\r\n--------------------------------------\r\n" .. table.concat(lines, "\r\n") .. "\r\n"
 end
 
 return {
     on_click = function(me, npc)
         local sel = me:dialog_list(npc,
             "안녕하세요 저는 쉬프트마스터 드랍정보 도우미 엔피시 입니다. 원하시는 몬스터의 드랍정보를 보다 정확하게 알고싶다면 언제든지 이용해주시기 바랍니다.\r\n#b", {
-            "몬스터 드랍정보를 알고싶습니다.",
-            "몬스터의 코드를 확인하고 싶습니다.",
-        })
+                "몬스터 드랍정보를 알고싶습니다.",
+                "몬스터의 코드를 확인하고 싶습니다.",
+            })
         if sel == nil then
             return
         end

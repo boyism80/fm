@@ -48,7 +48,7 @@ return {
             reward_exp = 1000
         elseif have_diff == 1 then
             str = str ..
-            "어라? 손에 들고 계신 또 다른 안경은 무엇인가요? 어? 그 안경도 제게 주시지 않으시겠어요? 보상은 해드릴게요. 후후, 기분에 따라서 안경을 바꿔서 써보기도 해야겠어요.\r\n\r\n"
+                "어라? 손에 들고 계신 또 다른 안경은 무엇인가요? 어? 그 안경도 제게 주시지 않으시겠어요? 보상은 해드릴게요. 후후, 기분에 따라서 안경을 바꿔서 써보기도 해야겠어요.\r\n\r\n"
             str = str .. "#fUI/UIWindow.img/QuestIcon/4/0#\r\n"
             str = str .. "#i2030019# #t2030019# 15개\r\n\r\n"
             str = str .. "#fUI/UIWindow.img/QuestIcon/8/0# 1500 exp\r\n"
@@ -56,7 +56,7 @@ return {
             reward_exp = 2000
         else
             str = str ..
-            "어라? 손에 들고 계신 또 다른 안경들은 무엇인가요? 어? 그 안경들도 제게 주시지 않으시겠어요? 보상은 해드릴게요. 후후, 기분에 따라서 안경들을 바꿔서 써보기도 해야겠어요.\r\n\r\n"
+                "어라? 손에 들고 계신 또 다른 안경들은 무엇인가요? 어? 그 안경들도 제게 주시지 않으시겠어요? 보상은 해드릴게요. 후후, 기분에 따라서 안경들을 바꿔서 써보기도 해야겠어요.\r\n\r\n"
             str = str .. "#fUI/UIWindow.img/QuestIcon/4/0#\r\n"
             str = str .. "#i2030019# #t2030019# 30개\r\n\r\n"
             str = str .. "#fUI/UIWindow.img/QuestIcon/8/0# 2000 exp\r\n"

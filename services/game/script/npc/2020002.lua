@@ -87,8 +87,8 @@ return {
 
         local recipe = category.recipes[item_sel]
         local prompt = "#t" ..
-        recipe.item ..
-        "# 아이템을 원하는 것인가? 그렇다면 자네를 위해 그 물건을 만들어 주도록 하지. 단지 약간의 수수료가 필요하겠지만 말이야.. 재료는 다음과 같다네. 그리고 인벤토리 공간이 충분한지 확인해 주게.\r\n#b"
+            recipe.item ..
+            "# 아이템을 원하는 것인가? 그렇다면 자네를 위해 그 물건을 만들어 주도록 하지. 단지 약간의 수수료가 필요하겠지만 말이야.. 재료는 다음과 같다네. 그리고 인벤토리 공간이 충분한지 확인해 주게.\r\n#b"
         for _, mat in ipairs(recipe.mats) do
             prompt = prompt .. "\r\n#i" .. mat[1] .. "# #t" .. mat[1] .. "# " .. mat[2] .. "개"
         end

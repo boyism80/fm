@@ -315,16 +315,16 @@ local function quest_reward(ctx)
     end
     p = bot:request(resp.update_quest,
         req.quest_action { mode = QUEST_START, quest_id = RIDER_QUEST, npcid = RIDER_QUEST_NPC }, function(p)
-        return p.quest_status.quest_id == RIDER_QUEST and p.quest_status.status == 1
-    end, 5000)
+            return p.quest_status.quest_id == RIDER_QUEST and p.quest_status.status == 1
+        end, 5000)
     if p == false then
         return ctx:fail("몬스터 라이딩 퀘스트 시작 실패")
     end
 
     p = bot:request(resp.update_skills,
         req.quest_action { mode = QUEST_COMPLETE, quest_id = RIDER_QUEST, npcid = RIDER_QUEST_NPC }, function(p)
-        return p.skill_id == MONSTER_RIDER
-    end, 5000)
+            return p.skill_id == MONSTER_RIDER
+        end, 5000)
     if p == false then
         return ctx:fail("3차 직업이 퀘스트 보상으로 몬스터 라이딩을 받지 못함")
     end

@@ -76,8 +76,8 @@ local hooks = {
             game(sm).prepare(sm)
         end
         world_notice(
-        string.format("GM 이벤트 [%s]가 잠시 후 %d채널에서 시작됩니다! 해당 채널의 리스항구, 사우스페리, 오르비스, 루디브리엄에서 이벤트 NPC를 통해 참가할 수 있습니다!",
-            sm:get_property("name"), channel_id() + 1), Msg.LightBlueText)
+            string.format("GM 이벤트 [%s]가 잠시 후 %d채널에서 시작됩니다! 해당 채널의 리스항구, 사우스페리, 오르비스, 루디브리엄에서 이벤트 NPC를 통해 참가할 수 있습니다!",
+                sm:get_property("name"), channel_id() + 1), Msg.LightBlueText)
         sm:after("close", RECRUIT_MS, "on_close")
     end,
 

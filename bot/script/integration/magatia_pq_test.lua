@@ -314,8 +314,8 @@ local function persuade_urete(ctx, path)
     end
     local spawn, name = leader:request({ resp.dialog, resp.spawn_mob },
         req.dialog { dialog_type = DIALOG_LIST, next = true, selected = 1 }, function(p, name)
-        return name == resp.dialog or p.mob.mob_id == PERSUADED_URETE
-    end, 15000)
+            return name == resp.dialog or p.mob.mob_id == PERSUADED_URETE
+        end, 15000)
     for _ = 1, 5 do
         if spawn == false then
             return ctx:fail("설득한 유레테가 나타나지 않음")

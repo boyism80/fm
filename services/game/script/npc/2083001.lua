@@ -75,8 +75,8 @@ return {
             end
             local selected = me:dialog_list(npc,
                 "겁없이 생명의 동굴로 발을 내딛은 어리석은 자들이여... 숨겨진 열쇠를 찾은 자만이 나에게 다가올 수 있을것이다. 무모한 게임에 도전하겠는가?", {
-                "도전한다.",
-            })
+                    "도전한다.",
+                })
             if selected == nil then
                 return
             end

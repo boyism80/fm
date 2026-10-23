@@ -125,7 +125,7 @@ return {
         local recipe = category.recipes[item_sel]
         local cost = math.floor(recipe.cost * 9 / 10)
         local prompt = "#t" ..
-        recipe.item .. "# 아이템이 필요한가요? 그렇다면 재료는 아래와 같이 모아오셔야 합니다. 그리고 인벤토리 공간이 충분한지도 확인해 주세요.\r\n#b"
+            recipe.item .. "# 아이템이 필요한가요? 그렇다면 재료는 아래와 같이 모아오셔야 합니다. 그리고 인벤토리 공간이 충분한지도 확인해 주세요.\r\n#b"
         if stimulator then
             prompt = prompt .. "\r\n#i" .. STIMULATOR .. "# #t" .. STIMULATOR .. "# 1개"
         end

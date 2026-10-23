@@ -213,8 +213,8 @@ local function sell_flow(ctx)
     end
     local closed = other:request_on(buyer, resp.mini_room_leave,
         req.mini_room { mode = MODE.buy, index = 0, bundles = 7 }, function(leave)
-        return leave.reason == LEAVE.sold_out
-    end, 5000)
+            return leave.reason == LEAVE.sold_out
+        end, 5000)
     if closed == false then
         return ctx:fail("모두 팔린 뒤 손님이 품절로 나가지 않음")
     end
@@ -248,8 +248,8 @@ local function kick_flow(ctx)
 
     local kicked = owner:request_on(buyer, resp.mini_room_leave,
         req.mini_room { mode = MODE.kick, slot = 1, name = buyer:name() }, function(leave)
-        return leave.reason == LEAVE.kicked
-    end, 5000)
+            return leave.reason == LEAVE.kicked
+        end, 5000)
     if kicked == false then
         return ctx:fail("추방한 손님이 강제 퇴장되지 않음")
     end
