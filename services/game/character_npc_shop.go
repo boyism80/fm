@@ -3,8 +3,10 @@ package game
 import (
 	"math"
 
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func (d *Dialog) Buy(shop *wz.Shop, itemID uint32, count uint16) {
@@ -84,7 +86,7 @@ func (d *Dialog) Recharge(slot int16) {
 	if !ok || model.GetTraits()&constant.ItemTraitRechargeable == 0 {
 		return
 	}
-	capacity := model.GetCapacity()
+	capacity := d.rechargeCapacity(model)
 	if item.GetCount() >= capacity {
 		return
 	}
@@ -96,4 +98,21 @@ func (d *Dialog) Recharge(slot int16) {
 	item.SetCount(capacity)
 	d.owner.listener.OnInventorySlotUpdated(d.owner, constant.InventoryTypeConsume, slot, item)
 	d.owner.listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionUpdateOK)
+}
+
+func (d *Dialog) rechargeCapacity(model *wz.Consume) uint16 {
+	capacity := model.GetCapacity()
+	m := d.owner.GetMap()
+	if m == nil || m.GetLuaRoot() == nil {
+		return capacity
+	}
+	thread, err := luax.NewThread(m.GetLuaRoot(), constant.CharacterQueryScriptPath)
+	if err != nil {
+		return capacity
+	}
+	ret, err := luax.Call(thread, "get_recharge_capacity", d.owner, int(capacity))
+	if err != nil || ret == nil || ret.Type() != lua.LTNumber {
+		return capacity
+	}
+	return uint16(min(max(int(lua.LVAsNumber(ret)), int(capacity)), math.MaxUint16))
 }

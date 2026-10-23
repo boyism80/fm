@@ -321,5 +321,21 @@ return {
             end
         end
         return base + bonus
+    end,
+
+    get_recharge_capacity = function(me, capacity)
+        local s
+        if me:class_of(Class.Assassin) then
+            s = me:skill(Skill.ClawMastery)
+        elseif me:class_of(Class.NightWalker2) then
+            s = me:skill(Skill.ClawMasteryCygnus)
+        elseif me:class_of(Class.Gunslinger) then
+            s = me:skill(Skill.GunMastery)
+        end
+        local effect = s ~= nil and s:effect() or nil
+        if effect == nil then
+            return capacity
+        end
+        return capacity + (effect.y or 0)
     end
 }
