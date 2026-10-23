@@ -39,13 +39,7 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	useInventory := ch.Inventory().Tabs()[constant.InventoryTypeConsume]
-	if useInventory == nil {
-		ch.Listener().OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	item := useInventory.Get(uint8(req.Slot))
+	item := ch.Inventory().GetItem(constant.InventoryTypeConsume, int16(req.Slot))
 	if item == nil {
 		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
