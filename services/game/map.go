@@ -457,6 +457,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	m.sections.remove(character)
 
 	character.dialog.Close()
+	character.chair = 0
 	character.RemoveTimer(clockTimer)
 	character.SuspendTimers()
 	character.party.search = nil

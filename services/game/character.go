@@ -141,6 +141,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MorphId:           spawnBuffData.MorphID,
 		SpiritClawSkillId: spawnBuffData.SpiritClawSkillID,
 		ItemEffectId:      ch.itemEffectID,
+		ChairId:           ch.chair,
 		Chalkboard:        ch.chalkboard,
 		MountLevel:        ch.mount.level,
 		MountExp:          ch.mount.exp,
