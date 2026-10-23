@@ -345,20 +345,12 @@ func (inv *Inventory) ExpireItems(now time.Time) {
 }
 
 func (inv *Inventory) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
-	ch := inv.owner
 	if item == nil {
 		return nil, fmt.Errorf("item is nil")
 	}
 
-	if allOrNothing {
-		spec := ExchangeSpec{
-			Reward: ExchangeSide{
-				Items: map[uint32]uint16{item.GetModel().GetID(): item.GetCount()},
-			},
-		}
-		if spec.Valid(ch, ch.escrow) != ExchangeOK {
-			return nil, fmt.Errorf("not enough inventory space for %d items", item.GetCount())
-		}
+	if allOrNothing && !inv.canReceiveItem(item) {
+		return nil, fmt.Errorf("not enough inventory space for %d items", item.GetCount())
 	}
 
 	return inv.addItemUnchecked(item, allOrNothing)
@@ -696,4 +688,10 @@ func (inv *Inventory) Move(invType constant.InventoryType, src, dst int16) bool 
 
 func (inv *Inventory) canReceive(itemID uint32, count uint16) bool {
 	return (ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}}}).Valid(inv.owner, inv.owner.escrow) == ExchangeOK
+}
+
+func (inv *Inventory) canReceiveItem(item Item) bool {
+	var spec ExchangeSpec
+	spec.Reward.addItem(item, item.GetCount())
+	return spec.Valid(inv.owner, inv.owner.escrow) == ExchangeOK
 }

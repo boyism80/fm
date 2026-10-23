@@ -834,7 +834,7 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftOneOfAKind, nil, nil)
 		return nil
 	}
-	if !w.owner.inventory.canReceive(gift.item.GetModel().GetID(), gift.item.GetCount()) {
+	if !w.owner.inventory.canReceiveItem(gift.item) {
 		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 		w.owner.listener.OnMessage(w.owner, constant.MsgPopup, "인벤토리 공간이 부족합니다.")
 		return nil
@@ -880,7 +880,7 @@ func (w *Wedding) receiveClaimed(id uint64, pb *internal.WeddingGift) bool {
 		return false
 	}
 	model := item.GetModel()
-	if w.owner.inventory.hasUniqueItem(model) || !w.owner.inventory.canReceive(model.GetID(), item.GetCount()) {
+	if w.owner.inventory.hasUniqueItem(model) || !w.owner.inventory.canReceiveItem(item) {
 		w.owner.unsettled.Find(id).inFlight = false
 		return false
 	}

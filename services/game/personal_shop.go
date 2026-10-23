@@ -213,13 +213,15 @@ func (ps *PersonalShop) returnItems(ch *Character) {
 		if listed.bundles == 0 {
 			continue
 		}
-		model := listed.item.GetModel()
-		spec := ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{model.GetID(): listed.count()}}}
-		if ch.inventory.hasUniqueItem(model) || spec.Valid(ch, ch.escrow) != ExchangeOK {
+		var spec ExchangeSpec
+		spec.Reward.addItem(listed.item, listed.count())
+		if ch.inventory.hasUniqueItem(listed.item.GetModel()) || spec.Valid(ch, ch.escrow) != ExchangeOK {
 			items = append(items, listed)
 			continue
 		}
-		ch.inventory.addItemUnchecked(listed.item.Clone(listed.count()), true)
+		if _, err := ch.inventory.addItemUnchecked(listed.item.Clone(listed.count()), true); err != nil {
+			items = append(items, listed)
+		}
 	}
 	ps.items = items
 }
