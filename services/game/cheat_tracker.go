@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -169,18 +168,12 @@ func (t *CheatTracker) act(actx actor.Context, action string, score float64, cle
 			log.Printf("cheat notify character=%d: %v", ch.GetID(), err)
 		})
 	case "disconnect":
-		t.disconnect()
+		ch.listener.Disconnect(ch)
 	case "suspend":
 		ch.gameWorld.Systems().Get[*InternalSystem]().SetAccountBannedAsync(actx, ch, "anti-cheat: "+summary).OnError(func(err error) {
 			log.Printf("cheat suspend character=%d: %v", ch.GetID(), err)
 		})
-		t.disconnect()
-	}
-}
-
-func (t *CheatTracker) disconnect() {
-	if holder, ok := t.owner.Client().(interface{ GetConnection() net.Conn }); ok {
-		_ = holder.GetConnection().Close()
+		ch.listener.Disconnect(ch)
 	}
 }
 
