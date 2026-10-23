@@ -2,6 +2,7 @@ package wz
 
 import (
 	"sort"
+	"time"
 
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/types"
@@ -91,6 +92,7 @@ type Map struct {
 	HasClock          bool
 	MobRate           float32
 	RecoveryRate      float32
+	ConsumeCooldown   time.Duration
 	BGM               string
 	MapMark           string
 	MapDesc           string

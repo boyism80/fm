@@ -170,10 +170,9 @@ func (p *ActivePet) UsePotion(slot int16, itemID uint32) error {
 		return ErrPetPotionRefused
 	}
 
-	if !p.owner.UseConsume(consume) {
+	if p.owner.UseConsumeInSlot(slot, consume) != nil {
 		return ErrPetPotionRefused
 	}
-	p.owner.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
 	return nil
 }
 

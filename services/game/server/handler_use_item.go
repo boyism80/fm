@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -61,12 +62,9 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	if !ch.UseConsume(consumeEnt) {
-		ch.Listener().OnUpdateStats(ch, nil, true)
-		return nil
+	if errors.Is(ch.UseConsumeInSlot(int16(req.Slot), consumeEnt), game.ErrConsumeCooldown) {
+		ch.Listener().OnMessage(ch, constant.MsgPinkText, "아직 아이템을 사용할 수 없습니다.")
 	}
-
-	ch.Inventory().RemoveItem(constant.InventoryTypeConsume, int16(req.Slot), 1)
 	ch.Listener().OnUpdateStats(ch, nil, true)
 
 	return nil

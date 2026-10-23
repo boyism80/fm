@@ -1054,6 +1054,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	model.HasClock = info.Int("clock", 0) > 0
 	model.MobRate = float32(info.Float("mobRate", 0))
 	model.RecoveryRate = float32(info.Float("recovery", 1))
+	model.ConsumeCooldown = time.Duration(info.Int("consumeItemCoolTime", 0)) * time.Second
 	model.MiniMapOnOff = info.Int("miniMapOnOff", 0) != 0
 	model.PersonalShop = info.Int("personalShop", 0) != 0
 	model.EntrustedShop = info.Int("entrustedShop", 0) != 0

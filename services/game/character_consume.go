@@ -1,10 +1,12 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -21,6 +23,26 @@ func (ch *Character) UseItemEffect(itemID uint32) bool {
 	ch.buffs.addConsumeBuff(consume)
 	ch.recover(consume)
 	return true
+}
+
+var (
+	ErrConsumeCooldown = errors.New("consume item cooling down")
+	ErrConsumeRefused  = errors.New("consume item refused")
+)
+
+func (ch *Character) UseConsumeInSlot(slot int16, consume *Consume) error {
+	now := clock.Now()
+	if now.Before(ch.nextConsumeAt) {
+		return ErrConsumeCooldown
+	}
+	if !ch.UseConsume(consume) {
+		return ErrConsumeRefused
+	}
+	ch.inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
+	if m := ch.GetMap(); m != nil && m.wz.ConsumeCooldown > 0 {
+		ch.nextConsumeAt = now.Add(m.wz.ConsumeCooldown)
+	}
+	return nil
 }
 
 func (ch *Character) UseConsume(consume *Consume) bool {

@@ -65,6 +65,8 @@ type Character struct {
 	itemEffectID   uint32
 	chalkboard     string
 	chair          uint32
+	// The map's consume cooldown is shared by the use window and the pet's auto potion.
+	nextConsumeAt  time.Time
 	lastHeal       lastHeal
 	buffs          *Buffs
 	cheat          *CheatTracker
