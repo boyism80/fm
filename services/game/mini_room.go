@@ -380,6 +380,10 @@ func (m *Map) VisitMiniRoom(ch *Character, sn uint32, password string) error {
 	if t, ok := ch.miniRoom.(*Trade); ok && t.invited == ch && t.sn == sn {
 		return t.Visit(ch)
 	}
+	// The sn of a remotely managed shop is an OID of another map and can match an object here.
+	if ch.remoteShops.managed.sn != 0 && ch.remoteShops.managed.sn == sn {
+		return ch.remoteShops.visitManaged(sn)
+	}
 	if es, ok := m.GetObject(constant.ObjectTypeEntrustedShop, sn).(*EntrustedShop); ok {
 		if ch.GetID() != es.ownerID {
 			return es.Visit(ch)
@@ -396,5 +400,5 @@ func (m *Map) VisitMiniRoom(ch *Character, sn uint32, password string) error {
 	if g, ok := m.GetObject(constant.ObjectTypeMiniGame, sn).(*MiniGame); ok {
 		return g.Visit(ch, password)
 	}
-	return ch.remoteShops.visitManaged(sn)
+	return &MiniRoomEnterError{Code: pconst.MiniRoomEnterClosed}
 }
