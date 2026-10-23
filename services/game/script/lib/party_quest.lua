@@ -121,11 +121,15 @@ function M.shuffle(str)
     return table.concat(chars)
 end
 
-function M.party_exp(sm, amount)
+function M.party_exp(sm, amount, map)
     if sm == nil or amount == nil or amount <= 0 then
         return
     end
-    for _, p in ipairs(sm:players()) do
+    local players = sm:players()
+    if map ~= nil then
+        players = map:characters()
+    end
+    for _, p in pairs(players) do
         if p ~= nil then
             p:exchange({}, { exp = amount })
         end

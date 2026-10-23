@@ -252,9 +252,9 @@ local function create(cfg)
                 local ok = sm:get_property("stage7") ~= "1"
                 if ok then
                     sm:message(protect_ok_msg)
-                    pq.party_exp(sm, 45000)
+                    pq.party_exp(sm, 45000, boss)
                 else
-                    pq.party_exp(sm, 30000)
+                    pq.party_exp(sm, 30000, boss)
                 end
                 local spawns = ok and ending_npcs.success or ending_npcs.fail
                 for _, map_id in ipairs({ urete_map, reward_map, boss_map }) do
