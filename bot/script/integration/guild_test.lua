@@ -1,5 +1,6 @@
 local pq = require("script/integration/lib/party_quest")
 local fault = require("script/integration/lib/fault")
+local settle = require("script/integration/lib/settle")
 
 local GUILD_HQ = 200000301
 local HERACLE = 2010007
@@ -20,7 +21,7 @@ local ALLIANCE_CAPACITY_COST = 5000000
 local ALLIANCE_CAPACITY = 2
 local GP = 100
 local SETTLE_WAIT_MS = 45000
-local REPLY_DELAY_MS = 6000
+local REPLY_DELAY_MS = 4000
 
 local WATCHED = {
     guild_capacity_change = true,
@@ -67,8 +68,26 @@ local function emblem_request()
     return req.guild_operation { operation = GUILD.ChangeEmblem, logo_bg = 1001, logo_bg_color = 2, logo = 2001, logo_color = 3 }
 end
 
+local function pause(ctx, bot)
+    if settle.pause(bot) == false then
+        return ctx:fail("정산 타이머 정지 실패")
+    end
+    return true
+end
+
+local function resume(ctx, bot)
+    if settle.resume(bot) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
+    return true
+end
+
 -- The fault is server wide, so it is turned off right after the one request it targets.
+-- The settle timer stays paused so the held state can be seen; the caller resumes it.
 local function send_unknown(ctx, bot, method, request, mode)
+    if pause(ctx, bot) == false then
+        return false
+    end
     if fault.rpc(bot, method, mode) == false then
         return ctx:fail(method .. " 장애 주입 실패")
     end
@@ -93,7 +112,7 @@ local function create_lost_timer(ctx)
     if send_unknown(ctx, bot, "CreateGuild", create_request(bot), "lost") == false then
         return false
     end
-    if holds(ctx, bot, MESO - CREATE_COST, "장애 직후 보류") == false then
+    if holds(ctx, bot, MESO - CREATE_COST, "장애 직후 보류") == false or resume(ctx, bot) == false then
         return false
     end
     if bot:request(resp.guild_message, nil, code(GUILD_SHOW_INFO), SETTLE_WAIT_MS) == false then
@@ -117,7 +136,9 @@ local function create_lost_relogin(ctx)
     if bot:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if resume(ctx, bot) == false then
+        return false
+    end
     if holds(ctx, bot, MESO - CREATE_COST, "재접속 정리 뒤 (환불 없음)") == false then
         return false
     end
@@ -133,7 +154,7 @@ local function create_not_sent(ctx)
     if setup(ctx, bot) == false then
         return false
     end
-    if send_unknown(ctx, bot, "CreateGuild", create_request(bot), "on") == false then
+    if send_unknown(ctx, bot, "CreateGuild", create_request(bot), "on") == false or resume(ctx, bot) == false then
         return false
     end
     if bot:request(resp.guild_message, nil, code(GUILD_SHOW_INFO), SETTLE_WAIT_MS) == false then
@@ -148,7 +169,7 @@ local function late_create_after_resend(ctx)
     if setup(ctx, bot) == false then
         return false
     end
-    if fault.rpc_delay(bot, "CreateGuild", 6000) == false then
+    if fault.rpc_delay(bot, "CreateGuild", REPLY_DELAY_MS) == false then
         return ctx:fail("CreateGuild 지연 주입 실패")
     end
     bot:send(create_request(bot))
@@ -158,11 +179,11 @@ local function late_create_after_resend(ctx)
         return ctx:fail("채널 이동 실패")
     end
 
-    ctx:sleep(10000)
+    ctx:sleep(4000)
     if holds(ctx, bot, MESO - CREATE_COST, "재접속 재요청 뒤") == false then
         return false
     end
-    ctx:sleep(8000)
+    ctx:sleep(REPLY_DELAY_MS)
     if holds(ctx, bot, MESO - CREATE_COST, "늦은 원래 요청 뒤 (환불·중복 차감 없음)") == false then
         return false
     end
@@ -178,16 +199,16 @@ local function emblem_lost(ctx)
     if send_unknown(ctx, bot, "ChangeGuildEmblem", emblem_request(), "lost") == false then
         return false
     end
-    if holds(ctx, bot, MESO - CREATE_COST - EMBLEM_COST, "장애 직후 보류") == false then
+    if holds(ctx, bot, MESO - CREATE_COST - EMBLEM_COST, "장애 직후 보류") == false or resume(ctx, bot) == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     return holds(ctx, bot, MESO - CREATE_COST - EMBLEM_COST, "주기 정리 뒤 (환불 없음)")
 end
 
 local function emblem_not_sent(ctx)
     local bot = ctx:bot(2)
-    if send_unknown(ctx, bot, "ChangeGuildEmblem", emblem_request(), "on") == false then
+    if send_unknown(ctx, bot, "ChangeGuildEmblem", emblem_request(), "on") == false or resume(ctx, bot) == false then
         return false
     end
     if bot:request(resp.guild_message, nil, code(GUILD_EMBLEM_CHANGE), SETTLE_WAIT_MS) == false then
@@ -344,7 +365,11 @@ local function disband_alliance(ctx, leader)
 end
 
 -- The fault is server wide, so it is turned off right after the one answer it targets.
+-- The settle timer stays paused so the held state can be seen; the caller resumes it.
 local function answer_unknown(ctx, bot, method, mode, ask_fn)
+    if pause(ctx, bot) == false then
+        return false
+    end
     if fault.rpc(bot, method, mode) == false then
         return ctx:fail(method .. " 장애 주입 실패")
     end
@@ -392,13 +417,13 @@ end
 
 local function capacity_lost_timer(ctx)
     local bot = ctx:bot(0)
-    if capacity_unknown(ctx, bot, "lost") == false then
+    if capacity_unknown(ctx, bot, "lost") == false or resume(ctx, bot) == false then
         return false
     end
     if arrived(ctx, bot, "guild_capacity_change", "반영된 인원 확장") == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     if once(ctx, bot, "guild_capacity_change", "주기 정리 뒤 (중복 확장 없음)") == false then
         return false
     end
@@ -410,7 +435,7 @@ local function capacity_lost_relogin(ctx)
     if capacity_unknown(ctx, bot, "lost") == false then
         return false
     end
-    if arrived(ctx, bot, "guild_capacity_change", "반영된 인원 확장") == false or relogin(ctx, bot) == false then
+    if arrived(ctx, bot, "guild_capacity_change", "반영된 인원 확장") == false or relogin(ctx, bot) == false or resume(ctx, bot) == false then
         return false
     end
     if once(ctx, bot, "guild_capacity_change", "재접속 정리 뒤 (중복 확장 없음)") == false then
@@ -421,7 +446,7 @@ end
 
 local function capacity_not_sent(ctx)
     local bot = ctx:bot(2)
-    if capacity_unknown(ctx, bot, "on") == false then
+    if capacity_unknown(ctx, bot, "on") == false or resume(ctx, bot) == false then
         return false
     end
     if arrived(ctx, bot, "guild_capacity_change", "주기 정리로 다시 보낸 인원 확장") == false then
@@ -464,6 +489,9 @@ end
 
 local function gp_unknown(ctx, bot, mode)
     watch(ctx)
+    if pause(ctx, bot) == false then
+        return false
+    end
     if fault.rpc(bot, "GainGuildGP", mode) == false then
         return ctx:fail("GainGuildGP 장애 주입 실패")
     end
@@ -475,13 +503,13 @@ end
 
 local function gp_lost_timer(ctx)
     local bot = ctx:bot(0)
-    if gp_unknown(ctx, bot, "lost") == false then
+    if gp_unknown(ctx, bot, "lost") == false or resume(ctx, bot) == false then
         return false
     end
     if arrived(ctx, bot, "guild_update_gp", "반영된 GP") == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     return once(ctx, bot, "guild_update_gp", "주기 정리 뒤 (중복 지급 없음)")
 end
 
@@ -490,10 +518,10 @@ local function gp_lost_relogin(ctx)
     if gp_unknown(ctx, bot, "lost") == false then
         return false
     end
-    if arrived(ctx, bot, "guild_update_gp", "반영된 GP") == false or relogin(ctx, bot) == false then
+    if arrived(ctx, bot, "guild_update_gp", "반영된 GP") == false or relogin(ctx, bot) == false or resume(ctx, bot) == false then
         return false
     end
-    ctx:sleep(3000)
+    settle.tick(ctx)
     return once(ctx, bot, "guild_update_gp", "재접속 정리 뒤 (중복 지급 없음)")
 end
 
@@ -502,20 +530,20 @@ local function gp_not_sent(ctx)
     if gp_unknown(ctx, bot, "on") == false then
         return false
     end
-    if check(ctx, #packets(bot, "guild_update_gp") == 0, "보내지 않은 GP가 반영됨") == false then
+    if check(ctx, #packets(bot, "guild_update_gp") == 0, "보내지 않은 GP가 반영됨") == false or resume(ctx, bot) == false then
         return false
     end
     if arrived(ctx, bot, "guild_update_gp", "주기 정리로 다시 보낸 GP") == false then
         return false
     end
-    ctx:sleep(3000)
+    settle.tick(ctx)
     return once(ctx, bot, "guild_update_gp", "다시 보낸 GP 뒤")
 end
 
 local function late_gp_after_resend(ctx)
     local bot, other = ctx:bot(3), ctx:bot(4)
     watch(ctx)
-    if fault.rpc_delay(bot, "GainGuildGP", 6000) == false then
+    if fault.rpc_delay(bot, "GainGuildGP", REPLY_DELAY_MS) == false then
         return ctx:fail("GainGuildGP 지연 주입 실패")
     end
     local gained = gain_gp(ctx, bot)
@@ -530,7 +558,7 @@ local function late_gp_after_resend(ctx)
     if arrived(ctx, bot, "guild_update_gp", "재접속 재요청으로 GP") == false then
         return false
     end
-    ctx:sleep(8000)
+    ctx:sleep(REPLY_DELAY_MS + 1000)
     if once(ctx, bot, "guild_update_gp", "늦은 원래 요청 뒤 (중복 지급 없음)") == false then
         return false
     end
@@ -618,13 +646,13 @@ end
 
 local function alliance_create_lost_timer(ctx)
     local leader = ctx:bot(0)
-    if form_party(ctx, leader, ctx:bot(1)) == false or alliance_unknown(ctx, "lost") == false then
+    if form_party(ctx, leader, ctx:bot(1)) == false or alliance_unknown(ctx, "lost") == false or resume(ctx, leader) == false then
         return false
     end
     if created(ctx, leader, "반영된 연합 생성") == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     if created(ctx, leader, "주기 정리 뒤") == false then
         return false
     end
@@ -636,7 +664,7 @@ local function alliance_create_lost_relogin(ctx)
     if alliance_unknown(ctx, "lost") == false then
         return false
     end
-    if created(ctx, leader, "반영된 연합 생성") == false or relogin(ctx, leader) == false then
+    if created(ctx, leader, "반영된 연합 생성") == false or relogin(ctx, leader) == false or resume(ctx, leader) == false then
         return false
     end
     if created(ctx, leader, "재접속 정리 뒤") == false then
@@ -647,7 +675,7 @@ end
 
 local function alliance_create_not_sent(ctx)
     local leader = ctx:bot(0)
-    if alliance_unknown(ctx, "on") == false then
+    if alliance_unknown(ctx, "on") == false or resume(ctx, leader) == false then
         return false
     end
     if created(ctx, leader, "주기 정리로 다시 보낸 연합 생성") == false then
@@ -683,13 +711,13 @@ end
 
 local function alliance_capacity_lost_timer(ctx)
     local leader = ctx:bot(0)
-    if alliance_capacity_unknown(ctx, "lost") == false then
+    if alliance_capacity_unknown(ctx, "lost") == false or resume(ctx, leader) == false then
         return false
     end
     if capacity_is(ctx, leader, "반영된 연합 정원") == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     if capacity_is(ctx, leader, "주기 정리 뒤 (중복 확장 없음)") == false then
         return false
     end
@@ -704,10 +732,10 @@ local function alliance_capacity_lost_relogin(ctx)
     if alliance_capacity_unknown(ctx, "lost") == false then
         return false
     end
-    if capacity_is(ctx, leader, "반영된 연합 정원") == false or relogin(ctx, leader) == false then
+    if capacity_is(ctx, leader, "반영된 연합 정원") == false or relogin(ctx, leader) == false or resume(ctx, leader) == false then
         return false
     end
-    ctx:sleep(3000)
+    settle.tick(ctx)
     if capacity_is(ctx, leader, "재접속 정리 뒤 (중복 확장 없음)") == false then
         return false
     end
@@ -719,7 +747,7 @@ end
 
 local function alliance_capacity_not_sent(ctx)
     local leader = ctx:bot(0)
-    if alliance_capacity_unknown(ctx, "on") == false then
+    if alliance_capacity_unknown(ctx, "on") == false or resume(ctx, leader) == false then
         return false
     end
     if capacity_is(ctx, leader, "주기 정리로 다시 보낸 연합 정원") == false then
@@ -760,6 +788,10 @@ end
 test_suite {
     name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구",
     bot_count = 6,
+
+    on_scenario_finished = function(ctx)
+        settle.resume_all(ctx, 6)
+    end,
 
     scenarios = {
         create_cancelled,

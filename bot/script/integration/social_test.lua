@@ -1,5 +1,6 @@
 local pq = require("script/integration/lib/party_quest")
 local fault = require("script/integration/lib/fault")
+local settle = require("script/integration/lib/settle")
 
 local HENESYS = 100000000
 local ELLINIA = 101000000
@@ -19,8 +20,6 @@ local CASH_SHOP = { gift = 4, gift_sent = 59 }
 local FAMILY_FEATURE = { teleport = 0, summon = 1 }
 local TELEPORT_COST = 300
 local SUMMON_COST = 500
-local SETTLE_WAIT_MS = 40000
-
 local SOCIAL = {
     whisper = true,
     messenger = true,
@@ -485,8 +484,26 @@ local function family_flow(ctx, senior, junior, low)
     return check(ctx, again.code == FAMILY_RESULT.failed, "선배 없는 탈퇴 결과 " .. again.code)
 end
 
+local function pause(ctx, bot)
+    if settle.pause(bot) == false then
+        return ctx:fail("정산 타이머 정지 실패")
+    end
+    return true
+end
+
+local function resume(ctx, bot)
+    if settle.resume(bot) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
+    return true
+end
+
 -- The fault is server wide, so it is turned off right after the one request it targets.
+-- The settle timer stays paused so the held state can be seen; the caller resumes it.
 local function remove_unknown(ctx, buyer, note, mode)
+    if pause(ctx, buyer) == false then
+        return false
+    end
     if fault.rpc(buyer, "Notes", mode) == false then
         return ctx:fail("Notes 장애 주입 실패")
     end
@@ -497,17 +514,16 @@ local function remove_unknown(ctx, buyer, note, mode)
 end
 
 local function wait_population(ctx, bot, population, what)
-    for _ = 1, SETTLE_WAIT_MS / 1000 do
-        if bot:population() == population then
-            return true
-        end
-        ctx:sleep(1000)
+    if settle.wait(ctx, function()
+            return bot:population() == population
+        end) then
+        return true
     end
     return check(ctx, false, string.format("%s %s: 인기도 %d (기대 %d)", bot:name(), what, bot:population(), population))
 end
 
 local function settled(ctx, buyer, population)
-    ctx:sleep(3000)
+    settle.tick(ctx)
     if check(ctx, buyer:population() == population, string.format("정리 뒤 인기도 %d (기대 %d, 중복 지급 없음)", buyer:population(), population)) == false then
         return false
     end
@@ -527,7 +543,7 @@ local function note_lost_timer(ctx, buyer, receiver)
     if remove_unknown(ctx, buyer, note, "lost") == false then
         return false
     end
-    if check(ctx, buyer:population() == before, "장애 직후 인기도가 오름") == false then
+    if check(ctx, buyer:population() == before, "장애 직후 인기도가 오름") == false or resume(ctx, buyer) == false then
         return false
     end
     if wait_population(ctx, buyer, before + 1, "주기 정리로 인기도 지급") == false then
@@ -554,6 +570,9 @@ local function note_lost_relogin(ctx, buyer, receiver)
     if buyer:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
+    if resume(ctx, buyer) == false then
+        return false
+    end
     return settled(ctx, buyer, before + 1)
 end
 
@@ -563,7 +582,7 @@ local function note_not_sent(ctx, buyer, receiver)
         return false
     end
     local before = buyer:population()
-    if remove_unknown(ctx, buyer, note, "on") == false then
+    if remove_unknown(ctx, buyer, note, "on") == false or resume(ctx, buyer) == false then
         return false
     end
     if wait_population(ctx, buyer, before + 1, "주기 정리로 다시 삭제") == false then
@@ -597,11 +616,10 @@ local function reputation_is(ctx, bot, expected, what)
 end
 
 local function wait_reputation(ctx, bot, expected, what)
-    for _ = 1, SETTLE_WAIT_MS / 2000 do
-        if reputation(ctx, bot) == expected then
-            return true
-        end
-        ctx:sleep(2000)
+    if settle.wait(ctx, function()
+            return reputation(ctx, bot) == expected
+        end) then
+        return true
     end
     return reputation_is(ctx, bot, expected, what)
 end
@@ -679,7 +697,7 @@ end
 -- The fault is server wide, so it is turned off right after the one request it targets.
 local function move_unknown(ctx, senior, junior, mode)
     local before = prepare_family(ctx, senior, junior, TELEPORT_COST)
-    if before == nil then
+    if before == nil or pause(ctx, senior) == false then
         return nil
     end
     if fault.rpc(senior, "UseFamilyFeature", mode) == false then
@@ -700,7 +718,7 @@ local function move_lost_timer(ctx, senior, junior)
     if before == nil then
         return false
     end
-    if reputation_is(ctx, senior, before - TELEPORT_COST, "장애 직후 (이동 예약됨)") == false then
+    if reputation_is(ctx, senior, before - TELEPORT_COST, "장애 직후 (이동 예약됨)") == false or resume(ctx, senior) == false then
         return false
     end
     if wait_reputation(ctx, senior, before, "주기 정리로 명성 환불") == false then
@@ -723,7 +741,10 @@ local function move_lost_relogin(ctx, senior, junior)
     if senior:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if resume(ctx, senior) == false then
+        return false
+    end
+    settle.tick(ctx)
     return reputation_is(ctx, senior, before, "복귀 뒤 (중복 환불 없음)")
 end
 
@@ -732,10 +753,10 @@ local function move_not_sent(ctx, senior, junior)
     if before == nil then
         return false
     end
-    if reputation_is(ctx, senior, before, "장애 직후 (전송 안 됨)") == false then
+    if reputation_is(ctx, senior, before, "장애 직후 (전송 안 됨)") == false or resume(ctx, senior) == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     return reputation_is(ctx, senior, before, "주기 정리 뒤")
 end
 
@@ -744,7 +765,7 @@ local function late_move_after_refund(ctx, senior, junior)
     if before == nil then
         return false
     end
-    if fault.rpc_delay(senior, "UseFamilyFeature", 12000) == false then
+    if fault.rpc_delay(senior, "UseFamilyFeature", 9000) == false then
         return ctx:fail("UseFamilyFeature 지연 주입 실패")
     end
     send(senior, teleport(junior))
@@ -758,7 +779,7 @@ local function late_move_after_refund(ctx, senior, junior)
     if senior:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(14000)
+    ctx:sleep(10000)
     if check(ctx, senior:map() == ELLINIA, "중단한 뒤 늦은 이동이 반영됨: " .. tostring(senior:map())) == false then
         return false
     end
@@ -778,7 +799,7 @@ local function teleport_succeeds(ctx, senior, junior)
     if reputation_is(ctx, senior, before - TELEPORT_COST, "순간이동 직후") == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     if reputation_is(ctx, senior, before - TELEPORT_COST, "주기 정리 뒤 (환불 없음)") == false then
         return false
     end
@@ -811,13 +832,17 @@ local function summon_succeeds(ctx, senior, junior)
     if reputation_is(ctx, senior, before - SUMMON_COST, "소환 직후") == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     return reputation_is(ctx, senior, before - SUMMON_COST, "주기 정리 뒤 (환불 없음)")
 end
 
 test_suite {
     name = "Social: 귓속말·메신저·쪽지·감사 쪽지·인기도·패밀리·응답 유실 복구",
     bot_count = 14,
+
+    on_scenario_finished = function(ctx)
+        settle.resume_all(ctx, 14)
+    end,
 
     scenarios = {
         {

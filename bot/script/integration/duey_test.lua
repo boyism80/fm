@@ -1,5 +1,6 @@
 local pq = require("script/integration/lib/party_quest")
 local fault = require("script/integration/lib/fault")
+local settle = require("script/integration/lib/settle")
 
 local HENESYS = 100000000
 local DUEY = 9010009
@@ -620,11 +621,10 @@ local function holds(ctx, bot, shell, meso, what)
 end
 
 local function wait_holds(ctx, bot, shell, meso, what)
-    for _ = 1, SETTLE_WAIT_MS / 1000 do
-        if (bot:items()[SHELL] or 0) == shell and bot:meso() == meso then
-            return true
-        end
-        ctx:sleep(1000)
+    if settle.wait(ctx, function()
+            return (bot:items()[SHELL] or 0) == shell and bot:meso() == meso
+        end) then
+        return true
     end
     return holds(ctx, bot, shell, meso, what)
 end
@@ -665,9 +665,13 @@ local function recovery_request(sender, recipient)
 end
 
 -- The fault is server wide, so it is turned off right after the one request it targets.
+-- The settle timer stays paused so the held state can be seen; the caller resumes it.
 local function send_unknown(ctx, sender, recipient, mode)
     if open(ctx, sender) == false then
         return false
+    end
+    if settle.pause(sender) == false then
+        return ctx:fail("정산 타이머 정지 실패")
     end
     if fault.rpc(sender, "SendParcel", mode) == false then
         return ctx:fail("SendParcel 장애 주입 실패")
@@ -694,7 +698,10 @@ local function lost_after_send_timer(ctx)
         return false
     end
 
-    ctx:sleep(SETTLE_WAIT_MS)
+    if settle.resume(sender) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
+    settle.tick(ctx)
     if holds(ctx, sender, 0, MESO - COST, "주기 정리 뒤 (이미 배송됨)") == false then
         return false
     end
@@ -728,7 +735,9 @@ local function lost_after_send_relogin(ctx)
     if sender:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if settle.resume(sender) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
     if holds(ctx, sender, 0, MESO - COST, "복귀 뒤") == false then
         return false
     end
@@ -751,6 +760,9 @@ local function not_sent_refund(ctx)
     if send_unknown(ctx, sender, recipient, "on") == false then
         return false
     end
+    if settle.resume(sender) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
 
     if wait_refund(ctx, sender) == false then
         return false
@@ -771,7 +783,7 @@ local function late_send_after_abort(ctx)
     if open(ctx, sender) == false then
         return false
     end
-    if fault.rpc_delay(sender, "SendParcel", 6000) == false then
+    if fault.rpc_delay(sender, "SendParcel", 4000) == false then
         return ctx:fail("SendParcel 지연 주입 실패")
     end
 
@@ -785,7 +797,7 @@ local function late_send_after_abort(ctx)
         return false
     end
 
-    ctx:sleep(8000)
+    ctx:sleep(5000)
     local found = parcels_from(ctx, recipient, sender)
     if found == false then
         return false
@@ -821,11 +833,14 @@ local function claim_unknown(ctx, bot, mode)
     end
 
     if mode == "delay" then
-        if fault.rpc_delay(bot, "ClaimParcel", 6000) == false then
+        if fault.rpc_delay(bot, "ClaimParcel", 4000) == false then
             return ctx:fail("ClaimParcel 지연 주입 실패")
         end
         bot:send(req.duey { mode = MODE.receive, parcel_id = parcel.id })
         return true
+    end
+    if settle.pause(bot) == false then
+        return ctx:fail("정산 타이머 정지 실패")
     end
     if fault.rpc(bot, "ClaimParcel", mode) == false then
         return ctx:fail("ClaimParcel 장애 주입 실패")
@@ -847,10 +862,13 @@ local function claim_lost_timer(ctx)
     if claim_unknown(ctx, bot, "lost") == false then
         return false
     end
+    if settle.resume(bot) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
     if wait_holds(ctx, bot, 5, MESO + 1000, "주기 정리로 수령") == false then
         return false
     end
-    ctx:sleep(3000)
+    settle.tick(ctx)
     if holds(ctx, bot, 5, MESO + 1000, "수령 뒤 (중복 지급 없음)") == false then
         return false
     end
@@ -871,7 +889,9 @@ local function claim_lost_relogin(ctx)
     if bot:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if settle.resume(bot) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
     if holds(ctx, bot, 5, MESO + 1000, "복귀 뒤 (중복 지급 없음)") == false then
         return false
     end
@@ -882,6 +902,9 @@ local function claim_not_sent(ctx)
     local bot = ctx:bot(2)
     if claim_unknown(ctx, bot, "on") == false then
         return false
+    end
+    if settle.resume(bot) == false then
+        return ctx:fail("정산 타이머 재개 실패")
     end
     if wait_holds(ctx, bot, 5, MESO + 1000, "주기 정리로 다시 수령") == false then
         return false
@@ -904,7 +927,7 @@ local function late_claim_after_resend(ctx)
         return false
     end
 
-    ctx:sleep(8000)
+    ctx:sleep(5000)
     if holds(ctx, bot, 5, MESO + 1000, "늦은 원래 요청 뒤 (중복 지급 없음)") == false then
         return false
     end
@@ -921,6 +944,10 @@ end
 test_suite {
     name = "Duey: 택배 배송·퀵배송·수령·어뷰징·응답 유실 복구",
     bot_count = 6,
+
+    on_scenario_finished = function(ctx)
+        settle.resume_all(ctx, 6)
+    end,
 
     scenarios = {
         normal_flow,

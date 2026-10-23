@@ -1,6 +1,7 @@
 local pq = require("script/integration/lib/party_quest")
 local route = require("script/integration/lib/route")
 local fault = require("script/integration/lib/fault")
+local settle = require("script/integration/lib/settle")
 
 local VILLAGE = 680000000
 local LOBBY = 680000200
@@ -28,7 +29,7 @@ local RING = { propose = 0, answer = 2, invite = 5, wishlist = 9 }
 local ENGAGE = { engaged = 11, married = 12, divorced = 14, reserved = 16 }
 local GIFT_MODE = { give = 6, receive = 7, close = 8, open_give = 9, open_receive = 10, given = 11, give_failed = 13, received = 15, receive_fail = 16 }
 local SETTLE_WAIT_MS = 40000
-local REPLY_DELAY_MS = 6000
+local REPLY_DELAY_MS = 4000
 local DUEY = { send = 3, receive = 5, delete = 6, close = 8 }
 local ETC = 4
 
@@ -460,13 +461,26 @@ local function ceremony(ctx)
 end
 
 local function wait_count(ctx, bot, item_id, count, what)
-    for _ = 1, SETTLE_WAIT_MS / 1000 do
-        if (bot:items()[item_id] or 0) == count then
-            return true
-        end
-        ctx:sleep(1000)
+    if settle.wait(ctx, function()
+            return (bot:items()[item_id] or 0) == count
+        end) then
+        return true
     end
     return ctx:fail(string.format("%s %s: %d 개수 %d (기대 %d)", bot:name(), what, item_id, bot:items()[item_id] or 0, count))
+end
+
+local function resume(ctx, bot)
+    if settle.resume(bot) == false then
+        return ctx:fail("정산 타이머 재개 실패")
+    end
+    return true
+end
+
+local function pause(ctx, bot)
+    if settle.pause(bot) == false then
+        return ctx:fail("정산 타이머 정지 실패")
+    end
+    return true
 end
 
 -- The guest's unsent gift is refunded and the lost one stays given; the groom's lost claim is granted on settle.
@@ -737,9 +751,13 @@ local function engage_couple(ctx, groom, bride)
 end
 
 -- The fault is server wide, so it is turned off right after the one answer it targets.
+-- The settle timer stays paused so the held state can be seen; the caller resumes it.
 local function proposal_unknown(ctx, mode)
     local groom, bride = ctx:bot(0), ctx:bot(1)
     if prepare_couple(ctx) == false or propose(ctx, groom, bride) == false then
+        return false
+    end
+    if pause(ctx, bride) == false then
         return false
     end
     if fault.rpc(bride, "CreateMarriage", mode) == false then
@@ -760,7 +778,7 @@ end
 
 local function proposal_lost_timer(ctx)
     local groom, bride = ctx:bot(0), ctx:bot(1)
-    if proposal_unknown(ctx, "lost") == false then
+    if proposal_unknown(ctx, "lost") == false or resume(ctx, groom) == false then
         return false
     end
     if rings(ctx, groom, bride, 1, "주기 정리로 약혼반지") == false then
@@ -786,7 +804,9 @@ local function proposal_lost_relogin(ctx)
     if groom:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if resume(ctx, groom) == false then
+        return false
+    end
     if rings(ctx, groom, bride, 1, "복귀 뒤 (중복 지급 없음)") == false then
         return false
     end
@@ -798,13 +818,13 @@ end
 
 local function proposal_not_sent(ctx)
     local groom, bride = ctx:bot(0), ctx:bot(1)
-    if proposal_unknown(ctx, "on") == false then
+    if proposal_unknown(ctx, "on") == false or resume(ctx, groom) == false then
         return false
     end
     if wait_count(ctx, groom, RING_BOX, 1, "주기 정리로 상자 환불") == false then
         return false
     end
-    ctx:sleep(3000)
+    settle.tick(ctx)
     if holds(ctx, groom, ENGAGEMENT_RING, 0, "환불 뒤") == false or holds(ctx, bride, ENGAGEMENT_RING, 0, "환불 뒤") == false then
         return false
     end
@@ -816,7 +836,7 @@ local function late_proposal_after_abort(ctx)
     if prepare_couple(ctx) == false or propose(ctx, groom, bride) == false then
         return false
     end
-    if fault.rpc_delay(bride, "CreateMarriage", 6000) == false then
+    if fault.rpc_delay(bride, "CreateMarriage", REPLY_DELAY_MS) == false then
         return ctx:fail("CreateMarriage 지연 주입 실패")
     end
     bride:send(answer(groom))
@@ -830,7 +850,7 @@ local function late_proposal_after_abort(ctx)
         return false
     end
 
-    ctx:sleep(8000)
+    ctx:sleep(REPLY_DELAY_MS + 1000)
     if holds(ctx, bride, ENGAGEMENT_RING, 0, "늦은 요청 뒤") == false or holds(ctx, groom, ENGAGEMENT_RING, 0, "늦은 요청 뒤") == false then
         return false
     end
@@ -884,6 +904,9 @@ local function reservation_unknown(ctx, mode)
         return true
     end
 
+    if pause(ctx, groom) == false then
+        return false
+    end
     if fault.rpc(groom, "ReserveWedding", mode) == false then
         return ctx:fail("ReserveWedding 장애 주입 실패")
     end
@@ -900,10 +923,10 @@ end
 
 local function reservation_lost_timer(ctx)
     local groom = ctx:bot(0)
-    if reservation_unknown(ctx, "lost") == false then
+    if reservation_unknown(ctx, "lost") == false or resume(ctx, groom) == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     if holds(ctx, groom, TICKET, 0, "주기 정리 뒤 (이미 예약됨)") == false then
         return false
     end
@@ -925,7 +948,9 @@ local function reservation_lost_relogin(ctx)
     if groom:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if resume(ctx, groom) == false then
+        return false
+    end
     if holds(ctx, groom, TICKET, 0, "복귀 뒤") == false then
         return false
     end
@@ -934,7 +959,7 @@ end
 
 local function reservation_not_sent(ctx)
     local groom = ctx:bot(0)
-    if reservation_unknown(ctx, "on") == false then
+    if reservation_unknown(ctx, "on") == false or resume(ctx, groom) == false then
         return false
     end
     if wait_count(ctx, groom, TICKET, 1, "주기 정리로 티켓 환불") == false then
@@ -989,6 +1014,9 @@ local function wishlist_unknown(ctx, mode)
     if input == false then
         return ctx:fail("위시리스트 입력창이 오지 않음")
     end
+    if pause(ctx, groom) == false then
+        return false
+    end
     if fault.rpc(groom, "SetWeddingWishlist", mode) == false then
         return ctx:fail("SetWeddingWishlist 장애 주입 실패")
     end
@@ -1000,13 +1028,13 @@ end
 
 local function wishlist_lost_timer(ctx)
     local groom = ctx:bot(0)
-    if wishlist_unknown(ctx, "lost") == false then
+    if wishlist_unknown(ctx, "lost") == false or resume(ctx, groom) == false then
         return false
     end
     if wait_count(ctx, groom, INVITATION, 5, "주기 정리 뒤 청첩장") == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     return has(ctx, groom, INVITATION, 5)
 end
 
@@ -1024,13 +1052,15 @@ local function wishlist_lost_relogin(ctx)
     if groom:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if resume(ctx, groom) == false then
+        return false
+    end
     return has(ctx, groom, INVITATION, 5)
 end
 
 local function wishlist_not_sent(ctx)
     local groom = ctx:bot(0)
-    if wishlist_unknown(ctx, "on") == false then
+    if wishlist_unknown(ctx, "on") == false or resume(ctx, groom) == false then
         return false
     end
     if wait_count(ctx, groom, INVITATION, 5, "미전송 요청 재시도 뒤 청첩장") == false then
@@ -1082,6 +1112,9 @@ local function invite_unknown(ctx, mode)
     if invite_ready(ctx) == false then
         return false
     end
+    if pause(ctx, groom) == false then
+        return false
+    end
     if fault.rpc(groom, "InviteWeddingGuest", mode) == false then
         return ctx:fail("InviteWeddingGuest 장애 주입 실패")
     end
@@ -1093,10 +1126,10 @@ end
 
 local function invite_lost_timer(ctx)
     local groom, guest = ctx:bot(0), ctx:bot(2)
-    if invite_unknown(ctx, "lost") == false then
+    if invite_unknown(ctx, "lost") == false or resume(ctx, groom) == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     if holds(ctx, groom, INVITATION, 4, "주기 정리 뒤 (이미 초대됨)") == false or invited(ctx, guest, 1, "주기 정리 뒤") == false then
         return false
     end
@@ -1125,7 +1158,9 @@ local function invite_lost_relogin(ctx)
     if groom:transfer(0) == false then
         return ctx:fail("원래 채널 복귀 실패")
     end
-    ctx:sleep(1000)
+    if resume(ctx, groom) == false then
+        return false
+    end
     if holds(ctx, groom, INVITATION, 4, "복귀 뒤") == false then
         return false
     end
@@ -1135,10 +1170,10 @@ end
 -- Settle resends the same request, so an invite that never reached internal goes through on settle.
 local function invite_not_sent(ctx)
     local groom, guest = ctx:bot(0), ctx:bot(2)
-    if invite_unknown(ctx, "on") == false then
+    if invite_unknown(ctx, "on") == false or resume(ctx, groom) == false then
         return false
     end
-    ctx:sleep(SETTLE_WAIT_MS)
+    settle.tick(ctx)
     if holds(ctx, groom, INVITATION, 4, "재전송 뒤") == false then
         return false
     end
@@ -1212,6 +1247,10 @@ end
 test_suite {
     name = "Marriage: 약혼·예약·청첩장·예식·선물·이혼·응답 유실 복구",
     bot_count = 3,
+
+    on_scenario_finished = function(ctx)
+        settle.resume_all(ctx, 3)
+    end,
 
     scenarios = {
         prepare,
