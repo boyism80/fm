@@ -48,7 +48,8 @@ end
 
 function M.machine(key)
 	local mode = MODE[key]
-	return {
+	local machine
+	machine = {
 		on_init = function(group)
 			group:min_players(1)
 			group:max_machines(nil)
@@ -60,7 +61,11 @@ function M.machine(key)
 		end,
 
 		on_start = function(sm)
-			sm:after("spawn", mode.spawn_ms, "on_spawn")
+			if mode.spawn_ms > 0 then
+				sm:after("spawn", mode.spawn_ms, "on_spawn")
+			else
+				machine.on_spawn(sm)
+			end
 			sm:after("check", mode.check_ms, "on_check")
 		end,
 
@@ -130,6 +135,7 @@ function M.machine(key)
 			sm:finish(EXIT_MAP)
 		end,
 	}
+	return machine
 end
 
 return M
