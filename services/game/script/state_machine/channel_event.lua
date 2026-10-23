@@ -118,6 +118,9 @@ local hooks = {
 
     -- The game marks its winners with the "winner:<id>" property before it calls this.
     on_game_over = function(sm)
+        if phase(sm) == "finished" then
+            return
+        end
         set_phase(sm, "finished")
         set_rules(sm, false)
         sm:set_property("clock_until", "")

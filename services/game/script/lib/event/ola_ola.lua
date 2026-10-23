@@ -72,6 +72,7 @@ function M.pass(me, portal)
     me:message("축하합니다! [올라올라] 이벤트를 완주하셨습니다! NPC [피에트로] 를 더블클릭하면 보상을 받을 수 있습니다.", Msg.Notice)
     me:map(sm:map(WINNER_MAP))
     if #contestants(sm) == 0 then
+        sm:cancel("ola")
         sm:call_hook("on_game_over")
     end
 end
