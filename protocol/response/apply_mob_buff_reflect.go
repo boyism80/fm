@@ -14,10 +14,9 @@ type ApplyMobBuffReflect struct {
 }
 
 type ApplyMobBuffReflectEntry struct {
-	X          int16
-	SkillID    uint16
-	SkillLevel uint16
-	BuffTime   int16
+	X        int16
+	Reason   uint32
+	BuffTime int16
 }
 
 func (p *ApplyMobBuffReflect) Opcode() uint16 {
@@ -29,8 +28,7 @@ func (p *ApplyMobBuffReflect) Serialize(writer *stream.StreamWriter) error {
 	writer.Write32(p.StatusMask)
 	for _, e := range p.Entries {
 		writer.Write16(e.X)
-		writer.WriteU16(e.SkillID)
-		writer.WriteU16(e.SkillLevel)
+		writer.WriteU32(e.Reason)
 		writer.Write16(e.BuffTime)
 	}
 	for _, r := range p.Reflections {

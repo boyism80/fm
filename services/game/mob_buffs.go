@@ -30,6 +30,17 @@ func (e *MobBuff) RemainingDuration(now time.Time) time.Duration {
 	return end.Sub(now)
 }
 
+// Reason is read by the client as one int: a mob skill packs its level above the id, a character skill sends the whole id.
+func (e *MobBuff) Reason() uint32 {
+	if e.wz == nil {
+		return 0
+	}
+	if e.wz.MobSkill {
+		return e.wz.ID | uint32(e.skillLevel)<<16
+	}
+	return e.wz.ID
+}
+
 func (e *MobBuff) SameSource(skillWz *wz.Skill, skillLevel uint8, causer uint32) bool {
 	if e == nil {
 		return false

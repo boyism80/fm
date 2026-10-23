@@ -22,10 +22,6 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, add
 			buffTime = int16(sec)
 		}
 	}
-	skillID := uint16(0)
-	if ent.Wz() != nil {
-		skillID = uint16(ent.Wz().ID)
-	}
 	flags := make([]constant.MobBuffFlag, 0, len(ent.Values()))
 	for f := range ent.Values() {
 		flags = append(flags, f)
@@ -37,10 +33,9 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, add
 		for _, flag := range flags {
 			mask |= int32(flag)
 			entries = append(entries, response.ApplyMobBuffReflectEntry{
-				X:          int16(ent.Values()[flag]),
-				SkillID:    skillID,
-				SkillLevel: uint16(ent.SkillLevel()),
-				BuffTime:   buffTime,
+				X:        int16(ent.Values()[flag]),
+				Reason:   ent.Reason(),
+				BuffTime: buffTime,
 			})
 		}
 		pkt := &response.ApplyMobBuffReflect{
@@ -59,8 +54,7 @@ func (l *MobListenerImpl) OnMobBuffApplied(mob *game.Mob, ent *game.MobBuff, add
 			OID:        mob.GetOID(),
 			Status:     int32(flag),
 			X:          int16(ent.Values()[flag]),
-			SkillID:    skillID,
-			SkillLevel: uint16(ent.SkillLevel()),
+			Reason:     ent.Reason(),
 			BuffTime:   buffTime,
 			Delay:      0,
 			StatusSize: 1,

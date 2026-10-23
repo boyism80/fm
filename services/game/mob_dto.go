@@ -35,14 +35,9 @@ func (m *Mob) BuildS2C() *dto.Mob {
 			continue
 		}
 		mask |= int32(f)
-		skillID := uint16(0)
-		if ent.wz != nil {
-			skillID = uint16(ent.wz.ID)
-		}
 		statuses = append(statuses, dto.MobBuffEntry{
-			X:          int16(v),
-			SkillID:    skillID,
-			SkillLevel: uint16(ent.skillLevel),
+			X:      int16(v),
+			Reason: ent.Reason(),
 		})
 	}
 
