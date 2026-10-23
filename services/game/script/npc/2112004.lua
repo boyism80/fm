@@ -73,7 +73,7 @@ local function handle_hub(me, npc, sm, map)
         me:dialog(npc, "알카드노 실험 자료를 찾아오셨군요! 이제 제뉴미스트 실험 자료를 찾으면 되겠군요.")
         return
     end
-    if pq.has_item(me, 4001135, 1) then
+    if pq.has_item(me, 4001135, 1) and sm:get_property("stage4") == "1" then
         pq.remove_all(4001135, me)
         rj.clear_fx(map)
         map:set_respawn(false)
