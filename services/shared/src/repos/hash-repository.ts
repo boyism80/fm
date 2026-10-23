@@ -2,7 +2,10 @@ import type { Pool } from "pg";
 import { Repository } from "./repository";
 import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
 
-export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>> extends Repository<TModel, TRow, string> {
+export abstract class HashRepository<
+    TModel = Record<string, unknown>,
+    TRow = Record<string, unknown>,
+> extends Repository<TModel, TRow, string> {
     override getKey(model: TModel): string {
         return this.getGroupKey(model);
     }
@@ -43,7 +46,11 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         throw new Error(`${this.constructor.name}.getMany is not supported for hash repositories`);
     }
 
-    override async getAll(worldId: number, groupKey: string, options: RepositoryTxOptions = {}): Promise<Map<string, TModel>> {
+    override async getAll(
+        worldId: number,
+        groupKey: string,
+        options: RepositoryTxOptions = {},
+    ): Promise<Map<string, TModel>> {
         const hashKey = this.getRedisHashKey(worldId, groupKey);
         const redis = this.redis(worldId, groupKey);
         const useCache = !options.txClient;
@@ -78,7 +85,10 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
                 if (fields.length > 0) {
                     multi.hset(hashKey, ...fields);
                 }
-                await multi.expire(hashKey, this.getTtlSeconds()).exec().catch(() => {});
+                await multi
+                    .expire(hashKey, this.getTtlSeconds())
+                    .exec()
+                    .catch(() => {});
             }
         } finally {
             await guard?.release();
@@ -99,7 +109,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         worldId: number,
         groupKey: string,
         itemKey: string | number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<TModel | null> {
         const all = await this.getAll(worldId, groupKey, options);
         return all.get(String(itemKey)) ?? null;
@@ -153,7 +163,12 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         return first;
     }
 
-    override async delAll(worldId: number, groupKey: string, itemKeys: Array<string | number>, options: RepositoryTxOptions = {}): Promise<void> {
+    override async delAll(
+        worldId: number,
+        groupKey: string,
+        itemKeys: Array<string | number>,
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         if (!itemKeys.length) {
             return;
         }
@@ -164,34 +179,52 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         await this.invalidateAfterWrite(worldId, groupKey, pool, options);
     }
 
-    async del(worldId: number, groupKey: string, itemKey: string | number, options: RepositoryTxOptions = {}): Promise<void> {
+    async del(
+        worldId: number,
+        groupKey: string,
+        itemKey: string | number,
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         return this.delAll(worldId, groupKey, [itemKey], options);
     }
 
-    async replaceBySnapshot(worldId: number, groupKey: string, models: TModel[], options: RepositoryTxOptions = {}): Promise<void> {
+    async replaceBySnapshot(
+        worldId: number,
+        groupKey: string,
+        models: TModel[],
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         const rows = models.map((m) => this.modelToRow(m));
-        await this.ctx.withPgDataTransaction(worldId, this.getShardHash(groupKey), async (txClient) => {
-            const select = this.onSelect(groupKey, worldId);
-            const existing = (await txClient.query(select.text, select.values)).rows as TRow[];
+        await this.ctx.withPgDataTransaction(
+            worldId,
+            this.getShardHash(groupKey),
+            async (txClient) => {
+                const select = this.onSelect(groupKey, worldId);
+                const existing = (await txClient.query(select.text, select.values)).rows as TRow[];
 
-            if (rows.length > 0) {
-                const upsert = this.onBulkUpsert(rows);
-                await txClient.query(upsert.text, upsert.values);
-            }
+                if (rows.length > 0) {
+                    const upsert = this.onBulkUpsert(rows);
+                    await txClient.query(upsert.text, upsert.values);
+                }
 
-            const incoming = new Set(models.map((m) => this.getItemKey(m)));
-            const removed = existing
-                .map((r) => this.getItemKey(this.rowToModel(this.normalizeRow(r))))
-                .filter((key) => incoming.has(key) === false);
-            if (removed.length > 0) {
-                const del = this.onBulkDelete(removed, groupKey, worldId);
-                await txClient.query(del.text, del.values);
-            }
-        }, options);
+                const incoming = new Set(models.map((m) => this.getItemKey(m)));
+                const removed = existing
+                    .map((r) => this.getItemKey(this.rowToModel(this.normalizeRow(r))))
+                    .filter((key) => incoming.has(key) === false);
+                if (removed.length > 0) {
+                    const del = this.onBulkDelete(removed, groupKey, worldId);
+                    await txClient.query(del.text, del.values);
+                }
+            },
+            options,
+        );
         await this.invalidateAfterWrite(worldId, groupKey, this.pool(worldId, groupKey), options);
     }
 
-    override async delete(row: { worldId: number } & Record<string, unknown>, options: RepositoryTxOptions = {}): Promise<boolean> {
+    override async delete(
+        row: { worldId: number } & Record<string, unknown>,
+        options: RepositoryTxOptions = {},
+    ): Promise<boolean> {
         const worldId = row.worldId;
         const model = row as TModel;
         await this.del(worldId, this.getGroupKey(model), this.getItemKey(model), options);

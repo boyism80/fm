@@ -47,7 +47,9 @@ export class MountRepository extends ValueRepository<MountModel, MountRow, numbe
         if (!rows.length) {
             return null;
         }
-        const placeholders = rows.map((_, i) => `($${i * 5 + 1},$${i * 5 + 2},$${i * 5 + 3},$${i * 5 + 4},$${i * 5 + 5},NOW())`).join(",\n");
+        const placeholders = rows
+            .map((_, i) => `($${i * 5 + 1},$${i * 5 + 2},$${i * 5 + 3},$${i * 5 + 4},$${i * 5 + 5},NOW())`)
+            .join(",\n");
         return {
             text: `INSERT INTO mount (${INSERT_COLS}) VALUES\n${placeholders}\nON CONFLICT (character_id, world_id) DO UPDATE SET ${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rows.flatMap((r) => [r.character_id, r.world_id, r.level, r.exp, r.fatigue]),
@@ -68,7 +70,8 @@ export class MountRepository extends ValueRepository<MountModel, MountRow, numbe
             level: row.level,
             exp: row.exp,
             fatigue: row.fatigue,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

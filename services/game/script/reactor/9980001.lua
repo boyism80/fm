@@ -3,7 +3,7 @@
 local cpq = require("script/lib/carnival")
 
 return {
-	on_reactor = function(reactor)
-		cpq.destroy_guardian(reactor)
-	end
+    on_reactor = function(reactor)
+        cpq.destroy_guardian(reactor)
+    end
 }

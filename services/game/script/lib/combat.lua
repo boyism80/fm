@@ -3,421 +3,421 @@
 local M = {}
 
 local function element_amp_from_class(me)
-	local amp = 1.0
-	if me == nil then
-		return amp
-	end
-	local skill_id
-	if me:class_of(Class.FpWizard) then
-		skill_id = Skill.ElementAmplification
-	elseif me:class_of(Class.IlWizard) then
-		skill_id = Skill.ElementAmplification2210001
-	elseif me:class_of(Class.BlazeWizard1) then
-		skill_id = Skill.ElementAmplificationCygnus
-	end
-	if skill_id == nil then
-		return amp
-	end
-	local s = me:skill(skill_id)
-	if s == nil then
-		return amp
-	end
-	local e = s:effect()
-	amp = e.y / 100.0
-	return amp
+    local amp = 1.0
+    if me == nil then
+        return amp
+    end
+    local skill_id
+    if me:class_of(Class.FpWizard) then
+        skill_id = Skill.ElementAmplification
+    elseif me:class_of(Class.IlWizard) then
+        skill_id = Skill.ElementAmplification2210001
+    elseif me:class_of(Class.BlazeWizard1) then
+        skill_id = Skill.ElementAmplificationCygnus
+    end
+    if skill_id == nil then
+        return amp
+    end
+    local s = me:skill(skill_id)
+    if s == nil then
+        return amp
+    end
+    local e = s:effect()
+    amp = e.y / 100.0
+    return amp
 end
 
 local function element_weak_multiplier(swz, mwz)
-	local weak = 1.0
-	if mwz == nil or mwz:elem_resist() == nil then
-		return weak
-	end
-	local attr = swz:elem_attr()
-	if attr == nil or attr == "" then
-		return weak
-	end
-	local letter = string.lower(string.sub(tostring(attr), 1, 1))
-	local v = mwz:elem_resist()[letter]
-	if v == nil then
-		return weak
-	end
-	if v == 1 or v == 2 then
-		return 0.5
-	end
-	if v == 3 then
-		return 1.5
-	end
-	return weak
+    local weak = 1.0
+    if mwz == nil or mwz:elem_resist() == nil then
+        return weak
+    end
+    local attr = swz:elem_attr()
+    if attr == nil or attr == "" then
+        return weak
+    end
+    local letter = string.lower(string.sub(tostring(attr), 1, 1))
+    local v = mwz:elem_resist()[letter]
+    if v == nil then
+        return weak
+    end
+    if v == 1 or v == 2 then
+        return 0.5
+    end
+    if v == 3 then
+        return 1.5
+    end
+    return weak
 end
 
 local function skill_effect_mob_limit(effect)
-	if effect == nil then
-		return nil
-	end
-	local c = effect.mob_count
-	if c == nil then
-		return nil
-	end
-	c = tonumber(c) or 0
-	if c <= 0 then
-		return nil
-	end
-	return c
+    if effect == nil then
+        return nil
+    end
+    local c = effect.mob_count
+    if c == nil then
+        return nil
+    end
+    c = tonumber(c) or 0
+    if c <= 0 then
+        return nil
+    end
+    return c
 end
 
 local function total_damage_to_mob(hits)
-	if hits == nil then
-		return 0
-	end
-	local total = 0
-	for _, amount in ipairs(hits) do
-		if amount and amount > 0 then
-			total = total + amount
-		end
-	end
-	return total
+    if hits == nil then
+        return 0
+    end
+    local total = 0
+    for _, amount in ipairs(hits) do
+        if amount and amount > 0 then
+            total = total + amount
+        end
+    end
+    return total
 end
 
 local MOB_ATTACK_REFLECT_DAMAGE_MIN = 7000
 local MOB_ATTACK_REFLECT_DAMAGE_RANGE = 8000
 
 local function mob_attack_reflect_damage()
-	return MOB_ATTACK_REFLECT_DAMAGE_MIN + math.random(0, MOB_ATTACK_REFLECT_DAMAGE_RANGE - 1)
+    return MOB_ATTACK_REFLECT_DAMAGE_MIN + math.random(0, MOB_ATTACK_REFLECT_DAMAGE_RANGE - 1)
 end
 
 local function apply_mob_attack_immunity(hits, immunity)
-	if not immunity or hits == nil then
-		return total_damage_to_mob(hits)
-	end
-	local total = 0
-	for i, amount in ipairs(hits) do
-		amount = amount or 0
-		if amount > 0 then
-			if amount > 1 then
-				amount = 1
-				hits[i] = 1
-			end
-			total = total + amount
-		end
-	end
-	return total
+    if not immunity or hits == nil then
+        return total_damage_to_mob(hits)
+    end
+    local total = 0
+    for i, amount in ipairs(hits) do
+        amount = amount or 0
+        if amount > 0 then
+            if amount > 1 then
+                amount = 1
+                hits[i] = 1
+            end
+            total = total + amount
+        end
+    end
+    return total
 end
 
 M.reflect_mob_attack_damage = function(me, damages, attack_info)
-	if me == nil or damages == nil or attack_info == nil then
-		return
-	end
-	local magic = attack_info.magic == true
-	for mob, hits in pairs(damages) do
-		local immunity = false
-		local reflect = false
-		if magic then
-			immunity = mob:has_buff({ MobBuff.MagicImmunity, MobBuff.MagicDamageReflect })
-			reflect = mob:has_buff(MobBuff.MagicDamageReflect)
-		else
-			immunity = mob:has_buff({
-				MobBuff.WeaponDamageReflect,
-				MobBuff.DamageImmunity,
-				MobBuff.WeaponImmunity,
-			})
-			reflect = mob:has_buff(MobBuff.WeaponDamageReflect)
-		end
-		local total = apply_mob_attack_immunity(hits, immunity)
-		if total > 0 and reflect and not me:invincible() then
-			me:add_hp(-mob_attack_reflect_damage())
-		end
-	end
+    if me == nil or damages == nil or attack_info == nil then
+        return
+    end
+    local magic = attack_info.magic == true
+    for mob, hits in pairs(damages) do
+        local immunity = false
+        local reflect = false
+        if magic then
+            immunity = mob:has_buff({ MobBuff.MagicImmunity, MobBuff.MagicDamageReflect })
+            reflect = mob:has_buff(MobBuff.MagicDamageReflect)
+        else
+            immunity = mob:has_buff({
+                MobBuff.WeaponDamageReflect,
+                MobBuff.DamageImmunity,
+                MobBuff.WeaponImmunity,
+            })
+            reflect = mob:has_buff(MobBuff.WeaponDamageReflect)
+        end
+        local total = apply_mob_attack_immunity(hits, immunity)
+        if total > 0 and reflect and not me:invincible() then
+            me:add_hp(-mob_attack_reflect_damage())
+        end
+    end
 end
 
 M.drain_hp_from_damage = function(me, skill, damages)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	local pct = tonumber(effect.x) or 0
-	if pct <= 0 then
-		return
-	end
-	local player_max = me:max_hp()
-	if player_max == nil or player_max <= 0 then
-		return
-	end
-	local cap_half = math.floor(player_max / 2)
-	local total_heal = 0
-	for mob, hits in pairs(damages) do
-		local tot_damage = total_damage_to_mob(hits)
-		if tot_damage <= 0 then
-			goto continue_drain
-		end
-		local mob_max_hp = 0
-		local mwz = mob:wz()
-		if mwz ~= nil and mwz:max_hp() ~= nil then
-			mob_max_hp = tonumber(mwz:max_hp()) or 0
-		end
-		local raw = math.floor(tot_damage * pct / 100.0)
-		local heal = math.min(mob_max_hp, math.min(raw, cap_half))
-		if heal > 0 then
-			total_heal = total_heal + heal
-		end
-		::continue_drain::
-	end
-	if total_heal > 0 then
-		me:add_hp(total_heal)
-	end
+    local effect = skill:effect()
+    if effect == nil then
+        return
+    end
+    local pct = tonumber(effect.x) or 0
+    if pct <= 0 then
+        return
+    end
+    local player_max = me:max_hp()
+    if player_max == nil or player_max <= 0 then
+        return
+    end
+    local cap_half = math.floor(player_max / 2)
+    local total_heal = 0
+    for mob, hits in pairs(damages) do
+        local tot_damage = total_damage_to_mob(hits)
+        if tot_damage <= 0 then
+            goto continue_drain
+        end
+        local mob_max_hp = 0
+        local mwz = mob:wz()
+        if mwz ~= nil and mwz:max_hp() ~= nil then
+            mob_max_hp = tonumber(mwz:max_hp()) or 0
+        end
+        local raw = math.floor(tot_damage * pct / 100.0)
+        local heal = math.min(mob_max_hp, math.min(raw, cap_half))
+        if heal > 0 then
+            total_heal = total_heal + heal
+        end
+        ::continue_drain::
+    end
+    if total_heal > 0 then
+        me:add_hp(total_heal)
+    end
 end
 
 M.for_each_mob_in_skill_area = function(me, skill, callback)
-	if callback == nil then
-		return
-	end
-	local map = me:map()
-	if map == nil then
-		return
-	end
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	local prop = effect.prop or 0
-	if prop <= 0 then
-		prop = 100
-	end
-	local mob_limit = skill_effect_mob_limit(effect)
-	local mobs = map:objects(ObjectType.Mob, { area = me:skill_area(skill) })
-	local n = 0
-	for _, mob in ipairs(mobs) do
-		if mob_limit ~= nil and n >= mob_limit then
-			break
-		end
-		if math.random(1, 100) <= prop then
-			if callback(mob) ~= false then
-				n = n + 1
-			end
-		else
-			n = n + 1
-		end
-	end
+    if callback == nil then
+        return
+    end
+    local map = me:map()
+    if map == nil then
+        return
+    end
+    local effect = skill:effect()
+    if effect == nil then
+        return
+    end
+    local prop = effect.prop or 0
+    if prop <= 0 then
+        prop = 100
+    end
+    local mob_limit = skill_effect_mob_limit(effect)
+    local mobs = map:objects(ObjectType.Mob, { area = me:skill_area(skill) })
+    local n = 0
+    for _, mob in ipairs(mobs) do
+        if mob_limit ~= nil and n >= mob_limit then
+            break
+        end
+        if math.random(1, 100) <= prop then
+            if callback(mob) ~= false then
+                n = n + 1
+            end
+        else
+            n = n + 1
+        end
+    end
 end
 
 M.apply_shadow_web_skill = function(me, skill)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	local duration_ms = effect.time or 0
-	if duration_ms <= 0 then
-		return
-	end
-	M.for_each_mob_in_skill_area(me, skill, function(mob)
-		mob:buff(MobBuff.ShadowWeb, 1, duration_ms, skill, me)
-		return true
-	end)
+    local effect = skill:effect()
+    if effect == nil then
+        return
+    end
+    local duration_ms = effect.time or 0
+    if duration_ms <= 0 then
+        return
+    end
+    M.for_each_mob_in_skill_area(me, skill, function(mob)
+        mob:buff(MobBuff.ShadowWeb, 1, duration_ms, skill, me)
+        return true
+    end)
 end
 
 M.compute_ninja_ambush_tick_damage = function(me, skill)
-	local effect = skill:effect()
-	if effect == nil then
-		return 0
-	end
-	local skill_level = skill:level() or 1
-	local dmg_field = tonumber(effect.damage) or 0
-	local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
-	local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
-	local raw = (skill_level + 30) * dmg_field * (str + luk) / 2000
-	local pdam = math.max(1, math.floor(raw))
-	if pdam > 30000 then
-		pdam = 30000
-	end
-	return pdam
+    local effect = skill:effect()
+    if effect == nil then
+        return 0
+    end
+    local skill_level = skill:level() or 1
+    local dmg_field = tonumber(effect.damage) or 0
+    local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
+    local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
+    local raw = (skill_level + 30) * dmg_field * (str + luk) / 2000
+    local pdam = math.max(1, math.floor(raw))
+    if pdam > 30000 then
+        pdam = 30000
+    end
+    return pdam
 end
 
 M.apply_ninja_ambush_skill = function(me, skill)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	local duration_ms = effect.time or 0
-	if duration_ms <= 0 then
-		return
-	end
-	M.for_each_mob_in_skill_area(me, skill, function(mob)
-		local value = M.compute_ninja_ambush_tick_damage(me, skill)
-		if value <= 0 then
-			return true
-		end
-		mob:buff(MobBuff.NinjaAmbush, value, duration_ms, skill, me)
-		return true
-	end)
+    local effect = skill:effect()
+    if effect == nil then
+        return
+    end
+    local duration_ms = effect.time or 0
+    if duration_ms <= 0 then
+        return
+    end
+    M.for_each_mob_in_skill_area(me, skill, function(mob)
+        local value = M.compute_ninja_ambush_tick_damage(me, skill)
+        if value <= 0 then
+            return true
+        end
+        mob:buff(MobBuff.NinjaAmbush, value, duration_ms, skill, me)
+        return true
+    end)
 end
 
 M.for_each_character_in_skill_area = function(me, skill, callback)
-	if callback == nil then
-		return
-	end
-	local map = me:map()
-	if map == nil then
-		return
-	end
-	local area = me:skill_area(skill)
-	if area == nil then
-		return
-	end
-	local chars = map:objects(ObjectType.Character, { area = area })
-	for _, ch in ipairs(chars) do
-		if ch ~= nil then
-			callback(ch)
-		end
-	end
+    if callback == nil then
+        return
+    end
+    local map = me:map()
+    if map == nil then
+        return
+    end
+    local area = me:skill_area(skill)
+    if area == nil then
+        return
+    end
+    local chars = map:objects(ObjectType.Character, { area = area })
+    for _, ch in ipairs(chars) do
+        if ch ~= nil then
+            callback(ch)
+        end
+    end
 end
 
 M.for_each_near_party_member = function(me, skill, callback, opts)
-	if callback == nil or me == nil then
-		return
-	end
-	opts = opts or {}
-	local allow_dead = opts.allow_dead == true
-	local party = me:party()
-	if party == nil then
-		if opts.exclude_caster then
-			return
-		end
-		if not allow_dead and not me:is_alive() then
-			return
-		end
-		callback(me)
-		return
-	end
-	local id_set = {}
-	for _, pm in ipairs(party:members()) do
-		if pm ~= nil then
-			id_set[pm:id()] = true
-		end
-	end
-	if opts.exclude_caster then
-		id_set[me:id()] = nil
-	end
-	M.for_each_character_in_skill_area(me, skill, function(ch)
-		if ch == nil then
-			return
-		end
-		if not allow_dead and not ch:is_alive() then
-			return
-		end
-		if id_set[ch:id()] then
-			callback(ch)
-		end
-	end)
+    if callback == nil or me == nil then
+        return
+    end
+    opts = opts or {}
+    local allow_dead = opts.allow_dead == true
+    local party = me:party()
+    if party == nil then
+        if opts.exclude_caster then
+            return
+        end
+        if not allow_dead and not me:is_alive() then
+            return
+        end
+        callback(me)
+        return
+    end
+    local id_set = {}
+    for _, pm in ipairs(party:members()) do
+        if pm ~= nil then
+            id_set[pm:id()] = true
+        end
+    end
+    if opts.exclude_caster then
+        id_set[me:id()] = nil
+    end
+    M.for_each_character_in_skill_area(me, skill, function(ch)
+        if ch == nil then
+            return
+        end
+        if not allow_dead and not ch:is_alive() then
+            return
+        end
+        if id_set[ch:id()] then
+            callback(ch)
+        end
+    end)
 end
 
 local poison_pdam_cap = 30000
 local poison_denominator_base = 70
 
 M.compute_poison_tick_multiplier = function(me, skill)
-	local mul = 1.0
-	if me ~= nil then
-		mul = mul * element_amp_from_class(me)
-	end
-	return mul
+    local mul = 1.0
+    if me ~= nil then
+        mul = mul * element_amp_from_class(me)
+    end
+    return mul
 end
 
 M.compute_poison_tick_damage = function(skill, mob, multiplier)
-	if mob == nil or skill == nil then
-		return 0
-	end
-	return M.compute_poison_tick_damage_wz_level(skill:wz(), skill:level(), mob, multiplier)
+    if mob == nil or skill == nil then
+        return 0
+    end
+    return M.compute_poison_tick_damage_wz_level(skill:wz(), skill:level(), mob, multiplier)
 end
 
 M.compute_poison_tick_damage_wz_level = function(wz, level, mob, multiplier)
-	if mob == nil then
-		return 0
-	end
-	local mwz = mob:wz()
-	local max_hp = mwz:max_hp() or 0
-	if max_hp <= 0 then
-		return 0
-	end
-	local skill_level = level or 1
-	local denom = poison_denominator_base - skill_level
-	if denom <= 0 then
-		denom = 1
-	end
-	local quotient = math.floor(max_hp / denom)
-	local base = quotient + 0.999
-	local weak = element_weak_multiplier(wz, mwz)
-	local mul = multiplier or 1.0
-	if mul <= 0 then
-		mul = 1.0
-	end
-	local raw = base * weak * mul
-	local clamped = math.max(1, math.min(raw, poison_pdam_cap))
-	return math.floor(clamped)
+    if mob == nil then
+        return 0
+    end
+    local mwz = mob:wz()
+    local max_hp = mwz:max_hp() or 0
+    if max_hp <= 0 then
+        return 0
+    end
+    local skill_level = level or 1
+    local denom = poison_denominator_base - skill_level
+    if denom <= 0 then
+        denom = 1
+    end
+    local quotient = math.floor(max_hp / denom)
+    local base = quotient + 0.999
+    local weak = element_weak_multiplier(wz, mwz)
+    local mul = multiplier or 1.0
+    if mul <= 0 then
+        mul = 1.0
+    end
+    local raw = base * weak * mul
+    local clamped = math.max(1, math.min(raw, poison_pdam_cap))
+    return math.floor(clamped)
 end
 
 M.apply_prob_status = function(me, skill, damages, status)
-	if damages == nil or skill == nil or status == nil then
-		return
-	end
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	local prop = effect.prop or 0
-	if prop <= 0 then
-		prop = 100
-	end
-	local duration_ms = effect.time or 0
-	if duration_ms <= 0 then
-		return
-	end
-	for mob, hits in pairs(damages) do
-		if mob and hits and total_damage_to_mob(hits) > 0 then
-			if math.random(1, 100) <= prop then
-				local value = 1
-				if status == MobBuff.Poison then
-					local multiplier = M.compute_poison_tick_multiplier(me, skill)
-					value = M.compute_poison_tick_damage(skill, mob, multiplier)
-				end
-				mob:buff(status, value, duration_ms, skill, me)
-			end
-		end
-	end
+    if damages == nil or skill == nil or status == nil then
+        return
+    end
+    local effect = skill:effect()
+    if effect == nil then
+        return
+    end
+    local prop = effect.prop or 0
+    if prop <= 0 then
+        prop = 100
+    end
+    local duration_ms = effect.time or 0
+    if duration_ms <= 0 then
+        return
+    end
+    for mob, hits in pairs(damages) do
+        if mob and hits and total_damage_to_mob(hits) > 0 then
+            if math.random(1, 100) <= prop then
+                local value = 1
+                if status == MobBuff.Poison then
+                    local multiplier = M.compute_poison_tick_multiplier(me, skill)
+                    value = M.compute_poison_tick_damage(skill, mob, multiplier)
+                end
+                mob:buff(status, value, duration_ms, skill, me)
+            end
+        end
+    end
 end
 
 M.apply_showdown = function(me, skill, damages)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	local prop = effect.prop or 0
-	if prop <= 0 then
-		prop = 100
-	end
-	local duration_ms = effect.time or 0
-	if duration_ms <= 0 then
-		return
-	end
-	local raw_x = effect.x
-	if raw_x == nil then
-		raw_x = 0
-	end
-	local val = math.floor(tonumber(raw_x) or 0)
-	if val <= 0 then
-		return
-	end
-	for mob, hits in pairs(damages) do
-		if total_damage_to_mob(hits) <= 0 then
-			goto continue_showdown
-		end
-		if math.random(1, 100) > prop then
-			goto continue_showdown
-		end
-		mob:buff({
-			[MobBuff.Showdown] = val,
-			[MobBuff.Mdef] = val,
-			[MobBuff.Wdef] = val,
-		}, duration_ms, skill, me)
-		::continue_showdown::
-	end
+    local effect = skill:effect()
+    if effect == nil then
+        return
+    end
+    local prop = effect.prop or 0
+    if prop <= 0 then
+        prop = 100
+    end
+    local duration_ms = effect.time or 0
+    if duration_ms <= 0 then
+        return
+    end
+    local raw_x = effect.x
+    if raw_x == nil then
+        raw_x = 0
+    end
+    local val = math.floor(tonumber(raw_x) or 0)
+    if val <= 0 then
+        return
+    end
+    for mob, hits in pairs(damages) do
+        if total_damage_to_mob(hits) <= 0 then
+            goto continue_showdown
+        end
+        if math.random(1, 100) > prop then
+            goto continue_showdown
+        end
+        mob:buff({
+            [MobBuff.Showdown] = val,
+            [MobBuff.Mdef] = val,
+            [MobBuff.Wdef] = val,
+        }, duration_ms, skill, me)
+        ::continue_showdown::
+    end
 end
 
 local PICKPOCKET_SKILL_IDS = { [0] = true }
@@ -598,188 +598,188 @@ M.roll_mortal_blow = function(me, damages)
         return
     end
 
-	local skill = nil
-	if me:class_of(Class.Ranger) then
-		skill = me:skill(Skill.MortalBlow)
-	elseif me:class_of(Class.Crossbowman) then
-		skill = me:skill(Skill.MortalBlow3210001)
-	else
-		return
-	end
-	if skill == nil then
-		return
-	end
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
+    local skill = nil
+    if me:class_of(Class.Ranger) then
+        skill = me:skill(Skill.MortalBlow)
+    elseif me:class_of(Class.Crossbowman) then
+        skill = me:skill(Skill.MortalBlow3210001)
+    else
+        return
+    end
+    if skill == nil then
+        return
+    end
+    local effect = skill:effect()
+    if effect == nil then
+        return
+    end
 
-	for mob, hits in pairs(damages) do
-		local mob_hp_percent = mob:hp() / mob:max_hp()
-		if mob_hp_percent <= effect.x / 100 then
-			if math.random(1, 100) <= effect.y then
-				for i = 1, #hits do
-					hits[i] = mob:max_hp()
-				end
-			end
-		end
-	end
+    for mob, hits in pairs(damages) do
+        local mob_hp_percent = mob:hp() / mob:max_hp()
+        if mob_hp_percent <= effect.x / 100 then
+            if math.random(1, 100) <= effect.y then
+                for i = 1, #hits do
+                    hits[i] = mob:max_hp()
+                end
+            end
+        end
+    end
 end
 
 -- v83 MapleMonster VENOM: matk * (dex + 5*v43) / 49, v43 = floor((rand[0,v55-1] + v55*0.8)), v55 = str+luk (min 1).
 M.roll_venom_tick_damage = function(me, venom_skill)
-	if venom_skill == nil then
-		return 1
-	end
-	local effect = venom_skill:effect()
-	if effect == nil then
-		return 1
-	end
-	local matk = math.floor(tonumber(effect.mad) or 0)
-	if matk < 1 then
-		matk = 1
-	end
-	local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
-	local dex = math.floor(tonumber(me:base_dex()) or 0) + math.floor(tonumber(me:bonus_dex()) or 0)
-	local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
-	local v55 = str + luk
-	if v55 < 1 then
-		v55 = 1
-	end
-	local v56 = v55 * 0.8
-	local mod = math.random(0, v55 - 1)
-	local v43 = math.floor(mod + v56)
-	local v44 = math.floor(matk * (dex + 5 * v43) / 49)
-	if v44 < 1 then
-		v44 = 1
-	end
-	if v44 > 30000 then
-		v44 = 30000
-	end
-	return v44
+    if venom_skill == nil then
+        return 1
+    end
+    local effect = venom_skill:effect()
+    if effect == nil then
+        return 1
+    end
+    local matk = math.floor(tonumber(effect.mad) or 0)
+    if matk < 1 then
+        matk = 1
+    end
+    local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
+    local dex = math.floor(tonumber(me:base_dex()) or 0) + math.floor(tonumber(me:bonus_dex()) or 0)
+    local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
+    local v55 = str + luk
+    if v55 < 1 then
+        v55 = 1
+    end
+    local v56 = v55 * 0.8
+    local mod = math.random(0, v55 - 1)
+    local v43 = math.floor(mod + v56)
+    local v44 = math.floor(matk * (dex + 5 * v43) / 49)
+    if v44 < 1 then
+        v44 = 1
+    end
+    if v44 > 30000 then
+        v44 = 30000
+    end
+    return v44
 end
 
 -- Passive venom: WZ prop, stack 1..3, tick = sum of rolls capped 30000, immediate hit, buff with stack (Lua drives value like poison mist).
 M.apply_venom = function(me, damages, passive_skill_id)
-	if damages == nil or passive_skill_id == nil then
-		return
-	end
-	local venom_skill = me:skill(passive_skill_id)
-	if venom_skill == nil then
-		return
-	end
-	local venom_level = venom_skill:level()
-	if venom_level == nil or venom_level <= 0 then
-		return
-	end
-	local effect = venom_skill:effect()
-	if effect == nil then
-		return
-	end
-	local chance = tonumber(effect.prop) or 0
-	if chance <= 0 then
-		return
-	end
-	local duration_ms = tonumber(effect.time) or 0
-	if duration_ms <= 0 then
-		return
-	end
-	for mob, hits in pairs(damages) do
-		if mob == nil or hits == nil then
-			goto venom_passive_continue
-		end
-		if total_damage_to_mob(hits) <= 0 then
-			goto venom_passive_continue
-		end
-		if math.random(1, 100) > chance then
-			goto venom_passive_continue
-		end
-		local old_stack = math.floor(tonumber(mob:buff_stack(MobBuff.Venom)) or 0)
-		if old_stack >= 3 then
-			goto venom_passive_continue
-		end
-		local old_tick = 0
-		if mob:has_buff(MobBuff.Venom) then
-			old_tick = math.floor(tonumber(mob:buff_value(MobBuff.Venom)) or 0)
-		end
-		local roll = M.roll_venom_tick_damage(me, venom_skill)
-		local new_tick = old_tick + roll
-		if new_tick < 1 then
-			new_tick = 1
-		end
-		if new_tick > 30000 then
-			new_tick = 30000
-		end
-		local new_stack = old_stack + 1
-		mob:buff(MobBuff.Venom, new_tick, duration_ms, venom_skill, me, new_stack)
-		::venom_passive_continue::
-	end
+    if damages == nil or passive_skill_id == nil then
+        return
+    end
+    local venom_skill = me:skill(passive_skill_id)
+    if venom_skill == nil then
+        return
+    end
+    local venom_level = venom_skill:level()
+    if venom_level == nil or venom_level <= 0 then
+        return
+    end
+    local effect = venom_skill:effect()
+    if effect == nil then
+        return
+    end
+    local chance = tonumber(effect.prop) or 0
+    if chance <= 0 then
+        return
+    end
+    local duration_ms = tonumber(effect.time) or 0
+    if duration_ms <= 0 then
+        return
+    end
+    for mob, hits in pairs(damages) do
+        if mob == nil or hits == nil then
+            goto venom_passive_continue
+        end
+        if total_damage_to_mob(hits) <= 0 then
+            goto venom_passive_continue
+        end
+        if math.random(1, 100) > chance then
+            goto venom_passive_continue
+        end
+        local old_stack = math.floor(tonumber(mob:buff_stack(MobBuff.Venom)) or 0)
+        if old_stack >= 3 then
+            goto venom_passive_continue
+        end
+        local old_tick = 0
+        if mob:has_buff(MobBuff.Venom) then
+            old_tick = math.floor(tonumber(mob:buff_value(MobBuff.Venom)) or 0)
+        end
+        local roll = M.roll_venom_tick_damage(me, venom_skill)
+        local new_tick = old_tick + roll
+        if new_tick < 1 then
+            new_tick = 1
+        end
+        if new_tick > 30000 then
+            new_tick = 30000
+        end
+        local new_stack = old_stack + 1
+        mob:buff(MobBuff.Venom, new_tick, duration_ms, venom_skill, me, new_stack)
+        ::venom_passive_continue::
+    end
 end
 
 local function incoming_reflect_cap(max_hp, divisor)
-	if max_hp == nil or max_hp <= 0 or divisor == nil or divisor <= 0 then
-		return 0
-	end
-	return math.floor(max_hp / divisor)
+    if max_hp == nil or max_hp <= 0 or divisor == nil or divisor <= 0 then
+        return 0
+    end
+    return math.floor(max_hp / divisor)
 end
 
 local function reflect_via_power_guard(me, attacker, damage, reflect_ratio)
-	if me:buff_value(BuffFlag.Powerguard) == nil then
-		return damage
-	end
-	local reduce = math.floor(damage * (reflect_ratio / 100.0))
-	if reduce < 0 then
-		reduce = 0
-	end
-	if reduce > damage then
-		reduce = damage
-	end
-	local hp_loss = damage - reduce
-	if hp_loss < 0 then
-		hp_loss = 0
-	end
-	if attacker ~= nil and attacker:is(ObjectType.Mob) then
-		local bounced = reduce
-		local cap = incoming_reflect_cap(attacker:max_hp(), 10)
-		bounced = math.min(bounced, cap)
-		if bounced > 0 then
-			attacker:damage(me, bounced)
-		end
-	end
-	return hp_loss
+    if me:buff_value(BuffFlag.Powerguard) == nil then
+        return damage
+    end
+    local reduce = math.floor(damage * (reflect_ratio / 100.0))
+    if reduce < 0 then
+        reduce = 0
+    end
+    if reduce > damage then
+        reduce = damage
+    end
+    local hp_loss = damage - reduce
+    if hp_loss < 0 then
+        hp_loss = 0
+    end
+    if attacker ~= nil and attacker:is(ObjectType.Mob) then
+        local bounced = reduce
+        local cap = incoming_reflect_cap(attacker:max_hp(), 10)
+        bounced = math.min(bounced, cap)
+        if bounced > 0 then
+            attacker:damage(me, bounced)
+        end
+    end
+    return hp_loss
 end
 
 local function reflect_via_mana_reflection(me, attacker, damage, reflect_ratio)
-	if me:buff_value(BuffFlag.ManaReflection) == nil then
-		return damage
-	end
-	if attacker ~= nil and attacker:is(ObjectType.Mob) then
-		local bounce = math.floor(damage * (reflect_ratio / 100.0))
-		if bounce < 0 then
-			bounce = 0
-		end
-		local cap = incoming_reflect_cap(attacker:max_hp(), 20)
-		bounce = math.min(bounce, cap)
-		if bounce > 0 then
-			attacker:damage(me, bounce)
-		end
-	end
-	return damage
+    if me:buff_value(BuffFlag.ManaReflection) == nil then
+        return damage
+    end
+    if attacker ~= nil and attacker:is(ObjectType.Mob) then
+        local bounce = math.floor(damage * (reflect_ratio / 100.0))
+        if bounce < 0 then
+            bounce = 0
+        end
+        local cap = incoming_reflect_cap(attacker:max_hp(), 20)
+        bounce = math.min(bounce, cap)
+        if bounce > 0 then
+            attacker:damage(me, bounce)
+        end
+    end
+    return damage
 end
 
 M.reflect_incoming_damage = function(me, attacker, skill, damage, params)
-	if damage == nil or damage <= 0 or params == nil then
-		return damage
-	end
-	local reflect_ratio = params.reflect_ratio
-	if reflect_ratio == nil or reflect_ratio <= 0 then
-		return damage
-	end
-	local hit_type = params.hit_type
-	if hit_type == IncomingHit.Collide then
-		return reflect_via_power_guard(me, attacker, damage, reflect_ratio)
-	end
-	return reflect_via_mana_reflection(me, attacker, damage, reflect_ratio)
+    if damage == nil or damage <= 0 or params == nil then
+        return damage
+    end
+    local reflect_ratio = params.reflect_ratio
+    if reflect_ratio == nil or reflect_ratio <= 0 then
+        return damage
+    end
+    local hit_type = params.hit_type
+    if hit_type == IncomingHit.Collide then
+        return reflect_via_power_guard(me, attacker, damage, reflect_ratio)
+    end
+    return reflect_via_mana_reflection(me, attacker, damage, reflect_ratio)
 end
 
 return M

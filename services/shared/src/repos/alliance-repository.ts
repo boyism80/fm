@@ -109,8 +109,10 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
             capacity: row.capacity,
             notice: row.notice,
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
-            createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            createdAt:
+                row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
             revision: Number(row.revision ?? 0),
         };
     }

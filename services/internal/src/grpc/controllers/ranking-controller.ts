@@ -1,6 +1,10 @@
 import type { RankingKind as RankingKindName } from "@fm/shared/ranking-filters";
 import type { RankingService } from "../../services/ranking-service";
-import { RankingKind, type GetRankingReply, type GetRankingRequest } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import {
+    RankingKind,
+    type GetRankingReply,
+    type GetRankingRequest,
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
@@ -25,7 +29,9 @@ export class RankingGrpcController {
         try {
             const kind = KIND_NAMES.get(call.request.kind);
             if (kind === undefined) {
-                throw Object.assign(new Error(`unknown ranking kind ${call.request.kind}`), { code: "INVALID_PAYLOAD" });
+                throw Object.assign(new Error(`unknown ranking kind ${call.request.kind}`), {
+                    code: "INVALID_PAYLOAD",
+                });
             }
             const entries = await this.rankingService.top(kind, call.request.worldId >>> 0, call.request.count >>> 0);
             callback(null, {

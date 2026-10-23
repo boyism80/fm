@@ -3,12 +3,12 @@
 local drop = require("script/lib/drop")
 
 local DROPS = {
-	{ item = 4001162, min = 1, max = 1, chance = 999999 },
+    { item = 4001162, min = 1, max = 1, chance = 999999 },
 }
 
 return {
-	on_reactor = function(reactor)
-		reactor:drop_items()
-		drop.from_reactor(DROPS, reactor)
-	end
+    on_reactor = function(reactor)
+        reactor:drop_items()
+        drop.from_reactor(DROPS, reactor)
+    end
 }

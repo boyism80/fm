@@ -91,43 +91,71 @@ export class CashShopRepository {
         worldId: number,
         accountId: number,
         fn: (client: PoolClient) => Promise<T>,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<T> {
-        return this.ctx.withPgDataTransaction(worldId, accountId, async (client) => {
-            await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, accountId]);
-            return fn(client);
-        }, options);
+        return this.ctx.withPgDataTransaction(
+            worldId,
+            accountId,
+            async (client) => {
+                await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, accountId]);
+                return fn(client);
+            },
+            options,
+        );
     }
 
-    async withCharacterLock<T>(worldId: number, characterId: number, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    async withCharacterLock<T>(
+        worldId: number,
+        characterId: number,
+        fn: (client: PoolClient) => Promise<T>,
+    ): Promise<T> {
         return this.ctx.withPgDataTransaction(worldId, characterId, async (client) => {
             await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, characterId]);
             return fn(client);
         });
     }
 
-    async withAccount<T>(worldId: number, accountId: number, fn: (client: PoolClient) => Promise<T>, options: RepositoryTxOptions = {}): Promise<T> {
+    async withAccount<T>(
+        worldId: number,
+        accountId: number,
+        fn: (client: PoolClient) => Promise<T>,
+        options: RepositoryTxOptions = {},
+    ): Promise<T> {
         return this.ctx.withPgDataTransaction(worldId, accountId, fn, options);
     }
 
-    async queueTransfer(sourceId: number, targetId: number, kind: CashTransferKind, detail: unknown, client: PoolClient): Promise<void> {
+    async queueTransfer(
+        sourceId: number,
+        targetId: number,
+        kind: CashTransferKind,
+        detail: unknown,
+        client: PoolClient,
+    ): Promise<void> {
         await client.query(
             "INSERT INTO cash_transfer_requests (request_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5)",
-            [randomUUID(), sourceId, targetId, kind, JSON.stringify(detail)]
+            [randomUUID(), sourceId, targetId, kind, JSON.stringify(detail)],
         );
     }
 
     // Queued in the unified database with a balance change, for the shards of one world.
-    async queueBalanceTransfer(worldId: number, sourceId: number, targetId: number, kind: CashTransferKind, detail: unknown, client: PoolClient): Promise<void> {
+    async queueBalanceTransfer(
+        worldId: number,
+        sourceId: number,
+        targetId: number,
+        kind: CashTransferKind,
+        detail: unknown,
+        client: PoolClient,
+    ): Promise<void> {
         await client.query(
             "INSERT INTO cash_transfer_requests (request_id, world_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5, $6)",
-            [randomUUID(), worldId, sourceId, targetId, kind, JSON.stringify(detail)]
+            [randomUUID(), worldId, sourceId, targetId, kind, JSON.stringify(detail)],
         );
     }
 
     async pendingTransfers(worldId: number): Promise<CashTransferRequest[]> {
         const requests: CashTransferRequest[] = [];
-        const select = "SELECT request_id, source_id, target_id, kind, detail FROM cash_transfer_requests WHERE completed = FALSE";
+        const select =
+            "SELECT request_id, source_id, target_id, kind, detail FROM cash_transfer_requests WHERE completed = FALSE";
         for (const pool of this.ctx.getPgDataPools(worldId)) {
             const res = await pool.query(`${select} AND world_id IS NULL ORDER BY created_at LIMIT 100`);
             requests.push(...(res.rows as Omit<CashTransferRequest, "pool">[]).map((row) => ({ ...row, pool })));
@@ -138,7 +166,11 @@ export class CashShopRepository {
         return requests;
     }
 
-    async receiveTransfer(worldId: number, request: CashTransferRequest, fn: (client: PoolClient) => Promise<void>): Promise<void> {
+    async receiveTransfer(
+        worldId: number,
+        request: CashTransferRequest,
+        fn: (client: PoolClient) => Promise<void>,
+    ): Promise<void> {
         await this.ctx.withPgDataTransaction(worldId, request.target_id, async (client) => {
             if (
                 request.kind === CashTransferKind.Gift ||
@@ -167,16 +199,22 @@ export class CashShopRepository {
             const res = await pool.query(`${pending} AND world_id IS NULL`, [accountId, kinds]);
             count += Number(res.rows[0]?.count ?? 0);
         }
-        const res = await this.ctx.getPgUnifiedPool().query(`${pending} AND world_id = $3`, [accountId, kinds, worldId]);
+        const res = await this.ctx
+            .getPgUnifiedPool()
+            .query(`${pending} AND world_id = $3`, [accountId, kinds, worldId]);
         return count + Number(res.rows[0]?.count ?? 0);
     }
 
     async finishTransfer(request: CashTransferRequest): Promise<void> {
-        await request.pool.query("UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1", [request.request_id]);
+        await request.pool.query("UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1", [
+            request.request_id,
+        ]);
     }
 
     async isTransferCompleted(request: CashTransferRequest): Promise<boolean> {
-        const res = await request.pool.query("SELECT completed FROM cash_transfer_requests WHERE request_id = $1", [request.request_id]);
+        const res = await request.pool.query("SELECT completed FROM cash_transfer_requests WHERE request_id = $1", [
+            request.request_id,
+        ]);
         const row = res.rows[0] as { completed: boolean } | undefined;
         return row?.completed === true;
     }
@@ -184,7 +222,7 @@ export class CashShopRepository {
     async claimTransfer(requestId: string, client: PoolClient): Promise<boolean> {
         const res = await client.query(
             "UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1 AND completed = FALSE RETURNING request_id",
-            [requestId]
+            [requestId],
         );
         return (res.rowCount ?? 0) > 0;
     }
@@ -197,15 +235,14 @@ export class CashShopRepository {
             `UPDATE cash_transfer_requests
              SET completed = TRUE
              WHERE completed = FALSE AND source_id = $1 AND kind = $3 AND detail->>'serial' = ANY($2::text[])`,
-            [sourceId, serials, CashTransferKind.Ring]
+            [sourceId, serials, CashTransferKind.Ring],
         );
     }
 
     async deleteRing(worldId: number, characterId: number, serial: string): Promise<void> {
-        await this.ctx.getPgDataPool(worldId, characterId).query(
-            "DELETE FROM cash_rings WHERE character_id = $1 AND serial = $2",
-            [characterId, serial]
-        );
+        await this.ctx
+            .getPgDataPool(worldId, characterId)
+            .query("DELETE FROM cash_rings WHERE character_id = $1 AND serial = $2", [characterId, serial]);
     }
 
     async findBalance(accountId: number, options: RepositoryTxOptions = {}): Promise<CashBalance> {
@@ -217,35 +254,48 @@ export class CashShopRepository {
 
     async addBalance(accountId: number, delta: CashBalance, options: RepositoryTxOptions = {}): Promise<void> {
         const client = this.ctx.pgClient(this.ctx.getPgUnifiedPool(), options);
-        await client.query(
-            "UPDATE accounts SET nx_cash = nx_cash + $2, maple_point = maple_point + $3 WHERE id = $1",
-            [accountId, delta.nxCash, delta.maplePoint]
-        );
+        await client.query("UPDATE accounts SET nx_cash = nx_cash + $2, maple_point = maple_point + $3 WHERE id = $1", [
+            accountId,
+            delta.nxCash,
+            delta.maplePoint,
+        ]);
     }
 
     async findItems(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<CashItemRow[]> {
         const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         const res = await client.query(
             "SELECT serial, account_id, item FROM cash_items WHERE account_id = $1 ORDER BY created_at, serial",
-            [accountId]
+            [accountId],
         );
         return res.rows as CashItemRow[];
     }
 
-    async insertItem(worldId: number, accountId: number, serial: string, item: unknown, options: RepositoryTxOptions = {}): Promise<void> {
+    async insertItem(
+        worldId: number,
+        accountId: number,
+        serial: string,
+        item: unknown,
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
-        await client.query(
-            "INSERT INTO cash_items (serial, account_id, item) VALUES ($1, $2, $3)",
-            [serial, accountId, JSON.stringify(item)]
-        );
+        await client.query("INSERT INTO cash_items (serial, account_id, item) VALUES ($1, $2, $3)", [
+            serial,
+            accountId,
+            JSON.stringify(item),
+        ]);
     }
 
     // An unopened gift is the item itself, so it leaves with the item on every path out of the locker.
-    async deleteItem(worldId: number, accountId: number, serial: string, options: RepositoryTxOptions = {}): Promise<CashItemRow | null> {
+    async deleteItem(
+        worldId: number,
+        accountId: number,
+        serial: string,
+        options: RepositoryTxOptions = {},
+    ): Promise<CashItemRow | null> {
         const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         const res = await client.query(
             "DELETE FROM cash_items WHERE account_id = $1 AND serial = $2 RETURNING serial, account_id, item",
-            [accountId, serial]
+            [accountId, serial],
         );
         const row = (res.rows[0] as CashItemRow | undefined) ?? null;
         if (row == null) {
@@ -255,19 +305,26 @@ export class CashShopRepository {
         return row;
     }
 
-    async insertGift(worldId: number, accountId: number, gift: CashGiftRow, options: RepositoryTxOptions = {}): Promise<void> {
+    async insertGift(
+        worldId: number,
+        accountId: number,
+        gift: CashGiftRow,
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         const client = this.ctx.pgClient(this.ctx.getPgDataPool(worldId, accountId), options);
         await client.query(
             "INSERT INTO cash_gifts (serial, account_id, item_id, sender_name, message) VALUES ($1, $2, $3, $4, $5)",
-            [gift.serial, accountId, gift.item_id, gift.sender_name, gift.message]
+            [gift.serial, accountId, gift.item_id, gift.sender_name, gift.message],
         );
     }
 
     async findGifts(worldId: number, accountId: number): Promise<CashGiftRow[]> {
-        const res = await this.ctx.getPgDataPool(worldId, accountId).query(
-            "SELECT serial, item_id, sender_name, message FROM cash_gifts WHERE account_id = $1 ORDER BY serial",
-            [accountId]
-        );
+        const res = await this.ctx
+            .getPgDataPool(worldId, accountId)
+            .query(
+                "SELECT serial, item_id, sender_name, message FROM cash_gifts WHERE account_id = $1 ORDER BY serial",
+                [accountId],
+            );
         return res.rows as CashGiftRow[];
     }
 
@@ -276,25 +333,39 @@ export class CashShopRepository {
             return;
         }
         await this.withAccount(worldId, accountId, async (client) => {
-            await client.query("DELETE FROM cash_items WHERE account_id = $1 AND serial = ANY($2::bigint[])", [accountId, serials]);
-            await client.query("DELETE FROM cash_gifts WHERE account_id = $1 AND serial = ANY($2::bigint[])", [accountId, serials]);
+            await client.query("DELETE FROM cash_items WHERE account_id = $1 AND serial = ANY($2::bigint[])", [
+                accountId,
+                serials,
+            ]);
+            await client.query("DELETE FROM cash_gifts WHERE account_id = $1 AND serial = ANY($2::bigint[])", [
+                accountId,
+                serials,
+            ]);
         });
     }
 
     async findCoupon(worldId: number, code: string): Promise<CashCouponRow | null> {
         return this.ctx.withPgGlobalTransaction(worldId, async (client) => {
-            const res = await client.query("SELECT code, kind, value, used_at, used_by, request_id FROM cash_coupons WHERE code = $1", [code]);
+            const res = await client.query(
+                "SELECT code, kind, value, used_at, used_by, request_id FROM cash_coupons WHERE code = $1",
+                [code],
+            );
             return (res.rows[0] as CashCouponRow | undefined) ?? null;
         });
     }
 
-    async claimCoupon(worldId: number, code: string, accountId: number, requestId: string): Promise<CashCouponRow | null> {
+    async claimCoupon(
+        worldId: number,
+        code: string,
+        accountId: number,
+        requestId: string,
+    ): Promise<CashCouponRow | null> {
         return this.ctx.withPgGlobalTransaction(worldId, async (client) => {
             const res = await client.query(
                 `UPDATE cash_coupons SET used_by = $2, used_at = COALESCE(used_at, NOW()), request_id = COALESCE(request_id, $3)
                  WHERE code = $1 AND (used_at IS NULL OR (used_by = $2 AND request_id IS NOT NULL))
                  RETURNING code, kind, value, used_at, used_by, request_id`,
-                [code, accountId, requestId]
+                [code, accountId, requestId],
             );
             return (res.rows[0] as CashCouponRow | undefined) ?? null;
         });
@@ -304,7 +375,7 @@ export class CashShopRepository {
         return this.ctx.withPgGlobalTransaction(worldId, async (client) => {
             const res = await client.query(
                 "INSERT INTO cash_coupons (code, kind, value) SELECT unnest($1::text[]), $2, $3 ON CONFLICT (code) DO NOTHING RETURNING code",
-                [codes, kind, value]
+                [codes, kind, value],
             );
             return (res.rows as Array<{ code: string }>).map((row) => row.code);
         });
@@ -314,7 +385,7 @@ export class CashShopRepository {
         await this.ctx.pgClient(this.ctx.getPgDataPool(worldId, ring.character_id), options).query(
             `INSERT INTO cash_rings (serial, partner_serial, character_id, partner_id, partner_name, item_id)
              VALUES ($1, $2, $3, $4, $5, $6)`,
-            [ring.serial, ring.partner_serial, ring.character_id, ring.partner_id, ring.partner_name, ring.item_id]
+            [ring.serial, ring.partner_serial, ring.character_id, ring.partner_id, ring.partner_name, ring.item_id],
         );
     }
 
@@ -322,16 +393,15 @@ export class CashShopRepository {
         const res = await this.ctx.getPgDataPool(worldId, characterId).query(
             `SELECT serial, partner_serial, character_id, partner_id, partner_name, item_id
              FROM cash_rings WHERE character_id = $1 ORDER BY serial`,
-            [characterId]
+            [characterId],
         );
         return res.rows as CashRingRow[];
     }
 
     async findWishlist(worldId: number, characterId: number): Promise<number[]> {
-        const res = await this.ctx.getPgDataPool(worldId, characterId).query(
-            "SELECT commodity_sns FROM cash_wishlists WHERE character_id = $1",
-            [characterId]
-        );
+        const res = await this.ctx
+            .getPgDataPool(worldId, characterId)
+            .query("SELECT commodity_sns FROM cash_wishlists WHERE character_id = $1", [characterId]);
         const row = res.rows[0] as { commodity_sns: number[] } | undefined;
         return row?.commodity_sns ?? [];
     }
@@ -340,7 +410,7 @@ export class CashShopRepository {
         await this.ctx.getPgDataPool(worldId, characterId).query(
             `INSERT INTO cash_wishlists (character_id, commodity_sns) VALUES ($1, $2)
              ON CONFLICT (character_id) DO UPDATE SET commodity_sns = EXCLUDED.commodity_sns`,
-            [characterId, commoditySns]
+            [characterId, commoditySns],
         );
     }
 }

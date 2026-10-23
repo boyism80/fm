@@ -19,10 +19,7 @@ export class ServerTimeGrpcController {
     }
 
     @Method("setServerDateTime")
-    async setServerDateTime(
-        call: GrpcCall<SetServerDateTimeRequest>,
-        callback: GrpcCallback<SetServerDateTimeReply>,
-    ) {
+    async setServerDateTime(call: GrpcCall<SetServerDateTimeRequest>, callback: GrpcCallback<SetServerDateTimeReply>) {
         const req = call.request;
         try {
             const ok = await this.serverTimeService.setServerDateTime(
@@ -37,10 +34,7 @@ export class ServerTimeGrpcController {
     }
 
     @Method("broadcastNotice")
-    async broadcastNotice(
-        call: GrpcCall<BroadcastNoticeRequest>,
-        callback: GrpcCallback<BroadcastNoticeReply>,
-    ) {
+    async broadcastNotice(call: GrpcCall<BroadcastNoticeRequest>, callback: GrpcCallback<BroadcastNoticeReply>) {
         const req = call.request;
         try {
             const ok = await this.serverTimeService.broadcastNotice(

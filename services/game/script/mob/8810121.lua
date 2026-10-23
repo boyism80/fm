@@ -3,10 +3,10 @@
 local horntail = require("script/lib/horntail")
 
 return {
-	on_mob_die = function(mob, attacker, map)
-		horntail.replace_sponge(map, mob, 8810122)
-	end,
+    on_mob_die = function(mob, attacker, map)
+        horntail.replace_sponge(map, mob, 8810122)
+    end,
 
-	on_revive = function(mob, map, x, y, revives)
-	end
+    on_revive = function(mob, map, x, y, revives)
+    end
 }

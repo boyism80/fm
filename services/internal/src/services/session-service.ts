@@ -1,5 +1,13 @@
-import { AccountSessionState, SessionDisconnectSource, SessionErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type { Debuff, EnterCashShopReply, EnterGameReply } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import {
+    AccountSessionState,
+    SessionDisconnectSource,
+    SessionErrorCode,
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type {
+    Debuff,
+    EnterCashShopReply,
+    EnterGameReply,
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { isRedisEvalArray } from "@fm/shared/types/redis-eval";
 import type { SessionRepository } from "@fm/shared/repos/session-repository";
 import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
@@ -43,7 +51,7 @@ export class SessionService {
         socialService: SocialService,
         familyService: FamilyService,
         characterService: CharacterService,
-        cashShopService: CashShopService
+        cashShopService: CashShopService,
     ) {
         this.repo = sessionRepository;
         this.unifiedRepo = unifiedRepository;
@@ -89,8 +97,8 @@ export class SessionService {
                 accountId,
                 loginServerId,
                 this.now(),
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN)
-            )
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
+            ),
         );
         if (ok !== 1) {
             const existing = await this.repo.getAccountSession(accountId);
@@ -99,7 +107,7 @@ export class SessionService {
                 `[session] begin_login rejected account=${accountId} login_server=${loginServerId} code=${code}` +
                     ` existing_state=${existing?.state} existing_login_server=${existing?.loginServer?.id}` +
                     ` login_connected=${existing?.loginServer?.connected} created_at=${existing?.timestamps?.createdAt}` +
-                    ` updated_at=${existing?.timestamps?.updatedAt} ttl=${ttl}`
+                    ` updated_at=${existing?.timestamps?.updatedAt} ttl=${ttl}`,
             );
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_ALREADY_LOGGED_IN };
         }
@@ -115,7 +123,7 @@ export class SessionService {
         clientIp: string,
         debuffs: Debuff[],
         sourceChannelId: number | null,
-        sourceCashShopId: number | null
+        sourceCashShopId: number | null,
     ) {
         const [ok, code] = this.atomicResultTuple(
             await this.repo.beginTransition(
@@ -128,26 +136,34 @@ export class SessionService {
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
                 sourceChannelId,
                 sourceCashShopId,
-                debuffs
-            )
+                debuffs,
+            ),
         );
         if (ok !== 1) {
             console.log(`[session] begin_transition failed account=${accountId} character=${characterId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
-        console.log(`[session] begin_transition ok account=${accountId} character=${characterId} source_channel=${sourceChannelId ?? ""} source_cash_shop=${sourceCashShopId ?? ""}`);
+        console.log(
+            `[session] begin_transition ok account=${accountId} character=${characterId} source_channel=${sourceChannelId ?? ""} source_cash_shop=${sourceCashShopId ?? ""}`,
+        );
         // The caller treats a reply that misses its deadline as a transition that may have committed, so the reply must not wait for this cleanup.
         void (async () => {
             await this.socialService
                 .leaveMessenger(worldId, characterId)
-                .catch(err => console.error("[social] messenger cleanup failed", err));
+                .catch((err) => console.error("[social] messenger cleanup failed", err));
             await this.announcePresence(worldId, characterId, { family: true });
             await this.releaseCharacterNameReservation(accountId);
         })();
         return { ok: true };
     }
 
-    async enterGame(worldId: number, row: CharacterModel, channelId: number, clientIp: string, callerGone: () => boolean): Promise<EnterGameReply> {
+    async enterGame(
+        worldId: number,
+        row: CharacterModel,
+        channelId: number,
+        clientIp: string,
+        callerGone: () => boolean,
+    ): Promise<EnterGameReply> {
         const { accountId, characterId } = row;
         const account = await this.repo.getAccountSession(accountId);
         const gameToGameTransfer = account?.gameToGameTransfer === true;
@@ -159,12 +175,16 @@ export class SessionService {
                 channelId,
                 clientIp,
                 this.now(),
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
-            )
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME),
+            ),
         );
         if (ok !== 1) {
-            console.log(`[session] enter_game failed account=${accountId} character=${characterId} channel=${channelId} code=${code}`);
-            throw new Error(`enter game session failed: ${Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND}`);
+            console.log(
+                `[session] enter_game failed account=${accountId} character=${characterId} channel=${channelId} code=${code}`,
+            );
+            throw new Error(
+                `enter game session failed: ${Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND}`,
+            );
         }
         console.log(`[session] enter_game ok account=${accountId} character=${characterId} channel=${channelId}`);
 
@@ -181,7 +201,7 @@ export class SessionService {
             if (callerGone()) {
                 throw new Error(`enter game: caller left before the reply (character=${characterId})`);
             }
-            reply.debuffs = gameToGameTransfer ? account?.debuffs ?? [] : [];
+            reply.debuffs = gameToGameTransfer ? (account?.debuffs ?? []) : [];
             return reply;
         } catch (err) {
             await this.logout(worldId, accountId, {
@@ -189,13 +209,21 @@ export class SessionService {
                 characterId,
                 channelId,
             }).catch((logoutErr) => {
-                console.log(`[session] enter_game rollback failed account=${accountId} character=${characterId}: ${logoutErr}`);
+                console.log(
+                    `[session] enter_game rollback failed account=${accountId} character=${characterId}: ${logoutErr}`,
+                );
             });
             throw err;
         }
     }
 
-    async enterCashShop(worldId: number, row: CharacterModel, cashShopId: number, clientIp: string, callerGone: () => boolean): Promise<EnterCashShopReply> {
+    async enterCashShop(
+        worldId: number,
+        row: CharacterModel,
+        cashShopId: number,
+        clientIp: string,
+        callerGone: () => boolean,
+    ): Promise<EnterCashShopReply> {
         const { accountId, characterId } = row;
         const account = await this.repo.getAccountSession(accountId);
         const raw = await this.repo.enterCashShop(
@@ -205,19 +233,25 @@ export class SessionService {
             cashShopId,
             clientIp,
             this.now(),
-            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP)
+            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP),
         );
         const [ok, code] = this.atomicResultTuple(raw);
         if (ok !== 1) {
-            console.log(`[session] enter_cash_shop failed account=${accountId} character=${characterId} cash_shop=${cashShopId} code=${code}`);
-            throw new Error(`enter cash shop session failed: ${Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND}`);
+            console.log(
+                `[session] enter_cash_shop failed account=${accountId} character=${characterId} cash_shop=${cashShopId} code=${code}`,
+            );
+            throw new Error(
+                `enter cash shop session failed: ${Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND}`,
+            );
         }
-        console.log(`[session] enter_cash_shop ok account=${accountId} character=${characterId} cash_shop=${cashShopId}`);
+        console.log(
+            `[session] enter_cash_shop ok account=${accountId} character=${characterId} cash_shop=${cashShopId}`,
+        );
 
         try {
             await this.socialService
                 .leaveMessenger(worldId, characterId)
-                .catch(err => console.error("[social] messenger cleanup failed", err));
+                .catch((err) => console.error("[social] messenger cleanup failed", err));
             await this.announcePresence(worldId, characterId, { family: true, party: true });
             const game = await this.characterService.load(worldId, row);
             const cashShop = await this.cashShopService.loadAccount(worldId, accountId, characterId);
@@ -232,22 +266,21 @@ export class SessionService {
                 characterId,
                 cashShopId,
             }).catch((logoutErr) => {
-                console.log(`[session] enter_cash_shop rollback failed account=${accountId} character=${characterId}: ${logoutErr}`);
+                console.log(
+                    `[session] enter_cash_shop rollback failed account=${accountId} character=${characterId}: ${logoutErr}`,
+                );
             });
             throw err;
         }
     }
 
-    async refresh(
-        accountId: number,
-        owner: { characterId: number; channelId?: number; cashShopId?: number } | null
-    ) {
+    async refresh(accountId: number, owner: { characterId: number; channelId?: number; cashShopId?: number } | null) {
         const raw = await this.repo.refresh(
             accountId,
             this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
             this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
             this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME),
-            owner
+            owner,
         );
         const [ok, code] = this.atomicResultTuple(raw);
         if (ok !== 1) {
@@ -277,7 +310,7 @@ export class SessionService {
             characterId?: number;
             channelId?: number;
             cashShopId?: number;
-        } = {}
+        } = {},
     ) {
         const src = options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED;
         const transferDisconnect = options.transferDisconnect ?? false;
@@ -294,12 +327,13 @@ export class SessionService {
             src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER ||
             src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER;
         const ownerCharacterId = serverDisconnect ? options.characterId : undefined;
-        const cashShopId = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER ? options.cashShopId : undefined;
+        const cashShopId =
+            src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER ? options.cashShopId : undefined;
         const raw = await this.repo.logout(accountId, keep, channelId, ownerCharacterId, cashShopId);
         const [ok, code] = this.atomicResultTuple(raw);
         console.log(
             `[session] logout account=${accountId} source=${src} transfer=${transferDisconnect}` +
-                ` character=${options.characterId ?? ""} ok=${ok} prev_state=${Array.isArray(raw) ? raw[2] : ""}`
+                ` character=${options.characterId ?? ""} ok=${ok} prev_state=${Array.isArray(raw) ? raw[2] : ""}`,
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };
@@ -308,7 +342,7 @@ export class SessionService {
         if (options.characterId != null && serverDisconnect) {
             await this.socialService
                 .leaveMessenger(worldId, options.characterId)
-                .catch(err => console.error("[social] messenger cleanup failed", err));
+                .catch((err) => console.error("[social] messenger cleanup failed", err));
             await this.announcePresence(worldId, options.characterId, { family: true });
         }
         const gameNormalDisconnect = serverDisconnect && !transferDisconnect;
@@ -323,27 +357,27 @@ export class SessionService {
     private async announcePresence(
         worldId: number,
         characterId: number,
-        notices: { family?: boolean; party?: boolean; buddyChannel?: number; guildOnline?: boolean }
+        notices: { family?: boolean; party?: boolean; buddyChannel?: number; guildOnline?: boolean },
     ) {
         if (notices.family) {
             await this.familyService
                 .presence(worldId, characterId)
-                .catch(err => console.error("[social] family presence failed", err));
+                .catch((err) => console.error("[social] family presence failed", err));
         }
         if (notices.party && this.partyService) {
             await this.partyService
                 .publishMemberLogOnOff(worldId, characterId)
-                .catch(err => console.error("[party] log on/off notice failed", err));
+                .catch((err) => console.error("[party] log on/off notice failed", err));
         }
         if (notices.buddyChannel !== undefined && this.buddyService) {
             await this.buddyService
                 .publishBuddyChannel(worldId, characterId, notices.buddyChannel)
-                .catch(err => console.error("[buddy] channel notice failed", err));
+                .catch((err) => console.error("[buddy] channel notice failed", err));
         }
         if (notices.guildOnline !== undefined && this.guildService) {
             await this.guildService
                 .publishMemberOnline(worldId, characterId, notices.guildOnline)
-                .catch(err => console.error("[guild] online notice failed", err));
+                .catch((err) => console.error("[guild] online notice failed", err));
         }
     }
 }

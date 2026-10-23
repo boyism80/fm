@@ -3,21 +3,21 @@
 local pq = require("script/lib/party_quest")
 
 local KEY_ITEMS = {
-	4001087,
-	4001088,
-	4001089,
-	4001090,
-	4001091,
-	4001092,
-	4001093,
+    4001087,
+    4001088,
+    4001089,
+    4001090,
+    4001091,
+    4001092,
+    4001093,
 }
 
 return {
-	on_enter = function(me)
-		for _, id in ipairs(KEY_ITEMS) do
-			pq.remove_all(id, me)
-		end
-		me:play_portal_sound()
-		me:map(240050400)
-	end
+    on_enter = function(me)
+        for _, id in ipairs(KEY_ITEMS) do
+            pq.remove_all(id, me)
+        end
+        me:play_portal_sound()
+        me:map(240050400)
+    end
 }

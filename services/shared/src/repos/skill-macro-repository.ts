@@ -32,17 +32,22 @@ export class SkillMacroRepository extends HashRepository<SkillMacroModel, SkillM
     }
 
     override onSelect(characterId: string): RepositoryQuery {
-        return { text: `SELECT ${SELECT_COLS} FROM character_skill_macros WHERE character_id = $1 ORDER BY position`, values: [Number(characterId)] };
+        return {
+            text: `SELECT ${SELECT_COLS} FROM character_skill_macros WHERE character_id = $1 ORDER BY position`,
+            values: [Number(characterId)],
+        };
     }
 
     override onBulkUpsert(rows: SkillMacroRow[]): RepositoryQuery {
         if (!rows.length) {
             return { text: "", values: [] };
         }
-        const placeholders = rows.map((_, i) => {
-            const base = i * PER_ROW_PARAMS;
-            return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7},NOW())`;
-        }).join(",");
+        const placeholders = rows
+            .map((_, i) => {
+                const base = i * PER_ROW_PARAMS;
+                return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7},NOW())`;
+            })
+            .join(",");
         return {
             text: `INSERT INTO character_skill_macros (${INSERT_COLS}) VALUES\n${placeholders}\nON CONFLICT (character_id, position) DO UPDATE SET name = EXCLUDED.name, shout = EXCLUDED.shout, skill1 = EXCLUDED.skill1, skill2 = EXCLUDED.skill2, skill3 = EXCLUDED.skill3, updated_at = NOW() RETURNING ${SELECT_COLS}`,
             values: rows.flatMap(rowValues),
@@ -50,7 +55,10 @@ export class SkillMacroRepository extends HashRepository<SkillMacroModel, SkillM
     }
 
     override onBulkDelete(itemKeys: string[], characterId: string): RepositoryQuery {
-        return { text: "DELETE FROM character_skill_macros WHERE position = ANY($1::smallint[]) AND character_id = $2", values: [itemKeys.map(Number), Number(characterId)] };
+        return {
+            text: "DELETE FROM character_skill_macros WHERE position = ANY($1::smallint[]) AND character_id = $2",
+            values: [itemKeys.map(Number), Number(characterId)],
+        };
     }
 
     override rowToModel(row: SkillMacroRow): SkillMacroModel {

@@ -51,11 +51,15 @@ export class InternalContext {
             cache: cfg.cache,
             sequelize: cfg.sequelize,
         };
-        this.pgUnified = this.config.postgresql.unified ? this.createPool(this.config.postgresql.unified, UNIFIED_WORLD_ID, "unified") : null;
+        this.pgUnified = this.config.postgresql.unified
+            ? this.createPool(this.config.postgresql.unified, UNIFIED_WORLD_ID, "unified")
+            : null;
         this.pgGlobal = {};
         this.pgFailureLog = {};
         if (this.config.postgresql.unified) {
-            this.pgFailureLog[String(UNIFIED_WORLD_ID)] = InternalContext.createFailureLogPool(this.config.postgresql.unified);
+            this.pgFailureLog[String(UNIFIED_WORLD_ID)] = InternalContext.createFailureLogPool(
+                this.config.postgresql.unified,
+            );
         }
         this.pgData = {};
         this.redisUnified = this.config.redis.unified ? InternalContext.createRedis(this.config.redis.unified) : null;
@@ -133,10 +137,26 @@ export class InternalContext {
         }
         const operation = this.databaseOperation.getStore();
         const failure = error as { code?: string; message?: string };
-        await this.insertFailure(location.worldId, location.role, operation?.name ?? "query", operation?.subject ?? "", statement, failure.code ?? "", String(failure.message ?? error));
+        await this.insertFailure(
+            location.worldId,
+            location.role,
+            operation?.name ?? "query",
+            operation?.subject ?? "",
+            statement,
+            failure.code ?? "",
+            String(failure.message ?? error),
+        );
     }
 
-    private async insertFailure(worldId: number, role: string, operation: string, subject: string, statement: string, code: string, message: string): Promise<void> {
+    private async insertFailure(
+        worldId: number,
+        role: string,
+        operation: string,
+        subject: string,
+        statement: string,
+        code: string,
+        message: string,
+    ): Promise<void> {
         const global = this.pgFailureLog[String(worldId)];
         if (!global) {
             console.error(`[pg] failure log has no global pool world=${worldId} operation=${operation}`);
@@ -145,7 +165,15 @@ export class InternalContext {
         try {
             await global.query(
                 "INSERT INTO db_failures (world_id, database_role, operation, subject, statement, error_code, error_message) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-                [worldId, role, operation, subject.slice(0, 4000), statement.slice(0, 4000), code, message.slice(0, 4000)],
+                [
+                    worldId,
+                    role,
+                    operation,
+                    subject.slice(0, 4000),
+                    statement.slice(0, 4000),
+                    code,
+                    message.slice(0, 4000),
+                ],
             );
         } catch (logError) {
             console.error("[pg] failure log write failed", logError, { worldId, role, operation, subject, message });
@@ -262,7 +290,12 @@ export class InternalContext {
 
     // A transaction already open on the same shard is joined, so the caller never waits for a second connection
     // from a pool it is holding.
-    async withPgDataTransaction<T>(worldId: number, hash: number, fn: TxFn<T>, options: RepositoryTxOptions = {}): Promise<T> {
+    async withPgDataTransaction<T>(
+        worldId: number,
+        hash: number,
+        fn: TxFn<T>,
+        options: RepositoryTxOptions = {},
+    ): Promise<T> {
         const pool = this.getPgDataPool(worldId, hash);
         if (options.txClient != null && this.clientPools.get(options.txClient) === pool) {
             return fn(options.txClient);
@@ -358,8 +391,7 @@ export class InternalContext {
         for (const client of clients) {
             try {
                 client.disconnect();
-            } catch {
-            }
+            } catch {}
         }
     }
 }

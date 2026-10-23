@@ -3,32 +3,32 @@
 local rnj32_out_hit, on_reactor
 
 return {
-	rnj32_out_hit = function(map, reactor_name)
-		local reactor = map:find_reactor_name(reactor_name)
-		if reactor == nil then
-			return false
-		end
-		reactor:hit(1)
-		sleep(2000)
-		if reactor:state() == 1 then
-			reactor:hit(0)
-		end
-		return true
-	end,
+    rnj32_out_hit = function(map, reactor_name)
+        local reactor = map:find_reactor_name(reactor_name)
+        if reactor == nil then
+            return false
+        end
+        reactor:hit(1)
+        sleep(2000)
+        if reactor:state() == 1 then
+            reactor:hit(0)
+        end
+        return true
+    end,
 
-	on_reactor = function(reactor)
-		local map = reactor:map()
-		if map == nil then
-			return
-		end
-		local wz = map:wz()
-		if wz == nil then
-			return
-		end
-		local reactor_name = "jnr32_out"
-		if wz:id() == 926100200 then
-			reactor_name = "rnj32_out"
-		end
-		run_on_map(wz:id() + 2, "script/reactor/2618001.lua", "rnj32_out_hit", reactor_name)
-	end
+    on_reactor = function(reactor)
+        local map = reactor:map()
+        if map == nil then
+            return
+        end
+        local wz = map:wz()
+        if wz == nil then
+            return
+        end
+        local reactor_name = "jnr32_out"
+        if wz:id() == 926100200 then
+            reactor_name = "rnj32_out"
+        end
+        run_on_map(wz:id() + 2, "script/reactor/2618001.lua", "rnj32_out_hit", reactor_name)
+    end
 }

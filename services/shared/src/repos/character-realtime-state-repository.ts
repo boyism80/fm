@@ -12,7 +12,11 @@ const SELECT_COLS = "world_id, character_id, party_id, guild_id, buddy_capacity,
 
 export type { CharacterRealtimeStateModel };
 
-export class CharacterRealtimeStateRepository extends ValueRepository<CharacterRealtimeStateModel, CharacterRealtimeStateRow, number> {
+export class CharacterRealtimeStateRepository extends ValueRepository<
+    CharacterRealtimeStateModel,
+    CharacterRealtimeStateRow,
+    number
+> {
     override getKey(model: CharacterRealtimeStateModel) {
         return model.characterId;
     }
@@ -45,13 +49,7 @@ export class CharacterRealtimeStateRepository extends ValueRepository<CharacterR
                        buddy_capacity = COALESCE(EXCLUDED.buddy_capacity, character_realtime_state.buddy_capacity),
                        updated_at = NOW()
                    RETURNING ${SELECT_COLS}`,
-            values: [
-                row.world_id,
-                row.character_id,
-                row.party_id,
-                row.guild_id,
-                row.buddy_capacity ?? null,
-            ],
+            values: [row.world_id, row.character_id, row.party_id, row.guild_id, row.buddy_capacity ?? null],
         };
     }
 
@@ -85,7 +83,8 @@ export class CharacterRealtimeStateRepository extends ValueRepository<CharacterR
             partyId: toPgIntOrNull(row.party_id),
             guildId: toPgIntOrNull(row.guild_id),
             buddyCapacity: row.buddy_capacity == null ? undefined : Number(row.buddy_capacity),
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

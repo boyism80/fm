@@ -5,33 +5,33 @@ local BOSS_MAP = 741020101
 local DURATION_MS = 1900000
 
 local function end_run(sm)
-	sm:finish(EXIT_MAP)
+    sm:finish(EXIT_MAP)
 end
 
 return {
-	on_init = function(group)
-		group:min_players(1)
-		group:exit_map(EXIT_MAP)
-	end,
+    on_init = function(group)
+        group:min_players(1)
+        group:exit_map(EXIT_MAP)
+    end,
 
-	on_create = function(sm)
-		return { BOSS_MAP }
-	end,
+    on_create = function(sm)
+        return { BOSS_MAP }
+    end,
 
-	on_prepare = function(sm)
-		sm:map(BOSS_MAP):respawn({ include_one_time = true })
-	end,
+    on_prepare = function(sm)
+        sm:map(BOSS_MAP):respawn({ include_one_time = true })
+    end,
 
-	on_start = function(sm)
-		sm:start_timer(DURATION_MS)
-	end,
+    on_start = function(sm)
+        sm:start_timer(DURATION_MS)
+    end,
 
-	on_player_enter = function(sm, player)
-		player:map(sm:map(BOSS_MAP))
-	end,
+    on_player_enter = function(sm, player)
+        player:map(sm:map(BOSS_MAP))
+    end,
 
-	on_scheduled_timeout = function(sm)
-		end_run(sm)
-	end,
+    on_scheduled_timeout = function(sm)
+        end_run(sm)
+    end,
 
 }

@@ -3,28 +3,28 @@
 local cpq = require("script/lib/carnival")
 
 return {
-	on_click = function(me, npc)
-		local match = carnival.map_match(me:map():wz():id())
-		if match == nil then
-			return
-		end
-		while true do
-			if not match:has_pending_challenge() then
-				return
-			end
-			local members, size = match:pending_challenge_members()
-			local info = cpq.challenge_info(members, size)
-			local msg = "이 파티의 카니발 도전을 수락하겠는가?"
-			if info ~= nil and info ~= "" then
-				msg = info .. msg
-			end
-			if me:dialog_yes_no(npc, msg) then
-				break
-			end
-			match:reject_pending_challenge()
-		end
-		if not match:accept_pending_challenge() then
-			me:dialog(npc, "도전을 수락하는데 실패하였네.")
-		end
-	end
+    on_click = function(me, npc)
+        local match = carnival.map_match(me:map():wz():id())
+        if match == nil then
+            return
+        end
+        while true do
+            if not match:has_pending_challenge() then
+                return
+            end
+            local members, size = match:pending_challenge_members()
+            local info = cpq.challenge_info(members, size)
+            local msg = "이 파티의 카니발 도전을 수락하겠는가?"
+            if info ~= nil and info ~= "" then
+                msg = info .. msg
+            end
+            if me:dialog_yes_no(npc, msg) then
+                break
+            end
+            match:reject_pending_challenge()
+        end
+        if not match:accept_pending_challenge() then
+            me:dialog(npc, "도전을 수락하는데 실패하였네.")
+        end
+    end
 }

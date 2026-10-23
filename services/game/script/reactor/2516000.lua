@@ -1,13 +1,13 @@
 -- Reactor name (Reactor.wz/2516000.img.xml): 투명리액터:우양소환
 
 return {
-	on_reactor = function(reactor)
-		local map = reactor:map()
-		if map == nil then
-			return
-		end
-		map:message('해적왕이 죽고 도라지 왕이 풀려났습니다!')
-		local x, y = reactor:position()
-		map:spawn_npc(2094001, x, y - 10)
-	end
+    on_reactor = function(reactor)
+        local map = reactor:map()
+        if map == nil then
+            return
+        end
+        map:message('해적왕이 죽고 도라지 왕이 풀려났습니다!')
+        local x, y = reactor:position()
+        map:spawn_npc(2094001, x, y - 10)
+    end
 }

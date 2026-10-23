@@ -7,7 +7,14 @@ export class OperationLogService {
         this.ctx = internalContext;
     }
 
-    async write(worldId: number, channelId: number, characterId: number, kind: string, meso: number, detail: string): Promise<boolean> {
+    async write(
+        worldId: number,
+        channelId: number,
+        characterId: number,
+        kind: string,
+        meso: number,
+        detail: string,
+    ): Promise<boolean> {
         if (!Number.isFinite(worldId) || worldId < 0) {
             return false;
         }

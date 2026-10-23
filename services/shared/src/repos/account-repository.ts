@@ -51,7 +51,7 @@ export class AccountRepository {
                 model.secondPasswordHash ?? null,
                 model.secondPasswordFailures,
                 model.secondPasswordLockedUntil ?? null,
-            ]
+            ],
         );
         return AccountRepository.rowToModel(rows[0] as AccountRow);
     }
@@ -59,16 +59,24 @@ export class AccountRepository {
     // An existing account is written column by column, never as a whole row. The second password state is
     // written under the `second_password:a{id}` lock and the other columns are not, so writing back a
     // whole stale row would undo failures and lockouts (or a login) recorded in the meantime.
-    async setSecondPassword(accountId: number, hash: string | null, failures: number, lockedUntil: string | null): Promise<void> {
+    async setSecondPassword(
+        accountId: number,
+        hash: string | null,
+        failures: number,
+        lockedUntil: string | null,
+    ): Promise<void> {
         await this.update(
             accountId,
             "second_password_hash = $2, second_password_failures = $3, second_password_locked_until = $4",
-            [hash, failures, lockedUntil]
+            [hash, failures, lockedUntil],
         );
     }
 
     async setSecondPasswordFailures(accountId: number, failures: number, lockedUntil: string | null): Promise<void> {
-        await this.update(accountId, "second_password_failures = $2, second_password_locked_until = $3", [failures, lockedUntil]);
+        await this.update(accountId, "second_password_failures = $2, second_password_locked_until = $3", [
+            failures,
+            lockedUntil,
+        ]);
     }
 
     async setLogin(accountId: number, lastLoginIp: string | null, macAddress: string | null): Promise<void> {
@@ -84,7 +92,10 @@ export class AccountRepository {
     }
 
     private async update(accountId: number, columns: string, values: RepositoryQueryValue[]): Promise<void> {
-        await this.pool().query(`UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`, [accountId, ...values]);
+        await this.pool().query(`UPDATE accounts SET ${columns}, updated_at = NOW() WHERE id = $1`, [
+            accountId,
+            ...values,
+        ]);
     }
 
     // Accounts used to live in a world data shard. Rows still there are copied to the unified database and
@@ -98,7 +109,7 @@ export class AccountRepository {
             }
             await this.pool().query(
                 "INSERT INTO accounts SELECT * FROM jsonb_populate_recordset(NULL::accounts, $1) ON CONFLICT (id) DO NOTHING",
-                [JSON.stringify(rows)]
+                [JSON.stringify(rows)],
             );
             await shard.query("DELETE FROM accounts WHERE id = ANY($1)", [(rows as AccountRow[]).map((row) => row.id)]);
             moved += rows.length;

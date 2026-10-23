@@ -3,9 +3,9 @@
 local combat = require("script/lib/combat")
 
 return {
-	extra_element = "s",
+    extra_element = "s",
 
-	on_attack = function(me, skill, damages)
-		combat.apply_prob_status(me, skill, damages, MobBuff.Poison)
-	end
+    on_attack = function(me, skill, damages)
+        combat.apply_prob_status(me, skill, damages, MobBuff.Poison)
+    end
 }

@@ -63,7 +63,12 @@ export class ParcelGrpcController {
     async returnParcel(call: GrpcCall<ReturnParcelRequest>, callback: GrpcCallback<ReturnParcelReply>) {
         try {
             const req = call.request;
-            const result = await this.parcelService.returnParcels(req.worldId, req.characterId, req.requestId, req.parcels);
+            const result = await this.parcelService.returnParcels(
+                req.worldId,
+                req.characterId,
+                req.requestId,
+                req.parcels,
+            );
             callback(null, { result });
         } catch (err) {
             this.grpcError(err, callback);
@@ -74,7 +79,9 @@ export class ParcelGrpcController {
     async abortParcelSend(call: GrpcCall<AbortParcelSendRequest>, callback: GrpcCallback<AbortParcelSendReply>) {
         try {
             const req = call.request;
-            callback(null, { sent: await this.parcelService.abortParcelSend(req.worldId, req.recipientName, req.requestId) });
+            callback(null, {
+                sent: await this.parcelService.abortParcelSend(req.worldId, req.recipientName, req.requestId),
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -84,7 +91,10 @@ export class ParcelGrpcController {
     async claimParcel(call: GrpcCall<ClaimParcelRequest>, callback: GrpcCallback<ClaimParcelReply>) {
         try {
             const req = call.request;
-            callback(null, await this.parcelService.claimParcel(req.worldId, req.characterId, req.parcelId, req.requestId));
+            callback(
+                null,
+                await this.parcelService.claimParcel(req.worldId, req.characterId, req.parcelId, req.requestId),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -104,7 +114,7 @@ export class ParcelGrpcController {
     @Method("checkParcelArrivals")
     async checkParcelArrivals(
         call: GrpcCall<CheckParcelArrivalsRequest>,
-        callback: GrpcCallback<CheckParcelArrivalsReply>
+        callback: GrpcCallback<CheckParcelArrivalsReply>,
     ) {
         try {
             const req = call.request;

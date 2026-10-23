@@ -71,7 +71,10 @@ function normalizePgEndpoint(endpoint?: RawPgEndpoint | null, defaults: Partial<
     };
 }
 
-function normalizeRedisEndpoint(endpoint?: RawRedisEndpoint | null, defaults: Partial<RedisEndpoint> = {}): RedisEndpoint | null {
+function normalizeRedisEndpoint(
+    endpoint?: RawRedisEndpoint | null,
+    defaults: Partial<RedisEndpoint> = {},
+): RedisEndpoint | null {
     if (!endpoint) {
         return null;
     }

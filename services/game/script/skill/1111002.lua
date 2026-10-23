@@ -3,7 +3,7 @@
 local util = require("script/lib/skill")
 
 return {
-	on_activated = function(me, skill, params)
-		util.apply_buff_fixed(me, skill, BuffFlag.Combo, 1)
-	end
+    on_activated = function(me, skill, params)
+        util.apply_buff_fixed(me, skill, BuffFlag.Combo, 1)
+    end
 }

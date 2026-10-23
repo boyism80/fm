@@ -12,12 +12,7 @@ const BCRYPT_ROUNDS = 10;
 const SECOND_PASSWORD_MAX_FAILURES = 5;
 const SECOND_PASSWORD_LOCK_MS = 15 * 60 * 1000;
 
-export type SecondPasswordResult =
-    | "success"
-    | "invalid"
-    | "already_set"
-    | "not_set"
-    | "locked";
+export type SecondPasswordResult = "success" | "invalid" | "already_set" | "not_set" | "locked";
 
 export class AccountService {
     private readonly ctx: InternalContext;
@@ -31,7 +26,7 @@ export class AccountService {
         accountRepository: AccountRepository,
         accountWorldRepository: AccountWorldRepository,
         unifiedRepository: UnifiedRepository,
-        distributedLockService: DistributedLockService
+        distributedLockService: DistributedLockService,
     ) {
         this.ctx = internalContext;
         this.accountRepo = accountRepository;
@@ -40,7 +35,13 @@ export class AccountService {
         this.distributedLockService = distributedLockService;
     }
 
-    async loginAccount(loginId: string, password: string, macAddress: string | null, ipAddress: string | null, initialRole: number) {
+    async loginAccount(
+        loginId: string,
+        password: string,
+        macAddress: string | null,
+        ipAddress: string | null,
+        initialRole: number,
+    ) {
         const identity = await this.unifiedRepo.findAccountByLoginId(loginId);
 
         if (!identity || identity.registered_at === null) {
@@ -93,7 +94,11 @@ export class AccountService {
             return { status: LoginAccountReply_Status.WRONG_PASSWORD, role: account.role ?? 0 };
         }
         if (macAddress || ipAddress) {
-            await this.accountRepo.setLogin(account.accountId, ipAddress ?? account.lastLoginIp ?? null, macAddress ?? account.macAddress ?? null);
+            await this.accountRepo.setLogin(
+                account.accountId,
+                ipAddress ?? account.lastLoginIp ?? null,
+                macAddress ?? account.macAddress ?? null,
+            );
         }
 
         return {
@@ -210,7 +215,9 @@ export class AccountService {
 
     private async checkSecondPassword(account: AccountModel, password: string): Promise<SecondPasswordResult> {
         const now = Date.now();
-        const lockedUntil = account.secondPasswordLockedUntil ? new Date(account.secondPasswordLockedUntil).getTime() : 0;
+        const lockedUntil = account.secondPasswordLockedUntil
+            ? new Date(account.secondPasswordLockedUntil).getTime()
+            : 0;
         if (lockedUntil > now) {
             return "locked";
         }
@@ -227,7 +234,7 @@ export class AccountService {
         await this.accountRepo.setSecondPasswordFailures(
             account.accountId,
             failures,
-            failures >= SECOND_PASSWORD_MAX_FAILURES ? new Date(now + SECOND_PASSWORD_LOCK_MS).toISOString() : null
+            failures >= SECOND_PASSWORD_MAX_FAILURES ? new Date(now + SECOND_PASSWORD_LOCK_MS).toISOString() : null,
         );
         return failures >= SECOND_PASSWORD_MAX_FAILURES ? "locked" : "invalid";
     }

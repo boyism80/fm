@@ -56,7 +56,9 @@ export class ShopGrpcController {
     async abortOpenShop(call: GrpcCall<AbortOpenShopRequest>, callback: GrpcCallback<AbortOpenShopReply>) {
         try {
             const req = call.request;
-            callback(null, { aborted: await this.shopService.abortOpenShop(req.worldId, req.accountId, req.requestId) });
+            callback(null, {
+                aborted: await this.shopService.abortOpenShop(req.worldId, req.accountId, req.requestId),
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -73,7 +75,7 @@ export class ShopGrpcController {
                 req.shop,
                 (req.characters ?? []).map((entry) => makeSaveCharacterEntry(entry)),
                 req.close === true,
-                req.storeBank ?? []
+                req.storeBank ?? [],
             );
             callback(null, {});
         } catch (err) {
@@ -95,7 +97,9 @@ export class ShopGrpcController {
     async searchShops(call: GrpcCall<SearchShopsRequest>, callback: GrpcCallback<SearchShopsReply>) {
         try {
             const req = call.request;
-            callback(null, { entries: await this.shopService.searchShops(req.worldId, req.itemId, req.highFirst === true) });
+            callback(null, {
+                entries: await this.shopService.searchShops(req.worldId, req.itemId, req.highFirst === true),
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -104,7 +108,7 @@ export class ShopGrpcController {
     @Method("findPopularShopSearches")
     async findPopularShopSearches(
         call: GrpcCall<FindPopularShopSearchesRequest>,
-        callback: GrpcCallback<FindPopularShopSearchesReply>
+        callback: GrpcCallback<FindPopularShopSearchesReply>,
     ) {
         try {
             callback(null, { itemIds: this.shopService.findPopularShopSearches(call.request.worldId) });

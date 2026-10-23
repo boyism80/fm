@@ -6,10 +6,10 @@ local PURIFY_BEAD = 2270004
 local ENTRY_MAP = 300030100
 
 return {
-	on_enter = function(me)
-		pq.remove_all(PURPLE_STONE, me)
-		pq.remove_all(MONSTER_MARBLE, me)
-		pq.remove_all(PURIFY_BEAD, me)
-		me:map(ENTRY_MAP)
-	end
+    on_enter = function(me)
+        pq.remove_all(PURPLE_STONE, me)
+        pq.remove_all(MONSTER_MARBLE, me)
+        pq.remove_all(PURIFY_BEAD, me)
+        me:map(ENTRY_MAP)
+    end
 }

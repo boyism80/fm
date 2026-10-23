@@ -118,7 +118,7 @@ export class GuildGrpcController {
         guildService: GuildService,
         guildBulletinBoardService: GuildBulletinBoardService,
         allianceService: AllianceService,
-        grpcError: GrpcErrorHandler
+        grpcError: GrpcErrorHandler,
     ) {
         this.guildService = guildService;
         this.guildBulletinBoardService = guildBulletinBoardService;
@@ -130,7 +130,12 @@ export class GuildGrpcController {
     async createGuild(call: GrpcCall<CreateGuildRequest>, callback: GrpcCallback<CreateGuildReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.createGuild(req.worldId, req.guildName, req.leader, req.requestId) as CreateGuildResult;
+            const result = (await this.guildService.createGuild(
+                req.worldId,
+                req.guildName,
+                req.leader,
+                req.requestId,
+            )) as CreateGuildResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -154,7 +159,7 @@ export class GuildGrpcController {
     async getGuild(call: GrpcCall<GetGuildRequest>, callback: GrpcCallback<GetGuildReply>) {
         try {
             const worldId = call.request.worldId;
-            const result = await this.guildService.getGuild(worldId, call.request.guildId) as GetGuildResult;
+            const result = (await this.guildService.getGuild(worldId, call.request.guildId)) as GetGuildResult;
             if (!result.guild) {
                 callback(null, { found: false, guild: undefined });
                 return;
@@ -170,7 +175,11 @@ export class GuildGrpcController {
     async acceptGuildInvite(call: GrpcCall<AcceptGuildInviteRequest>, callback: GrpcCallback<AcceptGuildInviteReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.acceptGuildInvite(req.worldId, req.guildId, req.member) as AcceptGuildInviteResult;
+            const result = (await this.guildService.acceptGuildInvite(
+                req.worldId,
+                req.guildId,
+                req.member,
+            )) as AcceptGuildInviteResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -192,7 +201,10 @@ export class GuildGrpcController {
     @Method("leaveGuild")
     async leaveGuild(call: GrpcCall<LeaveGuildRequest>, callback: GrpcCallback<LeaveGuildReply>) {
         try {
-            const result = await this.guildService.leaveGuild(call.request.worldId, call.request.characterId) as LeaveGuildResult;
+            const result = (await this.guildService.leaveGuild(
+                call.request.worldId,
+                call.request.characterId,
+            )) as LeaveGuildResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -215,11 +227,11 @@ export class GuildGrpcController {
     async expelGuild(call: GrpcCall<ExpelGuildRequest>, callback: GrpcCallback<ExpelGuildReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.expelGuild(
+            const result = (await this.guildService.expelGuild(
                 req.worldId,
                 req.requesterCharacterId,
-                req.targetCharacterId
-            ) as ExpelGuildResult;
+                req.targetCharacterId,
+            )) as ExpelGuildResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -241,15 +253,15 @@ export class GuildGrpcController {
     @Method("changeGuildRankTitles")
     async changeGuildRankTitles(
         call: GrpcCall<ChangeGuildRankTitlesRequest>,
-        callback: GrpcCallback<ChangeGuildRankTitlesReply>
+        callback: GrpcCallback<ChangeGuildRankTitlesReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeGuildRankTitles(
+            const result = (await this.guildService.changeGuildRankTitles(
                 req.worldId,
                 req.characterId,
-                req.rankTitles
-            ) as ChangeGuildRankTitlesResult;
+                req.rankTitles,
+            )) as ChangeGuildRankTitlesResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -271,16 +283,16 @@ export class GuildGrpcController {
     @Method("changeGuildMemberRank")
     async changeGuildMemberRank(
         call: GrpcCall<ChangeGuildMemberRankRequest>,
-        callback: GrpcCallback<ChangeGuildMemberRankReply>
+        callback: GrpcCallback<ChangeGuildMemberRankReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeGuildMemberRank(
+            const result = (await this.guildService.changeGuildMemberRank(
                 req.worldId,
                 req.requesterCharacterId,
                 req.targetCharacterId,
-                req.newRank
-            ) as ChangeGuildMemberRankResult;
+                req.newRank,
+            )) as ChangeGuildMemberRankResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -303,12 +315,12 @@ export class GuildGrpcController {
     async changeGuildEmblem(call: GrpcCall<ChangeGuildEmblemRequest>, callback: GrpcCallback<ChangeGuildEmblemReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeGuildEmblem(
+            const result = (await this.guildService.changeGuildEmblem(
                 req.worldId,
                 req.characterId,
                 req.logo,
-                req.requestId
-            ) as ChangeGuildEmblemResult;
+                req.requestId,
+            )) as ChangeGuildEmblemResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -331,11 +343,11 @@ export class GuildGrpcController {
     async changeGuildNotice(call: GrpcCall<ChangeGuildNoticeRequest>, callback: GrpcCallback<ChangeGuildNoticeReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeGuildNotice(
+            const result = (await this.guildService.changeGuildNotice(
                 req.worldId,
                 req.characterId,
-                req.notice
-            ) as ChangeGuildNoticeResult;
+                req.notice,
+            )) as ChangeGuildNoticeResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -357,16 +369,16 @@ export class GuildGrpcController {
     @Method("increaseGuildCapacity")
     async increaseGuildCapacity(
         call: GrpcCall<IncreaseGuildCapacityRequest>,
-        callback: GrpcCallback<IncreaseGuildCapacityReply>
+        callback: GrpcCallback<IncreaseGuildCapacityReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.increaseGuildCapacity(
+            const result = (await this.guildService.increaseGuildCapacity(
                 req.worldId,
                 req.characterId,
                 req.extendedCap,
-                req.requestId
-            ) as IncreaseGuildCapacityResult;
+                req.requestId,
+            )) as IncreaseGuildCapacityResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -393,7 +405,12 @@ export class GuildGrpcController {
     async gainGuildGP(call: GrpcCall<GainGuildGPRequest>, callback: GrpcCallback<GainGuildGPReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.gainGuildGP(req.worldId, req.guildId, req.amount, req.requestId) as GainGuildGPResult;
+            const result = (await this.guildService.gainGuildGP(
+                req.worldId,
+                req.guildId,
+                req.amount,
+                req.requestId,
+            )) as GainGuildGPResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -452,15 +469,15 @@ export class GuildGrpcController {
     @Method("listGuildBulletinBoardThreads")
     async listGuildBulletinBoardThreads(
         call: GrpcCall<ListGuildBulletinBoardThreadsRequest>,
-        callback: GrpcCallback<ListGuildBulletinBoardThreadsReply>
+        callback: GrpcCallback<ListGuildBulletinBoardThreadsReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildBulletinBoardService.listGuildBulletinBoardThreads(
+            const result = (await this.guildBulletinBoardService.listGuildBulletinBoardThreads(
                 req.worldId,
                 req.characterId,
-                req.page
-            ) as ListGuildBulletinBoardThreadsResult;
+                req.page,
+            )) as ListGuildBulletinBoardThreadsResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -488,15 +505,15 @@ export class GuildGrpcController {
     @Method("showGuildBulletinBoardThread")
     async showGuildBulletinBoardThread(
         call: GrpcCall<ShowGuildBulletinBoardThreadRequest>,
-        callback: GrpcCallback<ShowGuildBulletinBoardThreadReply>
+        callback: GrpcCallback<ShowGuildBulletinBoardThreadReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildBulletinBoardService.showGuildBulletinBoardThread(
+            const result = (await this.guildBulletinBoardService.showGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
-                req.localThreadId
-            ) as ShowGuildBulletinBoardThreadResult;
+                req.localThreadId,
+            )) as ShowGuildBulletinBoardThreadResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -518,18 +535,18 @@ export class GuildGrpcController {
     @Method("createGuildBulletinBoardThread")
     async createGuildBulletinBoardThread(
         call: GrpcCall<CreateGuildBulletinBoardThreadRequest>,
-        callback: GrpcCallback<CreateGuildBulletinBoardThreadReply>
+        callback: GrpcCallback<CreateGuildBulletinBoardThreadReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildBulletinBoardService.createGuildBulletinBoardThread(
+            const result = (await this.guildBulletinBoardService.createGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
                 req.notice,
                 req.title,
                 req.body,
-                req.icon
-            ) as CreateGuildBulletinBoardThreadResult;
+                req.icon,
+            )) as CreateGuildBulletinBoardThreadResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -559,18 +576,18 @@ export class GuildGrpcController {
     @Method("updateGuildBulletinBoardThread")
     async updateGuildBulletinBoardThread(
         call: GrpcCall<UpdateGuildBulletinBoardThreadRequest>,
-        callback: GrpcCallback<UpdateGuildBulletinBoardThreadReply>
+        callback: GrpcCallback<UpdateGuildBulletinBoardThreadReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildBulletinBoardService.updateGuildBulletinBoardThread(
+            const result = (await this.guildBulletinBoardService.updateGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
                 req.localThreadId,
                 req.title,
                 req.body,
-                req.icon
-            ) as UpdateGuildBulletinBoardThreadResult;
+                req.icon,
+            )) as UpdateGuildBulletinBoardThreadResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -592,15 +609,15 @@ export class GuildGrpcController {
     @Method("deleteGuildBulletinBoardThread")
     async deleteGuildBulletinBoardThread(
         call: GrpcCall<DeleteGuildBulletinBoardThreadRequest>,
-        callback: GrpcCallback<DeleteGuildBulletinBoardThreadReply>
+        callback: GrpcCallback<DeleteGuildBulletinBoardThreadReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildBulletinBoardService.deleteGuildBulletinBoardThread(
+            const result = (await this.guildBulletinBoardService.deleteGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
-                req.localThreadId
-            ) as DeleteGuildBulletinBoardThreadResult;
+                req.localThreadId,
+            )) as DeleteGuildBulletinBoardThreadResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -620,16 +637,16 @@ export class GuildGrpcController {
     @Method("createGuildBulletinBoardReply")
     async createGuildBulletinBoardReply(
         call: GrpcCall<CreateGuildBulletinBoardReplyRequest>,
-        callback: GrpcCallback<CreateGuildBulletinBoardReplyReply>
+        callback: GrpcCallback<CreateGuildBulletinBoardReplyReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildBulletinBoardService.createGuildBulletinBoardReply(
+            const result = (await this.guildBulletinBoardService.createGuildBulletinBoardReply(
                 req.worldId,
                 req.characterId,
                 req.localThreadId,
-                req.content
-            ) as CreateGuildBulletinBoardReplyResult;
+                req.content,
+            )) as CreateGuildBulletinBoardReplyResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -651,16 +668,16 @@ export class GuildGrpcController {
     @Method("deleteGuildBulletinBoardReply")
     async deleteGuildBulletinBoardReply(
         call: GrpcCall<DeleteGuildBulletinBoardReplyRequest>,
-        callback: GrpcCallback<DeleteGuildBulletinBoardReplyReply>
+        callback: GrpcCallback<DeleteGuildBulletinBoardReplyReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.guildBulletinBoardService.deleteGuildBulletinBoardReply(
+            const result = (await this.guildBulletinBoardService.deleteGuildBulletinBoardReply(
                 req.worldId,
                 req.characterId,
                 req.localThreadId,
-                req.replyId
-            ) as DeleteGuildBulletinBoardReplyResult;
+                req.replyId,
+            )) as DeleteGuildBulletinBoardReplyResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -683,13 +700,13 @@ export class GuildGrpcController {
     async createAlliance(call: GrpcCall<CreateAllianceRequest>, callback: GrpcCallback<CreateAllianceReply>) {
         try {
             const req = call.request;
-            const result = await this.allianceService.createAlliance(
+            const result = (await this.allianceService.createAlliance(
                 req.worldId,
                 req.allianceName,
                 req.leaderCharacterId,
                 req.partnerCharacterId,
-                req.requestId
-            ) as CreateAllianceResult;
+                req.requestId,
+            )) as CreateAllianceResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -713,10 +730,10 @@ export class GuildGrpcController {
     @Method("leaveAlliance")
     async leaveAlliance(call: GrpcCall<LeaveAllianceRequest>, callback: GrpcCallback<LeaveAllianceReply>) {
         try {
-            const result = await this.allianceService.leaveAlliance(
+            const result = (await this.allianceService.leaveAlliance(
                 call.request.worldId,
-                call.request.characterId
-            ) as LeaveAllianceResult;
+                call.request.characterId,
+            )) as LeaveAllianceResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -744,16 +761,16 @@ export class GuildGrpcController {
     @Method("expelAllianceGuild")
     async expelAllianceGuild(
         call: GrpcCall<ExpelAllianceGuildRequest>,
-        callback: GrpcCallback<ExpelAllianceGuildReply>
+        callback: GrpcCallback<ExpelAllianceGuildReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.allianceService.expelAllianceGuild(
+            const result = (await this.allianceService.expelAllianceGuild(
                 req.worldId,
                 req.characterId,
                 req.targetGuildId,
-                req.allianceId > 0 ? req.allianceId : undefined
-            ) as ExpelAllianceGuildResult;
+                req.allianceId > 0 ? req.allianceId : undefined,
+            )) as ExpelAllianceGuildResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -781,10 +798,10 @@ export class GuildGrpcController {
     @Method("disbandAlliance")
     async disbandAlliance(call: GrpcCall<DisbandAllianceRequest>, callback: GrpcCallback<DisbandAllianceReply>) {
         try {
-            const result = await this.allianceService.disbandAlliance(
+            const result = (await this.allianceService.disbandAlliance(
                 call.request.worldId,
-                call.request.characterId
-            ) as DisbandAllianceResult;
+                call.request.characterId,
+            )) as DisbandAllianceResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -806,16 +823,16 @@ export class GuildGrpcController {
     @Method("acceptAllianceInvite")
     async acceptAllianceInvite(
         call: GrpcCall<AcceptAllianceInviteRequest>,
-        callback: GrpcCallback<AcceptAllianceInviteReply>
+        callback: GrpcCallback<AcceptAllianceInviteReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.allianceService.acceptAllianceInvite(
+            const result = (await this.allianceService.acceptAllianceInvite(
                 req.worldId,
                 req.characterId,
                 req.allianceId,
-                req.guildId
-            ) as AcceptAllianceInviteResult;
+                req.guildId,
+            )) as AcceptAllianceInviteResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -839,14 +856,14 @@ export class GuildGrpcController {
     @Method("increaseAllianceCapacity")
     async increaseAllianceCapacity(
         call: GrpcCall<IncreaseAllianceCapacityRequest>,
-        callback: GrpcCallback<IncreaseAllianceCapacityReply>
+        callback: GrpcCallback<IncreaseAllianceCapacityReply>,
     ) {
         try {
-            const result = await this.allianceService.increaseAllianceCapacity(
+            const result = (await this.allianceService.increaseAllianceCapacity(
                 call.request.worldId,
                 call.request.characterId,
-                call.request.requestId
-            ) as IncreaseAllianceCapacityResult;
+                call.request.requestId,
+            )) as IncreaseAllianceCapacityResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -870,15 +887,15 @@ export class GuildGrpcController {
     @Method("changeAllianceRankTitles")
     async changeAllianceRankTitles(
         call: GrpcCall<ChangeAllianceRankTitlesRequest>,
-        callback: GrpcCallback<ChangeAllianceRankTitlesReply>
+        callback: GrpcCallback<ChangeAllianceRankTitlesReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.allianceService.changeAllianceRankTitles(
+            const result = (await this.allianceService.changeAllianceRankTitles(
                 req.worldId,
                 req.characterId,
-                req.rankTitles
-            ) as ChangeAllianceRankTitlesResult;
+                req.rankTitles,
+            )) as ChangeAllianceRankTitlesResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -902,15 +919,15 @@ export class GuildGrpcController {
     @Method("changeAllianceLeader")
     async changeAllianceLeader(
         call: GrpcCall<ChangeAllianceLeaderRequest>,
-        callback: GrpcCallback<ChangeAllianceLeaderReply>
+        callback: GrpcCallback<ChangeAllianceLeaderReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.allianceService.changeAllianceLeader(
+            const result = (await this.allianceService.changeAllianceLeader(
                 req.worldId,
                 req.characterId,
-                req.newLeaderCharacterId
-            ) as ChangeAllianceLeaderResult;
+                req.newLeaderCharacterId,
+            )) as ChangeAllianceLeaderResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -938,15 +955,15 @@ export class GuildGrpcController {
     @Method("changeAllianceNotice")
     async changeAllianceNotice(
         call: GrpcCall<ChangeAllianceNoticeRequest>,
-        callback: GrpcCallback<ChangeAllianceNoticeReply>
+        callback: GrpcCallback<ChangeAllianceNoticeReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.allianceService.changeAllianceNotice(
+            const result = (await this.allianceService.changeAllianceNotice(
                 req.worldId,
                 req.characterId,
-                req.notice
-            ) as ChangeAllianceNoticeResult;
+                req.notice,
+            )) as ChangeAllianceNoticeResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -970,16 +987,16 @@ export class GuildGrpcController {
     @Method("changeAllianceMemberRank")
     async changeAllianceMemberRank(
         call: GrpcCall<ChangeAllianceMemberRankRequest>,
-        callback: GrpcCallback<ChangeAllianceMemberRankReply>
+        callback: GrpcCallback<ChangeAllianceMemberRankReply>,
     ) {
         try {
             const req = call.request;
-            const result = await this.allianceService.changeAllianceMemberRank(
+            const result = (await this.allianceService.changeAllianceMemberRank(
                 req.worldId,
                 req.requesterCharacterId,
                 req.targetCharacterId,
-                req.promote
-            ) as ChangeAllianceMemberRankResult;
+                req.promote,
+            )) as ChangeAllianceMemberRankResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -1008,7 +1025,10 @@ export class GuildGrpcController {
     async getAlliance(call: GrpcCall<GetAllianceRequest>, callback: GrpcCallback<GetAllianceReply>) {
         try {
             const worldId = call.request.worldId;
-            const result = await this.allianceService.getAlliance(worldId, call.request.allianceId) as GetAllianceResult;
+            const result = (await this.allianceService.getAlliance(
+                worldId,
+                call.request.allianceId,
+            )) as GetAllianceResult;
             if (!result.alliance) {
                 callback(null, { found: false, alliance: undefined });
                 return;
@@ -1022,13 +1042,17 @@ export class GuildGrpcController {
     @Method("disbandGuild")
     async disbandGuild(call: GrpcCall<DisbandGuildRequest>, callback: GrpcCallback<DisbandGuildReply>) {
         try {
-            const result = await this.guildService.disbandGuild(
+            const result = (await this.guildService.disbandGuild(
                 call.request.worldId,
-                call.request.characterId
-            ) as DisbandGuildResult;
+                call.request.characterId,
+            )) as DisbandGuildResult;
             if (result.ok) {
                 if (result.allianceId != null && result.guildId != null) {
-                    await this.allianceService.removeDisbandedGuild(call.request.worldId, result.allianceId, result.guildId);
+                    await this.allianceService.removeDisbandedGuild(
+                        call.request.worldId,
+                        result.allianceId,
+                        result.guildId,
+                    );
                 }
                 callback(null, {
                     ok: true,

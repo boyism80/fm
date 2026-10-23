@@ -146,15 +146,13 @@ export class RabbitMQService {
         if (this.channel) {
             try {
                 await this.channel.close();
-            } catch {
-            }
+            } catch {}
             this.channel = null;
         }
         if (this.connection) {
             try {
                 await this.connection.close();
-            } catch {
-            }
+            } catch {}
             this.connection = null;
         }
     }

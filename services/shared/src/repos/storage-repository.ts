@@ -49,7 +49,8 @@ export class StorageRepository extends ValueRepository<StorageModel, StorageRow,
             worldId: row.world_id,
             slots: row.slots,
             meso: row.meso,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

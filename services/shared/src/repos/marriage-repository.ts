@@ -58,15 +58,16 @@ export class MarriageRepository {
     async findByCharacter(client: PoolClient, characterId: number): Promise<MarriageRow | null> {
         const res = await client.query(
             `SELECT ${SELECT_COLS} FROM marriages WHERE ended = FALSE AND (groom_id = $1 OR bride_id = $1) FOR UPDATE`,
-            [characterId]
+            [characterId],
         );
         return (res.rows[0] as MarriageRow | undefined) ?? null;
     }
 
     async find(client: PoolClient, marriageId: number): Promise<MarriageRow | null> {
-        const res = await client.query(`SELECT ${SELECT_COLS} FROM marriages WHERE ended = FALSE AND marriage_id = $1 FOR UPDATE`, [
-            marriageId,
-        ]);
+        const res = await client.query(
+            `SELECT ${SELECT_COLS} FROM marriages WHERE ended = FALSE AND marriage_id = $1 FOR UPDATE`,
+            [marriageId],
+        );
         return (res.rows[0] as MarriageRow | undefined) ?? null;
     }
 
@@ -83,7 +84,7 @@ export class MarriageRepository {
                 marriage.groomItemId,
                 marriage.brideItemId,
                 marriage.status,
-            ]
+            ],
         );
         return res.rows[0] as MarriageRow;
     }
@@ -107,7 +108,7 @@ export class MarriageRepository {
                 row.guests,
                 row.divorce_requester_id,
                 row.divorce_requested_at,
-            ]
+            ],
         );
     }
 
@@ -122,7 +123,13 @@ export class MarriageRepository {
         return res.rows as WeddingGiftRow[];
     }
 
-    async insertGift(worldId: number, receiverId: number, senderName: string, item: unknown, options: RepositoryTxOptions = {}): Promise<void> {
+    async insertGift(
+        worldId: number,
+        receiverId: number,
+        senderName: string,
+        item: unknown,
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         const client = options.txClient ?? this.ctx.getPgDataPool(worldId, receiverId);
         await client.query("INSERT INTO wedding_gifts (receiver_id, sender_name, item) VALUES ($1, $2, $3)", [
             receiverId,
@@ -139,7 +146,10 @@ export class MarriageRepository {
     }
 
     async deleteGift(client: PoolClient, receiverId: number, giftId: number): Promise<WeddingGiftRow | null> {
-        const res = await client.query(`DELETE FROM wedding_gifts WHERE receiver_id = $1 AND gift_id = $2 RETURNING ${GIFT_COLS}`, [receiverId, giftId]);
+        const res = await client.query(
+            `DELETE FROM wedding_gifts WHERE receiver_id = $1 AND gift_id = $2 RETURNING ${GIFT_COLS}`,
+            [receiverId, giftId],
+        );
         return (res.rows[0] as WeddingGiftRow | undefined) ?? null;
     }
 }

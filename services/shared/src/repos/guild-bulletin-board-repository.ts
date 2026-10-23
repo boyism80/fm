@@ -56,7 +56,7 @@ export class GuildBulletinBoardRepository {
         worldId: number,
         guildId: number,
         options: RepositoryTxOptions,
-        fn: (client: PoolClient) => Promise<T>
+        fn: (client: PoolClient) => Promise<T>,
     ): Promise<T> {
         if (options.txClient) {
             return fn(options.txClient);
@@ -64,17 +64,13 @@ export class GuildBulletinBoardRepository {
         return this.ctx.withPgDataTransaction(worldId, guildId, fn);
     }
 
-    async countThreads(
-        worldId: number,
-        guildId: number,
-        options: RepositoryTxOptions = {}
-    ): Promise<number> {
+    async countThreads(worldId: number, guildId: number, options: RepositoryTxOptions = {}): Promise<number> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
             `SELECT COUNT(*)::int AS cnt
              FROM guild_bulletin_board_threads
              WHERE world_id = $1 AND guild_id = $2`,
-            [worldId, guildId]
+            [worldId, guildId],
         );
         const row = res.rows[0] as { cnt: number } | undefined;
         if (!row) {
@@ -86,7 +82,7 @@ export class GuildBulletinBoardRepository {
     async getNoticeThread(
         worldId: number,
         guildId: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardThreadModel | null> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
@@ -103,7 +99,7 @@ export class GuildBulletinBoardRepository {
                 AND r.guild_id = t.guild_id
                 AND r.local_thread_id = t.local_thread_id
              WHERE t.world_id = $1 AND t.guild_id = $2 AND t.local_thread_id = $3`,
-            [worldId, guildId, NOTICE_LOCAL_THREAD_ID]
+            [worldId, guildId, NOTICE_LOCAL_THREAD_ID],
         );
         const row = res.rows[0] as GuildBulletinBoardThreadRow | undefined;
         if (!row) {
@@ -117,7 +113,7 @@ export class GuildBulletinBoardRepository {
         guildId: number,
         offset: number,
         limit: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardThreadModel[]> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
@@ -136,7 +132,7 @@ export class GuildBulletinBoardRepository {
              WHERE t.world_id = $1 AND t.guild_id = $2
              ORDER BY t.local_thread_id DESC
              LIMIT $3 OFFSET $4`,
-            [worldId, guildId, limit, offset]
+            [worldId, guildId, limit, offset],
         );
         return (res.rows as GuildBulletinBoardThreadRow[]).map((row) => this.rowToThreadModel(row));
     }
@@ -145,7 +141,7 @@ export class GuildBulletinBoardRepository {
         worldId: number,
         guildId: number,
         localThreadId: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardThreadModel | null> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
@@ -153,7 +149,7 @@ export class GuildBulletinBoardRepository {
                     t.created_at, t.updated_at
              FROM guild_bulletin_board_threads t
              WHERE t.world_id = $1 AND t.guild_id = $2 AND t.local_thread_id = $3`,
-            [worldId, guildId, localThreadId]
+            [worldId, guildId, localThreadId],
         );
         const row = res.rows[0] as GuildBulletinBoardThreadRow | undefined;
         if (!row) {
@@ -166,7 +162,7 @@ export class GuildBulletinBoardRepository {
         worldId: number,
         guildId: number,
         localThreadId: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardThreadWithRepliesModel | null> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
@@ -183,7 +179,7 @@ export class GuildBulletinBoardRepository {
                AND r.local_thread_id = t.local_thread_id
              WHERE t.world_id = $1 AND t.guild_id = $2 AND t.local_thread_id = $3
              ORDER BY r.reply_id ASC NULLS FIRST`,
-            [worldId, guildId, localThreadId]
+            [worldId, guildId, localThreadId],
         );
         const rows = res.rows as GuildBulletinBoardThreadWithRepliesRow[];
         const first = rows[0];
@@ -205,7 +201,7 @@ export class GuildBulletinBoardRepository {
                     poster_character_id: row.reply_poster_character_id,
                     content: row.reply_content,
                     created_at: row.reply_created_at,
-                } as GuildBulletinBoardReplyRow)
+                } as GuildBulletinBoardReplyRow),
             );
         }
         return { thread, replies };
@@ -215,7 +211,7 @@ export class GuildBulletinBoardRepository {
         worldId: number,
         guildId: number,
         localThreadId: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardReplyModel[]> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
@@ -223,7 +219,7 @@ export class GuildBulletinBoardRepository {
              FROM guild_bulletin_board_replies
              WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3
              ORDER BY reply_id ASC`,
-            [worldId, guildId, localThreadId]
+            [worldId, guildId, localThreadId],
         );
         return (res.rows as GuildBulletinBoardReplyRow[]).map((row) => this.rowToReplyModel(row));
     }
@@ -233,14 +229,14 @@ export class GuildBulletinBoardRepository {
         guildId: number,
         localThreadId: number,
         replyId: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardReplyModel | null> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
             `SELECT world_id, guild_id, local_thread_id, reply_id, poster_character_id, content, created_at
              FROM guild_bulletin_board_replies
              WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3 AND reply_id = $4`,
-            [worldId, guildId, localThreadId, replyId]
+            [worldId, guildId, localThreadId, replyId],
         );
         const row = res.rows[0] as GuildBulletinBoardReplyRow | undefined;
         if (!row) {
@@ -252,7 +248,7 @@ export class GuildBulletinBoardRepository {
     async createThread(
         worldId: number,
         input: CreateGuildBulletinBoardThreadInput,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardThreadModel> {
         const createdAt = input.createdAt ?? new Date();
         return this.runInDataTransaction(worldId, input.guildId, options, async (client) => {
@@ -261,7 +257,7 @@ export class GuildBulletinBoardRepository {
                  FROM guilds
                  WHERE world_id = $1 AND guild_id = $2 AND disbanded_at IS NULL
                  FOR UPDATE`,
-                [worldId, input.guildId]
+                [worldId, input.guildId],
             );
             if ((guildRes.rowCount ?? 0) === 0) {
                 throw new Error(`guild not found for bulletin thread: world=${worldId} guild=${input.guildId}`);
@@ -272,12 +268,12 @@ export class GuildBulletinBoardRepository {
                 await client.query(
                     `DELETE FROM guild_bulletin_board_replies
                      WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
-                    [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID]
+                    [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID],
                 );
                 await client.query(
                     `DELETE FROM guild_bulletin_board_threads
                      WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
-                    [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID]
+                    [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID],
                 );
             }
 
@@ -289,11 +285,11 @@ export class GuildBulletinBoardRepository {
                     END AS next_local_thread_id
                  FROM guild_bulletin_board_threads
                  WHERE world_id = $1 AND guild_id = $2`,
-                [worldId, input.guildId, input.isNotice, NOTICE_LOCAL_THREAD_ID]
+                [worldId, input.guildId, input.isNotice, NOTICE_LOCAL_THREAD_ID],
             );
 
             const localThreadId = Number(
-                (nextRes.rows[0] as { next_local_thread_id: number | string }).next_local_thread_id
+                (nextRes.rows[0] as { next_local_thread_id: number | string }).next_local_thread_id,
             );
 
             const res = await client.query(
@@ -310,7 +306,7 @@ export class GuildBulletinBoardRepository {
                     input.body,
                     input.icon,
                     createdAt,
-                ]
+                ],
             );
             return this.rowToThreadModel(res.rows[0] as GuildBulletinBoardThreadRow);
         });
@@ -319,7 +315,7 @@ export class GuildBulletinBoardRepository {
     async updateThread(
         worldId: number,
         model: GuildBulletinBoardThreadModel,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardThreadModel | null> {
         const client = options.txClient ?? this.pool(worldId, model.guildId);
         const res = await client.query(
@@ -327,15 +323,7 @@ export class GuildBulletinBoardRepository {
              SET title = $4, body = $5, icon = $6, updated_at = $7
              WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3
              RETURNING world_id, guild_id, local_thread_id, poster_character_id, title, body, icon, created_at, updated_at`,
-            [
-                worldId,
-                model.guildId,
-                model.localThreadId,
-                model.title,
-                model.body,
-                model.icon,
-                model.updatedAt,
-            ]
+            [worldId, model.guildId, model.localThreadId, model.title, model.body, model.icon, model.updatedAt],
         );
         const row = res.rows[0] as GuildBulletinBoardThreadRow | undefined;
         if (!row) {
@@ -348,18 +336,18 @@ export class GuildBulletinBoardRepository {
         worldId: number,
         guildId: number,
         localThreadId: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<boolean> {
         return this.runInDataTransaction(worldId, guildId, options, async (client) => {
             await client.query(
                 `DELETE FROM guild_bulletin_board_replies
                  WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
-                [worldId, guildId, localThreadId]
+                [worldId, guildId, localThreadId],
             );
             const res = await client.query(
                 `DELETE FROM guild_bulletin_board_threads
                  WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
-                [worldId, guildId, localThreadId]
+                [worldId, guildId, localThreadId],
             );
             return (res.rowCount ?? 0) > 0;
         });
@@ -368,7 +356,7 @@ export class GuildBulletinBoardRepository {
     async createReply(
         worldId: number,
         input: CreateGuildBulletinBoardReplyInput,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<GuildBulletinBoardReplyModel | null> {
         const createdAt = input.createdAt ?? new Date();
         return this.runInDataTransaction(worldId, input.guildId, options, async (client) => {
@@ -377,7 +365,7 @@ export class GuildBulletinBoardRepository {
                  FROM guild_bulletin_board_threads
                  WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3
                  FOR UPDATE`,
-                [worldId, input.guildId, input.localThreadId]
+                [worldId, input.guildId, input.localThreadId],
             );
             if ((threadRes.rowCount ?? 0) === 0) {
                 return null;
@@ -387,11 +375,9 @@ export class GuildBulletinBoardRepository {
                 `SELECT COALESCE(MAX(reply_id), -1) + 1 AS next_reply_id
                  FROM guild_bulletin_board_replies
                  WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
-                [worldId, input.guildId, input.localThreadId]
+                [worldId, input.guildId, input.localThreadId],
             );
-            const replyId = Number(
-                (nextRes.rows[0] as { next_reply_id: number | string }).next_reply_id
-            );
+            const replyId = Number((nextRes.rows[0] as { next_reply_id: number | string }).next_reply_id);
 
             const res = await client.query(
                 `INSERT INTO guild_bulletin_board_replies
@@ -406,7 +392,7 @@ export class GuildBulletinBoardRepository {
                     input.posterCharacterId,
                     input.content,
                     createdAt,
-                ]
+                ],
             );
             return this.rowToReplyModel(res.rows[0] as GuildBulletinBoardReplyRow);
         });
@@ -417,27 +403,27 @@ export class GuildBulletinBoardRepository {
         guildId: number,
         localThreadId: number,
         replyId: number,
-        options: RepositoryTxOptions = {}
+        options: RepositoryTxOptions = {},
     ): Promise<boolean> {
         const client = options.txClient ?? this.pool(worldId, guildId);
         const res = await client.query(
             `DELETE FROM guild_bulletin_board_replies
              WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3 AND reply_id = $4`,
-            [worldId, guildId, localThreadId, replyId]
+            [worldId, guildId, localThreadId, replyId],
         );
         return (res.rowCount ?? 0) > 0;
     }
 
     async deleteAllForGuild(worldId: number, guildId: number, options: RepositoryTxOptions = {}): Promise<void> {
         await this.runInDataTransaction(worldId, guildId, options, async (client) => {
-            await client.query(
-                `DELETE FROM guild_bulletin_board_replies WHERE world_id = $1 AND guild_id = $2`,
-                [worldId, guildId]
-            );
-            await client.query(
-                `DELETE FROM guild_bulletin_board_threads WHERE world_id = $1 AND guild_id = $2`,
-                [worldId, guildId]
-            );
+            await client.query(`DELETE FROM guild_bulletin_board_replies WHERE world_id = $1 AND guild_id = $2`, [
+                worldId,
+                guildId,
+            ]);
+            await client.query(`DELETE FROM guild_bulletin_board_threads WHERE world_id = $1 AND guild_id = $2`, [
+                worldId,
+                guildId,
+            ]);
         });
     }
 

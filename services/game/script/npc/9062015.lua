@@ -1,97 +1,97 @@
 -- NPC name (String.wz/Npc.img.xml): 할로캣
 
 local TOWNS = {
-	{ text = "자유시장", map = 910000000 },
-	{ text = "코크타운", map = 219000000 },
-	{ text = "행복한 마을", map = 209000000 },
-	{ text = "웨딩빌리지", map = 680000000 },
-	{ text = "리스항구", map = 104000000 },
-	{ text = "헤네시스", map = 100000000 },
-	{ text = "엘리니아", map = 101000000 },
-	{ text = "커닝시티", map = 103000000 },
-	{ text = "페리온", map = 102000000 },
-	{ text = "슬리피우드", map = 105040300 },
-	{ text = "노틸러스", map = 120000000 },
-	{ text = "플로리나 비치", map = 110000000 },
-	{ text = "오르비스", map = 200000000 },
-	{ text = "엘나스", map = 211000000 },
-	{ text = "루디브리엄", map = 220000000 },
-	{ text = "지구방위본부", map = 221000000 },
-	{ text = "아랫마을", map = 222000000 },
-	{ text = "아쿠아리움", map = 230000000 },
-	{ text = "리프레", map = 240000000 },
-	{ text = "무릉도원", map = 250000000 },
-	{ text = "백초마을", map = 251000000 },
-	{ text = "아리안트", map = 260000000 },
-	{ text = "마가티아", map = 261000000 },
-	{ text = "시간의 신전", map = 270000000 },
-	{ text = "엘린숲", map = 300000000 },
-	{ text = "태국 - 플로팅마켓", map = 500000000 },
-	{ text = "대만 - 서문정", map = 740000000 },
-	{ text = "일본 - 버섯신사", map = 800000000 },
-	{ text = "중국 - 상해와이탄", map = 701000000 },
-	{ text = "오르비스 - 길드본부<영웅의전당>", map = 200000301 },
-	{ text = "히든스트리트 - 마르의숲", map = 101000200 },
+    { text = "자유시장", map = 910000000 },
+    { text = "코크타운", map = 219000000 },
+    { text = "행복한 마을", map = 209000000 },
+    { text = "웨딩빌리지", map = 680000000 },
+    { text = "리스항구", map = 104000000 },
+    { text = "헤네시스", map = 100000000 },
+    { text = "엘리니아", map = 101000000 },
+    { text = "커닝시티", map = 103000000 },
+    { text = "페리온", map = 102000000 },
+    { text = "슬리피우드", map = 105040300 },
+    { text = "노틸러스", map = 120000000 },
+    { text = "플로리나 비치", map = 110000000 },
+    { text = "오르비스", map = 200000000 },
+    { text = "엘나스", map = 211000000 },
+    { text = "루디브리엄", map = 220000000 },
+    { text = "지구방위본부", map = 221000000 },
+    { text = "아랫마을", map = 222000000 },
+    { text = "아쿠아리움", map = 230000000 },
+    { text = "리프레", map = 240000000 },
+    { text = "무릉도원", map = 250000000 },
+    { text = "백초마을", map = 251000000 },
+    { text = "아리안트", map = 260000000 },
+    { text = "마가티아", map = 261000000 },
+    { text = "시간의 신전", map = 270000000 },
+    { text = "엘린숲", map = 300000000 },
+    { text = "태국 - 플로팅마켓", map = 500000000 },
+    { text = "대만 - 서문정", map = 740000000 },
+    { text = "일본 - 버섯신사", map = 800000000 },
+    { text = "중국 - 상해와이탄", map = 701000000 },
+    { text = "오르비스 - 길드본부<영웅의전당>", map = 200000301 },
+    { text = "히든스트리트 - 마르의숲", map = 101000200 },
 }
 
 local HUNTS = {
-	{ text = "#r[추천 Lv 130~150]#k 성벽 #b(그레이 벌쳐)#k", map = 211060410 },
-	{ text = "#r[추천 Lv 150~160]#k 암벽 거인 #b(호넷)#k", map = 240091400 },
-	{ text = "#r[추천 Lv 160~170]#k 레헬른 #b(닭고기)#k", map = 450003310 },
-	{ text = "#r[추천 Lv 170~200]#k 아르카나 #b(부조화의 정령)#k", map = 450005431 },
-	{ text = "#r[추천 Lv 200~250~]#k 미래의문 #b(돌연변이 슬라임)#k", map = 271010300 },
+    { text = "#r[추천 Lv 130~150]#k 성벽 #b(그레이 벌쳐)#k", map = 211060410 },
+    { text = "#r[추천 Lv 150~160]#k 암벽 거인 #b(호넷)#k", map = 240091400 },
+    { text = "#r[추천 Lv 160~170]#k 레헬른 #b(닭고기)#k", map = 450003310 },
+    { text = "#r[추천 Lv 170~200]#k 아르카나 #b(부조화의 정령)#k", map = 450005431 },
+    { text = "#r[추천 Lv 200~250~]#k 미래의문 #b(돌연변이 슬라임)#k", map = 271010300 },
 }
 
 local BOSSES = {
-	{ text = "#r[파풀라투스]#k #b시계탑 깊은 곳#k (입장)", map = 220080000 },
-	{ text = "#r[크렉셀]#k #b사유지#k #e(점프맵)#n", map = 541020700 },
-	{ text = "#r[자쿰]#k #b자쿰의 제단 입구#k (입장)", map = 211042300 },
-	{ text = "#r[도로시]#k #b도로시의 영역#k #e(보스룸)#n", map = 123456788 },
-	{ text = "#r[아인크라드]#k #b어딘가의 보스룸#k (소환할때)", map = 864000100 },
-	{ text = "#r[마왕 발록]#k #b신전으로 가는길#k #k(입장)", map = 105100000 },
-	{ text = "#r[텐구]#k #b월하죽림#k #e(나막신)#n", map = 800020130 },
-	{ text = "#r[혼테일]#k #b생명의 동굴#k #k(입장)#n", map = 240050400 },
-	{ text = "#r[보스웨이브]#k #b로비#k #k(입장)", map = 123456771 },
+    { text = "#r[파풀라투스]#k #b시계탑 깊은 곳#k (입장)", map = 220080000 },
+    { text = "#r[크렉셀]#k #b사유지#k #e(점프맵)#n", map = 541020700 },
+    { text = "#r[자쿰]#k #b자쿰의 제단 입구#k (입장)", map = 211042300 },
+    { text = "#r[도로시]#k #b도로시의 영역#k #e(보스룸)#n", map = 123456788 },
+    { text = "#r[아인크라드]#k #b어딘가의 보스룸#k (소환할때)", map = 864000100 },
+    { text = "#r[마왕 발록]#k #b신전으로 가는길#k #k(입장)", map = 105100000 },
+    { text = "#r[텐구]#k #b월하죽림#k #e(나막신)#n", map = 800020130 },
+    { text = "#r[혼테일]#k #b생명의 동굴#k #k(입장)#n", map = 240050400 },
+    { text = "#r[보스웨이브]#k #b로비#k #k(입장)", map = 123456771 },
 }
 
 local MAIN = {
-	{ text = "#r#e강화 이동#k", map = 864000000 },
-	{ text = "#r#e퀘스트 이동#k", npc = 9000400 },
-	{ text = "#k#n마을 이동#k", menu = TOWNS },
-	{ text = "#k보스 이동", menu = BOSSES },
-	{ text = "#k파티 사냥#n#k", menu = HUNTS },
-	{ text = "#k추천 사냥#k", npc = 9072200 },
-	{ text = "#k쩔맵 이용#k", npc = 9010095 },
-	{ text = "#e티어 이용#n#k", npc = 2011 },
+    { text = "#r#e강화 이동#k", map = 864000000 },
+    { text = "#r#e퀘스트 이동#k", npc = 9000400 },
+    { text = "#k#n마을 이동#k", menu = TOWNS },
+    { text = "#k보스 이동", menu = BOSSES },
+    { text = "#k파티 사냥#n#k", menu = HUNTS },
+    { text = "#k추천 사냥#k", npc = 9072200 },
+    { text = "#k쩔맵 이용#k", npc = 9010095 },
+    { text = "#e티어 이용#n#k", npc = 2011 },
 }
 
 local function choose(me, npc, prompt, entries)
-	local options = {}
-	for i, entry in ipairs(entries) do
-		options[i] = entry.text
-	end
-	local sel = me:dialog_list(npc, prompt, options)
-	if sel == nil then
-		return
-	end
-	local entry = entries[sel]
-	if entry.menu ~= nil then
-		choose(me, npc, "", entry.menu)
-		return
-	end
-	if entry.npc ~= nil then
-		me:open_npc(entry.npc)
-		return
-	end
-	if id2map(entry.map) == nil then
-		me:dialog(npc, "아직 갈 수 없는 곳입니다.")
-		return
-	end
-	me:map(entry.map)
+    local options = {}
+    for i, entry in ipairs(entries) do
+        options[i] = entry.text
+    end
+    local sel = me:dialog_list(npc, prompt, options)
+    if sel == nil then
+        return
+    end
+    local entry = entries[sel]
+    if entry.menu ~= nil then
+        choose(me, npc, "", entry.menu)
+        return
+    end
+    if entry.npc ~= nil then
+        me:open_npc(entry.npc)
+        return
+    end
+    if id2map(entry.map) == nil then
+        me:dialog(npc, "아직 갈 수 없는 곳입니다.")
+        return
+    end
+    me:map(entry.map)
 end
 
 return {
-	on_click = function(me, npc)
-		choose(me, npc, "#k#e퀘스트 이동 기능#n 을 이용 하면 퀘스트 진행이 편해져! 퀘스트 이동에 없는 퀘스트 진행 맵은 광장의 #e차원의 거울#n을 찾아보시면 있어!", MAIN)
-	end
+    on_click = function(me, npc)
+        choose(me, npc, "#k#e퀘스트 이동 기능#n 을 이용 하면 퀘스트 진행이 편해져! 퀘스트 이동에 없는 퀘스트 진행 맵은 광장의 #e차원의 거울#n을 찾아보시면 있어!", MAIN)
+    end
 }

@@ -11,93 +11,93 @@ local SHUFFLE_REACTOR_MIN = 2110000
 local SHUFFLE_REACTOR_MAX = 2112013
 
 local STAGE_MAPS = {
-	280010000,
-	280010010,
-	280010011,
-	280010020,
-	280010030,
-	280010031,
-	280010040,
-	280010041,
-	280010050,
-	280010060,
-	280010070,
-	280010071,
-	280010080,
-	280010081,
-	280010090,
-	280010091,
-	280010100,
-	280010101,
-	280010110,
-	280010120,
-	280010130,
-	280010140,
-	280010150,
-	280011000,
-	280011001,
-	280011002,
-	280011003,
-	280011004,
-	280011005,
-	280011006,
+    280010000,
+    280010010,
+    280010011,
+    280010020,
+    280010030,
+    280010031,
+    280010040,
+    280010041,
+    280010050,
+    280010060,
+    280010070,
+    280010071,
+    280010080,
+    280010081,
+    280010090,
+    280010091,
+    280010100,
+    280010101,
+    280010110,
+    280010120,
+    280010130,
+    280010140,
+    280010150,
+    280011000,
+    280011001,
+    280011002,
+    280011003,
+    280011004,
+    280011005,
+    280011006,
 }
 
 local function end_run(sm)
-	sm:finish(EXIT_MAP)
+    sm:finish(EXIT_MAP)
 end
 
 local function exit_player(sm, player)
-	sm:unregister(player)
-	if player ~= nil then
-		player:map(EXIT_MAP)
-	end
+    sm:unregister(player)
+    if player ~= nil then
+        player:map(EXIT_MAP)
+    end
 end
 
 return {
-	on_init = function(group)
-		group:min_players(1)
-		group:exit_map(EXIT_MAP)
-	end,
+    on_init = function(group)
+        group:min_players(1)
+        group:exit_map(EXIT_MAP)
+    end,
 
-	on_create = function(sm)
-		sm:set_property("clear", "")
-		sm:set_property("paper", "")
-		return STAGE_MAPS
-	end,
+    on_create = function(sm)
+        sm:set_property("clear", "")
+        sm:set_property("paper", "")
+        return STAGE_MAPS
+    end,
 
-	on_prepare = function(sm)
-		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = sm:map(map_id)
-			map:respawn({ include_one_time = true })
-			pq.shuffle_reactors(map, SHUFFLE_REACTOR_MIN, SHUFFLE_REACTOR_MAX)
-		end
-		pq.shuffle_reactors(sm:map(START_MAP))
-	end,
+    on_prepare = function(sm)
+        for _, map_id in ipairs(STAGE_MAPS) do
+            local map = sm:map(map_id)
+            map:respawn({ include_one_time = true })
+            pq.shuffle_reactors(map, SHUFFLE_REACTOR_MIN, SHUFFLE_REACTOR_MAX)
+        end
+        pq.shuffle_reactors(sm:map(START_MAP))
+    end,
 
-	on_start = function(sm)
-		sm:start_timer(DURATION_MS)
-	end,
+    on_start = function(sm)
+        sm:start_timer(DURATION_MS)
+    end,
 
-	on_player_enter = function(sm, player)
-		local function on_arrive(player)
-			if player:records():get(STAGE1_RECORD) == 0 then
-				player:records():set(STAGE1_RECORD, STAGE_STARTED)
-			end
-		end
-		player:map(sm:map(START_MAP), { callback = on_arrive })
-	end,
+    on_player_enter = function(sm, player)
+        local function on_arrive(player)
+            if player:records():get(STAGE1_RECORD) == 0 then
+                player:records():set(STAGE1_RECORD, STAGE_STARTED)
+            end
+        end
+        player:map(sm:map(START_MAP), { callback = on_arrive })
+    end,
 
-	on_left_party = function(sm, player)
-		exit_player(sm, player)
-	end,
+    on_left_party = function(sm, player)
+        exit_player(sm, player)
+    end,
 
-	on_disband_party = function(sm)
-		end_run(sm)
-	end,
+    on_disband_party = function(sm)
+        end_run(sm)
+    end,
 
-	on_scheduled_timeout = function(sm)
-		end_run(sm)
-	end,
+    on_scheduled_timeout = function(sm)
+        end_run(sm)
+    end,
 
 }

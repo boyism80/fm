@@ -34,10 +34,12 @@ export class MedalRankingRepository {
     }
 
     async list(worldId: number): Promise<MedalRankingRow[]> {
-        const { rows } = await this.ctx.getPgGlobalPool(worldId).query(
-            `SELECT kind, month, character_id, name, score FROM medal_rankings WHERE world_id = $1 ORDER BY kind, month, ${BOARD_ORDER}`,
-            [worldId]
-        );
+        const { rows } = await this.ctx
+            .getPgGlobalPool(worldId)
+            .query(
+                `SELECT kind, month, character_id, name, score FROM medal_rankings WHERE world_id = $1 ORDER BY kind, month, ${BOARD_ORDER}`,
+                [worldId],
+            );
         const rankings = new Map<string, MedalRankingRow>();
         for (const row of rows as Row[]) {
             const key = `${row.kind}|${row.month}`;
@@ -55,11 +57,15 @@ export class MedalRankingRepository {
         month: number,
         characterId: number,
         name: string,
-        score: number
+        score: number,
     ): Promise<{ previousHolderId: number; ranking: MedalRankingRow }> {
         return this.ctx.withPgGlobalTransaction(worldId, async (client) => {
             await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`medal:${worldId}:${kind}`]);
-            await client.query("DELETE FROM medal_rankings WHERE world_id = $1 AND kind = $2 AND month < $3", [worldId, kind, month]);
+            await client.query("DELETE FROM medal_rankings WHERE world_id = $1 AND kind = $2 AND month < $3", [
+                worldId,
+                kind,
+                month,
+            ]);
             const before = await this.board(client, worldId, kind, month);
             await client.query(
                 `INSERT INTO medal_rankings (world_id, kind, month, character_id, name, score) VALUES ($1, $2, $3, $4, $5, $6)
@@ -67,23 +73,32 @@ export class MedalRankingRepository {
                      name = EXCLUDED.name,
                      score = GREATEST(medal_rankings.score, EXCLUDED.score),
                      recorded_at = CASE WHEN EXCLUDED.score > medal_rankings.score THEN NOW() ELSE medal_rankings.recorded_at END`,
-                [worldId, kind, month, characterId, name, score]
+                [worldId, kind, month, characterId, name, score],
             );
             await client.query(
                 `DELETE FROM medal_rankings WHERE world_id = $1 AND kind = $2 AND month = $3 AND character_id NOT IN (
                      SELECT character_id FROM medal_rankings WHERE world_id = $1 AND kind = $2 AND month = $3 ORDER BY ${BOARD_ORDER} LIMIT ${MEDAL_RANKING_SIZE})`,
-                [worldId, kind, month]
+                [worldId, kind, month],
             );
             const entries = await this.board(client, worldId, kind, month);
             return { previousHolderId: before[0]?.characterId ?? 0, ranking: { kind, month, entries } };
         });
     }
 
-    private async board(client: PoolClient, worldId: number, kind: string, month: number): Promise<MedalRankingEntryRow[]> {
+    private async board(
+        client: PoolClient,
+        worldId: number,
+        kind: string,
+        month: number,
+    ): Promise<MedalRankingEntryRow[]> {
         const { rows } = await client.query(
             `SELECT kind, month, character_id, name, score FROM medal_rankings WHERE world_id = $1 AND kind = $2 AND month = $3 ORDER BY ${BOARD_ORDER}`,
-            [worldId, kind, month]
+            [worldId, kind, month],
         );
-        return (rows as Row[]).map((row) => ({ characterId: row.character_id, name: row.name, score: Number(row.score) }));
+        return (rows as Row[]).map((row) => ({
+            characterId: row.character_id,
+            name: row.name,
+            score: Number(row.score),
+        }));
     }
 }

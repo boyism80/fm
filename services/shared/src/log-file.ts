@@ -12,8 +12,7 @@ export class DailyLogFile {
     private currentPath = "";
     private fd: number | null = null;
 
-    constructor(private readonly service: string) {
-    }
+    constructor(private readonly service: string) {}
 
     write(message: string) {
         const now = new Date();
@@ -48,8 +47,7 @@ export class DailyLogFile {
                 original(...args);
                 try {
                     this.write(format(...args));
-                } catch {
-                }
+                } catch {}
             };
         }
     }

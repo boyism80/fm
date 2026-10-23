@@ -12,21 +12,35 @@ export class AccountWorldRepository {
         this.ctx = internalContext;
     }
 
-    async findCharacterSlotCount(worldId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<number> {
+    async findCharacterSlotCount(
+        worldId: number,
+        accountId: number,
+        options: RepositoryTxOptions = {},
+    ): Promise<number> {
         const pool = this.ctx.getPgDataPool(worldId, accountId);
-        const { rows } = await this.ctx.pgClient(pool, options).query(
-            "SELECT character_slot_count FROM account_worlds WHERE account_id = $1 AND world_id = $2",
-            [accountId, worldId]
+        const { rows } = await this.ctx
+            .pgClient(pool, options)
+            .query("SELECT character_slot_count FROM account_worlds WHERE account_id = $1 AND world_id = $2", [
+                accountId,
+                worldId,
+            ]);
+        return (
+            (rows[0] as { character_slot_count: number } | undefined)?.character_slot_count ??
+            DEFAULT_CHARACTER_SLOT_COUNT
         );
-        return (rows[0] as { character_slot_count: number } | undefined)?.character_slot_count ?? DEFAULT_CHARACTER_SLOT_COUNT;
     }
 
-    async setCharacterSlotCount(worldId: number, accountId: number, count: number, options: RepositoryTxOptions = {}): Promise<void> {
+    async setCharacterSlotCount(
+        worldId: number,
+        accountId: number,
+        count: number,
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         const pool = this.ctx.getPgDataPool(worldId, accountId);
         await this.ctx.pgClient(pool, options).query(
             `INSERT INTO account_worlds (account_id, world_id, character_slot_count) VALUES ($1, $2, $3)
              ON CONFLICT (account_id, world_id) DO UPDATE SET character_slot_count = EXCLUDED.character_slot_count`,
-            [accountId, worldId, count]
+            [accountId, worldId, count],
         );
     }
 
@@ -40,9 +54,11 @@ export class AccountWorldRepository {
                     `INSERT INTO account_worlds (account_id, world_id, character_slot_count)
                      SELECT id, $1, character_slot_count FROM accounts WHERE character_slot_count <> $2
                      ON CONFLICT (account_id, world_id) DO NOTHING`,
-                    [worldId, DEFAULT_CHARACTER_SLOT_COUNT]
+                    [worldId, DEFAULT_CHARACTER_SLOT_COUNT],
                 );
-                await client.query("UPDATE accounts SET character_slot_count = $1 WHERE character_slot_count <> $1", [DEFAULT_CHARACTER_SLOT_COUNT]);
+                await client.query("UPDATE accounts SET character_slot_count = $1 WHERE character_slot_count <> $1", [
+                    DEFAULT_CHARACTER_SLOT_COUNT,
+                ]);
                 await client.query("COMMIT");
             } catch (err) {
                 await client.query("ROLLBACK").catch(() => {});

@@ -99,7 +99,11 @@ export class DistributedLockMultiGuard implements AsyncDisposable {
 }
 
 export class DistributedLock {
-    async tryAcquire(client: Redis, lockKey: string, options: DistributedLockOptions = {}): Promise<DistributedLockGuard | null> {
+    async tryAcquire(
+        client: Redis,
+        lockKey: string,
+        options: DistributedLockOptions = {},
+    ): Promise<DistributedLockGuard | null> {
         const leaseTtlSec = options.leaseTtlSec ?? DEFAULT_LOCK_LEASE_TTL_SEC;
         const token = randomUUID();
         const ok = await client.set(lockKey, token, "EX", leaseTtlSec, "NX");

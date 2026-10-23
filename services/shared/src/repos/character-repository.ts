@@ -2,7 +2,12 @@ import { redisCacheKey } from "../redis-cache-key";
 import { toPgInt } from "./pg-int";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
-import type { CharacterDeleteModel, CharacterModel, CharacterRow, PopulationHistoryRow } from "../types/repository-models";
+import type {
+    CharacterDeleteModel,
+    CharacterModel,
+    CharacterRow,
+    PopulationHistoryRow,
+} from "../types/repository-models";
 import type { PopulationHistory } from "../protobuf/generated/fminternal/internal_service";
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
@@ -58,18 +63,49 @@ function populationHistoryToRow(history: PopulationHistory | undefined): Populat
 
 function rowValues(row: CharacterRow) {
     return [
-        row.id, row.account_id, row.world_id, row.name,
-        row.gender, row.skin_color, row.face, row.hair,
-        row.level, row.class_id, row.role, row.str,
-        row.dex, row.int_stat, row.luk, row.hp,
-        row.max_hp, row.mp, row.max_mp, row.ability_point,
-        row.exp, row.map_id, row.spawn_point, row.pos_x,
-        row.pos_y, row.stance, row.meso, row.skill_point,
-        row.population, row.hp_ap_used, row.pet_hp_item, row.pet_mp_item,
-        row.summoned_pet, row.slot_limits ?? DEFAULT_SLOT_LIMITS, row.monster_book_cover,
-        row.teleport_stones ?? [], row.vip_teleport_stones ?? [], row.hidden, row.family_progress ?? "0",
+        row.id,
+        row.account_id,
+        row.world_id,
+        row.name,
+        row.gender,
+        row.skin_color,
+        row.face,
+        row.hair,
+        row.level,
+        row.class_id,
+        row.role,
+        row.str,
+        row.dex,
+        row.int_stat,
+        row.luk,
+        row.hp,
+        row.max_hp,
+        row.mp,
+        row.max_mp,
+        row.ability_point,
+        row.exp,
+        row.map_id,
+        row.spawn_point,
+        row.pos_x,
+        row.pos_y,
+        row.stance,
+        row.meso,
+        row.skill_point,
+        row.population,
+        row.hp_ap_used,
+        row.pet_hp_item,
+        row.pet_mp_item,
+        row.summoned_pet,
+        row.slot_limits ?? DEFAULT_SLOT_LIMITS,
+        row.monster_book_cover,
+        row.teleport_stones ?? [],
+        row.vip_teleport_stones ?? [],
+        row.hidden,
+        row.family_progress ?? "0",
         JSON.stringify(row.family_reputation ?? {}),
-        JSON.stringify(row.population_history ?? { last_given_at: null, given: {} }), row.saved_at, row.exp_reached_at,
+        JSON.stringify(row.population_history ?? { last_given_at: null, given: {} }),
+        row.saved_at,
+        row.exp_reached_at,
     ];
 }
 
@@ -112,7 +148,10 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             return null;
         }
         const placeholders = rows
-            .map((_, ri) => `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},FALSE,NOW())`)
+            .map(
+                (_, ri) =>
+                    `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},FALSE,NOW())`,
+            )
             .join(",\n");
         return {
             text: `INSERT INTO characters (${INSERT_COLS}) VALUES\n${placeholders}\nON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
@@ -172,7 +211,8 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             hidden: row.hidden,
             savedAtUnixMs: row.saved_at ? new Date(row.saved_at).getTime() : 0,
             expReachedUnixMs: row.exp_reached_at ? new Date(row.exp_reached_at).getTime() : 0,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
@@ -214,7 +254,8 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             pet_hp_item: model.petHpItem ?? 0,
             pet_mp_item: model.petMpItem ?? 0,
             summoned_pet: model.summonedPet ?? "0",
-            slot_limits: model.slotLimits?.length === DEFAULT_SLOT_LIMITS.length ? model.slotLimits : DEFAULT_SLOT_LIMITS,
+            slot_limits:
+                model.slotLimits?.length === DEFAULT_SLOT_LIMITS.length ? model.slotLimits : DEFAULT_SLOT_LIMITS,
             monster_book_cover: model.monsterBookCover ?? 0,
             teleport_stones: model.teleportStones ?? [],
             vip_teleport_stones: model.vipTeleportStones ?? [],

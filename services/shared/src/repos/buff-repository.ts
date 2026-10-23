@@ -77,7 +77,7 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
         const placeholders = rows
             .map(
                 (_, ri) =>
-                    `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},NOW())`
+                    `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},NOW())`,
             )
             .join(",\n");
         return {
@@ -114,7 +114,8 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
             remainingDurationMs: toPgIntOrNull(row.remaining_duration_ms),
             skillLevel: row.skill_level,
             causerId: row.causer_id,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

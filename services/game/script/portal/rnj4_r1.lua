@@ -1,18 +1,18 @@
 local pq = require("script/lib/party_quest")
 
 return {
-	on_enter = function(me)
-		local sm = me:state_machine()
-		if sm == nil then
-			return
-		end
-		local key = "stage6_0"
-		if sm:get_property(key) == "0" then
-			me:play_portal_sound()
-			pq.warp(me, 926100301)
-			sm:set_property(key, "1")
-		else
-			me:message("이미 누군가가 이 포탈 안에 들어가 있습니다.", Msg.PinkText)
-		end
-	end
+    on_enter = function(me)
+        local sm = me:state_machine()
+        if sm == nil then
+            return
+        end
+        local key = "stage6_0"
+        if sm:get_property(key) == "0" then
+            me:play_portal_sound()
+            pq.warp(me, 926100301)
+            sm:set_property(key, "1")
+        else
+            me:message("이미 누군가가 이 포탈 안에 들어가 있습니다.", Msg.PinkText)
+        end
+    end
 }

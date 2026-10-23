@@ -6,40 +6,40 @@ local STAGE_STARTED = 1
 local STAGE_COMPLETED = 2
 
 return {
-	on_enter = function(me)
-		local sm = me:state_machine()
-		if sm == nil then
-			me:play_portal_sound()
-			me:map(EXIT_MAP)
-			return
-		end
-		if sm:get_property("clear") ~= "1" then
-			me:message("아직 임무를 완료하지 못하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
-			return
-		end
-		local paper = sm:get_property("paper") == "1"
-		local reward = {
-			item = { [FIRE_ORE_PIECE] = 1 },
-			exp = 12000,
-		}
-		if paper then
-			reward = {
-				item = {
-					[FIRE_ORE_PIECE] = 1,
-					[PAPER_REWARD] = 5,
-				},
-				exp = 20000,
-			}
-		end
-		local code = me:exchange({}, reward)
-		if code == ExchangeResult.LackCapacity or code ~= ExchangeResult.OK then
-			me:message("인벤토리에 공간이 부족하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
-			return
-		end
-		if me:records():get(STAGE1_RECORD) == STAGE_STARTED then
-			me:records():set(STAGE1_RECORD, STAGE_COMPLETED)
-		end
-		me:play_portal_sound()
-		me:map(EXIT_MAP, 1)
-	end
+    on_enter = function(me)
+        local sm = me:state_machine()
+        if sm == nil then
+            me:play_portal_sound()
+            me:map(EXIT_MAP)
+            return
+        end
+        if sm:get_property("clear") ~= "1" then
+            me:message("아직 임무를 완료하지 못하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
+            return
+        end
+        local paper = sm:get_property("paper") == "1"
+        local reward = {
+            item = { [FIRE_ORE_PIECE] = 1 },
+            exp = 12000,
+        }
+        if paper then
+            reward = {
+                item = {
+                    [FIRE_ORE_PIECE] = 1,
+                    [PAPER_REWARD] = 5,
+                },
+                exp = 20000,
+            }
+        end
+        local code = me:exchange({}, reward)
+        if code == ExchangeResult.LackCapacity or code ~= ExchangeResult.OK then
+            me:message("인벤토리에 공간이 부족하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
+            return
+        end
+        if me:records():get(STAGE1_RECORD) == STAGE_STARTED then
+            me:records():set(STAGE1_RECORD, STAGE_COMPLETED)
+        end
+        me:play_portal_sound()
+        me:map(EXIT_MAP, 1)
+    end
 }

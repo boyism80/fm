@@ -3,7 +3,7 @@
 local pirate_pq = require("script/lib/pirate_party_quest")
 
 return {
-	on_reactor = function(reactor)
-		pirate_pq.lock_door(reactor, 9300120)
-	end
+    on_reactor = function(reactor)
+        pirate_pq.lock_door(reactor, 9300120)
+    end
 }

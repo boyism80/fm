@@ -2,7 +2,11 @@ import { Repository } from "./repository";
 import type { RepositoryTxOptions } from "./repository";
 import type { DistributedLockGuard } from "../system/distributed-lock";
 
-export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>, TKey = unknown> extends Repository<TModel, TRow, TKey> {
+export abstract class ValueRepository<
+    TModel = Record<string, unknown>,
+    TRow = Record<string, unknown>,
+    TKey = unknown,
+> extends Repository<TModel, TRow, TKey> {
     override async get(worldId: number, key: TKey, options: RepositoryTxOptions = {}): Promise<TModel | null> {
         const redis = this.redis(worldId, key);
         const redisKey = this.getRedisKey(worldId, key);
@@ -58,7 +62,11 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         return this.rowToModel(savedRow);
     }
 
-    override async getMany(worldId: number, keys: TKey[], options: RepositoryTxOptions = {}): Promise<Map<TKey, TModel>> {
+    override async getMany(
+        worldId: number,
+        keys: TKey[],
+        options: RepositoryTxOptions = {},
+    ): Promise<Map<TKey, TModel>> {
         const results = new Map<TKey, TModel>();
         const useCache = !options.txClient;
         if (options.txClient) {
@@ -89,8 +97,7 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
                             const row = this.normalizeRow(parsed);
                             results.set(key, this.rowToModel(row));
                         }
-                    } catch {
-                    }
+                    } catch {}
                 }
                 if (!results.has(key)) {
                     const pool = this.pool(worldId, key);
@@ -135,7 +142,9 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
                         const key = this.getKey(model);
                         const redisKey = this.getRedisKey(worldId, key);
                         if (guards.has(redisKey)) {
-                            await this.redis(worldId, key).set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds()).catch(() => {});
+                            await this.redis(worldId, key)
+                                .set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds())
+                                .catch(() => {});
                         }
                         results.set(key, model);
                     }
@@ -183,7 +192,10 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         return saved;
     }
 
-    override async delete(row: { worldId: number } & Record<string, unknown>, options: RepositoryTxOptions = {}): Promise<boolean> {
+    override async delete(
+        row: { worldId: number } & Record<string, unknown>,
+        options: RepositoryTxOptions = {},
+    ): Promise<boolean> {
         const worldId = row.worldId;
         const key = this.getDeleteKey(row);
         const pool = this.pool(worldId, key);
@@ -204,7 +216,7 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         _worldId: number,
         _key: TKey,
         _itemKeys: Array<string | number>,
-        _options: RepositoryTxOptions = {}
+        _options: RepositoryTxOptions = {},
     ): Promise<never> {
         throw new Error(`${this.constructor.name}.delAll is not supported for value repositories`);
     }

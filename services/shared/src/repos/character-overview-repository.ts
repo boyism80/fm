@@ -31,17 +31,25 @@ function looksFromRow(value: CharacterOverviewRow["base_looks"]): CharacterLooks
             if (parsed != null && typeof parsed === "object") {
                 return parsed;
             }
-        } catch {
-        }
+        } catch {}
     }
     return {};
 }
 
 function rowValues(row: CharacterOverviewRow) {
     return [
-        row.character_id, row.account_id, row.world_id, row.name,
-        row.gender, row.skin_color, row.face, row.hair,
-        row.level, row.class_id, row.map_id, row.spawn_point,
+        row.character_id,
+        row.account_id,
+        row.world_id,
+        row.name,
+        row.gender,
+        row.skin_color,
+        row.face,
+        row.hair,
+        row.level,
+        row.class_id,
+        row.map_id,
+        row.spawn_point,
         looksFromRow(row.base_looks),
         looksFromRow(row.overlays),
     ];
@@ -80,7 +88,10 @@ export class CharacterOverviewRepository extends HashRepository<CharacterOvervie
             return { text: "", values: [] };
         }
         const placeholders = rows
-            .map((_, ri) => `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},FALSE,NOW())`)
+            .map(
+                (_, ri) =>
+                    `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},FALSE,NOW())`,
+            )
             .join(",\n");
         return {
             text: `INSERT INTO character_overview (${INSERT_COLS}) VALUES\n${placeholders}\nON CONFLICT (character_id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,

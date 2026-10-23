@@ -1,4 +1,10 @@
-import type { PopulationHistory, PartyMemberRole, PartyState, GuildMemberRank, Pet } from "../protobuf/generated/fminternal/internal_service";
+import type {
+    PopulationHistory,
+    PartyMemberRole,
+    PartyState,
+    GuildMemberRank,
+    Pet,
+} from "../protobuf/generated/fminternal/internal_service";
 import type { EquipmentBonusStatsJson } from "./equipment-bonus-stats";
 import type { KeyLayoutJsonRecord } from "./key-layout-json";
 import type { GuildLogo as GuildLogoModel, GuildRankTitles as GuildRankTitlesModel } from "./guild-json";

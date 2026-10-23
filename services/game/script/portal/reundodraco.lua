@@ -1,5 +1,5 @@
 return {
-	on_enter = function(me)
-		me:morph(false)
-	end
+    on_enter = function(me)
+        me:morph(false)
+    end
 }

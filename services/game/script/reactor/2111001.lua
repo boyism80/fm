@@ -3,28 +3,28 @@
 local zakum_battle = require("script/state_machine/zakum_battle")
 
 local zakum_arm_ids = {
-	8800003, 8800004, 8800005, 8800006,
-	8800007, 8800008, 8800009, 8800010,
+    8800003, 8800004, 8800005, 8800006,
+    8800007, 8800008, 8800009, 8800010,
 }
 
 return {
-	on_reactor = function(reactor)
-		local map = reactor:map()
-		if map == nil then
-			return
-		end
+    on_reactor = function(reactor)
+        local map = reactor:map()
+        if map == nil then
+            return
+        end
 
-		map:music('Bgm06/FinalFight')
-		local zakum = map:spawn_mob(8800000, -10, -215, -2)
-		zakum:fake(true)
-		for _, mob_id in ipairs(zakum_arm_ids) do
-			map:spawn_mob(mob_id, -10, -215, -2)
-		end
-		map:message('원석의 힘으로 자쿰이 소환됩니다.')
+        map:music('Bgm06/FinalFight')
+        local zakum = map:spawn_mob(8800000, -10, -215, -2)
+        zakum:fake(true)
+        for _, mob_id in ipairs(zakum_arm_ids) do
+            map:spawn_mob(mob_id, -10, -215, -2)
+        end
+        map:message('원석의 힘으로 자쿰이 소환됩니다.')
 
-		local sm = map:state_machine()
-		if sm ~= nil then
-			zakum_battle.summon(sm)
-		end
-	end
+        local sm = map:state_machine()
+        if sm ~= nil then
+            zakum_battle.summon(sm)
+        end
+    end
 }

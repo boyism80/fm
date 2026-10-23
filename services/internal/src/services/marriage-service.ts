@@ -58,7 +58,7 @@ export class MarriageService {
         weddingGiftSendRequestRepository: WeddingGiftSendRequestRepository,
         weddingGiftClaimRequestRepository: WeddingGiftClaimRequestRepository,
         parcelSendRequestRepository: ParcelSendRequestRepository,
-        parcelService: ParcelService
+        parcelService: ParcelService,
     ) {
         this.marriageRepo = marriageRepository;
         this.unifiedRepo = unifiedRepository;
@@ -120,7 +120,10 @@ export class MarriageService {
         }
     }
 
-    private async loadActive(worldId: number, find: (client: PoolClient) => Promise<MarriageRow | null>): Promise<MarriageRow | null> {
+    private async loadActive(
+        worldId: number,
+        find: (client: PoolClient) => Promise<MarriageRow | null>,
+    ): Promise<MarriageRow | null> {
         const loaded = await this.marriageRepo.withTransaction(worldId, async (client) => {
             const row = await find(client);
             if (row == null) {
@@ -161,11 +164,14 @@ export class MarriageService {
         brideId: number,
         brideName: string,
         ringItemId: number,
-        requestId: string
+        requestId: string,
     ): Promise<MarriageReply> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             await client.query("SELECT pg_advisory_xact_lock($1)", [0x6d617272]);
-            if (requestId !== "0" && (await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client })) != null) {
+            if (
+                requestId !== "0" &&
+                (await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client })) != null
+            ) {
                 return { result: MarriageResult.MARRIAGE_RESULT_ABORTED, marriage: undefined };
             }
             if ((await this.marriageRepo.findByCharacter(client, groomId)) != null) {
@@ -216,14 +222,21 @@ export class MarriageService {
         marriageId: number,
         characterId: number,
         ticketItemId: number,
-        requestId: string
+        requestId: string,
     ): Promise<MarriageReply> {
         const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
-            if (requestId !== "0" && (await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client })) != null) {
+            if (
+                requestId !== "0" &&
+                (await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client })) != null
+            ) {
                 return MarriageResult.MARRIAGE_RESULT_ABORTED;
             }
             const found = await this.marriageRepo.find(client, marriageId);
-            if (found == null || found.status !== MarriageStatus.MARRIAGE_STATUS_ENGAGED || found.ticket_item_id !== 0) {
+            if (
+                found == null ||
+                found.status !== MarriageStatus.MARRIAGE_STATUS_ENGAGED ||
+                found.ticket_item_id !== 0
+            ) {
                 return MarriageResult.MARRIAGE_RESULT_INVALID_STATE;
             }
             if (found.groom_id !== characterId && found.bride_id !== characterId) {
@@ -252,7 +265,13 @@ export class MarriageService {
         });
     }
 
-    async setWeddingWishlist(worldId: number, marriageId: number, characterId: number, wishes: string[], requestId: string): Promise<MarriageReply> {
+    async setWeddingWishlist(
+        worldId: number,
+        marriageId: number,
+        characterId: number,
+        wishes: string[],
+        requestId: string,
+    ): Promise<MarriageReply> {
         const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
             const found = await this.marriageRepo.find(client, marriageId);
             if (found == null || found.ticket_item_id === 0) {
@@ -260,7 +279,10 @@ export class MarriageService {
             }
             const request = await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client });
             if (request != null) {
-                if (request.status === RequestStatus.Aborted || (found.groom_id !== characterId && found.bride_id !== characterId)) {
+                if (
+                    request.status === RequestStatus.Aborted ||
+                    (found.groom_id !== characterId && found.bride_id !== characterId)
+                ) {
                     return null;
                 }
                 return found;
@@ -291,7 +313,13 @@ export class MarriageService {
 
     // The marriage row lock serializes invites to one wedding. The invitation parcel commits on the guest's data shard
     // before the guest and the request id commit here, so a parcel recorded under the request id means the invite went through.
-    async inviteWeddingGuest(worldId: number, marriageId: number, guestName: string, parcel: Parcel, requestId: string): Promise<InviteWeddingGuestReply> {
+    async inviteWeddingGuest(
+        worldId: number,
+        marriageId: number,
+        guestName: string,
+        parcel: Parcel,
+        requestId: string,
+    ): Promise<InviteWeddingGuestReply> {
         return this.marriageRepo.withTransaction(worldId, async (client) => {
             const row = await this.marriageRepo.find(client, marriageId);
             const request = await this.marriageRequestRepo.find(worldId, 0, requestId, { txClient: client });
@@ -316,7 +344,11 @@ export class MarriageService {
                 if (row == null || row.ticket_item_id === 0) {
                     return fail(MarriageResult.MARRIAGE_RESULT_INVALID_STATE);
                 }
-                if (entry.character_id === row.groom_id || entry.character_id === row.bride_id || row.guests.includes(entry.character_id)) {
+                if (
+                    entry.character_id === row.groom_id ||
+                    entry.character_id === row.bride_id ||
+                    row.guests.includes(entry.character_id)
+                ) {
                     return fail(MarriageResult.MARRIAGE_RESULT_GUEST_ALREADY_INVITED);
                 }
                 const result = await this.parcelService.sendParcel({
@@ -345,7 +377,11 @@ export class MarriageService {
     async finishWedding(worldId: number, marriageId: number): Promise<MarriageReply> {
         const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
             const found = await this.marriageRepo.find(client, marriageId);
-            if (found == null || found.status !== MarriageStatus.MARRIAGE_STATUS_ENGAGED || found.ticket_item_id === 0) {
+            if (
+                found == null ||
+                found.status !== MarriageStatus.MARRIAGE_STATUS_ENGAGED ||
+                found.ticket_item_id === 0
+            ) {
                 return null;
             }
             found.status = MarriageStatus.MARRIAGE_STATUS_MARRIED;
@@ -368,7 +404,12 @@ export class MarriageService {
         return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
     }
 
-    async requestDivorce(worldId: number, marriageId: number, characterId: number, nowMs: number): Promise<MarriageReply> {
+    async requestDivorce(
+        worldId: number,
+        marriageId: number,
+        characterId: number,
+        nowMs: number,
+    ): Promise<MarriageReply> {
         const loaded = await this.marriageRepo.withTransaction(worldId, async (client) => {
             const row = await this.marriageRepo.find(client, marriageId);
             if (row == null || row.status !== MarriageStatus.MARRIAGE_STATUS_MARRIED) {
@@ -406,7 +447,11 @@ export class MarriageService {
     async cancelDivorce(worldId: number, marriageId: number, characterId: number): Promise<MarriageReply> {
         const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
             const found = await this.marriageRepo.find(client, marriageId);
-            if (found == null || found.status !== MarriageStatus.MARRIAGE_STATUS_MARRIED || found.divorce_requested_at == null) {
+            if (
+                found == null ||
+                found.status !== MarriageStatus.MARRIAGE_STATUS_MARRIED ||
+                found.divorce_requested_at == null
+            ) {
                 return null;
             }
             if (found.groom_id !== characterId && found.bride_id !== characterId) {
@@ -428,7 +473,12 @@ export class MarriageService {
     async giveWeddingGift(input: GiveWeddingGiftInput): Promise<MarriageResult> {
         return this.marriageRepo.withReceiverLock(input.worldId, input.receiverId, async (client) => {
             if (input.requestId !== "0") {
-                const request = await this.weddingGiftSendRequestRepo.find(input.worldId, input.receiverId, input.requestId, { txClient: client });
+                const request = await this.weddingGiftSendRequestRepo.find(
+                    input.worldId,
+                    input.receiverId,
+                    input.requestId,
+                    { txClient: client },
+                );
                 if (request?.status === RequestStatus.Aborted) {
                     return MarriageResult.MARRIAGE_RESULT_ABORTED;
                 }
@@ -442,10 +492,16 @@ export class MarriageService {
                 input.receiverId,
                 input.gift.senderName,
                 Inventory.toJSON(input.gift.item ?? Inventory.fromPartial({})),
-                { txClient: client }
+                { txClient: client },
             );
             if (input.requestId !== "0") {
-                await this.weddingGiftSendRequestRepo.insert(input.worldId, input.receiverId, input.requestId, {}, client);
+                await this.weddingGiftSendRequestRepo.insert(
+                    input.worldId,
+                    input.receiverId,
+                    input.requestId,
+                    {},
+                    client,
+                );
             }
             return MarriageResult.MARRIAGE_RESULT_OK;
         });
@@ -463,12 +519,22 @@ export class MarriageService {
         return { gifts: rows.map((row) => this.giftToProto(row)) };
     }
 
-    async claimWeddingGift(worldId: number, characterId: number, giftId: number, requestId: string): Promise<ClaimWeddingGiftReply> {
+    async claimWeddingGift(
+        worldId: number,
+        characterId: number,
+        giftId: number,
+        requestId: string,
+    ): Promise<ClaimWeddingGiftReply> {
         return this.marriageRepo.withReceiverLock(worldId, characterId, async (client) => {
             if (requestId !== "0") {
-                const claimed = await this.weddingGiftClaimRequestRepo.find(worldId, characterId, requestId, { txClient: client });
+                const claimed = await this.weddingGiftClaimRequestRepo.find(worldId, characterId, requestId, {
+                    txClient: client,
+                });
                 if (claimed?.status === RequestStatus.Applied) {
-                    return { result: MarriageResult.MARRIAGE_RESULT_OK, gift: WeddingGift.fromJSON(claimed.outcome.gift) };
+                    return {
+                        result: MarriageResult.MARRIAGE_RESULT_OK,
+                        gift: WeddingGift.fromJSON(claimed.outcome.gift),
+                    };
                 }
             }
 
@@ -478,13 +544,25 @@ export class MarriageService {
             }
             const gift = this.giftToProto(row);
             if (requestId !== "0") {
-                await this.weddingGiftClaimRequestRepo.insert(worldId, characterId, requestId, { gift: WeddingGift.toJSON(gift) }, client);
+                await this.weddingGiftClaimRequestRepo.insert(
+                    worldId,
+                    characterId,
+                    requestId,
+                    { gift: WeddingGift.toJSON(gift) },
+                    client,
+                );
             }
             return { result: MarriageResult.MARRIAGE_RESULT_OK, gift };
         });
     }
 
-    async notifySpouseMap(worldId: number, characterId: number, spouseId: number, mapId: number, reply: boolean): Promise<void> {
+    async notifySpouseMap(
+        worldId: number,
+        characterId: number,
+        spouseId: number,
+        mapId: number,
+        reply: boolean,
+    ): Promise<void> {
         const channelId = await this.sessionRepo.findChannel(worldId, spouseId);
         if (channelId == null) {
             return;

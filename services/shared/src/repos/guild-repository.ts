@@ -138,8 +138,10 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             rankTitles: this.rankTitlesFromRow(row.rank_titles),
             allianceId: toPgIntOrNull(row.alliance_id),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
-            createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            createdAt:
+                row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
             revision: Number(row.revision ?? 0),
         };
     }
@@ -149,7 +151,7 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
         for (const pool of this.ctx.getPgDataPools(worldId)) {
             const res = await pool.query(
                 `SELECT ${SELECT_COLS} FROM guilds WHERE world_id = $1 AND disbanded_at IS NULL ORDER BY gp DESC, guild_id ASC LIMIT $2`,
-                [worldId, limit]
+                [worldId, limit],
             );
             for (const row of res.rows as GuildRow[]) {
                 result.push(this.rowToModel(this.normalizeRow(row)));

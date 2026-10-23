@@ -38,7 +38,7 @@ export class UnifiedRepository {
     async findAccountByLoginId(loginId: string): Promise<AccountIdentityRow | null> {
         const { rows } = await this.pool().query(
             "SELECT id, login_id, created_at, registered_at FROM account_identity WHERE login_id = $1",
-            [loginId]
+            [loginId],
         );
         return rows[0] ?? null;
     }
@@ -46,7 +46,7 @@ export class UnifiedRepository {
     async insertAccountIdentity(loginId: string): Promise<AccountIdentityRow> {
         const { rows } = await this.pool().query(
             "INSERT INTO account_identity (login_id) VALUES ($1) RETURNING id, login_id, created_at, registered_at",
-            [loginId]
+            [loginId],
         );
         return rows[0];
     }
@@ -62,7 +62,7 @@ export class UnifiedRepository {
     async findCharacterNameEntry(name: string): Promise<CharacterNameRegistryRow | null> {
         const { rows } = await this.pool().query(
             "SELECT character_id, name, account_id, world_id, status FROM character_name_registry WHERE LOWER(name) = LOWER($1) AND reserved_at IS NULL",
-            [name]
+            [name],
         );
         return rows[0] ?? null;
     }
@@ -85,20 +85,20 @@ export class UnifiedRepository {
                 // Release any prior pending reservation for this account under a different name.
                 await client.query(
                     `DELETE FROM character_name_registry WHERE account_id = $1 AND reserved_at IS NOT NULL AND LOWER(name) != LOWER($2)`,
-                    [accountId, name]
+                    [accountId, name],
                 );
 
                 const { rows } = await client.query(
                     `SELECT character_id, account_id, world_id, reserved_at,
                       reserved_at > NOW() - make_interval(secs => $2::numeric) AS reservation_active
                      FROM character_name_registry WHERE LOWER(name) = LOWER($1) FOR UPDATE`,
-                    [name, CHARACTER_NAME_RESERVATION_TTL_SECONDS]
+                    [name, CHARACTER_NAME_RESERVATION_TTL_SECONDS],
                 );
 
                 if (rows.length === 0) {
                     const { rows: ins } = await client.query(
                         `INSERT INTO character_name_registry (name, account_id, world_id, reserved_at) VALUES ($1, $2, $3, NOW()) RETURNING character_id`,
-                        [name, accountId, worldId]
+                        [name, accountId, worldId],
                     );
                     await client.query("COMMIT");
                     return Number(ins[0].character_id);
@@ -115,7 +115,7 @@ export class UnifiedRepository {
                 if (sameAccount && Number(existingWorldId) === worldId) {
                     await client.query(
                         `UPDATE character_name_registry SET reserved_at = NOW() WHERE character_id = $1`,
-                        [character_id]
+                        [character_id],
                     );
                     await client.query("COMMIT");
                     return Number(character_id);
@@ -129,13 +129,10 @@ export class UnifiedRepository {
                 // Delete and re-insert to get a fresh serial character_id. Reusing the old id risks
                 // conflicting with orphan data left by a failed creation that never ran its cleanup
                 // (e.g. process kill).
-                await client.query(
-                    `DELETE FROM character_name_registry WHERE character_id = $1`,
-                    [character_id]
-                );
+                await client.query(`DELETE FROM character_name_registry WHERE character_id = $1`, [character_id]);
                 const { rows: ins } = await client.query(
                     `INSERT INTO character_name_registry (name, account_id, world_id, reserved_at) VALUES ($1, $2, $3, NOW()) RETURNING character_id`,
-                    [name, accountId, worldId]
+                    [name, accountId, worldId],
                 );
                 await client.query("COMMIT");
                 return Number(ins[0].character_id);
@@ -150,7 +147,7 @@ export class UnifiedRepository {
     async confirmCharacterName(characterId: number): Promise<boolean> {
         const { rowCount } = await this.pool().query(
             `UPDATE character_name_registry SET reserved_at = NULL WHERE character_id = $1 AND reserved_at IS NOT NULL`,
-            [characterId]
+            [characterId],
         );
         return rowCount === 1;
     }
@@ -158,28 +155,25 @@ export class UnifiedRepository {
     async refreshCharacterNameReservation(accountId: number): Promise<void> {
         await this.pool().query(
             `UPDATE character_name_registry SET reserved_at = NOW() WHERE account_id = $1 AND reserved_at IS NOT NULL`,
-            [accountId]
+            [accountId],
         );
     }
 
     async releaseCharacterNameReservation(accountId: number): Promise<void> {
         await this.pool().query(
             `DELETE FROM character_name_registry WHERE account_id = $1 AND reserved_at IS NOT NULL`,
-            [accountId]
+            [accountId],
         );
     }
 
     async deleteCharacterName(characterId: number) {
-        await this.pool().query(
-            "DELETE FROM character_name_registry WHERE character_id = $1",
-            [characterId]
-        );
+        await this.pool().query("DELETE FROM character_name_registry WHERE character_id = $1", [characterId]);
     }
 
     async findGuildNameEntry(name: string): Promise<GuildNameRegistryRow | null> {
         const { rows } = await this.pool().query(
             "SELECT guild_id, name, world_id, created_at FROM guild_name_registry WHERE LOWER(name) = LOWER($1)",
-            [name]
+            [name],
         );
         return rows[0] ?? null;
     }
@@ -189,15 +183,12 @@ export class UnifiedRepository {
             `INSERT INTO guild_name_registry (name, world_id)
              VALUES ($1, $2)
              RETURNING guild_id, name, world_id, created_at`,
-            [name, worldId]
+            [name, worldId],
         );
         return rows[0];
     }
 
     async deleteGuildName(guildId: number) {
-        await this.pool().query(
-            "DELETE FROM guild_name_registry WHERE guild_id = $1",
-            [guildId]
-        );
+        await this.pool().query("DELETE FROM guild_name_registry WHERE guild_id = $1", [guildId]);
     }
 }

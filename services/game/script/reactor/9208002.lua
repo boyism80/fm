@@ -3,7 +3,7 @@
 local gq = require("script/lib/guild_quest")
 
 return {
-	on_reactor = function(reactor)
-		gq.record_statue(reactor)
-	end
+    on_reactor = function(reactor)
+        gq.record_statue(reactor)
+    end
 }

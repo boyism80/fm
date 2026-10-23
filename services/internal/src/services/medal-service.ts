@@ -18,18 +18,44 @@ export class MedalService {
     }
 
     // A lost notice leaves the other channels on the old board until they restart, so it does not undo the write.
-    async submit(worldId: number, kind: string, month: number, characterId: number, name: string, score: number): Promise<{ rank: number; ranking: MedalRankingRow }> {
-        if (kind === "" || kind.length > MAX_KIND_LENGTH || name === "" || characterId === 0 || month < 200001 || month % 100 < 1 || month % 100 > 12) {
+    async submit(
+        worldId: number,
+        kind: string,
+        month: number,
+        characterId: number,
+        name: string,
+        score: number,
+    ): Promise<{ rank: number; ranking: MedalRankingRow }> {
+        if (
+            kind === "" ||
+            kind.length > MAX_KIND_LENGTH ||
+            name === "" ||
+            characterId === 0 ||
+            month < 200001 ||
+            month % 100 < 1 ||
+            month % 100 > 12
+        ) {
             throw Object.assign(new Error("invalid medal score"), { code: "INVALID_PAYLOAD" });
         }
-        const { previousHolderId, ranking } = await this.medalRankingRepository.submit(worldId, kind, month, characterId, name, score);
+        const { previousHolderId, ranking } = await this.medalRankingRepository.submit(
+            worldId,
+            kind,
+            month,
+            characterId,
+            name,
+            score,
+        );
         const holderId = ranking.entries[0]?.characterId ?? 0;
         try {
             await this.rabbitmqService.publish(`fm.${worldId}.all.global`, MEDAL_RANKING_CHANGED_EVENT, {
                 ranking: {
                     kind: ranking.kind,
                     month: ranking.month,
-                    entries: ranking.entries.map((entry) => ({ character_id: entry.characterId, name: entry.name, score: entry.score })),
+                    entries: ranking.entries.map((entry) => ({
+                        character_id: entry.characterId,
+                        name: entry.name,
+                        score: entry.score,
+                    })),
                 },
                 previous_holder_id: previousHolderId !== holderId ? previousHolderId : 0,
             });

@@ -76,7 +76,8 @@ export class SavedLocationRepository extends HashRepository<SavedLocationModel, 
             characterId: row.character_id,
             name: row.location_key,
             mapId: toPgInt(row.map_id),
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

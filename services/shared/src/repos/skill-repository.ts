@@ -15,11 +15,7 @@ const PER_ROW_PARAMS = 5;
 export type { SkillModel };
 
 function rowValues(row: SkillRow) {
-    return [
-        row.character_id, row.skill_id,
-        row.level, row.master_level,
-        row.cooldown_end_unix_ms ?? null,
-    ];
+    return [row.character_id, row.skill_id, row.level, row.master_level, row.cooldown_end_unix_ms ?? null];
 }
 
 export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
@@ -51,7 +47,10 @@ export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
             return { text: "", values: [] };
         }
         const placeholders = rows
-            .map((_, ri) => `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},NOW())`)
+            .map(
+                (_, ri) =>
+                    `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},NOW())`,
+            )
             .join(",\n");
         return {
             text: `INSERT INTO character_skills (${INSERT_COLS}) VALUES\n${placeholders}\nON CONFLICT (character_id, skill_id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
@@ -81,7 +80,8 @@ export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
             level: row.level,
             masterLevel: row.master_level,
             cooldownEndUnixMs: toPgIntOrNull(row.cooldown_end_unix_ms),
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

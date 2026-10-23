@@ -45,7 +45,7 @@ export class SessionGrpcController {
         sessionService: SessionService,
         accountService: AccountService,
         internalConfig: Pick<InternalConfig, "game_servers">,
-        grpcError: GrpcErrorHandler
+        grpcError: GrpcErrorHandler,
     ) {
         this.characterService = characterService;
         this.sessionService = sessionService;
@@ -70,7 +70,10 @@ export class SessionGrpcController {
     }
 
     @Method("beginGameTransition")
-    async beginGameTransition(call: GrpcCall<BeginGameTransitionRequest>, callback: GrpcCallback<BeginGameTransitionReply>) {
+    async beginGameTransition(
+        call: GrpcCall<BeginGameTransitionRequest>,
+        callback: GrpcCallback<BeginGameTransitionReply>,
+    ) {
         try {
             const worldId = call.request.worldId;
             const accountId = call.request.accountId;
@@ -80,7 +83,9 @@ export class SessionGrpcController {
                 throw Object.assign(new Error(`character not found: ${characterId}`), { code: "INVALID_CHARACTER_ID" });
             }
             if (row.accountId !== accountId) {
-                throw Object.assign(new Error(`account mismatch for character ${characterId}`), { code: "INVALID_PAYLOAD" });
+                throw Object.assign(new Error(`account mismatch for character ${characterId}`), {
+                    code: "INVALID_PAYLOAD",
+                });
             }
             const transition = await this.sessionService.beginTransition(
                 worldId,
@@ -102,7 +107,10 @@ export class SessionGrpcController {
     }
 
     @Method("authorizeCharacterSelection")
-    async authorizeCharacterSelection(call: GrpcCall<AuthorizeCharacterSelectionRequest>, callback: GrpcCallback<AuthorizeCharacterSelectionReply>) {
+    async authorizeCharacterSelection(
+        call: GrpcCall<AuthorizeCharacterSelectionRequest>,
+        callback: GrpcCallback<AuthorizeCharacterSelectionReply>,
+    ) {
         try {
             const worldId = call.request.worldId;
             const accountId = call.request.accountId;
@@ -113,7 +121,10 @@ export class SessionGrpcController {
                 return;
             }
 
-            const result = await this.accountService.authorizeCharacterSelection(accountId, call.request.secondPassword);
+            const result = await this.accountService.authorizeCharacterSelection(
+                accountId,
+                call.request.secondPassword,
+            );
             let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
             switch (result) {
                 case "success":
@@ -162,11 +173,15 @@ export class SessionGrpcController {
             const channelId = call.request.channelId;
             const worldCfg = this.internalConfig.game_servers?.worlds?.[String(worldId)];
             if (!worldCfg) {
-                throw Object.assign(new Error(`Unknown world_id for enter game: ${worldId}`), { code: "UNKNOWN_WORLD" });
+                throw Object.assign(new Error(`Unknown world_id for enter game: ${worldId}`), {
+                    code: "UNKNOWN_WORLD",
+                });
             }
             const hasChannel = (worldCfg.channels ?? []).some((ch) => ch.channel_id === channelId);
             if (!hasChannel) {
-                throw Object.assign(new Error(`Unknown channel_id for world ${worldId}: ${channelId}`), { code: "UNKNOWN_CHANNEL" });
+                throw Object.assign(new Error(`Unknown channel_id for world ${worldId}: ${channelId}`), {
+                    code: "UNKNOWN_CHANNEL",
+                });
             }
 
             const row = await this.characterService.getCharacter(worldId, characterId);
@@ -198,7 +213,16 @@ export class SessionGrpcController {
                 });
                 return;
             }
-            callback(null, await this.sessionService.enterGame(worldId, row, channelId, call.request.clientIp, () => call.cancelled));
+            callback(
+                null,
+                await this.sessionService.enterGame(
+                    worldId,
+                    row,
+                    channelId,
+                    call.request.clientIp,
+                    () => call.cancelled,
+                ),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -211,14 +235,25 @@ export class SessionGrpcController {
             const worldCfg = this.internalConfig.game_servers?.worlds?.[String(worldId)];
             const hasCashShop = (worldCfg?.cash_shops ?? []).some((cs) => cs.cash_shop_id === cashShopId);
             if (hasCashShop === false) {
-                throw Object.assign(new Error(`Unknown cash_shop_id for world ${worldId}: ${cashShopId}`), { code: "UNKNOWN_CHANNEL" });
+                throw Object.assign(new Error(`Unknown cash_shop_id for world ${worldId}: ${cashShopId}`), {
+                    code: "UNKNOWN_CHANNEL",
+                });
             }
 
             const row = await this.characterService.getCharacter(worldId, characterId);
             if (!row) {
                 throw Object.assign(new Error(`character not found: ${characterId}`), { code: "INVALID_CHARACTER_ID" });
             }
-            callback(null, await this.sessionService.enterCashShop(worldId, row, cashShopId, call.request.clientIp, () => call.cancelled));
+            callback(
+                null,
+                await this.sessionService.enterCashShop(
+                    worldId,
+                    row,
+                    cashShopId,
+                    call.request.clientIp,
+                    () => call.cancelled,
+                ),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }

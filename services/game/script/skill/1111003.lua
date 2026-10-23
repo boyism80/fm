@@ -3,8 +3,8 @@
 local util = require("script/lib/skill")
 
 return {
-	on_activated = function(me, skill, params)
-		-- Panic consumes all combo orbs (leaving at least 1) after the attack is fully resolved.
-		util.consume_combo_orbs(me)
-	end
+    on_activated = function(me, skill, params)
+        -- Panic consumes all combo orbs (leaving at least 1) after the attack is fully resolved.
+        util.consume_combo_orbs(me)
+    end
 }

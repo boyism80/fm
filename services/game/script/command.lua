@@ -2,2648 +2,2653 @@ local ex = require("script/lib/expedition")
 local channel_event = require("script/lib/channel_event")
 
 local function string_split(s, sep)
-	sep = sep or " "
-	local t = {}
-	local pattern = "([^" .. sep .. "]+)"
-	for v in string.gmatch(s, pattern) do
-		table.insert(t, v)
-	end
-	return t
+    sep = sep or " "
+    local t = {}
+    local pattern = "([^" .. sep .. "]+)"
+    for v in string.gmatch(s, pattern) do
+        table.insert(t, v)
+    end
+    return t
 end
 
 local function is_sponge_root(mob)
-	local children = mob:children()
-	return children ~= nil and #children > 0
+    local children = mob:children()
+    return children ~= nil and #children > 0
 end
 
 local function resolve_skill_entry(me, skill_arg)
-	if skill_arg == nil or skill_arg == "" then
-		return nil, "스킬ID 또는 스킬이름이 필요합니다."
-	end
-	local skill_id = tonumber(skill_arg)
-	if skill_id == nil then
-		local wz = name2skill(skill_arg)
-		if wz == nil then
-			return nil, "존재하지 않는 스킬입니다: " .. tostring(skill_arg)
-		end
-		skill_id = wz:id()
-	end
-	local skill = me:skill(skill_id)
-	if skill == nil then
-		return nil, string.format("배운 스킬이 아닙니다: %d", skill_id)
-	end
-	return skill, nil
+    if skill_arg == nil or skill_arg == "" then
+        return nil, "스킬ID 또는 스킬이름이 필요합니다."
+    end
+    local skill_id = tonumber(skill_arg)
+    if skill_id == nil then
+        local wz = name2skill(skill_arg)
+        if wz == nil then
+            return nil, "존재하지 않는 스킬입니다: " .. tostring(skill_arg)
+        end
+        skill_id = wz:id()
+    end
+    local skill = me:skill(skill_id)
+    if skill == nil then
+        return nil, string.format("배운 스킬이 아닙니다: %d", skill_id)
+    end
+    return skill, nil
 end
 
 local function effect_show_skill(me, skill_arg, skill_effect_type)
-	local skill, err = resolve_skill_entry(me, skill_arg)
-	if skill == nil then
-		me:message(err)
-		return true
-	end
-	if skill_effect_type == nil then
-		skill_effect_type = SkillEffectType.Cast
-	end
-	me:show_skill_effect(skill, skill_effect_type)
-	return true
+    local skill, err = resolve_skill_entry(me, skill_arg)
+    if skill == nil then
+        me:message(err)
+        return true
+    end
+    if skill_effect_type == nil then
+        skill_effect_type = SkillEffectType.Cast
+    end
+    me:show_skill_effect(skill, skill_effect_type)
+    return true
 end
 
 local function effect_show_basic(me, effect_type)
-	if effect_type == nil then
-		effect_type = EffectType.LevelUp
-	end
-	me:show_effect(effect_type)
-	return true
+    if effect_type == nil then
+        effect_type = EffectType.LevelUp
+    end
+    me:show_effect(effect_type)
+    return true
 end
 
 local function effect_show_dragon_blood(me, skill_arg)
-	local skill, err = resolve_skill_entry(me, skill_arg)
-	if skill == nil then
-		me:message(err)
-		return true
-	end
-	me:show_dragon_blood_effect(skill)
-	return true
+    local skill, err = resolve_skill_entry(me, skill_arg)
+    if skill == nil then
+        me:message(err)
+        return true
+    end
+    me:show_dragon_blood_effect(skill)
+    return true
 end
 
 local function effect_show_hp_healed(me, amount)
-	if amount == nil then
-		amount = 1
-	end
-	me:show_hp_healed_effect(tonumber(amount) or 1)
-	return true
+    if amount == nil then
+        amount = 1
+    end
+    me:show_hp_healed_effect(tonumber(amount) or 1)
+    return true
 end
 
 local function effect_show_reward_item_animation(me, item_id, effect_text)
-	local id = tonumber(item_id)
-	if id == nil or id <= 0 then
-		me:message("item_id는 1 이상의 숫자여야 합니다.")
-		return true
-	end
-	if effect_text == nil or effect_text == "" then
-		effect_text = "Effect/BasicEff.img/LevelUp"
-	end
-	me:show_reward_item_animation(id, effect_text)
-	return true
+    local id = tonumber(item_id)
+    if id == nil or id <= 0 then
+        me:message("item_id는 1 이상의 숫자여야 합니다.")
+        return true
+    end
+    if effect_text == nil or effect_text == "" then
+        effect_text = "Effect/BasicEff.img/LevelUp"
+    end
+    me:show_reward_item_animation(id, effect_text)
+    return true
 end
 
 local function effect_show_item_maker_success(me)
-	me:show_item_maker_success_effect()
-	return true
+    me:show_item_maker_success_effect()
+    return true
 end
 
 local function effect_show_crafting(me, effect_text, time_value, mode_value)
-	if effect_text == nil or effect_text == "" then
-		effect_text = "Effect/BasicEff.img/LevelUp"
-	end
-	time_value = tonumber(time_value) or 0
-	mode_value = tonumber(mode_value) or 0
-	me:show_crafting_effect(effect_text, time_value, mode_value)
-	return true
+    if effect_text == nil or effect_text == "" then
+        effect_text = "Effect/BasicEff.img/LevelUp"
+    end
+    time_value = tonumber(time_value) or 0
+    mode_value = tonumber(mode_value) or 0
+    me:show_crafting_effect(effect_text, time_value, mode_value)
+    return true
 end
 
 local function effect_show_dice(me, effect_id, skill_arg)
-	local skill, err = resolve_skill_entry(me, skill_arg)
-	if skill == nil then
-		me:message(err)
-		return true
-	end
-	effect_id = tonumber(effect_id) or 1
-	me:show_dice_effect(effect_id, skill)
-	return true
+    local skill, err = resolve_skill_entry(me, skill_arg)
+    if skill == nil then
+        me:message(err)
+        return true
+    end
+    effect_id = tonumber(effect_id) or 1
+    me:show_dice_effect(effect_id, skill)
+    return true
 end
 
 local function item_count(me, item_id)
-	local slots = me:item(item_id)
-	if slots == nil then
-		return 0
-	end
-	local total = 0
-	for _, it in pairs(slots) do
-		if it ~= nil then
-			total = total + it:count()
-		end
-	end
-	return total
+    local slots = me:item(item_id)
+    if slots == nil then
+        return 0
+    end
+    local total = 0
+    for _, it in pairs(slots) do
+        if it ~= nil then
+            total = total + it:count()
+        end
+    end
+    return total
 end
 
 local unsupported_quest_req_kinds = {
-	pet = true,
-	pettamenessmin = true,
-	mbmin = true,
-	mbcard = true,
-	subJobFlags = true,
-	partyQuest_S = true,
-	start = true,
-	["end"] = true,
+    pet = true,
+    pettamenessmin = true,
+    mbmin = true,
+    mbcard = true,
+    subJobFlags = true,
+    partyQuest_S = true,
+    start = true,
+    ["end"] = true,
 }
 
 local function class_matches(class_id, codes)
-	if codes == nil then
-		return true
-	end
-	for _, code in ipairs(codes) do
-		if code == 0 and class_id == 0 then
-			return true
-		end
-		if code == class_id then
-			return true
-		end
-		if code % 100 == 0 and math.floor(class_id / 100) == math.floor(code / 100) then
-			return true
-		end
-	end
-	return false
+    if codes == nil then
+        return true
+    end
+    for _, code in ipairs(codes) do
+        if code == 0 and class_id == 0 then
+            return true
+        end
+        if code == class_id then
+            return true
+        end
+        if code % 100 == 0 and math.floor(class_id / 100) == math.floor(code / 100) then
+            return true
+        end
+    end
+    return false
 end
 
 local function pick_class(codes)
-	for _, code in ipairs(codes) do
-		if code % 100 ~= 0 then
-			return code
-		end
-	end
-	return codes[1]
+    for _, code in ipairs(codes) do
+        if code % 100 ~= 0 then
+            return code
+        end
+    end
+    return codes[1]
 end
 
 local function force_start(quest)
-	return quest:start(0, true)
+    return quest:start(0, true)
 end
 
 local function ensure_quest_state(me, quest_id, state)
-	local other = me:quest(quest_id)
-	if other == nil then
-		return false
-	end
-	if state == 2 then
-		if other:completed() then
-			return true
-		end
-		if not other:started() then
-			if not force_start(other) then
-				return false
-			end
-			other = me:quest(quest_id)
-			if other == nil then
-				return false
-			end
-		end
-		return other:force_complete(0)
-	end
-	if state == 1 then
-		if other:status() == 1 then
-			return true
-		end
-		if other:completed() or other:started() then
-			me:clear_quests(quest_id)
-			other = me:quest(quest_id)
-			if other == nil then
-				return false
-			end
-		end
-		return force_start(other)
-	end
-	if state == 0 then
-		if other:status() == 0 then
-			return true
-		end
-		me:clear_quests(quest_id)
-		other = me:quest(quest_id)
-		return other ~= nil and other:status() == 0
-	end
-	return false
+    local other = me:quest(quest_id)
+    if other == nil then
+        return false
+    end
+    if state == 2 then
+        if other:completed() then
+            return true
+        end
+        if not other:started() then
+            if not force_start(other) then
+                return false
+            end
+            other = me:quest(quest_id)
+            if other == nil then
+                return false
+            end
+        end
+        return other:force_complete(0)
+    end
+    if state == 1 then
+        if other:status() == 1 then
+            return true
+        end
+        if other:completed() or other:started() then
+            me:clear_quests(quest_id)
+            other = me:quest(quest_id)
+            if other == nil then
+                return false
+            end
+        end
+        return force_start(other)
+    end
+    if state == 0 then
+        if other:status() == 0 then
+            return true
+        end
+        me:clear_quests(quest_id)
+        other = me:quest(quest_id)
+        return other ~= nil and other:status() == 0
+    end
+    return false
 end
 
 local function prepare_quest_requirement(me, quest, req)
-	local kind = req.kind
-	if kind == "item" then
-		local items = req.items
-		if items == nil then
-			return true
-		end
-		for _, entry in ipairs(items) do
-			local item_id = entry.id
-			local need = entry.count or 0
-			if item_id ~= nil and need > 0 then
-				local have = item_count(me, item_id)
-				if have < need then
-					me:mkitem(item_id, need - have)
-				end
-				if item_count(me, item_id) < need then
-					return false, kind
-				end
-			end
-		end
-		return true
-	end
-	if kind == "mob" then
-		local mobs = req.mobs
-		if mobs == nil then
-			return true
-		end
-		local changed = false
-		for _, entry in ipairs(mobs) do
-			local mob_id = entry.id
-			local need = entry.count or 0
-			if mob_id ~= nil and need > 0 then
-				local have = quest:mob_kills(mob_id)
-				if have < need then
-					quest:set_mob_kills(mob_id, need)
-					changed = true
-				end
-			end
-		end
-		if changed then
-			quest:sync_progress()
-		end
-		return true
-	end
-	if kind == "pop" then
-		local need = req.value or 0
-		if me:population() < need then
-			me:population(need)
-		end
-		return true
-	end
-	if kind == "lvmin" then
-		local need = req.value or 0
-		if me:level() < need then
-			me:level(need)
-		end
-		return true
-	end
-	if kind == "lvmax" then
-		local max_level = req.value or 0
-		if max_level > 0 and me:level() > max_level then
-			me:level(max_level)
-		end
-		return true
-	end
-	if kind == "npc" or kind == "startscript" or kind == "endscript" then
-		return true
-	end
-	if kind == "interval" or kind == "dayByDay" or kind == "normalAutoStart" or kind == "fieldEnter" then
-		return true
-	end
-	if kind == "infoNumber" then
-		local info_id = req.value or 0
-		if info_id == 0 then
-			return true
-		end
-		local want = "1"
-		for _, value in ipairs(req.info or {}) do
-			if value ~= "" then
-				want = value
-				break
-			end
-		end
-		if not ensure_quest_state(me, info_id, 1) then
-			return false, kind
-		end
-		me:quest(info_id):record(want)
-		return true
-	end
-	if kind == "quest" then
-		local quests = req.quests
-		if quests == nil then
-			return true
-		end
-		for _, entry in ipairs(quests) do
-			if not ensure_quest_state(me, entry.id, entry.state or 0) then
-				return false, kind
-			end
-		end
-		return true
-	end
-	if kind == "class" then
-		local classes = req.classes
-		if classes == nil or #classes == 0 then
-			return true
-		end
-		if not class_matches(me:class(), classes) then
-			local target = pick_class(classes)
-			if target == nil then
-				return false, kind
-			end
-			me:class(target)
-		end
-		return true
-	end
-	if unsupported_quest_req_kinds[kind] then
-		return false, kind
-	end
-	if req.value ~= nil and req.value ~= 0 then
-		return false, kind
-	end
-	return true
+    local kind = req.kind
+    if kind == "item" then
+        local items = req.items
+        if items == nil then
+            return true
+        end
+        for _, entry in ipairs(items) do
+            local item_id = entry.id
+            local need = entry.count or 0
+            if item_id ~= nil and need > 0 then
+                local have = item_count(me, item_id)
+                if have < need then
+                    me:mkitem(item_id, need - have)
+                end
+                if item_count(me, item_id) < need then
+                    return false, kind
+                end
+            end
+        end
+        return true
+    end
+    if kind == "mob" then
+        local mobs = req.mobs
+        if mobs == nil then
+            return true
+        end
+        local changed = false
+        for _, entry in ipairs(mobs) do
+            local mob_id = entry.id
+            local need = entry.count or 0
+            if mob_id ~= nil and need > 0 then
+                local have = quest:mob_kills(mob_id)
+                if have < need then
+                    quest:set_mob_kills(mob_id, need)
+                    changed = true
+                end
+            end
+        end
+        if changed then
+            quest:sync_progress()
+        end
+        return true
+    end
+    if kind == "pop" then
+        local need = req.value or 0
+        if me:population() < need then
+            me:population(need)
+        end
+        return true
+    end
+    if kind == "lvmin" then
+        local need = req.value or 0
+        if me:level() < need then
+            me:level(need)
+        end
+        return true
+    end
+    if kind == "lvmax" then
+        local max_level = req.value or 0
+        if max_level > 0 and me:level() > max_level then
+            me:level(max_level)
+        end
+        return true
+    end
+    if kind == "npc" or kind == "startscript" or kind == "endscript" then
+        return true
+    end
+    if kind == "interval" or kind == "dayByDay" or kind == "normalAutoStart" or kind == "fieldEnter" then
+        return true
+    end
+    if kind == "infoNumber" then
+        local info_id = req.value or 0
+        if info_id == 0 then
+            return true
+        end
+        local want = "1"
+        for _, value in ipairs(req.info or {}) do
+            if value ~= "" then
+                want = value
+                break
+            end
+        end
+        if not ensure_quest_state(me, info_id, 1) then
+            return false, kind
+        end
+        me:quest(info_id):record(want)
+        return true
+    end
+    if kind == "quest" then
+        local quests = req.quests
+        if quests == nil then
+            return true
+        end
+        for _, entry in ipairs(quests) do
+            if not ensure_quest_state(me, entry.id, entry.state or 0) then
+                return false, kind
+            end
+        end
+        return true
+    end
+    if kind == "class" then
+        local classes = req.classes
+        if classes == nil or #classes == 0 then
+            return true
+        end
+        if not class_matches(me:class(), classes) then
+            local target = pick_class(classes)
+            if target == nil then
+                return false, kind
+            end
+            me:class(target)
+        end
+        return true
+    end
+    if unsupported_quest_req_kinds[kind] then
+        return false, kind
+    end
+    if req.value ~= nil and req.value ~= 0 then
+        return false, kind
+    end
+    return true
 end
 
 local function prepare_quest_cost(me, cost)
-	if me:meso() < cost.meso then
-		me:meso(cost.meso)
-	end
-	if me:population() < cost.pop then
-		me:population(cost.pop)
-	end
-	for _, entry in ipairs(cost.items) do
-		local have = item_count(me, entry.id)
-		if have < entry.count then
-			me:mkitem(entry.id, entry.count - have)
-		end
-	end
+    if me:meso() < cost.meso then
+        me:meso(cost.meso)
+    end
+    if me:population() < cost.pop then
+        me:population(cost.pop)
+    end
+    for _, entry in ipairs(cost.items) do
+        local have = item_count(me, entry.id)
+        if have < entry.count then
+            me:mkitem(entry.id, entry.count - have)
+        end
+    end
 end
 
 local function prepare_quest_complete(me, quest)
-	local wz = quest:wz()
-	if wz == nil then
-		return false, "wz"
-	end
-	prepare_quest_cost(me, wz:complete_cost())
-	local reqs = wz:complete_requirements()
-	if reqs == nil then
-		return true
-	end
-	for _, req in ipairs(reqs) do
-		local ok, reason = prepare_quest_requirement(me, quest, req)
-		if not ok then
-			return false, reason or req.kind
-		end
-	end
-	return true
+    local wz = quest:wz()
+    if wz == nil then
+        return false, "wz"
+    end
+    prepare_quest_cost(me, wz:complete_cost())
+    local reqs = wz:complete_requirements()
+    if reqs == nil then
+        return true
+    end
+    for _, req in ipairs(reqs) do
+        local ok, reason = prepare_quest_requirement(me, quest, req)
+        if not ok then
+            return false, reason or req.kind
+        end
+    end
+    return true
 end
 
 local function prepare_quest_start(me, quest)
-	local wz = quest:wz()
-	if wz == nil then
-		return false, "wz"
-	end
-	prepare_quest_cost(me, wz:start_cost())
-	local reqs = wz:start_requirements()
-	if reqs == nil then
-		return true
-	end
-	for _, req in ipairs(reqs) do
-		local ok, reason = prepare_quest_requirement(me, quest, req)
-		if not ok then
-			return false, reason or req.kind
-		end
-	end
-	return true
+    local wz = quest:wz()
+    if wz == nil then
+        return false, "wz"
+    end
+    prepare_quest_cost(me, wz:start_cost())
+    local reqs = wz:start_requirements()
+    if reqs == nil then
+        return true
+    end
+    for _, req in ipairs(reqs) do
+        local ok, reason = prepare_quest_requirement(me, quest, req)
+        if not ok then
+            return false, reason or req.kind
+        end
+    end
+    return true
 end
 
 local function start_requirement_value(wz, kind)
-	if wz == nil or wz:start_requirements() == nil then
-		return nil
-	end
-	for _, req in ipairs(wz:start_requirements()) do
-		if req.kind == kind then
-			local value = req.value or 0
-			if value ~= 0 then
-				return value
-			end
-		end
-	end
-	return nil
+    if wz == nil or wz:start_requirements() == nil then
+        return nil
+    end
+    for _, req in ipairs(wz:start_requirements()) do
+        if req.kind == kind then
+            local value = req.value or 0
+            if value ~= 0 then
+                return value
+            end
+        end
+    end
+    return nil
 end
 
 local function delay_command(label, key_name, delay)
-	return {
-		privilege = ROLE.Admin,
-		usage = string.format("[%s] [밀리초] - %s 지연 조회/설정, %s 지정 시 접두어가 일치하는 대상만 (0이면 전체 값 사용) (테스트용)", key_name, label, key_name),
-		command = function(me, args)
-			local key = nil
-			local value_arg = args[1]
-			if args[1] ~= nil and tonumber(args[1]) == nil then
-				key = args[1]
-				value_arg = args[2]
-			end
+    return {
+        privilege = ROLE.Admin,
+        usage = string.format("[%s] [밀리초] - %s 지연 조회/설정, %s 지정 시 접두어가 일치하는 대상만 (0이면 전체 값 사용) (테스트용)", key_name, label,
+            key_name),
+        command = function(me, args)
+            local key = nil
+            local value_arg = args[1]
+            if args[1] ~= nil and tonumber(args[1]) == nil then
+                key = args[1]
+                value_arg = args[2]
+            end
 
-			if value_arg == nil then
-				local current = key and delay(key) or delay()
-				me:message(string.format("현재 %s 지연(%s): %dms", label, key or "전체", current))
-				return true
-			end
+            if value_arg == nil then
+                local current = key and delay(key) or delay()
+                me:message(string.format("현재 %s 지연(%s): %dms", label, key or "전체", current))
+                return true
+            end
 
-			local value = tonumber(value_arg)
-			if value == nil or value < 0 then
-				me:message("지연 시간은 0 이상의 숫자여야 합니다.")
-				return true
-			end
+            local value = tonumber(value_arg)
+            if value == nil or value < 0 then
+                me:message("지연 시간은 0 이상의 숫자여야 합니다.")
+                return true
+            end
 
-			if key then
-				delay(key, value)
-			else
-				delay(value)
-			end
-			me:message(string.format("%s 지연(%s)을 %dms로 설정했습니다. (이 서버에만 적용됩니다)", label, key or "전체", value))
-			return true
-		end,
-	}
+            if key then
+                delay(key, value)
+            else
+                delay(value)
+            end
+            me:message(string.format("%s 지연(%s)을 %dms로 설정했습니다. (이 서버에만 적용됩니다)", label, key or "전체", value))
+            return true
+        end,
+    }
 end
 
 local function fault_command(label, key_name, fault)
-	return {
-		privilege = ROLE.Admin,
-		usage = string.format("<%s> [on|lost|timeout|off] - on: 요청 미전송, lost: 요청 처리 후 응답 유실, timeout: 응답 없이 대기. 모두 지연 후 적용 (테스트용)", key_name),
-		command = function(me, args)
-			local key = args[1]
-			if key == nil then
-				me:message(string.format("사용법: /%s장애 <%s> [on|lost|timeout|off]", label, key_name))
-				return true
-			end
+    return {
+        privilege = ROLE.Admin,
+        usage = string.format(
+        "<%s> [on|lost|timeout|off] - on: 요청 미전송, lost: 요청 처리 후 응답 유실, timeout: 응답 없이 대기. 모두 지연 후 적용 (테스트용)", key_name),
+        command = function(me, args)
+            local key = args[1]
+            if key == nil then
+                me:message(string.format("사용법: /%s장애 <%s> [on|lost|timeout|off]", label, key_name))
+                return true
+            end
 
-			local modes = {
-				on = "unreachable",
-				lost = "lost",
-				timeout = "timeout",
-				off = "off",
-			}
-			if args[2] ~= nil then
-				local mode = modes[string.lower(args[2])]
-				if mode == nil then
-					me:message("on, lost, timeout, off 중 하나를 입력해야 합니다.")
-					return true
-				end
-				fault(key, mode)
-			end
+            local modes = {
+                on = "unreachable",
+                lost = "lost",
+                timeout = "timeout",
+                off = "off",
+            }
+            if args[2] ~= nil then
+                local mode = modes[string.lower(args[2])]
+                if mode == nil then
+                    me:message("on, lost, timeout, off 중 하나를 입력해야 합니다.")
+                    return true
+                end
+                fault(key, mode)
+            end
 
-			me:message(string.format("%s 장애(%s): %s (이 서버에만 적용됩니다)", label, key, string.upper(fault(key))))
-			return true
-		end,
-	}
+            me:message(string.format("%s 장애(%s): %s (이 서버에만 적용됩니다)", label, key, string.upper(fault(key))))
+            return true
+        end,
+    }
 end
 
 local command_funcs = {
-	["명령어"] = {
-		privilege = ROLE.User,
-		usage = "- 사용 가능한 명령어 목록 표시",
-		command = function(me, args)
-			local user_role = me:role()
-			local list = {}
-			for cmd_name, cmd_data in pairs(command_funcs) do
-				local priv = ROLE.User
-				local usage_str = ""
-				if type(cmd_data) == "table" then
-					priv = cmd_data.privilege or ROLE.Admin
-					usage_str = cmd_data.usage or ""
-				else
-					priv = ROLE.Admin
-					usage_str = "- (설명 없음)"
-				end
-				if user_role >= priv then
-					table.insert(list, { name = cmd_name, usage = usage_str })
-				end
-			end
-			table.sort(list, function(a, b) return a.name < b.name end)
-			me:message("=== 사용 가능한 명령어 목록 ===")
-			for i, c in ipairs(list) do
-				me:message(string.format("%d. /%s %s", i, c.name, c.usage))
-			end
-			me:message(string.format("총 %d개의 명령어가 있습니다.", #list))
-			return true
-		end,
-	},
-	["아이템생성"] = {
-		privilege = ROLE.Admin,
-		usage = "<아이템이름> [개수] - 아이템 생성",
-		command = function(me, args)
-			if not args[1] or args[1] == "" then
-				me:message("사용법: /아이템생성 <아이템이름> [개수]")
-				return true
-			end
-			local count = 1
-			if args[2] then
-				count = tonumber(args[2]) or 1
-			end
-			local item_id = tonumber(args[1])
-			if item_id == nil then
-				item_id = name2item(args[1])
-			end
-			if item_id == nil then
-				me:message("존재하지 않는 아이템입니다: " .. args[1])
-				return true
-			end
-			local item = me:mkitem(item_id, count)
-			if item == nil then
-				me:message("아이템 생성 실패: " .. args[1])
-				return true
-			end
-			me:message(string.format("아이템 생성: %s x%d", args[1], count))
-			return true
-		end,
-	},
-	["성별"] = {
-		privilege = ROLE.Admin,
-		usage = "<0|1> - 성별 변경 (0 남성, 1 여성)",
-		command = function(me, args)
-			local gender = tonumber(args[1])
-			if gender ~= 0 and gender ~= 1 then
-				me:message("사용법: /성별 <0|1>")
-				return true
-			end
-			me:gender(gender)
-			me:message("성별 변경: " .. gender)
-			return true
-		end,
-	},
-	["파혼"] = {
-		privilege = ROLE.Admin,
-		usage = "- 약혼 강제 해제 (예약 여부 무관)",
-		command = function(me, args)
-			if me:break_engagement() then
-				me:message("파혼 완료")
-			else
-				me:message("약혼 상태가 아닙니다.")
-			end
-			return true
-		end,
-	},
-	["인벤토리초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "- 인벤토리 아이템 전부 제거 (착용 장비 제외)",
-		command = function(me, args)
-			local cleared = me:clear_inventory()
-			me:message(string.format("인벤토리 %d슬롯 비움", cleared))
-			return true
-		end,
-	},
-	["몬스터북카드"] = {
-		privilege = ROLE.Admin,
-		usage = "<카드ID> [횟수] - 몬스터북에 카드 등록",
-		command = function(me, args)
-			local card_id = tonumber(args[1])
-			local count = tonumber(args[2] or "1")
-			if card_id == nil or count == nil or count < 1 then
-				me:message("사용법: /몬스터북카드 <카드ID> [횟수]")
-				return true
-			end
-			if me:register_card(card_id, count) == false then
-				me:message("몬스터 카드가 아닙니다: " .. card_id)
-			end
-			return true
-		end,
-	},
-	["몬스터북초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "- 몬스터북 카드와 표지 초기화 (재접속 후 반영)",
-		command = function(me, args)
-			me:reset_monster_book()
-			me:message("몬스터북 초기화 완료")
-			return true
-		end,
-	},
-	["순간이동초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "- 순간이동의 돌 등록 맵 초기화",
-		command = function(me, args)
-			me:reset_teleport_stones()
-			me:message("순간이동 초기화 완료")
-			return true
-		end,
-	},
-	["펫정보"] = {
-		privilege = ROLE.Admin,
-		usage = "- 소환한 펫의 친밀도, 레벨, 포만감 보기",
-		command = function(me, args)
-			if me:pet_id() == 0 then
-				me:message("소환한 펫이 없습니다.")
-				return true
-			end
-			me:message(string.format("펫 친밀도 %d 레벨 %d 포만감 %d", me:pet_closeness(), me:pet_level(), me:pet_fullness()))
-			return true
-		end,
-	},
-	["펫친밀도"] = {
-		privilege = ROLE.Admin,
-		usage = "<친밀도> - 소환한 펫의 친밀도 설정 (레벨 재계산)",
-		command = function(me, args)
-			local closeness = tonumber(args[1])
-			if closeness == nil then
-				me:message("사용법: /펫친밀도 <친밀도>")
-				return true
-			end
-			if me:set_pet_closeness(closeness) == false then
-				me:message("소환한 펫이 없습니다.")
-				return true
-			end
-			me:message(string.format("펫 친밀도 %d 레벨 %d", me:pet_closeness(), me:pet_level()))
-			return true
-		end,
-	},
-	["펫포만감"] = {
-		privilege = ROLE.Admin,
-		usage = "<포만감> - 소환한 펫의 포만감 설정 (0~100)",
-		command = function(me, args)
-			local fullness = tonumber(args[1])
-			if fullness == nil then
-				me:message("사용법: /펫포만감 <포만감>")
-				return true
-			end
-			if me:set_pet_fullness(fullness) == false then
-				me:message("소환한 펫이 없습니다.")
-				return true
-			end
-			me:message(string.format("펫 포만감 %d", me:pet_fullness()))
-			return true
-		end,
-	},
-	["펫배고픔"] = {
-		privilege = ROLE.Admin,
-		usage = "- 소환한 펫의 포만감 감소를 지금 한 번 실행",
-		command = function(me, args)
-			if me:hunger_pet() == false then
-				me:message("소환한 펫이 없습니다.")
-				return true
-			end
-			me:message(string.format("펫 포만감 %d", me:pet_fullness()))
-			return true
-		end,
-	},
-	["탈것정보"] = {
-		privilege = ROLE.Admin,
-		usage = "- 탈것 레벨, 경험치, 피로도, HP, 탑승 중인 탈것 보기",
-		command = function(me, args)
-			local level, exp, fatigue, hp, vehicle = me:mount()
-			me:message(string.format("탈것 레벨 %d 경험치 %d 피로도 %d HP %d 탑승 %d", level, exp, fatigue, hp, vehicle))
-			return true
-		end,
-	},
-	["탈것레벨"] = {
-		privilege = ROLE.Admin,
-		usage = "<레벨> - 탈것 레벨 설정 (1~30, 경험치는 그 레벨 시작값)",
-		command = function(me, args)
-			local level = tonumber(args[1])
-			if level == nil then
-				me:message("사용법: /탈것레벨 <레벨>")
-				return true
-			end
-			me:set_mount_level(level)
-			local mount_level, exp = me:mount()
-			me:message(string.format("탈것 레벨 %d 경험치 %d", mount_level, exp))
-			return true
-		end,
-	},
-	["탈것피로도"] = {
-		privilege = ROLE.Admin,
-		usage = "<피로도> - 탈것 피로도 설정 (0~100)",
-		command = function(me, args)
-			local fatigue = tonumber(args[1])
-			if fatigue == nil then
-				me:message("사용법: /탈것피로도 <피로도>")
-				return true
-			end
-			me:set_mount_fatigue(fatigue)
-			local _, _, mount_fatigue = me:mount()
-			me:message(string.format("탈것 피로도 %d", mount_fatigue))
-			return true
-		end,
-	},
-	["탈것피로"] = {
-		privilege = ROLE.Admin,
-		usage = "- 탑승 중인 탈것의 피로도 증가를 지금 한 번 실행",
-		command = function(me, args)
-			me:tire_mount()
-			local _, _, fatigue = me:mount()
-			me:message(string.format("탈것 피로도 %d", fatigue))
-			return true
-		end,
-	},
-	["아이템드롭"] = {
-		privilege = ROLE.Admin,
-		usage = "<아이템ID> [개수] - 내 위치에 아이템 떨어뜨리기",
-		command = function(me, args)
-			local item_id = tonumber(args[1])
-			local count = tonumber(args[2] or "1")
-			if item_id == nil or count == nil or count < 1 then
-				me:message("사용법: /아이템드롭 <아이템ID> [개수]")
-				return true
-			end
-			local x, y = me:position()
-			if me:map():spawn_item(item_id, count, { x, y }, me) == nil then
-				me:message("아이템을 떨어뜨릴 수 없습니다: " .. item_id)
-			end
-			return true
-		end,
-	},
-	["봇초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "<레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...|-] [퀘스트ID=기록,...|-] [기록키=값,...] - 인벤토리·퀘스트·기록을 비우고 상태 설정",
-		command = function(me, args)
-			local level = tonumber(args[1])
-			local class = tonumber(args[2])
-			local meso = tonumber(args[3])
-			if level == nil or class == nil or meso == nil then
-				me:message("사용법: /봇초기화 <레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...]")
-				return true
-			end
-			me:clear_inventory()
-			me:clear_quests()
-			me:records():clear()
-			me:class(class)
-			me:level(1)
-			me:level(level)
-			me:exp(0)
-			me:skill_point(0)
-			me:meso(meso)
-			me:population(0)
-			me:clear_population_history()
-			for item_id, count in string.gmatch(args[4] or "", "(%d+):(%d+)") do
-				me:mkitem(tonumber(item_id), tonumber(count))
-			end
-			for quest_id, state in string.gmatch(args[5] or "", "(%d+):(%d+)") do
-				ensure_quest_state(me, tonumber(quest_id), tonumber(state))
-			end
-			for quest_id, record in string.gmatch(args[6] or "", "(%d+)=([%w_]+)") do
-				if ensure_quest_state(me, tonumber(quest_id), 1) then
-					me:quest(tonumber(quest_id)):record(record)
-				end
-			end
-			for key, value in string.gmatch(args[7] or "", "([%w_%.]+)=([%w_%-]+)") do
-				if tonumber(value) ~= nil then
-					me:records():set(key, tonumber(value))
-				else
-					me:records():set_text(key, value)
-				end
-			end
-			me:message("봇초기화 완료")
-			return true
-		end,
-	},
-	["봇상태"] = {
-		privilege = ROLE.Admin,
-		usage = "[태그] - 대화 여부·레벨·직업·메소·경험치·인기도·맵·퀘스트·아이템을 한 줄로 표시",
-		command = function(me, args)
-			local counts = {}
-			for _, tab in pairs(me:items()) do
-				for _, it in pairs(tab) do
-					local wz = it:wz()
-					if wz ~= nil then
-						counts[wz:id()] = (counts[wz:id()] or 0) + it:count()
-					end
-				end
-			end
-			local ids = {}
-			for item_id in pairs(counts) do
-				ids[#ids + 1] = item_id
-			end
-			table.sort(ids)
-			local items = {}
-			for i, item_id in ipairs(ids) do
-				items[i] = item_id .. ":" .. counts[item_id]
-			end
-			local quests = {}
-			for quest_id, quest in pairs(me:quests()) do
-				quests[#quests + 1] = quest_id .. ":" .. (quest:completed() and 2 or 1)
-			end
-			table.sort(quests)
-			me:message(string.format(
-				"봇상태 tag=%s dialog=%d level=%d class=%d meso=%d exp=%d population=%d map=%d sp=%d quests=%s items=%s",
-				args[1] or "-",
-				me:in_dialog() and 1 or 0,
-				me:level(),
-				me:class(),
-				me:meso(),
-				me:exp(),
-				me:population(),
-				me:map():template_id(),
-				me:skill_point(),
-				table.concat(quests, ","),
-				table.concat(items, ",")
-			))
-			return true
-		end,
-	},
-	["듀이"] = {
-		privilege = ROLE.Admin,
-		usage = "- 택배 보관함 열기",
-		command = function(me, args)
-			me:open_duey()
-			return true
-		end,
-	},
-	["퀵배송"] = {
-		privilege = ROLE.Admin,
-		usage = "- 퀵배송 창 열기",
-		command = function(me, args)
-			if not me:open_quick_parcel() then
-				me:message("퀵배송 창을 열 수 없습니다.")
-			end
-			return true
-		end,
-	},
-	["택배"] = {
-		privilege = ROLE.Admin,
-		usage = "<받는사람> <보내는이름> <아이템ID|-> [개수] [메소] - 서버 이름으로 택배 발송",
-		command = function(me, args)
-			if not args[1] or not args[2] or not args[3] then
-				me:message("사용법: /택배 <받는사람> <보내는이름> <아이템ID|-> [개수] [메소]")
-				return true
-			end
-			local item_id = tonumber(args[3]) or 0
-			local count = tonumber(args[4]) or 1
-			local meso = tonumber(args[5]) or 0
-			if me:send_parcel(args[1], args[2], item_id, count, meso) then
-				me:message(string.format("택배 발송: %s <- %s", args[1], args[2]))
-			else
-				me:message("택배 발송 실패")
-			end
-			return true
-		end,
-	},
-	["메소초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "- 메소 초기화",
-		command = function(me, args)
-			me:meso(0)
-			me:message("메소를 초기화했습니다.")
-			return true
-		end,
-	},
-	["인기도"] = {
-		privilege = ROLE.Admin,
-		usage = "<값> - 인기도 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /인기도 <값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v then
-				me:message("사용법: /인기도 <값>")
-				return true
-			end
-			me:population(v)
-			me:message(string.format("인기도 설정: %d", me:population()))
-			return true
-		end,
-	},
-	["플레이어NPC생성"] = {
-		privilege = ROLE.Admin,
-		usage = "<NPC ID> [캐릭터이름] - 같은 맵 캐릭터(생략 시 자신)의 외형으로 플레이어 NPC를 지금 위치에 세움",
-		command = function(me, args)
-			local npc_id = tonumber(args[1])
-			if npc_id == nil then
-				me:message("사용법: /플레이어NPC생성 <NPC ID> [캐릭터이름]")
-				return true
-			end
-			local source = me
-			if args[2] ~= nil and args[2] ~= "" then
-				source = nil
-				for _, character in pairs(me:map():characters()) do
-					if character:name() == args[2] then
-						source = character
-						break
-					end
-				end
-				if source == nil then
-					me:message("같은 맵에 없는 캐릭터입니다: " .. args[2])
-					return true
-				end
-			end
-			local reasons = {
-				unknown = "존재하지 않는 NPC입니다",
-				taken = "이미 플레이어 NPC로 쓰이는 NPC입니다",
-				placed = "이 맵에 이미 배치된 NPC입니다",
-				error = "저장에 실패했습니다",
-			}
-			local ok, reason = create_player_npc(me, npc_id, source)
-			if not ok then
-				me:message(string.format("플레이어 NPC 생성 실패 %d: %s", npc_id, reasons[reason] or tostring(reason)))
-				return true
-			end
-			me:message(string.format("플레이어 NPC 생성 %d", npc_id))
-			return true
-		end,
-	},
-	["플레이어NPC삭제"] = {
-		privilege = ROLE.Admin,
-		usage = "<NPC ID> - 플레이어 NPC를 모든 채널에서 삭제",
-		command = function(me, args)
-			local npc_id = tonumber(args[1])
-			if npc_id == nil then
-				me:message("사용법: /플레이어NPC삭제 <NPC ID>")
-				return true
-			end
-			if not remove_player_npc(npc_id) then
-				me:message(string.format("플레이어 NPC 삭제 실패 %d", npc_id))
-				return true
-			end
-			me:message(string.format("플레이어 NPC 삭제 %d", npc_id))
-			return true
-		end,
-	},
-	["퀘스트상태"] = {
-		privilege = ROLE.Admin,
-		usage = "<퀘스트ID> - 퀘스트 진행 상태 조회",
-		command = function(me, args)
-			local quest_id = tonumber(args[1])
-			if not quest_id then
-				me:message("사용법: /퀘스트상태 <퀘스트ID>")
-				return true
-			end
-			local quest = me:quest(quest_id)
-			if quest == nil then
-				me:message(string.format("퀘스트 %d 없음", quest_id))
-				return true
-			end
-			local name = ""
-			local wz = quest:wz()
-			if wz ~= nil then
-				name = wz:name() or ""
-			end
-			local state = "미시작"
-			if quest:completed() then
-				state = "완료"
-			elseif quest:started() then
-				state = "진행"
-			end
-			if name ~= "" then
-				me:message(string.format("퀘스트 %d (%s): %s", quest_id, name, state))
-			else
-				me:message(string.format("퀘스트 %d: %s", quest_id, state))
-			end
-			return true
-		end,
-	},
-	["퀘스트초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "[퀘스트ID] - 진행·완료 퀘스트 제거 (생략 시 전체)",
-		command = function(me, args)
-			if not args[1] or args[1] == "" then
-				local count = me:clear_quests()
-				me:message(string.format("퀘스트 %d개 초기화", count))
-			else
-				local quest_id = tonumber(args[1])
-				if not quest_id then
-					me:message("사용법: /퀘스트초기화 [퀘스트ID]")
-					return true
-				end
-				if me:clear_quests(quest_id) == 1 then
-					me:message(string.format("퀘스트 %d 초기화", quest_id))
-				else
-					me:message(string.format("퀘스트 %d 없음", quest_id))
-				end
-			end
-			return true
-		end,
-	},
-	["원정대제한초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "[보스] - 원정대 입장 제한 기록 삭제 (생략 시 전체)",
-		command = function(me, args)
-			local target = args[1]
-			if target ~= nil and target ~= "" and ex.BOSS[target] == nil then
-				local keys = {}
-				for key in pairs(ex.BOSS) do
-					keys[#keys + 1] = key
-				end
-				table.sort(keys)
-				me:message("사용법: /원정대제한초기화 [" .. table.concat(keys, "|") .. "]")
-				return true
-			end
-			for key, boss in pairs(ex.BOSS) do
-				if target == nil or target == "" or target == key then
-					me:records():remove(boss.cooldown_record)
-					me:message(string.format("%s 원정대 입장 제한 초기화", boss.name))
-				end
-			end
-			return true
-		end,
-	},
-	["퀘스트완료준비"] = {
-		privilege = ROLE.Admin,
-		usage = "[퀘스트ID] - 완료 조건 충족 (생략 시 진행 중 전체)",
-		command = function(me, args)
-			local targets = {}
-			if args[1] and args[1] ~= "" then
-				local quest_id = tonumber(args[1])
-				if not quest_id then
-					me:message("사용법: /퀘스트완료준비 [퀘스트ID]")
-					return true
-				end
-				local quest = me:quest(quest_id)
-				if quest == nil or not quest:started() then
-					me:message(string.format("퀘스트 %d 진행 중 아님", quest_id))
-					return true
-				end
-				targets[quest_id] = quest
-			else
-				for quest_id, quest in pairs(me:quests()) do
-					if quest:started() then
-						targets[quest_id] = quest
-					end
-				end
-			end
-			local prepared = 0
-			local skipped = 0
-			for quest_id, quest in pairs(targets) do
-				local ok, reason = prepare_quest_complete(me, quest)
-				if ok then
-					prepared = prepared + 1
-					me:message(string.format("퀘스트 %d 준비 완료", quest_id))
-				else
-					skipped = skipped + 1
-					me:message(string.format("퀘스트 %d 스킵 (%s)", quest_id, tostring(reason)))
-				end
-			end
-			if prepared == 0 and skipped == 0 then
-				me:message("진행 중인 퀘스트 없음")
-			else
-				me:message(string.format("완료 준비: %d개 성공, %d개 스킵", prepared, skipped))
-			end
-			return true
-		end,
-	},
-	["퀘스트시작준비"] = {
-		privilege = ROLE.Admin,
-		usage = "<퀘스트ID> - 시작 조건 충족 후 시작 NPC 근처로 이동",
-		command = function(me, args)
-			local quest_id = tonumber(args[1])
-			if not quest_id then
-				me:message("사용법: /퀘스트시작준비 <퀘스트ID>")
-				return true
-			end
-			local quest = me:quest(quest_id)
-			if quest == nil then
-				me:message(string.format("퀘스트 %d 없음", quest_id))
-				return true
-			end
-			if quest:started() then
-				me:message(string.format("퀘스트 %d 이미 진행 중", quest_id))
-				return true
-			end
-			if quest:completed() then
-				me:message(string.format("퀘스트 %d 이미 완료됨 (필요 시 /퀘스트초기화)", quest_id))
-				return true
-			end
-			local ok, reason = prepare_quest_start(me, quest)
-			if not ok then
-				me:message(string.format("퀘스트 %d 시작 준비 실패 (%s)", quest_id, tostring(reason)))
-				return true
-			end
-			me:message(string.format("퀘스트 %d 시작 조건 준비 완료", quest_id))
-			local wz = quest:wz()
-			local field_id = start_requirement_value(wz, "fieldEnter")
-			if field_id ~= nil then
-				me:map(field_id)
-				me:message(string.format("필드 %d로 이동", field_id))
-				return true
-			end
-			local npc_id = start_requirement_value(wz, "npc")
-			if npc_id == nil then
-				me:message("시작 NPC 없음")
-				return true
-			end
-			local spawns = npc_spawns(npc_id)
-			if spawns == nil or #spawns == 0 then
-				me:message(string.format("시작 NPC %d 스폰을 찾지 못함", npc_id))
-				return true
-			end
-			local spawn = spawns[1]
-			local spawn_point = closest_spawn(spawn.map_id, spawn.x, spawn.y)
-			if spawn_point == nil then
-				me:map(spawn.map_id)
-			else
-				me:map(spawn.map_id, spawn_point)
-			end
-			me:message(string.format("NPC %d → 맵 %d (%d, %d) 근처 스폰으로 이동", npc_id, spawn.map_id, spawn.x, spawn.y))
-			return true
-		end,
-	},
-	["메소얻기"] = {
-		privilege = ROLE.Admin,
-		usage = "<금액> - 메소 획득",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /메소얻기 <금액>")
-				return true
-			end
-			local amount = tonumber(args[1])
-			if not amount or amount < 0 then
-				me:message("금액은 0 이상의 숫자여야 합니다.")
-				return true
-			end
-			me:meso(me:meso() + amount)
-			me:message(string.format("메소 %d 획득.", amount))
-			return true
-		end,
-	},
-	["경험치얻기"] = {
-		privilege = ROLE.Admin,
-		usage = "<양> - 경험치 획득 (레벨업·패밀리 명성 포함)",
-		command = function(me, args)
-			local amount = tonumber(args[1] or "")
-			if not amount or amount < 0 then
-				me:message("사용법: /경험치얻기 <양>")
-				return true
-			end
-			me:exp(me:exp() + amount)
-			me:message(string.format("경험치 %d 획득.", amount))
-			return true
-		end,
-	},
-	["길드GP얻기"] = {
-		privilege = ROLE.Admin,
-		usage = "<양> - 소속 길드 GP 획득",
-		command = function(me, args)
-			local amount = tonumber(args[1] or "")
-			if not amount or amount <= 0 then
-				me:message("사용법: /길드GP얻기 <양>")
-				return true
-			end
-			if not me:guild() then
-				me:message("길드에 가입되어 있지 않습니다.")
-				return true
-			end
-			me:gain_guild_gp(amount)
-			me:message(string.format("길드 GP %d 획득 요청.", amount))
-			return true
-		end,
-	},
-	["캐시얻기"] = {
-		privilege = ROLE.Admin,
-		usage = "<NX캐시> [메이플포인트] - 계정 캐시 증감",
-		command = function(me, args)
-			local nx = tonumber(args[1])
-			local mp = tonumber(args[2] or "0")
-			if not nx or not mp then
-				me:message("사용법: /캐시얻기 <NX캐시> [메이플포인트]")
-				return true
-			end
-			me:add_cash(nx, mp)
-			return true
-		end,
-	},
-	["쿠폰생성"] = {
-		privilege = ROLE.Admin,
-		usage = "<캐시|포인트|아이템|메소> <값> [개수] - 캐시샵 쿠폰 생성 (아이템은 커머디티 SN)",
-		command = function(me, args)
-			local kinds = {
-				["캐시"] = 0,
-				["포인트"] = 1,
-				["아이템"] = 2,
-				["메소"] = 3,
-			}
-			local kind = kinds[args[1] or ""]
-			local value = tonumber(args[2])
-			local count = tonumber(args[3] or "1")
-			if not kind or not value or not count or value < 1 or count < 1 or count > 100 then
-				me:message("사용법: /쿠폰생성 <캐시|포인트|아이템|메소> <값> [개수(1~100)]")
-				return true
-			end
-			me:create_cash_coupons(kind, value, count)
-			return true
-		end,
-	},
-	["풀메소"] = {
-		privilege = ROLE.Admin,
-		usage = "- 메소 최대치로 설정",
-		command = function(me, args)
-			me:meso(2147483647)
-			me:message("메소를 최대치로 설정했습니다.")
-			return true
-		end,
-	},
-	["CP얻기"] = {
-		privilege = ROLE.Admin,
-		usage = "<값> - 몬스터 카니발 CP 획득",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /CP얻기 <값>")
-				return true
-			end
-			local amount = tonumber(args[1])
-			if not amount or amount <= 0 then
-				me:message("CP는 1 이상의 숫자여야 합니다.")
-				return true
-			end
-			local team = me:carnival_team()
-			if team == nil then
-				me:message("몬스터 카니발에 참가 중이 아닙니다.")
-				return true
-			end
-			if not team:add_cp(me, amount) then
-				me:message("CP 획득에 실패했습니다.")
-				return true
-			end
-			me:message(string.format("CP %d 획득.", amount))
-			return true
-		end,
-	},
-	["맵이동"] = {
-		privilege = ROLE.Admin,
-		usage = "<맵이름|맵ID> [스폰포인트] - 맵 이동",
-		command = function(me, args)
-			if not args[1] or args[1] == "" then
-				me:message("사용법: /맵이동 <맵이름|맵ID> [스폰포인트]")
-				return true
-			end
-			local spawn = 0
-			if args[2] then
-				spawn = tonumber(args[2]) or 0
-			end
-			local map_arg = args[1]
-			local map_id = tonumber(map_arg)
-			local map_info
-			if map_id ~= nil then
-				map_info = id2map(map_id)
-			else
-				map_info = name2map(map_arg)
-			end
-			if map_info == nil then
-				me:message("존재하지 않는 맵입니다: " .. tostring(map_arg))
-				return true
-			end
-			me:map(map_info:id(), spawn)
-			return true
-		end,
-	},
-	["인스턴스이동"] = {
-		privilege = ROLE.Admin,
-		usage = "<맵이름|맵ID> <슬롯> [스폰포인트] - 슬롯별 인스턴스 맵 입장 (없으면 생성)",
-		command = function(me, args)
-			local slot = tonumber(args[2] or "")
-			if not args[1] or args[1] == "" or slot == nil then
-				me:message("사용법: /인스턴스이동 <맵이름|맵ID> <슬롯> [스폰포인트]")
-				return true
-			end
-			local spawn = tonumber(args[3] or "") or 0
-			local map_arg = args[1]
-			local map_id = tonumber(map_arg)
-			local map_info
-			if map_id ~= nil then
-				map_info = id2map(map_id)
-			else
-				map_info = name2map(map_arg)
-			end
-			if map_info == nil then
-				me:message("존재하지 않는 맵입니다: " .. tostring(map_arg))
-				return true
-			end
-			local instance, err = map_info:create_instance({ slot = slot })
-			if instance == nil then
-				me:message("인스턴스 생성 실패: " .. tostring(err))
-				return true
-			end
-			me:map(instance, spawn)
-			return true
-		end,
-	},
-	["SM시작"] = {
-		privilege = ROLE.Admin,
-		usage = "<그룹> - 파티가 있으면 파티로, 없으면 혼자 SM을 시작",
-		command = function(me, args)
-			local name = args[1]
-			if name == nil or name == "" then
-				me:message("사용법: /SM시작 <그룹>")
-				return true
-			end
-			local group = state_machine(name)
-			if group == nil then
-				me:message("그룹 없음: " .. name)
-				return true
-			end
-			local sm, err
-			local party = me:party()
-			if party ~= nil then
-				sm, err = group:start_party(me, party)
-			else
-				sm, err = group:start_solo(me)
-			end
-			if sm == nil then
-				me:message("SM 시작 실패: " .. tostring(err))
-				return true
-			end
-			me:message("SM 시작: " .. name)
-			return true
-		end,
-	},
-	["SM목록"] = {
-		privilege = ROLE.Admin,
-		usage = "<그룹> - 진행 중인 SM과 맵 목록",
-		command = function(me, args)
-			local name = args[1]
-			if name == nil or name == "" then
-				me:message("사용법: /SM목록 <그룹>")
-				return true
-			end
-			local group = state_machine(name)
-			if group == nil then
-				me:message("그룹 없음: " .. name)
-				return true
-			end
-			local machines = group:machines()
-			if #machines == 0 then
-				me:message("[" .. name .. "] 진행 중인 SM 없음")
-				return true
-			end
-			for _, sm in ipairs(machines) do
-				local ids = {}
-				for _, map in ipairs(sm:maps()) do
-					ids[#ids + 1] = tostring(map:template_id())
-				end
-				table.sort(ids)
-				me:message(string.format("[%s] id=%s players=%d maps=%s", name, sm:id(), #sm:players(), table.concat(ids, ",")))
-			end
-			return true
-		end,
-	},
-	["SM관전"] = {
-		privilege = ROLE.Admin,
-		usage = "<그룹> <id> [템플릿맵ID] - SM 맵에 관전자로 입장",
-		command = function(me, args)
-			local name = args[1]
-			local id = args[2]
-			if name == nil or name == "" or id == nil or id == "" then
-				me:message("사용법: /SM관전 <그룹> <id> [템플릿맵ID]")
-				return true
-			end
-			local group = state_machine(name)
-			if group == nil then
-				me:message("그룹 없음: " .. name)
-				return true
-			end
-			local sm = group:get(id)
-			if sm == nil or sm:disposed() then
-				me:message("진행 중인 SM 없음: " .. name .. " " .. id)
-				return true
-			end
-			local template_id = tonumber(args[3] or "")
-			local map
-			if template_id ~= nil then
-				map = sm:map(template_id)
-			else
-				map = sm:maps()[1]
-			end
-			if map == nil then
-				me:message("SM 맵 없음: " .. tostring(args[3]))
-				return true
-			end
-			me:map(map, 0)
-			return true
-		end,
-	},
-	["SM목록"] = {
-		privilege = ROLE.Admin,
-		usage = "<그룹> - 진행 중인 SM과 맵 목록",
-		command = function(me, args)
-			local name = args[1]
-			if name == nil or name == "" then
-				me:message("사용법: /SM목록 <그룹>")
-				return true
-			end
-			local group = state_machine(name)
-			if group == nil then
-				me:message("그룹 없음: " .. name)
-				return true
-			end
-			local machines = group:machines()
-			if #machines == 0 then
-				me:message("[" .. name .. "] 진행 중인 SM 없음")
-				return true
-			end
-			for _, sm in ipairs(machines) do
-				local ids = {}
-				for _, map in ipairs(sm:maps()) do
-					ids[#ids + 1] = tostring(map:template_id())
-				end
-				table.sort(ids)
-				me:message(string.format("[%s] id=%s players=%d maps=%s", name, sm:id(), #sm:players(), table.concat(ids, ",")))
-			end
-			return true
-		end,
-	},
-	["SM관전"] = {
-		privilege = ROLE.Admin,
-		usage = "<그룹> <id> [템플릿맵ID] - SM 맵에 관전자로 입장",
-		command = function(me, args)
-			local name = args[1]
-			local id = args[2]
-			if name == nil or name == "" or id == nil or id == "" then
-				me:message("사용법: /SM관전 <그룹> <id> [템플릿맵ID]")
-				return true
-			end
-			local group = state_machine(name)
-			if group == nil then
-				me:message("그룹 없음: " .. name)
-				return true
-			end
-			local sm = group:get(id)
-			if sm == nil or sm:disposed() then
-				me:message("진행 중인 SM 없음: " .. name .. " " .. id)
-				return true
-			end
-			local template_id = tonumber(args[3] or "")
-			local map
-			if template_id ~= nil then
-				map = sm:map(template_id)
-			else
-				map = sm:maps()[1]
-			end
-			if map == nil then
-				me:message("SM 맵 없음: " .. tostring(args[3]))
-				return true
-			end
-			me:map(map, 0)
-			return true
-		end,
-	},
-	["SM상한"] = {
-		privilege = ROLE.Admin,
-		usage = "<그룹|전체> [개수|무제한|기본] - 이 채널의 SM 동시 진행 상한 확인·변경 (기본: 스크립트 설정으로 복원)",
-		command = function(me, args)
-			local name = args[1]
-			local value = args[2]
-			if name == nil or name == "" then
-				me:message("사용법: /SM상한 <그룹|전체> [개수|무제한|기본]")
-				return true
-			end
+    ["명령어"] = {
+        privilege = ROLE.User,
+        usage = "- 사용 가능한 명령어 목록 표시",
+        command = function(me, args)
+            local user_role = me:role()
+            local list = {}
+            for cmd_name, cmd_data in pairs(command_funcs) do
+                local priv = ROLE.User
+                local usage_str = ""
+                if type(cmd_data) == "table" then
+                    priv = cmd_data.privilege or ROLE.Admin
+                    usage_str = cmd_data.usage or ""
+                else
+                    priv = ROLE.Admin
+                    usage_str = "- (설명 없음)"
+                end
+                if user_role >= priv then
+                    table.insert(list, { name = cmd_name, usage = usage_str })
+                end
+            end
+            table.sort(list, function(a, b) return a.name < b.name end)
+            me:message("=== 사용 가능한 명령어 목록 ===")
+            for i, c in ipairs(list) do
+                me:message(string.format("%d. /%s %s", i, c.name, c.usage))
+            end
+            me:message(string.format("총 %d개의 명령어가 있습니다.", #list))
+            return true
+        end,
+    },
+    ["아이템생성"] = {
+        privilege = ROLE.Admin,
+        usage = "<아이템이름> [개수] - 아이템 생성",
+        command = function(me, args)
+            if not args[1] or args[1] == "" then
+                me:message("사용법: /아이템생성 <아이템이름> [개수]")
+                return true
+            end
+            local count = 1
+            if args[2] then
+                count = tonumber(args[2]) or 1
+            end
+            local item_id = tonumber(args[1])
+            if item_id == nil then
+                item_id = name2item(args[1])
+            end
+            if item_id == nil then
+                me:message("존재하지 않는 아이템입니다: " .. args[1])
+                return true
+            end
+            local item = me:mkitem(item_id, count)
+            if item == nil then
+                me:message("아이템 생성 실패: " .. args[1])
+                return true
+            end
+            me:message(string.format("아이템 생성: %s x%d", args[1], count))
+            return true
+        end,
+    },
+    ["성별"] = {
+        privilege = ROLE.Admin,
+        usage = "<0|1> - 성별 변경 (0 남성, 1 여성)",
+        command = function(me, args)
+            local gender = tonumber(args[1])
+            if gender ~= 0 and gender ~= 1 then
+                me:message("사용법: /성별 <0|1>")
+                return true
+            end
+            me:gender(gender)
+            me:message("성별 변경: " .. gender)
+            return true
+        end,
+    },
+    ["파혼"] = {
+        privilege = ROLE.Admin,
+        usage = "- 약혼 강제 해제 (예약 여부 무관)",
+        command = function(me, args)
+            if me:break_engagement() then
+                me:message("파혼 완료")
+            else
+                me:message("약혼 상태가 아닙니다.")
+            end
+            return true
+        end,
+    },
+    ["인벤토리초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "- 인벤토리 아이템 전부 제거 (착용 장비 제외)",
+        command = function(me, args)
+            local cleared = me:clear_inventory()
+            me:message(string.format("인벤토리 %d슬롯 비움", cleared))
+            return true
+        end,
+    },
+    ["몬스터북카드"] = {
+        privilege = ROLE.Admin,
+        usage = "<카드ID> [횟수] - 몬스터북에 카드 등록",
+        command = function(me, args)
+            local card_id = tonumber(args[1])
+            local count = tonumber(args[2] or "1")
+            if card_id == nil or count == nil or count < 1 then
+                me:message("사용법: /몬스터북카드 <카드ID> [횟수]")
+                return true
+            end
+            if me:register_card(card_id, count) == false then
+                me:message("몬스터 카드가 아닙니다: " .. card_id)
+            end
+            return true
+        end,
+    },
+    ["몬스터북초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "- 몬스터북 카드와 표지 초기화 (재접속 후 반영)",
+        command = function(me, args)
+            me:reset_monster_book()
+            me:message("몬스터북 초기화 완료")
+            return true
+        end,
+    },
+    ["순간이동초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "- 순간이동의 돌 등록 맵 초기화",
+        command = function(me, args)
+            me:reset_teleport_stones()
+            me:message("순간이동 초기화 완료")
+            return true
+        end,
+    },
+    ["펫정보"] = {
+        privilege = ROLE.Admin,
+        usage = "- 소환한 펫의 친밀도, 레벨, 포만감 보기",
+        command = function(me, args)
+            if me:pet_id() == 0 then
+                me:message("소환한 펫이 없습니다.")
+                return true
+            end
+            me:message(string.format("펫 친밀도 %d 레벨 %d 포만감 %d", me:pet_closeness(), me:pet_level(), me:pet_fullness()))
+            return true
+        end,
+    },
+    ["펫친밀도"] = {
+        privilege = ROLE.Admin,
+        usage = "<친밀도> - 소환한 펫의 친밀도 설정 (레벨 재계산)",
+        command = function(me, args)
+            local closeness = tonumber(args[1])
+            if closeness == nil then
+                me:message("사용법: /펫친밀도 <친밀도>")
+                return true
+            end
+            if me:set_pet_closeness(closeness) == false then
+                me:message("소환한 펫이 없습니다.")
+                return true
+            end
+            me:message(string.format("펫 친밀도 %d 레벨 %d", me:pet_closeness(), me:pet_level()))
+            return true
+        end,
+    },
+    ["펫포만감"] = {
+        privilege = ROLE.Admin,
+        usage = "<포만감> - 소환한 펫의 포만감 설정 (0~100)",
+        command = function(me, args)
+            local fullness = tonumber(args[1])
+            if fullness == nil then
+                me:message("사용법: /펫포만감 <포만감>")
+                return true
+            end
+            if me:set_pet_fullness(fullness) == false then
+                me:message("소환한 펫이 없습니다.")
+                return true
+            end
+            me:message(string.format("펫 포만감 %d", me:pet_fullness()))
+            return true
+        end,
+    },
+    ["펫배고픔"] = {
+        privilege = ROLE.Admin,
+        usage = "- 소환한 펫의 포만감 감소를 지금 한 번 실행",
+        command = function(me, args)
+            if me:hunger_pet() == false then
+                me:message("소환한 펫이 없습니다.")
+                return true
+            end
+            me:message(string.format("펫 포만감 %d", me:pet_fullness()))
+            return true
+        end,
+    },
+    ["탈것정보"] = {
+        privilege = ROLE.Admin,
+        usage = "- 탈것 레벨, 경험치, 피로도, HP, 탑승 중인 탈것 보기",
+        command = function(me, args)
+            local level, exp, fatigue, hp, vehicle = me:mount()
+            me:message(string.format("탈것 레벨 %d 경험치 %d 피로도 %d HP %d 탑승 %d", level, exp, fatigue, hp, vehicle))
+            return true
+        end,
+    },
+    ["탈것레벨"] = {
+        privilege = ROLE.Admin,
+        usage = "<레벨> - 탈것 레벨 설정 (1~30, 경험치는 그 레벨 시작값)",
+        command = function(me, args)
+            local level = tonumber(args[1])
+            if level == nil then
+                me:message("사용법: /탈것레벨 <레벨>")
+                return true
+            end
+            me:set_mount_level(level)
+            local mount_level, exp = me:mount()
+            me:message(string.format("탈것 레벨 %d 경험치 %d", mount_level, exp))
+            return true
+        end,
+    },
+    ["탈것피로도"] = {
+        privilege = ROLE.Admin,
+        usage = "<피로도> - 탈것 피로도 설정 (0~100)",
+        command = function(me, args)
+            local fatigue = tonumber(args[1])
+            if fatigue == nil then
+                me:message("사용법: /탈것피로도 <피로도>")
+                return true
+            end
+            me:set_mount_fatigue(fatigue)
+            local _, _, mount_fatigue = me:mount()
+            me:message(string.format("탈것 피로도 %d", mount_fatigue))
+            return true
+        end,
+    },
+    ["탈것피로"] = {
+        privilege = ROLE.Admin,
+        usage = "- 탑승 중인 탈것의 피로도 증가를 지금 한 번 실행",
+        command = function(me, args)
+            me:tire_mount()
+            local _, _, fatigue = me:mount()
+            me:message(string.format("탈것 피로도 %d", fatigue))
+            return true
+        end,
+    },
+    ["아이템드롭"] = {
+        privilege = ROLE.Admin,
+        usage = "<아이템ID> [개수] - 내 위치에 아이템 떨어뜨리기",
+        command = function(me, args)
+            local item_id = tonumber(args[1])
+            local count = tonumber(args[2] or "1")
+            if item_id == nil or count == nil or count < 1 then
+                me:message("사용법: /아이템드롭 <아이템ID> [개수]")
+                return true
+            end
+            local x, y = me:position()
+            if me:map():spawn_item(item_id, count, { x, y }, me) == nil then
+                me:message("아이템을 떨어뜨릴 수 없습니다: " .. item_id)
+            end
+            return true
+        end,
+    },
+    ["봇초기화"] = {
+        privilege = ROLE.Admin,
+        usage =
+        "<레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...|-] [퀘스트ID=기록,...|-] [기록키=값,...] - 인벤토리·퀘스트·기록을 비우고 상태 설정",
+        command = function(me, args)
+            local level = tonumber(args[1])
+            local class = tonumber(args[2])
+            local meso = tonumber(args[3])
+            if level == nil or class == nil or meso == nil then
+                me:message("사용법: /봇초기화 <레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...]")
+                return true
+            end
+            me:clear_inventory()
+            me:clear_quests()
+            me:records():clear()
+            me:class(class)
+            me:level(1)
+            me:level(level)
+            me:exp(0)
+            me:skill_point(0)
+            me:meso(meso)
+            me:population(0)
+            me:clear_population_history()
+            for item_id, count in string.gmatch(args[4] or "", "(%d+):(%d+)") do
+                me:mkitem(tonumber(item_id), tonumber(count))
+            end
+            for quest_id, state in string.gmatch(args[5] or "", "(%d+):(%d+)") do
+                ensure_quest_state(me, tonumber(quest_id), tonumber(state))
+            end
+            for quest_id, record in string.gmatch(args[6] or "", "(%d+)=([%w_]+)") do
+                if ensure_quest_state(me, tonumber(quest_id), 1) then
+                    me:quest(tonumber(quest_id)):record(record)
+                end
+            end
+            for key, value in string.gmatch(args[7] or "", "([%w_%.]+)=([%w_%-]+)") do
+                if tonumber(value) ~= nil then
+                    me:records():set(key, tonumber(value))
+                else
+                    me:records():set_text(key, value)
+                end
+            end
+            me:message("봇초기화 완료")
+            return true
+        end,
+    },
+    ["봇상태"] = {
+        privilege = ROLE.Admin,
+        usage = "[태그] - 대화 여부·레벨·직업·메소·경험치·인기도·맵·퀘스트·아이템을 한 줄로 표시",
+        command = function(me, args)
+            local counts = {}
+            for _, tab in pairs(me:items()) do
+                for _, it in pairs(tab) do
+                    local wz = it:wz()
+                    if wz ~= nil then
+                        counts[wz:id()] = (counts[wz:id()] or 0) + it:count()
+                    end
+                end
+            end
+            local ids = {}
+            for item_id in pairs(counts) do
+                ids[#ids + 1] = item_id
+            end
+            table.sort(ids)
+            local items = {}
+            for i, item_id in ipairs(ids) do
+                items[i] = item_id .. ":" .. counts[item_id]
+            end
+            local quests = {}
+            for quest_id, quest in pairs(me:quests()) do
+                quests[#quests + 1] = quest_id .. ":" .. (quest:completed() and 2 or 1)
+            end
+            table.sort(quests)
+            me:message(string.format(
+                "봇상태 tag=%s dialog=%d level=%d class=%d meso=%d exp=%d population=%d map=%d sp=%d quests=%s items=%s",
+                args[1] or "-",
+                me:in_dialog() and 1 or 0,
+                me:level(),
+                me:class(),
+                me:meso(),
+                me:exp(),
+                me:population(),
+                me:map():template_id(),
+                me:skill_point(),
+                table.concat(quests, ","),
+                table.concat(items, ",")
+            ))
+            return true
+        end,
+    },
+    ["듀이"] = {
+        privilege = ROLE.Admin,
+        usage = "- 택배 보관함 열기",
+        command = function(me, args)
+            me:open_duey()
+            return true
+        end,
+    },
+    ["퀵배송"] = {
+        privilege = ROLE.Admin,
+        usage = "- 퀵배송 창 열기",
+        command = function(me, args)
+            if not me:open_quick_parcel() then
+                me:message("퀵배송 창을 열 수 없습니다.")
+            end
+            return true
+        end,
+    },
+    ["택배"] = {
+        privilege = ROLE.Admin,
+        usage = "<받는사람> <보내는이름> <아이템ID|-> [개수] [메소] - 서버 이름으로 택배 발송",
+        command = function(me, args)
+            if not args[1] or not args[2] or not args[3] then
+                me:message("사용법: /택배 <받는사람> <보내는이름> <아이템ID|-> [개수] [메소]")
+                return true
+            end
+            local item_id = tonumber(args[3]) or 0
+            local count = tonumber(args[4]) or 1
+            local meso = tonumber(args[5]) or 0
+            if me:send_parcel(args[1], args[2], item_id, count, meso) then
+                me:message(string.format("택배 발송: %s <- %s", args[1], args[2]))
+            else
+                me:message("택배 발송 실패")
+            end
+            return true
+        end,
+    },
+    ["메소초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "- 메소 초기화",
+        command = function(me, args)
+            me:meso(0)
+            me:message("메소를 초기화했습니다.")
+            return true
+        end,
+    },
+    ["인기도"] = {
+        privilege = ROLE.Admin,
+        usage = "<값> - 인기도 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /인기도 <값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v then
+                me:message("사용법: /인기도 <값>")
+                return true
+            end
+            me:population(v)
+            me:message(string.format("인기도 설정: %d", me:population()))
+            return true
+        end,
+    },
+    ["플레이어NPC생성"] = {
+        privilege = ROLE.Admin,
+        usage = "<NPC ID> [캐릭터이름] - 같은 맵 캐릭터(생략 시 자신)의 외형으로 플레이어 NPC를 지금 위치에 세움",
+        command = function(me, args)
+            local npc_id = tonumber(args[1])
+            if npc_id == nil then
+                me:message("사용법: /플레이어NPC생성 <NPC ID> [캐릭터이름]")
+                return true
+            end
+            local source = me
+            if args[2] ~= nil and args[2] ~= "" then
+                source = nil
+                for _, character in pairs(me:map():characters()) do
+                    if character:name() == args[2] then
+                        source = character
+                        break
+                    end
+                end
+                if source == nil then
+                    me:message("같은 맵에 없는 캐릭터입니다: " .. args[2])
+                    return true
+                end
+            end
+            local reasons = {
+                unknown = "존재하지 않는 NPC입니다",
+                taken = "이미 플레이어 NPC로 쓰이는 NPC입니다",
+                placed = "이 맵에 이미 배치된 NPC입니다",
+                error = "저장에 실패했습니다",
+            }
+            local ok, reason = create_player_npc(me, npc_id, source)
+            if not ok then
+                me:message(string.format("플레이어 NPC 생성 실패 %d: %s", npc_id, reasons[reason] or tostring(reason)))
+                return true
+            end
+            me:message(string.format("플레이어 NPC 생성 %d", npc_id))
+            return true
+        end,
+    },
+    ["플레이어NPC삭제"] = {
+        privilege = ROLE.Admin,
+        usage = "<NPC ID> - 플레이어 NPC를 모든 채널에서 삭제",
+        command = function(me, args)
+            local npc_id = tonumber(args[1])
+            if npc_id == nil then
+                me:message("사용법: /플레이어NPC삭제 <NPC ID>")
+                return true
+            end
+            if not remove_player_npc(npc_id) then
+                me:message(string.format("플레이어 NPC 삭제 실패 %d", npc_id))
+                return true
+            end
+            me:message(string.format("플레이어 NPC 삭제 %d", npc_id))
+            return true
+        end,
+    },
+    ["퀘스트상태"] = {
+        privilege = ROLE.Admin,
+        usage = "<퀘스트ID> - 퀘스트 진행 상태 조회",
+        command = function(me, args)
+            local quest_id = tonumber(args[1])
+            if not quest_id then
+                me:message("사용법: /퀘스트상태 <퀘스트ID>")
+                return true
+            end
+            local quest = me:quest(quest_id)
+            if quest == nil then
+                me:message(string.format("퀘스트 %d 없음", quest_id))
+                return true
+            end
+            local name = ""
+            local wz = quest:wz()
+            if wz ~= nil then
+                name = wz:name() or ""
+            end
+            local state = "미시작"
+            if quest:completed() then
+                state = "완료"
+            elseif quest:started() then
+                state = "진행"
+            end
+            if name ~= "" then
+                me:message(string.format("퀘스트 %d (%s): %s", quest_id, name, state))
+            else
+                me:message(string.format("퀘스트 %d: %s", quest_id, state))
+            end
+            return true
+        end,
+    },
+    ["퀘스트초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "[퀘스트ID] - 진행·완료 퀘스트 제거 (생략 시 전체)",
+        command = function(me, args)
+            if not args[1] or args[1] == "" then
+                local count = me:clear_quests()
+                me:message(string.format("퀘스트 %d개 초기화", count))
+            else
+                local quest_id = tonumber(args[1])
+                if not quest_id then
+                    me:message("사용법: /퀘스트초기화 [퀘스트ID]")
+                    return true
+                end
+                if me:clear_quests(quest_id) == 1 then
+                    me:message(string.format("퀘스트 %d 초기화", quest_id))
+                else
+                    me:message(string.format("퀘스트 %d 없음", quest_id))
+                end
+            end
+            return true
+        end,
+    },
+    ["원정대제한초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "[보스] - 원정대 입장 제한 기록 삭제 (생략 시 전체)",
+        command = function(me, args)
+            local target = args[1]
+            if target ~= nil and target ~= "" and ex.BOSS[target] == nil then
+                local keys = {}
+                for key in pairs(ex.BOSS) do
+                    keys[#keys + 1] = key
+                end
+                table.sort(keys)
+                me:message("사용법: /원정대제한초기화 [" .. table.concat(keys, "|") .. "]")
+                return true
+            end
+            for key, boss in pairs(ex.BOSS) do
+                if target == nil or target == "" or target == key then
+                    me:records():remove(boss.cooldown_record)
+                    me:message(string.format("%s 원정대 입장 제한 초기화", boss.name))
+                end
+            end
+            return true
+        end,
+    },
+    ["퀘스트완료준비"] = {
+        privilege = ROLE.Admin,
+        usage = "[퀘스트ID] - 완료 조건 충족 (생략 시 진행 중 전체)",
+        command = function(me, args)
+            local targets = {}
+            if args[1] and args[1] ~= "" then
+                local quest_id = tonumber(args[1])
+                if not quest_id then
+                    me:message("사용법: /퀘스트완료준비 [퀘스트ID]")
+                    return true
+                end
+                local quest = me:quest(quest_id)
+                if quest == nil or not quest:started() then
+                    me:message(string.format("퀘스트 %d 진행 중 아님", quest_id))
+                    return true
+                end
+                targets[quest_id] = quest
+            else
+                for quest_id, quest in pairs(me:quests()) do
+                    if quest:started() then
+                        targets[quest_id] = quest
+                    end
+                end
+            end
+            local prepared = 0
+            local skipped = 0
+            for quest_id, quest in pairs(targets) do
+                local ok, reason = prepare_quest_complete(me, quest)
+                if ok then
+                    prepared = prepared + 1
+                    me:message(string.format("퀘스트 %d 준비 완료", quest_id))
+                else
+                    skipped = skipped + 1
+                    me:message(string.format("퀘스트 %d 스킵 (%s)", quest_id, tostring(reason)))
+                end
+            end
+            if prepared == 0 and skipped == 0 then
+                me:message("진행 중인 퀘스트 없음")
+            else
+                me:message(string.format("완료 준비: %d개 성공, %d개 스킵", prepared, skipped))
+            end
+            return true
+        end,
+    },
+    ["퀘스트시작준비"] = {
+        privilege = ROLE.Admin,
+        usage = "<퀘스트ID> - 시작 조건 충족 후 시작 NPC 근처로 이동",
+        command = function(me, args)
+            local quest_id = tonumber(args[1])
+            if not quest_id then
+                me:message("사용법: /퀘스트시작준비 <퀘스트ID>")
+                return true
+            end
+            local quest = me:quest(quest_id)
+            if quest == nil then
+                me:message(string.format("퀘스트 %d 없음", quest_id))
+                return true
+            end
+            if quest:started() then
+                me:message(string.format("퀘스트 %d 이미 진행 중", quest_id))
+                return true
+            end
+            if quest:completed() then
+                me:message(string.format("퀘스트 %d 이미 완료됨 (필요 시 /퀘스트초기화)", quest_id))
+                return true
+            end
+            local ok, reason = prepare_quest_start(me, quest)
+            if not ok then
+                me:message(string.format("퀘스트 %d 시작 준비 실패 (%s)", quest_id, tostring(reason)))
+                return true
+            end
+            me:message(string.format("퀘스트 %d 시작 조건 준비 완료", quest_id))
+            local wz = quest:wz()
+            local field_id = start_requirement_value(wz, "fieldEnter")
+            if field_id ~= nil then
+                me:map(field_id)
+                me:message(string.format("필드 %d로 이동", field_id))
+                return true
+            end
+            local npc_id = start_requirement_value(wz, "npc")
+            if npc_id == nil then
+                me:message("시작 NPC 없음")
+                return true
+            end
+            local spawns = npc_spawns(npc_id)
+            if spawns == nil or #spawns == 0 then
+                me:message(string.format("시작 NPC %d 스폰을 찾지 못함", npc_id))
+                return true
+            end
+            local spawn = spawns[1]
+            local spawn_point = closest_spawn(spawn.map_id, spawn.x, spawn.y)
+            if spawn_point == nil then
+                me:map(spawn.map_id)
+            else
+                me:map(spawn.map_id, spawn_point)
+            end
+            me:message(string.format("NPC %d → 맵 %d (%d, %d) 근처 스폰으로 이동", npc_id, spawn.map_id, spawn.x, spawn.y))
+            return true
+        end,
+    },
+    ["메소얻기"] = {
+        privilege = ROLE.Admin,
+        usage = "<금액> - 메소 획득",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /메소얻기 <금액>")
+                return true
+            end
+            local amount = tonumber(args[1])
+            if not amount or amount < 0 then
+                me:message("금액은 0 이상의 숫자여야 합니다.")
+                return true
+            end
+            me:meso(me:meso() + amount)
+            me:message(string.format("메소 %d 획득.", amount))
+            return true
+        end,
+    },
+    ["경험치얻기"] = {
+        privilege = ROLE.Admin,
+        usage = "<양> - 경험치 획득 (레벨업·패밀리 명성 포함)",
+        command = function(me, args)
+            local amount = tonumber(args[1] or "")
+            if not amount or amount < 0 then
+                me:message("사용법: /경험치얻기 <양>")
+                return true
+            end
+            me:exp(me:exp() + amount)
+            me:message(string.format("경험치 %d 획득.", amount))
+            return true
+        end,
+    },
+    ["길드GP얻기"] = {
+        privilege = ROLE.Admin,
+        usage = "<양> - 소속 길드 GP 획득",
+        command = function(me, args)
+            local amount = tonumber(args[1] or "")
+            if not amount or amount <= 0 then
+                me:message("사용법: /길드GP얻기 <양>")
+                return true
+            end
+            if not me:guild() then
+                me:message("길드에 가입되어 있지 않습니다.")
+                return true
+            end
+            me:gain_guild_gp(amount)
+            me:message(string.format("길드 GP %d 획득 요청.", amount))
+            return true
+        end,
+    },
+    ["캐시얻기"] = {
+        privilege = ROLE.Admin,
+        usage = "<NX캐시> [메이플포인트] - 계정 캐시 증감",
+        command = function(me, args)
+            local nx = tonumber(args[1])
+            local mp = tonumber(args[2] or "0")
+            if not nx or not mp then
+                me:message("사용법: /캐시얻기 <NX캐시> [메이플포인트]")
+                return true
+            end
+            me:add_cash(nx, mp)
+            return true
+        end,
+    },
+    ["쿠폰생성"] = {
+        privilege = ROLE.Admin,
+        usage = "<캐시|포인트|아이템|메소> <값> [개수] - 캐시샵 쿠폰 생성 (아이템은 커머디티 SN)",
+        command = function(me, args)
+            local kinds = {
+                ["캐시"] = 0,
+                ["포인트"] = 1,
+                ["아이템"] = 2,
+                ["메소"] = 3,
+            }
+            local kind = kinds[args[1] or ""]
+            local value = tonumber(args[2])
+            local count = tonumber(args[3] or "1")
+            if not kind or not value or not count or value < 1 or count < 1 or count > 100 then
+                me:message("사용법: /쿠폰생성 <캐시|포인트|아이템|메소> <값> [개수(1~100)]")
+                return true
+            end
+            me:create_cash_coupons(kind, value, count)
+            return true
+        end,
+    },
+    ["풀메소"] = {
+        privilege = ROLE.Admin,
+        usage = "- 메소 최대치로 설정",
+        command = function(me, args)
+            me:meso(2147483647)
+            me:message("메소를 최대치로 설정했습니다.")
+            return true
+        end,
+    },
+    ["CP얻기"] = {
+        privilege = ROLE.Admin,
+        usage = "<값> - 몬스터 카니발 CP 획득",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /CP얻기 <값>")
+                return true
+            end
+            local amount = tonumber(args[1])
+            if not amount or amount <= 0 then
+                me:message("CP는 1 이상의 숫자여야 합니다.")
+                return true
+            end
+            local team = me:carnival_team()
+            if team == nil then
+                me:message("몬스터 카니발에 참가 중이 아닙니다.")
+                return true
+            end
+            if not team:add_cp(me, amount) then
+                me:message("CP 획득에 실패했습니다.")
+                return true
+            end
+            me:message(string.format("CP %d 획득.", amount))
+            return true
+        end,
+    },
+    ["맵이동"] = {
+        privilege = ROLE.Admin,
+        usage = "<맵이름|맵ID> [스폰포인트] - 맵 이동",
+        command = function(me, args)
+            if not args[1] or args[1] == "" then
+                me:message("사용법: /맵이동 <맵이름|맵ID> [스폰포인트]")
+                return true
+            end
+            local spawn = 0
+            if args[2] then
+                spawn = tonumber(args[2]) or 0
+            end
+            local map_arg = args[1]
+            local map_id = tonumber(map_arg)
+            local map_info
+            if map_id ~= nil then
+                map_info = id2map(map_id)
+            else
+                map_info = name2map(map_arg)
+            end
+            if map_info == nil then
+                me:message("존재하지 않는 맵입니다: " .. tostring(map_arg))
+                return true
+            end
+            me:map(map_info:id(), spawn)
+            return true
+        end,
+    },
+    ["인스턴스이동"] = {
+        privilege = ROLE.Admin,
+        usage = "<맵이름|맵ID> <슬롯> [스폰포인트] - 슬롯별 인스턴스 맵 입장 (없으면 생성)",
+        command = function(me, args)
+            local slot = tonumber(args[2] or "")
+            if not args[1] or args[1] == "" or slot == nil then
+                me:message("사용법: /인스턴스이동 <맵이름|맵ID> <슬롯> [스폰포인트]")
+                return true
+            end
+            local spawn = tonumber(args[3] or "") or 0
+            local map_arg = args[1]
+            local map_id = tonumber(map_arg)
+            local map_info
+            if map_id ~= nil then
+                map_info = id2map(map_id)
+            else
+                map_info = name2map(map_arg)
+            end
+            if map_info == nil then
+                me:message("존재하지 않는 맵입니다: " .. tostring(map_arg))
+                return true
+            end
+            local instance, err = map_info:create_instance({ slot = slot })
+            if instance == nil then
+                me:message("인스턴스 생성 실패: " .. tostring(err))
+                return true
+            end
+            me:map(instance, spawn)
+            return true
+        end,
+    },
+    ["SM시작"] = {
+        privilege = ROLE.Admin,
+        usage = "<그룹> - 파티가 있으면 파티로, 없으면 혼자 SM을 시작",
+        command = function(me, args)
+            local name = args[1]
+            if name == nil or name == "" then
+                me:message("사용법: /SM시작 <그룹>")
+                return true
+            end
+            local group = state_machine(name)
+            if group == nil then
+                me:message("그룹 없음: " .. name)
+                return true
+            end
+            local sm, err
+            local party = me:party()
+            if party ~= nil then
+                sm, err = group:start_party(me, party)
+            else
+                sm, err = group:start_solo(me)
+            end
+            if sm == nil then
+                me:message("SM 시작 실패: " .. tostring(err))
+                return true
+            end
+            me:message("SM 시작: " .. name)
+            return true
+        end,
+    },
+    ["SM목록"] = {
+        privilege = ROLE.Admin,
+        usage = "<그룹> - 진행 중인 SM과 맵 목록",
+        command = function(me, args)
+            local name = args[1]
+            if name == nil or name == "" then
+                me:message("사용법: /SM목록 <그룹>")
+                return true
+            end
+            local group = state_machine(name)
+            if group == nil then
+                me:message("그룹 없음: " .. name)
+                return true
+            end
+            local machines = group:machines()
+            if #machines == 0 then
+                me:message("[" .. name .. "] 진행 중인 SM 없음")
+                return true
+            end
+            for _, sm in ipairs(machines) do
+                local ids = {}
+                for _, map in ipairs(sm:maps()) do
+                    ids[#ids + 1] = tostring(map:template_id())
+                end
+                table.sort(ids)
+                me:message(string.format("[%s] id=%s players=%d maps=%s", name, sm:id(), #sm:players(),
+                    table.concat(ids, ",")))
+            end
+            return true
+        end,
+    },
+    ["SM관전"] = {
+        privilege = ROLE.Admin,
+        usage = "<그룹> <id> [템플릿맵ID] - SM 맵에 관전자로 입장",
+        command = function(me, args)
+            local name = args[1]
+            local id = args[2]
+            if name == nil or name == "" or id == nil or id == "" then
+                me:message("사용법: /SM관전 <그룹> <id> [템플릿맵ID]")
+                return true
+            end
+            local group = state_machine(name)
+            if group == nil then
+                me:message("그룹 없음: " .. name)
+                return true
+            end
+            local sm = group:get(id)
+            if sm == nil or sm:disposed() then
+                me:message("진행 중인 SM 없음: " .. name .. " " .. id)
+                return true
+            end
+            local template_id = tonumber(args[3] or "")
+            local map
+            if template_id ~= nil then
+                map = sm:map(template_id)
+            else
+                map = sm:maps()[1]
+            end
+            if map == nil then
+                me:message("SM 맵 없음: " .. tostring(args[3]))
+                return true
+            end
+            me:map(map, 0)
+            return true
+        end,
+    },
+    ["SM목록"] = {
+        privilege = ROLE.Admin,
+        usage = "<그룹> - 진행 중인 SM과 맵 목록",
+        command = function(me, args)
+            local name = args[1]
+            if name == nil or name == "" then
+                me:message("사용법: /SM목록 <그룹>")
+                return true
+            end
+            local group = state_machine(name)
+            if group == nil then
+                me:message("그룹 없음: " .. name)
+                return true
+            end
+            local machines = group:machines()
+            if #machines == 0 then
+                me:message("[" .. name .. "] 진행 중인 SM 없음")
+                return true
+            end
+            for _, sm in ipairs(machines) do
+                local ids = {}
+                for _, map in ipairs(sm:maps()) do
+                    ids[#ids + 1] = tostring(map:template_id())
+                end
+                table.sort(ids)
+                me:message(string.format("[%s] id=%s players=%d maps=%s", name, sm:id(), #sm:players(),
+                    table.concat(ids, ",")))
+            end
+            return true
+        end,
+    },
+    ["SM관전"] = {
+        privilege = ROLE.Admin,
+        usage = "<그룹> <id> [템플릿맵ID] - SM 맵에 관전자로 입장",
+        command = function(me, args)
+            local name = args[1]
+            local id = args[2]
+            if name == nil or name == "" or id == nil or id == "" then
+                me:message("사용법: /SM관전 <그룹> <id> [템플릿맵ID]")
+                return true
+            end
+            local group = state_machine(name)
+            if group == nil then
+                me:message("그룹 없음: " .. name)
+                return true
+            end
+            local sm = group:get(id)
+            if sm == nil or sm:disposed() then
+                me:message("진행 중인 SM 없음: " .. name .. " " .. id)
+                return true
+            end
+            local template_id = tonumber(args[3] or "")
+            local map
+            if template_id ~= nil then
+                map = sm:map(template_id)
+            else
+                map = sm:maps()[1]
+            end
+            if map == nil then
+                me:message("SM 맵 없음: " .. tostring(args[3]))
+                return true
+            end
+            me:map(map, 0)
+            return true
+        end,
+    },
+    ["SM상한"] = {
+        privilege = ROLE.Admin,
+        usage = "<그룹|전체> [개수|무제한|기본] - 이 채널의 SM 동시 진행 상한 확인·변경 (기본: 스크립트 설정으로 복원)",
+        command = function(me, args)
+            local name = args[1]
+            local value = args[2]
+            if name == nil or name == "" then
+                me:message("사용법: /SM상한 <그룹|전체> [개수|무제한|기본]")
+                return true
+            end
 
-			local groups
-			if name == "전체" then
-				groups = state_machines()
-			else
-				local group = state_machine(name)
-				if group == nil then
-					me:message("그룹 없음: " .. name)
-					return true
-				end
-				groups = { group }
-			end
+            local groups
+            if name == "전체" then
+                groups = state_machines()
+            else
+                local group = state_machine(name)
+                if group == nil then
+                    me:message("그룹 없음: " .. name)
+                    return true
+                end
+                groups = { group }
+            end
 
-			if value == nil or value == "" then
-				for _, group in ipairs(groups) do
-					local max, overridden = group:machine_cap()
-					local text = max == nil and "무제한" or tostring(max)
-					if overridden then
-						text = text .. " (변경됨)"
-					end
-					me:message(string.format("[%s] SM상한: %s", group:name(), text))
-				end
-				return true
-			end
+            if value == nil or value == "" then
+                for _, group in ipairs(groups) do
+                    local max, overridden = group:machine_cap()
+                    local text = max == nil and "무제한" or tostring(max)
+                    if overridden then
+                        text = text .. " (변경됨)"
+                    end
+                    me:message(string.format("[%s] SM상한: %s", group:name(), text))
+                end
+                return true
+            end
 
-			local count = tonumber(value)
-			if value ~= "무제한" and value ~= "기본" and (count == nil or count < 0) then
-				me:message("사용법: /SM상한 <그룹|전체> [개수|무제한|기본]")
-				return true
-			end
-			for _, group in ipairs(groups) do
-				if value == "기본" then
-					group:reset_max_machines()
-				elseif value == "무제한" then
-					group:override_max_machines(nil)
-				else
-					group:override_max_machines(math.floor(count))
-				end
-			end
-			me:message(string.format("SM상한 %s: %s (%d개 그룹)", name, value, #groups))
-			return true
-		end,
-	},
-	["좌표"] = {
-		privilege = ROLE.Admin,
-		usage = "- 현재 좌표·저장 스폰포인트 확인",
-		command = function(me, args)
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local x, y = me:position()
-			local wz_t = m:wz()
-			local map_id = 0
-			local map_name = "?"
-			if wz_t ~= nil then
-				map_id = wz_t:id()
-				map_name = wz_t:name()
-			end
-			local spawn_id, spawn_name, sx, sy = me:spawn_point()
-			if spawn_name ~= nil then
-				me:message(string.format(
-					"Map: %s (%d), Position: %d, %d, Spawn: %d (%s) @ %d, %d",
-					map_name, map_id, x, y, spawn_id, spawn_name, sx, sy
-				))
-			else
-				me:message(string.format(
-					"Map: %s (%d), Position: %d, %d, Spawn: %d",
-					map_name, map_id, x, y, spawn_id or 0
-				))
-			end
-			return true
-		end,
-	},
-	["보스"] = {
-		privilege = ROLE.User,
-		usage = "- 보스 대기실로 이동",
-		command = function(me, args)
-			me:map(123256780, 0)
-			return true
-		end,
-	},
-	["위치"] = {
-		privilege = ROLE.User,
-		usage = "- 현재 맵·좌표를 채팅으로 표시",
-		command = function(me, args)
-			local m = me:map()
-			if m == nil then
-				me:chat("맵 정보 없음")
-				return true
-			end
-			local x, y = me:position()
-			local wz_t = m:wz()
-			local map_id = 0
-			local map_name = "?"
-			if wz_t ~= nil then
-				map_id = wz_t:id()
-				map_name = wz_t:name()
-			end
-			me:chat(string.format("맵: %s (%d), 좌표: %d, %d", map_name, map_id, x, y))
-			return true
-		end,
-	},
-	["서버저장"] = {
-		privilege = ROLE.Admin,
-		usage = "- 온라인 유저 저장 요청",
-		command = function(me, args)
-			local ok, err = save()
-			if ok then
-				me:message("서버 저장이 완료되었습니다.")
-			else
-				me:message("서버 저장 실패: " .. tostring(err))
-			end
-			return true
-		end,
-	},
-	["체력바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<체력값> - 체력 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /체력바꾸기 <체력값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then
-				me:message("체력은 0 이상이어야 합니다.")
-				return true
-			end
-			if v > 32767 then v = 32767 end
-			me:base_hp(v)
-			me:hp(v)
-			me:message(string.format("체력 설정: %d", v))
-			return true
-		end,
-	},
-	["마력바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<마력값> - 마력 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /마력바꾸기 <마력값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then
-				me:message("마력은 0 이상이어야 합니다.")
-				return true
-			end
-			if v > 32767 then v = 32767 end
-			me:base_mp(v)
-			me:mp(v)
-			me:message(string.format("마력 설정: %d", v))
-			return true
-		end,
-	},
-	["AP바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<AP> - 남은 능력치 포인트 설정",
-		command = function(me, args)
-			local v = tonumber(args[1])
-			if v == nil or v < 0 then
-				me:message("사용법: /AP바꾸기 <AP>")
-				return true
-			end
-			me:ability_point(v)
-			me:message(string.format("AP 설정: %d", v))
-			return true
-		end,
-	},
-	["힘바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<힘값> - 힘 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /힘바꾸기 <힘값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then v = 0 end
-			me:base_str(v)
-			me:message(string.format("힘 설정: %d", v))
-			return true
-		end,
-	},
-	["덱스바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<덱스값> - 덱스 설정",
-		command = function(me, args)
-			if not args[1] then
+            local count = tonumber(value)
+            if value ~= "무제한" and value ~= "기본" and (count == nil or count < 0) then
+                me:message("사용법: /SM상한 <그룹|전체> [개수|무제한|기본]")
+                return true
+            end
+            for _, group in ipairs(groups) do
+                if value == "기본" then
+                    group:reset_max_machines()
+                elseif value == "무제한" then
+                    group:override_max_machines(nil)
+                else
+                    group:override_max_machines(math.floor(count))
+                end
+            end
+            me:message(string.format("SM상한 %s: %s (%d개 그룹)", name, value, #groups))
+            return true
+        end,
+    },
+    ["좌표"] = {
+        privilege = ROLE.Admin,
+        usage = "- 현재 좌표·저장 스폰포인트 확인",
+        command = function(me, args)
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local x, y = me:position()
+            local wz_t = m:wz()
+            local map_id = 0
+            local map_name = "?"
+            if wz_t ~= nil then
+                map_id = wz_t:id()
+                map_name = wz_t:name()
+            end
+            local spawn_id, spawn_name, sx, sy = me:spawn_point()
+            if spawn_name ~= nil then
+                me:message(string.format(
+                    "Map: %s (%d), Position: %d, %d, Spawn: %d (%s) @ %d, %d",
+                    map_name, map_id, x, y, spawn_id, spawn_name, sx, sy
+                ))
+            else
+                me:message(string.format(
+                    "Map: %s (%d), Position: %d, %d, Spawn: %d",
+                    map_name, map_id, x, y, spawn_id or 0
+                ))
+            end
+            return true
+        end,
+    },
+    ["보스"] = {
+        privilege = ROLE.User,
+        usage = "- 보스 대기실로 이동",
+        command = function(me, args)
+            me:map(123256780, 0)
+            return true
+        end,
+    },
+    ["위치"] = {
+        privilege = ROLE.User,
+        usage = "- 현재 맵·좌표를 채팅으로 표시",
+        command = function(me, args)
+            local m = me:map()
+            if m == nil then
+                me:chat("맵 정보 없음")
+                return true
+            end
+            local x, y = me:position()
+            local wz_t = m:wz()
+            local map_id = 0
+            local map_name = "?"
+            if wz_t ~= nil then
+                map_id = wz_t:id()
+                map_name = wz_t:name()
+            end
+            me:chat(string.format("맵: %s (%d), 좌표: %d, %d", map_name, map_id, x, y))
+            return true
+        end,
+    },
+    ["서버저장"] = {
+        privilege = ROLE.Admin,
+        usage = "- 온라인 유저 저장 요청",
+        command = function(me, args)
+            local ok, err = save()
+            if ok then
+                me:message("서버 저장이 완료되었습니다.")
+            else
+                me:message("서버 저장 실패: " .. tostring(err))
+            end
+            return true
+        end,
+    },
+    ["체력바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<체력값> - 체력 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /체력바꾸기 <체력값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then
+                me:message("체력은 0 이상이어야 합니다.")
+                return true
+            end
+            if v > 32767 then v = 32767 end
+            me:base_hp(v)
+            me:hp(v)
+            me:message(string.format("체력 설정: %d", v))
+            return true
+        end,
+    },
+    ["마력바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<마력값> - 마력 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /마력바꾸기 <마력값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then
+                me:message("마력은 0 이상이어야 합니다.")
+                return true
+            end
+            if v > 32767 then v = 32767 end
+            me:base_mp(v)
+            me:mp(v)
+            me:message(string.format("마력 설정: %d", v))
+            return true
+        end,
+    },
+    ["AP바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<AP> - 남은 능력치 포인트 설정",
+        command = function(me, args)
+            local v = tonumber(args[1])
+            if v == nil or v < 0 then
+                me:message("사용법: /AP바꾸기 <AP>")
+                return true
+            end
+            me:ability_point(v)
+            me:message(string.format("AP 설정: %d", v))
+            return true
+        end,
+    },
+    ["힘바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<힘값> - 힘 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /힘바꾸기 <힘값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then v = 0 end
+            me:base_str(v)
+            me:message(string.format("힘 설정: %d", v))
+            return true
+        end,
+    },
+    ["덱스바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<덱스값> - 덱스 설정",
+        command = function(me, args)
+            if not args[1] then
 
-				me:message("사용법: /덱스바꾸기 <덱스값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then v = 0 end
-			me:base_dex(v)
-			me:message(string.format("덱스 설정: %d", v))
-			return true
-		end,
-	},
-	["인트바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<인트값> - 인트 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /인트바꾸기 <인트값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then v = 0 end
-			me:base_int(v)
-			me:message(string.format("인트 설정: %d", v))
-			return true
-		end,
-	},
-	["럭바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<럭값> - 럭 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /럭바꾸기 <럭값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then v = 0 end
-			me:base_luk(v)
-			me:message(string.format("럭 설정: %d", v))
-			return true
-		end,
-	},
-	["전능"] = {
-		privilege = ROLE.Admin,
-		usage = "<값> - 힘/덱/인트/럭 동일값 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /전능 <값>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then v = 0 end
-			me:base_str(v)
-			me:base_dex(v)
-			me:base_int(v)
-			me:base_luk(v)
-			me:message(string.format("전능 설정: %d", v))
-			return true
-		end,
-	},
-	["레벨바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<레벨> - 레벨 설정",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /레벨바꾸기 <레벨>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 1 then v = 1 end
-			if v > 200 then v = 200 end
-			me:level(v)
-			me:message(string.format("레벨 설정: %d", v))
-			return true
-		end,
-	},
-	["무적"] = {
-		privilege = ROLE.Admin,
-		usage = "- 무적 상태 토글",
-		command = function(me, args)
-			me:invincible(not me:invincible())
-			local status = me:invincible() and "enabled" or "disabled"
-			me:message("무적 상태: " .. status)
-			return true
-		end,
-	},
-	["즉사"] = {
-		privilege = ROLE.Admin,
-		usage = "[on|off] - 즉사 상태 설정, 생략하면 토글 (몬스터·리액터를 한 번에 처치, 아이템 리액터 즉시 반응)",
-		command = function(me, args)
-			if args[1] == "on" then
-				me:instant_kill(true)
-			elseif args[1] == "off" then
-				me:instant_kill(false)
-			else
-				me:instant_kill(not me:instant_kill())
-			end
-			local status = me:instant_kill() and "enabled" or "disabled"
-			me:message("즉사 상태: " .. status)
-			return true
-		end,
-	},
-	["플레이어모드"] = {
-		privilege = ROLE.Admin,
-		usage = "- 컨텐츠 판정을 일반 플레이어처럼 받는 상태 토글",
-		command = function(me, args)
-			me:player_mode(not me:player_mode())
-			local status = me:player_mode() and "enabled" or "disabled"
-			me:message("플레이어 모드: " .. status)
-			return true
-		end,
-	},
-	["타이머"] = {
-		privilege = ROLE.Admin,
-		usage = "<초> - 참가 중인 컨텐츠의 현재·이후 타이머를 최대 <초>로 줄임 (0이면 해제)",
-		command = function(me, args)
-			local seconds = tonumber(args[1])
-			if seconds == nil or seconds < 0 then
-				me:message("사용법: /타이머 <초>")
-				return true
-			end
-			seconds = math.floor(seconds)
-			me:timer_limit(seconds)
-			local sm = me:state_machine()
-			if seconds > 0 and sm ~= nil and sm:time_left() > seconds * 1000 then
-				sm:restart_timer(seconds * 1000)
-			end
-			me:message("타이머 제한: " .. seconds)
-			return true
-		end,
-	},
-	["거탐정답"] = {
-		privilege = ROLE.Admin,
-		usage = "<이름> - 같은 맵 캐릭터가 받고 있는 거짓말 탐지기의 정답 조회",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /거탐정답 <이름>")
-				return true
-			end
-			local answer = me:lie_detector_answer(args[1])
-			if answer == nil then
-				me:message("거탐정답: 없음")
-				return true
-			end
-			me:message("거탐정답: " .. answer)
-			return true
-		end,
-	},
-	["직업바꾸기"] = {
-		privilege = ROLE.Admin,
-		usage = "<직업코드> - 직업 변경",
-		command = function(me, args)
-			if not args[1] then
-				me:message("사용법: /직업바꾸기 <직업코드>")
-				return true
-			end
-			local v = tonumber(args[1])
-			if not v or v < 0 then
-				me:message("직업코드는 0 이상이어야 합니다.")
-				return true
-			end
-			me:class(v)
-			me:message(string.format("직업 변경: %d", v))
-			return true
-		end,
-	},
-	["몬스터생성"] = {
-		privilege = ROLE.Admin,
-		usage = "<몬스터ID/이름> [마리수] - 현재 위치에 몬스터 생성 (마리수 기본값 1)",
-		command = function(me, args)
-			if not args[1] or args[1] == "" then
-				me:message("사용법: /몬스터생성 <몬스터ID/이름> [마리수]")
-				return true
-			end
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local x, y = me:position()
-			local mob_wz = name2mob(args[1])
-			local id = nil
-			if mob_wz ~= nil then
-				id = mob_wz:id()
-			else
-				id = tonumber(args[1])
-			end
-			if id == nil then
-				me:message("잘못된 몬스터 ID 또는 이름: " .. args[1])
-				return true
-			end
-			local count = 1
-			if args[2] then
-				count = tonumber(args[2]) or 1
-			end
-			if count < 1 then
-				count = 1
-			end
-			local spawned = 0
-			for _ = 1, count do
-				local mob = m:spawn_mob(id, x, y)
-				if mob ~= nil then
-					spawned = spawned + 1
-				end
-			end
-			if spawned == 0 then
-				me:message("몬스터 생성 실패")
-			else
-				me:message(string.format("몬스터 생성: %s %d마리", args[1], spawned))
-			end
-			return true
-		end,
-	},
-	["몬스터정보"] = {
-		privilege = ROLE.Admin,
-		usage = "- 현재 맵에 있는 몬스터 ID·이름 목록",
-		command = function(me, args)
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local entries = {}
-			for _, mob in pairs(m:mobs()) do
-				if mob:map() ~= nil and mob:hp() > 0 then
-					entries[#entries + 1] = mob
-				end
-			end
-			table.sort(entries, function(a, b)
-				if a:id() ~= b:id() then
-					return a:id() < b:id()
-				end
-				return a:oid() < b:oid()
-			end)
-			if #entries == 0 then
-				me:message("맵에 몬스터가 없습니다.")
-				return true
-			end
-			me:message(string.format("몬스터 %d마리", #entries))
-			for _, mob in ipairs(entries) do
-				local mob_id = mob:id()
-				local mob_name = tostring(mob_id)
-				local wz = id2mob(mob_id)
-				if wz ~= nil and wz:name() ~= nil and wz:name() ~= "" then
-					mob_name = wz:name()
-				end
-				me:message(string.format("  %d - %s", mob_id, mob_name))
-			end
-			return true
-		end,
-	},
-	["몹피해"] = {
-		privilege = ROLE.Admin,
-		usage = "<oid> <피해량> - 맵 몬스터에게 공격 검증 없이 피해를 줌",
-		command = function(me, args)
-			local oid = tonumber(args[1])
-			local amount = tonumber(args[2])
-			if oid == nil or amount == nil or amount <= 0 then
-				me:message("사용법: /몹피해 <oid> <피해량>")
-				return true
-			end
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local mob = m:mobs()[oid]
-			if mob == nil then
-				me:message("몬스터 없음: " .. oid)
-				return true
-			end
-			-- Instant kill turns any damage into the mob's remaining HP.
-			local instant = me:instant_kill()
-			me:instant_kill(false)
-			local killed = mob:damage(me, math.floor(amount))
-			me:instant_kill(instant)
-			me:message(string.format("몹 피해: %d (처치: %s)", math.floor(amount), tostring(killed)))
-			return true
-		end,
-	},
-	["몬스터죽이기"] = {
-		privilege = ROLE.Admin,
-		usage = "- 맵 몬스터 제거 (스펀지 본체 제외)",
-		command = function(me, args)
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local mobs = {}
-			for _, mob in pairs(m:mobs()) do
-				mobs[#mobs + 1] = mob
-			end
-			local count = 0
-			local skipped_sponge = 0
-			for _, mob in ipairs(mobs) do
-				if mob:map() == nil then
-					goto continue
-				end
-				if is_sponge_root(mob) then
-					skipped_sponge = skipped_sponge + 1
-					goto continue
-				end
-				local hp = mob:hp()
-				if hp <= 0 then
-					goto continue
-				end
-				if mob:damage(me, hp) then
-					count = count + 1
-				end
-				::continue::
-			end
-			me:message(string.format("몬스터 %d마리 제거", count))
-			return true
-		end,
-	},
-	["리젠"] = {
-		privilege = ROLE.Admin,
-		usage = "- 현재 맵의 비어 있는 몬스터 리젠 위치를 리젠 시간 없이 즉시 채움",
-		command = function(me, args)
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			me:message(string.format("리젠 %d마리", m:respawn()))
-			return true
-		end,
-	},
-	["리액터초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "- 현재 맵 리액터 초기화",
-		command = function(me, args)
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local count = m:reload_reactors()
-			me:message(string.format("리액터 %d개 초기화", count))
-			return true
-		end,
-	},
-	["몬스터체력"] = {
-		privilege = ROLE.Admin,
-		usage = "<체력값|체력%> - 맵 몬스터 체력 조정 (스펀지 본체 제외)",
-		command = function(me, args)
-			if not args[1] or args[1] == "" then
-				me:message("사용법: /몬스터체력 <체력값|체력%>")
-				return true
-			end
-			local raw = args[1]
-			if args[2] == "%" then
-				raw = raw .. "%"
-			end
-			local percent = false
-			local num_str = raw
-			if string.sub(raw, -1) == "%" then
-				percent = true
-				num_str = string.sub(raw, 1, -2)
-				if num_str == "" then
-					me:message("사용법: /몬스터체력 <체력값|체력%>")
-					return true
-				end
-			end
-			local value = tonumber(num_str)
-			if value == nil or value < 0 then
-				me:message("체력 값이 올바르지 않습니다.")
-				return true
-			end
-			if percent and value > 100 then
-				me:message("체력 %는 0~100 사이여야 합니다.")
-				return true
-			end
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local changed = 0
-			local skipped = 0
-			for _, mob in pairs(m:mobs()) do
-				if is_sponge_root(mob) then
-					skipped = skipped + 1
-					goto continue_mob_hp
-				end
-				local max_hp = mob:max_hp()
-				if max_hp ~= nil and max_hp > 0 then
-					local target_hp
-					if percent then
-						target_hp = math.floor(max_hp * value / 100)
-					elseif value > max_hp then
-						target_hp = max_hp
-					else
-						target_hp = math.floor(value)
-					end
-					local current = mob:hp()
-					if current > target_hp then
-						mob:damage(me, current - target_hp)
-						changed = changed + 1
-					elseif current < target_hp then
-						mob:add_hp(target_hp - current)
-						changed = changed + 1
-					else
-						skipped = skipped + 1
-					end
-				else
-					skipped = skipped + 1
-				end
-				::continue_mob_hp::
-			end
-			if percent then
-				me:message(string.format("몬스터 체력 %.0f%% 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
-			else
-				me:message(string.format("몬스터 체력 %d 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
-			end
-			return true
-		end,
-	},
-	["스킬마스터"] = {
-		privilege = ROLE.Admin,
-		usage = "- 모든 배운 스킬의 레벨을 최대치로 올림",
-		command = function(me, args)
-			local class = me:class()
-			if class < 100 then
-				me:message("직업이 2차 이상이어야 합니다.")
-				return true
-			end
-			local wz_skills = class_learnable_skill_wzs(class)
-			if wz_skills == nil then
-				me:message("스킬 정보를 가져올 수 없습니다.")
-				return true
-			end
-			local added = 0
-			local updated = 0
-			for _, wz in pairs(wz_skills) do
-				local skill = me:skill(wz:id())
-				if skill == nil then
-					skill = me:add_skill(wz:id())
-					if skill ~= nil then
-						added = added + 1
-					end
-				end
-				if skill ~= nil then
-					skill:level(wz:max_level(), wz:max_level())
-					updated = updated + 1
-				end
-			end
-			me:message(string.format("스킬마스터: %d 추가, %d 갱신", added, updated))
-			return true
-		end,
-	},
-	["스킬레벨"] = {
-		privilege = ROLE.Admin,
-		usage = "<스킬ID/이름> <레벨> [마스터레벨] - 스킬 레벨 설정",
-		command = function(me, args)
-			if #args < 2 then
-				me:message("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
-				return true
-			end
+                me:message("사용법: /덱스바꾸기 <덱스값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then v = 0 end
+            me:base_dex(v)
+            me:message(string.format("덱스 설정: %d", v))
+            return true
+        end,
+    },
+    ["인트바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<인트값> - 인트 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /인트바꾸기 <인트값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then v = 0 end
+            me:base_int(v)
+            me:message(string.format("인트 설정: %d", v))
+            return true
+        end,
+    },
+    ["럭바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<럭값> - 럭 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /럭바꾸기 <럭값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then v = 0 end
+            me:base_luk(v)
+            me:message(string.format("럭 설정: %d", v))
+            return true
+        end,
+    },
+    ["전능"] = {
+        privilege = ROLE.Admin,
+        usage = "<값> - 힘/덱/인트/럭 동일값 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /전능 <값>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then v = 0 end
+            me:base_str(v)
+            me:base_dex(v)
+            me:base_int(v)
+            me:base_luk(v)
+            me:message(string.format("전능 설정: %d", v))
+            return true
+        end,
+    },
+    ["레벨바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<레벨> - 레벨 설정",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /레벨바꾸기 <레벨>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 1 then v = 1 end
+            if v > 200 then v = 200 end
+            me:level(v)
+            me:message(string.format("레벨 설정: %d", v))
+            return true
+        end,
+    },
+    ["무적"] = {
+        privilege = ROLE.Admin,
+        usage = "- 무적 상태 토글",
+        command = function(me, args)
+            me:invincible(not me:invincible())
+            local status = me:invincible() and "enabled" or "disabled"
+            me:message("무적 상태: " .. status)
+            return true
+        end,
+    },
+    ["즉사"] = {
+        privilege = ROLE.Admin,
+        usage = "[on|off] - 즉사 상태 설정, 생략하면 토글 (몬스터·리액터를 한 번에 처치, 아이템 리액터 즉시 반응)",
+        command = function(me, args)
+            if args[1] == "on" then
+                me:instant_kill(true)
+            elseif args[1] == "off" then
+                me:instant_kill(false)
+            else
+                me:instant_kill(not me:instant_kill())
+            end
+            local status = me:instant_kill() and "enabled" or "disabled"
+            me:message("즉사 상태: " .. status)
+            return true
+        end,
+    },
+    ["플레이어모드"] = {
+        privilege = ROLE.Admin,
+        usage = "- 컨텐츠 판정을 일반 플레이어처럼 받는 상태 토글",
+        command = function(me, args)
+            me:player_mode(not me:player_mode())
+            local status = me:player_mode() and "enabled" or "disabled"
+            me:message("플레이어 모드: " .. status)
+            return true
+        end,
+    },
+    ["타이머"] = {
+        privilege = ROLE.Admin,
+        usage = "<초> - 참가 중인 컨텐츠의 현재·이후 타이머를 최대 <초>로 줄임 (0이면 해제)",
+        command = function(me, args)
+            local seconds = tonumber(args[1])
+            if seconds == nil or seconds < 0 then
+                me:message("사용법: /타이머 <초>")
+                return true
+            end
+            seconds = math.floor(seconds)
+            me:timer_limit(seconds)
+            local sm = me:state_machine()
+            if seconds > 0 and sm ~= nil and sm:time_left() > seconds * 1000 then
+                sm:restart_timer(seconds * 1000)
+            end
+            me:message("타이머 제한: " .. seconds)
+            return true
+        end,
+    },
+    ["거탐정답"] = {
+        privilege = ROLE.Admin,
+        usage = "<이름> - 같은 맵 캐릭터가 받고 있는 거짓말 탐지기의 정답 조회",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /거탐정답 <이름>")
+                return true
+            end
+            local answer = me:lie_detector_answer(args[1])
+            if answer == nil then
+                me:message("거탐정답: 없음")
+                return true
+            end
+            me:message("거탐정답: " .. answer)
+            return true
+        end,
+    },
+    ["직업바꾸기"] = {
+        privilege = ROLE.Admin,
+        usage = "<직업코드> - 직업 변경",
+        command = function(me, args)
+            if not args[1] then
+                me:message("사용법: /직업바꾸기 <직업코드>")
+                return true
+            end
+            local v = tonumber(args[1])
+            if not v or v < 0 then
+                me:message("직업코드는 0 이상이어야 합니다.")
+                return true
+            end
+            me:class(v)
+            me:message(string.format("직업 변경: %d", v))
+            return true
+        end,
+    },
+    ["몬스터생성"] = {
+        privilege = ROLE.Admin,
+        usage = "<몬스터ID/이름> [마리수] - 현재 위치에 몬스터 생성 (마리수 기본값 1)",
+        command = function(me, args)
+            if not args[1] or args[1] == "" then
+                me:message("사용법: /몬스터생성 <몬스터ID/이름> [마리수]")
+                return true
+            end
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local x, y = me:position()
+            local mob_wz = name2mob(args[1])
+            local id = nil
+            if mob_wz ~= nil then
+                id = mob_wz:id()
+            else
+                id = tonumber(args[1])
+            end
+            if id == nil then
+                me:message("잘못된 몬스터 ID 또는 이름: " .. args[1])
+                return true
+            end
+            local count = 1
+            if args[2] then
+                count = tonumber(args[2]) or 1
+            end
+            if count < 1 then
+                count = 1
+            end
+            local spawned = 0
+            for _ = 1, count do
+                local mob = m:spawn_mob(id, x, y)
+                if mob ~= nil then
+                    spawned = spawned + 1
+                end
+            end
+            if spawned == 0 then
+                me:message("몬스터 생성 실패")
+            else
+                me:message(string.format("몬스터 생성: %s %d마리", args[1], spawned))
+            end
+            return true
+        end,
+    },
+    ["몬스터정보"] = {
+        privilege = ROLE.Admin,
+        usage = "- 현재 맵에 있는 몬스터 ID·이름 목록",
+        command = function(me, args)
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local entries = {}
+            for _, mob in pairs(m:mobs()) do
+                if mob:map() ~= nil and mob:hp() > 0 then
+                    entries[#entries + 1] = mob
+                end
+            end
+            table.sort(entries, function(a, b)
+                if a:id() ~= b:id() then
+                    return a:id() < b:id()
+                end
+                return a:oid() < b:oid()
+            end)
+            if #entries == 0 then
+                me:message("맵에 몬스터가 없습니다.")
+                return true
+            end
+            me:message(string.format("몬스터 %d마리", #entries))
+            for _, mob in ipairs(entries) do
+                local mob_id = mob:id()
+                local mob_name = tostring(mob_id)
+                local wz = id2mob(mob_id)
+                if wz ~= nil and wz:name() ~= nil and wz:name() ~= "" then
+                    mob_name = wz:name()
+                end
+                me:message(string.format("  %d - %s", mob_id, mob_name))
+            end
+            return true
+        end,
+    },
+    ["몹피해"] = {
+        privilege = ROLE.Admin,
+        usage = "<oid> <피해량> - 맵 몬스터에게 공격 검증 없이 피해를 줌",
+        command = function(me, args)
+            local oid = tonumber(args[1])
+            local amount = tonumber(args[2])
+            if oid == nil or amount == nil or amount <= 0 then
+                me:message("사용법: /몹피해 <oid> <피해량>")
+                return true
+            end
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local mob = m:mobs()[oid]
+            if mob == nil then
+                me:message("몬스터 없음: " .. oid)
+                return true
+            end
+            -- Instant kill turns any damage into the mob's remaining HP.
+            local instant = me:instant_kill()
+            me:instant_kill(false)
+            local killed = mob:damage(me, math.floor(amount))
+            me:instant_kill(instant)
+            me:message(string.format("몹 피해: %d (처치: %s)", math.floor(amount), tostring(killed)))
+            return true
+        end,
+    },
+    ["몬스터죽이기"] = {
+        privilege = ROLE.Admin,
+        usage = "- 맵 몬스터 제거 (스펀지 본체 제외)",
+        command = function(me, args)
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local mobs = {}
+            for _, mob in pairs(m:mobs()) do
+                mobs[#mobs + 1] = mob
+            end
+            local count = 0
+            local skipped_sponge = 0
+            for _, mob in ipairs(mobs) do
+                if mob:map() == nil then
+                    goto continue
+                end
+                if is_sponge_root(mob) then
+                    skipped_sponge = skipped_sponge + 1
+                    goto continue
+                end
+                local hp = mob:hp()
+                if hp <= 0 then
+                    goto continue
+                end
+                if mob:damage(me, hp) then
+                    count = count + 1
+                end
+                ::continue::
+            end
+            me:message(string.format("몬스터 %d마리 제거", count))
+            return true
+        end,
+    },
+    ["리젠"] = {
+        privilege = ROLE.Admin,
+        usage = "- 현재 맵의 비어 있는 몬스터 리젠 위치를 리젠 시간 없이 즉시 채움",
+        command = function(me, args)
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            me:message(string.format("리젠 %d마리", m:respawn()))
+            return true
+        end,
+    },
+    ["리액터초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "- 현재 맵 리액터 초기화",
+        command = function(me, args)
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local count = m:reload_reactors()
+            me:message(string.format("리액터 %d개 초기화", count))
+            return true
+        end,
+    },
+    ["몬스터체력"] = {
+        privilege = ROLE.Admin,
+        usage = "<체력값|체력%> - 맵 몬스터 체력 조정 (스펀지 본체 제외)",
+        command = function(me, args)
+            if not args[1] or args[1] == "" then
+                me:message("사용법: /몬스터체력 <체력값|체력%>")
+                return true
+            end
+            local raw = args[1]
+            if args[2] == "%" then
+                raw = raw .. "%"
+            end
+            local percent = false
+            local num_str = raw
+            if string.sub(raw, -1) == "%" then
+                percent = true
+                num_str = string.sub(raw, 1, -2)
+                if num_str == "" then
+                    me:message("사용법: /몬스터체력 <체력값|체력%>")
+                    return true
+                end
+            end
+            local value = tonumber(num_str)
+            if value == nil or value < 0 then
+                me:message("체력 값이 올바르지 않습니다.")
+                return true
+            end
+            if percent and value > 100 then
+                me:message("체력 %는 0~100 사이여야 합니다.")
+                return true
+            end
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local changed = 0
+            local skipped = 0
+            for _, mob in pairs(m:mobs()) do
+                if is_sponge_root(mob) then
+                    skipped = skipped + 1
+                    goto continue_mob_hp
+                end
+                local max_hp = mob:max_hp()
+                if max_hp ~= nil and max_hp > 0 then
+                    local target_hp
+                    if percent then
+                        target_hp = math.floor(max_hp * value / 100)
+                    elseif value > max_hp then
+                        target_hp = max_hp
+                    else
+                        target_hp = math.floor(value)
+                    end
+                    local current = mob:hp()
+                    if current > target_hp then
+                        mob:damage(me, current - target_hp)
+                        changed = changed + 1
+                    elseif current < target_hp then
+                        mob:add_hp(target_hp - current)
+                        changed = changed + 1
+                    else
+                        skipped = skipped + 1
+                    end
+                else
+                    skipped = skipped + 1
+                end
+                ::continue_mob_hp::
+            end
+            if percent then
+                me:message(string.format("몬스터 체력 %.0f%% 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
+            else
+                me:message(string.format("몬스터 체력 %d 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
+            end
+            return true
+        end,
+    },
+    ["스킬마스터"] = {
+        privilege = ROLE.Admin,
+        usage = "- 모든 배운 스킬의 레벨을 최대치로 올림",
+        command = function(me, args)
+            local class = me:class()
+            if class < 100 then
+                me:message("직업이 2차 이상이어야 합니다.")
+                return true
+            end
+            local wz_skills = class_learnable_skill_wzs(class)
+            if wz_skills == nil then
+                me:message("스킬 정보를 가져올 수 없습니다.")
+                return true
+            end
+            local added = 0
+            local updated = 0
+            for _, wz in pairs(wz_skills) do
+                local skill = me:skill(wz:id())
+                if skill == nil then
+                    skill = me:add_skill(wz:id())
+                    if skill ~= nil then
+                        added = added + 1
+                    end
+                end
+                if skill ~= nil then
+                    skill:level(wz:max_level(), wz:max_level())
+                    updated = updated + 1
+                end
+            end
+            me:message(string.format("스킬마스터: %d 추가, %d 갱신", added, updated))
+            return true
+        end,
+    },
+    ["스킬레벨"] = {
+        privilege = ROLE.Admin,
+        usage = "<스킬ID/이름> <레벨> [마스터레벨] - 스킬 레벨 설정",
+        command = function(me, args)
+            if #args < 2 then
+                me:message("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
+                return true
+            end
 
-			local master_level
-			local level_arg_index = #args
-			local target_end_index = #args - 1
-			if #args >= 3 and tonumber(args[#args]) ~= nil then
-				master_level = tonumber(args[#args])
-				level_arg_index = #args - 1
-				target_end_index = #args - 2
-			end
+            local master_level
+            local level_arg_index = #args
+            local target_end_index = #args - 1
+            if #args >= 3 and tonumber(args[#args]) ~= nil then
+                master_level = tonumber(args[#args])
+                level_arg_index = #args - 1
+                target_end_index = #args - 2
+            end
 
-			local level = tonumber(args[level_arg_index])
-			if level == nil or level < 0 then
-				me:message("레벨은 0 이상의 숫자여야 합니다.")
-				return true
-			end
+            local level = tonumber(args[level_arg_index])
+            if level == nil or level < 0 then
+                me:message("레벨은 0 이상의 숫자여야 합니다.")
+                return true
+            end
 
-			local target = table.concat(args, " ", 1, target_end_index)
-			if target == nil or target == "" then
-				me:message("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
-				return true
-			end
+            local target = table.concat(args, " ", 1, target_end_index)
+            if target == nil or target == "" then
+                me:message("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
+                return true
+            end
 
-			local skill_id = tonumber(target)
-			local skill_wz = nil
-			if skill_id == nil then
-				skill_wz = name2skill(target)
-				if skill_wz == nil then
-					me:message("존재하지 않는 스킬입니다: " .. target)
-					return true
-				end
-				skill_id = skill_wz:id()
-			end
+            local skill_id = tonumber(target)
+            local skill_wz = nil
+            if skill_id == nil then
+                skill_wz = name2skill(target)
+                if skill_wz == nil then
+                    me:message("존재하지 않는 스킬입니다: " .. target)
+                    return true
+                end
+                skill_id = skill_wz:id()
+            end
 
-			if skill_wz ~= nil then
-				if level > skill_wz:max_level() then
-					level = skill_wz:max_level()
-				end
-			end
+            if skill_wz ~= nil then
+                if level > skill_wz:max_level() then
+                    level = skill_wz:max_level()
+                end
+            end
 
-			if master_level == nil then
-				if skill_wz ~= nil then
-					master_level = skill_wz:max_level()
-				else
-					master_level = level
-				end
-			end
-			if master_level < level then
-				master_level = level
-			end
-			if skill_wz ~= nil and master_level > skill_wz:max_level() then
-				master_level = skill_wz:max_level()
-			end
+            if master_level == nil then
+                if skill_wz ~= nil then
+                    master_level = skill_wz:max_level()
+                else
+                    master_level = level
+                end
+            end
+            if master_level < level then
+                master_level = level
+            end
+            if skill_wz ~= nil and master_level > skill_wz:max_level() then
+                master_level = skill_wz:max_level()
+            end
 
-			local skill = me:skill(skill_id)
-			if skill == nil then
-				skill = me:add_skill(skill_id)
-			end
-			if skill == nil then
-				me:message(string.format("스킬 추가 실패: %d", skill_id))
-				return true
-			end
+            local skill = me:skill(skill_id)
+            if skill == nil then
+                skill = me:add_skill(skill_id)
+            end
+            if skill == nil then
+                me:message(string.format("스킬 추가 실패: %d", skill_id))
+                return true
+            end
 
-			skill:level(level, master_level)
-			me:message(string.format("스킬레벨 설정: %d -> level %d, master %d", skill_id, level, master_level))
-			return true
-		end,
-	},
-	["스킬포인트"] = {
-		privilege = ROLE.Admin,
-		usage = "<SP> - 남은 SP 설정",
-		command = function(me, args)
-			local sp = tonumber(args[1])
-			if sp == nil or sp < 0 then
-				me:message("사용법: /스킬포인트 <SP>")
-				return true
-			end
-			me:skill_point(sp)
-			me:message(string.format("스킬포인트 설정: %d", sp))
-			return true
-		end,
-	},
-	["쿨타임초기화"] = {
-		privilege = ROLE.Admin,
-		usage = "[스킬ID] - 모든 스킬 또는 지정 스킬 쿨타임 초기화",
-		command = function(me, args)
-			if args[1] then
-				local skill_id = tonumber(args[1])
-				if not skill_id or skill_id <= 0 then
-					me:message("사용법: /쿨타임초기화 [스킬ID]")
-					return true
-				end
-				local skill = me:skill(skill_id)
-				if skill == nil then
-					me:message(string.format("배운 스킬이 아닙니다: %d", skill_id))
-					return true
-				end
-				skill:cooldown(0)
-				me:message(string.format("스킬 %d 쿨타임 초기화 완료", skill_id))
-				return true
-			end
+            skill:level(level, master_level)
+            me:message(string.format("스킬레벨 설정: %d -> level %d, master %d", skill_id, level, master_level))
+            return true
+        end,
+    },
+    ["스킬포인트"] = {
+        privilege = ROLE.Admin,
+        usage = "<SP> - 남은 SP 설정",
+        command = function(me, args)
+            local sp = tonumber(args[1])
+            if sp == nil or sp < 0 then
+                me:message("사용법: /스킬포인트 <SP>")
+                return true
+            end
+            me:skill_point(sp)
+            me:message(string.format("스킬포인트 설정: %d", sp))
+            return true
+        end,
+    },
+    ["쿨타임초기화"] = {
+        privilege = ROLE.Admin,
+        usage = "[스킬ID] - 모든 스킬 또는 지정 스킬 쿨타임 초기화",
+        command = function(me, args)
+            if args[1] then
+                local skill_id = tonumber(args[1])
+                if not skill_id or skill_id <= 0 then
+                    me:message("사용법: /쿨타임초기화 [스킬ID]")
+                    return true
+                end
+                local skill = me:skill(skill_id)
+                if skill == nil then
+                    me:message(string.format("배운 스킬이 아닙니다: %d", skill_id))
+                    return true
+                end
+                skill:cooldown(0)
+                me:message(string.format("스킬 %d 쿨타임 초기화 완료", skill_id))
+                return true
+            end
 
-			local skills = me:skills()
-			if skills == nil then
-				me:message("스킬 정보가 없습니다.")
-				return true
-			end
-			local cleared = 0
-			for _, skill in pairs(skills) do
-				if skill ~= nil then
-					skill:cooldown(0)
-					cleared = cleared + 1
-				end
-			end
-			me:message(string.format("쿨타임 초기화 완료: %d개 스킬", cleared))
-			return true
-		end,
-	},
-	["엔피씨생성"] = {
-		privilege = ROLE.Admin,
-		usage = "<NPCID/이름> - 현재 위치에 NPC 생성",
-		command = function(me, args)
-			if not args[1] or args[1] == "" then
-				me:message("사용법: /엔피씨생성 <NPCID/이름>")
-				return true
-			end
-			local m = me:map()
-			if m == nil then
-				me:message("맵 정보 없음")
-				return true
-			end
-			local x, y = me:position()
-			local id = name2npc(args[1])
-			if id == nil then
-				id = tonumber(args[1])
-			end
-			if id == nil then
-				me:message("잘못된 NPC ID 또는 이름: " .. args[1])
-				return true
-			end
-			local npc = m:spawn_npc(id, x, y)
-			if npc == nil then
-				me:message("NPC 생성 실패")
-				return true
-			end
-			me:message(string.format("NPC 생성: %s (OID %d)", args[1], npc:oid()))
-			return true
-		end,
-	},
-	["스크립트"] = {
-		privilege = ROLE.Admin,
-		usage = "- script/character/hook.lua의 on_script(me) 실행 (또는 me:script(경로, 함수, ...) 형태로 사용)",
-		command = function(me, args)
-			me:script("script/character/hook.lua", "on_script")
-			return true
-		end,
-	},
-	["맵리셋"] = {
-		privilege = ROLE.Admin,
-		usage = "[인스턴스] - 현재 맵 리셋 (인스턴스: 인스턴스 맵일 때만)",
-		command = function(me, args)
-			local m = me:map()
-			if m == nil then
-				return true
-			end
-			if args[1] == "인스턴스" and not m:is_instance() then
-				return true
-			end
-			m:reset()
-			return true
-		end,
-	},
-	["패킷로그"] = {
-		privilege = ROLE.Admin,
-		usage = " [0|1|on|off] - 수신 패킷 로그 켜기/끄기",
-		command = function(me, args)
-			if not args[1] or args[1] == "" then
-				local enabled = get_packet_log()
-				me:message("packet log: " .. tostring(enabled))
-				return true
-			end
-			local arg = string.lower(string.gsub(args[1], "^%s*(.-)%s*$", "%1"))
-			local enable = (arg == "1" or arg == "on" or arg == "true")
-			set_packet_log(enable)
-			me:message("packet log: " .. tostring(enable))
-			return true
-		end,
-	},
-	["확성기금지"] = {
-		privilege = ROLE.Admin,
-		usage = "- 이 채널의 확성기 사용 금지 켜기/끄기",
-		command = function(me, args)
-			local muted = not get_megaphone_muted()
-			set_megaphone_muted(muted)
-			if muted then
-				me:message("확성기 사용 금지: 켜짐")
-			else
-				me:message("확성기 사용 금지: 꺼짐")
-			end
-			return true
-		end,
-	},
-	["수송상태"] = {
-		privilege = ROLE.Admin,
-		usage = "<Boats|Trains|Flight|Geenie|elevator> - 수송 Group prop / persistent SM 상태",
-		command = function(me, args)
-			local name = args[1]
-			if name == nil or name == "" then
-				me:message("사용법: /수송상태 <Boats|Trains|Flight|Geenie|elevator>")
-				return true
-			end
-			local group = state_machine(name)
-			if group == nil then
-				me:message("그룹 없음: " .. name)
-				return true
-			end
-			local sm = group:get("persistent")
-			local sm_ok = sm ~= nil
-			me:message(string.format(
-				"[%s] ready=%s docked=%s entry=%s haveBalrog=%s persistent=%s",
-				name,
-				tostring(group:get_property("ready")),
-				tostring(group:get_property("docked")),
-				tostring(group:get_property("entry")),
-				tostring(group:get_property("haveBalrog")),
-				tostring(sm_ok)
-			))
-			return true
-		end,
-	},
-	["수송"] = {
-		privilege = ROLE.Admin,
-		usage = "<그룹> <phase> - 수송 SM 훅 강제 (예: /수송 Boats dock)",
-		command = function(me, args)
-			local ferry_phases = {
-				dock = "on_dock",
-				stop_entry = "on_stop_entry",
-				takeoff = "on_takeoff",
-				invasion = "on_invasion",
-				arrived = "on_arrived",
-			}
-			local elevator_phases = {
-				waiting_to_down = "on_waiting_to_down",
-				run_to_down = "on_run_to_down",
-				waiting_to_up = "on_waiting_to_up",
-				run_to_up = "on_run_to_up",
-			}
-			local ferry_after = { "stop_entry", "takeoff", "invasion", "arrived" }
-			local elevator_after = { "waiting_to_down", "run_to_down", "waiting_to_up", "run_to_up" }
-			local groups = {
-				Boats = true,
-				Trains = true,
-				Flight = true,
-				Geenie = true,
-				elevator = true,
-			}
+            local skills = me:skills()
+            if skills == nil then
+                me:message("스킬 정보가 없습니다.")
+                return true
+            end
+            local cleared = 0
+            for _, skill in pairs(skills) do
+                if skill ~= nil then
+                    skill:cooldown(0)
+                    cleared = cleared + 1
+                end
+            end
+            me:message(string.format("쿨타임 초기화 완료: %d개 스킬", cleared))
+            return true
+        end,
+    },
+    ["엔피씨생성"] = {
+        privilege = ROLE.Admin,
+        usage = "<NPCID/이름> - 현재 위치에 NPC 생성",
+        command = function(me, args)
+            if not args[1] or args[1] == "" then
+                me:message("사용법: /엔피씨생성 <NPCID/이름>")
+                return true
+            end
+            local m = me:map()
+            if m == nil then
+                me:message("맵 정보 없음")
+                return true
+            end
+            local x, y = me:position()
+            local id = name2npc(args[1])
+            if id == nil then
+                id = tonumber(args[1])
+            end
+            if id == nil then
+                me:message("잘못된 NPC ID 또는 이름: " .. args[1])
+                return true
+            end
+            local npc = m:spawn_npc(id, x, y)
+            if npc == nil then
+                me:message("NPC 생성 실패")
+                return true
+            end
+            me:message(string.format("NPC 생성: %s (OID %d)", args[1], npc:oid()))
+            return true
+        end,
+    },
+    ["스크립트"] = {
+        privilege = ROLE.Admin,
+        usage = "- script/character/hook.lua의 on_script(me) 실행 (또는 me:script(경로, 함수, ...) 형태로 사용)",
+        command = function(me, args)
+            me:script("script/character/hook.lua", "on_script")
+            return true
+        end,
+    },
+    ["맵리셋"] = {
+        privilege = ROLE.Admin,
+        usage = "[인스턴스] - 현재 맵 리셋 (인스턴스: 인스턴스 맵일 때만)",
+        command = function(me, args)
+            local m = me:map()
+            if m == nil then
+                return true
+            end
+            if args[1] == "인스턴스" and not m:is_instance() then
+                return true
+            end
+            m:reset()
+            return true
+        end,
+    },
+    ["패킷로그"] = {
+        privilege = ROLE.Admin,
+        usage = " [0|1|on|off] - 수신 패킷 로그 켜기/끄기",
+        command = function(me, args)
+            if not args[1] or args[1] == "" then
+                local enabled = get_packet_log()
+                me:message("packet log: " .. tostring(enabled))
+                return true
+            end
+            local arg = string.lower(string.gsub(args[1], "^%s*(.-)%s*$", "%1"))
+            local enable = (arg == "1" or arg == "on" or arg == "true")
+            set_packet_log(enable)
+            me:message("packet log: " .. tostring(enable))
+            return true
+        end,
+    },
+    ["확성기금지"] = {
+        privilege = ROLE.Admin,
+        usage = "- 이 채널의 확성기 사용 금지 켜기/끄기",
+        command = function(me, args)
+            local muted = not get_megaphone_muted()
+            set_megaphone_muted(muted)
+            if muted then
+                me:message("확성기 사용 금지: 켜짐")
+            else
+                me:message("확성기 사용 금지: 꺼짐")
+            end
+            return true
+        end,
+    },
+    ["수송상태"] = {
+        privilege = ROLE.Admin,
+        usage = "<Boats|Trains|Flight|Geenie|elevator> - 수송 Group prop / persistent SM 상태",
+        command = function(me, args)
+            local name = args[1]
+            if name == nil or name == "" then
+                me:message("사용법: /수송상태 <Boats|Trains|Flight|Geenie|elevator>")
+                return true
+            end
+            local group = state_machine(name)
+            if group == nil then
+                me:message("그룹 없음: " .. name)
+                return true
+            end
+            local sm = group:get("persistent")
+            local sm_ok = sm ~= nil
+            me:message(string.format(
+                "[%s] ready=%s docked=%s entry=%s haveBalrog=%s persistent=%s",
+                name,
+                tostring(group:get_property("ready")),
+                tostring(group:get_property("docked")),
+                tostring(group:get_property("entry")),
+                tostring(group:get_property("haveBalrog")),
+                tostring(sm_ok)
+            ))
+            return true
+        end,
+    },
+    ["수송"] = {
+        privilege = ROLE.Admin,
+        usage = "<그룹> <phase> - 수송 SM 훅 강제 (예: /수송 Boats dock)",
+        command = function(me, args)
+            local ferry_phases = {
+                dock = "on_dock",
+                stop_entry = "on_stop_entry",
+                takeoff = "on_takeoff",
+                invasion = "on_invasion",
+                arrived = "on_arrived",
+            }
+            local elevator_phases = {
+                waiting_to_down = "on_waiting_to_down",
+                run_to_down = "on_run_to_down",
+                waiting_to_up = "on_waiting_to_up",
+                run_to_up = "on_run_to_up",
+            }
+            local ferry_after = { "stop_entry", "takeoff", "invasion", "arrived" }
+            local elevator_after = { "waiting_to_down", "run_to_down", "waiting_to_up", "run_to_up" }
+            local groups = {
+                Boats = true,
+                Trains = true,
+                Flight = true,
+                Geenie = true,
+                elevator = true,
+            }
 
-			local name = args[1]
-			local phase = args[2]
-			if name == nil or phase == nil or groups[name] ~= true then
-				me:message("사용법: /수송 <Boats|Trains|Flight|Geenie|elevator> <phase>")
-				me:message("페리 phase: dock stop_entry takeoff invasion arrived")
-				me:message("elevator phase: waiting_to_down run_to_down waiting_to_up run_to_up")
-				return true
-			end
+            local name = args[1]
+            local phase = args[2]
+            if name == nil or phase == nil or groups[name] ~= true then
+                me:message("사용법: /수송 <Boats|Trains|Flight|Geenie|elevator> <phase>")
+                me:message("페리 phase: dock stop_entry takeoff invasion arrived")
+                me:message("elevator phase: waiting_to_down run_to_down waiting_to_up run_to_up")
+                return true
+            end
 
-			local hook
-			local after_ids
-			if name == "elevator" then
-				hook = elevator_phases[phase]
-				after_ids = elevator_after
-			else
-				hook = ferry_phases[phase]
-				after_ids = ferry_after
-			end
-			if hook == nil then
-				me:message("알 수 없는 phase: " .. tostring(phase))
-				return true
-			end
+            local hook
+            local after_ids
+            if name == "elevator" then
+                hook = elevator_phases[phase]
+                after_ids = elevator_after
+            else
+                hook = ferry_phases[phase]
+                after_ids = ferry_after
+            end
+            if hook == nil then
+                me:message("알 수 없는 phase: " .. tostring(phase))
+                return true
+            end
 
-			local group = state_machine(name)
-			if group == nil then
-				me:message("그룹 없음: " .. name)
-				return true
-			end
-			local sm = group:get("persistent")
-			if sm == nil then
-				me:message("persistent SM 없음 (채널 부팅/on_init 확인): " .. name)
-				return true
-			end
+            local group = state_machine(name)
+            if group == nil then
+                me:message("그룹 없음: " .. name)
+                return true
+            end
+            local sm = group:get("persistent")
+            if sm == nil then
+                me:message("persistent SM 없음 (채널 부팅/on_init 확인): " .. name)
+                return true
+            end
 
-			for _, id in ipairs(after_ids) do
-				sm:cancel(id)
-			end
-			sm:call_hook(hook)
-			me:message(string.format("[%s] %s (%s) 강제 호출", name, phase, hook))
-			return true
-		end,
-	},
-	["이펙트테스트"] = {
-		privilege = ROLE.Admin,
-		usage = "<종류> [args] - 이펙트 패킷 테스트 (종류: skill, basic, dragon, hp, reward, maker, crafting, dice)",
-		command = function(me, args)
-			local kind = args[1]
-			if kind == nil or kind == "" then
-				me:message("사용법: /이펙트테스트 <skill|basic|dragon|hp|reward|maker|crafting|dice> ...")
-				return true
-			end
-			if kind == "skill" then
-				local skill_arg = args[2]
-				local effect_type = tonumber(args[3]) or SkillEffectType.Cast
-				return effect_show_skill(me, skill_arg, effect_type)
-			end
-			if kind == "basic" then
-				local effect_type = tonumber(args[2]) or EffectType.LevelUp
-				return effect_show_basic(me, effect_type)
-			end
-			if kind == "dragon" then
-				return effect_show_dragon_blood(me, args[2])
-			end
-			if kind == "hp" then
-				return effect_show_hp_healed(me, args[2])
-			end
-			if kind == "reward" then
-				return effect_show_reward_item_animation(me, args[2], args[3])
-			end
-			if kind == "maker" then
-				return effect_show_item_maker_success(me)
-			end
-			if kind == "crafting" then
-				return effect_show_crafting(me, args[2], args[3], args[4])
-			end
-			if kind == "dice" then
-				return effect_show_dice(me, args[2], args[3])
-			end
-			me:message("알 수 없는 종류입니다. skill, basic, dragon, hp, reward, maker, crafting, dice 중에서 선택하세요.")
-			return true
-		end,
-	},
-	["현재시간"] = {
-		privilege = ROLE.Admin,
-		usage = '[YYYY-MM-DD HH:MM:SS] - 현재 서버 시간 조회/설정',
-		command = function(me, args)
-			if #args == 0 then
-				local dt = datetime()
-				me:message(string.format('현재 서버 시간: %04d-%02d-%02d %02d:%02d:%02d',
-					dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second))
-				return true
-			end
+            for _, id in ipairs(after_ids) do
+                sm:cancel(id)
+            end
+            sm:call_hook(hook)
+            me:message(string.format("[%s] %s (%s) 강제 호출", name, phase, hook))
+            return true
+        end,
+    },
+    ["이펙트테스트"] = {
+        privilege = ROLE.Admin,
+        usage = "<종류> [args] - 이펙트 패킷 테스트 (종류: skill, basic, dragon, hp, reward, maker, crafting, dice)",
+        command = function(me, args)
+            local kind = args[1]
+            if kind == nil or kind == "" then
+                me:message("사용법: /이펙트테스트 <skill|basic|dragon|hp|reward|maker|crafting|dice> ...")
+                return true
+            end
+            if kind == "skill" then
+                local skill_arg = args[2]
+                local effect_type = tonumber(args[3]) or SkillEffectType.Cast
+                return effect_show_skill(me, skill_arg, effect_type)
+            end
+            if kind == "basic" then
+                local effect_type = tonumber(args[2]) or EffectType.LevelUp
+                return effect_show_basic(me, effect_type)
+            end
+            if kind == "dragon" then
+                return effect_show_dragon_blood(me, args[2])
+            end
+            if kind == "hp" then
+                return effect_show_hp_healed(me, args[2])
+            end
+            if kind == "reward" then
+                return effect_show_reward_item_animation(me, args[2], args[3])
+            end
+            if kind == "maker" then
+                return effect_show_item_maker_success(me)
+            end
+            if kind == "crafting" then
+                return effect_show_crafting(me, args[2], args[3], args[4])
+            end
+            if kind == "dice" then
+                return effect_show_dice(me, args[2], args[3])
+            end
+            me:message("알 수 없는 종류입니다. skill, basic, dragon, hp, reward, maker, crafting, dice 중에서 선택하세요.")
+            return true
+        end,
+    },
+    ["현재시간"] = {
+        privilege = ROLE.Admin,
+        usage = '[YYYY-MM-DD HH:MM:SS] - 현재 서버 시간 조회/설정',
+        command = function(me, args)
+            if #args == 0 then
+                local dt = datetime()
+                me:message(string.format('현재 서버 시간: %04d-%02d-%02d %02d:%02d:%02d',
+                    dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second))
+                return true
+            end
 
-			local value = table.concat(args, ' ')
-			if not string.match(value, '^%d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d$') then
-				me:message('사용법: /현재시간 YYYY-MM-DD HH:MM:SS')
-				return true
-			end
+            local value = table.concat(args, ' ')
+            if not string.match(value, '^%d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d$') then
+                me:message('사용법: /현재시간 YYYY-MM-DD HH:MM:SS')
+                return true
+            end
 
-			local success, error_message = now(value)
-			if success then
-				me:message(string.format('현재 시간을 %s 로 설정 요청했습니다.', value))
-			else
-				me:message(string.format('현재시간 설정 실패: %s', error_message or 'unknown error'))
-			end
-			return true
-		end,
-	},
-	["현재시간초기화"] = {
-		privilege = ROLE.Admin,
-		usage = '- 현재 서버 시간 보정 초기화',
-		command = function(me, args)
-			local success, error_message = now('reset')
-			if success then
-				me:message('현재 시간 보정 초기화 요청을 전송했습니다.')
-			else
-				me:message(string.format('현재시간 보정 초기화 실패: %s', error_message or 'unknown error'))
-			end
-			return true
-		end,
-	},
-	["시간가속"] = {
-		privilege = ROLE.Admin,
-		usage = '<timespan> - 시간 앞으로 이동 (예: 10.12:30:00 / 12:30:00)',
-		command = function(me, args)
-			local value = args[1]
-			if not value then
-				me:message('사용법: /시간가속 <timespan>')
-				return true
-			end
+            local success, error_message = now(value)
+            if success then
+                me:message(string.format('현재 시간을 %s 로 설정 요청했습니다.', value))
+            else
+                me:message(string.format('현재시간 설정 실패: %s', error_message or 'unknown error'))
+            end
+            return true
+        end,
+    },
+    ["현재시간초기화"] = {
+        privilege = ROLE.Admin,
+        usage = '- 현재 서버 시간 보정 초기화',
+        command = function(me, args)
+            local success, error_message = now('reset')
+            if success then
+                me:message('현재 시간 보정 초기화 요청을 전송했습니다.')
+            else
+                me:message(string.format('현재시간 보정 초기화 실패: %s', error_message or 'unknown error'))
+            end
+            return true
+        end,
+    },
+    ["시간가속"] = {
+        privilege = ROLE.Admin,
+        usage = '<timespan> - 시간 앞으로 이동 (예: 10.12:30:00 / 12:30:00)',
+        command = function(me, args)
+            local value = args[1]
+            if not value then
+                me:message('사용법: /시간가속 <timespan>')
+                return true
+            end
 
-			local success, error_message = time_forward(value)
-			if success then
-				me:message(string.format('시간가속 적용 요청: %s', value))
-			else
-				me:message(string.format('시간가속 실패: %s', error_message or 'unknown error'))
-			end
-			return true
-		end,
-	},
-	["시간역전"] = {
-		privilege = ROLE.Admin,
-		usage = '<timespan> - 시간 뒤로 이동 (예: 10.12:30:00 / 12:30:00)',
-		command = function(me, args)
-			local value = args[1]
-			if not value then
-				me:message('사용법: /시간역전 <timespan>')
-				return true
-			end
+            local success, error_message = time_forward(value)
+            if success then
+                me:message(string.format('시간가속 적용 요청: %s', value))
+            else
+                me:message(string.format('시간가속 실패: %s', error_message or 'unknown error'))
+            end
+            return true
+        end,
+    },
+    ["시간역전"] = {
+        privilege = ROLE.Admin,
+        usage = '<timespan> - 시간 뒤로 이동 (예: 10.12:30:00 / 12:30:00)',
+        command = function(me, args)
+            local value = args[1]
+            if not value then
+                me:message('사용법: /시간역전 <timespan>')
+                return true
+            end
 
-			local success, error_message = time_backward(value)
-			if success then
-				me:message(string.format('시간역전 적용 요청: %s', value))
-			else
-				me:message(string.format('시간역전 실패: %s', error_message or 'unknown error'))
-			end
-			return true
-		end,
-	},
-	["치트점수"] = {
-		privilege = ROLE.Admin,
-		usage = "- 내 치트 의심 점수와 위반 횟수",
-		command = function(me, args)
-			me:message("치트 점수: " .. me:cheat_report(), Msg.Notice)
-			return true
-		end,
-	},
-	["일정이벤트"] = {
-		privilege = ROLE.Admin,
-		usage = "<OX|OLA> - 이 채널에서 이벤트 참가 모집 시작",
-		command = function(me, args)
-			local ok, err = channel_event.schedule(args[1])
-			if ok then
-				me:message("이벤트를 준비합니다. 준비가 끝나면 월드 공지와 함께 모집이 시작됩니다.")
-			else
-				me:message("이벤트를 시작하지 못했습니다: " .. tostring(err))
-			end
-			return true
-		end,
-	},
-	["이벤트시작"] = {
-		privilege = ROLE.Admin,
-		usage = "- 참가 모집을 마감하고 30초 뒤 이벤트 시작",
-		command = function(me, args)
-			if channel_event.close() then
-				me:message("참가 모집을 마감했습니다.")
-			else
-				me:message("모집 중인 이벤트가 없습니다.")
-			end
-			return true
-		end,
-	},
-	["이벤트취소"] = {
-		privilege = ROLE.Admin,
-		usage = "- 진행 중인 이벤트를 취소하고 참가자를 내보냄",
-		command = function(me, args)
-			if channel_event.cancel() then
-				me:message("이벤트를 취소했습니다.")
-			else
-				me:message("진행 중인 이벤트가 없습니다.")
-			end
-			return true
-		end,
-	},
-	["액터지연"] = delay_command("액터", "액터이름", actor_delay),
-	["액터장애"] = fault_command("액터", "액터이름", actor_fault),
-	["RPC지연"] = delay_command("RPC", "메서드", rpc_delay),
-	["RPC장애"] = fault_command("RPC", "메서드", rpc_fault),
+            local success, error_message = time_backward(value)
+            if success then
+                me:message(string.format('시간역전 적용 요청: %s', value))
+            else
+                me:message(string.format('시간역전 실패: %s', error_message or 'unknown error'))
+            end
+            return true
+        end,
+    },
+    ["치트점수"] = {
+        privilege = ROLE.Admin,
+        usage = "- 내 치트 의심 점수와 위반 횟수",
+        command = function(me, args)
+            me:message("치트 점수: " .. me:cheat_report(), Msg.Notice)
+            return true
+        end,
+    },
+    ["일정이벤트"] = {
+        privilege = ROLE.Admin,
+        usage = "<OX|OLA> - 이 채널에서 이벤트 참가 모집 시작",
+        command = function(me, args)
+            local ok, err = channel_event.schedule(args[1])
+            if ok then
+                me:message("이벤트를 준비합니다. 준비가 끝나면 월드 공지와 함께 모집이 시작됩니다.")
+            else
+                me:message("이벤트를 시작하지 못했습니다: " .. tostring(err))
+            end
+            return true
+        end,
+    },
+    ["이벤트시작"] = {
+        privilege = ROLE.Admin,
+        usage = "- 참가 모집을 마감하고 30초 뒤 이벤트 시작",
+        command = function(me, args)
+            if channel_event.close() then
+                me:message("참가 모집을 마감했습니다.")
+            else
+                me:message("모집 중인 이벤트가 없습니다.")
+            end
+            return true
+        end,
+    },
+    ["이벤트취소"] = {
+        privilege = ROLE.Admin,
+        usage = "- 진행 중인 이벤트를 취소하고 참가자를 내보냄",
+        command = function(me, args)
+            if channel_event.cancel() then
+                me:message("이벤트를 취소했습니다.")
+            else
+                me:message("진행 중인 이벤트가 없습니다.")
+            end
+            return true
+        end,
+    },
+    ["액터지연"] = delay_command("액터", "액터이름", actor_delay),
+    ["액터장애"] = fault_command("액터", "액터이름", actor_fault),
+    ["RPC지연"] = delay_command("RPC", "메서드", rpc_delay),
+    ["RPC장애"] = fault_command("RPC", "메서드", rpc_fault),
 }
 
 if DEV then
-	command_funcs["MQ장애"] = {
-		privilege = ROLE.Admin,
-		usage = "<on|off> - internal의 MQ 발행을 끊긴 것처럼 실패시킴 (개발환경 전용, 테스트용)",
-		command = function(me, args)
-			local mode = string.lower(args[1] or "")
-			if mode ~= "on" and mode ~= "off" then
-				me:message("사용법: /MQ장애 <on|off>")
-				return true
-			end
-			if mq_fault(mode == "on") == false then
-				me:message("MQ 장애 설정 실패")
-				return true
-			end
-			me:message("MQ 장애: " .. string.upper(mode))
-			return true
-		end,
-	}
-	command_funcs["권한"] = {
-		privilege = ROLE.User,
-		usage = "<유저|GM> - 계정·캐릭터 권한을 바꾸고 접속 종료 (재접속 후 적용, 개발환경 전용)",
-		command = function(me, args)
-			local roles = { ["유저"] = ROLE.User, ["GM"] = ROLE.Admin }
-			local role = roles[args[1] or ""]
-			if role == nil then
-				me:message("사용법: /권한 <유저|GM>")
-				return true
-			end
-			if me:role() == role then
-				me:message("이미 해당 권한입니다.")
-				return true
-			end
-			if me:account_role(role) == false then
-				me:message("권한 변경 실패")
-				return true
-			end
-			me:disconnect()
-			return true
-		end,
-	}
+    command_funcs["MQ장애"] = {
+        privilege = ROLE.Admin,
+        usage = "<on|off> - internal의 MQ 발행을 끊긴 것처럼 실패시킴 (개발환경 전용, 테스트용)",
+        command = function(me, args)
+            local mode = string.lower(args[1] or "")
+            if mode ~= "on" and mode ~= "off" then
+                me:message("사용법: /MQ장애 <on|off>")
+                return true
+            end
+            if mq_fault(mode == "on") == false then
+                me:message("MQ 장애 설정 실패")
+                return true
+            end
+            me:message("MQ 장애: " .. string.upper(mode))
+            return true
+        end,
+    }
+    command_funcs["권한"] = {
+        privilege = ROLE.User,
+        usage = "<유저|GM> - 계정·캐릭터 권한을 바꾸고 접속 종료 (재접속 후 적용, 개발환경 전용)",
+        command = function(me, args)
+            local roles = { ["유저"] = ROLE.User, ["GM"] = ROLE.Admin }
+            local role = roles[args[1] or ""]
+            if role == nil then
+                me:message("사용법: /권한 <유저|GM>")
+                return true
+            end
+            if me:role() == role then
+                me:message("이미 해당 권한입니다.")
+                return true
+            end
+            if me:account_role(role) == false then
+                me:message("권한 변경 실패")
+                return true
+            end
+            me:disconnect()
+            return true
+        end,
+    }
 end
 
 return {
-	on_chat = function(me, message, shout)
-		if string.sub(message, 1, 1) ~= "/" then
-			return false
-		end
-		message = string.sub(message, 2, #message)
-		local args = string_split(message, " ")
-		local cmd = args[1]
-		if cmd == nil or cmd == "" then
-			return false
-		end
-		local cmd_data = command_funcs[cmd]
-		if cmd_data == nil then
-			return false
-		end
-		local cmd_func = nil
-		local required_privilege = ROLE.User
-		if type(cmd_data) == "table" then
-			cmd_func = cmd_data.command
-			required_privilege = cmd_data.privilege or ROLE.User
-		else
-			cmd_func = cmd_data
-		end
-		if me:role() < required_privilege then
-			me:message("권한이 부족합니다.")
-			return true
-		end
-		table.remove(args, 1)
-		local ok = cmd_func(me, args)
-		return ok
-	end
+    on_chat = function(me, message, shout)
+        if string.sub(message, 1, 1) ~= "/" then
+            return false
+        end
+        message = string.sub(message, 2, #message)
+        local args = string_split(message, " ")
+        local cmd = args[1]
+        if cmd == nil or cmd == "" then
+            return false
+        end
+        local cmd_data = command_funcs[cmd]
+        if cmd_data == nil then
+            return false
+        end
+        local cmd_func = nil
+        local required_privilege = ROLE.User
+        if type(cmd_data) == "table" then
+            cmd_func = cmd_data.command
+            required_privilege = cmd_data.privilege or ROLE.User
+        else
+            cmd_func = cmd_data
+        end
+        if me:role() < required_privilege then
+            me:message("권한이 부족합니다.")
+            return true
+        end
+        table.remove(args, 1)
+        local ok = cmd_func(me, args)
+        return ok
+    end
 }

@@ -4,12 +4,12 @@ local pq = require("script/lib/party_quest")
 local gq = require("script/lib/guild_quest")
 
 return {
-	on_enter = function(me)
-		gq.set_maze(me, "2")
-		pq.warp_portal(me, 990000700, "st00")
-		local sm = me:state_machine()
-		if sm ~= nil then
-			gq.gain_gp_once(me, sm, "gainGP03", 5)
-		end
-	end
+    on_enter = function(me)
+        gq.set_maze(me, "2")
+        pq.warp_portal(me, 990000700, "st00")
+        local sm = me:state_machine()
+        if sm ~= nil then
+            gq.gain_gp_once(me, sm, "gainGP03", 5)
+        end
+    end
 }

@@ -29,10 +29,9 @@ export class PlayerNpcRepository {
     }
 
     async list(worldId: number): Promise<PlayerNpcRow[]> {
-        const res = await this.ctx.getPgGlobalPool(worldId).query(
-            `SELECT ${SELECT_COLS} FROM player_npcs WHERE world_id = $1 ORDER BY npc_id`,
-            [worldId]
-        );
+        const res = await this.ctx
+            .getPgGlobalPool(worldId)
+            .query(`SELECT ${SELECT_COLS} FROM player_npcs WHERE world_id = $1 ORDER BY npc_id`, [worldId]);
         return res.rows as PlayerNpcRow[];
     }
 
@@ -54,16 +53,15 @@ export class PlayerNpcRepository {
                 row.map_id,
                 row.x,
                 row.y,
-            ]
+            ],
         );
         return (res.rowCount ?? 0) > 0;
     }
 
     async remove(worldId: number, npcId: number): Promise<boolean> {
-        const res = await this.ctx.getPgGlobalPool(worldId).query(
-            "DELETE FROM player_npcs WHERE world_id = $1 AND npc_id = $2",
-            [worldId, npcId]
-        );
+        const res = await this.ctx
+            .getPgGlobalPool(worldId)
+            .query("DELETE FROM player_npcs WHERE world_id = $1 AND npc_id = $2", [worldId, npcId]);
         return (res.rowCount ?? 0) > 0;
     }
 }

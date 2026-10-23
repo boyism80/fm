@@ -22,14 +22,22 @@ export class DistributedLockService {
         return this.lock.acquire(this.ctx.getRedisUnifiedAccess().client, redisLockKey(keyRest), options);
     }
 
-    acquireWorldDataLock(worldId: number, keyRest: string, options?: DistributedLockOptions): Promise<DistributedLockGuard> {
+    acquireWorldDataLock(
+        worldId: number,
+        keyRest: string,
+        options?: DistributedLockOptions,
+    ): Promise<DistributedLockGuard> {
         const lockKey = redisWorldLockKey(worldId, keyRest);
         const hash = redisLockShardHash(lockKey);
         const { client } = this.ctx.getRedisDataAccess(worldId, hash);
         return this.lock.acquire(client, lockKey, options);
     }
 
-    async acquireWorldDataLocks(worldId: number, keyRests: string[], options?: DistributedLockOptions): Promise<DistributedLockMultiGuard> {
+    async acquireWorldDataLocks(
+        worldId: number,
+        keyRests: string[],
+        options?: DistributedLockOptions,
+    ): Promise<DistributedLockMultiGuard> {
         const sorted = [...new Set(keyRests)].sort();
         if (sorted.length === 0) {
             return new DistributedLockMultiGuard([]);

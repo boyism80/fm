@@ -7,7 +7,8 @@ import { PartyMemberRole } from "../protobuf/generated/fminternal/internal_servi
 
 const DEFAULT_PARTY_MEMBER_ROLE = PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER;
 
-const SELECT_COLS = "world_id, party_id, character_id, character_name, level, class_id, role, map_id, door, joined_at, updated_at";
+const SELECT_COLS =
+    "world_id, party_id, character_id, character_name, level, class_id, role, map_id, door, joined_at, updated_at";
 
 export type { PartyMemberModel };
 
@@ -36,7 +37,10 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
             return { text: "", values: [] };
         }
         const placeholders = rows
-            .map((_, i) => `($${i * 9 + 1},$${i * 9 + 2},$${i * 9 + 3},$${i * 9 + 4},$${i * 9 + 5},$${i * 9 + 6},$${i * 9 + 7},$${i * 9 + 8},$${i * 9 + 9},NOW(),NOW())`)
+            .map(
+                (_, i) =>
+                    `($${i * 9 + 1},$${i * 9 + 2},$${i * 9 + 3},$${i * 9 + 4},$${i * 9 + 5},$${i * 9 + 6},$${i * 9 + 7},$${i * 9 + 8},$${i * 9 + 9},NOW(),NOW())`,
+            )
             .join(",\n");
         return {
             text: `INSERT INTO party_members (world_id, party_id, character_id, character_name, level, class_id, role, map_id, door, joined_at, updated_at)

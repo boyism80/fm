@@ -65,8 +65,12 @@ export class KeyLayoutRepository extends ValueRepository<KeyLayoutModel, KeyLayo
         return {
             characterId: row.character_id,
             worldId: row.world_id,
-            keyLayoutJson: typeof row.key_layout_json === "string" ? row.key_layout_json : JSON.stringify(row.key_layout_json ?? {}),
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            keyLayoutJson:
+                typeof row.key_layout_json === "string"
+                    ? row.key_layout_json
+                    : JSON.stringify(row.key_layout_json ?? {}),
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

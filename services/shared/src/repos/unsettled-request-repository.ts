@@ -31,17 +31,22 @@ export class UnsettledRequestRepository extends HashRepository<UnsettledRequestM
     }
 
     override onSelect(characterId: string): RepositoryQuery {
-        return { text: `SELECT ${SELECT_COLS} FROM character_unsettled_requests WHERE character_id = $1 ORDER BY id`, values: [Number(characterId)] };
+        return {
+            text: `SELECT ${SELECT_COLS} FROM character_unsettled_requests WHERE character_id = $1 ORDER BY id`,
+            values: [Number(characterId)],
+        };
     }
 
     override onBulkUpsert(rows: UnsettledRequestRow[]): RepositoryQuery {
         if (!rows.length) {
             return { text: "", values: [] };
         }
-        const placeholders = rows.map((_, i) => {
-            const base = i * PER_ROW_PARAMS;
-            return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},NOW())`;
-        }).join(",");
+        const placeholders = rows
+            .map((_, i) => {
+                const base = i * PER_ROW_PARAMS;
+                return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},NOW())`;
+            })
+            .join(",");
         return {
             text: `INSERT INTO character_unsettled_requests (${SELECT_COLS}) VALUES\n${placeholders}\nON CONFLICT (character_id, id) DO UPDATE SET type = EXCLUDED.type, target = EXCLUDED.target, detail = EXCLUDED.detail, updated_at = NOW() RETURNING ${SELECT_COLS}`,
             values: rows.flatMap(rowValues),
@@ -49,7 +54,10 @@ export class UnsettledRequestRepository extends HashRepository<UnsettledRequestM
     }
 
     override onBulkDelete(itemKeys: string[], characterId: string): RepositoryQuery {
-        return { text: "DELETE FROM character_unsettled_requests WHERE id = ANY($1::bigint[]) AND character_id = $2", values: [itemKeys, Number(characterId)] };
+        return {
+            text: "DELETE FROM character_unsettled_requests WHERE id = ANY($1::bigint[]) AND character_id = $2",
+            values: [itemKeys, Number(characterId)],
+        };
     }
 
     override rowToModel(row: UnsettledRequestRow): UnsettledRequestModel {

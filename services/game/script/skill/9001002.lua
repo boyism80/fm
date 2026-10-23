@@ -3,21 +3,21 @@
 local combat = require("script/lib/combat")
 
 return {
-	full_holy_symbol = true,
+    full_holy_symbol = true,
 
-	on_activated = function(me, skill, params)
-		local effect = skill:effect()
-		if effect == nil then
-			return
-		end
-		combat.for_each_character_in_skill_area(me, skill, function(ch)
-			if ch == nil or not ch:is_alive() then
-				return
-			end
-			ch:buff(skill, BuffFlag.HolySymbol, effect.x)
-			if ch ~= me then
-				ch:show_skill_effect(skill, SkillEffectType.Affected)
-			end
-		end)
-	end
+    on_activated = function(me, skill, params)
+        local effect = skill:effect()
+        if effect == nil then
+            return
+        end
+        combat.for_each_character_in_skill_area(me, skill, function(ch)
+            if ch == nil or not ch:is_alive() then
+                return
+            end
+            ch:buff(skill, BuffFlag.HolySymbol, effect.x)
+            if ch ~= me then
+                ch:show_skill_effect(skill, SkillEffectType.Affected)
+            end
+        end)
+    end
 }

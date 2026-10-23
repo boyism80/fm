@@ -85,7 +85,7 @@ export class CashShopService {
         sessionRepository: SessionRepository,
         rabbitmqService: RabbitMQService,
         socialService: SocialService,
-        distributedLockService: DistributedLockService
+        distributedLockService: DistributedLockService,
     ) {
         this.cashShopRepo = cashShopRepository;
         this.cashRequestRepo = cashRequestRepository;
@@ -128,11 +128,14 @@ export class CashShopService {
         accountId: number,
         delta: CashBalance,
         requestId: string | null,
-        transfers: BalanceTransfer[]
+        transfers: BalanceTransfer[],
     ): Promise<{ result: CashShopResult; balance: CashBalance }> {
         return this.cashShopRepo.withBalanceLock(accountId, async (txClient) => {
             const balance = await this.cashShopRepo.findBalance(accountId, { txClient });
-            if (requestId !== null && (await this.cashBalanceRequestRepo.find(worldId, accountId, requestId, { txClient })) != null) {
+            if (
+                requestId !== null &&
+                (await this.cashBalanceRequestRepo.find(worldId, accountId, requestId, { txClient })) != null
+            ) {
                 return { result: CashShopResult.CASH_SHOP_RESULT_OK, balance };
             }
             if (this.affordable(balance, delta) === false) {
@@ -143,7 +146,14 @@ export class CashShopService {
             }
             await this.cashShopRepo.addBalance(accountId, delta, { txClient });
             for (const transfer of transfers) {
-                await this.cashShopRepo.queueBalanceTransfer(worldId, accountId, transfer.targetId, transfer.kind, transfer.detail, txClient);
+                await this.cashShopRepo.queueBalanceTransfer(
+                    worldId,
+                    accountId,
+                    transfer.targetId,
+                    transfer.kind,
+                    transfer.detail,
+                    txClient,
+                );
             }
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
@@ -217,13 +227,15 @@ export class CashShopService {
     private async receive(
         worldId: number,
         request: CashTransferRequest,
-        place: (txClient: PoolClient) => Promise<TransferOutcome.Placed | TransferOutcome.Full>
+        place: (txClient: PoolClient) => Promise<TransferOutcome.Placed | TransferOutcome.Full>,
     ): Promise<TransferOutcome> {
         let result: TransferOutcome = TransferOutcome.Skipped;
         // Placed and full are both recorded under the request id in the receiving shard, under its lock, so a
         // settle that comes later never places what another already refunds, or refunds what it placed.
         await this.cashShopRepo.receiveTransfer(worldId, request, async (txClient) => {
-            const recorded = await this.cashRequestRepo.find(worldId, request.target_id, request.request_id, { txClient });
+            const recorded = await this.cashRequestRepo.find(worldId, request.target_id, request.request_id, {
+                txClient,
+            });
             if (recorded != null) {
                 result = recorded.outcome.full === true ? TransferOutcome.Full : TransferOutcome.Skipped;
                 return;
@@ -233,7 +245,13 @@ export class CashShopService {
                 return;
             }
             result = await place(txClient);
-            await this.cashRequestRepo.insert(worldId, request.target_id, request.request_id, result === TransferOutcome.Full ? { full: true } : {}, txClient);
+            await this.cashRequestRepo.insert(
+                worldId,
+                request.target_id,
+                request.request_id,
+                result === TransferOutcome.Full ? { full: true } : {},
+                txClient,
+            );
         });
         return result;
     }
@@ -265,16 +283,22 @@ export class CashShopService {
                 detail.accountId,
                 detail.items.map((item) => CashItem.fromJSON(item)),
                 detail.message,
-                { txClient }
+                { txClient },
             );
             // The buyer's half of a ring is queued only once the partner's half is placed, so a refund never leaves
             // the buyer holding it.
             if (detail.buyerItem != null) {
-                await this.cashShopRepo.queueTransfer(detail.accountId, detail.buyerItem.accountId, CashTransferKind.Purchase, {
-                    accountId: detail.buyerItem.accountId,
-                    items: [detail.buyerItem.item],
-                    refund: NO_REFUND,
-                }, txClient);
+                await this.cashShopRepo.queueTransfer(
+                    detail.accountId,
+                    detail.buyerItem.accountId,
+                    CashTransferKind.Purchase,
+                    {
+                        accountId: detail.buyerItem.accountId,
+                        items: [detail.buyerItem.item],
+                        refund: NO_REFUND,
+                    },
+                    txClient,
+                );
             }
             return TransferOutcome.Placed;
         });
@@ -307,7 +331,12 @@ export class CashShopService {
                 item.expiration = new Date(item.expiration);
             }
             const inventory = await this.inventoryRepo.getAll(worldId, String(request.target_id), { txClient });
-            await this.inventoryRepo.replaceBySnapshot(worldId, String(request.target_id), [...inventory.values(), item], { txClient });
+            await this.inventoryRepo.replaceBySnapshot(
+                worldId,
+                String(request.target_id),
+                [...inventory.values(), item],
+                { txClient },
+            );
             return TransferOutcome.Placed;
         });
         if ((await this.finishSettled(request, result)) === false) {
@@ -361,7 +390,13 @@ export class CashShopService {
             }
             for (const item of detail.items) {
                 const cashItem = CashItem.fromJSON(item);
-                await this.cashShopRepo.insertItem(worldId, detail.accountId, String(cashItem.item?.uniqueId ?? 0), CashItem.toJSON(cashItem), { txClient });
+                await this.cashShopRepo.insertItem(
+                    worldId,
+                    detail.accountId,
+                    String(cashItem.item?.uniqueId ?? 0),
+                    CashItem.toJSON(cashItem),
+                    { txClient },
+                );
             }
             return TransferOutcome.Placed;
         });
@@ -384,7 +419,7 @@ export class CashShopService {
                     slots: Math.min((storage?.slots ?? DEFAULT_STORAGE_SLOTS) + detail.amount, detail.max),
                     meso: storage?.meso ?? 0,
                 },
-                { txClient }
+                { txClient },
             );
             return TransferOutcome.Placed;
         });
@@ -396,7 +431,12 @@ export class CashShopService {
         const detail = request.detail as { amount: number; max: number };
         const result = await this.receive(worldId, request, async (txClient) => {
             const slots = await this.accountWorldRepo.findCharacterSlotCount(worldId, request.target_id, { txClient });
-            await this.accountWorldRepo.setCharacterSlotCount(worldId, request.target_id, Math.min(slots + detail.amount, detail.max), { txClient });
+            await this.accountWorldRepo.setCharacterSlotCount(
+                worldId,
+                request.target_id,
+                Math.min(slots + detail.amount, detail.max),
+                { txClient },
+            );
             return TransferOutcome.Placed;
         });
         await this.finishSettled(request, result);
@@ -420,7 +460,11 @@ export class CashShopService {
             if (character == null) {
                 throw new Error(`character not found: ${request.target_id}`);
             }
-            await this.characterRepo.set(worldId, { ...character, meso: Math.min((character.meso ?? 0) + detail.meso, MAX_MESO) }, { txClient });
+            await this.characterRepo.set(
+                worldId,
+                { ...character, meso: Math.min((character.meso ?? 0) + detail.meso, MAX_MESO) },
+                { txClient },
+            );
             return TransferOutcome.Placed;
         });
         await this.finishSettled(request, result);
@@ -448,7 +492,7 @@ export class CashShopService {
             await this.cashShopRepo.completeRingTransfers(
                 request.source_id,
                 rings.map((ring) => ring.serial),
-                txClient
+                txClient,
             );
         });
         for (const ring of rings) {
@@ -470,11 +514,15 @@ export class CashShopService {
             if (!claimed) {
                 return;
             }
-            const inventory = [...(await this.inventoryRepo.getAll(worldId, String(request.source_id), { txClient })).values()];
+            const inventory = [
+                ...(await this.inventoryRepo.getAll(worldId, String(request.source_id), { txClient })).values(),
+            ];
             if (inventory.some((model) => String(model.uniqueId) === detail.serial)) {
                 return;
             }
-            const used = new Set(inventory.filter((model) => model.inventoryType === item.inventoryType).map((model) => model.slot));
+            const used = new Set(
+                inventory.filter((model) => model.inventoryType === item.inventoryType).map((model) => model.slot),
+            );
             if (used.has(item.slot)) {
                 let slot = 1;
                 while (used.has(slot)) {
@@ -482,7 +530,9 @@ export class CashShopService {
                 }
                 item.slot = slot;
             }
-            await this.inventoryRepo.replaceBySnapshot(worldId, String(request.source_id), [...inventory, item], { txClient });
+            await this.inventoryRepo.replaceBySnapshot(worldId, String(request.source_id), [...inventory, item], {
+                txClient,
+            });
         });
         await this.inventoryRepo.invalidateCache(worldId, String(request.source_id));
     }
@@ -524,25 +574,43 @@ export class CashShopService {
     }
 
     async buy(req: BuyCashItemRequest): Promise<BuyCashItemReply> {
-        await using _lock = await this.distributedLockService.acquireWorldDataLock(req.worldId, `cash_account:${req.accountId}`);
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(
+            req.worldId,
+            `cash_account:${req.accountId}`,
+        );
         if ((await this.reservedLockerCount(req.worldId, req.accountId)) + req.items.length > LOCKER_CAPACITY) {
             const balance = await this.cashShopRepo.findBalance(req.accountId);
-            return { result: CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL, nxCash: balance.nxCash, maplePoint: balance.maplePoint };
+            return {
+                result: CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL,
+                nxCash: balance.nxCash,
+                maplePoint: balance.maplePoint,
+            };
         }
 
         const delta = this.debit(req.currency, req.price);
-        const charged = await this.charge(req.worldId, req.accountId, delta, null, [{
-            targetId: req.accountId,
-            kind: CashTransferKind.Purchase,
-            detail: { accountId: req.accountId, items: req.items.map((item) => CashItem.toJSON(item)), refund: CashShopService.negate(delta) },
-        }]);
+        const charged = await this.charge(req.worldId, req.accountId, delta, null, [
+            {
+                targetId: req.accountId,
+                kind: CashTransferKind.Purchase,
+                detail: {
+                    accountId: req.accountId,
+                    items: req.items.map((item) => CashItem.toJSON(item)),
+                    refund: CashShopService.negate(delta),
+                },
+            },
+        ]);
         if (charged.result === CashShopResult.CASH_SHOP_RESULT_OK) {
             await this.settleTransfers(req.worldId);
         }
         return { result: charged.result, nxCash: charged.balance.nxCash, maplePoint: charged.balance.maplePoint };
     }
 
-    async takeOut(worldId: number, accountId: number, characterId: number, item: InventoryModel): Promise<CashShopResult> {
+    async takeOut(
+        worldId: number,
+        accountId: number,
+        characterId: number,
+        item: InventoryModel,
+    ): Promise<CashShopResult> {
         const result = await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
             const row = await this.cashShopRepo.deleteItem(worldId, accountId, String(item.uniqueId), { txClient });
             if (row == null) {
@@ -566,7 +634,9 @@ export class CashShopService {
                 return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
             }
 
-            const inventory = [...(await this.inventoryRepo.getAll(worldId, String(characterId), { txClient })).values()];
+            const inventory = [
+                ...(await this.inventoryRepo.getAll(worldId, String(characterId), { txClient })).values(),
+            ];
             const kept = inventory.filter((model) => String(model.uniqueId) !== serial || model.slot < 0);
             if (kept.length === inventory.length) {
                 return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
@@ -574,12 +644,18 @@ export class CashShopService {
 
             await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), kept, { txClient });
             const removed = inventory.find((model) => String(model.uniqueId) === serial && model.slot >= 0);
-            await this.cashShopRepo.queueTransfer(characterId, accountId, CashTransferKind.PutIn, {
+            await this.cashShopRepo.queueTransfer(
+                characterId,
                 accountId,
-                serial,
-                item: CashItem.toJSON(item),
-                inventory: removed,
-            }, txClient);
+                CashTransferKind.PutIn,
+                {
+                    accountId,
+                    serial,
+                    item: CashItem.toJSON(item),
+                    inventory: removed,
+                },
+                txClient,
+            );
             return CashShopResult.CASH_SHOP_RESULT_OK;
         });
         await this.inventoryRepo.invalidateCache(worldId, String(characterId));
@@ -614,11 +690,20 @@ export class CashShopService {
                 case CashSlotKind.CASH_SLOT_KIND_INVENTORY: {
                     const character = await this.characterRepo.get(req.worldId, req.characterId);
                     const index = req.inventoryType - 1;
-                    if (character == null || character.slotLimits == null || index < 0 || index >= character.slotLimits.length) {
+                    if (
+                        character == null ||
+                        character.slotLimits == null ||
+                        index < 0 ||
+                        index >= character.slotLimits.length
+                    ) {
                         return this.slotFailure(req.accountId, CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
                     }
                     slots = (character.slotLimits[index] ?? 0) + req.amount;
-                    transfer = { targetId: req.characterId, kind: CashTransferKind.InventorySlot, detail: { ...detail, index } };
+                    transfer = {
+                        targetId: req.characterId,
+                        kind: CashTransferKind.InventorySlot,
+                        detail: { ...detail, index },
+                    };
                     break;
                 }
                 case CashSlotKind.CASH_SLOT_KIND_STORAGE: {
@@ -628,7 +713,8 @@ export class CashShopService {
                     break;
                 }
                 case CashSlotKind.CASH_SLOT_KIND_CHARACTER: {
-                    slots = (await this.accountWorldRepo.findCharacterSlotCount(req.worldId, req.accountId)) + req.amount;
+                    slots =
+                        (await this.accountWorldRepo.findCharacterSlotCount(req.worldId, req.accountId)) + req.amount;
                     transfer = { targetId: req.accountId, kind: CashTransferKind.CharacterSlot, detail };
                     break;
                 }
@@ -641,10 +727,20 @@ export class CashShopService {
 
             const charged = await this.charge(req.worldId, req.accountId, delta, null, [transfer]);
             if (charged.result !== CashShopResult.CASH_SHOP_RESULT_OK) {
-                return { result: charged.result, slots: 0, nxCash: charged.balance.nxCash, maplePoint: charged.balance.maplePoint };
+                return {
+                    result: charged.result,
+                    slots: 0,
+                    nxCash: charged.balance.nxCash,
+                    maplePoint: charged.balance.maplePoint,
+                };
             }
             await this.settleTransfers(req.worldId);
-            return { result: charged.result, slots, nxCash: charged.balance.nxCash, maplePoint: charged.balance.maplePoint };
+            return {
+                result: charged.result,
+                slots,
+                nxCash: charged.balance.nxCash,
+                maplePoint: charged.balance.maplePoint,
+            };
         } finally {
             if (req.kind === CashSlotKind.CASH_SLOT_KIND_INVENTORY) {
                 await this.characterRepo.invalidateCache(req.worldId, req.characterId);
@@ -662,20 +758,27 @@ export class CashShopService {
         recipientAccountId: number,
         items: CashItem[],
         message: string,
-        options: RepositoryTxOptions
+        options: RepositoryTxOptions,
     ): Promise<void> {
-        await this.cashShopRepo.withAccount(worldId, recipientAccountId, async (txClient) => {
-            for (const item of items) {
-                const serial = String(item.item?.uniqueId ?? 0);
-                await this.cashShopRepo.insertItem(worldId, recipientAccountId, serial, CashItem.toJSON(item), { txClient });
-                await this.cashShopRepo.insertGift(
-                    worldId,
-                    recipientAccountId,
-                    { serial, item_id: item.item?.itemId ?? 0, sender_name: item.buyerName, message },
-                    { txClient }
-                );
-            }
-        }, options);
+        await this.cashShopRepo.withAccount(
+            worldId,
+            recipientAccountId,
+            async (txClient) => {
+                for (const item of items) {
+                    const serial = String(item.item?.uniqueId ?? 0);
+                    await this.cashShopRepo.insertItem(worldId, recipientAccountId, serial, CashItem.toJSON(item), {
+                        txClient,
+                    });
+                    await this.cashShopRepo.insertGift(
+                        worldId,
+                        recipientAccountId,
+                        { serial, item_id: item.item?.itemId ?? 0, sender_name: item.buyerName, message },
+                        { txClient },
+                    );
+                }
+            },
+            options,
+        );
     }
 
     // The gift is already committed; a failed notice must not report the purchase as failed.
@@ -731,18 +834,26 @@ export class CashShopService {
             return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
         }
 
-        const charged = await this.charge(req.worldId, req.accountId, this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price), req.requestId, [{
-            targetId: entry.account_id,
-            kind: CashTransferKind.Gift,
-            detail: {
-                accountId: entry.account_id,
-                items: req.items.map((item) => CashItem.toJSON(item)),
-                message: req.message,
-                recipientId: entry.character_id,
-                senderName: req.items[0]?.buyerName ?? "",
-                price: req.price,
-            },
-        }]);
+        const charged = await this.charge(
+            req.worldId,
+            req.accountId,
+            this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price),
+            req.requestId,
+            [
+                {
+                    targetId: entry.account_id,
+                    kind: CashTransferKind.Gift,
+                    detail: {
+                        accountId: entry.account_id,
+                        items: req.items.map((item) => CashItem.toJSON(item)),
+                        message: req.message,
+                        recipientId: entry.character_id,
+                        senderName: req.items[0]?.buyerName ?? "",
+                        price: req.price,
+                    },
+                },
+            ],
+        );
         if (charged.result === CashShopResult.CASH_SHOP_RESULT_OK) {
             await this.settleTransfers(req.worldId);
         }
@@ -792,35 +903,55 @@ export class CashShopService {
         const serial = String(item.item?.uniqueId ?? 0);
         const partnerSerial = String(partnerItem.item?.uniqueId ?? 0);
         const itemId = item.item?.itemId ?? 0;
-        const charged = await this.charge(req.worldId, req.accountId, this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price), req.requestId, [
-            {
-                targetId: entry.account_id,
-                kind: CashTransferKind.Gift,
-                detail: {
-                    accountId: entry.account_id,
-                    items: [CashItem.toJSON(partnerItem)],
-                    message: req.message,
-                    recipientId: entry.character_id,
-                    senderName: req.characterName,
-                    price: req.price,
-                    buyerItem: { accountId: req.accountId, item: CashItem.toJSON(item) },
-                    rings: [
-                        { characterId: req.characterId, serial },
-                        { characterId: entry.character_id, serial: partnerSerial },
-                    ],
+        const charged = await this.charge(
+            req.worldId,
+            req.accountId,
+            this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price),
+            req.requestId,
+            [
+                {
+                    targetId: entry.account_id,
+                    kind: CashTransferKind.Gift,
+                    detail: {
+                        accountId: entry.account_id,
+                        items: [CashItem.toJSON(partnerItem)],
+                        message: req.message,
+                        recipientId: entry.character_id,
+                        senderName: req.characterName,
+                        price: req.price,
+                        buyerItem: { accountId: req.accountId, item: CashItem.toJSON(item) },
+                        rings: [
+                            { characterId: req.characterId, serial },
+                            { characterId: entry.character_id, serial: partnerSerial },
+                        ],
+                    },
                 },
-            },
-            {
-                targetId: req.characterId,
-                kind: CashTransferKind.Ring,
-                detail: { serial, partner_serial: partnerSerial, character_id: req.characterId, partner_id: entry.character_id, partner_name: partner.name, item_id: itemId },
-            },
-            {
-                targetId: entry.character_id,
-                kind: CashTransferKind.Ring,
-                detail: { serial: partnerSerial, partner_serial: serial, character_id: entry.character_id, partner_id: req.characterId, partner_name: req.characterName, item_id: itemId },
-            },
-        ]);
+                {
+                    targetId: req.characterId,
+                    kind: CashTransferKind.Ring,
+                    detail: {
+                        serial,
+                        partner_serial: partnerSerial,
+                        character_id: req.characterId,
+                        partner_id: entry.character_id,
+                        partner_name: partner.name,
+                        item_id: itemId,
+                    },
+                },
+                {
+                    targetId: entry.character_id,
+                    kind: CashTransferKind.Ring,
+                    detail: {
+                        serial: partnerSerial,
+                        partner_serial: serial,
+                        character_id: entry.character_id,
+                        partner_id: req.characterId,
+                        partner_name: req.characterName,
+                        item_id: itemId,
+                    },
+                },
+            ],
+        );
         if (charged.result === CashShopResult.CASH_SHOP_RESULT_OK) {
             // The second pass places the buyer's half, queued when the partner's half was placed.
             await this.settleTransfers(req.worldId);
@@ -843,11 +974,19 @@ export class CashShopService {
     // The item leaves the locker with a credit request in the same transaction; settle adds the maple points.
     async payBack(req: PayBackCashItemRequest): Promise<PayBackCashItemReply> {
         const removed = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
-            const row = await this.cashShopRepo.deleteItem(req.worldId, req.accountId, String(req.serial), { txClient });
+            const row = await this.cashShopRepo.deleteItem(req.worldId, req.accountId, String(req.serial), {
+                txClient,
+            });
             if (row == null) {
                 return false;
             }
-            await this.cashShopRepo.queueTransfer(req.accountId, req.accountId, CashTransferKind.Credit, { delta: { nxCash: 0, maplePoint: req.maplePoint } }, txClient);
+            await this.cashShopRepo.queueTransfer(
+                req.accountId,
+                req.accountId,
+                CashTransferKind.Credit,
+                { delta: { nxCash: 0, maplePoint: req.maplePoint } },
+                txClient,
+            );
             return true;
         });
         if (removed) {
@@ -861,7 +1000,12 @@ export class CashShopService {
         };
     }
 
-    async buyQuestItem(worldId: number, characterId: number, price: number, item: InventoryModel): Promise<BuyCashQuestItemReply> {
+    async buyQuestItem(
+        worldId: number,
+        characterId: number,
+        price: number,
+        item: InventoryModel,
+    ): Promise<BuyCashQuestItemReply> {
         const reply = await this.cashShopRepo.withCharacterLock(worldId, characterId, async (txClient) => {
             const character = await this.characterRepo.get(worldId, characterId, { txClient });
             if (character == null) {
@@ -873,7 +1017,9 @@ export class CashShopService {
             }
 
             const inventory = await this.inventoryRepo.getAll(worldId, String(characterId), { txClient });
-            await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), [...inventory.values(), item], { txClient });
+            await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), [...inventory.values(), item], {
+                txClient,
+            });
             await this.characterRepo.set(worldId, { ...character, meso: meso - price }, { txClient });
             return { result: CashShopResult.CASH_SHOP_RESULT_OK, meso: meso - price };
         });
@@ -884,9 +1030,18 @@ export class CashShopService {
     async findCoupon(worldId: number, code: string, accountId: number): Promise<FindCashCouponReply> {
         const coupon = await this.cashShopRepo.findCoupon(worldId, code);
         if (coupon == null) {
-            return { result: CashShopResult.CASH_SHOP_RESULT_NOT_FOUND, kind: CashCouponKind.CASH_COUPON_KIND_NX_CASH, value: 0 };
+            return {
+                result: CashShopResult.CASH_SHOP_RESULT_NOT_FOUND,
+                kind: CashCouponKind.CASH_COUPON_KIND_NX_CASH,
+                value: 0,
+            };
         }
-        if (coupon.used_at != null && (coupon.used_by !== accountId || coupon.request_id == null || (await this.couponGranted(worldId, accountId, coupon.kind, coupon.request_id)))) {
+        if (
+            coupon.used_at != null &&
+            (coupon.used_by !== accountId ||
+                coupon.request_id == null ||
+                (await this.couponGranted(worldId, accountId, coupon.kind, coupon.request_id)))
+        ) {
             return { result: CashShopResult.CASH_SHOP_RESULT_COUPON_USED, kind: coupon.kind, value: coupon.value };
         }
         return { result: CashShopResult.CASH_SHOP_RESULT_OK, kind: coupon.kind, value: coupon.value };
@@ -894,7 +1049,12 @@ export class CashShopService {
 
     // A balance coupon is granted in the unified database and an item or meso coupon in the account's shard, each
     // recorded under the coupon's request id in the same transaction.
-    private async couponGranted(worldId: number, accountId: number, kind: CashCouponKind, requestId: string): Promise<boolean> {
+    private async couponGranted(
+        worldId: number,
+        accountId: number,
+        kind: CashCouponKind,
+        requestId: string,
+    ): Promise<boolean> {
         if (kind === CashCouponKind.CASH_COUPON_KIND_NX_CASH || kind === CashCouponKind.CASH_COUPON_KIND_MAPLE_POINT) {
             return (await this.cashBalanceRequestRepo.find(worldId, accountId, requestId)) != null;
         }
@@ -919,9 +1079,20 @@ export class CashShopService {
         switch (coupon.kind) {
             case CashCouponKind.CASH_COUPON_KIND_NX_CASH:
             case CashCouponKind.CASH_COUPON_KIND_MAPLE_POINT: {
-                const delta = coupon.kind === CashCouponKind.CASH_COUPON_KIND_NX_CASH ? { nxCash: coupon.value, maplePoint: 0 } : { nxCash: 0, maplePoint: coupon.value };
+                const delta =
+                    coupon.kind === CashCouponKind.CASH_COUPON_KIND_NX_CASH
+                        ? { nxCash: coupon.value, maplePoint: 0 }
+                        : { nxCash: 0, maplePoint: coupon.value };
                 result = await this.cashShopRepo.withBalanceLock(req.accountId, async (txClient) => {
-                    if ((await this.cashBalanceRequestRepo.reserve(req.worldId, req.accountId, requestId, {}, txClient)) === false) {
+                    if (
+                        (await this.cashBalanceRequestRepo.reserve(
+                            req.worldId,
+                            req.accountId,
+                            requestId,
+                            {},
+                            txClient,
+                        )) === false
+                    ) {
                         return CashShopResult.CASH_SHOP_RESULT_COUPON_USED;
                     }
                     await this.cashShopRepo.addBalance(req.accountId, delta, { txClient });
@@ -938,17 +1109,32 @@ export class CashShopService {
                             return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
                         }
                     }
-                    if ((await this.cashRequestRepo.reserve(req.worldId, req.accountId, requestId, {}, txClient)) === false) {
+                    if (
+                        (await this.cashRequestRepo.reserve(req.worldId, req.accountId, requestId, {}, txClient)) ===
+                        false
+                    ) {
                         return CashShopResult.CASH_SHOP_RESULT_COUPON_USED;
                     }
                     if (coupon.kind === CashCouponKind.CASH_COUPON_KIND_ITEM) {
                         if (req.item?.item == null) {
                             throw new Error(`coupon ${req.code}: item is required`);
                         }
-                        await this.cashShopRepo.insertItem(req.worldId, req.accountId, String(req.item.item.uniqueId ?? 0), CashItem.toJSON(req.item), { txClient });
+                        await this.cashShopRepo.insertItem(
+                            req.worldId,
+                            req.accountId,
+                            String(req.item.item.uniqueId ?? 0),
+                            CashItem.toJSON(req.item),
+                            { txClient },
+                        );
                     } else {
                         meso = Math.min(meso + coupon.value, MAX_MESO);
-                        await this.cashShopRepo.queueTransfer(req.accountId, req.characterId, CashTransferKind.Meso, { meso: coupon.value }, txClient);
+                        await this.cashShopRepo.queueTransfer(
+                            req.accountId,
+                            req.characterId,
+                            CashTransferKind.Meso,
+                            { meso: coupon.value },
+                            txClient,
+                        );
                     }
                     return CashShopResult.CASH_SHOP_RESULT_OK;
                 });
@@ -957,7 +1143,9 @@ export class CashShopService {
                 throw new Error(`coupon ${req.code}: unknown kind ${coupon.kind}`);
         }
         if (result !== CashShopResult.CASH_SHOP_RESULT_OK) {
-            return result === CashShopResult.CASH_SHOP_RESULT_COUPON_USED ? used : { result, nxCash: 0, maplePoint: 0, meso: 0 };
+            return result === CashShopResult.CASH_SHOP_RESULT_COUPON_USED
+                ? used
+                : { result, nxCash: 0, maplePoint: 0, meso: 0 };
         }
         if (coupon.kind === CashCouponKind.CASH_COUPON_KIND_MESO) {
             await this.settleTransfers(req.worldId);

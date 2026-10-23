@@ -94,7 +94,8 @@ ON CONFLICT (${this.ownerColumn}, record_key) DO UPDATE SET
             text: row.text ?? "",
             expiresAtUnixMs: row.expires_at ? new Date(row.expires_at).getTime() : 0,
             recordedAtUnixMs: new Date(row.recorded_at).getTime(),
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 

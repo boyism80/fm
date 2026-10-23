@@ -1,12 +1,12 @@
 -- State machine (old/scripts/event/KerningPQ.js): 커닝시티 파티 퀘스트
 
 local stage_maps = {
-	103000800,
-	103000801,
-	103000802,
-	103000803,
-	103000804,
-	103000805,
+    103000800,
+    103000801,
+    103000802,
+    103000803,
+    103000804,
+    103000805,
 }
 
 local exit_map_id = 103000890
@@ -14,62 +14,62 @@ local ranking_quest_id = 1201
 local duration_ms = 1800000
 
 local function clear(sm)
-	sm:finish(exit_map_id)
+    sm:finish(exit_map_id)
 end
 
 return {
-	on_init = function(group)
-		group:min_players(4)
-		group:exit_map(exit_map_id)
-	end,
+    on_init = function(group)
+        group:min_players(4)
+        group:exit_map(exit_map_id)
+    end,
 
-	on_mob_kill = function(sm, player, mobs)
-		sm:add_kill(player, #mobs)
-	end,
+    on_mob_kill = function(sm, player, mobs)
+        sm:add_kill(player, #mobs)
+    end,
 
-	on_create = function(sm)
-		return stage_maps
-	end,
+    on_create = function(sm)
+        return stage_maps
+    end,
 
-	on_prepare = function(sm)
-		for _, map_id in ipairs(stage_maps) do
-			local map = sm:map(map_id)
-			map:respawn({ include_one_time = true })
-			local portal = map:portal("next00")
-			if portal ~= nil then
-				portal:script("enter_kpq")
-			end
-		end
-	end,
+    on_prepare = function(sm)
+        for _, map_id in ipairs(stage_maps) do
+            local map = sm:map(map_id)
+            map:respawn({ include_one_time = true })
+            local portal = map:portal("next00")
+            if portal ~= nil then
+                portal:script("enter_kpq")
+            end
+        end
+    end,
 
-	on_start = function(sm)
-		sm:start_timer(duration_ms)
-	end,
+    on_start = function(sm)
+        sm:start_timer(duration_ms)
+    end,
 
-	on_player_enter = function(sm, player)
-		local function on_arrive(player)
-			player:try_party_quest(ranking_quest_id)
-		end
-		player:map(sm:map(stage_maps[1]), { callback = on_arrive })
-	end,
+    on_player_enter = function(sm, player)
+        local function on_arrive(player)
+            player:try_party_quest(ranking_quest_id)
+        end
+        player:map(sm:map(stage_maps[1]), { callback = on_arrive })
+    end,
 
-	on_player_dead = function(sm, player)
-	end,
+    on_player_dead = function(sm, player)
+    end,
 
-	on_player_revive = function(sm, player)
-	end,
+    on_player_revive = function(sm, player)
+    end,
 
-	on_left_party = function(sm, player)
-	end,
+    on_left_party = function(sm, player)
+    end,
 
-	on_disband_party = function(sm)
-		sm:finish(exit_map_id)
-	end,
+    on_disband_party = function(sm)
+        sm:finish(exit_map_id)
+    end,
 
-	on_scheduled_timeout = function(sm)
-		clear(sm)
-	end,
+    on_scheduled_timeout = function(sm)
+        clear(sm)
+    end,
 
-	on_all_monsters_dead = function(sm)
-	end,
+    on_all_monsters_dead = function(sm)
+    end,
 }

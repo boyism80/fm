@@ -7,26 +7,26 @@ local NPC_X = -70
 local NPC_Y = 95
 
 return {
-	on_init = function(group)
-		group:min_players(1)
-		group:exit_map(EXIT_MAP)
-	end,
+    on_init = function(group)
+        group:min_players(1)
+        group:exit_map(EXIT_MAP)
+    end,
 
-	on_create = function(sm)
-		return {
-			{ id = TEMPLATE_MAP, npcs = false, reactors = false, respawns = false },
-		}
-	end,
+    on_create = function(sm)
+        return {
+            { id = TEMPLATE_MAP, npcs = false, reactors = false, respawns = false },
+        }
+    end,
 
-	on_prepare = function(sm)
-		local map = sm:map(TEMPLATE_MAP)
-		map:spawn_npc(NPC_ID, NPC_X, NPC_Y)
-		map:portal(2):script("goja_out")
-		map:portal(3):script("goja_out")
-	end,
+    on_prepare = function(sm)
+        local map = sm:map(TEMPLATE_MAP)
+        map:spawn_npc(NPC_ID, NPC_X, NPC_Y)
+        map:portal(2):script("goja_out")
+        map:portal(3):script("goja_out")
+    end,
 
-	on_player_enter = function(sm, player)
-		player:map(sm:map(TEMPLATE_MAP), 0)
-	end,
+    on_player_enter = function(sm, player)
+        player:map(sm:map(TEMPLATE_MAP), 0)
+    end,
 
 }

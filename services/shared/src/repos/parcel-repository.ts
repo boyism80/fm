@@ -46,10 +46,9 @@ export class ParcelRepository {
 
     async findByReceiver(worldId: number, receiverId: number, options: RepositoryTxOptions = {}): Promise<ParcelRow[]> {
         const client = options.txClient ?? this.pool(worldId, receiverId);
-        const res = await client.query(
-            `SELECT ${SELECT_COLS} FROM parcels WHERE receiver_id = $1 ORDER BY parcel_id`,
-            [receiverId]
-        );
+        const res = await client.query(`SELECT ${SELECT_COLS} FROM parcels WHERE receiver_id = $1 ORDER BY parcel_id`, [
+            receiverId,
+        ]);
         return res.rows as ParcelRow[];
     }
 
@@ -66,37 +65,55 @@ export class ParcelRepository {
                 parcel.quick,
                 parcel.message,
                 parcel.item === null ? null : JSON.stringify(parcel.item),
-            ]
+            ],
         );
         return res.rows[0] as ParcelRow;
     }
 
-    async delete(worldId: number, receiverId: number, parcelId: number, options: RepositoryTxOptions = {}): Promise<ParcelRow | null> {
+    async delete(
+        worldId: number,
+        receiverId: number,
+        parcelId: number,
+        options: RepositoryTxOptions = {},
+    ): Promise<ParcelRow | null> {
         const client = options.txClient ?? this.pool(worldId, receiverId);
         const res = await client.query(
             `DELETE FROM parcels WHERE receiver_id = $1 AND parcel_id = $2 RETURNING ${SELECT_COLS}`,
-            [receiverId, parcelId]
+            [receiverId, parcelId],
         );
         return (res.rows[0] as ParcelRow | undefined) ?? null;
     }
 
-    async deleteMany(worldId: number, receiverId: number, parcelIds: number[], options: RepositoryTxOptions = {}): Promise<void> {
+    async deleteMany(
+        worldId: number,
+        receiverId: number,
+        parcelIds: number[],
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         if (parcelIds.length === 0) {
             return;
         }
         const client = options.txClient ?? this.pool(worldId, receiverId);
-        await client.query("DELETE FROM parcels WHERE receiver_id = $1 AND parcel_id = ANY($2::int[])", [receiverId, parcelIds]);
+        await client.query("DELETE FROM parcels WHERE receiver_id = $1 AND parcel_id = ANY($2::int[])", [
+            receiverId,
+            parcelIds,
+        ]);
     }
 
-    async markNotified(worldId: number, receiverId: number, parcelIds: number[], options: RepositoryTxOptions = {}): Promise<void> {
+    async markNotified(
+        worldId: number,
+        receiverId: number,
+        parcelIds: number[],
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         if (parcelIds.length === 0) {
             return;
         }
         const client = options.txClient ?? this.pool(worldId, receiverId);
-        await client.query(
-            "UPDATE parcels SET notified = TRUE WHERE receiver_id = $1 AND parcel_id = ANY($2::int[])",
-            [receiverId, parcelIds]
-        );
+        await client.query("UPDATE parcels SET notified = TRUE WHERE receiver_id = $1 AND parcel_id = ANY($2::int[])", [
+            receiverId,
+            parcelIds,
+        ]);
     }
 }
 

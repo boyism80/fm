@@ -14,10 +14,4 @@ export const DEFAULT_GUILD_LOGO: GuildLogo = {
     logoBGColor: 0,
 };
 
-export const DEFAULT_GUILD_RANK_TITLES: GuildRankTitles = [
-    "Master",
-    "Jr. Master",
-    "Member",
-    "Member",
-    "Member",
-];
+export const DEFAULT_GUILD_RANK_TITLES: GuildRankTitles = ["Master", "Jr. Master", "Member", "Member", "Member"];

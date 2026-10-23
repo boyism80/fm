@@ -3,7 +3,7 @@
 local gq = require("script/lib/guild_quest")
 
 return {
-	on_enter = function(me)
-		gq.pass_gate(me, "ghostgate", "stage4clear", 990000800, 0, "결계로 가로막혀 있어 지나갈 수 없습니다.")
-	end
+    on_enter = function(me)
+        gq.pass_gate(me, "ghostgate", "stage4clear", 990000800, 0, "결계로 가로막혀 있어 지나갈 수 없습니다.")
+    end
 }

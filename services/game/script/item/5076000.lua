@@ -3,7 +3,7 @@
 local megaphone = require("script/lib/megaphone")
 
 return {
-	on_cash = function(me, item_id, text, ear, pet_sn, input)
-		return megaphone.send_item(me, text, ear, input.inventory, input.slot)
-	end,
+    on_cash = function(me, item_id, text, ear, pet_sn, input)
+        return megaphone.send_item(me, text, ear, input.inventory, input.slot)
+    end,
 }

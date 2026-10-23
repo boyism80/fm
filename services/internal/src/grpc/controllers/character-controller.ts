@@ -57,47 +57,17 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
         throw Object.assign(new Error("character is required in entry"), { code: "INVALID_PAYLOAD" });
     }
     return {
-        character: grpcMapper.map<Character, CharacterModel>(
-            msgChar,
-            CHARACTER_PROTO,
-            CHARACTER_MODEL
-        ),
+        character: grpcMapper.map<Character, CharacterModel>(msgChar, CHARACTER_PROTO, CHARACTER_MODEL),
         baseLooks: protoMapToObject(entry.baseLooks),
         overlays: protoMapToObject(entry.overlays),
         inventory: entry.inventory.map((inventory) =>
-            grpcMapper.map<Inventory, InventoryModel>(
-                inventory,
-                INVENTORY_PROTO,
-                INVENTORY_MODEL
-            )
+            grpcMapper.map<Inventory, InventoryModel>(inventory, INVENTORY_PROTO, INVENTORY_MODEL),
         ),
-        skills: entry.skills.map((skill) =>
-            grpcMapper.map<Skill, SkillModel>(
-                skill,
-                SKILL_PROTO,
-                SKILL_MODEL
-            )
-        ),
-        buffs: (entry.buffs ?? []).map((buff) =>
-            grpcMapper.map<Buff, BuffModel>(
-                buff,
-                BUFF_PROTO,
-                BUFF_MODEL
-            )
-        ),
-        quests: (entry.quests ?? []).map((quest) =>
-            grpcMapper.map<Quest, QuestModel>(
-                quest,
-                QUEST_PROTO,
-                QUEST_MODEL
-            )
-        ),
+        skills: entry.skills.map((skill) => grpcMapper.map<Skill, SkillModel>(skill, SKILL_PROTO, SKILL_MODEL)),
+        buffs: (entry.buffs ?? []).map((buff) => grpcMapper.map<Buff, BuffModel>(buff, BUFF_PROTO, BUFF_MODEL)),
+        quests: (entry.quests ?? []).map((quest) => grpcMapper.map<Quest, QuestModel>(quest, QUEST_PROTO, QUEST_MODEL)),
         savedLocations: (entry.savedLocations ?? []).map((loc) =>
-            grpcMapper.map<SavedLocation, SavedLocationModel>(
-                loc,
-                SAVED_LOCATION_PROTO,
-                SAVED_LOCATION_MODEL
-            )
+            grpcMapper.map<SavedLocation, SavedLocationModel>(loc, SAVED_LOCATION_PROTO, SAVED_LOCATION_MODEL),
         ),
         records: (entry.records ?? []).map((record) => ({
             ...record,
@@ -124,27 +94,23 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
         })),
         mount: entry.mount
             ? {
-                level: entry.mount.level,
-                exp: entry.mount.exp,
-                fatigue: entry.mount.fatigue,
-            }
+                  level: entry.mount.level,
+                  exp: entry.mount.exp,
+                  fatigue: entry.mount.fatigue,
+              }
             : undefined,
         storage: entry.account?.storage
             ? {
-                storage: {
-                    accountId: entry.account.storage.accountId,
-                    worldId: entry.account.storage.worldId,
-                    slots: entry.account.storage.slots,
-                    meso: entry.account.storage.meso,
-                },
-                items: entry.account.storage.items.map((item) =>
-                    grpcMapper.map<Inventory, InventoryModel>(
-                        item,
-                        INVENTORY_PROTO,
-                        INVENTORY_MODEL
-                    )
-                ),
-            }
+                  storage: {
+                      accountId: entry.account.storage.accountId,
+                      worldId: entry.account.storage.worldId,
+                      slots: entry.account.storage.slots,
+                      meso: entry.account.storage.meso,
+                  },
+                  items: entry.account.storage.items.map((item) =>
+                      grpcMapper.map<Inventory, InventoryModel>(item, INVENTORY_PROTO, INVENTORY_MODEL),
+                  ),
+              }
             : undefined,
         claimedShops: entry.claimedShops ?? [],
         unsettledRequests: (entry.unsettledRequests ?? []).map((request) => ({
@@ -188,7 +154,7 @@ export class CharacterGrpcController {
     constructor(
         characterService: CharacterService,
         characterOverviewService: CharacterOverviewService,
-        grpcError: GrpcErrorHandler
+        grpcError: GrpcErrorHandler,
     ) {
         this.characterService = characterService;
         this.characterOverviewService = characterOverviewService;
@@ -202,11 +168,7 @@ export class CharacterGrpcController {
             if (!msgChar) {
                 throw Object.assign(new Error("character is required"), { code: "INVALID_PAYLOAD" });
             }
-            const character = grpcMapper.map<Character, CharacterModel>(
-                msgChar,
-                CHARACTER_PROTO,
-                CHARACTER_MODEL
-            );
+            const character = grpcMapper.map<Character, CharacterModel>(msgChar, CHARACTER_PROTO, CHARACTER_MODEL);
             const baseLooks = protoMapToObject(call.request.baseLooks);
             const overlays = protoMapToObject(call.request.overlays);
             await this.characterService.saveCharacter(character, baseLooks, overlays);
@@ -230,7 +192,10 @@ export class CharacterGrpcController {
     @Method("getCharacterList")
     async getCharacterList(call: GrpcCall<GetCharacterListRequest>, callback: GrpcCallback<GetCharacterListReply>) {
         try {
-            const result = await this.characterOverviewService.getCharacterList(call.request.accountId, call.request.worldId);
+            const result = await this.characterOverviewService.getCharacterList(
+                call.request.accountId,
+                call.request.worldId,
+            );
             callback(null, {
                 characters: result.characters.map(makeCharacterOverview),
                 slotCount: result.slotCount,
@@ -242,9 +207,16 @@ export class CharacterGrpcController {
     }
 
     @Method("checkCharacterName")
-    async checkCharacterName(call: GrpcCall<CheckCharacterNameRequest>, callback: GrpcCallback<CheckCharacterNameReply>) {
+    async checkCharacterName(
+        call: GrpcCall<CheckCharacterNameRequest>,
+        callback: GrpcCallback<CheckCharacterNameReply>,
+    ) {
         try {
-            const result = await this.characterOverviewService.checkCharacterName(call.request.name, call.request.accountId, call.request.worldId);
+            const result = await this.characterOverviewService.checkCharacterName(
+                call.request.name,
+                call.request.accountId,
+                call.request.worldId,
+            );
             callback(null, { exists: result.exists });
         } catch (err) {
             this.grpcError(err, callback);
@@ -254,7 +226,11 @@ export class CharacterGrpcController {
     @Method("createCharacter")
     async createCharacter(call: GrpcCall<CreateCharacterRequest>, callback: GrpcCallback<CreateCharacterReply>) {
         try {
-            const result = await this.characterService.createCharacter(call.request.accountId, call.request.worldId, call.request);
+            const result = await this.characterService.createCharacter(
+                call.request.accountId,
+                call.request.worldId,
+                call.request,
+            );
             callback(null, {
                 success: result.success,
                 errorMsg: result.errorMsg ?? "",
@@ -268,7 +244,11 @@ export class CharacterGrpcController {
     @Method("deleteCharacter")
     async deleteCharacter(call: GrpcCall<DeleteCharacterRequest>, callback: GrpcCallback<DeleteCharacterReply>) {
         try {
-            const result = await this.characterService.deleteCharacter(call.request.accountId, call.request.characterId, call.request.worldId);
+            const result = await this.characterService.deleteCharacter(
+                call.request.accountId,
+                call.request.characterId,
+                call.request.worldId,
+            );
             callback(null, {
                 success: result.success,
                 secondPasswordSet: result.secondPasswordSet ?? false,

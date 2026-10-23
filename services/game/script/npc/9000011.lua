@@ -3,7 +3,7 @@
 local channel_event = require("script/lib/channel_event")
 
 return {
-	on_click = function(me, npc)
-		channel_event.guide(me, npc)
-	end,
+    on_click = function(me, npc)
+        channel_event.guide(me, npc)
+    end,
 }

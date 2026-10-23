@@ -6,49 +6,49 @@ local TAME_PIG_ID = 9300102
 local DURATION_MS = 300000
 
 local function finish(sm, message)
-	local players = sm:players()
-	sm:message(message, Msg.PinkText)
-	sm:finish(0)
-	for _, player in ipairs(players) do
-		player:map(EXIT_MAP)
-	end
+    local players = sm:players()
+    sm:message(message, Msg.PinkText)
+    sm:finish(0)
+    for _, player in ipairs(players) do
+        player:map(EXIT_MAP)
+    end
 end
 
 return {
-	on_init = function(group)
-		group:min_players(1)
-	end,
+    on_init = function(group)
+        group:min_players(1)
+    end,
 
-	on_create = function(sm)
-		return { QUEST_MAP }
-	end,
+    on_create = function(sm)
+        return { QUEST_MAP }
+    end,
 
-	on_prepare = function(sm)
-		local map = sm:map(QUEST_MAP)
-		map:respawn({ include_one_time = true })
-		for _, mob in pairs(map:mobs(TAME_PIG_ID)) do
-			map:remove_mob(mob:oid(), MobDieAnimation.FadeOut)
-		end
-		map:spawn_mob(TAME_PIG_ID, -26, 335)
-	end,
+    on_prepare = function(sm)
+        local map = sm:map(QUEST_MAP)
+        map:respawn({ include_one_time = true })
+        for _, mob in pairs(map:mobs(TAME_PIG_ID)) do
+            map:remove_mob(mob:oid(), MobDieAnimation.FadeOut)
+        end
+        map:spawn_mob(TAME_PIG_ID, -26, 335)
+    end,
 
-	on_start = function(sm)
-		sm:start_timer(DURATION_MS)
-	end,
+    on_start = function(sm)
+        sm:start_timer(DURATION_MS)
+    end,
 
-	on_player_enter = function(sm, player)
-		player:map(sm:map(QUEST_MAP))
-		sm:message("멧돼지를 외계인으로부터 보호하고, 페로몬과 연구 보고서를 회수하세요!", Msg.PinkText)
-	end,
+    on_player_enter = function(sm, player)
+        player:map(sm:map(QUEST_MAP))
+        sm:message("멧돼지를 외계인으로부터 보호하고, 페로몬과 연구 보고서를 회수하세요!", Msg.PinkText)
+    end,
 
-	on_mob_die = function(sm, mob)
-		if mob ~= nil and mob:id() == TAME_PIG_ID then
-			finish(sm, "멧돼지를 보호하는 데 실패하였습니다.")
-		end
-	end,
+    on_mob_die = function(sm, mob)
+        if mob ~= nil and mob:id() == TAME_PIG_ID then
+            finish(sm, "멧돼지를 보호하는 데 실패하였습니다.")
+        end
+    end,
 
-	on_scheduled_timeout = function(sm)
-		finish(sm, "제한시간이 다 되어 실패하였습니다.")
-	end,
+    on_scheduled_timeout = function(sm)
+        finish(sm, "제한시간이 다 되어 실패하였습니다.")
+    end,
 
 }

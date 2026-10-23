@@ -10,57 +10,57 @@ local COOLDOWN_RECORD = "cooldown.night_market_boss"
 local COOLDOWN_SEC = 7200
 
 local function eligible(me)
-	local qualification = me:quest(QUALIFICATION_QUEST)
-	local story = me:quest(STORY_QUEST)
-	if qualification == nil or not qualification:completed() then
-		return false
-	end
-	if story == nil or (not story:started() and not story:completed()) then
-		return false
-	end
-	return not pq.has_item(me, NECKLACE)
+    local qualification = me:quest(QUALIFICATION_QUEST)
+    local story = me:quest(STORY_QUEST)
+    if qualification == nil or not qualification:completed() then
+        return false
+    end
+    if story == nil or (not story:started() and not story:completed()) then
+        return false
+    end
+    return not pq.has_item(me, NECKLACE)
 end
 
 local function cooldown_blocked(me)
-	return me:records():get(COOLDOWN_RECORD) > 0
+    return me:records():get(COOLDOWN_RECORD) > 0
 end
 
 local function record_entry(me)
-	me:records():set(COOLDOWN_RECORD, 1, { every = COOLDOWN_SEC })
+    me:records():set(COOLDOWN_RECORD, 1, { every = COOLDOWN_SEC })
 end
 
 return {
-	on_click = function(me, npc)
-		if not eligible(me) then
-			me:dialog(npc, "흐음.. 내가 포장마차를 만나러 가는 길을 알고 있기는 하지만, 자네에게 알려줄 필요는 없을 것 같네.")
-			return
-		end
-		me:dialog(npc, "자네라면 포장마차를 퇴치할 수 있을 것 같군! 그럼 포장마차가 있는 곳으로 보내주겠네. 포장마차는 체력이 아주 높으니 4차가 아니면 잡기 힘들걸세! 조심하게나~")
-		if cooldown_blocked(me) then
-			me:dialog(npc, "포장마차는 2시간에 한번씩만 퇴치하러 갈 수 있다네. 나중에 다시 찾아와주게나.")
-			return
-		end
-		local group = state_machine(GROUP_NAME)
-		if group == nil then
-			me:dialog(npc, "오류가 발생했다네.")
-			return
-		end
-		local party = me:party()
-		local sm, err
-		if party ~= nil then
-			sm, err = group:start_party(me, party)
-		else
-			sm, err = group:start_solo(me)
-		end
-		if sm == nil then
-			if err == StateMachineError.Full then
-				me:dialog(npc, "이미 이 안에 다른 누군가가 포장마차를 물리치고 있는 것 같네. 잠시 후에 다시 찾아와 주게.")
-			else
-				me:dialog(npc, "오류가 발생했다네.")
-				log("night_market_boss start:", err)
-				return
-			end
-		end
-		record_entry(me)
-	end
+    on_click = function(me, npc)
+        if not eligible(me) then
+            me:dialog(npc, "흐음.. 내가 포장마차를 만나러 가는 길을 알고 있기는 하지만, 자네에게 알려줄 필요는 없을 것 같네.")
+            return
+        end
+        me:dialog(npc, "자네라면 포장마차를 퇴치할 수 있을 것 같군! 그럼 포장마차가 있는 곳으로 보내주겠네. 포장마차는 체력이 아주 높으니 4차가 아니면 잡기 힘들걸세! 조심하게나~")
+        if cooldown_blocked(me) then
+            me:dialog(npc, "포장마차는 2시간에 한번씩만 퇴치하러 갈 수 있다네. 나중에 다시 찾아와주게나.")
+            return
+        end
+        local group = state_machine(GROUP_NAME)
+        if group == nil then
+            me:dialog(npc, "오류가 발생했다네.")
+            return
+        end
+        local party = me:party()
+        local sm, err
+        if party ~= nil then
+            sm, err = group:start_party(me, party)
+        else
+            sm, err = group:start_solo(me)
+        end
+        if sm == nil then
+            if err == StateMachineError.Full then
+                me:dialog(npc, "이미 이 안에 다른 누군가가 포장마차를 물리치고 있는 것 같네. 잠시 후에 다시 찾아와 주게.")
+            else
+                me:dialog(npc, "오류가 발생했다네.")
+                log("night_market_boss start:", err)
+                return
+            end
+        end
+        record_entry(me)
+    end
 }

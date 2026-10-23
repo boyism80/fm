@@ -58,15 +58,13 @@ type ServerContainerCradle = {
     grpcError: typeof grpcError;
 };
 
-const INVALID_CODES = new Set([
-    "UNKNOWN_WORLD", "INVALID_CHARACTER_ID",
-    "INVALID_PAYLOAD", "UNKNOWN_CHANNEL",
-]);
+const INVALID_CODES = new Set(["UNKNOWN_WORLD", "INVALID_CHARACTER_ID", "INVALID_PAYLOAD", "UNKNOWN_CHANNEL"]);
 
-function grpcError(err: { code?: string; message?: string }, callback: (error: { code: number; message: string }) => void) {
-    const code = err && err.code && INVALID_CODES.has(err.code)
-        ? grpc.status.INVALID_ARGUMENT
-        : grpc.status.INTERNAL;
+function grpcError(
+    err: { code?: string; message?: string },
+    callback: (error: { code: number; message: string }) => void,
+) {
+    const code = err && err.code && INVALID_CODES.has(err.code) ? grpc.status.INVALID_ARGUMENT : grpc.status.INTERNAL;
     callback({ code, message: err.message || String(err) });
 }
 
@@ -111,7 +109,7 @@ async function main() {
             `character_cache_ttl_s ${appConfiguration.getCharacterCacheTtlSeconds()} | item_cache_ttl_s ${appConfiguration.getItemCacheTtlSeconds()}` +
             (pgUnified ? ` | pg_unified ${pgUnified.host}:${pgUnified.port}/${pgUnified.database}` : "") +
             ` | game_catalog_worlds ${Object.keys(internalConfig.game_servers?.worlds ?? {}).length}` +
-            ` | rabbitmq ${internalConfig.rabbitmq?.ip}:${internalConfig.rabbitmq?.port}/${internalConfig.rabbitmq?.vhost}`
+            ` | rabbitmq ${internalConfig.rabbitmq?.ip}:${internalConfig.rabbitmq?.port}/${internalConfig.rabbitmq?.vhost}`,
     );
 
     await container.resolve("accountService").moveAccountsToUnified();
@@ -178,7 +176,10 @@ async function main() {
         serviceImplementation[route.grpcMethod] = async (call, callback) => {
             const scope = container.createScope();
             try {
-                const controller = scope.resolve(route.resolverName) as Record<string, handleUnaryCall<unknown, unknown>>;
+                const controller = scope.resolve(route.resolverName) as Record<
+                    string,
+                    handleUnaryCall<unknown, unknown>
+                >;
                 const method = controller[route.methodName];
                 if (typeof method !== "function") {
                     throw new Error(`gRPC method not found: ${route.resolverName}.${route.methodName}`);

@@ -2,8 +2,21 @@ import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import type { InternalContext } from "@fm/shared/context/internal-context";
 import { guildWeek, guildWeekStart } from "@fm/shared/guild-week";
-import { JOB_GROUP_SQL, JOB_ID_SQL, RANKED_CLASS_SQL, rankingFilters, type RankingKind, type WorldGroups } from "@fm/shared/ranking-filters";
-import { KEPT_ROUNDS, RankingRepository, type RankingBounds, type RankingKeys, type RankingRow } from "@fm/shared/repos/ranking-repository";
+import {
+    JOB_GROUP_SQL,
+    JOB_ID_SQL,
+    RANKED_CLASS_SQL,
+    rankingFilters,
+    type RankingKind,
+    type WorldGroups,
+} from "@fm/shared/ranking-filters";
+import {
+    KEPT_ROUNDS,
+    RankingRepository,
+    type RankingBounds,
+    type RankingKeys,
+    type RankingRow,
+} from "@fm/shared/repos/ranking-repository";
 import { RangeReader } from "./range-reader";
 import { WorkTable, type RangeStep, type RunningRound } from "./work-table";
 
@@ -48,7 +61,11 @@ export class RankingScheduler {
     private heartbeatTimer: NodeJS.Timeout | undefined;
     private wake: (() => void) | undefined;
 
-    constructor(internalContext: InternalContext, rankingRepository: RankingRepository, options: RankingSchedulerOptions) {
+    constructor(
+        internalContext: InternalContext,
+        rankingRepository: RankingRepository,
+        options: RankingSchedulerOptions,
+    ) {
         this.ctx = internalContext;
         this.rankings = rankingRepository;
         this.work = new WorkTable(internalContext.getRedisUnifiedAccess().client);
@@ -58,7 +75,9 @@ export class RankingScheduler {
     async start(): Promise<void> {
         await this.work.heartbeat(this.nodeId, this.options.workers);
         this.heartbeatTimer = setInterval(() => {
-            this.work.heartbeat(this.nodeId, this.options.workers).catch((error: unknown) => console.error("[ranking] heartbeat failed", error));
+            this.work
+                .heartbeat(this.nodeId, this.options.workers)
+                .catch((error: unknown) => console.error("[ranking] heartbeat failed", error));
         }, HEARTBEAT_MS);
         this.loop = this.poll();
     }
@@ -161,7 +180,9 @@ export class RankingScheduler {
             return;
         }
         const renew = setInterval(() => {
-            this.work.renewLock(kind, token).catch((error: unknown) => console.error("[ranking] lock renewal failed", error));
+            this.work
+                .renewLock(kind, token)
+                .catch((error: unknown) => console.error("[ranking] lock renewal failed", error));
         }, WorkTable.lockRenewMs());
         try {
             await work();
@@ -180,29 +201,37 @@ export class RankingScheduler {
         if (running !== null && running.period !== run.period) {
             await this.abandon(run.kind, running);
         }
-        const roundId = running !== null && running.period === run.period ? running.roundId : await this.rankings.nextRoundId();
+        const roundId =
+            running !== null && running.period === run.period ? running.roundId : await this.rankings.nextRoundId();
         const table = RankingRepository.roundTable(run.kind, roundId, run.period);
         await this.work.setRunning(run.kind, { roundId, period: run.period, phase: "freezing", ranges: 0 });
         await this.dropUnattached(run.kind, roundId);
         await this.rankings.createRoundTable(table, roundId);
 
         const shards = this.shardPools();
-        const counts = await Promise.all(shards.map(async (shard) => {
-            await this.rankings.clearInputs(shard, run.kind);
-            return this.rankings.freezeInputs(shard, run.select(roundId));
-        }));
+        const counts = await Promise.all(
+            shards.map(async (shard) => {
+                await this.rankings.clearInputs(shard, run.kind);
+                return this.rankings.freezeInputs(shard, run.select(roundId));
+            }),
+        );
         const total = counts.reduce((sum, n) => sum + n, 0);
 
         const rangeCount = Math.max(1, Math.min(total, (await this.work.liveWorkers()) * this.options.rangeMultiplier));
         const splits: RankingKeys[] = [];
         if (rangeCount > 1) {
             const fraction = Math.min(1, (SAMPLES_PER_RANGE * rangeCount) / total);
-            const samples = (await Promise.all(shards.map((shard) => this.rankings.sampleKeys(shard, roundId, fraction))))
+            const samples = (
+                await Promise.all(shards.map((shard) => this.rankings.sampleKeys(shard, roundId, fraction)))
+            )
                 .flat()
                 .sort(RankingScheduler.compare);
             for (let i = 1; i < rangeCount; i += 1) {
                 const split = samples[Math.floor((i * samples.length) / rangeCount)];
-                if (split !== undefined && (splits.length === 0 || RankingScheduler.compare(split, splits[splits.length - 1]!) > 0)) {
+                if (
+                    split !== undefined &&
+                    (splits.length === 0 || RankingScheduler.compare(split, splits[splits.length - 1]!) > 0)
+                ) {
                     splits.push(split);
                 }
             }
@@ -210,7 +239,9 @@ export class RankingScheduler {
         const bounds: RankingBounds[] = [null, ...splits].map((lo, i) => ({ lo, hi: splits[i] ?? null }));
         await this.work.writeRanges(roundId, bounds);
         await this.work.setRunning(run.kind, { roundId, period: run.period, phase: "counting", ranges: bounds.length });
-        console.log(`[ranking] kind=${run.kind} period=${run.period} round=${roundId} frozen=${total} ranges=${bounds.length}`);
+        console.log(
+            `[ranking] kind=${run.kind} period=${run.period} round=${roundId} frozen=${total} ranges=${bounds.length}`,
+        );
     }
 
     private async runRanges(run: KindRun, running: RunningRound): Promise<void> {
@@ -231,7 +262,9 @@ export class RankingScheduler {
     private async count(run: KindRun, running: RunningRound, index: number): Promise<void> {
         const task = await this.work.range(running.roundId, index);
         const counts: Record<string, number> = {};
-        const shardCounts = await Promise.all(this.shardPools().map((shard) => this.rankings.countRange(shard, running.roundId, task.bounds)));
+        const shardCounts = await Promise.all(
+            this.shardPools().map((shard) => this.rankings.countRange(shard, running.roundId, task.bounds)),
+        );
         for (const combination of shardCounts.flat()) {
             for (const filter of rankingFilters(run.kind, this.options.worldGroups, combination)) {
                 counts[filter] = (counts[filter] ?? 0) + combination.count;
@@ -243,7 +276,9 @@ export class RankingScheduler {
     private async rank(run: KindRun, running: RunningRound, index: number): Promise<void> {
         const task = await this.work.range(running.roundId, index);
         const table = RankingRepository.roundTable(run.kind, running.roundId, running.period);
-        const readers = this.shardPools().map((shard) => new RangeReader(this.rankings, shard, running.roundId, task.bounds));
+        const readers = this.shardPools().map(
+            (shard) => new RangeReader(this.rankings, shard, running.roundId, task.bounds),
+        );
         const written: Record<string, number> = {};
         let batch: RankingRow[] = [];
 
@@ -280,7 +315,9 @@ export class RankingScheduler {
 
         for (const filter of new Set([...Object.keys(task.counts), ...Object.keys(written)])) {
             if ((task.counts[filter] ?? 0) !== (written[filter] ?? 0)) {
-                throw new Error(`range ${index} wrote ${written[filter] ?? 0} rows for ${filter}, counted ${task.counts[filter] ?? 0}`);
+                throw new Error(
+                    `range ${index} wrote ${written[filter] ?? 0} rows for ${filter}, counted ${task.counts[filter] ?? 0}`,
+                );
             }
         }
         await this.work.finish(running.roundId, "rank", index, null);
@@ -312,7 +349,9 @@ export class RankingScheduler {
             }
             await this.work.startRanking(running.roundId, offsets);
             await this.work.setRunning(run.kind, { ...running, phase: "ranking" });
-            console.log(`[ranking] kind=${run.kind} period=${run.period} round=${running.roundId} counted filters=${Object.keys(totals).length}`);
+            console.log(
+                `[ranking] kind=${run.kind} period=${run.period} round=${running.roundId} counted filters=${Object.keys(totals).length}`,
+            );
             return;
         }
 
@@ -334,7 +373,9 @@ export class RankingScheduler {
         for (const filter of new Set([...Object.keys(expected), ...totals.keys()])) {
             const total = totals.get(filter);
             if (total === undefined || total.count !== expected[filter] || total.last !== expected[filter]) {
-                console.error(`[ranking] kind=${run.kind} round=${running.roundId} filter=${filter} expected=${expected[filter] ?? 0} got=${JSON.stringify(total)}; round dropped`);
+                console.error(
+                    `[ranking] kind=${run.kind} round=${running.roundId} filter=${filter} expected=${expected[filter] ?? 0} got=${JSON.stringify(total)}; round dropped`,
+                );
                 await this.abandon(run.kind, running);
                 return;
             }
@@ -342,9 +383,14 @@ export class RankingScheduler {
 
         await this.rankings.attach(table, running.roundId);
         const published = await this.rankings.publishedRounds(run.kind);
-        await this.rankings.setCurrentRounds(run.kind, published.slice(0, KEPT_ROUNDS).map((round) => round.roundId));
+        await this.rankings.setCurrentRounds(
+            run.kind,
+            published.slice(0, KEPT_ROUNDS).map((round) => round.roundId),
+        );
         await this.work.clearRound(run.kind, running);
-        console.log(`[ranking] kind=${run.kind} period=${run.period} round=${running.roundId} published filters=${totals.size}`);
+        console.log(
+            `[ranking] kind=${run.kind} period=${run.period} round=${running.roundId} published filters=${totals.size}`,
+        );
 
         for (const old of published.slice(KEPT_ROUNDS)) {
             await this.rankings.detachAndDrop(old.table);

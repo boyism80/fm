@@ -76,9 +76,7 @@ export class AppConfiguration {
         return 50;
     }
 
-    getSection(
-        section: "app" | "grpc" | "postgresql" | "redis" | "rabbitmq" | "cache" | "sequelize" | "resources"
-    ) {
+    getSection(section: "app" | "grpc" | "postgresql" | "redis" | "rabbitmq" | "cache" | "sequelize" | "resources") {
         return this.config[section];
     }
 }

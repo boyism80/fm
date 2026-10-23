@@ -96,18 +96,34 @@ export class CatalogGrpcController {
         const req = call.request;
         try {
             if (req.role === ServerRole.SERVER_ROLE_GAME) {
-                await this.heartbeat(this.internalContext.getRedisGlobalAccess(req.worldId).client, `w${req.worldId}`, `game:c${req.channelId}`, req.onlineUsers);
+                await this.heartbeat(
+                    this.internalContext.getRedisGlobalAccess(req.worldId).client,
+                    `w${req.worldId}`,
+                    `game:c${req.channelId}`,
+                    req.onlineUsers,
+                );
             } else if (req.role === ServerRole.SERVER_ROLE_CASH_SHOP) {
-                await this.heartbeat(this.internalContext.getRedisGlobalAccess(req.worldId).client, `w${req.worldId}`, `cashshop:cs${req.cashShopId}`, req.onlineUsers);
+                await this.heartbeat(
+                    this.internalContext.getRedisGlobalAccess(req.worldId).client,
+                    `w${req.worldId}`,
+                    `cashshop:cs${req.cashShopId}`,
+                    req.onlineUsers,
+                );
             } else if (req.role === ServerRole.SERVER_ROLE_LOGIN) {
                 const id = (req.loginInstanceId ?? "").trim();
                 if (!id) {
-                    this.grpcError({ code: "INVALID_PAYLOAD", message: "login ping requires login_instance_id" }, callback);
+                    this.grpcError(
+                        { code: "INVALID_PAYLOAD", message: "login ping requires login_instance_id" },
+                        callback,
+                    );
                     return;
                 }
                 await this.heartbeat(this.internalContext.getRedisUnifiedAccess().client, "login", id, 0);
             } else {
-                this.grpcError({ code: "INVALID_PAYLOAD", message: "ping requires role LOGIN, GAME or CASH_SHOP" }, callback);
+                this.grpcError(
+                    { code: "INVALID_PAYLOAD", message: "ping requires role LOGIN, GAME or CASH_SHOP" },
+                    callback,
+                );
                 return;
             }
             callback(null, { message: "pong" });

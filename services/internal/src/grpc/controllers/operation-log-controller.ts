@@ -17,10 +17,7 @@ export class OperationLogGrpcController {
     }
 
     @Method("writeOperationLog")
-    async writeOperationLog(
-        call: GrpcCall<WriteOperationLogRequest>,
-        callback: GrpcCallback<WriteOperationLogReply>,
-    ) {
+    async writeOperationLog(call: GrpcCall<WriteOperationLogRequest>, callback: GrpcCallback<WriteOperationLogReply>) {
         const req = call.request;
         try {
             const ok = await this.operationLogService.write(

@@ -128,7 +128,11 @@ export class SocialService {
     // The target's channel claims the request through completeWhisper and
     // pushes the whisper result to the reply list this call waits on.
     async whisper(req: WhisperRequest): Promise<WhisperReply> {
-        const modes = [WhisperMode.WHISPER_MODE_FIND, WhisperMode.WHISPER_MODE_SEND, WhisperMode.WHISPER_MODE_FIND_BUDDY];
+        const modes = [
+            WhisperMode.WHISPER_MODE_FIND,
+            WhisperMode.WHISPER_MODE_SEND,
+            WhisperMode.WHISPER_MODE_FIND_BUDDY,
+        ];
         if (!modes.includes(req.mode) || !this.validText(req.targetName, NAME_LIMIT)) {
             return offline();
         }
@@ -149,7 +153,10 @@ export class SocialService {
         }
 
         const session = await this.session(req.worldId, target);
-        if (req.mode !== WhisperMode.WHISPER_MODE_SEND && session?.state === AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP) {
+        if (
+            req.mode !== WhisperMode.WHISPER_MODE_SEND &&
+            session?.state === AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP
+        ) {
             return { ...offline(), found: true, characterId: target.characterId, name: target.name, cashShop: true };
         }
 
@@ -227,7 +234,7 @@ export class SocialService {
 
     private async rooms(world: number) {
         const raw = await this.redis(world).hgetall(this.key(world, "messengers"));
-        return Object.values(raw).map(value => JSON.parse(value) as Room);
+        return Object.values(raw).map((value) => JSON.parse(value) as Room);
     }
 
     private async store(world: number, room: Room) {
@@ -254,15 +261,18 @@ export class SocialService {
     }
 
     private async remove(world: number, room: Room, id: number) {
-        const member = room.members.find(m => m.characterId === id);
+        const member = room.members.find((m) => m.characterId === id);
         if (!member) {
             return;
         }
 
-        room.members = room.members.filter(m => m.characterId !== id);
-        room.invites = room.invites.filter(i => i.sender !== id && i.receiver !== id);
+        room.members = room.members.filter((m) => m.characterId !== id);
+        room.invites = room.invites.filter((i) => i.sender !== id && i.receiver !== id);
         await this.store(world, room);
-        await this.broadcast(world, room, { action: MessengerAction.MESSENGER_ACTION_LEAVE, position: member.position });
+        await this.broadcast(world, room, {
+            action: MessengerAction.MESSENGER_ACTION_LEAVE,
+            position: member.position,
+        });
     }
 
     // A member whose game session changed (relog, channel change) left the
@@ -280,7 +290,7 @@ export class SocialService {
                     await this.remove(world, room, member.characterId);
                 }
             }
-            room.invites = room.invites.filter(i => i.expires > Date.now());
+            room.invites = room.invites.filter((i) => i.expires > Date.now());
         }
     }
 
@@ -313,7 +323,7 @@ export class SocialService {
         const rooms = await this.rooms(world);
         await this.prune(world, rooms);
 
-        const room = rooms.find(r => r.members.some(m => m.characterId === id));
+        const room = rooms.find((r) => r.members.some((m) => m.characterId === id));
         if (req.action === MessengerAction.MESSENGER_ACTION_ENTER) {
             return this.join(world, character, req, rooms, room, session.timestamps.stateChangedAt ?? "");
         }
@@ -353,7 +363,7 @@ export class SocialService {
                     return emptyMessenger();
                 }
 
-                const member = room.members.find(m => m.characterId === id)!;
+                const member = room.members.find((m) => m.characterId === id)!;
                 member.look = Buffer.from(req.look).toString("base64");
                 await this.store(world, room);
                 await this.broadcast(world, room, { action: MessengerAction.MESSENGER_ACTION_AVATAR, member }, id);
@@ -381,12 +391,12 @@ export class SocialService {
                 return emptyMessenger();
             }
 
-            const member = current.members.find(m => m.characterId === id)!;
+            const member = current.members.find((m) => m.characterId === id)!;
             return {
                 ok: true,
                 roomId: current.id,
                 position: member.position,
-                members: current.members.filter(m => m !== member).map(memberReply),
+                members: current.members.filter((m) => m !== member).map(memberReply),
             };
         }
 
@@ -396,21 +406,21 @@ export class SocialService {
 
         let room: Room | undefined;
         if (req.roomId === 0) {
-            const used = new Set(rooms.filter(r => r.members.length > 0).map(r => r.id));
+            const used = new Set(rooms.filter((r) => r.members.length > 0).map((r) => r.id));
             let roomId = 1;
             while (used.has(roomId)) {
                 roomId++;
             }
             room = { id: roomId, members: [], invites: [] };
         } else {
-            room = rooms.find(r => r.id === req.roomId && r.members.length > 0);
-            if (!room || room.members.length >= MESSENGER_CAPACITY || !room.invites.some(i => i.receiver === id)) {
+            room = rooms.find((r) => r.id === req.roomId && r.members.length > 0);
+            if (!room || room.members.length >= MESSENGER_CAPACITY || !room.invites.some((i) => i.receiver === id)) {
                 return emptyMessenger();
             }
         }
 
         const joined = room;
-        const position = [0, 1, 2].find(p => !joined.members.some(m => m.position === p))!;
+        const position = [0, 1, 2].find((p) => !joined.members.some((m) => m.position === p))!;
         const member: Member = {
             characterId: id,
             name: character.name,
@@ -421,27 +431,32 @@ export class SocialService {
         };
         const others = [...room.members];
         room.members.push(member);
-        room.invites = room.invites.filter(i => i.receiver !== id);
+        room.invites = room.invites.filter((i) => i.receiver !== id);
         await this.store(world, room);
         await this.broadcast(world, room, { action: MessengerAction.MESSENGER_ACTION_ENTER, member }, id);
         return { ok: true, roomId: room.id, position, members: others.map(memberReply) };
     }
 
-    private async decline(world: number, character: CharacterModel, inviterName: string, rooms: Room[]): Promise<MessengerReply> {
+    private async decline(
+        world: number,
+        character: CharacterModel,
+        inviterName: string,
+        rooms: Room[],
+    ): Promise<MessengerReply> {
         const id = character.characterId;
         const inviter = await this.named(world, inviterName);
         if (!inviter) {
             return emptyMessenger();
         }
 
-        const room = rooms.find(r => r.invites.some(i => i.receiver === id && i.sender === inviter.characterId));
+        const room = rooms.find((r) => r.invites.some((i) => i.receiver === id && i.sender === inviter.characterId));
         if (!room) {
             return emptyMessenger();
         }
 
-        room.invites = room.invites.filter(i => i.receiver !== id);
+        room.invites = room.invites.filter((i) => i.receiver !== id);
         await this.store(world, room);
-        const sender = room.members.find(m => m.characterId === inviter.characterId);
+        const sender = room.members.find((m) => m.characterId === inviter.characterId);
         if (sender) {
             await this.publish(world, sender.channelId, "messenger", {
                 character_id: sender.characterId,
@@ -467,11 +482,11 @@ export class SocialService {
         if (channel == null || room.members.length >= MESSENGER_CAPACITY) {
             return false;
         }
-        if (rooms.some(r => r.members.some(m => m.characterId === target.characterId))) {
+        if (rooms.some((r) => r.members.some((m) => m.characterId === target.characterId))) {
             return false;
         }
 
-        room.invites = room.invites.filter(i => i.receiver !== target.characterId);
+        room.invites = room.invites.filter((i) => i.receiver !== target.characterId);
         if (room.invites.length >= MESSENGER_INVITE_LIMIT) {
             return false;
         }
@@ -494,7 +509,7 @@ export class SocialService {
             return;
         }
 
-        await this.internalContext.withPgGlobalTransaction(world, tx =>
+        await this.internalContext.withPgGlobalTransaction(world, (tx) =>
             tx.query(
                 "INSERT INTO social_thanks (serial, character_id, sender_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
                 [serial, characterId, sender.characterId],
@@ -515,7 +530,10 @@ export class SocialService {
             case NotesAction.NOTES_ACTION_REMOVE_GIFTS:
                 return this.removeNotes(req);
             case NotesAction.NOTES_ACTION_LIST:
-                return { ...notesReply(NoteResult.NOTE_RESULT_OK), notes: await this.listNotes(req.worldId, req.characterId) };
+                return {
+                    ...notesReply(NoteResult.NOTE_RESULT_OK),
+                    notes: await this.listNotes(req.worldId, req.characterId),
+                };
         }
         return notesReply(NoteResult.NOTE_RESULT_WRONG_NAME);
     }
@@ -523,7 +541,10 @@ export class SocialService {
     private async sendNote(sender: CharacterModel, req: NotesRequest): Promise<NotesReply> {
         const world = req.worldId;
         const id = sender.characterId;
-        if ((req.gift !== NoteKind.NORMAL && req.gift !== NoteKind.POPULATION) || !this.validText(req.message, TEXT_LIMIT)) {
+        if (
+            (req.gift !== NoteKind.NORMAL && req.gift !== NoteKind.POPULATION) ||
+            !this.validText(req.message, TEXT_LIMIT)
+        ) {
             return notesReply(NoteResult.NOTE_RESULT_WRONG_NAME);
         }
 
@@ -532,12 +553,11 @@ export class SocialService {
             return notesReply(NoteResult.NOTE_RESULT_WRONG_NAME);
         }
 
-        const ok = await this.internalContext.withPgGlobalTransaction(world, async tx => {
+        const ok = await this.internalContext.withPgGlobalTransaction(world, async (tx) => {
             await tx.query("SELECT pg_advisory_xact_lock(280, $1)", [target.characterId]);
-            const count = await tx.query<{ count: string }>(
-                "SELECT COUNT(*) FROM social_notes WHERE receiver_id=$1",
-                [target.characterId],
-            );
+            const count = await tx.query<{ count: string }>("SELECT COUNT(*) FROM social_notes WHERE receiver_id=$1", [
+                target.characterId,
+            ]);
             if (Number(count.rows[0]!.count) >= NOTE_LIMIT) {
                 return false;
             }
@@ -581,27 +601,36 @@ export class SocialService {
             return notesReply(NoteResult.NOTE_RESULT_WRONG_NAME);
         }
 
-        const population = await this.internalContext.withPgGlobalTransaction(req.worldId, async tx => {
+        const population = await this.internalContext.withPgGlobalTransaction(req.worldId, async (tx) => {
             await tx.query("SELECT pg_advisory_xact_lock(280, $1)", [id]);
             if (req.requestId !== "0") {
-                const recorded = await this.noteRemoveRequestRepository.find(req.worldId, id, req.requestId, { txClient: tx });
+                const recorded = await this.noteRemoveRequestRepository.find(req.worldId, id, req.requestId, {
+                    txClient: tx,
+                });
                 if (recorded?.status === RequestStatus.Applied) {
                     return recorded.outcome.population;
                 }
             }
 
-            const removed = req.action === NotesAction.NOTES_ACTION_REMOVE_GIFTS
-                ? await tx.query<{ gift: number }>(
-                    "DELETE FROM social_notes WHERE receiver_id=$1 AND gift=$2 RETURNING gift",
-                    [id, NoteKind.POPULATION],
-                )
-                : await tx.query<{ gift: number }>(
-                    "DELETE FROM social_notes WHERE receiver_id=$1 AND id=ANY($2::int[]) RETURNING gift",
-                    [id, req.noteIds],
-                );
-            const count = removed.rows.filter(n => n.gift === NoteKind.POPULATION).length;
+            const removed =
+                req.action === NotesAction.NOTES_ACTION_REMOVE_GIFTS
+                    ? await tx.query<{ gift: number }>(
+                          "DELETE FROM social_notes WHERE receiver_id=$1 AND gift=$2 RETURNING gift",
+                          [id, NoteKind.POPULATION],
+                      )
+                    : await tx.query<{ gift: number }>(
+                          "DELETE FROM social_notes WHERE receiver_id=$1 AND id=ANY($2::int[]) RETURNING gift",
+                          [id, req.noteIds],
+                      );
+            const count = removed.rows.filter((n) => n.gift === NoteKind.POPULATION).length;
             if (req.requestId !== "0") {
-                await this.noteRemoveRequestRepository.insert(req.worldId, id, req.requestId, { population: count }, tx);
+                await this.noteRemoveRequestRepository.insert(
+                    req.worldId,
+                    id,
+                    req.requestId,
+                    { population: count },
+                    tx,
+                );
             }
             return count;
         });
@@ -613,13 +642,13 @@ export class SocialService {
     }
 
     async listNotes(world: number, characterId: number): Promise<Note[]> {
-        const result = await this.internalContext.withPgGlobalTransaction(world, tx =>
+        const result = await this.internalContext.withPgGlobalTransaction(world, (tx) =>
             tx.query<{ id: number; sender_name: string; message: string; created_at: Date; gift: number }>(
                 "SELECT id, sender_name, message, created_at, gift FROM social_notes WHERE receiver_id=$1 ORDER BY id LIMIT 100",
                 [characterId],
             ),
         );
-        return result.rows.map(n => ({
+        return result.rows.map((n) => ({
             id: n.id,
             senderName: n.sender_name,
             message: n.message,

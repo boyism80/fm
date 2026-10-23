@@ -73,13 +73,18 @@ export class ShopRepository {
         const client = options.txClient ?? this.pool(worldId, accountId);
         const res = await client.query(
             `SELECT ${SELECT_COLS} FROM shops WHERE account_id = $1 AND claimed_at IS NULL ORDER BY closed_at NULLS FIRST, shop_id`,
-            [accountId]
+            [accountId],
         );
         return res.rows as ShopRow[];
     }
 
     // An opened shop is removed only while it is still empty; a shop already gone counts as removed.
-    async abortOpen(worldId: number, accountId: number, shopId: number, options: RepositoryTxOptions = {}): Promise<boolean> {
+    async abortOpen(
+        worldId: number,
+        accountId: number,
+        shopId: number,
+        options: RepositoryTxOptions = {},
+    ): Promise<boolean> {
         const client = options.txClient ?? this.pool(worldId, accountId);
         const deleted = await client.query(
             "DELETE FROM shops WHERE shop_id = $1 AND account_id = $2 AND closed_at IS NULL AND sn IS NULL AND meso = 0 AND items = '[]'::jsonb AND sold = '[]'::jsonb RETURNING shop_id",
@@ -130,7 +135,7 @@ export class ShopRepository {
                 JSON.stringify(shop.sold),
                 shop.closedAt,
                 shop.storeBankId,
-            ]
+            ],
         );
         return res.rows[0] as ShopRow | undefined;
     }
@@ -148,7 +153,7 @@ export class ShopRepository {
                 shop.meso,
                 JSON.stringify(shop.items),
                 JSON.stringify(shop.sold),
-            ]
+            ],
         );
     }
 
@@ -157,28 +162,32 @@ export class ShopRepository {
         await client.query(
             `UPDATE shops SET channel_id = NULL, map_id = NULL, sn = NULL, closed_at = NOW()
              WHERE shop_id = $1 AND account_id = $2 AND closed_at IS NULL`,
-            [shopId, accountId]
+            [shopId, accountId],
         );
     }
 
     async claim(worldId: number, accountId: number, characterId: number, shopIds: number[]): Promise<void> {
         const pool = this.pool(worldId, accountId);
-        await pool.query(
-            "DELETE FROM shops WHERE account_id = $1 AND claimed_at < NOW() - INTERVAL '1 day'",
-            [accountId]
-        );
+        await pool.query("DELETE FROM shops WHERE account_id = $1 AND claimed_at < NOW() - INTERVAL '1 day'", [
+            accountId,
+        ]);
         await pool.query(
             `UPDATE shops SET claimed_at = NOW()
              WHERE account_id = $1 AND character_id = $2 AND shop_id = ANY($3::bigint[]) AND closed_at IS NOT NULL AND claimed_at IS NULL`,
-            [accountId, characterId, shopIds]
+            [accountId, characterId, shopIds],
         );
     }
 
-    async deleteEmpty(worldId: number, shopId: number, accountId: number, options: RepositoryTxOptions = {}): Promise<void> {
+    async deleteEmpty(
+        worldId: number,
+        shopId: number,
+        accountId: number,
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         const client = options.txClient ?? this.pool(worldId, accountId);
         await client.query(
             "DELETE FROM shops WHERE shop_id = $1 AND account_id = $2 AND meso = 0 AND jsonb_array_length(items) = 0",
-            [shopId, accountId]
+            [shopId, accountId],
         );
     }
 
@@ -187,12 +196,12 @@ export class ShopRepository {
         for (const pool of this.ctx.getPgDataPools(worldId)) {
             await pool.query(
                 "DELETE FROM shops WHERE channel_id = $1 AND closed_at IS NULL AND meso = 0 AND jsonb_array_length(items) = 0",
-                [channelId]
+                [channelId],
             );
             const res = await pool.query(
                 `UPDATE shops SET channel_id = NULL, map_id = NULL, sn = NULL, closed_at = NOW()
                  WHERE channel_id = $1 AND closed_at IS NULL`,
-                [channelId]
+                [channelId],
             );
             count += res.rowCount ?? 0;
         }

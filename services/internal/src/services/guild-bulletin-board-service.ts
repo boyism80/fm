@@ -94,7 +94,7 @@ export class GuildBulletinBoardService {
         guildMemberRepository: GuildMemberRepository,
         guildBulletinBoardRepository: GuildBulletinBoardRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
-        distributedLockService: DistributedLockService
+        distributedLockService: DistributedLockService,
     ) {
         this.ctx = internalContext;
         this.app = appConfiguration;
@@ -124,8 +124,7 @@ export class GuildBulletinBoardService {
     }
 
     private canChangeMemberRank(rank: GuildMemberRank | undefined) {
-        return rank === GuildMemberRank.GUILD_MEMBER_RANK_MASTER
-            || rank === GuildMemberRank.GUILD_MEMBER_RANK_JUNIOR;
+        return rank === GuildMemberRank.GUILD_MEMBER_RANK_MASTER || rank === GuildMemberRank.GUILD_MEMBER_RANK_JUNIOR;
     }
 
     private truncateBulletinField(value: string, maxLen: number): string {
@@ -148,7 +147,7 @@ export class GuildBulletinBoardService {
     private canModifyBulletinContent(
         posterCharacterId: number,
         characterId: number,
-        guildRank: GuildMemberRank | undefined
+        guildRank: GuildMemberRank | undefined,
     ): boolean {
         if (posterCharacterId === characterId) {
             return true;
@@ -170,7 +169,7 @@ export class GuildBulletinBoardService {
     private async loadGuildBulletinBoardThreadListPage(
         worldId: number,
         guildId: number,
-        listStart: number
+        listStart: number,
     ): Promise<{
         threads: GuildBulletinBoardThreadEntry[];
         threadCount: number;
@@ -180,12 +179,7 @@ export class GuildBulletinBoardService {
         const offset = Math.max(0, listStart);
         const [threadCount, pageRows, noticeRow] = await Promise.all([
             this.guildBulletinBoardRepo.countThreads(worldId, guildId),
-            this.guildBulletinBoardRepo.listThreads(
-                worldId,
-                guildId,
-                offset,
-                GUILD_BULLETIN_THREADS_PER_PAGE
-            ),
+            this.guildBulletinBoardRepo.listThreads(worldId, guildId, offset, GUILD_BULLETIN_THREADS_PER_PAGE),
             this.guildBulletinBoardRepo.getNoticeThread(worldId, guildId),
         ]);
         const threads = pageRows.map((t) => this.bulletinThreadToEntry(t));
@@ -201,7 +195,7 @@ export class GuildBulletinBoardService {
     private async loadBulletinThreadDetail(
         worldId: number,
         guildId: number,
-        localThreadId: number
+        localThreadId: number,
     ): Promise<GuildBulletinBoardThreadDetail | null> {
         const loaded = await this.guildBulletinBoardRepo.getThreadWithReplies(worldId, guildId, localThreadId);
         if (!loaded) {
@@ -243,10 +237,7 @@ export class GuildBulletinBoardService {
         await client.del(key);
     }
 
-    private async assertGuildMembership(
-        worldId: number,
-        characterId: number
-    ): Promise<GuildMembershipResult> {
+    private async assertGuildMembership(worldId: number, characterId: number): Promise<GuildMembershipResult> {
         const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
         if (state?.guildId == null) {
             return { code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
@@ -273,7 +264,7 @@ export class GuildBulletinBoardService {
     async listGuildBulletinBoardThreads(
         worldId: number,
         characterId: number,
-        page: number
+        page: number,
     ): Promise<ListGuildBulletinBoardThreadsResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
@@ -284,11 +275,7 @@ export class GuildBulletinBoardService {
         }
 
         const listStart = Math.max(0, page) * GUILD_BULLETIN_THREADS_PER_PAGE;
-        const listPage = await this.loadGuildBulletinBoardThreadListPage(
-            worldId,
-            membership.guildId,
-            listStart
-        );
+        const listPage = await this.loadGuildBulletinBoardThreadListPage(worldId, membership.guildId, listStart);
         return {
             ok: true,
             threads: listPage.threads,
@@ -301,7 +288,7 @@ export class GuildBulletinBoardService {
     async showGuildBulletinBoardThread(
         worldId: number,
         characterId: number,
-        localThreadId: number
+        localThreadId: number,
     ): Promise<ShowGuildBulletinBoardThreadResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
@@ -324,7 +311,7 @@ export class GuildBulletinBoardService {
         notice: boolean,
         title: string,
         body: string,
-        icon: number
+        icon: number,
     ): Promise<CreateGuildBulletinBoardThreadResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
@@ -388,7 +375,7 @@ export class GuildBulletinBoardService {
         localThreadId: number,
         title: string,
         body: string,
-        icon: number
+        icon: number,
     ): Promise<UpdateGuildBulletinBoardThreadResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
@@ -429,7 +416,7 @@ export class GuildBulletinBoardService {
     async deleteGuildBulletinBoardThread(
         worldId: number,
         characterId: number,
-        localThreadId: number
+        localThreadId: number,
     ): Promise<DeleteGuildBulletinBoardThreadResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
@@ -454,7 +441,7 @@ export class GuildBulletinBoardService {
         worldId: number,
         characterId: number,
         localThreadId: number,
-        content: string
+        content: string,
     ): Promise<CreateGuildBulletinBoardReplyResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
@@ -502,7 +489,7 @@ export class GuildBulletinBoardService {
         worldId: number,
         characterId: number,
         localThreadId: number,
-        replyId: number
+        replyId: number,
     ): Promise<DeleteGuildBulletinBoardReplyResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
@@ -512,12 +499,7 @@ export class GuildBulletinBoardService {
             return { ok: false, code: membership.code };
         }
 
-        const target = await this.guildBulletinBoardRepo.getReply(
-            worldId,
-            membership.guildId,
-            localThreadId,
-            replyId
-        );
+        const target = await this.guildBulletinBoardRepo.getReply(worldId, membership.guildId, localThreadId, replyId);
         if (!target) {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND };
         }
@@ -528,7 +510,7 @@ export class GuildBulletinBoardService {
             worldId,
             membership.guildId,
             localThreadId,
-            replyId
+            replyId,
         );
         if (!deleted) {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND };

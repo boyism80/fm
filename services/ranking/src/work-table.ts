@@ -116,7 +116,12 @@ export class WorkTable {
         const key = this.runningKey(kind);
         await this.redis
             .multi()
-            .hset(key, { round_id: running.roundId, period: running.period, phase: running.phase, ranges: running.ranges })
+            .hset(key, {
+                round_id: running.roundId,
+                period: running.period,
+                phase: running.phase,
+                ranges: running.ranges,
+            })
             .expire(key, ROUND_TTL_SEC)
             .exec();
     }
@@ -158,7 +163,7 @@ export class WorkTable {
             this.roundKey(roundId, `done:${step}`),
             String(Date.now()),
             String(leaseMs),
-            String(ROUND_TTL_SEC)
+            String(ROUND_TTL_SEC),
         )) as string | null;
         return index === null ? null : Number(index);
     }
@@ -167,13 +172,21 @@ export class WorkTable {
         const hash = await this.redis.hgetall(this.roundKey(roundId, `range:${index}`));
         return {
             index,
-            bounds: { lo: JSON.parse(hash.lo ?? "null") as RankingKeys | null, hi: JSON.parse(hash.hi ?? "null") as RankingKeys | null },
+            bounds: {
+                lo: JSON.parse(hash.lo ?? "null") as RankingKeys | null,
+                hi: JSON.parse(hash.hi ?? "null") as RankingKeys | null,
+            },
             counts: JSON.parse(hash.counts ?? "{}") as Record<string, number>,
             offsets: JSON.parse(hash.offsets ?? "{}") as Record<string, number>,
         };
     }
 
-    async finish(roundId: number, step: RangeStep, index: number, counts: Record<string, number> | null): Promise<void> {
+    async finish(
+        roundId: number,
+        step: RangeStep,
+        index: number,
+        counts: Record<string, number> | null,
+    ): Promise<void> {
         await this.redis.eval(
             FINISH_SCRIPT,
             3,
@@ -183,7 +196,7 @@ export class WorkTable {
             String(index),
             counts === null ? "" : "counts",
             counts === null ? "" : JSON.stringify(counts),
-            String(ROUND_TTL_SEC)
+            String(ROUND_TTL_SEC),
         );
     }
 

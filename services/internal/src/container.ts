@@ -23,9 +23,18 @@ import { MountRepository } from "@fm/shared/repos/mount-repository";
 import { UnsettledRequestRepository } from "@fm/shared/repos/unsettled-request-repository";
 import { StorageRepository } from "@fm/shared/repos/storage-repository";
 import { StorageItemRepository } from "@fm/shared/repos/storage-item-repository";
-import { ParcelClaimRequestRepository, ParcelRepository, ParcelReturnRequestRepository, ParcelSendRequestRepository } from "@fm/shared/repos/parcel-repository";
+import {
+    ParcelClaimRequestRepository,
+    ParcelRepository,
+    ParcelReturnRequestRepository,
+    ParcelSendRequestRepository,
+} from "@fm/shared/repos/parcel-repository";
 import { ShopOpenRequestRepository, ShopRepository } from "@fm/shared/repos/shop-repository";
-import { CashBalanceRequestRepository, CashRequestRepository, CashShopRepository } from "@fm/shared/repos/cash-shop-repository";
+import {
+    CashBalanceRequestRepository,
+    CashRequestRepository,
+    CashShopRepository,
+} from "@fm/shared/repos/cash-shop-repository";
 import {
     MarriageRepository,
     MarriageRequestRepository,
@@ -34,8 +43,16 @@ import {
 } from "@fm/shared/repos/marriage-repository";
 import { PartyRepository } from "@fm/shared/repos/party-repository";
 import { PartyMemberRepository } from "@fm/shared/repos/party-member-repository";
-import { AllianceChangeRequestRepository, AllianceCreateRequestRepository, AllianceRepository } from "@fm/shared/repos/alliance-repository";
-import { GuildChangeRequestRepository, GuildCreateRequestRepository, GuildRepository } from "@fm/shared/repos/guild-repository";
+import {
+    AllianceChangeRequestRepository,
+    AllianceCreateRequestRepository,
+    AllianceRepository,
+} from "@fm/shared/repos/alliance-repository";
+import {
+    GuildChangeRequestRepository,
+    GuildCreateRequestRepository,
+    GuildRepository,
+} from "@fm/shared/repos/guild-repository";
 import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "@fm/shared/repos/guild-bulletin-board-repository";
 import { CharacterBuddyRepository } from "@fm/shared/repos/character-buddy-repository";
@@ -72,7 +89,9 @@ import { RankingService } from "./services/ranking-service";
 import { MedalService } from "./services/medal-service";
 
 export function createAppContainer() {
-    const internalConfig = loadConfig(process.env.FM_INTERNAL_CONFIG ?? fileURLToPath(new URL("../config.yaml", import.meta.url)));
+    const internalConfig = loadConfig(
+        process.env.FM_INTERNAL_CONFIG ?? fileURLToPath(new URL("../config.yaml", import.meta.url)),
+    );
     const container = awilix.createContainer({
         injectionMode: awilix.InjectionMode.CLASSIC,
     });

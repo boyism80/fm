@@ -3,7 +3,7 @@
 local henesys_pq = require("script/lib/henesys_party_quest")
 
 return {
-	on_reactor = function(reactor)
-		henesys_pq.plant_seed(reactor)
-	end
+    on_reactor = function(reactor)
+        henesys_pq.plant_seed(reactor)
+    end
 }

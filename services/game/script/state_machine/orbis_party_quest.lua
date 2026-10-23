@@ -21,188 +21,188 @@ local FIXED_REACTOR = 2001016
 local EAK_READY_STATE = 20
 
 local STAGE_MAPS = {
-	920010000,
-	920010100,
-	920010200,
-	920010300,
-	920010400,
-	920010500,
-	920010600,
-	920010601,
-	920010602,
-	920010603,
-	920010604,
-	920010700,
-	920010800,
-	920010900,
-	920010910,
-	920010911,
-	920010912,
-	920010920,
-	920010921,
-	920010922,
-	920010930,
-	920010931,
-	920010932,
-	920011000,
-	920011100,
+    920010000,
+    920010100,
+    920010200,
+    920010300,
+    920010400,
+    920010500,
+    920010600,
+    920010601,
+    920010602,
+    920010603,
+    920010604,
+    920010700,
+    920010800,
+    920010900,
+    920010910,
+    920010911,
+    920010912,
+    920010920,
+    920010921,
+    920010922,
+    920010930,
+    920010931,
+    920010932,
+    920011000,
+    920011100,
 }
 
 local CX = { 200, -300, -300, -300, 200, 200, 200, -300, -300, 200, 200, -300, -300, 200 }
 local CY = { -2321, -2114, -2910, -2510, -1526, -2716, -717, -1310, -3357, -1912, -1122, -1736, -915, -3116 }
 
 local STAGE3_MUSIC = {
-	[1] = "Bgm08/ForTheGlory",
-	[2] = "Bgm11/Aquarium",
-	[3] = "Bgm06/WelcomeToTheHell",
-	[4] = "Bgm06/FantasticThinking",
-	[5] = "Bgm02/EvilEyes",
-	[6] = "Bgm10/TheWayGrotesque",
-	[7] = "Bgm01/MoonlightShadow",
+    [1] = "Bgm08/ForTheGlory",
+    [2] = "Bgm11/Aquarium",
+    [3] = "Bgm06/WelcomeToTheHell",
+    [4] = "Bgm06/FantasticThinking",
+    [5] = "Bgm02/EvilEyes",
+    [6] = "Bgm10/TheWayGrotesque",
+    [7] = "Bgm01/MoonlightShadow",
 }
 
 local function end_run(sm, map_id)
-	if map_id == nil then
-		map_id = EXIT_MAP
-	end
-	sm:finish(map_id)
+    if map_id == nil then
+        map_id = EXIT_MAP
+    end
+    sm:finish(map_id)
 end
 
 local function clear_props(sm)
-	sm:set_property("allfinish", "")
-	sm:set_property("prestage", "")
-	sm:set_property("prestageRewarded", "")
-	sm:set_property("status", "0")
-	sm:set_property("stage0clear", "")
-	sm:set_property("stage1clear", "")
-	sm:set_property("stage2clear", "")
-	sm:set_property("stage2mob", "")
-	sm:set_property("stage3_music", "")
-	sm:set_property("stage3clear", "")
-	sm:set_property("stage4rand", "")
-	sm:set_property("stage4try", "")
-	sm:set_property("stage4clear", "")
-	sm:set_property("stage4_rand", "")
-	sm:set_property("stage4_r4way1", "")
-	sm:set_property("stage4_r4way2", "")
-	sm:set_property("stage5clear", "")
-	sm:set_property("stage6clear", "")
-	sm:set_property("stage6_ans", "")
-	sm:set_property("stage6_way", "")
-	sm:set_property("stagebossclear", "")
-	sm:set_property("clearall", "")
+    sm:set_property("allfinish", "")
+    sm:set_property("prestage", "")
+    sm:set_property("prestageRewarded", "")
+    sm:set_property("status", "0")
+    sm:set_property("stage0clear", "")
+    sm:set_property("stage1clear", "")
+    sm:set_property("stage2clear", "")
+    sm:set_property("stage2mob", "")
+    sm:set_property("stage3_music", "")
+    sm:set_property("stage3clear", "")
+    sm:set_property("stage4rand", "")
+    sm:set_property("stage4try", "")
+    sm:set_property("stage4clear", "")
+    sm:set_property("stage4_rand", "")
+    sm:set_property("stage4_r4way1", "")
+    sm:set_property("stage4_r4way2", "")
+    sm:set_property("stage5clear", "")
+    sm:set_property("stage6clear", "")
+    sm:set_property("stage6_ans", "")
+    sm:set_property("stage6_way", "")
+    sm:set_property("stagebossclear", "")
+    sm:set_property("clearall", "")
 end
 
 return {
-	on_init = function(group)
-		group:min_players(1)
-		group:exit_map(EXIT_MAP)
-	end,
+    on_init = function(group)
+        group:min_players(1)
+        group:exit_map(EXIT_MAP)
+    end,
 
-	on_create = function(sm)
-		clear_props(sm)
-		return STAGE_MAPS
-	end,
+    on_create = function(sm)
+        clear_props(sm)
+        return STAGE_MAPS
+    end,
 
-	on_prepare = function(sm)
-		for _, map_id in ipairs(STAGE_MAPS) do
-			sm:map(map_id):respawn({ include_one_time = true })
-		end
-		pq.shuffle_reactors(sm:map(LOBBY_MAP), 2002004, 2002010)
-		pq.shuffle_reactors(sm:map(GARDEN_MAP), nil, nil, FIXED_REACTOR)
-		-- States 0-19 of the lump of light have no event; only state 20 takes the clouds.
-		local eak = sm:map(START_MAP):find_reactor_name("eak")
-		if eak ~= nil then
-			eak:hit(EAK_READY_STATE)
-		end
-	end,
+    on_prepare = function(sm)
+        for _, map_id in ipairs(STAGE_MAPS) do
+            sm:map(map_id):respawn({ include_one_time = true })
+        end
+        pq.shuffle_reactors(sm:map(LOBBY_MAP), 2002004, 2002010)
+        pq.shuffle_reactors(sm:map(GARDEN_MAP), nil, nil, FIXED_REACTOR)
+        -- States 0-19 of the lump of light have no event; only state 20 takes the clouds.
+        local eak = sm:map(START_MAP):find_reactor_name("eak")
+        if eak ~= nil then
+            eak:hit(EAK_READY_STATE)
+        end
+    end,
 
-	on_start = function(sm)
-		sm:start_timer(DURATION_MS)
-	end,
+    on_start = function(sm)
+        sm:start_timer(DURATION_MS)
+    end,
 
-	on_player_enter = function(sm, player)
-		local function on_arrive(player)
-			player:try_party_quest(RANKING_QUEST)
-			player:open_npc(GUIDE_NPC)
-		end
-		player:map(sm:map(START_MAP), { callback = on_arrive })
-	end,
+    on_player_enter = function(sm, player)
+        local function on_arrive(player)
+            player:try_party_quest(RANKING_QUEST)
+            player:open_npc(GUIDE_NPC)
+        end
+        player:map(sm:map(START_MAP), { callback = on_arrive })
+    end,
 
-	on_changed_map = function(sm, player, map_id)
-		if map_id == BONUS_MAP then
-			if sm:get_property("allfinish") == "1" then
-				return
-			end
-			sm:set_property("allfinish", "1")
-			sm:restart_timer(BONUS_MS)
-			return
-		end
-		if map_id == LOBBY_MAP then
-			local music_id = tonumber(sm:get_property("stage3_music")) or 0
-			local path = STAGE3_MUSIC[music_id]
-			if path ~= nil then
-				local map = player:map()
-				if map ~= nil then
-					map:music(path)
-				end
-			end
-		end
-	end,
+    on_changed_map = function(sm, player, map_id)
+        if map_id == BONUS_MAP then
+            if sm:get_property("allfinish") == "1" then
+                return
+            end
+            sm:set_property("allfinish", "1")
+            sm:restart_timer(BONUS_MS)
+            return
+        end
+        if map_id == LOBBY_MAP then
+            local music_id = tonumber(sm:get_property("stage3_music")) or 0
+            local path = STAGE3_MUSIC[music_id]
+            if path ~= nil then
+                local map = player:map()
+                if map ~= nil then
+                    map:music(path)
+                end
+            end
+        end
+    end,
 
-	on_mob_die = function(sm, mob)
-		if mob == nil then
-			return
-		end
-		local id = mob:id()
-		if id == DARK_NEPENTHES then
-			sm:message("Boss Spawned.")
-			local garden = sm:map(GARDEN_MAP)
-			if garden ~= nil then
-				garden:spawn_mob(PAPA_PIXIE, -830, 563)
-			end
-			return
-		end
-		if id ~= STAGE2_MOB then
-			return
-		end
-		local st = sm:get_property("stage2mob")
-		if st == "" then
-			sm:set_property("stage2mob", "0")
-			st = "0"
-		end
-		local count = tonumber(st) or 0
-		local map = sm:map(STAGE2_MAP)
-		if map == nil then
-			return
-		end
-		if count < 14 then
-			local idx = count + 1
-			map:spawn_mob(STAGE2_MOB, CX[idx], CY[idx])
-			sm:message("Celion Spawned.", Msg.PinkText)
-			sm:set_property("stage2mob", tostring(count + 1))
-		else
-			map:spawn_item(STAGE2_PIECE, 1, { CX[14], CY[14] })
-		end
-	end,
+    on_mob_die = function(sm, mob)
+        if mob == nil then
+            return
+        end
+        local id = mob:id()
+        if id == DARK_NEPENTHES then
+            sm:message("Boss Spawned.")
+            local garden = sm:map(GARDEN_MAP)
+            if garden ~= nil then
+                garden:spawn_mob(PAPA_PIXIE, -830, 563)
+            end
+            return
+        end
+        if id ~= STAGE2_MOB then
+            return
+        end
+        local st = sm:get_property("stage2mob")
+        if st == "" then
+            sm:set_property("stage2mob", "0")
+            st = "0"
+        end
+        local count = tonumber(st) or 0
+        local map = sm:map(STAGE2_MAP)
+        if map == nil then
+            return
+        end
+        if count < 14 then
+            local idx = count + 1
+            map:spawn_mob(STAGE2_MOB, CX[idx], CY[idx])
+            sm:message("Celion Spawned.", Msg.PinkText)
+            sm:set_property("stage2mob", tostring(count + 1))
+        else
+            map:spawn_item(STAGE2_PIECE, 1, { CX[14], CY[14] })
+        end
+    end,
 
-	on_left_party = function(sm, player)
-		end_run(sm, EXIT_MAP)
-	end,
+    on_left_party = function(sm, player)
+        end_run(sm, EXIT_MAP)
+    end,
 
-	on_disband_party = function(sm)
-		end_run(sm, EXIT_MAP)
-	end,
+    on_disband_party = function(sm)
+        end_run(sm, EXIT_MAP)
+    end,
 
-	on_scheduled_timeout = function(sm)
-		if sm:get_property("allfinish") == "1" then
-			end_run(sm, REWARD_MAP)
-		else
-			end_run(sm, EXIT_MAP)
-		end
-	end,
+    on_scheduled_timeout = function(sm)
+        if sm:get_property("allfinish") == "1" then
+            end_run(sm, REWARD_MAP)
+        else
+            end_run(sm, EXIT_MAP)
+        end
+    end,
 
-	on_finish = function(sm)
-		clear_props(sm)
-	end
+    on_finish = function(sm)
+        clear_props(sm)
+    end
 }

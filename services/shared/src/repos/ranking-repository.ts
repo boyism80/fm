@@ -118,7 +118,9 @@ export class RankingRepository {
     async createRoundTable(table: string, roundId: number): Promise<void> {
         await this.unified().query(`DROP TABLE IF EXISTS ${table}`);
         await this.unified().query(`CREATE TABLE ${table} (LIKE ranking_entry INCLUDING ALL)`);
-        await this.unified().query(`ALTER TABLE ${table} ADD CONSTRAINT ${table}_round CHECK (round_id = ${Number(roundId)})`);
+        await this.unified().query(
+            `ALTER TABLE ${table} ADD CONSTRAINT ${table}_round CHECK (round_id = ${Number(roundId)})`,
+        );
     }
 
     async insertRows(table: string, roundId: number, rows: RankingRow[]): Promise<void> {
@@ -138,12 +140,14 @@ export class RankingRepository {
                 rows.map((r) => r.input.classId),
                 rows.map((r) => r.input.level),
                 rows.map((r) => r.input.value),
-            ]
+            ],
         );
     }
 
     async filterTotals(table: string): Promise<Map<string, { count: number; last: number }>> {
-        const { rows } = await this.unified().query(`SELECT filter, COUNT(*)::bigint AS n, MAX(rank_no) AS last FROM ${table} GROUP BY filter`);
+        const { rows } = await this.unified().query(
+            `SELECT filter, COUNT(*)::bigint AS n, MAX(rank_no) AS last FROM ${table} GROUP BY filter`,
+        );
         const totals = new Map<string, { count: number; last: number }>();
         for (const row of rows as Array<{ filter: string; n: string; last: string }>) {
             totals.set(row.filter, { count: Number(row.n), last: Number(row.last) });
@@ -152,13 +156,15 @@ export class RankingRepository {
     }
 
     async attach(table: string, roundId: number): Promise<void> {
-        await this.unified().query(`ALTER TABLE ranking_entry ATTACH PARTITION ${table} FOR VALUES IN (${Number(roundId)})`);
+        await this.unified().query(
+            `ALTER TABLE ranking_entry ATTACH PARTITION ${table} FOR VALUES IN (${Number(roundId)})`,
+        );
     }
 
     async publishedRounds(kind: RankingKind): Promise<PublishedRound[]> {
         const { rows } = await this.unified().query(
             `SELECT c.relname FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid
-             WHERE i.inhparent = 'ranking_entry'::regclass`
+             WHERE i.inhparent = 'ranking_entry'::regclass`,
         );
         return RankingRepository.rounds(rows as Array<{ relname: string }>, kind).sort((a, b) => b.roundId - a.roundId);
     }
@@ -175,7 +181,9 @@ export class RankingRepository {
     }
 
     async setCurrentRounds(kind: RankingKind, roundIds: number[]): Promise<void> {
-        await this.ctx.getRedisUnifiedAccess().client.set(RankingRepository.currentKey(kind), JSON.stringify(roundIds), "EX", CURRENT_TTL_SEC);
+        await this.ctx
+            .getRedisUnifiedAccess()
+            .client.set(RankingRepository.currentKey(kind), JSON.stringify(roundIds), "EX", CURRENT_TTL_SEC);
     }
 
     async top(roundId: number, filter: string, count: number): Promise<RankingEntry[]> {
@@ -183,7 +191,7 @@ export class RankingRepository {
             `SELECT ${ENTRY_COLUMNS} FROM ranking_entry
              WHERE round_id = $1 AND filter = $2 AND rank_no BETWEEN 1 AND $3
              ORDER BY rank_no`,
-            [roundId, filter, count]
+            [roundId, filter, count],
         );
         return (rows as EntryRow[]).map(RankingRepository.entry);
     }
@@ -192,7 +200,7 @@ export class RankingRepository {
         const { rows } = await this.unified().query(
             `SELECT ${ENTRY_COLUMNS} FROM ranking_entry
              WHERE round_id = ANY($1::bigint[]) AND subject_id = ANY($2::bigint[])`,
-            [roundIds, subjectIds]
+            [roundIds, subjectIds],
         );
         return (rows as EntryRow[]).map(RankingRepository.entry);
     }
@@ -201,7 +209,7 @@ export class RankingRepository {
         const { rows } = await this.unified().query(
             `SELECT c.relname FROM pg_class c
              WHERE c.relkind = 'r' AND c.relname LIKE 'ranking\\_entry\\_%'
-               AND NOT EXISTS (SELECT 1 FROM pg_inherits i WHERE i.inhrelid = c.oid)`
+               AND NOT EXISTS (SELECT 1 FROM pg_inherits i WHERE i.inhrelid = c.oid)`,
         );
         return RankingRepository.rounds(rows as Array<{ relname: string }>, kind);
     }
@@ -221,13 +229,16 @@ export class RankingRepository {
 
     async freezeInputs(shard: Pool, select: string): Promise<number> {
         const res = await shard.query(
-            `INSERT INTO ranking_inputs (kind, round_id, k1, k2, k3, k4, subject_id, name, world_id, class_id, job_group, job_id, level, value) ${select}`
+            `INSERT INTO ranking_inputs (kind, round_id, k1, k2, k3, k4, subject_id, name, world_id, class_id, job_group, job_id, level, value) ${select}`,
         );
         return res.rowCount ?? 0;
     }
 
     async sampleKeys(shard: Pool, roundId: number, fraction: number): Promise<RankingKeys[]> {
-        const { rows } = await shard.query("SELECT k1, k2, k3, k4 FROM ranking_inputs WHERE round_id = $1 AND random() < $2", [roundId, fraction]);
+        const { rows } = await shard.query(
+            "SELECT k1, k2, k3, k4 FROM ranking_inputs WHERE round_id = $1 AND random() < $2",
+            [roundId, fraction],
+        );
         return (rows as InputRow[]).map((row) => [Number(row.k1), Number(row.k2), Number(row.k3), Number(row.k4)]);
     }
 
@@ -237,17 +248,25 @@ export class RankingRepository {
         const { rows } = await shard.query(
             `SELECT world_id, job_group, job_id, COUNT(*)::bigint AS n FROM ranking_inputs
              WHERE round_id = $1${where} GROUP BY world_id, job_group, job_id`,
-            values
+            values,
         );
-        return (rows as Array<{ world_id: number; job_group: number | null; job_id: number | null; n: string }>).map((row) => ({
-            worldId: row.world_id,
-            jobGroup: row.job_group,
-            jobId: row.job_id,
-            count: Number(row.n),
-        }));
+        return (rows as Array<{ world_id: number; job_group: number | null; job_id: number | null; n: string }>).map(
+            (row) => ({
+                worldId: row.world_id,
+                jobGroup: row.job_group,
+                jobId: row.job_id,
+                count: Number(row.n),
+            }),
+        );
     }
 
-    async readRange(shard: Pool, roundId: number, bounds: RankingBounds, after: RankingKeys | null, limit: number): Promise<RankingInput[]> {
+    async readRange(
+        shard: Pool,
+        roundId: number,
+        bounds: RankingBounds,
+        after: RankingKeys | null,
+        limit: number,
+    ): Promise<RankingInput[]> {
         const values: unknown[] = [roundId];
         let where = RankingRepository.boundsSql(bounds, values);
         if (after !== null) {
@@ -260,7 +279,7 @@ export class RankingRepository {
              WHERE round_id = $1${where}
              ORDER BY k1, k2, k3, k4
              LIMIT $${values.length}`,
-            values
+            values,
         );
         return (rows as InputRow[]).map((row) => ({
             keys: [Number(row.k1), Number(row.k2), Number(row.k3), Number(row.k4)],
@@ -280,7 +299,7 @@ export class RankingRepository {
         while (true) {
             const res = await pool.query(
                 `DELETE FROM ${table} WHERE ctid IN (SELECT ctid FROM ${table} WHERE ${where} LIMIT ${DELETE_BATCH})`,
-                values
+                values,
             );
             if ((res.rowCount ?? 0) < DELETE_BATCH) {
                 return;

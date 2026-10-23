@@ -7,7 +7,8 @@ import { GuildMemberRank } from "../protobuf/generated/fminternal/internal_servi
 
 const DEFAULT_GUILD_MEMBER_RANK = GuildMemberRank.GUILD_MEMBER_RANK_MEMBER;
 
-const SELECT_COLS = "world_id, guild_id, character_id, character_name, level, class_id, guild_rank, alliance_rank, joined_at, updated_at";
+const SELECT_COLS =
+    "world_id, guild_id, character_id, character_name, level, class_id, guild_rank, alliance_rank, joined_at, updated_at";
 
 export type { GuildMemberModel };
 
@@ -36,7 +37,10 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
             return { text: "", values: [] };
         }
         const placeholders = rows
-            .map((_, i) => `($${i * 8 + 1},$${i * 8 + 2},$${i * 8 + 3},$${i * 8 + 4},$${i * 8 + 5},$${i * 8 + 6},$${i * 8 + 7},$${i * 8 + 8},NOW(),NOW())`)
+            .map(
+                (_, i) =>
+                    `($${i * 8 + 1},$${i * 8 + 2},$${i * 8 + 3},$${i * 8 + 4},$${i * 8 + 5},$${i * 8 + 6},$${i * 8 + 7},$${i * 8 + 8},NOW(),NOW())`,
+            )
             .join(",\n");
         return {
             text: `INSERT INTO guild_members (world_id, guild_id, character_id, character_name, level, class_id, guild_rank, alliance_rank, joined_at, updated_at)
@@ -77,7 +81,7 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
             pool,
             "DELETE FROM guild_members WHERE world_id = $1 AND guild_id = $2",
             [worldId, guildId],
-            options
+            options,
         );
         await this.invalidateAfterWrite(worldId, groupKey, pool, options);
     }

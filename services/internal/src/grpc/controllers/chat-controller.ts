@@ -28,7 +28,7 @@ export class ChatGrpcController {
         buddyService: BuddyService,
         guildService: GuildService,
         allianceService: AllianceService,
-        grpcError: GrpcErrorHandler
+        grpcError: GrpcErrorHandler,
     ) {
         this.partyService = partyService;
         this.buddyService = buddyService;
@@ -38,7 +38,10 @@ export class ChatGrpcController {
     }
 
     @Method("broadcastMultiChat")
-    async broadcastMultiChat(call: GrpcCall<BroadcastMultiChatRequest>, callback: GrpcCallback<BroadcastMultiChatReply>) {
+    async broadcastMultiChat(
+        call: GrpcCall<BroadcastMultiChatRequest>,
+        callback: GrpcCallback<BroadcastMultiChatReply>,
+    ) {
         try {
             const req = call.request;
             const mode = req.chatMode;
@@ -49,7 +52,7 @@ export class ChatGrpcController {
                     req.senderCharacterId,
                     recipients,
                     req.senderName,
-                    req.message
+                    req.message,
                 )) as BroadcastBuddyMultiChatResult;
                 callback(null, {
                     ok: result.ok,
@@ -65,7 +68,7 @@ export class ChatGrpcController {
                     req.senderCharacterId,
                     req.chatMode,
                     req.senderName,
-                    req.message
+                    req.message,
                 )) as BroadcastMultiChatResult;
                 callback(null, {
                     ok: result.ok,
@@ -80,7 +83,7 @@ export class ChatGrpcController {
                     req.memberId,
                     req.senderCharacterId,
                     req.senderName,
-                    req.message
+                    req.message,
                 );
                 callback(null, {
                     ok: result.ok,
@@ -95,7 +98,7 @@ export class ChatGrpcController {
                     req.memberId,
                     req.senderCharacterId,
                     req.senderName,
-                    req.message
+                    req.message,
                 );
                 callback(null, {
                     ok: result.ok,

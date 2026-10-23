@@ -10,87 +10,87 @@ local STAGE1_MOB = 9300172
 local STAGE1_MAP = 930000100
 
 local STAGE_MAPS = {
-	930000000,
-	930000010,
-	930000100,
-	930000200,
-	930000300,
-	930000400,
-	930000500,
-	930000600,
-	930000700,
+    930000000,
+    930000010,
+    930000100,
+    930000200,
+    930000300,
+    930000400,
+    930000500,
+    930000600,
+    930000700,
 }
 
 local function end_run(sm)
-	sm:finish(EXIT_MAP)
+    sm:finish(EXIT_MAP)
 end
 
 return {
-	on_init = function(group)
-		group:set_property("stage1_cleareff", "0")
-		group:min_players(1)
-		group:exit_map(EXIT_MAP)
-	end,
+    on_init = function(group)
+        group:set_property("stage1_cleareff", "0")
+        group:min_players(1)
+        group:exit_map(EXIT_MAP)
+    end,
 
-	on_create = function(sm)
-		local group = sm:group()
-		group:set_property("stage1_cleareff", "0")
-		return STAGE_MAPS
-	end,
+    on_create = function(sm)
+        local group = sm:group()
+        group:set_property("stage1_cleareff", "0")
+        return STAGE_MAPS
+    end,
 
-	on_prepare = function(sm)
-		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = sm:map(map_id)
-			map:respawn({ include_one_time = true })
-			if map_id == 930000500 then
-				pq.shuffle_reactors(map)
-			end
-		end
-	end,
+    on_prepare = function(sm)
+        for _, map_id in ipairs(STAGE_MAPS) do
+            local map = sm:map(map_id)
+            map:respawn({ include_one_time = true })
+            if map_id == 930000500 then
+                pq.shuffle_reactors(map)
+            end
+        end
+    end,
 
-	on_start = function(sm)
-		sm:start_timer(DURATION_MS)
-	end,
+    on_start = function(sm)
+        sm:start_timer(DURATION_MS)
+    end,
 
-	on_player_enter = function(sm, player)
-		local function on_arrive(player)
-			player:try_party_quest(RANKING_QUEST)
-		end
-		player:map(sm:map(START_MAP), { callback = on_arrive })
-	end,
+    on_player_enter = function(sm, player)
+        local function on_arrive(player)
+            player:try_party_quest(RANKING_QUEST)
+        end
+        player:map(sm:map(START_MAP), { callback = on_arrive })
+    end,
 
-	on_mob_die = function(sm, mob)
-		if mob == nil or mob:id() ~= STAGE1_MOB then
-			return
-		end
-		local group = sm:group()
-		if group == nil or group:get_property("stage1_cleareff") == "1" then
-			return
-		end
-		local map = sm:map(STAGE1_MAP)
-		if map == nil then
-			return
-		end
-		if pq.mob_count(map) == 0 then
-			map:clear_effect()
-			group:set_property("stage1_cleareff", "1")
-		end
-	end,
+    on_mob_die = function(sm, mob)
+        if mob == nil or mob:id() ~= STAGE1_MOB then
+            return
+        end
+        local group = sm:group()
+        if group == nil or group:get_property("stage1_cleareff") == "1" then
+            return
+        end
+        local map = sm:map(STAGE1_MAP)
+        if map == nil then
+            return
+        end
+        if pq.mob_count(map) == 0 then
+            map:clear_effect()
+            group:set_property("stage1_cleareff", "1")
+        end
+    end,
 
-	on_left_party = function(sm, player)
-		end_run(sm)
-	end,
+    on_left_party = function(sm, player)
+        end_run(sm)
+    end,
 
-	on_disband_party = function(sm)
-		end_run(sm)
-	end,
+    on_disband_party = function(sm)
+        end_run(sm)
+    end,
 
-	on_scheduled_timeout = function(sm)
-		end_run(sm)
-	end,
+    on_scheduled_timeout = function(sm)
+        end_run(sm)
+    end,
 
-	on_finish = function(sm)
-		local group = sm:group()
-		group:set_property("stage1_cleareff", "0")
-	end
+    on_finish = function(sm)
+        local group = sm:group()
+        group:set_property("stage1_cleareff", "0")
+    end
 }

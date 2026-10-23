@@ -28,20 +28,20 @@ local function on_tick(me, hp_loss)
 end
 
 return {
-	on_activated = function(me, skill, params)
-		local hp_loss, bonus = dragon_blood_values(skill)
-		local buff = me:buff(skill, {[BuffFlag.DragonBlood] = hp_loss, [BuffFlag.WeaponAtk] = bonus})
-	end,
+    on_activated = function(me, skill, params)
+        local hp_loss, bonus = dragon_blood_values(skill)
+        local buff = me:buff(skill, { [BuffFlag.DragonBlood] = hp_loss, [BuffFlag.WeaponAtk] = bonus })
+    end,
 
-	on_buff = function(me, skill)
-		local hp_loss = me:buff_value(BuffFlag.DragonBlood)
-		if hp_loss == nil then
-		    return
-		end
-		me:mktimer(TIMER_KEY, INTERVAL_MS, true, on_tick, hp_loss)
-	end,
+    on_buff = function(me, skill)
+        local hp_loss = me:buff_value(BuffFlag.DragonBlood)
+        if hp_loss == nil then
+            return
+        end
+        me:mktimer(TIMER_KEY, INTERVAL_MS, true, on_tick, hp_loss)
+    end,
 
-	on_unbuff = function(me, skill)
-		me:rmtimer(TIMER_KEY)
-	end
+    on_unbuff = function(me, skill)
+        me:rmtimer(TIMER_KEY)
+    end
 }

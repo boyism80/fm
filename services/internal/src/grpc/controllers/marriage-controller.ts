@@ -51,8 +51,8 @@ export class MarriageGrpcController {
                     req.brideId,
                     req.brideName,
                     req.ringItemId,
-                    req.requestId
-                )
+                    req.requestId,
+                ),
             );
         } catch (err) {
             this.grpcError(err, callback);
@@ -91,14 +91,26 @@ export class MarriageGrpcController {
     async reserveWedding(call: GrpcCall<ReserveWeddingRequest>, callback: GrpcCallback<MarriageReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.reserveWedding(req.worldId, req.marriageId, req.characterId, req.ticketItemId, req.requestId));
+            callback(
+                null,
+                await this.marriageService.reserveWedding(
+                    req.worldId,
+                    req.marriageId,
+                    req.characterId,
+                    req.ticketItemId,
+                    req.requestId,
+                ),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
     }
 
     @Method("abortMarriageChange")
-    async abortMarriageChange(call: GrpcCall<AbortMarriageChangeRequest>, callback: GrpcCallback<AbortMarriageChangeReply>) {
+    async abortMarriageChange(
+        call: GrpcCall<AbortMarriageChangeRequest>,
+        callback: GrpcCallback<AbortMarriageChangeReply>,
+    ) {
         try {
             const req = call.request;
             callback(null, { changed: await this.marriageService.abortMarriageChange(req.worldId, req.requestId) });
@@ -111,20 +123,41 @@ export class MarriageGrpcController {
     async setWeddingWishlist(call: GrpcCall<SetWeddingWishlistRequest>, callback: GrpcCallback<MarriageReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.setWeddingWishlist(req.worldId, req.marriageId, req.characterId, req.wishes ?? [], req.requestId));
+            callback(
+                null,
+                await this.marriageService.setWeddingWishlist(
+                    req.worldId,
+                    req.marriageId,
+                    req.characterId,
+                    req.wishes ?? [],
+                    req.requestId,
+                ),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
     }
 
     @Method("inviteWeddingGuest")
-    async inviteWeddingGuest(call: GrpcCall<InviteWeddingGuestRequest>, callback: GrpcCallback<InviteWeddingGuestReply>) {
+    async inviteWeddingGuest(
+        call: GrpcCall<InviteWeddingGuestRequest>,
+        callback: GrpcCallback<InviteWeddingGuestReply>,
+    ) {
         try {
             const req = call.request;
             if (!req.parcel) {
                 throw Object.assign(new Error("parcel is required"), { code: "INVALID_PAYLOAD" });
             }
-            callback(null, await this.marriageService.inviteWeddingGuest(req.worldId, req.marriageId, req.guestName, req.parcel, req.requestId));
+            callback(
+                null,
+                await this.marriageService.inviteWeddingGuest(
+                    req.worldId,
+                    req.marriageId,
+                    req.guestName,
+                    req.parcel,
+                    req.requestId,
+                ),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -143,7 +176,15 @@ export class MarriageGrpcController {
     async requestDivorce(call: GrpcCall<RequestDivorceRequest>, callback: GrpcCallback<MarriageReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.requestDivorce(req.worldId, req.marriageId, req.characterId, Number(req.nowUnixMs) || Date.now()));
+            callback(
+                null,
+                await this.marriageService.requestDivorce(
+                    req.worldId,
+                    req.marriageId,
+                    req.characterId,
+                    Number(req.nowUnixMs) || Date.now(),
+                ),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -182,7 +223,9 @@ export class MarriageGrpcController {
     async abortWeddingGift(call: GrpcCall<AbortWeddingGiftRequest>, callback: GrpcCallback<AbortWeddingGiftReply>) {
         try {
             const req = call.request;
-            callback(null, { given: await this.marriageService.abortWeddingGift(req.worldId, req.receiverId, req.requestId) });
+            callback(null, {
+                given: await this.marriageService.abortWeddingGift(req.worldId, req.receiverId, req.requestId),
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -201,7 +244,10 @@ export class MarriageGrpcController {
     async claimWeddingGift(call: GrpcCall<ClaimWeddingGiftRequest>, callback: GrpcCallback<ClaimWeddingGiftReply>) {
         try {
             const req = call.request;
-            callback(null, await this.marriageService.claimWeddingGift(req.worldId, req.characterId, req.giftId, req.requestId));
+            callback(
+                null,
+                await this.marriageService.claimWeddingGift(req.worldId, req.characterId, req.giftId, req.requestId),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -211,7 +257,13 @@ export class MarriageGrpcController {
     async notifySpouseMap(call: GrpcCall<NotifySpouseMapRequest>, callback: GrpcCallback<NotifySpouseMapReply>) {
         try {
             const req = call.request;
-            await this.marriageService.notifySpouseMap(req.worldId, req.characterId, req.spouseId, req.mapId, req.reply);
+            await this.marriageService.notifySpouseMap(
+                req.worldId,
+                req.characterId,
+                req.spouseId,
+                req.mapId,
+                req.reply,
+            );
             callback(null, {});
         } catch (err) {
             this.grpcError(err, callback);

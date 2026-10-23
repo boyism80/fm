@@ -88,7 +88,11 @@ export class CashShopGrpcController {
     @Method("setCashWishlist")
     async setCashWishlist(call: GrpcCall<SetCashWishlistRequest>, callback: GrpcCallback<SetCashWishlistReply>) {
         try {
-            await this.cashShopService.setWishlist(call.request.worldId, call.request.characterId, call.request.commoditySns);
+            await this.cashShopService.setWishlist(
+                call.request.worldId,
+                call.request.characterId,
+                call.request.commoditySns,
+            );
             callback(null, { ok: true });
         } catch (err) {
             this.grpcError(err, callback);
@@ -130,7 +134,9 @@ export class CashShopGrpcController {
     async buyCashRing(call: GrpcCall<BuyCashRingRequest>, callback: GrpcCallback<BuyCashRingReply>) {
         try {
             if (!call.request.item?.item?.uniqueId || !call.request.partnerItem?.item?.uniqueId) {
-                throw Object.assign(new Error("item and partner_item with unique_id are required"), { code: "INVALID_PAYLOAD" });
+                throw Object.assign(new Error("item and partner_item with unique_id are required"), {
+                    code: "INVALID_PAYLOAD",
+                });
             }
             callback(null, await this.cashShopService.buyRing(call.request));
         } catch (err) {
@@ -164,7 +170,14 @@ export class CashShopGrpcController {
     @Method("findCashCoupon")
     async findCashCoupon(call: GrpcCall<FindCashCouponRequest>, callback: GrpcCallback<FindCashCouponReply>) {
         try {
-            callback(null, await this.cashShopService.findCoupon(call.request.worldId, call.request.code.toUpperCase(), call.request.accountId));
+            callback(
+                null,
+                await this.cashShopService.findCoupon(
+                    call.request.worldId,
+                    call.request.code.toUpperCase(),
+                    call.request.accountId,
+                ),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -173,7 +186,10 @@ export class CashShopGrpcController {
     @Method("redeemCashCoupon")
     async redeemCashCoupon(call: GrpcCall<RedeemCashCouponRequest>, callback: GrpcCallback<RedeemCashCouponReply>) {
         try {
-            callback(null, await this.cashShopService.redeemCoupon({ ...call.request, code: call.request.code.toUpperCase() }));
+            callback(
+                null,
+                await this.cashShopService.redeemCoupon({ ...call.request, code: call.request.code.toUpperCase() }),
+            );
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -186,7 +202,9 @@ export class CashShopGrpcController {
             if (req.count < 1 || req.count > 100) {
                 throw Object.assign(new Error("count must be 1..100"), { code: "INVALID_PAYLOAD" });
             }
-            callback(null, { codes: await this.cashShopService.createCoupons(req.worldId, req.kind, req.value, req.count) });
+            callback(null, {
+                codes: await this.cashShopService.createCoupons(req.worldId, req.kind, req.value, req.count),
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }

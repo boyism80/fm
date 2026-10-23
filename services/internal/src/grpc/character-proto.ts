@@ -10,96 +10,354 @@ createMap(
     grpcMapper,
     CHARACTER_MODEL,
     CHARACTER_PROTO,
-    forMember((destination: any) => destination.characterId, mapFrom((source: CharacterModel) => source.characterId >>> 0)),
-    forMember((destination: any) => destination.worldId, mapFrom((source: CharacterModel) => source.worldId >>> 0)),
-    forMember((destination: any) => destination.name, mapFrom((source: CharacterModel) => source.name ?? "")),
-    forMember((destination: any) => destination.gender, mapFrom((source: CharacterModel) => source.gender >>> 0)),
-    forMember((destination: any) => destination.skinColor, mapFrom((source: CharacterModel) => source.skinColor >>> 0)),
-    forMember((destination: any) => destination.face, mapFrom((source: CharacterModel) => source.face >>> 0)),
-    forMember((destination: any) => destination.hair, mapFrom((source: CharacterModel) => source.hair >>> 0)),
-    forMember((destination: any) => destination.level, mapFrom((source: CharacterModel) => source.level >>> 0)),
-    forMember((destination: any) => destination.classId, mapFrom((source: CharacterModel) => source.classId >>> 0)),
-    forMember((destination: any) => destination.role, mapFrom((source: CharacterModel) => (source.role ?? 0) >>> 0)),
-    forMember((destination: any) => destination.str, mapFrom((source: CharacterModel) => (source.str ?? 0) >>> 0)),
-    forMember((destination: any) => destination.dex, mapFrom((source: CharacterModel) => (source.dex ?? 0) >>> 0)),
-    forMember((destination: any) => destination.intStat, mapFrom((source: CharacterModel) => (source.intStat ?? 0) >>> 0)),
-    forMember((destination: any) => destination.luk, mapFrom((source: CharacterModel) => (source.luk ?? 0) >>> 0)),
-    forMember((destination: any) => destination.hp, mapFrom((source: CharacterModel) => (source.hp ?? 0) >>> 0)),
-    forMember((destination: any) => destination.maxHp, mapFrom((source: CharacterModel) => (source.maxHp ?? 0) >>> 0)),
-    forMember((destination: any) => destination.mp, mapFrom((source: CharacterModel) => (source.mp ?? 0) >>> 0)),
-    forMember((destination: any) => destination.maxMp, mapFrom((source: CharacterModel) => (source.maxMp ?? 0) >>> 0)),
-    forMember((destination: any) => destination.abilityPoint, mapFrom((source: CharacterModel) => (source.abilityPoint ?? 0) >>> 0)),
-    forMember((destination: any) => destination.exp, mapFrom((source: CharacterModel) => (source.exp ?? 0) >>> 0)),
-    forMember((destination: any) => destination.mapId, mapFrom((source: CharacterModel) => source.mapId >>> 0)),
-    forMember((destination: any) => destination.spawnPoint, mapFrom((source: CharacterModel) => source.spawnPoint >>> 0)),
-    forMember((destination: any) => destination.positionX, mapFrom((source: CharacterModel) => (source.positionX ?? 0) | 0)),
-    forMember((destination: any) => destination.positionY, mapFrom((source: CharacterModel) => (source.positionY ?? 0) | 0)),
-    forMember((destination: any) => destination.stance, mapFrom((source: CharacterModel) => (source.stance ?? 0) >>> 0)),
-    forMember((destination: any) => destination.meso, mapFrom((source: CharacterModel) => (source.meso ?? 0) | 0)),
-    forMember((destination: any) => destination.skillPoint, mapFrom((source: CharacterModel) => (source.skillPoint ?? 0) >>> 0)),
-    forMember((destination: any) => destination.familyProgress, mapFrom((source: CharacterModel) => source.familyProgress ?? "0")),
-    forMember((destination: any) => destination.familyReputation, mapFrom((source: CharacterModel) => source.familyReputation ?? {})),
-    forMember((destination: any) => destination.populationHistory, mapFrom((source: CharacterModel) => source.populationHistory ?? { lastGivenUnixMs: 0, givenUnixMs: {} })),
-    forMember((destination: any) => destination.population, mapFrom((source: CharacterModel) => (source.population ?? 0) | 0)),
-    forMember((destination: any) => destination.hpApUsed, mapFrom((source: CharacterModel) => (source.hpApUsed ?? 0) >>> 0)),
-    forMember((destination: any) => destination.petHpItem, mapFrom((source: CharacterModel) => (source.petHpItem ?? 0) >>> 0)),
-    forMember((destination: any) => destination.petMpItem, mapFrom((source: CharacterModel) => (source.petMpItem ?? 0) >>> 0)),
-    forMember((destination: any) => destination.summonedPet, mapFrom((source: CharacterModel) => source.summonedPet ?? "0")),
-    forMember((destination: any) => destination.slotLimits, mapFrom((source: CharacterModel) => source.slotLimits ?? [])),
-    forMember((destination: any) => destination.monsterBookCover, mapFrom((source: CharacterModel) => (source.monsterBookCover ?? 0) >>> 0)),
-    forMember((destination: any) => destination.teleportStones, mapFrom((source: CharacterModel) => source.teleportStones ?? [])),
-    forMember((destination: any) => destination.vipTeleportStones, mapFrom((source: CharacterModel) => source.vipTeleportStones ?? [])),
-    forMember((destination: any) => destination.accountId, mapFrom((source: CharacterModel) => source.accountId >>> 0)),
-    forMember((destination: any) => destination.hidden, mapFrom((source: CharacterModel) => source.hidden ?? false)),
-    forMember((destination: any) => destination.savedAtUnixMs, mapFrom((source: CharacterModel) => source.savedAtUnixMs ?? 0)),
-    forMember((destination: any) => destination.expReachedUnixMs, mapFrom((source: CharacterModel) => source.expReachedUnixMs ?? 0))
+    forMember(
+        (destination: any) => destination.characterId,
+        mapFrom((source: CharacterModel) => source.characterId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.worldId,
+        mapFrom((source: CharacterModel) => source.worldId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.name,
+        mapFrom((source: CharacterModel) => source.name ?? ""),
+    ),
+    forMember(
+        (destination: any) => destination.gender,
+        mapFrom((source: CharacterModel) => source.gender >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.skinColor,
+        mapFrom((source: CharacterModel) => source.skinColor >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.face,
+        mapFrom((source: CharacterModel) => source.face >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.hair,
+        mapFrom((source: CharacterModel) => source.hair >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.level,
+        mapFrom((source: CharacterModel) => source.level >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.classId,
+        mapFrom((source: CharacterModel) => source.classId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.role,
+        mapFrom((source: CharacterModel) => (source.role ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.str,
+        mapFrom((source: CharacterModel) => (source.str ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.dex,
+        mapFrom((source: CharacterModel) => (source.dex ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.intStat,
+        mapFrom((source: CharacterModel) => (source.intStat ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.luk,
+        mapFrom((source: CharacterModel) => (source.luk ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.hp,
+        mapFrom((source: CharacterModel) => (source.hp ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.maxHp,
+        mapFrom((source: CharacterModel) => (source.maxHp ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.mp,
+        mapFrom((source: CharacterModel) => (source.mp ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.maxMp,
+        mapFrom((source: CharacterModel) => (source.maxMp ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.abilityPoint,
+        mapFrom((source: CharacterModel) => (source.abilityPoint ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.exp,
+        mapFrom((source: CharacterModel) => (source.exp ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.mapId,
+        mapFrom((source: CharacterModel) => source.mapId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.spawnPoint,
+        mapFrom((source: CharacterModel) => source.spawnPoint >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.positionX,
+        mapFrom((source: CharacterModel) => (source.positionX ?? 0) | 0),
+    ),
+    forMember(
+        (destination: any) => destination.positionY,
+        mapFrom((source: CharacterModel) => (source.positionY ?? 0) | 0),
+    ),
+    forMember(
+        (destination: any) => destination.stance,
+        mapFrom((source: CharacterModel) => (source.stance ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.meso,
+        mapFrom((source: CharacterModel) => (source.meso ?? 0) | 0),
+    ),
+    forMember(
+        (destination: any) => destination.skillPoint,
+        mapFrom((source: CharacterModel) => (source.skillPoint ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.familyProgress,
+        mapFrom((source: CharacterModel) => source.familyProgress ?? "0"),
+    ),
+    forMember(
+        (destination: any) => destination.familyReputation,
+        mapFrom((source: CharacterModel) => source.familyReputation ?? {}),
+    ),
+    forMember(
+        (destination: any) => destination.populationHistory,
+        mapFrom((source: CharacterModel) => source.populationHistory ?? { lastGivenUnixMs: 0, givenUnixMs: {} }),
+    ),
+    forMember(
+        (destination: any) => destination.population,
+        mapFrom((source: CharacterModel) => (source.population ?? 0) | 0),
+    ),
+    forMember(
+        (destination: any) => destination.hpApUsed,
+        mapFrom((source: CharacterModel) => (source.hpApUsed ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.petHpItem,
+        mapFrom((source: CharacterModel) => (source.petHpItem ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.petMpItem,
+        mapFrom((source: CharacterModel) => (source.petMpItem ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.summonedPet,
+        mapFrom((source: CharacterModel) => source.summonedPet ?? "0"),
+    ),
+    forMember(
+        (destination: any) => destination.slotLimits,
+        mapFrom((source: CharacterModel) => source.slotLimits ?? []),
+    ),
+    forMember(
+        (destination: any) => destination.monsterBookCover,
+        mapFrom((source: CharacterModel) => (source.monsterBookCover ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.teleportStones,
+        mapFrom((source: CharacterModel) => source.teleportStones ?? []),
+    ),
+    forMember(
+        (destination: any) => destination.vipTeleportStones,
+        mapFrom((source: CharacterModel) => source.vipTeleportStones ?? []),
+    ),
+    forMember(
+        (destination: any) => destination.accountId,
+        mapFrom((source: CharacterModel) => source.accountId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.hidden,
+        mapFrom((source: CharacterModel) => source.hidden ?? false),
+    ),
+    forMember(
+        (destination: any) => destination.savedAtUnixMs,
+        mapFrom((source: CharacterModel) => source.savedAtUnixMs ?? 0),
+    ),
+    forMember(
+        (destination: any) => destination.expReachedUnixMs,
+        mapFrom((source: CharacterModel) => source.expReachedUnixMs ?? 0),
+    ),
 );
 
 createMap(
     grpcMapper,
     CHARACTER_PROTO,
     CHARACTER_MODEL,
-    forMember((destination: any) => destination.characterId, mapFrom((source: Character) => source.characterId >>> 0)),
-    forMember((destination: any) => destination.worldId, mapFrom((source: Character) => source.worldId >>> 0)),
-    forMember((destination: any) => destination.name, mapFrom((source: Character) => source.name)),
-    forMember((destination: any) => destination.gender, mapFrom((source: Character) => source.gender >>> 0)),
-    forMember((destination: any) => destination.skinColor, mapFrom((source: Character) => source.skinColor >>> 0)),
-    forMember((destination: any) => destination.face, mapFrom((source: Character) => source.face >>> 0)),
-    forMember((destination: any) => destination.hair, mapFrom((source: Character) => source.hair >>> 0)),
-    forMember((destination: any) => destination.level, mapFrom((source: Character) => source.level >>> 0)),
-    forMember((destination: any) => destination.classId, mapFrom((source: Character) => source.classId >>> 0)),
-    forMember((destination: any) => destination.role, mapFrom((source: Character) => source.role >>> 0)),
-    forMember((destination: any) => destination.str, mapFrom((source: Character) => source.str >>> 0)),
-    forMember((destination: any) => destination.dex, mapFrom((source: Character) => source.dex >>> 0)),
-    forMember((destination: any) => destination.intStat, mapFrom((source: Character) => source.intStat >>> 0)),
-    forMember((destination: any) => destination.luk, mapFrom((source: Character) => source.luk >>> 0)),
-    forMember((destination: any) => destination.hp, mapFrom((source: Character) => source.hp >>> 0)),
-    forMember((destination: any) => destination.maxHp, mapFrom((source: Character) => source.maxHp >>> 0)),
-    forMember((destination: any) => destination.mp, mapFrom((source: Character) => source.mp >>> 0)),
-    forMember((destination: any) => destination.maxMp, mapFrom((source: Character) => source.maxMp >>> 0)),
-    forMember((destination: any) => destination.abilityPoint, mapFrom((source: Character) => source.abilityPoint >>> 0)),
-    forMember((destination: any) => destination.exp, mapFrom((source: Character) => source.exp >>> 0)),
-    forMember((destination: any) => destination.mapId, mapFrom((source: Character) => source.mapId >>> 0)),
-    forMember((destination: any) => destination.spawnPoint, mapFrom((source: Character) => source.spawnPoint >>> 0)),
-    forMember((destination: any) => destination.positionX, mapFrom((source: Character) => source.positionX | 0)),
-    forMember((destination: any) => destination.positionY, mapFrom((source: Character) => source.positionY | 0)),
-    forMember((destination: any) => destination.stance, mapFrom((source: Character) => source.stance >>> 0)),
-    forMember((destination: any) => destination.meso, mapFrom((source: Character) => source.meso | 0)),
-    forMember((destination: any) => destination.skillPoint, mapFrom((source: Character) => source.skillPoint >>> 0)),
-    forMember((destination: any) => destination.familyProgress, mapFrom((source: Character) => source.familyProgress ?? "0")),
-    forMember((destination: any) => destination.familyReputation, mapFrom((source: Character) => source.familyReputation ?? {})),
-    forMember((destination: any) => destination.populationHistory, mapFrom((source: Character) => source.populationHistory)),
-    forMember((destination: any) => destination.population, mapFrom((source: Character) => source.population | 0)),
-    forMember((destination: any) => destination.hpApUsed, mapFrom((source: Character) => source.hpApUsed >>> 0)),
-    forMember((destination: any) => destination.petHpItem, mapFrom((source: Character) => source.petHpItem >>> 0)),
-    forMember((destination: any) => destination.petMpItem, mapFrom((source: Character) => source.petMpItem >>> 0)),
-    forMember((destination: any) => destination.summonedPet, mapFrom((source: Character) => source.summonedPet)),
-    forMember((destination: any) => destination.slotLimits, mapFrom((source: Character) => source.slotLimits ?? [])),
-    forMember((destination: any) => destination.monsterBookCover, mapFrom((source: Character) => source.monsterBookCover >>> 0)),
-    forMember((destination: any) => destination.teleportStones, mapFrom((source: Character) => source.teleportStones ?? [])),
-    forMember((destination: any) => destination.vipTeleportStones, mapFrom((source: Character) => source.vipTeleportStones ?? [])),
-    forMember((destination: any) => destination.accountId, mapFrom((source: Character) => source.accountId >>> 0)),
-    forMember((destination: any) => destination.hidden, mapFrom((source: Character) => source.hidden)),
-    forMember((destination: any) => destination.savedAtUnixMs, mapFrom((source: Character) => source.savedAtUnixMs)),
-    forMember((destination: any) => destination.expReachedUnixMs, mapFrom((source: Character) => source.expReachedUnixMs))
+    forMember(
+        (destination: any) => destination.characterId,
+        mapFrom((source: Character) => source.characterId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.worldId,
+        mapFrom((source: Character) => source.worldId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.name,
+        mapFrom((source: Character) => source.name),
+    ),
+    forMember(
+        (destination: any) => destination.gender,
+        mapFrom((source: Character) => source.gender >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.skinColor,
+        mapFrom((source: Character) => source.skinColor >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.face,
+        mapFrom((source: Character) => source.face >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.hair,
+        mapFrom((source: Character) => source.hair >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.level,
+        mapFrom((source: Character) => source.level >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.classId,
+        mapFrom((source: Character) => source.classId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.role,
+        mapFrom((source: Character) => source.role >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.str,
+        mapFrom((source: Character) => source.str >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.dex,
+        mapFrom((source: Character) => source.dex >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.intStat,
+        mapFrom((source: Character) => source.intStat >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.luk,
+        mapFrom((source: Character) => source.luk >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.hp,
+        mapFrom((source: Character) => source.hp >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.maxHp,
+        mapFrom((source: Character) => source.maxHp >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.mp,
+        mapFrom((source: Character) => source.mp >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.maxMp,
+        mapFrom((source: Character) => source.maxMp >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.abilityPoint,
+        mapFrom((source: Character) => source.abilityPoint >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.exp,
+        mapFrom((source: Character) => source.exp >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.mapId,
+        mapFrom((source: Character) => source.mapId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.spawnPoint,
+        mapFrom((source: Character) => source.spawnPoint >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.positionX,
+        mapFrom((source: Character) => source.positionX | 0),
+    ),
+    forMember(
+        (destination: any) => destination.positionY,
+        mapFrom((source: Character) => source.positionY | 0),
+    ),
+    forMember(
+        (destination: any) => destination.stance,
+        mapFrom((source: Character) => source.stance >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.meso,
+        mapFrom((source: Character) => source.meso | 0),
+    ),
+    forMember(
+        (destination: any) => destination.skillPoint,
+        mapFrom((source: Character) => source.skillPoint >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.familyProgress,
+        mapFrom((source: Character) => source.familyProgress ?? "0"),
+    ),
+    forMember(
+        (destination: any) => destination.familyReputation,
+        mapFrom((source: Character) => source.familyReputation ?? {}),
+    ),
+    forMember(
+        (destination: any) => destination.populationHistory,
+        mapFrom((source: Character) => source.populationHistory),
+    ),
+    forMember(
+        (destination: any) => destination.population,
+        mapFrom((source: Character) => source.population | 0),
+    ),
+    forMember(
+        (destination: any) => destination.hpApUsed,
+        mapFrom((source: Character) => source.hpApUsed >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.petHpItem,
+        mapFrom((source: Character) => source.petHpItem >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.petMpItem,
+        mapFrom((source: Character) => source.petMpItem >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.summonedPet,
+        mapFrom((source: Character) => source.summonedPet),
+    ),
+    forMember(
+        (destination: any) => destination.slotLimits,
+        mapFrom((source: Character) => source.slotLimits ?? []),
+    ),
+    forMember(
+        (destination: any) => destination.monsterBookCover,
+        mapFrom((source: Character) => source.monsterBookCover >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.teleportStones,
+        mapFrom((source: Character) => source.teleportStones ?? []),
+    ),
+    forMember(
+        (destination: any) => destination.vipTeleportStones,
+        mapFrom((source: Character) => source.vipTeleportStones ?? []),
+    ),
+    forMember(
+        (destination: any) => destination.accountId,
+        mapFrom((source: Character) => source.accountId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.hidden,
+        mapFrom((source: Character) => source.hidden),
+    ),
+    forMember(
+        (destination: any) => destination.savedAtUnixMs,
+        mapFrom((source: Character) => source.savedAtUnixMs),
+    ),
+    forMember(
+        (destination: any) => destination.expReachedUnixMs,
+        mapFrom((source: Character) => source.expReachedUnixMs),
+    ),
 );

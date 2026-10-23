@@ -3,7 +3,7 @@
 local ex = require("script/lib/expedition")
 
 return {
-	on_click = function(me, npc)
-		ex.talk(me, npc, "pink_bean")
-	end
+    on_click = function(me, npc)
+        ex.talk(me, npc, "pink_bean")
+    end
 }

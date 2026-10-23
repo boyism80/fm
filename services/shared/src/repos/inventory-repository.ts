@@ -118,10 +118,14 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
             flag: row.flag,
             skillBonus: row.skill_bonus,
             ownerName: row.owner_name ?? null,
-            equipBonusStats: typeof row.equip_bonus_stats === "string" ? JSON.parse(row.equip_bonus_stats) : (row.equip_bonus_stats ?? {}),
+            equipBonusStats:
+                typeof row.equip_bonus_stats === "string"
+                    ? JSON.parse(row.equip_bonus_stats)
+                    : (row.equip_bonus_stats ?? {}),
             pet: typeof row.pet === "string" ? JSON.parse(row.pet) : (row.pet ?? null),
             marriageId: row.marriage_id ?? 0,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
@@ -149,7 +153,12 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         };
     }
 
-    override async replaceBySnapshot(worldId: number, groupKey: string, models: InventoryModel[], options: RepositoryTxOptions = {}): Promise<void> {
+    override async replaceBySnapshot(
+        worldId: number,
+        groupKey: string,
+        models: InventoryModel[],
+        options: RepositoryTxOptions = {},
+    ): Promise<void> {
         const ownerId = Number(groupKey);
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
@@ -157,15 +166,20 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
             return row;
         });
 
-        await this.ctx.withPgDataTransaction(worldId, ownerId, async (txClient) => {
-            await txClient.query(`DELETE FROM ${this.table} WHERE owner_id = $1`, [ownerId]);
-            if (normalized.length > 0) {
-                const insert = this.onBulkUpsert(normalized);
-                if (insert.text) {
-                    await txClient.query(insert.text, insert.values);
+        await this.ctx.withPgDataTransaction(
+            worldId,
+            ownerId,
+            async (txClient) => {
+                await txClient.query(`DELETE FROM ${this.table} WHERE owner_id = $1`, [ownerId]);
+                if (normalized.length > 0) {
+                    const insert = this.onBulkUpsert(normalized);
+                    if (insert.text) {
+                        await txClient.query(insert.text, insert.values);
+                    }
                 }
-            }
-        }, options);
+            },
+            options,
+        );
         await this.invalidateAfterWrite(worldId, groupKey, this.pool(worldId, groupKey), options);
     }
 }

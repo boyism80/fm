@@ -1,7 +1,4 @@
-import type {
-    EquipmentBonusStats,
-    Inventory,
-} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { EquipmentBonusStats, Inventory } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
 import type { EquipmentBonusStatsJson } from "@fm/shared/types/equipment-bonus-stats";
 import { createMap, forMember, mapFrom } from "@automapper/core";
@@ -16,8 +13,21 @@ function plainObjectToBonusProto(input: EquipmentBonusStatsJson | undefined): Eq
         return undefined;
     }
     const b: EquipmentBonusStats = {
-        str: 0, dex: 0, intStat: 0, luk: 0, maxHp: 0, maxMp: 0, pad: 0, mad: 0, pdd: 0, mdd: 0,
-        acc: 0, avoid: 0, hands: 0, speed: 0, jump: 0,
+        str: 0,
+        dex: 0,
+        intStat: 0,
+        luk: 0,
+        maxHp: 0,
+        maxMp: 0,
+        pad: 0,
+        mad: 0,
+        pdd: 0,
+        mdd: 0,
+        acc: 0,
+        avoid: 0,
+        hands: 0,
+        speed: 0,
+        jump: 0,
     };
     let hasAny = false;
     const setIfHas = (key: keyof EquipmentBonusStatsJson, setter: (v: number) => void) => {
@@ -27,21 +37,51 @@ function plainObjectToBonusProto(input: EquipmentBonusStatsJson | undefined): Eq
         hasAny = true;
         setter(Number(o[key]) | 0);
     };
-    setIfHas("str", (v) => { b.str = v; });
-    setIfHas("dex", (v) => { b.dex = v; });
-    setIfHas("int", (v) => { b.intStat = v; });
-    setIfHas("luk", (v) => { b.luk = v; });
-    setIfHas("maxHp", (v) => { b.maxHp = v; });
-    setIfHas("maxMp", (v) => { b.maxMp = v; });
-    setIfHas("pad", (v) => { b.pad = v; });
-    setIfHas("mad", (v) => { b.mad = v; });
-    setIfHas("pdd", (v) => { b.pdd = v; });
-    setIfHas("mdd", (v) => { b.mdd = v; });
-    setIfHas("acc", (v) => { b.acc = v; });
-    setIfHas("avoid", (v) => { b.avoid = v; });
-    setIfHas("hands", (v) => { b.hands = v; });
-    setIfHas("speed", (v) => { b.speed = v; });
-    setIfHas("jump", (v) => { b.jump = v; });
+    setIfHas("str", (v) => {
+        b.str = v;
+    });
+    setIfHas("dex", (v) => {
+        b.dex = v;
+    });
+    setIfHas("int", (v) => {
+        b.intStat = v;
+    });
+    setIfHas("luk", (v) => {
+        b.luk = v;
+    });
+    setIfHas("maxHp", (v) => {
+        b.maxHp = v;
+    });
+    setIfHas("maxMp", (v) => {
+        b.maxMp = v;
+    });
+    setIfHas("pad", (v) => {
+        b.pad = v;
+    });
+    setIfHas("mad", (v) => {
+        b.mad = v;
+    });
+    setIfHas("pdd", (v) => {
+        b.pdd = v;
+    });
+    setIfHas("mdd", (v) => {
+        b.mdd = v;
+    });
+    setIfHas("acc", (v) => {
+        b.acc = v;
+    });
+    setIfHas("avoid", (v) => {
+        b.avoid = v;
+    });
+    setIfHas("hands", (v) => {
+        b.hands = v;
+    });
+    setIfHas("speed", (v) => {
+        b.speed = v;
+    });
+    setIfHas("jump", (v) => {
+        b.jump = v;
+    });
     return hasAny ? b : undefined;
 }
 
@@ -72,44 +112,133 @@ createMap(
     grpcMapper,
     INVENTORY_MODEL,
     INVENTORY_PROTO,
-    forMember((destination: any) => destination.uniqueId, mapFrom((source: InventoryModel) => {
-        const uid = source.uniqueId;
-        return uid != null && uid !== "0" ? uid : undefined;
-    })),
-    forMember((destination: any) => destination.ownerId, mapFrom((source: InventoryModel) => source.ownerId >>> 0)),
-    forMember((destination: any) => destination.inventoryType, mapFrom((source: InventoryModel) => (source.inventoryType ?? 0) >>> 0)),
-    forMember((destination: any) => destination.itemId, mapFrom((source: InventoryModel) => source.itemId >>> 0)),
-    forMember((destination: any) => destination.slot, mapFrom((source: InventoryModel) => source.slot | 0)),
-    forMember((destination: any) => destination.count, mapFrom((source: InventoryModel) => source.count >>> 0)),
-    forMember((destination: any) => destination.expirationUnixMs, mapFrom((source: InventoryModel) => source.expiration ? source.expiration.getTime() : 0)),
-    forMember((destination: any) => destination.enhanceChance, mapFrom((source: InventoryModel) => (source.enhanceChance ?? 0) >>> 0)),
-    forMember((destination: any) => destination.enhanceCount, mapFrom((source: InventoryModel) => (source.enhanceCount ?? 0) >>> 0)),
-    forMember((destination: any) => destination.flag, mapFrom((source: InventoryModel) => (source.flag ?? 0) >>> 0)),
-    forMember((destination: any) => destination.skillBonus, mapFrom((source: InventoryModel) => (source.skillBonus ?? 0) >>> 0)),
-    forMember((destination: any) => destination.ownerName, mapFrom((source: InventoryModel) => source.ownerName ?? "")),
-    forMember((destination: any) => destination.equipBonusStats, mapFrom((source: InventoryModel) => plainObjectToBonusProto(source.equipBonusStats))),
-    forMember((destination: any) => destination.pet, mapFrom((source: InventoryModel) => source.pet ?? undefined)),
-    forMember((destination: any) => destination.marriageId, mapFrom((source: InventoryModel) => (source.marriageId ?? 0) >>> 0))
+    forMember(
+        (destination: any) => destination.uniqueId,
+        mapFrom((source: InventoryModel) => {
+            const uid = source.uniqueId;
+            return uid != null && uid !== "0" ? uid : undefined;
+        }),
+    ),
+    forMember(
+        (destination: any) => destination.ownerId,
+        mapFrom((source: InventoryModel) => source.ownerId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.inventoryType,
+        mapFrom((source: InventoryModel) => (source.inventoryType ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.itemId,
+        mapFrom((source: InventoryModel) => source.itemId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.slot,
+        mapFrom((source: InventoryModel) => source.slot | 0),
+    ),
+    forMember(
+        (destination: any) => destination.count,
+        mapFrom((source: InventoryModel) => source.count >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.expirationUnixMs,
+        mapFrom((source: InventoryModel) => (source.expiration ? source.expiration.getTime() : 0)),
+    ),
+    forMember(
+        (destination: any) => destination.enhanceChance,
+        mapFrom((source: InventoryModel) => (source.enhanceChance ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.enhanceCount,
+        mapFrom((source: InventoryModel) => (source.enhanceCount ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.flag,
+        mapFrom((source: InventoryModel) => (source.flag ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.skillBonus,
+        mapFrom((source: InventoryModel) => (source.skillBonus ?? 0) >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.ownerName,
+        mapFrom((source: InventoryModel) => source.ownerName ?? ""),
+    ),
+    forMember(
+        (destination: any) => destination.equipBonusStats,
+        mapFrom((source: InventoryModel) => plainObjectToBonusProto(source.equipBonusStats)),
+    ),
+    forMember(
+        (destination: any) => destination.pet,
+        mapFrom((source: InventoryModel) => source.pet ?? undefined),
+    ),
+    forMember(
+        (destination: any) => destination.marriageId,
+        mapFrom((source: InventoryModel) => (source.marriageId ?? 0) >>> 0),
+    ),
 );
 
 createMap(
     grpcMapper,
     INVENTORY_PROTO,
     INVENTORY_MODEL,
-    forMember((destination: any) => destination.uniqueId, mapFrom((source: Inventory) => source.uniqueId ?? null)),
-    forMember((destination: any) => destination.ownerId, mapFrom((source: Inventory) => source.ownerId >>> 0)),
-    forMember((destination: any) => destination.inventoryType, mapFrom((source: Inventory) => source.inventoryType >>> 0)),
-    forMember((destination: any) => destination.itemId, mapFrom((source: Inventory) => source.itemId >>> 0)),
-    forMember((destination: any) => destination.slot, mapFrom((source: Inventory) => source.slot | 0)),
-    forMember((destination: any) => destination.count, mapFrom((source: Inventory) => source.count >>> 0)),
-    forMember((destination: any) => destination.expiration, mapFrom((source: Inventory) => source.expirationUnixMs > 0 ? new Date(source.expirationUnixMs) : null)),
-    forMember((destination: any) => destination.enhanceChance, mapFrom((source: Inventory) => source.enhanceChance || null)),
-    forMember((destination: any) => destination.enhanceCount, mapFrom((source: Inventory) => source.enhanceCount || null)),
-    forMember((destination: any) => destination.flag, mapFrom((source: Inventory) => source.flag || null)),
-    forMember((destination: any) => destination.skillBonus, mapFrom((source: Inventory) => source.skillBonus || null)),
-    forMember((destination: any) => destination.ownerName, mapFrom((source: Inventory) => source.ownerName || null)),
-    forMember((destination: any) => destination.equipBonusStats, mapFrom((source: Inventory) => bonusProtoToPlainObject(source.equipBonusStats))),
-    forMember((destination: any) => destination.pet, mapFrom((source: Inventory) => source.pet ?? null)),
-    forMember((destination: any) => destination.marriageId, mapFrom((source: Inventory) => source.marriageId >>> 0))
+    forMember(
+        (destination: any) => destination.uniqueId,
+        mapFrom((source: Inventory) => source.uniqueId ?? null),
+    ),
+    forMember(
+        (destination: any) => destination.ownerId,
+        mapFrom((source: Inventory) => source.ownerId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.inventoryType,
+        mapFrom((source: Inventory) => source.inventoryType >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.itemId,
+        mapFrom((source: Inventory) => source.itemId >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.slot,
+        mapFrom((source: Inventory) => source.slot | 0),
+    ),
+    forMember(
+        (destination: any) => destination.count,
+        mapFrom((source: Inventory) => source.count >>> 0),
+    ),
+    forMember(
+        (destination: any) => destination.expiration,
+        mapFrom((source: Inventory) => (source.expirationUnixMs > 0 ? new Date(source.expirationUnixMs) : null)),
+    ),
+    forMember(
+        (destination: any) => destination.enhanceChance,
+        mapFrom((source: Inventory) => source.enhanceChance || null),
+    ),
+    forMember(
+        (destination: any) => destination.enhanceCount,
+        mapFrom((source: Inventory) => source.enhanceCount || null),
+    ),
+    forMember(
+        (destination: any) => destination.flag,
+        mapFrom((source: Inventory) => source.flag || null),
+    ),
+    forMember(
+        (destination: any) => destination.skillBonus,
+        mapFrom((source: Inventory) => source.skillBonus || null),
+    ),
+    forMember(
+        (destination: any) => destination.ownerName,
+        mapFrom((source: Inventory) => source.ownerName || null),
+    ),
+    forMember(
+        (destination: any) => destination.equipBonusStats,
+        mapFrom((source: Inventory) => bonusProtoToPlainObject(source.equipBonusStats)),
+    ),
+    forMember(
+        (destination: any) => destination.pet,
+        mapFrom((source: Inventory) => source.pet ?? null),
+    ),
+    forMember(
+        (destination: any) => destination.marriageId,
+        mapFrom((source: Inventory) => source.marriageId >>> 0),
+    ),
 );
-

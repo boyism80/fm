@@ -47,7 +47,7 @@ export class ShopService {
         shopRepository: ShopRepository,
         shopOpenRequestRepository: ShopOpenRequestRepository,
         characterService: CharacterService,
-        shopSearchRanking: ShopSearchRanking
+        shopSearchRanking: ShopSearchRanking,
     ) {
         this.shopRepo = shopRepository;
         this.shopOpenRequestRepo = shopOpenRequestRepository;
@@ -77,7 +77,10 @@ export class ShopService {
         };
     }
 
-    async findEntrustedShop(worldId: number, accountId: number): Promise<{ shop: Shop | undefined; storeBank: Shop[] }> {
+    async findEntrustedShop(
+        worldId: number,
+        accountId: number,
+    ): Promise<{ shop: Shop | undefined; storeBank: Shop[] }> {
         const rows = await this.shopRepo.findByAccount(worldId, accountId);
         const open = rows.find((row) => row.kind === ShopKindEntrusted && row.closed_at == null);
         return {
@@ -125,12 +128,18 @@ export class ShopService {
                     closedAt: null,
                     storeBankId: null,
                 },
-                { txClient }
+                { txClient },
             );
             if (!row) {
                 throw new Error("shop insert returned no row");
             }
-            await this.shopOpenRequestRepo.insert(shop.worldId, shop.accountId, requestId, { shop_id: Number(row.shop_id) }, txClient);
+            await this.shopOpenRequestRepo.insert(
+                shop.worldId,
+                shop.accountId,
+                requestId,
+                { shop_id: Number(row.shop_id) },
+                txClient,
+            );
             return { shopId: row.shop_id, existing: undefined, aborted: false };
         });
     }
@@ -150,7 +159,14 @@ export class ShopService {
             if ((await this.shopRepo.abortOpen(worldId, accountId, request.outcome.shop_id, { txClient })) === false) {
                 return false;
             }
-            await this.shopOpenRequestRepo.transition(worldId, accountId, requestId, RequestStatus.Applied, RequestStatus.Aborted, txClient);
+            await this.shopOpenRequestRepo.transition(
+                worldId,
+                accountId,
+                requestId,
+                RequestStatus.Applied,
+                RequestStatus.Aborted,
+                txClient,
+            );
             return true;
         });
     }
@@ -178,7 +194,7 @@ export class ShopService {
                         closedAt: new Date(),
                         storeBankId: kept.storeBankId,
                     },
-                    { txClient }
+                    { txClient },
                 );
             }
             await this.shopRepo.update(
@@ -192,7 +208,7 @@ export class ShopService {
                     items: shop.items.map((item) => ShopItem.toJSON(item)),
                     sold: shop.sold.map((sale) => ShopSale.toJSON(sale)),
                 },
-                { txClient }
+                { txClient },
             );
             if (close === false) {
                 return;

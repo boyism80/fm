@@ -6,50 +6,50 @@ local COOLDOWN_RECORD = "cooldown.shanghai_boss"
 local COOLDOWN_SEC = 60
 
 local function quest_allowed(me)
-	local q = me:quest(QUEST_ID)
-	if q == nil then
-		return false
-	end
-	return q:started() or q:completed()
+    local q = me:quest(QUEST_ID)
+    if q == nil then
+        return false
+    end
+    return q:started() or q:completed()
 end
 
 local function cooldown_blocked(me)
-	if me:records():get(COOLDOWN_RECORD) > 0 then
-		return true
-	end
-	me:records():set(COOLDOWN_RECORD, 1, { every = COOLDOWN_SEC })
-	return false
+    if me:records():get(COOLDOWN_RECORD) > 0 then
+        return true
+    end
+    me:records():set(COOLDOWN_RECORD, 1, { every = COOLDOWN_SEC })
+    return false
 end
 
 return {
-	on_click = function(me, npc)
-		if not quest_allowed(me) then
-			me:dialog(npc, "충성! 하지만 이 안은 아무나 들어갈 수 없습니다.")
-			return
-		end
-		if cooldown_blocked(me) then
-			me:dialog(npc, "대왕지네는 60초에 한번씩만 퇴치하러 갈 수 있다네. 나중에 다시 찾아와주게나.")
-			return
-		end
-		local group = state_machine(GROUP_NAME)
-		if group == nil then
-			me:dialog(npc, "오류가 발생했군요.")
-			return
-		end
-		local party = me:party()
-		local sm, err
-		if party ~= nil then
-			sm, err = group:start_party(me, party)
-		else
-			sm, err = group:start_solo(me)
-		end
-		if sm == nil then
-			if err == StateMachineError.Full then
-				me:dialog(npc, "이미 이 안에 다른 누군가가 대왕지네를 물리치고 있는 것 같네. 잠시 후에 다시 찾아와 주게.")
-			else
-				me:dialog(npc, "오류가 발생했군요.")
-				log("shanghai_boss start:", err)
-			end
-		end
-	end
+    on_click = function(me, npc)
+        if not quest_allowed(me) then
+            me:dialog(npc, "충성! 하지만 이 안은 아무나 들어갈 수 없습니다.")
+            return
+        end
+        if cooldown_blocked(me) then
+            me:dialog(npc, "대왕지네는 60초에 한번씩만 퇴치하러 갈 수 있다네. 나중에 다시 찾아와주게나.")
+            return
+        end
+        local group = state_machine(GROUP_NAME)
+        if group == nil then
+            me:dialog(npc, "오류가 발생했군요.")
+            return
+        end
+        local party = me:party()
+        local sm, err
+        if party ~= nil then
+            sm, err = group:start_party(me, party)
+        else
+            sm, err = group:start_solo(me)
+        end
+        if sm == nil then
+            if err == StateMachineError.Full then
+                me:dialog(npc, "이미 이 안에 다른 누군가가 대왕지네를 물리치고 있는 것 같네. 잠시 후에 다시 찾아와 주게.")
+            else
+                me:dialog(npc, "오류가 발생했군요.")
+                log("shanghai_boss start:", err)
+            end
+        end
+    end
 }

@@ -80,9 +80,15 @@ redis.call("HSET", key,
 redis.call("EXPIRE", key, ttl)
 return {1, ${SessionErrorCode.SESSION_NONE}}
 `;
-        return (await client.eval(script, 1, accountKey, String(accountId), String(loginServerId), String(now), String(ttlSeconds))) as Array<
-            number | string
-        >;
+        return (await client.eval(
+            script,
+            1,
+            accountKey,
+            String(accountId),
+            String(loginServerId),
+            String(now),
+            String(ttlSeconds),
+        )) as Array<number | string>;
     }
 
     async beginTransition(
@@ -95,12 +101,16 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         ttlSeconds: number,
         sourceChannelId: number | null,
         sourceCashShopId: number | null,
-        debuffs: Debuff[]
+        debuffs: Debuff[],
     ) {
         const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
-        const sourceCh = sourceChannelId != null && Number.isInteger(sourceChannelId) && sourceChannelId >= 0 ? sourceChannelId : -1;
-        const sourceCs = sourceCashShopId != null && Number.isInteger(sourceCashShopId) && sourceCashShopId >= 0 ? sourceCashShopId : -1;
+        const sourceCh =
+            sourceChannelId != null && Number.isInteger(sourceChannelId) && sourceChannelId >= 0 ? sourceChannelId : -1;
+        const sourceCs =
+            sourceCashShopId != null && Number.isInteger(sourceCashShopId) && sourceCashShopId >= 0
+                ? sourceCashShopId
+                : -1;
         const script = `
 local account_key = KEYS[1]
 local world_id = ARGV[1]
@@ -169,7 +179,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
             String(sourceCh),
             clientIp,
             (sourceCh >= 0 || sourceCs >= 0) && debuffs.length > 0 ? JSON.stringify(debuffs) : "",
-            String(sourceCs)
+            String(sourceCs),
         )) as Array<number | string>;
     }
 
@@ -180,7 +190,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         cashShopId: number,
         clientIp: string,
         now: string,
-        ttlSeconds: number
+        ttlSeconds: number,
     ) {
         const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
@@ -231,7 +241,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}, return_channel_id}
             String(cashShopId),
             String(now),
             String(ttlSeconds),
-            clientIp
+            clientIp,
         )) as Array<number | string>;
     }
 
@@ -242,7 +252,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}, return_channel_id}
         channelId: number,
         clientIp: string,
         now: string,
-        ttlSeconds: number
+        ttlSeconds: number,
     ) {
         const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
@@ -295,7 +305,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
             String(channelId),
             String(now),
             String(ttlSeconds),
-            clientIp
+            clientIp,
         )) as Array<number | string>;
     }
 
@@ -304,7 +314,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         loginTtl: number,
         transitionTtl: number,
         gameTtl: number,
-        owner: { characterId: number; channelId?: number; cashShopId?: number } | null
+        owner: { characterId: number; channelId?: number; cashShopId?: number } | null,
     ) {
         const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
@@ -352,7 +362,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
             String(gameTtl),
             owner ? String(owner.characterId) : "",
             owner?.channelId != null ? String(owner.channelId) : "",
-            owner?.cashShopId != null ? String(owner.cashShopId) : ""
+            owner?.cashShopId != null ? String(owner.cashShopId) : "",
         )) as Array<number | string>;
     }
 
@@ -361,7 +371,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
         keep: boolean,
         requestChannelId?: number,
         ownerCharacterId?: number,
-        requestCashShopId?: number
+        requestCashShopId?: number,
     ) {
         const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
@@ -409,7 +419,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
             keep ? "1" : "0",
             String(ch),
             ownerCharacterId != null ? String(ownerCharacterId) : "",
-            String(cs)
+            String(cs),
         )) as Array<number | string>;
     }
 

@@ -62,8 +62,10 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
             groupName: row.group_name ?? "",
             pending: row.pending === true,
             requested: row.requested === true,
-            createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            createdAt:
+                row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
@@ -77,7 +79,11 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
         };
     }
 
-    async listAcceptedBuddyCharacterIds(worldId: number, characterId: number, options: RepositoryTxOptions = {}): Promise<number[]> {
+    async listAcceptedBuddyCharacterIds(
+        worldId: number,
+        characterId: number,
+        options: RepositoryTxOptions = {},
+    ): Promise<number[]> {
         const all = await this.getAll(worldId, String(characterId), options);
         const ids: number[] = [];
         for (const model of all.values()) {
@@ -95,7 +101,7 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
             pool,
             "SELECT COUNT(*)::int AS cnt FROM character_buddies WHERE character_id = $1 AND NOT pending",
             [characterId],
-            options
+            options,
         );
         return Number(res.rows[0]?.cnt ?? 0);
     }
@@ -106,7 +112,7 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
             pool,
             "SELECT COUNT(*)::int AS cnt FROM character_buddies WHERE character_id = $1",
             [characterId],
-            options
+            options,
         );
         return Number(res.rows[0]?.cnt ?? 0);
     }
@@ -122,7 +128,7 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
         for (const pool of this.ctx.getPgDataPools(worldId)) {
             const res = await pool.query(
                 "DELETE FROM character_buddies WHERE buddy_character_id = $1 RETURNING character_id",
-                [buddyCharacterId]
+                [buddyCharacterId],
             );
             for (const row of res.rows as Array<{ character_id: number }>) {
                 await this.invalidateCache(worldId, String(row.character_id));

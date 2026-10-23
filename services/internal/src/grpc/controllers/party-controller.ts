@@ -70,10 +70,15 @@ export class PartyGrpcController {
     async joinParty(call: GrpcCall<JoinPartyRequest>, callback: GrpcCallback<JoinPartyReply>) {
         try {
             const req = call.request;
-            const result = await this.partyService.joinParty(req.worldId, req.partyId, req.member, req.skipInvitePendingCheck) as PartyMutationResult;
+            const result = (await this.partyService.joinParty(
+                req.worldId,
+                req.partyId,
+                req.member,
+                req.skipInvitePendingCheck,
+            )) as PartyMutationResult;
             console.log(
                 `[party] join character=${req.member?.characterId} party=${req.partyId} skip_pending=${req.skipInvitePendingCheck}` +
-                    ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`
+                    ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`,
             );
             if (result.ok) {
                 callback(null, {
@@ -98,11 +103,15 @@ export class PartyGrpcController {
     @Method("inviteParty")
     async inviteParty(call: GrpcCall<InvitePartyRequest>, callback: GrpcCallback<InvitePartyReply>) {
         try {
-            const result = await this.partyService.inviteParty(call.request.worldId, call.request.inviterCharacterId, call.request.targetCharacterName) as InvitePartyResult;
+            const result = (await this.partyService.inviteParty(
+                call.request.worldId,
+                call.request.inviterCharacterId,
+                call.request.targetCharacterName,
+            )) as InvitePartyResult;
             console.log(
                 `[party] invite inviter=${call.request.inviterCharacterId} target="${call.request.targetCharacterName}"` +
                     ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]} party=${result.partyId}` +
-                    ` target_id=${result.targetCharacterId} target_channel=${result.targetChannelId}`
+                    ` target_id=${result.targetCharacterId} target_channel=${result.targetChannelId}`,
             );
             callback(null, {
                 ok: result.ok,
@@ -119,7 +128,10 @@ export class PartyGrpcController {
     @Method("leaveParty")
     async leaveParty(call: GrpcCall<LeavePartyRequest>, callback: GrpcCallback<LeavePartyReply>) {
         try {
-            const result = await this.partyService.leaveParty(call.request.worldId, call.request.characterId) as LeavePartyResult;
+            const result = (await this.partyService.leaveParty(
+                call.request.worldId,
+                call.request.characterId,
+            )) as LeavePartyResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -145,7 +157,11 @@ export class PartyGrpcController {
     @Method("expelParty")
     async expelParty(call: GrpcCall<ExpelPartyRequest>, callback: GrpcCallback<ExpelPartyReply>) {
         try {
-            const result = await this.partyService.expelParty(call.request.worldId, call.request.requesterCharacterId, call.request.targetCharacterId) as ExpelPartyResult;
+            const result = (await this.partyService.expelParty(
+                call.request.worldId,
+                call.request.requesterCharacterId,
+                call.request.targetCharacterId,
+            )) as ExpelPartyResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -171,12 +187,12 @@ export class PartyGrpcController {
     @Method("changePartyLeader")
     async changePartyLeader(call: GrpcCall<ChangePartyLeaderRequest>, callback: GrpcCallback<ChangePartyLeaderReply>) {
         try {
-            const result = await this.partyService.changePartyLeader(
+            const result = (await this.partyService.changePartyLeader(
                 call.request.worldId,
                 call.request.partyId,
                 call.request.requesterCharacterId,
-                call.request.newLeaderCharacterId
-            ) as PartyMutationResult;
+                call.request.newLeaderCharacterId,
+            )) as PartyMutationResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -199,7 +215,7 @@ export class PartyGrpcController {
     async getParty(call: GrpcCall<GetPartyRequest>, callback: GrpcCallback<GetPartyReply>) {
         try {
             const worldId = call.request.worldId;
-            const result = await this.partyService.getParty(worldId, call.request.partyId) as GetPartyResult;
+            const result = (await this.partyService.getParty(worldId, call.request.partyId)) as GetPartyResult;
             if (!result.party) {
                 callback(null, { found: false, party: undefined });
                 return;
@@ -214,7 +230,7 @@ export class PartyGrpcController {
     @Method("updatePartyMember")
     async updatePartyMember(call: GrpcCall<UpdatePartyMemberRequest>, callback: GrpcCallback<UpdatePartyMemberReply>) {
         try {
-            const result = await this.partyService.updatePartyMember(call.request.member) as PartyMutationResult;
+            const result = (await this.partyService.updatePartyMember(call.request.member)) as PartyMutationResult;
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -236,10 +252,15 @@ export class PartyGrpcController {
     @Method("denyParty")
     async denyParty(call: GrpcCall<DenyPartyRequest>, callback: GrpcCallback<DenyPartyReply>) {
         try {
-            const result = await this.partyService.denyParty(call.request.worldId, call.request.deniedCharacterId, call.request.inviterName, call.request.action) as DenyPartyResult;
+            const result = (await this.partyService.denyParty(
+                call.request.worldId,
+                call.request.deniedCharacterId,
+                call.request.inviterName,
+                call.request.action,
+            )) as DenyPartyResult;
             console.log(
                 `[party] deny denied=${call.request.deniedCharacterId} inviter="${call.request.inviterName}" action=${call.request.action}` +
-                    ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`
+                    ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`,
             );
             callback(null, { ok: result.ok, errorCode: result.code ?? PartyErrorCode.UNKNOWN });
         } catch (err) {

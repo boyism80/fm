@@ -3,7 +3,7 @@
 local gq = require("script/lib/guild_quest")
 
 return {
-	on_enter = function(me)
-		gq.pass_gate(me, "stonegate", nil, 990000430)
-	end
+    on_enter = function(me)
+        gq.pass_gate(me, "stonegate", nil, 990000430)
+    end
 }

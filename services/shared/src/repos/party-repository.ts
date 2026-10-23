@@ -74,8 +74,10 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
             leaderCharacterId: row.leader_character_id,
             state: partyStateFromDb(row.state),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
-            createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
-            updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
+            createdAt:
+                row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
+            updatedAt:
+                row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
             revision: Number(row.revision ?? 0),
         };
     }

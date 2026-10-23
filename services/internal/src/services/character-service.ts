@@ -12,8 +12,22 @@ import { QUEST_MODEL, QUEST_PROTO } from "../grpc/quest-proto";
 import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../grpc/saved-location-proto";
 import { grpcMapper } from "../grpc/mappers";
 import type { KeyLayoutBindingModel } from "../grpc/key-layout-io";
-import { AccountSessionState, GuildErrorCode, PartyErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type { BuddyEntry, Buff, Character, CreateCharacterRequest, EnterGameReply, Inventory, Quest, SavedLocation, Skill } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import {
+    AccountSessionState,
+    GuildErrorCode,
+    PartyErrorCode,
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type {
+    BuddyEntry,
+    Buff,
+    Character,
+    CreateCharacterRequest,
+    EnterGameReply,
+    Inventory,
+    Quest,
+    SavedLocation,
+    Skill,
+} from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { AccountRepository } from "@fm/shared/repos/account-repository";
 import { AccountWorldRepository } from "@fm/shared/repos/account-world-repository";
@@ -196,7 +210,7 @@ export class CharacterService {
         marriageService: MarriageService,
         cashShopService: CashShopService,
         socialService: SocialService,
-        internalContext: InternalContext
+        internalContext: InternalContext,
     ) {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -296,9 +310,8 @@ export class CharacterService {
         this.assertCharacterId(characterId);
         const keyLayout = await this.keyLayoutRepo.get(worldId, characterId);
         const keyLayoutJson = keyLayout?.keyLayoutJson;
-        const keyLayoutJsonString = typeof keyLayoutJson === "string"
-            ? keyLayoutJson
-            : JSON.stringify(keyLayoutJson ?? {});
+        const keyLayoutJsonString =
+            typeof keyLayoutJson === "string" ? keyLayoutJson : JSON.stringify(keyLayoutJson ?? {});
         return jsonStringToBindings(keyLayoutJsonString);
     }
 
@@ -313,20 +326,44 @@ export class CharacterService {
         };
     }
 
-    async saveCharacter(character: CharacterInput, baseLooks?: Record<string, number>, overlays?: Record<string, number>) {
+    async saveCharacter(
+        character: CharacterInput,
+        baseLooks?: Record<string, number>,
+        overlays?: Record<string, number>,
+    ) {
         return this.saveCharacters([{ character, baseLooks, overlays }]);
     }
 
     async load(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
         const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, skillMacros, buddyPack, marriage, cashWishlist, rings, monsterBook, records, accountRecords, mount, storage, unsettledRequests] = await Promise.all([
+        const [
+            inventoryList,
+            skillList,
+            buffList,
+            questList,
+            savedLocationList,
+            keyLayoutBindings,
+            skillMacros,
+            buddyPack,
+            marriage,
+            cashWishlist,
+            rings,
+            monsterBook,
+            records,
+            accountRecords,
+            mount,
+            storage,
+            unsettledRequests,
+        ] = await Promise.all([
             this.inventoryRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.skillRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.buffRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.questRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.savedLocationRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.getKeyLayoutBindings(worldId, characterId),
-            this.skillMacroRepo.getAll(worldId, String(characterId)).then((map) => [...map.values()].sort((a, b) => a.position - b.position)),
+            this.skillMacroRepo
+                .getAll(worldId, String(characterId))
+                .then((map) => [...map.values()].sort((a, b) => a.position - b.position)),
             this.buddyService.getAll(worldId, characterId),
             this.marriageService.loadMarriage(worldId, characterId),
             this.cashShopService.getWishlist(worldId, characterId),
@@ -345,52 +382,22 @@ export class CharacterService {
             family,
             notes,
             found: true,
-            character: grpcMapper.map<CharacterModel, Character>(
-                row,
-                CHARACTER_MODEL,
-                CHARACTER_PROTO
-            ),
+            character: grpcMapper.map<CharacterModel, Character>(row, CHARACTER_MODEL, CHARACTER_PROTO),
             inventory: inventoryList.map((inventory) =>
-                grpcMapper.map<InventoryModel, Inventory>(
-                    inventory,
-                    INVENTORY_MODEL,
-                    INVENTORY_PROTO
-                )
+                grpcMapper.map<InventoryModel, Inventory>(inventory, INVENTORY_MODEL, INVENTORY_PROTO),
             ),
-            skills: skillList.map((skill) =>
-                grpcMapper.map<SkillModel, Skill>(
-                    skill,
-                    SKILL_MODEL,
-                    SKILL_PROTO
-                )
-            ),
-            buffs: buffList.map((buff) =>
-                grpcMapper.map<BuffModel, Buff>(
-                    buff,
-                    BUFF_MODEL,
-                    BUFF_PROTO
-                )
-            ),
-            quests: questList.map((quest) =>
-                grpcMapper.map<QuestModel, Quest>(
-                    quest,
-                    QUEST_MODEL,
-                    QUEST_PROTO
-                )
-            ),
+            skills: skillList.map((skill) => grpcMapper.map<SkillModel, Skill>(skill, SKILL_MODEL, SKILL_PROTO)),
+            buffs: buffList.map((buff) => grpcMapper.map<BuffModel, Buff>(buff, BUFF_MODEL, BUFF_PROTO)),
+            quests: questList.map((quest) => grpcMapper.map<QuestModel, Quest>(quest, QUEST_MODEL, QUEST_PROTO)),
             savedLocations: savedLocationList.map((loc) =>
-                grpcMapper.map<SavedLocationModel, SavedLocation>(
-                    loc,
-                    SAVED_LOCATION_MODEL,
-                    SAVED_LOCATION_PROTO
-                )
+                grpcMapper.map<SavedLocationModel, SavedLocation>(loc, SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO),
             ),
             keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
             skillMacros,
             partyId: realtime?.partyId != null ? realtime.partyId : undefined,
             guildId: realtime?.guildId != null ? realtime.guildId : undefined,
             buddies: buddyPack.buddies.map((buddy) =>
-                grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
+                grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY),
             ),
             buddyCapacity: buddyPack.capacity >>> 0,
             debuffs: [],
@@ -398,7 +405,13 @@ export class CharacterService {
             cashWishlist: cashWishlist.filter((sn) => sn !== 0),
             rings,
             monsterBook: monsterBook.map((card) => ({ cardId: card.cardId >>> 0, count: card.count >>> 0 })),
-            records: records.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
+            records: records.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({
+                key,
+                value,
+                text,
+                expiresAtUnixMs,
+                recordedAtUnixMs,
+            })),
             account: {
                 storage: {
                     accountId: storage.storage.accountId,
@@ -406,14 +419,16 @@ export class CharacterService {
                     slots: storage.storage.slots,
                     meso: storage.storage.meso,
                     items: storage.items.map((item) =>
-                        grpcMapper.map<InventoryModel, Inventory>(
-                            item,
-                            INVENTORY_MODEL,
-                            INVENTORY_PROTO
-                        )
+                        grpcMapper.map<InventoryModel, Inventory>(item, INVENTORY_MODEL, INVENTORY_PROTO),
                     ),
                 },
-                records: accountRecords.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({ key, value, text, expiresAtUnixMs, recordedAtUnixMs })),
+                records: accountRecords.map(({ key, value, text, expiresAtUnixMs, recordedAtUnixMs }) => ({
+                    key,
+                    value,
+                    text,
+                    expiresAtUnixMs,
+                    recordedAtUnixMs,
+                })),
             },
             mount: {
                 level: mount?.level ?? 1,
@@ -428,11 +443,13 @@ export class CharacterService {
         if (!entries || entries.length === 0) {
             return;
         }
-        const subject = JSON.stringify(entries.map(({ character }) => ({
-            worldId: character.worldId,
-            characterId: character.characterId,
-            accountId: character.accountId,
-        })));
+        const subject = JSON.stringify(
+            entries.map(({ character }) => ({
+                worldId: character.worldId,
+                characterId: character.characterId,
+                accountId: character.accountId,
+            })),
+        );
         return this.ctx.withDatabaseOperation("saveCharacters", subject, () => this.persistCharacters(entries));
     }
 
@@ -442,7 +459,25 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, skillMacros, mount, storage, claimedShops, unsettledRequests } of entries) {
+        for (const {
+            character,
+            baseLooks,
+            overlays,
+            inventory,
+            skills,
+            buffs,
+            quests,
+            savedLocations,
+            records,
+            accountRecords,
+            monsterBook,
+            keyLayout,
+            skillMacros,
+            mount,
+            storage,
+            claimedShops,
+            unsettledRequests,
+        } of entries) {
             this.assertWorld(character.worldId);
             this.assertCharacterId(character.characterId);
             this.assertAccountId(character.accountId);
@@ -454,7 +489,27 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, skillMacros, mount, storage, claimedShops, unsettledRequests });
+            byWorld
+                .get(wid)
+                ?.push({
+                    character,
+                    baseLooks,
+                    overlays,
+                    inventory,
+                    skills,
+                    buffs,
+                    quests,
+                    savedLocations,
+                    records,
+                    accountRecords,
+                    monsterBook,
+                    keyLayout,
+                    skillMacros,
+                    mount,
+                    storage,
+                    claimedShops,
+                    unsettledRequests,
+                });
         }
 
         for (const [worldId, group] of byWorld) {
@@ -464,8 +519,14 @@ export class CharacterService {
                 .map((characterId) => `character:${characterId}`);
             await using _characterLocks = await this.distributedLockService.acquireWorldDataLocks(worldId, lockKeys);
 
-            const saved = await this.repo.getMany(worldId, group.map(({ character }) => character.characterId));
-            const latest = group.filter(({ character }) => (character.savedAtUnixMs ?? 0) >= (saved.get(character.characterId)?.savedAtUnixMs ?? 0));
+            const saved = await this.repo.getMany(
+                worldId,
+                group.map(({ character }) => character.characterId),
+            );
+            const latest = group.filter(
+                ({ character }) =>
+                    (character.savedAtUnixMs ?? 0) >= (saved.get(character.characterId)?.savedAtUnixMs ?? 0),
+            );
             if (latest.length === 0) {
                 continue;
             }
@@ -476,7 +537,25 @@ export class CharacterService {
                 await this.familyService.progress(worldId, character);
             }
 
-            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, records, accountRecords, monsterBook, keyLayout, skillMacros, mount, storage, claimedShops, unsettledRequests } of latest) {
+            for (const {
+                character,
+                baseLooks,
+                overlays,
+                inventory,
+                skills,
+                buffs,
+                quests,
+                savedLocations,
+                records,
+                accountRecords,
+                monsterBook,
+                keyLayout,
+                skillMacros,
+                mount,
+                storage,
+                claimedShops,
+                unsettledRequests,
+            } of latest) {
                 if (!character.accountId) {
                     continue;
                 }
@@ -499,28 +578,60 @@ export class CharacterService {
                 await this.overviewRepo.set(character.worldId, overview);
 
                 if (inventory !== undefined) {
-                    await this.inventoryRepo.replaceBySnapshot(character.worldId, String(character.characterId), inventory);
+                    await this.inventoryRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        inventory,
+                    );
                 }
                 if (skills !== undefined) {
-                    await this.skillRepo.replaceBySnapshot(character.worldId, String(character.characterId), skills.map((m) => ({ ...m, characterId: character.characterId })));
+                    await this.skillRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        skills.map((m) => ({ ...m, characterId: character.characterId })),
+                    );
                 }
                 if (buffs !== undefined) {
-                    await this.buffRepo.replaceBySnapshot(character.worldId, String(character.characterId), buffs.map((m) => ({ ...m, characterId: character.characterId })));
+                    await this.buffRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        buffs.map((m) => ({ ...m, characterId: character.characterId })),
+                    );
                 }
                 if (quests !== undefined) {
-                    await this.questRepo.replaceBySnapshot(character.worldId, String(character.characterId), quests.map((m) => ({ ...m, characterId: character.characterId })));
+                    await this.questRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        quests.map((m) => ({ ...m, characterId: character.characterId })),
+                    );
                 }
                 if (savedLocations !== undefined) {
-                    await this.savedLocationRepo.replaceBySnapshot(character.worldId, String(character.characterId), savedLocations.map((m) => ({ ...m, characterId: character.characterId })));
+                    await this.savedLocationRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        savedLocations.map((m) => ({ ...m, characterId: character.characterId })),
+                    );
                 }
                 if (records !== undefined) {
-                    await this.characterRecordRepo.replaceBySnapshot(character.worldId, String(character.characterId), records.map((m) => ({ ...m, ownerId: character.characterId })));
+                    await this.characterRecordRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        records.map((m) => ({ ...m, ownerId: character.characterId })),
+                    );
                 }
                 if (accountRecords !== undefined) {
-                    await this.accountRecordRepo.replaceBySnapshot(character.worldId, String(character.accountId), accountRecords.map((m) => ({ ...m, ownerId: character.accountId })));
+                    await this.accountRecordRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.accountId),
+                        accountRecords.map((m) => ({ ...m, ownerId: character.accountId })),
+                    );
                 }
                 if (monsterBook !== undefined) {
-                    await this.monsterBookRepo.replaceBySnapshot(character.worldId, String(character.characterId), monsterBook.map((m) => ({ ...m, characterId: character.characterId })));
+                    await this.monsterBookRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        monsterBook.map((m) => ({ ...m, characterId: character.characterId })),
+                    );
                 }
                 if (keyLayout !== undefined) {
                     await this.keyLayoutRepo.set(character.worldId, {
@@ -530,20 +641,45 @@ export class CharacterService {
                     });
                 }
                 if (skillMacros !== undefined) {
-                    await this.skillMacroRepo.replaceBySnapshot(character.worldId, String(character.characterId), skillMacros.map((macro) => ({ ...macro, characterId: character.characterId })));
+                    await this.skillMacroRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        skillMacros.map((macro) => ({ ...macro, characterId: character.characterId })),
+                    );
                 }
                 if (mount !== undefined) {
-                    await this.mountRepo.set(character.worldId, { ...mount, characterId: character.characterId, worldId: character.worldId });
+                    await this.mountRepo.set(character.worldId, {
+                        ...mount,
+                        characterId: character.characterId,
+                        worldId: character.worldId,
+                    });
                 }
                 if (storage !== undefined) {
-                    await this.storageRepo.set(character.worldId, { ...storage.storage, accountId: character.accountId, worldId: character.worldId });
-                    await this.storageItemRepo.replaceBySnapshot(character.worldId, String(character.accountId), storage.items);
+                    await this.storageRepo.set(character.worldId, {
+                        ...storage.storage,
+                        accountId: character.accountId,
+                        worldId: character.worldId,
+                    });
+                    await this.storageItemRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.accountId),
+                        storage.items,
+                    );
                 }
                 if (unsettledRequests !== undefined) {
-                    await this.unsettledRequestRepo.replaceBySnapshot(character.worldId, String(character.characterId), unsettledRequests.map((m) => ({ ...m, characterId: character.characterId })));
+                    await this.unsettledRequestRepo.replaceBySnapshot(
+                        character.worldId,
+                        String(character.characterId),
+                        unsettledRequests.map((m) => ({ ...m, characterId: character.characterId })),
+                    );
                 }
                 if (claimedShops !== undefined && claimedShops.length > 0) {
-                    await this.shopRepo.claim(character.worldId, character.accountId, character.characterId, claimedShops);
+                    await this.shopRepo.claim(
+                        character.worldId,
+                        character.accountId,
+                        character.characterId,
+                        claimedShops,
+                    );
                 }
             }
         }
@@ -552,7 +688,10 @@ export class CharacterService {
     async createCharacter(
         accountId: number,
         worldId: number,
-        params: Pick<CreateCharacterRequest, "name" | "face" | "hair" | "skinColor" | "topItemId" | "bottomItemId" | "shoesItemId" | "weaponItemId">
+        params: Pick<
+            CreateCharacterRequest,
+            "name" | "face" | "hair" | "skinColor" | "topItemId" | "bottomItemId" | "shoesItemId" | "weaponItemId"
+        >,
     ) {
         const { name, face, hair, skinColor, topItemId, bottomItemId, shoesItemId, weaponItemId } = params;
         this.assertWorld(worldId);
@@ -566,7 +705,9 @@ export class CharacterService {
             return { success: false, errorMsg: "사용할 수 없는 이름입니다." };
         }
 
-        await using _createCharacterLock = await this.distributedLockService.acquireUnifiedLock(`create_character:a${accountId}`);
+        await using _createCharacterLock = await this.distributedLockService.acquireUnifiedLock(
+            `create_character:a${accountId}`,
+        );
 
         const overviewMap = await this.overviewRepo.getAll(worldId, String(accountId));
         const account = await this.accountRepo.get(accountId);
@@ -575,7 +716,16 @@ export class CharacterService {
             return { success: false, errorMsg: "캐릭터 슬롯이 부족합니다." };
         }
         const gender = account?.gender ?? 0;
-        if (this.wzService.canMakeCharacter(gender, [face, hair, topItemId, bottomItemId, shoesItemId, weaponItemId]) === false) {
+        if (
+            this.wzService.canMakeCharacter(gender, [
+                face,
+                hair,
+                topItemId,
+                bottomItemId,
+                shoesItemId,
+                weaponItemId,
+            ]) === false
+        ) {
             return { success: false, errorMsg: "선택할 수 없는 외형입니다." };
         }
 
@@ -674,7 +824,7 @@ export class CharacterService {
                         flag: 0,
                         skillBonus: 0,
                         ownerName: null,
-                    }))
+                    })),
                 );
             }
 
@@ -697,7 +847,11 @@ export class CharacterService {
         return { success: true, errorMsg: "", character: overview };
     }
 
-    async deleteCharacter(accountId: number, characterId: number, worldId: number): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean }> {
+    async deleteCharacter(
+        accountId: number,
+        characterId: number,
+        worldId: number,
+    ): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean }> {
         this.assertWorld(worldId);
         this.assertAccountId(accountId);
         this.assertCharacterId(characterId);

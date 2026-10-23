@@ -10,44 +10,44 @@ local BOSS_SPAWN_Y = 823
 local DURATION_MS = 600000000
 
 local STAGE_MAPS = {
-	ENTRY_MAP,
-	BOSS_MAP,
-	SIDE_MAP,
+    ENTRY_MAP,
+    BOSS_MAP,
+    SIDE_MAP,
 }
 
 local function end_run(sm)
-	sm:finish(EXIT_MAP)
+    sm:finish(EXIT_MAP)
 end
 
 return {
-	on_init = function(group)
-		group:min_players(1)
-		group:exit_map(EXIT_MAP)
-	end,
+    on_init = function(group)
+        group:min_players(1)
+        group:exit_map(EXIT_MAP)
+    end,
 
-	on_create = function(sm)
-		return STAGE_MAPS
-	end,
+    on_create = function(sm)
+        return STAGE_MAPS
+    end,
 
-	on_prepare = function(sm)
-		for _, map_id in ipairs(STAGE_MAPS) do
-			sm:map(map_id):respawn({ include_one_time = true })
-		end
-		local boss_map = sm:map(BOSS_MAP)
-		boss_map:kill_all_mobs()
-		boss_map:spawn_mob(BOSS_MOB, BOSS_SPAWN_X, BOSS_SPAWN_Y)
-	end,
+    on_prepare = function(sm)
+        for _, map_id in ipairs(STAGE_MAPS) do
+            sm:map(map_id):respawn({ include_one_time = true })
+        end
+        local boss_map = sm:map(BOSS_MAP)
+        boss_map:kill_all_mobs()
+        boss_map:spawn_mob(BOSS_MOB, BOSS_SPAWN_X, BOSS_SPAWN_Y)
+    end,
 
-	on_start = function(sm)
-		sm:start_timer(DURATION_MS)
-	end,
+    on_start = function(sm)
+        sm:start_timer(DURATION_MS)
+    end,
 
-	on_player_enter = function(sm, player)
-		player:map(sm:map(ENTRY_MAP))
-	end,
+    on_player_enter = function(sm, player)
+        player:map(sm:map(ENTRY_MAP))
+    end,
 
-	on_scheduled_timeout = function(sm)
-		end_run(sm)
-	end,
+    on_scheduled_timeout = function(sm)
+        end_run(sm)
+    end,
 
 }

@@ -51,7 +51,12 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
         return this.ctx.getPgDataPool(worldId, this.getShardHash(key));
     }
 
-    protected query(pool: Pool, text: string, values: RepositoryQueryValue[], options: RepositoryTxOptions = {}): Promise<QueryResult> {
+    protected query(
+        pool: Pool,
+        text: string,
+        values: RepositoryQueryValue[],
+        options: RepositoryTxOptions = {},
+    ): Promise<QueryResult> {
         return this.ctx.pgClient(pool, options).query(text, values);
     }
 
@@ -122,10 +127,17 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
         }
     }
 
-    protected async invalidateAfterWrite(worldId: number, key: TKey, pool: Pool, options: RepositoryTxOptions): Promise<void> {
+    protected async invalidateAfterWrite(
+        worldId: number,
+        key: TKey,
+        pool: Pool,
+        options: RepositoryTxOptions,
+    ): Promise<void> {
         const txClient = options.txClient;
         if (txClient && this.ctx.pgClient(pool, options) === txClient) {
-            this.ctx.deferCacheInvalidation(txClient, this.getRedisKey(worldId, key), () => this.invalidateCache(worldId, key));
+            this.ctx.deferCacheInvalidation(txClient, this.getRedisKey(worldId, key), () =>
+                this.invalidateCache(worldId, key),
+            );
             return;
         }
         await this.invalidateCache(worldId, key);
@@ -136,6 +148,14 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
     abstract getMany(worldId: number, keys: TKey[], options?: RepositoryTxOptions): Promise<Map<TKey, TModel>>;
     abstract getAll(worldId: number, key: TKey, options?: RepositoryTxOptions): Promise<unknown>;
     abstract setAll(worldId: number, models: TModel[], options?: RepositoryTxOptions): Promise<TModel[]>;
-    abstract delAll(worldId: number, key: TKey, itemKeys: Array<string | number>, options?: RepositoryTxOptions): Promise<void>;
-    abstract delete(row: { worldId: number } & Record<string, unknown>, options?: RepositoryTxOptions): Promise<boolean>;
+    abstract delAll(
+        worldId: number,
+        key: TKey,
+        itemKeys: Array<string | number>,
+        options?: RepositoryTxOptions,
+    ): Promise<void>;
+    abstract delete(
+        row: { worldId: number } & Record<string, unknown>,
+        options?: RepositoryTxOptions,
+    ): Promise<boolean>;
 }
