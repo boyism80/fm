@@ -220,10 +220,10 @@ func (w *Wedding) closeProposal(id uint64, engaged bool) {
 	if request == nil {
 		return
 	}
-	w.owner.unsettled.Erase(id)
 
 	var detail weddingProposalDetail
 	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		w.owner.unsettled.Erase(id)
 		log.Printf("Wedding.closeProposal character=%d id=%d: %v", w.owner.GetID(), id, err)
 		return
 	}
@@ -231,12 +231,22 @@ func (w *Wedding) closeProposal(id uint64, engaged bool) {
 	if !engaged {
 		itemID = detail.Box
 	}
-	if itemID == 0 {
-		return
+	w.returnItem(request, itemID)
+}
+
+// returnItem keeps the request unsettled when the item does not fit, so the next settle gives it again.
+func (w *Wedding) returnItem(request *UnsettledRequest, itemID uint32) {
+	if itemID != 0 {
+		item, err := NewItem(itemID, 1, w.owner.gameWorld)
+		if err != nil {
+			log.Printf("Wedding.returnItem character=%d id=%d item=%d: %v", w.owner.GetID(), request.id, itemID, err)
+		} else if _, err := w.owner.inventory.addItemUnchecked(item, true); err != nil {
+			request.inFlight = false
+			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultInventoryFull)
+			return
+		}
 	}
-	if item, err := NewItem(itemID, 1, w.owner.gameWorld); err == nil {
-		w.owner.inventory.addItemUnchecked(item, true)
-	}
+	w.owner.unsettled.Erase(request.id)
 }
 
 func (w *Wedding) settleProposal(actx actor.Context, request *UnsettledRequest) {
@@ -383,19 +393,18 @@ func (w *Wedding) closeReservation(id uint64, reserved bool) {
 	if request == nil {
 		return
 	}
-	w.owner.unsettled.Erase(id)
 	if reserved {
+		w.owner.unsettled.Erase(id)
 		return
 	}
 
 	var detail weddingReservationDetail
 	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		w.owner.unsettled.Erase(id)
 		log.Printf("Wedding.closeReservation character=%d id=%d: %v", w.owner.GetID(), id, err)
 		return
 	}
-	if item, err := NewItem(detail.Ticket, 1, w.owner.gameWorld); err == nil {
-		w.owner.inventory.addItemUnchecked(item, true)
-	}
+	w.returnItem(request, detail.Ticket)
 }
 
 func (w *Wedding) settleReservation(actx actor.Context, request *UnsettledRequest) {
@@ -541,19 +550,18 @@ func (w *Wedding) closeInvite(id uint64, result internal.MarriageResult) {
 	if request == nil {
 		return
 	}
-	w.owner.unsettled.Erase(id)
 	if result == internal.MarriageResult_MARRIAGE_RESULT_OK {
+		w.owner.unsettled.Erase(id)
 		return
 	}
 
 	var detail weddingInviteDetail
 	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		w.owner.unsettled.Erase(id)
 		log.Printf("Wedding.closeInvite character=%d id=%d: %v", w.owner.GetID(), id, err)
 		return
 	}
-	if item, err := NewItem(detail.Invitation, 1, w.owner.gameWorld); err == nil {
-		w.owner.inventory.addItemUnchecked(item, true)
-	}
+	w.returnItem(request, detail.Invitation)
 }
 
 func (w *Wedding) settleInvite(actx actor.Context, request *UnsettledRequest) {
