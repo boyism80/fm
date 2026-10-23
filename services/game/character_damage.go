@@ -23,6 +23,8 @@ type Hit struct {
 	Reflect    uint8
 }
 
+const maxIncomingDamage = 200000
+
 type AttackKind uint8
 
 const (
@@ -375,6 +377,10 @@ func (ch *Character) mesoExplosionArea() (types.Rect[int32], bool) {
 }
 
 func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
+	if hit.Damage < -1 || hit.Damage > maxIncomingDamage {
+		return
+	}
+
 	m := ch.GetMap()
 	var mob *Mob
 	if m != nil && hit.MobOID != 0 {

@@ -723,8 +723,26 @@ local function incoming_reflect_cap(max_hp, divisor)
     return math.floor(max_hp / divisor)
 end
 
-local function reflect_via_power_guard(me, attacker, damage, reflect_ratio)
-    if me:buff_value(BuffFlag.Powerguard) == nil then
+local MANA_REFLECTION_SKILLS = {
+    Skill.ManaReflection,
+    Skill.ManaReflection2221002,
+    Skill.ManaReflection2321002,
+}
+
+local function mana_reflection_ratio(me)
+    for _, id in ipairs(MANA_REFLECTION_SKILLS) do
+        local skill = me:skill(id)
+        local effect = skill ~= nil and skill:effect() or nil
+        if effect ~= nil and (effect.x or 0) > 0 then
+            return effect.x
+        end
+    end
+    return 0
+end
+
+local function reflect_via_power_guard(me, attacker, damage)
+    local reflect_ratio = me:buff_value(BuffFlag.Powerguard)
+    if reflect_ratio == nil or reflect_ratio <= 0 then
         return damage
     end
     local reduce = math.floor(damage * (reflect_ratio / 100.0))
@@ -749,10 +767,11 @@ local function reflect_via_power_guard(me, attacker, damage, reflect_ratio)
     return hp_loss
 end
 
-local function reflect_via_mana_reflection(me, attacker, damage, reflect_ratio)
+local function reflect_via_mana_reflection(me, attacker, damage)
     if me:buff_value(BuffFlag.ManaReflection) == nil then
         return damage
     end
+    local reflect_ratio = mana_reflection_ratio(me)
     if attacker ~= nil and attacker:is(ObjectType.Mob) then
         local bounce = math.floor(damage * (reflect_ratio / 100.0))
         if bounce < 0 then
@@ -777,9 +796,9 @@ M.reflect_incoming_damage = function(me, attacker, skill, damage, params)
     end
     local hit_type = params.hit_type
     if hit_type == IncomingHit.Collide then
-        return reflect_via_power_guard(me, attacker, damage, reflect_ratio)
+        return reflect_via_power_guard(me, attacker, damage)
     end
-    return reflect_via_mana_reflection(me, attacker, damage, reflect_ratio)
+    return reflect_via_mana_reflection(me, attacker, damage)
 end
 
 return M
