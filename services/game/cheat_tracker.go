@@ -223,13 +223,17 @@ func (t *CheatTracker) Pace(actx actor.Context, info dto.AttackInfo) {
 	area.Right += attackRangeMargin
 	area.Top -= attackRangeMargin
 	area.Bottom += attackRangeMargin
+	var outside []uint32
 	for _, target := range info.Damages {
 		mob := t.owner.GetMap().GetMob(target.OID)
 		if mob == nil || !mob.IsAlive() {
 			continue
 		}
 		if !area.ContainsPoint(types.Point[int32]{X: int32(mob.position.X), Y: int32(mob.position.Y)}) {
-			t.Register(actx, CheatAttackRange, info, "mob=%d at (%d,%d), attacker at (%d,%d)", target.OID, mob.position.X, mob.position.Y, t.owner.position.X, t.owner.position.Y)
+			outside = append(outside, target.OID)
 		}
+	}
+	if len(outside) > 0 {
+		t.Register(actx, CheatAttackRange, info, "mobs=%v outside, attacker at (%d,%d)", outside, t.owner.position.X, t.owner.position.Y)
 	}
 }
