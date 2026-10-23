@@ -103,6 +103,11 @@ anticheat:
 		core.InternalRPCPerStepTimeout = 10 * time.Second
 	}
 
+	settleInterval := 30 * time.Second
+	if g.SettleIntervalSeconds > 0 {
+		settleInterval = time.Duration(g.SettleIntervalSeconds) * time.Second
+	}
+
 	srvCfg := &server.GameConfig{
 		Host:                             g.Host,
 		Port:                             g.Port,
@@ -121,6 +126,7 @@ anticheat:
 		LuaAlwaysReload:                  g.Lua.AlwaysReload,
 		DueyIdentityPrompt:               g.Duey.IdentityPrompt,
 		AntiCheat:                        g.AntiCheat,
+		SettleInterval:                   settleInterval,
 	}
 
 	gs, err := server.NewGameServer(srvCfg)

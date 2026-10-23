@@ -58,6 +58,14 @@ func registerFaultLuaFuncs(gs *GameServer, luaState *lua.LState) {
 		})
 	}
 
+	luax.RegisterFunc(luaState, "settle_timer", func(L *lua.LState) int {
+		if L.GetTop() >= 1 {
+			gs.settlePaused.Store(!L.CheckBool(1))
+		}
+		L.Push(lua.LBool(!gs.settlePaused.Load()))
+		return 1
+	})
+
 	luax.RegisterFunc(luaState, "mq_fault", func(L *lua.LState) int {
 		cfg, ok := luax.GetConfiguration(L)
 		if !ok || cfg.ActorContext == nil {

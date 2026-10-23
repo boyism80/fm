@@ -2576,6 +2576,21 @@ local command_funcs = {
     ["액터장애"] = fault_command("액터", "액터이름", actor_fault),
     ["RPC지연"] = delay_command("RPC", "메서드", rpc_delay),
     ["RPC장애"] = fault_command("RPC", "메서드", rpc_fault),
+    ["정산타이머"] = {
+        privilege = ROLE.Admin,
+        usage = "[on|off] - 미정산 요청 정산 타이머 조회/설정, off면 로그인 정산만 동작 (테스트용)",
+        command = function(me, args)
+            local mode = string.lower(args[1] or "")
+            if mode == "on" or mode == "off" then
+                settle_timer(mode == "on")
+            elseif mode ~= "" then
+                me:message("사용법: /정산타이머 [on|off]")
+                return true
+            end
+            me:message(string.format("정산 타이머: %s (이 서버에만 적용됩니다)", settle_timer() and "ON" or "OFF"))
+            return true
+        end,
+    },
 }
 
 if DEV then

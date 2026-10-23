@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -34,10 +35,11 @@ const (
 
 type GameServer struct {
 	*core.ServerCore
-	config      *GameConfig
-	systems     *system.Systems
-	listeners   *system.Listeners
-	disconnects sync.WaitGroup
+	config       *GameConfig
+	systems      *system.Systems
+	listeners    *system.Listeners
+	disconnects  sync.WaitGroup
+	settlePaused atomic.Bool
 }
 
 type GameConfig struct {
@@ -58,6 +60,7 @@ type GameConfig struct {
 	LuaAlwaysReload                  bool
 	DueyIdentityPrompt               bool
 	AntiCheat                        config.GameAntiCheat
+	SettleInterval                   time.Duration
 }
 
 func NewGameServer(config *GameConfig) (*GameServer, error) {
@@ -175,6 +178,14 @@ func (gs *GameServer) DueyIdentityPrompt() bool {
 
 func (gs *GameServer) AntiCheat() config.GameAntiCheat {
 	return gs.config.AntiCheat
+}
+
+func (gs *GameServer) SettleInterval() time.Duration {
+	return gs.config.SettleInterval
+}
+
+func (gs *GameServer) SettlePaused() bool {
+	return gs.settlePaused.Load()
 }
 
 func (gs *GameServer) NewUniqueID() uint64 {

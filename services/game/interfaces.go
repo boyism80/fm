@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/config"
 	"github.com/boyism80/fm/core"
@@ -23,6 +25,8 @@ type GameWorld interface {
 	GetMesoRate() int
 	DueyIdentityPrompt() bool
 	AntiCheat() config.GameAntiCheat
+	SettleInterval() time.Duration
+	SettlePaused() bool
 	NewUniqueID() uint64
 	GetWorldID() uint32
 	GetChannelID() int32

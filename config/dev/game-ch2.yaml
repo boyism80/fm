@@ -21,6 +21,7 @@ rabbitmq:
   vhost: "/fm"
 high_rate: false
 dev: true
+settle_interval_seconds: 1
 lua:
   always_reload: true
 duey:

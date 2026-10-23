@@ -3,16 +3,12 @@ package game
 import (
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-const (
-	unsettledSettleTimer    = "unsettled_settle"
-	unsettledSettleInterval = 30 * time.Second
-)
+const unsettledSettleTimer = "unsettled_settle"
 
 type UnsettledRequest struct {
 	id       uint64
@@ -120,7 +116,10 @@ func (u *UnsettledRequests) Settle(actx actor.Context) {
 
 // Timer callbacks run without an actor context; settle through the character's dispatch.
 func (u *UnsettledRequests) ScheduleSettle() {
-	u.owner.AddTimer(unsettledSettleTimer, unsettledSettleInterval, true, func() {
+	u.owner.AddTimer(unsettledSettleTimer, u.owner.gameWorld.SettleInterval(), true, func() {
+		if u.owner.gameWorld.SettlePaused() {
+			return
+		}
 		u.owner.gameWorld.Systems().Get[*DispatchSystem]().Visit(u.owner.GetID(), func(ctx actor.Context, current *Character) {
 			if current != u.owner {
 				return

@@ -123,6 +123,8 @@ type Game struct {
 	Lua        GameLuaConfig    `yaml:"lua"`
 	Duey       GameDueyConfig   `yaml:"duey"`
 	AntiCheat  GameAntiCheat    `yaml:"anticheat"`
+	// SettleIntervalSeconds is how often unsettled requests are retried; 30 when unset.
+	SettleIntervalSeconds int `yaml:"settle_interval_seconds"`
 }
 
 type GameRates struct {
