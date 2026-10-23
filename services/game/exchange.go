@@ -23,6 +23,7 @@ type ExchangeSkill struct {
 
 type ExchangeSide struct {
 	Items      map[uint32]uint16
+	Stacks     map[uint32][]uint16
 	Period     map[uint32]time.Duration
 	Meso       int32
 	Exp        uint32
@@ -91,7 +92,7 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 		inv := ch.inventory.tabs[invType]
 		cost := costByInv[invType]
 		reward := rewardByInv[invType]
-		if result := inv.validateItemExchange(invType, cost, reward, spec.Reward.Period, modelOf, escrow); result != ExchangeOK {
+		if result := inv.validateItemExchange(invType, cost, reward, spec.Reward.Stacks, spec.Reward.Period, modelOf, escrow); result != ExchangeOK {
 			return result
 		}
 	}

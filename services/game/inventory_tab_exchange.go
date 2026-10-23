@@ -14,7 +14,7 @@ type itemSlotSnapshot struct {
 	expires bool
 }
 
-func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, cost map[uint32]uint16, reward map[uint32]uint16, period map[uint32]time.Duration, modelOf func(uint32) wz.Item, escrow *Escrow) ExchangeResult {
+func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, cost map[uint32]uint16, reward map[uint32]uint16, stacks map[uint32][]uint16, period map[uint32]time.Duration, modelOf func(uint32) wz.Item, escrow *Escrow) ExchangeResult {
 	if inv == nil {
 		if !exchangeItemsEmpty(cost) {
 			return ExchangeLackCost
@@ -107,6 +107,12 @@ func (inv *InventoryTab) validateItemExchange(invType constant.InventoryType, co
 			return ExchangeLackCapacity
 		}
 		capacity := max(int(model.GetCapacity()), 1)
+		if len(stacks[id]) > 0 {
+			for _, stack := range stacks[id] {
+				requiredSlots += (int(stack) + capacity - 1) / capacity
+			}
+			continue
+		}
 		need := int(count)
 		if capacity > 1 && model.GetTraits()&constant.ItemTraitRechargeable == 0 && period[id] == 0 {
 			for _, slot := range slotsByID[id] {

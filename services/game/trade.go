@@ -279,6 +279,7 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 		}
 		giver := t.sides[1-i]
 		rewards := make(map[uint32]uint16)
+		stacks := make(map[uint32][]uint16)
 		for _, item := range giver.items {
 			if item == nil {
 				continue
@@ -289,9 +290,12 @@ func (t *Trade) check() pconst.MiniRoomLeaveReason {
 				return pconst.MiniRoomLeaveTradeOnly
 			}
 			rewards[model.GetID()] += item.GetCount()
+			if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
+				stacks[model.GetID()] = append(stacks[model.GetID()], item.GetCount())
+			}
 		}
 		meso := giver.ch.escrow.meso
-		spec := ExchangeSpec{Reward: ExchangeSide{Items: rewards, Meso: meso - t.tax(meso)}}
+		spec := ExchangeSpec{Reward: ExchangeSide{Items: rewards, Stacks: stacks, Meso: meso - t.tax(meso)}}
 		if spec.Valid(side.ch, nil) != ExchangeOK {
 			return pconst.MiniRoomLeaveTradeFail
 		}

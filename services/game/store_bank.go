@@ -9,6 +9,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
+	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
@@ -133,14 +134,18 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 		return pconst.StoreBankResultMesoOver
 	}
 	rewards := map[uint32]uint16{}
+	stacks := map[uint32][]uint16{}
 	for _, listed := range sb.items {
 		model := listed.item.GetModel()
 		if sb.owner.inventory.hasUniqueItem(model) {
 			return pconst.StoreBankResultOnlyOne
 		}
 		rewards[model.GetID()] += listed.count()
+		if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
+			stacks[model.GetID()] = append(stacks[model.GetID()], listed.count())
+		}
 	}
-	if (ExchangeSpec{Reward: ExchangeSide{Items: rewards}}).Valid(sb.owner, sb.owner.escrow) != ExchangeOK {
+	if (ExchangeSpec{Reward: ExchangeSide{Items: rewards, Stacks: stacks}}).Valid(sb.owner, sb.owner.escrow) != ExchangeOK {
 		return pconst.StoreBankResultInventoryFull
 	}
 	return pconst.StoreBankResultClaimed
