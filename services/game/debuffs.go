@@ -104,6 +104,19 @@ func (d *Debuffs) DiseaseMask() [4]uint32 {
 	return mask
 }
 
+// SpawnReasons gives each disease's reason (mob skill id with its level above) and the poison damage.
+func (d *Debuffs) SpawnReasons() (map[constant.DebuffFlag]uint32, int16) {
+	reasons := make(map[constant.DebuffFlag]uint32, len(d.entries))
+	var poison int16
+	for flag, holder := range d.entries {
+		reasons[flag] = uint32(holder.skillID) | uint32(holder.skillLevel)<<16
+		if flag == constant.DebuffFlagPoison {
+			poison = holder.x
+		}
+	}
+	return reasons, poison
+}
+
 // Returns false when the mob skill is not a disease, so the caller can fall back to a dispel.
 func (d *Debuffs) GiveMobSkill(skillID uint32, skillLevel uint8) bool {
 	mobSkill := d.owner.gameWorld.GetResources().GetMobSkill(skillID, skillLevel)

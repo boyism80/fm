@@ -15,6 +15,8 @@ type SpawnPlayer struct {
 	GuildLogoColor    uint8
 	BuffStates        [4]uint32
 	Diseases          [4]uint32
+	DiseaseReasons    map[constant.DebuffFlag]uint32
+	PoisonDamage      int16
 	SpeedBuff         uint8
 	ComboCount        uint8
 	WKChargeSkillId   uint32
@@ -54,11 +56,19 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU8(p.GuildLogoColor)
 	}
 
+	var mask [4]uint32
 	for i := range 4 {
-		writer.WriteU32(p.BuffStates[i])
+		mask[i] = p.BuffStates[i] | p.Diseases[i]
+		writer.WriteU32(mask[i])
 	}
-	for i := len(p.BuffStates) - 1; i >= 0; i-- {
-		buff := p.BuffStates[i]
+	// The client reads these in a fixed order of its own, not by bit.
+	writeDisease := func(flag constant.DebuffFlag) {
+		if mask[flag.Position-1]&flag.Mask != 0 {
+			writer.WriteU32(p.DiseaseReasons[flag])
+		}
+	}
+	for i := len(mask) - 1; i >= 0; i-- {
+		buff := mask[i]
 		if i == 3 {
 			if (buff & constant.BuffFlagSpeed.Mask) != 0 {
 				writer.WriteU8(p.SpeedBuff)
@@ -69,13 +79,25 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 			if (buff & constant.BuffFlagWkCharge.Mask) != 0 {
 				writer.WriteU32(p.WKChargeSkillId)
 			}
+			writeDisease(constant.DebuffFlagStun)
+			writeDisease(constant.DebuffFlagDarkness)
+			writeDisease(constant.DebuffFlagSeal)
+			writeDisease(constant.DebuffFlagWeaken)
+			writeDisease(constant.DebuffFlagCurse)
+			if (buff & constant.DebuffFlagPoison.Mask) != 0 {
+				writer.Write16(p.PoisonDamage)
+				writer.WriteU32(p.DiseaseReasons[constant.DebuffFlagPoison])
+			}
 		} else if i == 2 {
 			if (buff & constant.BuffFlagMorph.Mask) != 0 {
 				writer.WriteU16(p.MorphId)
 			}
+			writeDisease(constant.DebuffFlagSeduce)
 			if (buff & constant.BuffFlagSpiritClaw.Mask) != 0 {
 				writer.WriteU32(p.SpiritClawSkillId)
 			}
+			writeDisease(constant.DebuffFlagZombify)
+			writeDisease(constant.DebuffFlagReverseDirection)
 		}
 	}
 

@@ -19,6 +19,11 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+const (
+	spawnBalloonItemID        = 5110000
+	spawnBalloonMax    uint16 = 250
+)
+
 type Look struct {
 	gender    uint8
 	skinColor uint8
@@ -129,6 +134,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	spawnBuffData := ch.buffs.SpawnPlayerData()
+	diseaseReasons, poisonDamage := ch.debuffs.SpawnReasons()
 	carnivalTeam := constant.CarnivalTeamNone
 	if team := ch.carnival.Team(); team != nil {
 		carnivalTeam = team.teamID
@@ -137,6 +143,9 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		Character:         ch.BuildS2C(),
 		BuffStates:        spawnBuffData.BuffStates,
 		Diseases:          ch.debuffs.DiseaseMask(),
+		DiseaseReasons:    diseaseReasons,
+		PoisonDamage:      poisonDamage,
+		Balloons:          uint32(min(ch.inventory.GetCountByItemID(spawnBalloonItemID), spawnBalloonMax)),
 		SpeedBuff:         spawnBuffData.SpeedBuff,
 		ComboCount:        spawnBuffData.ComboCount,
 		WKChargeSkillId:   spawnBuffData.WKChargeSkillID,
