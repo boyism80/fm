@@ -108,10 +108,11 @@ func (dc *Doors) Find(skillID constant.SkillID) *Door {
 }
 
 func (dc *Doors) SetPartyID(partyID *uint32) {
+	maps := dc.owner.gameWorld.Systems().Get[*MapSystem]()
 	for _, cast := range dc.casts {
 		if cast.door != nil {
-			cast.door.partyID = partyID
+			maps.SetDoorPartyID(cast.door.field.Map, cast.key, partyID)
 		}
-		dc.owner.gameWorld.Systems().Get[*MapSystem]().SetDoorPartyID(cast.town, cast.key, partyID)
+		maps.SetDoorPartyID(cast.town, cast.key, partyID)
 	}
 }
