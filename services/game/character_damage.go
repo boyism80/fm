@@ -25,6 +25,8 @@ type Hit struct {
 
 const maxIncomingDamage = 200000
 
+const blockRange = 400
+
 type AttackKind uint8
 
 const (
@@ -480,7 +482,7 @@ func (ch *Character) block(actx actor.Context, hit Hit) {
 	}
 	var attackerArg interface{} = lua.LNil
 	if hit.MobOID != 0 {
-		if mob := m.GetMob(hit.MobOID); mob != nil {
+		if mob := m.GetMob(hit.MobOID); mob != nil && mob.GetPosition().DistanceSq(ch.position) <= blockRange*blockRange {
 			attackerArg = mob
 		}
 	}

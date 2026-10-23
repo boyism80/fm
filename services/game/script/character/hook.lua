@@ -205,7 +205,7 @@ return {
     end,
 
     on_blocked = function(me, attacker)
-        if me == nil or attacker == nil then
+        if me == nil or attacker == nil or me:equipped(EquipmentPart.Shield) == nil then
             return
         end
         local class = me:class()
