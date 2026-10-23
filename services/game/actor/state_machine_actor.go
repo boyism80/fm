@@ -34,6 +34,7 @@ type StateMachineActor struct {
 	timeoutVersion uint64
 	timeoutCancel  scheduler.CancelFunc
 	namedSchedules map[string]*namedSchedule
+	namedVersion   uint64
 	lc             smLifecycle
 }
 
@@ -182,8 +183,8 @@ func (a *StateMachineActor) scheduleHook(ctx actor.Context, msg *game.ScheduleSt
 		return
 	}
 	a.cancelNamedSchedule(msg.ID)
-	entry := &namedSchedule{hook: msg.Hook}
-	entry.version++
+	a.namedVersion++
+	entry := &namedSchedule{hook: msg.Hook, version: a.namedVersion}
 	entry.cancel = a.scheduler.SendOnce(time.Duration(a.StateMachine.LimitTimer(msg.Milliseconds))*time.Millisecond, ctx.Self(), &game.StateMachineNamedTimeout{
 		ID:      msg.ID,
 		Version: entry.version,
@@ -229,7 +230,8 @@ func (a *StateMachineActor) scheduleNamedCron(ctx actor.Context, id string, entr
 	if delay <= 0 {
 		return
 	}
-	entry.version++
+	a.namedVersion++
+	entry.version = a.namedVersion
 	entry.cancel = a.scheduler.SendOnce(delay, ctx.Self(), &game.StateMachineNamedTimeout{
 		ID:      id,
 		Version: entry.version,
