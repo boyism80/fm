@@ -728,6 +728,11 @@ export class CharacterService {
         if (unsettledRequests.size > 0) {
             return { success: false, unsettled: true };
         }
+        // Only the character that left them can claim store bank items, and they block the account's next shop.
+        const shops = await this.shopRepo.findByAccount(worldId, accountId);
+        if (shops.some((shop) => Number(shop.character_id) === characterId)) {
+            return { success: false };
+        }
 
         const guildLeft = await this.guildService.leaveGuild(worldId, characterId);
         if (!guildLeft.ok && guildLeft.code !== GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD) {
