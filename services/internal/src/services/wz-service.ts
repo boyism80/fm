@@ -7,6 +7,9 @@ const NAME_PATTERN = /^[a-zA-Z0-9가-힣]+$/;
 const HANGUL_PATTERN = /[가-힣]/g;
 const MIN_NAME_BYTES = 3;
 const MAX_NAME_BYTES = 12;
+const CONTROL_PATTERN = /\p{Cc}/u;
+const MAX_RANK_TITLE_BYTES = 12;
+const REQUIRED_RANK_TITLES = 2;
 
 export class WzService {
     private readonly wzRoot: string;
@@ -142,6 +145,20 @@ export class WzService {
         }
         const lower = name.toLowerCase();
         return this.forbiddenNames.some((word) => word.length > 0 && lower.includes(word)) === false;
+    }
+
+    /** Guild and alliance rank titles: the first two are required, each fits 12 bytes in the client's CP949. */
+    isValidRankTitles(titles: string[]): boolean {
+        return titles.every((title, idx) => {
+            if (title.trim() === "") {
+                return title === "" && idx >= REQUIRED_RANK_TITLES;
+            }
+            if (CONTROL_PATTERN.test(title)) {
+                return false;
+            }
+            const bytes = [...title].reduce((n, ch) => n + (ch.charCodeAt(0) < 0x80 ? 1 : 2), 0);
+            return bytes <= MAX_RANK_TITLE_BYTES;
+        });
     }
 
     async getEnhanceChance(itemId: number): Promise<number> {

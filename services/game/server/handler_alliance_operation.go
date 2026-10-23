@@ -208,6 +208,10 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *game
 }
 
 func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
+	if !game.RankTitles(req.RankTitles).Valid() {
+		return nil
+	}
+
 	guildID, inGuild := ch.Guild().ID()
 	if !inGuild {
 		return nil

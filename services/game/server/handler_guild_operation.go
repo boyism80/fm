@@ -238,7 +238,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 	case pconst.GuildC2SChangeRankTitles:
 		guildID, inGuild := ch.Guild().ID()
 		g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
-		if !inGuild || g == nil || !g.IsGuildMaster(charID) {
+		if !inGuild || g == nil || !g.IsGuildMaster(charID) || !game.RankTitles(req.RankTitles).Valid() {
 			return nil
 		}
 		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)

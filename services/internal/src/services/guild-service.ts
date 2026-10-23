@@ -766,7 +766,11 @@ export class GuildService {
         if (!rankTitles || rankTitles.length !== 5) {
             return null;
         }
-        return rankTitles.map((entry) => String(entry ?? "")) as GuildRankTitles;
+        const titles = rankTitles.map((entry) => String(entry ?? ""));
+        if (this.wzService.isValidRankTitles(titles) === false) {
+            return null;
+        }
+        return titles as GuildRankTitles;
     }
 
     async changeGuildRankTitles(

@@ -932,7 +932,11 @@ export class AllianceService {
         if (!rankTitles || rankTitles.length !== 5) {
             return null;
         }
-        return rankTitles.map((entry) => String(entry ?? "")) as AllianceRankTitles;
+        const titles = rankTitles.map((entry) => String(entry ?? ""));
+        if (this.wzService.isValidRankTitles(titles) === false) {
+            return null;
+        }
+        return titles as AllianceRankTitles;
     }
 
     private canChangeAllianceMemberRank(allianceRank: number | null | undefined) {

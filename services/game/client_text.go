@@ -9,6 +9,13 @@ import (
 
 type ClientText string
 
+type RankTitles [5]string
+
+const (
+	rankTitleLimit     = 12
+	requiredRankTitles = 2
+)
+
 // Valid measures the limit in EUC-KR bytes, the client's text encoding.
 func (t ClientText) Valid(limit int) bool {
 	return strings.TrimSpace(string(t)) != "" && t.fits(limit)
@@ -22,6 +29,15 @@ func (t ClientText) ValidLines(count int, limit int) bool {
 	}
 	for _, line := range lines {
 		if !ClientText(line).fits(limit) {
+			return false
+		}
+	}
+	return true
+}
+
+func (t RankTitles) Valid() bool {
+	for i, title := range t {
+		if (i < requiredRankTitles || title != "") && !ClientText(title).Valid(rankTitleLimit) {
 			return false
 		}
 	}
