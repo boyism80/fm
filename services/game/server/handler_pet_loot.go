@@ -25,6 +25,10 @@ func (h *PetLoot) Handle(ctx *core.ClientContext, req *request.PetLoot) error {
 	if character == nil || character.Pets().Active() == nil {
 		return nil
 	}
+	if character.Spectating() || character.Occupied() {
+		character.Listener().OnUnlockAction(character)
+		return nil
+	}
 
 	err := character.Pets().Active().Loot(req.OID, req.Position)
 	if err != nil {
