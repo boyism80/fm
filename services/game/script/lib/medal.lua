@@ -211,6 +211,10 @@ function M.end_slayer(me, npc, quest_id, kind)
         me:dialog(npc, "아쉽지만 자네의 사냥 횟수로는 훈장을 받기엔 모자란 것 같소.")
         return
     end
+    if me:empty_slots(InventoryType.Equipment) < 1 then
+        me:dialog(npc, "장비 인벤토리 공간이 충분한지 확인해주시오.")
+        return
+    end
     local rank = submit_medal_score(me, kind, mon)
     if rank == nil then
         me:dialog(npc, "지금은 기록을 확인할 수 없구려. 잠시 후 다시 오시오.")

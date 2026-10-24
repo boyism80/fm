@@ -56,6 +56,10 @@ return {
             return
         end
 
+        if me:empty_slots(InventoryType.Equipment) < 1 then
+            me:dialog(npc, "장비 인벤토리 공간이 충분한지 확인해주게.")
+            return
+        end
         local rank = submit_medal_score(me, medal.IDOL_STAR, me:population())
         if rank == nil then
             me:dialog(npc, "지금은 기록을 확인할 수 없구려. 잠시 후 다시 오시오.")
