@@ -142,7 +142,7 @@ function M.hooks(quest_id, have, results)
         quest:record_ex("cmp", tostring(new_cmp))
         local try_count = tonumber(quest:record_ex("try"))
         if try_count ~= nil and try_count > 0 then
-            local cr = math.floor((new_cmp * 100) / try_count)
+            local cr = math.ceil((new_cmp * 100) / try_count)
             if cr < 0 then
                 cr = 0
             end
