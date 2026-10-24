@@ -126,7 +126,7 @@ func (ch *Character) DropItem(actx actor.Context, invType constant.InventoryType
 }
 
 func (ch *Character) DropMeso(amount int32) bool {
-	if ch.Spectating() {
+	if ch.Spectating() || !ch.IsAlive() {
 		return false
 	}
 	if amount < constant.DropMesoMin || amount > constant.DropMesoMax || amount > ch.inventory.meso {
