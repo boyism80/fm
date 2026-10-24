@@ -1,6 +1,12 @@
 -- Skill name (String.wz/Skill.img.xml): 이프리트
 
+local util = require("script/lib/skill")
+
 return {
+    on_attack = function(me, skill, damages)
+        util.summon_status_attack(me, skill, damages, MobBuff.Freeze)
+    end,
+
     on_activated = function(me, skill, params)
         local effect = skill:effect()
         if effect == nil then

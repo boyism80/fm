@@ -133,6 +133,32 @@ M.apply_mana_reflection = function(me, skill)
     me:buff(skill, BuffFlag.ManaReflection, val)
 end
 
+local function hits_positive(hits)
+    if hits == nil then
+        return false
+    end
+    for i = 1, #hits do
+        if (hits[i] or 0) > 0 then
+            return true
+        end
+    end
+    return false
+end
+
+-- A summon's hit puts the status on each mob it damaged for 4 seconds, at the skill's prop (100 when the WZ has none).
+M.summon_status_attack = function(me, skill, damages, flag)
+    local effect = skill:effect()
+    local prop = 100
+    if effect ~= nil and effect.prop > 0 then
+        prop = effect.prop
+    end
+    for mob, hits in pairs(damages) do
+        if hits_positive(hits) and math.random(1, 100) <= prop then
+            mob:buff(flag, 1, 4000, skill, me)
+        end
+    end
+end
+
 M.apply_resurrection = function(me, skill)
     combat.for_each_near_party_member(me, skill, function(ch)
         if ch:is_alive() then
