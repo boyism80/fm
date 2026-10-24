@@ -71,6 +71,9 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 			return fmt.Errorf("hand over: no route (world=%d)", worldID)
 		}
 		route = found
+		if m := character.GetMap(); m != nil {
+			m.Depart(character)
+		}
 		entry = character.BuildRPC(worldID)
 		if entry == nil {
 			block()

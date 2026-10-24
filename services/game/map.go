@@ -442,15 +442,12 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 
 	m.callMapLifecycleScript(nil, character, "on_map_leave")
 
+	m.dismissStationarySummons(character)
 	for _, summon := range character.summons.All() {
 		if summon == nil || summon.onMap != m || summon.oid == 0 {
 			continue
 		}
 		m.RemoveSummon(summon.oid, false)
-		if summon.movementType != constant.SummonMoveFollow && summon.movementType != constant.SummonMoveCircleFollow {
-			character.summons.Remove(summon, false)
-			character.buffs.CancelBySource(int32(summon.skillID))
-		}
 	}
 
 	delete(m.objects[constant.ObjectTypeCharacter], playerID)
@@ -470,13 +467,9 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	return nil
 }
 
-func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
-	character := m.GetPlayer(playerID)
-	if character == nil {
-		return fmt.Errorf("player %d not found on map", playerID)
-	}
-	character.wedding.HideFromSpouse(ctx)
-
+// Depart ends what the character leaves behind when it leaves the channel: its door and puppet (on_logout), its drops
+// on an everlast map, and its stationary summons. A save of the leaving character must be built after it.
+func (m *Map) Depart(character *Character) {
 	if root := m.GetLuaRoot(); root != nil {
 		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 		if err != nil {
@@ -487,11 +480,36 @@ func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 			})
 		}
 	}
+	m.collectOwnedFieldDrops(character)
+	m.dismissStationarySummons(character)
+}
+
+func (m *Map) dismissStationarySummons(character *Character) {
+	for _, summon := range character.summons.All() {
+		if summon == nil || summon.onMap != m || summon.oid == 0 {
+			continue
+		}
+		if summon.movementType == constant.SummonMoveFollow || summon.movementType == constant.SummonMoveCircleFollow {
+			continue
+		}
+		m.RemoveSummon(summon.oid, false)
+		character.summons.Remove(summon, false)
+		character.buffs.CancelBySource(int32(summon.skillID))
+	}
+}
+
+func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
+	character := m.GetPlayer(playerID)
+	if character == nil {
+		return fmt.Errorf("player %d not found on map", playerID)
+	}
+	character.wedding.HideFromSpouse(ctx)
 
 	if character.miniRoom != nil {
 		character.miniRoom.Leave(character)
 	}
 	character.lieDetector.Escape()
+	m.Depart(character)
 	entry := character.BuildRPC(m.gameWorld.GetWorldID())
 	err := m.RemovePlayer(playerID)
 	character.ClearTimers()
