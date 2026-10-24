@@ -320,6 +320,7 @@ export class GuildGrpcController {
                 req.characterId,
                 req.logo,
                 req.requestId,
+                req.guildId,
             )) as ChangeGuildEmblemResult;
             if (result.ok) {
                 callback(null, {
@@ -378,6 +379,7 @@ export class GuildGrpcController {
                 req.characterId,
                 req.extendedCap,
                 req.requestId,
+                req.guildId,
             )) as IncreaseGuildCapacityResult;
             if (result.ok) {
                 callback(null, {
@@ -706,6 +708,7 @@ export class GuildGrpcController {
                 req.leaderCharacterId,
                 req.partnerCharacterId,
                 req.requestId,
+                req.guildId,
             )) as CreateAllianceResult;
             if (result.ok) {
                 callback(null, {
@@ -863,6 +866,7 @@ export class GuildGrpcController {
                 call.request.worldId,
                 call.request.characterId,
                 call.request.requestId,
+                call.request.allianceId,
             )) as IncreaseAllianceCapacityResult;
             if (result.ok) {
                 callback(null, {

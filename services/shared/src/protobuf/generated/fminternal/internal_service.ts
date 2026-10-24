@@ -3508,6 +3508,7 @@ export interface ChangeGuildEmblemRequest {
   characterId: number;
   logo: GuildLogo | undefined;
   requestId: string;
+  guildId: number;
 }
 
 export interface ChangeGuildEmblemReply {
@@ -3533,6 +3534,7 @@ export interface IncreaseGuildCapacityRequest {
   characterId: number;
   extendedCap: boolean;
   requestId: string;
+  guildId: number;
 }
 
 export interface IncreaseGuildCapacityReply {
@@ -3695,6 +3697,7 @@ export interface CreateAllianceRequest {
   leaderCharacterId: number;
   partnerCharacterId: number;
   requestId: string;
+  guildId: number;
 }
 
 export interface CreateAllianceReply {
@@ -3773,6 +3776,7 @@ export interface IncreaseAllianceCapacityRequest {
   worldId: number;
   characterId: number;
   requestId: string;
+  allianceId: number;
 }
 
 export interface IncreaseAllianceCapacityReply {
@@ -30104,7 +30108,7 @@ export const ChangeGuildMemberRankReply: MessageFns<ChangeGuildMemberRankReply> 
 };
 
 function createBaseChangeGuildEmblemRequest(): ChangeGuildEmblemRequest {
-  return { worldId: 0, characterId: 0, logo: undefined, requestId: "0" };
+  return { worldId: 0, characterId: 0, logo: undefined, requestId: "0", guildId: 0 };
 }
 
 export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
@@ -30120,6 +30124,9 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
     }
     if (message.requestId !== "0") {
       writer.uint32(32).uint64(message.requestId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(40).uint32(message.guildId);
     }
     return writer;
   },
@@ -30163,6 +30170,14 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
           message.requestId = reader.uint64().toString();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -30190,6 +30205,11 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
         : isSet(object.request_id)
         ? globalThis.String(object.request_id)
         : "0",
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
     };
   },
 
@@ -30207,6 +30227,9 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
     if (message.requestId !== "0") {
       obj.requestId = globalThis.String(message.requestId);
     }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
     return obj;
   },
 
@@ -30219,6 +30242,7 @@ export const ChangeGuildEmblemRequest: MessageFns<ChangeGuildEmblemRequest> = {
     message.characterId = object.characterId ?? 0;
     message.logo = (object.logo !== undefined && object.logo !== null) ? GuildLogo.fromPartial(object.logo) : undefined;
     message.requestId = object.requestId ?? "0";
+    message.guildId = object.guildId ?? 0;
     return message;
   },
 };
@@ -30524,7 +30548,7 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
 };
 
 function createBaseIncreaseGuildCapacityRequest(): IncreaseGuildCapacityRequest {
-  return { worldId: 0, characterId: 0, extendedCap: false, requestId: "0" };
+  return { worldId: 0, characterId: 0, extendedCap: false, requestId: "0", guildId: 0 };
 }
 
 export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityRequest> = {
@@ -30540,6 +30564,9 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
     }
     if (message.requestId !== "0") {
       writer.uint32(32).uint64(message.requestId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(40).uint32(message.guildId);
     }
     return writer;
   },
@@ -30583,6 +30610,14 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
           message.requestId = reader.uint64().toString();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -30614,6 +30649,11 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
         : isSet(object.request_id)
         ? globalThis.String(object.request_id)
         : "0",
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
     };
   },
 
@@ -30631,6 +30671,9 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
     if (message.requestId !== "0") {
       obj.requestId = globalThis.String(message.requestId);
     }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
     return obj;
   },
 
@@ -30643,6 +30686,7 @@ export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityReque
     message.characterId = object.characterId ?? 0;
     message.extendedCap = object.extendedCap ?? false;
     message.requestId = object.requestId ?? "0";
+    message.guildId = object.guildId ?? 0;
     return message;
   },
 };
@@ -33204,7 +33248,7 @@ export const Alliance: MessageFns<Alliance> = {
 };
 
 function createBaseCreateAllianceRequest(): CreateAllianceRequest {
-  return { worldId: 0, allianceName: "", leaderCharacterId: 0, partnerCharacterId: 0, requestId: "0" };
+  return { worldId: 0, allianceName: "", leaderCharacterId: 0, partnerCharacterId: 0, requestId: "0", guildId: 0 };
 }
 
 export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
@@ -33223,6 +33267,9 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
     }
     if (message.requestId !== "0") {
       writer.uint32(40).uint64(message.requestId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(48).uint32(message.guildId);
     }
     return writer;
   },
@@ -33274,6 +33321,14 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
           message.requestId = reader.uint64().toString();
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -33310,6 +33365,11 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
         : isSet(object.request_id)
         ? globalThis.String(object.request_id)
         : "0",
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
     };
   },
 
@@ -33330,6 +33390,9 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
     if (message.requestId !== "0") {
       obj.requestId = globalThis.String(message.requestId);
     }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
     return obj;
   },
 
@@ -33343,6 +33406,7 @@ export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
     message.leaderCharacterId = object.leaderCharacterId ?? 0;
     message.partnerCharacterId = object.partnerCharacterId ?? 0;
     message.requestId = object.requestId ?? "0";
+    message.guildId = object.guildId ?? 0;
     return message;
   },
 };
@@ -34570,7 +34634,7 @@ export const AcceptAllianceInviteReply: MessageFns<AcceptAllianceInviteReply> = 
 };
 
 function createBaseIncreaseAllianceCapacityRequest(): IncreaseAllianceCapacityRequest {
-  return { worldId: 0, characterId: 0, requestId: "0" };
+  return { worldId: 0, characterId: 0, requestId: "0", allianceId: 0 };
 }
 
 export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacityRequest> = {
@@ -34583,6 +34647,9 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
     }
     if (message.requestId !== "0") {
       writer.uint32(24).uint64(message.requestId);
+    }
+    if (message.allianceId !== 0) {
+      writer.uint32(32).uint32(message.allianceId);
     }
     return writer;
   },
@@ -34618,6 +34685,14 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
           message.requestId = reader.uint64().toString();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.allianceId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -34644,6 +34719,11 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
         : isSet(object.request_id)
         ? globalThis.String(object.request_id)
         : "0",
+      allianceId: isSet(object.allianceId)
+        ? globalThis.Number(object.allianceId)
+        : isSet(object.alliance_id)
+        ? globalThis.Number(object.alliance_id)
+        : 0,
     };
   },
 
@@ -34658,6 +34738,9 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
     if (message.requestId !== "0") {
       obj.requestId = globalThis.String(message.requestId);
     }
+    if (message.allianceId !== 0) {
+      obj.allianceId = Math.round(message.allianceId);
+    }
     return obj;
   },
 
@@ -34671,6 +34754,7 @@ export const IncreaseAllianceCapacityRequest: MessageFns<IncreaseAllianceCapacit
     message.worldId = object.worldId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.requestId = object.requestId ?? "0";
+    message.allianceId = object.allianceId ?? 0;
     return message;
   },
 };

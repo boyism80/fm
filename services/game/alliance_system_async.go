@@ -52,7 +52,7 @@ func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, resu
 	allianceID, _ := g.GetAllianceID()
 	detail := allianceCapacityDetail{Meso: constant.AllianceIncreaseCapacityMesoCost}
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CAPACITY, uint64(allianceID), detail)
-	return s.incCapacityAsync(ctx, ch, id).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
+	return s.incCapacityAsync(ctx, ch, id, allianceID).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
 		ch.unsettled.Erase(id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)
@@ -92,11 +92,12 @@ type allianceCapacityDetail struct {
 	Meso int32
 }
 
-func (s *AllianceSystem) incCapacityAsync(ctx actor.Context, ch *Character, requestID uint64) *async.Promise[*internal.IncreaseAllianceCapacityReply] {
+func (s *AllianceSystem) incCapacityAsync(ctx actor.Context, ch *Character, requestID uint64, allianceID uint32) *async.Promise[*internal.IncreaseAllianceCapacityReply] {
 	req := &internal.IncreaseAllianceCapacityRequest{
 		WorldId:     s.gw.GetWorldID(),
 		CharacterId: ch.GetID(),
 		RequestId:   requestID,
+		AllianceId:  allianceID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.IncreaseAllianceCapacityReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.IncreaseAllianceCapacity(c, req)
@@ -109,7 +110,7 @@ func (s *AllianceSystem) SettleCapacity(ctx actor.Context, ch *Character, reques
 		log.Printf("alliance settle capacity: character=%d id=%d: %v", ch.GetID(), request.id, err)
 		return
 	}
-	s.incCapacityAsync(ctx, ch, request.id).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
+	s.incCapacityAsync(ctx, ch, request.id, uint32(request.target)).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
 		ch.unsettled.Erase(request.id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)

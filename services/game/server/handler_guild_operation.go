@@ -326,7 +326,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 		detail.Logo = game.NewGuildLogo(uint32(req.Logo), uint32(req.LogoColor), uint32(req.LogoBG), uint32(req.LogoBGColor))
 		id := ch.Unsettled().Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_EMBLEM, uint64(guildID), detail)
-		h.gs.systems.Get[*game.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, detail.Logo.BuildRPC()).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
+		h.gs.systems.Get[*game.GuildSystem]().ChangeEmblemAsync(ctx.ActorContext, ch, id, guildID, detail.Logo.BuildRPC()).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
 			ch.Unsettled().Erase(id)
 			if !reply.GetOk() {
 				h.gs.systems.Get[*game.GuildSystem]().RefundEmblem(ch, detail)

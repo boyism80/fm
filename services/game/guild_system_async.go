@@ -84,12 +84,13 @@ func (s *GuildSystem) SettleCreate(ctx actor.Context, ch *Character, request *Un
 	})
 }
 
-func (s *GuildSystem) ChangeEmblemAsync(ctx actor.Context, ch *Character, requestID uint64, logo *internal.GuildLogo) *async.Promise[*internal.ChangeGuildEmblemReply] {
+func (s *GuildSystem) ChangeEmblemAsync(ctx actor.Context, ch *Character, requestID uint64, guildID uint32, logo *internal.GuildLogo) *async.Promise[*internal.ChangeGuildEmblemReply] {
 	req := &internal.ChangeGuildEmblemRequest{
 		WorldId:     s.gw.GetWorldID(),
 		CharacterId: ch.GetID(),
 		Logo:        logo,
 		RequestId:   requestID,
+		GuildId:     guildID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.ChangeGuildEmblemReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.ChangeGuildEmblem(c, req)
@@ -117,7 +118,7 @@ func (s *GuildSystem) SettleEmblem(ctx actor.Context, ch *Character, request *Un
 		log.Printf("guild settle emblem: character=%d id=%d: %v", ch.GetID(), request.id, err)
 		return
 	}
-	s.ChangeEmblemAsync(ctx, ch, request.id, detail.Logo.BuildRPC()).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
+	s.ChangeEmblemAsync(ctx, ch, request.id, uint32(request.target), detail.Logo.BuildRPC()).Bind(ch).Do(func(reply *internal.ChangeGuildEmblemReply) error {
 		ch.unsettled.Erase(request.id)
 		if !reply.GetOk() {
 			s.RefundEmblem(ch, detail)
@@ -192,7 +193,7 @@ func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extende
 	*result = fail
 	guildID, _ := ch.guild.ID()
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CAPACITY, uint64(guildID), detail)
-	return s.incCapacityAsync(ctx, ch, id, extendedCap).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
+	return s.incCapacityAsync(ctx, ch, id, guildID, extendedCap).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
 		ch.unsettled.Erase(id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)
@@ -223,12 +224,13 @@ func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extende
 	})
 }
 
-func (s *GuildSystem) incCapacityAsync(ctx actor.Context, ch *Character, requestID uint64, extendedCap bool) *async.Promise[*internal.IncreaseGuildCapacityReply] {
+func (s *GuildSystem) incCapacityAsync(ctx actor.Context, ch *Character, requestID uint64, guildID uint32, extendedCap bool) *async.Promise[*internal.IncreaseGuildCapacityReply] {
 	req := &internal.IncreaseGuildCapacityRequest{
 		WorldId:     s.gw.GetWorldID(),
 		CharacterId: ch.GetID(),
 		ExtendedCap: extendedCap,
 		RequestId:   requestID,
+		GuildId:     guildID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.IncreaseGuildCapacityReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.IncreaseGuildCapacity(c, req)
@@ -241,7 +243,7 @@ func (s *GuildSystem) SettleCapacity(ctx actor.Context, ch *Character, request *
 		log.Printf("guild settle capacity: character=%d id=%d: %v", ch.GetID(), request.id, err)
 		return
 	}
-	s.incCapacityAsync(ctx, ch, request.id, detail.Extended).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
+	s.incCapacityAsync(ctx, ch, request.id, uint32(request.target), detail.Extended).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
 		ch.unsettled.Erase(request.id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)
@@ -386,7 +388,7 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 	guildID, _ := ch.guild.ID()
 	detail := allianceCreateDetail{Name: trimmed, Partner: partnerID, Meso: constant.AllianceCreateMesoCost}
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CREATE, uint64(guildID), detail)
-	return s.createAllianceAsync(ctx, ch, id, detail).Bind(ch).Do(func(reply *internal.CreateAllianceReply) error {
+	return s.createAllianceAsync(ctx, ch, id, guildID, detail).Bind(ch).Do(func(reply *internal.CreateAllianceReply) error {
 		ch.unsettled.Erase(id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)
@@ -419,13 +421,14 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 	})
 }
 
-func (s *GuildSystem) createAllianceAsync(ctx actor.Context, ch *Character, requestID uint64, detail allianceCreateDetail) *async.Promise[*internal.CreateAllianceReply] {
+func (s *GuildSystem) createAllianceAsync(ctx actor.Context, ch *Character, requestID uint64, guildID uint32, detail allianceCreateDetail) *async.Promise[*internal.CreateAllianceReply] {
 	req := &internal.CreateAllianceRequest{
 		WorldId:            s.gw.GetWorldID(),
 		AllianceName:       detail.Name,
 		LeaderCharacterId:  ch.GetID(),
 		PartnerCharacterId: detail.Partner,
 		RequestId:          requestID,
+		GuildId:            guildID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.CreateAllianceReply, error) {
 		return s.gw.Systems().Get[*InternalSystem]().client.CreateAlliance(c, req)
@@ -438,7 +441,7 @@ func (s *GuildSystem) SettleAllianceCreate(ctx actor.Context, ch *Character, req
 		log.Printf("alliance settle create: character=%d id=%d: %v", ch.GetID(), request.id, err)
 		return
 	}
-	s.createAllianceAsync(ctx, ch, request.id, detail).Bind(ch).Do(func(reply *internal.CreateAllianceReply) error {
+	s.createAllianceAsync(ctx, ch, request.id, uint32(request.target), detail).Bind(ch).Do(func(reply *internal.CreateAllianceReply) error {
 		ch.unsettled.Erase(request.id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)

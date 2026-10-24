@@ -304,6 +304,7 @@ export class AllianceService {
         leaderCharacterId: number,
         partnerCharacterId: number,
         requestId: string,
+        leaderGuildId: number,
     ): Promise<CreateAllianceResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(leaderCharacterId);
@@ -331,12 +332,10 @@ export class AllianceService {
         const partnerState = await this.characterRealtimeStateRepo.get(worldId, partnerCharacterId);
         const guildId = leaderState?.guildId;
         const partnerGuildId = partnerState?.guildId;
-        if (guildId == null || partnerGuildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
 
+        // The record is kept under the guild the request was made for, so a resend still finds it after that guild is gone.
         const recorded =
-            requestId === "0" ? null : await this.allianceCreateRequestRepo.find(worldId, guildId, requestId);
+            requestId === "0" ? null : await this.allianceCreateRequestRepo.find(worldId, leaderGuildId, requestId);
         if (recorded?.status === RequestStatus.Applied) {
             const recordedAllianceId = recorded.outcome.alliance_id;
             const recordedAlliance = await this.allianceRepo.get(worldId, recordedAllianceId);
@@ -348,6 +347,9 @@ export class AllianceService {
                 allianceId: recordedAllianceId,
                 alliance: await this.allianceToPb(worldId, recordedAlliance),
             };
+        }
+        if (guildId == null || partnerGuildId == null || guildId !== leaderGuildId) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
         if (guildId === partnerGuildId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
@@ -879,22 +881,48 @@ export class AllianceService {
         }
     }
 
+    private async recordedCapacityChange(
+        worldId: number,
+        allianceId: number,
+        requestId: string,
+    ): Promise<IncreaseAllianceCapacityResult | null> {
+        if (requestId === "0" || (await this.allianceChangeRequestRepo.find(worldId, allianceId, requestId)) == null) {
+            return null;
+        }
+        const alliance = await this.allianceRepo.get(worldId, allianceId);
+        return { ok: true, allianceId, alliance: alliance ? await this.allianceToPb(worldId, alliance) : undefined };
+    }
+
     async increaseAllianceCapacity(
         worldId: number,
         characterId: number,
         requestId: string,
+        allianceId: number,
     ): Promise<IncreaseAllianceCapacityResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
+        if (!Number.isInteger(allianceId) || allianceId < 1) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
+        }
 
+        // The record is kept under the alliance the request was made for, so a resend still finds it after the
+        // requester left; the alliance lock comes after the character locks, so it is looked up again once locked.
+        const recordedBefore = await this.recordedCapacityChange(worldId, allianceId, requestId);
+        if (recordedBefore) {
+            return recordedBefore;
+        }
         const locked = await this.lockRequesterAlliance(worldId, characterId);
         if (!locked.ok) {
             return locked;
         }
         await using _locks = locked.locks;
-        const { guild, allianceId, alliance, requester: requesterMember } = locked;
-        if (requestId !== "0" && (await this.allianceChangeRequestRepo.find(worldId, allianceId, requestId)) != null) {
-            return { ok: true, allianceId, alliance: await this.allianceToPb(worldId, alliance) };
+        const { guild, alliance, requester: requesterMember } = locked;
+        const recorded = await this.recordedCapacityChange(worldId, allianceId, requestId);
+        if (recorded) {
+            return recorded;
+        }
+        if (locked.allianceId !== allianceId) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
         if (guild.leaderCharacterId !== characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
