@@ -234,6 +234,9 @@ return {
 
     on_equipment_changed = function(me, part, before, after)
         if part == EquipmentPart.Weapon then
+            me:unbuff(BuffFlag.Booster)
+            me:unbuff(BuffFlag.SpiritClaw)
+            me:unbuff(BuffFlag.SoulArrow)
             me:unbuff(BuffFlag.WkCharge)
         end
     end,
