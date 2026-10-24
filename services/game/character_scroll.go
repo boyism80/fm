@@ -31,6 +31,9 @@ func (ch *Character) Scroll(actx actor.Context, scrollSlot int16, targetSlot int
 	if targetSlot < 0 {
 		target = ch.inventory.equipped[constant.EquipmentPartsType(targetSlot)]
 	} else {
+		if ch.skills.Level(uint32(constant.SkillLegendarySpirit)) <= 0 && ch.skills.Level(uint32(constant.SkillLegendarySpiritCygnus)) <= 0 {
+			return ErrCannotScroll
+		}
 		target, _ = ch.inventory.GetItem(constant.InventoryTypeEquipment, targetSlot).(Equipment)
 	}
 	if target == nil {
@@ -109,7 +112,7 @@ func (ch *Character) Scroll(actx actor.Context, scrollSlot int16, targetSlot int
 	}
 
 	ch.listener.OnScrolledItem(ch, scrollItem.GetInventoryType(), scrollSlot, scrollItem.GetCount(), targetSlot, destroyed, false, target)
-	ch.listener.OnShowScrollEffect(ch, success, destroyed)
+	ch.listener.OnShowScrollEffect(ch, success, destroyed, targetSlot >= 0)
 	ch.listener.OnUpdateStats(ch, nil, true)
 	return nil
 }

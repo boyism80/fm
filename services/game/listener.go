@@ -217,7 +217,7 @@ type CharacterListener interface {
 	OnShowCraftingEffect(ch *Character, effect string, time int32, mode int32)
 	OnShowSelfDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
 	OnShowDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
-	OnShowScrollEffect(ch *Character, success bool, destroyedByCurse bool)
+	OnShowScrollEffect(ch *Character, success bool, destroyedByCurse bool, legendarySpirit bool)
 	OnUseSkillBook(ch *Character, skillID uint32, masterLevel int, canUse bool, success bool)
 	OnScrolledItem(ch *Character, scrollInventoryType constant.InventoryType, scrollSlot int16, scrollCount uint16, upgradedSlot int16, destroyed bool, potential bool, upgradedItem Item)
 	OnPetSpawn(ch *Character, sn uint64)

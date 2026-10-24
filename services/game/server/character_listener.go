@@ -1364,7 +1364,7 @@ func (l *CharacterListenerImpl) OnShowDiceEffect(ch *game.Character, effectID in
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnShowScrollEffect(ch *game.Character, success bool, destroyedByCurse bool) {
+func (l *CharacterListenerImpl) OnShowScrollEffect(ch *game.Character, success bool, destroyedByCurse bool, legendarySpirit bool) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -1373,6 +1373,7 @@ func (l *CharacterListenerImpl) OnShowScrollEffect(ch *game.Character, success b
 		CharacterID:      ch.GetID(),
 		Success:          success,
 		DestroyedByCurse: destroyedByCurse,
+		LegendarySpirit:  legendarySpirit,
 	}, &game.ObjectBroadcastOption{
 		WithMe: true,
 	})
