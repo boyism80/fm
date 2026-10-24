@@ -31,14 +31,12 @@ end
 
 local function mp_recover_check(me)
     if me:class_of(Class.Magician) then
+        -- WZ gives this skill no mp; the amount is skill level x character level / 10, rounded.
         local s = me:skill(Skill.ImprovingMpRecovery2000000)
-        if s ~= nil then
-            local effect = s:effect()
-            if effect.mp > 0 then
-                return effect.mp
-            end
+        if s == nil then
+            return 0
         end
-        return 0
+        return math.floor(s:level() * me:level() * 0.1 + 0.5)
     end
     if me:class_of(Class.Assassin) then
         local s = me:skill(Skill.Endure4100002)
