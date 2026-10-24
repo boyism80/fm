@@ -21,4 +21,7 @@ func (p *UpdateQuestRecordEx) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *UpdateQuestRecordEx) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.QuestID = reader.ReadU16()
+	p.Data = reader.ReadStr16()
 }

@@ -15,6 +15,7 @@ local CONSUME = 2
 local MODE = {
     create = 0x00,
     visit = 0x04,
+    exit = 0x0A,
     open = 0x0B,
     add_item = 0x1D,
     buy = 0x1E,
@@ -486,12 +487,58 @@ local function open_delay_move(ctx)
     return true
 end
 
+-- A shop the owner empties while managing it closes when the owner leaves, instead of opening again with nothing.
+local function emptied_close(ctx)
+    local owner = ctx:bot(0)
+    local buyer = ctx:bot(1)
+    if setup(ctx, owner, 0, PERMIT .. ":1," .. POTION .. ":10") == false or setup(ctx, buyer, 0, "-") == false then
+        return false
+    end
+    if clear_store_bank(ctx, owner) == false then
+        return false
+    end
+    if move_to(ctx, buyer, MARKET_ROOM, { x = -1300, y = 102 }) == false or move_to(ctx, owner, MARKET_ROOM, SPOT) == false then
+        return false
+    end
+    if entered(ctx, owner, create_request(owner, "빈 상점"), 0, "개설") == false then
+        return false
+    end
+    if items(ctx, owner, add_item(owner, POTION, 1, 10, 1000), 1, "물약 등록") == false then
+        return false
+    end
+    local spawn = owner:request_on(buyer, resp.spawn_entrusted_shop, req.mini_room { mode = MODE.open }, function(s)
+        return s.employer_id == owner:id()
+    end, 5000)
+    if spawn == false then
+        return ctx:fail("상점 개설이 다른 캐릭터에게 보이지 않음")
+    end
+
+    if entered(ctx, owner, req.mini_room { mode = MODE.visit, sn = spawn.entrusted_shop_balloon.sn }, 0, "관리 시작") == false then
+        return false
+    end
+    local removed = owner:request(resp.mini_room_item_removed, req.mini_room { mode = MODE.remove_item, index = 0 }, nil,
+        5000)
+    if removed == false then
+        return ctx:fail("물약 회수 응답 없음")
+    end
+    local destroyed = owner:request_on(buyer, resp.destroy_entrusted_shop, req.mini_room { mode = MODE.exit },
+        function(p)
+            return p.employer_id == owner:id()
+        end, 5000)
+    if destroyed == false then
+        return ctx:fail("물건을 모두 뺀 상점이 관리 종료 뒤 맵에 남음")
+    end
+    ctx:sleep(300)
+    return has(ctx, owner, POTION, 10)
+end
+
 test_suite {
-    name = "EntrustedShop: 고용상인 개설·판매·관리·스토어뱅크",
+    name = "EntrustedShop: 고용상인 개설·판매·관리·스토어뱅크·빈 상점 닫기",
     bot_count = 2,
 
     scenarios = {
         shop_flow,
+        emptied_close,
         store_bank_flow,
         overflow_flow,
         open_lost_recovery,

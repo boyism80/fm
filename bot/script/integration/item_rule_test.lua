@@ -12,6 +12,9 @@ local HELMET_SCROLL = 2040000
 local HAT = 1002008
 local RETURN_SCROLL = 2030000
 local LEGENDARY_SPIRIT = 1003
+local EVERLAST_MAP = 209000001
+local SNAIL_SHELL = 4000000
+local MESO = 0x40000
 
 local function check(ctx, ok, message)
     if ok == false then
@@ -203,8 +206,62 @@ local function dead_refusals(ctx)
     return true
 end
 
+local function leave_on_everlast(ctx, bot)
+    if bot:force_instance_move(EVERLAST_MAP, "버린 아이템이 다른 스위트와 섞이지 않게") == false then
+        return ctx:fail("에버라스트 맵 이동 실패")
+    end
+    if bot:drop(SNAIL_SHELL, 1) == nil then
+        return ctx:fail("달팽이 껍질을 버리지 못함")
+    end
+    local dropped = bot:request(resp.update_stats, req.drop_meso { count = 100 }, function(p)
+        return p.stats[MESO] ~= nil
+    end, 3000)
+    if dropped == false then
+        return ctx:fail("메소를 버리지 못함")
+    end
+    return true
+end
+
+local function returned(ctx, bot, what)
+    if check(ctx, (bot:items()[SNAIL_SHELL] or 0) == 2, what .. " 뒤 버린 달팽이 껍질이 돌아오지 않음: " .. tostring(bot:items()[SNAIL_SHELL])) == false then
+        return false
+    end
+    return check(ctx, bot:meso() == 1000, what .. " 뒤 버린 메소가 돌아오지 않음: " .. bot:meso())
+end
+
+-- What a character dropped on an everlast map comes back before it is saved on logout or a channel change.
+local function everlast_drops(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 30 0 1000 " .. SNAIL_SHELL .. ":2 -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    if leave_on_everlast(ctx, bot) == false then
+        return false
+    end
+    if bot:relog({ passwords = { "" } }) == false then
+        return ctx:fail("재접속 실패")
+    end
+    if returned(ctx, bot, "재접속") == false then
+        return false
+    end
+
+    if leave_on_everlast(ctx, bot) == false then
+        return false
+    end
+    if bot:transfer(1) == false then
+        return ctx:fail("채널 이동 실패")
+    end
+    if returned(ctx, bot, "채널 이동") == false then
+        return false
+    end
+    if bot:transfer(0) == false then
+        return ctx:fail("원래 채널 복귀 실패")
+    end
+    return true
+end
+
 test_suite {
-    name = "Item: 착용한 고유 장비 줍기·주문서 아닌 강화·레전드리 스피릿·정렬 묶음 합계·사망 중 버리기와 귀환 주문서",
+    name = "Item: 착용한 고유 장비 줍기·주문서 아닌 강화·레전드리 스피릿·정렬 묶음 합계·사망 중 버리기와 귀환 주문서·에버라스트 드롭",
     bot_count = 2,
 
     scenarios = {
@@ -213,5 +270,6 @@ test_suite {
         legendary_spirit,
         merge_overflow,
         dead_refusals,
+        everlast_drops,
     },
 }

@@ -14,7 +14,13 @@ local MOONFLOWER = 9108000
 local RICE_CAKE = 4001101
 local MOON_BUNNY = 9300061
 local DIALOG_DEFAULT = 0
+local DIALOG_YES_NO = 1
 local DIALOG_LIST = 4
+local EXIT = 910010300
+local RANKING_QUEST = 1200
+local GROWLIE_MENU = { leave = 2 }
+
+local ranking = nil
 
 local function missing_seed(leader)
     for i = 0, 5 do
@@ -88,6 +94,72 @@ local function gather_rice_cakes(ctx, leader, count)
     return ctx:fail("월묘의 떡 부족: " .. (leader:items()[RICE_CAKE] or 0))
 end
 
+local function enter(ctx)
+    local leader = ctx:bot(0)
+    ctx:hook("ranking", function(_, bot, p, name)
+        if name == "update_quest_record_ex" and bot:id() == leader:id() and p.quest_id == RANKING_QUEST then
+            ranking = p.data
+        end
+    end)
+    local oid = pq.npc(ctx, leader, TORY)
+    if oid == false then
+        return false
+    end
+    local warp = leader:request(resp.warp, req.npc_click { oid = oid }, function(p)
+        return p.character.map == STAGE
+    end, 15000)
+    if warp == false then
+        return ctx:fail("달맞이꽃 언덕 입장 실패")
+    end
+    return pq.wait_all(ctx, STAGE, 15000)
+end
+
+-- A try that leaves without clearing still counts, so two of them make the clear one in three.
+local function enter_and_leave(ctx)
+    if enter(ctx) == false then
+        return false
+    end
+    local leader = ctx:bot(0)
+    local oid = pq.npc(ctx, leader, GROWLIE)
+    if oid == false then
+        return false
+    end
+    local dlg = leader:npc_click(oid)
+    if dlg == false or dlg.selections == nil then
+        return ctx:fail("어흥이 선택지가 오지 않음")
+    end
+    dlg = leader:dialog(true, GROWLIE_MENU.leave)
+    if dlg == nil or dlg.text:find("나가고 싶어", 1, true) == nil then
+        leader:dialog(false)
+        return ctx:fail("어흥이 퇴장 확인이 오지 않음")
+    end
+    local warp = leader:request(resp.warp, req.dialog { dialog_type = DIALOG_YES_NO, next = true }, function(p)
+        return p.character.map == EXIT
+    end, 10000)
+    if warp == false then
+        return ctx:fail("어흥이에게 포기하고 나가지 못함")
+    end
+    if pq.wait_all(ctx, EXIT, 10000) == false then
+        return false
+    end
+    for i = 0, ctx:bot_count() - 1 do
+        if ctx:bot(i):instance_move(PARK) == false then
+            return ctx:fail(ctx:bot(i):name() .. " 헤네시스 공원 복귀 실패")
+        end
+    end
+    return true
+end
+
+-- The completion rate rounds up like the legacy endPartyQuest: one clear in three tries is 34, not 33.
+local function completion_rate(ctx)
+    ctx:unhook("ranking")
+    local cr = ranking ~= nil and ranking:match("CR=(%d+)") or nil
+    if cr ~= "34" then
+        return ctx:fail("세 번 중 한 번 클리어한 파티 퀘스트 완료율이 34가 아님: " .. tostring(ranking))
+    end
+    return true
+end
+
 test_suite {
     name = "Party Quest: 헤네시스 PQ",
     bot_count = 3,
@@ -114,20 +186,9 @@ test_suite {
 
     scenarios = {
         pq.form_party,
-        function(ctx)
-            local leader = ctx:bot(0)
-            local oid = pq.npc(ctx, leader, TORY)
-            if oid == false then
-                return false
-            end
-            local warp = leader:request(resp.warp, req.npc_click { oid = oid }, function(p)
-                return p.character.map == STAGE
-            end, 15000)
-            if warp == false then
-                return ctx:fail("달맞이꽃 언덕 입장 실패")
-            end
-            return pq.wait_all(ctx, STAGE, 15000)
-        end,
+        enter_and_leave,
+        enter_and_leave,
+        enter,
         function(ctx)
             local leader = ctx:bot(0)
             if gather_seeds(ctx, leader) == false then
@@ -229,5 +290,6 @@ test_suite {
             end
             return true
         end,
+        completion_rate,
     },
 }

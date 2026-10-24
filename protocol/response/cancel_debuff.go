@@ -22,4 +22,7 @@ func (p *CancelMobBuff) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *CancelMobBuff) Deserialize(reader *stream.StreamReader) {
+	p.OID = reader.ReadU32()
+	p.Status = reader.Read32()
+	p.Size = reader.ReadU8()
 }

@@ -194,6 +194,9 @@ var decoders = func() []decoder {
 		newDecoder[response.ShopScannerPopular](sub(uint8(pconst.ShopScannerResultPopular))),
 		newDecoder[response.InventoryOperation](nil),
 		newDecoder[response.UpdateQuest](func(body []byte) bool { return len(body) > 0 && body[0] == 1 }),
+		newDecoder[response.UpdateQuestRecordEx](func(body []byte) bool {
+			return len(body) > 0 && body[0] == response.QuestWireRecordExSubOpcode
+		}),
 		newDecoder[response.ShowQuestCompletion](nil),
 		newDecoder[response.GuildInvite](func(body []byte) bool {
 			return len(body) > 0 && pconst.GuildSubOpcode(body[0]) == pconst.GuildS2CInvite
@@ -240,6 +243,7 @@ var decoders = func() []decoder {
 		newDecoder[response.SpawnMob](nil),
 		newDecoder[response.DieMob](nil),
 		newDecoder[response.ApplyMobBuff](nil),
+		newDecoder[response.CancelMobBuff](nil),
 		newDecoder[response.ShowMobHp](nil),
 		newDecoder[response.SessionValue](nil),
 		newDecoder[response.SpawnMeso](func(body []byte) bool { return len(body) >= 6 && body[5] == 1 }),

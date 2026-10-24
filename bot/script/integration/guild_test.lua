@@ -6,9 +6,10 @@ local GUILD_HQ = 200000301
 local HERACLE = 2010007
 local LENARIO = 2010009
 local GUILD_SHOW_INFO = 0x1A
+local GUILD_DISBAND = 0x32
 local GUILD_EMBLEM_CHANGE = 0x42
 local DIALOG = { yes_no = 1 }
-local HERACLE_MENU = { create = 0, capacity = 2 }
+local HERACLE_MENU = { create = 0, disband = 1, capacity = 2 }
 local GUILD_NAME_INPUT = 1
 local LENARIO_MENU = { create = 2, capacity = 3, disband = 4 }
 
@@ -480,6 +481,65 @@ local function capacity_delayed(ctx)
     return true
 end
 
+local function disband_guild(ctx, bot)
+    if ask(ctx, bot, HERACLE, HERACLE_MENU.disband, "길드를 해체하고 싶은가") == false then
+        return false
+    end
+    local done = bot:request(resp.guild_message, req.dialog { dialog_type = DIALOG.yes_no, next = true },
+        code(GUILD_DISBAND), 10000)
+    bot:dialog(false)
+    if done == false then
+        return ctx:fail(bot:name() .. " 길드 해체 알림 없음")
+    end
+    return true
+end
+
+local function create_guild(ctx, bot)
+    if bot:request(resp.guild_message, create_request(bot), code(GUILD_SHOW_INFO), 10000) == false then
+        return ctx:fail(bot:name() .. " 길드 생성 정보가 오지 않음")
+    end
+    return true
+end
+
+-- The emblem request is recorded under the guild it was made for, so its resend after the guild is disbanded finds
+-- the record and refunds nothing.
+local function emblem_lost_disband(ctx)
+    local bot = ctx:bot(5)
+    if setup(ctx, bot) == false then
+        return false
+    end
+    if send_unknown(ctx, bot, "ChangeGuildEmblem", emblem_request(), "lost") == false then
+        return false
+    end
+    if holds(ctx, bot, MESO - EMBLEM_COST, "장애 직후 보류") == false or disband_guild(ctx, bot) == false or resume(ctx, bot) == false then
+        return false
+    end
+    settle.tick(ctx)
+    return holds(ctx, bot, MESO - EMBLEM_COST, "길드 해체 뒤 정리 (환불 없음)")
+end
+
+-- A capacity resend after the master disbanded the guild and made a new one is not applied to the new guild.
+local function capacity_lost_recreate(ctx)
+    local bot = ctx:bot(4)
+    if setup(ctx, bot) == false or create_guild(ctx, bot) == false then
+        return false
+    end
+    if capacity_unknown(ctx, bot, "lost") == false then
+        return false
+    end
+    if arrived(ctx, bot, "guild_capacity_change", "반영된 인원 확장") == false then
+        return false
+    end
+    if disband_guild(ctx, bot) == false or create_guild(ctx, bot) == false or resume(ctx, bot) == false then
+        return false
+    end
+    settle.tick(ctx)
+    if once(ctx, bot, "guild_capacity_change", "새 길드를 만든 뒤 정리 (새 길드에 다시 확장 없음)") == false then
+        return false
+    end
+    return holds(ctx, bot, MESO - CAPACITY_COST - CREATE_COST, "새 길드를 만든 뒤 정리 (환불 없음)")
+end
+
 local function gain_gp(ctx, bot)
     if pq.command(bot, "/길드GP얻기 " .. GP, "길드 GP " .. GP .. " 획득 요청") == false then
         return ctx:fail(bot:name() .. " 길드 GP 명령 실패")
@@ -785,6 +845,44 @@ local function alliance_capacity_delayed(ctx)
     return disband_alliance(ctx, leader)
 end
 
+local function create_alliance(ctx, leader, what)
+    if ask_alliance_create(ctx, leader) == false then
+        return false
+    end
+    yes(leader)
+    local made = created(ctx, leader, what)
+    leader:dialog(false)
+    return made
+end
+
+-- An alliance capacity resend after the alliance was disbanded and formed again is not applied to the new alliance.
+local function alliance_capacity_lost_recreate(ctx)
+    local leader = ctx:bot(0)
+    watch(ctx)
+    if setup(ctx, leader) == false or create_alliance(ctx, leader, "연합 생성") == false then
+        return false
+    end
+    if alliance_capacity_unknown(ctx, "lost") == false then
+        return false
+    end
+    if capacity_is(ctx, leader, "반영된 연합 정원") == false or disband_alliance(ctx, leader) == false then
+        return false
+    end
+    watch(ctx)
+    if create_alliance(ctx, leader, "다시 만든 연합") == false or resume(ctx, leader) == false then
+        return false
+    end
+    settle.tick(ctx)
+    local have = alliance_capacity(leader)
+    if check(ctx, have <= ALLIANCE_CAPACITY, string.format("다시 만든 연합 정원 %d (기대 %d)", have, ALLIANCE_CAPACITY)) == false then
+        return false
+    end
+    if holds(ctx, leader, MESO - ALLIANCE_CAPACITY_COST - ALLIANCE_COST, "다시 만든 연합 뒤 정리 (환불 없음)") == false then
+        return false
+    end
+    return disband_alliance(ctx, leader)
+end
+
 test_suite {
     name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구",
     bot_count = 6,
@@ -802,10 +900,12 @@ test_suite {
         late_create_after_resend,
         emblem_lost,
         emblem_not_sent,
+        emblem_lost_disband,
         capacity_lost_timer,
         capacity_lost_relogin,
         capacity_not_sent,
         capacity_delayed,
+        capacity_lost_recreate,
         gp_lost_timer,
         gp_lost_relogin,
         gp_not_sent,
@@ -818,5 +918,6 @@ test_suite {
         alliance_capacity_not_sent,
         alliance_create_delayed,
         alliance_capacity_delayed,
+        alliance_capacity_lost_recreate,
     },
 }

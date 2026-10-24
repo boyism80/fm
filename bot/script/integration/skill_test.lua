@@ -30,6 +30,13 @@ local ALCHEMIST_CYGNUS = 14110003
 local IMPROVING_MP_RECOVERY = 2000000
 local MP_BURN_MOB = 8110300
 local HIT_ENV = -3
+local NIGHT_LORD = 412
+local PAGE = 120
+local SHOWDOWN = 4121003
+local THREATEN = 1201006
+local MOB_WATK = 0x1
+local MOB_MDEF = 0x8
+local MOB_SHOWDOWN = 0x800
 local HP = 0x400
 local MP = 0x1000
 
@@ -469,8 +476,84 @@ local function magician_mp_recovery(ctx)
     return check(ctx, gain > 100 and gain < 200, "MP 회복력 향상 16레벨 70레벨 마법사의 자연 회복 상한이 다름: " .. gain)
 end
 
+local function has_flag(status, flag)
+    return math.floor(status / flag) % 2 == 1
+end
+
+-- Threaten shares only the weapon defense flag with Showdown, so it takes that one flag over and leaves Showdown's
+-- other statuses (the EXP and drop bonus, the magic defense) on the mob.
+local function showdown_threaten(ctx)
+    local thief, page = ctx:bot(0), ctx:bot(1)
+    if setup(ctx, thief, 120, NIGHT_LORD, CLAW .. ":1," .. STAR .. ":100") == false or setup(ctx, page, 70, PAGE, "-") == false then
+        return false
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = thief:slot(CLAW) or 0, dest = WEAPON_SLOT, count = 1 }
+    if thief:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("아대 장착 실패")
+    end
+    if pq.command(thief, "/스킬레벨 " .. SHOWDOWN .. " 30", "스킬레벨 설정") == false
+        or pq.command(page, "/스킬레벨 " .. THREATEN .. " 20", "스킬레벨 설정") == false then
+        return ctx:fail("쇼다운·위협 배우기 실패")
+    end
+    if pq.command(thief, "/마력바꾸기 3000", "마력 설정") == false or pq.command(page, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    -- A damage check against the golem needs the thief to hit it, so its stats are raised and instant kill is off.
+    if pq.command(thief, "/전능 999", "전능 설정") == false or pq.command(thief, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("능력치·즉사 설정 실패")
+    end
+    if thief:instance_move(HUNTING_GROUND) == false or page:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    -- Threaten takes the first six mobs in its range, so the map's own mobs are cleared first.
+    if pq.command(thief, "/몬스터죽이기", "마리 제거") == false then
+        return ctx:fail("사냥터 몬스터 제거 실패")
+    end
+    local x, y = page:position()
+    local golem = spawn_golem(ctx, thief, x, y)
+    if golem == nil then
+        return false
+    end
+
+    local applied, cancelled = {}, {}
+    ctx:hook("showdown_threaten", function(_, bot, p, name)
+        if bot:id() ~= thief:id() or p.oid ~= golem then
+            return
+        end
+        local seen = nil
+        if name == "apply_mob_buff" then
+            seen = applied
+        elseif name == "cancel_mob_buff" then
+            seen = cancelled
+        else
+            return
+        end
+        for _, flag in ipairs({ MOB_WATK, MOB_MDEF, MOB_SHOWDOWN }) do
+            if has_flag(p.status, flag) then
+                seen[flag] = true
+            end
+        end
+    end)
+    thief:attack(golem, 1, 1, SHOWDOWN)
+    ctx:sleep(500)
+    local showdown = applied[MOB_SHOWDOWN] == true
+    page:send(req.active_skill { skill_id = THREATEN, skill_level = 20 })
+    ctx:sleep(1500)
+    ctx:unhook("showdown_threaten")
+    if check(ctx, showdown, "쇼다운이 스톤골렘에 걸리지 않음") == false then
+        return false
+    end
+    if check(ctx, applied[MOB_WATK] == true, "위협이 스톤골렘에 걸리지 않음") == false then
+        return false
+    end
+    if check(ctx, cancelled[MOB_SHOWDOWN] == nil, "위협이 쇼다운을 풀어 버림") == false then
+        return false
+    end
+    return check(ctx, cancelled[MOB_MDEF] == nil, "위협이 쇼다운의 마법 방어 감소를 풀어 버림")
+end
+
 test_suite {
-    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상",
+    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협",
     bot_count = 2,
 
     scenarios = {
@@ -484,5 +567,6 @@ test_suite {
         hermit_alchemist,
         night_walker_alchemist,
         magician_mp_recovery,
+        showdown_threaten,
     },
 }

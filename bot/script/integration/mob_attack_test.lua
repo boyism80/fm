@@ -16,6 +16,9 @@ local MP = 0x1000
 local BISHOP = 232
 local HOLY_SHIELD = 2321005
 local RED_POTION = 2000000
+local IL_ARCH_MAGE = 222
+local MANA_REFLECTION = 2221002
+local STONE_GOLEM = 5130101
 
 local function setup(ctx, bot)
     if pq.command(bot, "/봇초기화 70 0 0 -", "봇초기화 완료") == false then
@@ -234,8 +237,44 @@ local function zombify_potion(ctx)
     return true
 end
 
+-- The I/L Arch Mage's Mana Reflection sends part of a mob's attack back to the mob.
+local function il_mana_reflection(ctx)
+    local actor = ctx:bot(1)
+    if pq.command(actor, "/봇초기화 120 " .. IL_ARCH_MAGE .. " 0 -", "봇초기화 완료") == false then
+        return ctx:fail("썬콜 봇 초기화 실패")
+    end
+    if pq.command(actor, "/스킬레벨 " .. MANA_REFLECTION .. " 1", "스킬레벨 설정") == false then
+        return ctx:fail("마나 리플렉션 배우기 실패")
+    end
+    if pq.command(actor, "/체력바꾸기 3000", "체력 설정") == false or pq.command(actor, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("썬콜 체력·마력 설정 실패")
+    end
+    if actor:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("썬콜 사냥터 이동 실패")
+    end
+    local cast = actor:request(resp.update_stats, req.active_skill { skill_id = MANA_REFLECTION, skill_level = 1 },
+        function(p)
+            return p.unlock_action
+        end, 3000)
+    if cast == false then
+        return ctx:fail("마나 리플렉션 사용 응답 없음")
+    end
+    local oid = spawn(ctx, actor, STONE_GOLEM)
+    if oid == false then
+        return false
+    end
+    local reflected = actor:request(resp.show_mob_hp,
+        req.damaged { type = 0, damage = 500, mob_id = STONE_GOLEM, oid = oid, reflect = 50 }, function(p)
+            return p.oid == oid
+        end, 3000)
+    if reflected == false then
+        return ctx:fail("마나 리플렉션 중 맞았는데 몹에게 피해가 돌아가지 않음")
+    end
+    return true
+end
+
 test_suite {
-    name = "Mob attack: 상태이상·맵 디버프·HP/MP 1·MP 흡수·몸박치기 추방·홀리 실드·언데드 포션",
+    name = "Mob attack: 상태이상·맵 디버프·HP/MP 1·MP 흡수·몸박치기 추방·홀리 실드·언데드 포션·썬콜 마나 리플렉션",
     bot_count = 2,
 
     scenarios = {
@@ -245,5 +284,6 @@ test_suite {
         lethal_touch,
         holy_shield,
         zombify_potion,
+        il_mana_reflection,
     },
 }

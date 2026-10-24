@@ -189,6 +189,41 @@ local function attack_seen(ctx)
         string.format("소환수 공격의 소환수 번호 %d (기대 OID %d)", seen.summon_oid, octopus.oid))
 end
 
+-- A stationary summon ends when its owner leaves the channel, so it does not come back on the next one; a following
+-- summon does, which shows the packets sent while entering the channel are seen.
+local function channel_change(ctx)
+    local outlaw, knight = ctx:bot(0), ctx:bot(1)
+    if setup(ctx, outlaw, OUTLAW, { OCTOPUS }) == false or setup(ctx, knight, DARK_KNIGHT, { BEHOLDER }) == false then
+        return false
+    end
+    if summon(ctx, outlaw, OCTOPUS) == false or summon(ctx, knight, BEHOLDER) == false then
+        return false
+    end
+
+    local spawned = {}
+    ctx:hook("channel_summons", function(_, bot, p, name)
+        if name == "spawn_summon" and p.owner_id == bot:id() then
+            spawned[p.skill_id] = true
+        end
+    end)
+    local moved = outlaw:transfer(1) and knight:transfer(1)
+    ctx:sleep(1500)
+    ctx:unhook("channel_summons")
+    if check(ctx, moved, "채널 이동 실패") == false then
+        return false
+    end
+    if check(ctx, spawned[BEHOLDER] == true, "비홀더가 채널 이동을 따라오지 않음") == false then
+        return false
+    end
+    if check(ctx, spawned[OCTOPUS] == nil, "문어가 새 채널에서 다시 생김") == false then
+        return false
+    end
+    if outlaw:transfer(0) == false or knight:transfer(0) == false then
+        return ctx:fail("원래 채널 복귀 실패")
+    end
+    return true
+end
+
 -- A summon whose WZ has no prop puts its status on every mob it damages.
 local function status_hit(ctx, bot, class, skill_id, flag, name)
     if setup(ctx, bot, class, { skill_id }) == false then
@@ -223,7 +258,7 @@ local function ifrit_freeze(ctx)
 end
 
 test_suite {
-    name = "Summon: 고정형 소환수 맵 이동·비홀더스 힐링·가비오타 한 번 공격·공격 표시·엘퀴네스 기절·이프리트 빙결",
+    name = "Summon: 고정형 소환수 맵·채널 이동·비홀더스 힐링·가비오타 한 번 공격·공격 표시·엘퀴네스 기절·이프리트 빙결",
     bot_count = 2,
 
     scenarios = {
@@ -231,6 +266,7 @@ test_suite {
         healing_interval,
         gaviota_once,
         attack_seen,
+        channel_change,
         elquines_stun,
         ifrit_freeze,
     },
