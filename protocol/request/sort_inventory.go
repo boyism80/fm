@@ -13,6 +13,8 @@ type SortInventory struct {
 func (*SortInventory) Opcode() byte { return 0x34 }
 
 func (p *SortInventory) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU8(uint8(p.InventoryType))
 	return nil
 }
 

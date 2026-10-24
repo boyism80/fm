@@ -19,10 +19,19 @@ local MOB_POISON = 0x200
 local PRIEST = 231
 local ROGUE = 400
 local HERMIT = 411
+local NIGHT_WALKER = 1411
 local FP_MAGE = 211
 local GM = 900
 local EQUIP = 1
 local WEAPON_SLOT = -11
+local RED_POTION = 2000000
+local ALCHEMIST = 4110000
+local ALCHEMIST_CYGNUS = 14110003
+local IMPROVING_MP_RECOVERY = 2000000
+local MP_BURN_MOB = 8110300
+local HIT_ENV = -3
+local HP = 0x400
+local MP = 0x1000
 
 local function check(ctx, ok, message)
     if ok == false then
@@ -368,8 +377,100 @@ local function poison_mist(ctx)
     return check(ctx, p ~= false, "독 안개 안의 스톤골렘이 중독되지 않음")
 end
 
+local function hp_changed(p)
+    return p.stats[HP] ~= nil
+end
+
+-- The GM HP command sets the max too, so the HP a potion can fill is made by a hit.
+local function potion_heal(ctx, bot)
+    if pq.command(bot, "/체력바꾸기 1000", "체력 설정") == false then
+        ctx:fail(bot:name() .. " 체력 설정 실패")
+        return nil
+    end
+    local hit = bot:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 900 }, hp_changed, 3000)
+    if hit == false then
+        ctx:fail(bot:name() .. " 피해를 받지 않음")
+        return nil
+    end
+    local p = bot:request(resp.update_stats, req.use_item { slot = bot:slot(RED_POTION) or 0, item_id = RED_POTION },
+        hp_changed, 3000)
+    if p == false then
+        ctx:fail(bot:name() .. " 빨간 포션을 먹었는데 체력이 오르지 않음")
+        return nil
+    end
+    return p.stats[HP] - hit.stats[HP]
+end
+
+-- Alchemist at level 20 makes a potion heal 150%, for the Night Walker as for the Hermit.
+local function alchemist(ctx, bot, class, skill_id)
+    if setup(ctx, bot, 70, class, RED_POTION .. ":2") == false then
+        return false
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local base = potion_heal(ctx, bot)
+    if base == nil then
+        return false
+    end
+    if pq.command(bot, "/스킬레벨 " .. skill_id .. " 20", "스킬레벨 설정") == false then
+        return ctx:fail("알케미스트 배우기 실패: " .. skill_id)
+    end
+    local boosted = potion_heal(ctx, bot)
+    if boosted == nil then
+        return false
+    end
+    return check(ctx, boosted * 2 == base * 3,
+        string.format("알케미스트 %d 20레벨 포션 회복이 150%%가 아님: %d -> %d", skill_id, base, boosted))
+end
+
+local function hermit_alchemist(ctx)
+    return alchemist(ctx, ctx:bot(0), HERMIT, ALCHEMIST)
+end
+
+local function night_walker_alchemist(ctx)
+    return alchemist(ctx, ctx:bot(1), NIGHT_WALKER, ALCHEMIST_CYGNUS)
+end
+
+-- A magician's natural MP recovery grows with Improving MP Recovery and the character level (16 x 70 / 10 = 112).
+local function magician_mp_recovery(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, FP_MAGE, "-") == false then
+        return false
+    end
+    if pq.command(bot, "/스킬레벨 " .. IMPROVING_MP_RECOVERY .. " 16", "스킬레벨 설정") == false then
+        return ctx:fail("MP 회복력 향상 배우기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    if pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false or pq.command(bot, "/마력바꾸기 1000", "마력 설정") == false then
+        return ctx:fail("체력·마력 설정 실패")
+    end
+    local spawned = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. MP_BURN_MOB }, function(p)
+        return p.mob.mob_id == MP_BURN_MOB
+    end, 5000)
+    if spawned == false then
+        return ctx:fail("MP 흡수 몹 생성 응답 없음")
+    end
+    local function mp_changed(p)
+        return p.stats[MP] ~= nil
+    end
+    local burned = bot:request(resp.update_stats,
+        req.damaged { type = 0, damage = 1, mob_id = MP_BURN_MOB, oid = spawned.mob.oid }, mp_changed, 3000)
+    if burned == false then
+        return ctx:fail("MP 흡수 공격에 MP가 줄지 않음")
+    end
+    local p = bot:request(resp.update_stats, req.heal_over_time { heal_mp = 200 }, mp_changed, 3000)
+    if p == false then
+        return ctx:fail("자연 회복으로 MP가 오르지 않음")
+    end
+    local gain = p.stats[MP] - burned.stats[MP]
+    return check(ctx, gain > 100 and gain < 200, "MP 회복력 향상 16레벨 70레벨 마법사의 자연 회복 상한이 다름: " .. gain)
+end
+
 test_suite {
-    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개",
+    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상",
     bot_count = 2,
 
     scenarios = {
@@ -380,5 +481,8 @@ test_suite {
         shadow_web_front,
         ranged_ammo,
         poison_mist,
+        hermit_alchemist,
+        night_walker_alchemist,
+        magician_mp_recovery,
     },
 }

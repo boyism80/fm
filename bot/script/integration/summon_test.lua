@@ -11,6 +11,12 @@ local BEHOLDER = 1321007
 local BEHOLDER_HEALING = 1320008
 local HEAL = 40
 local SNAIL = 100100
+local FP_ARCH_MAGE = 212
+local IL_ARCH_MAGE = 222
+local ELQUINES = 2121005
+local IFRIT = 2221005
+local MOB_STUN = 0x80
+local MOB_FREEZE = 0x100
 
 local HP = 0x400
 local HIT_ENV = -3
@@ -183,8 +189,41 @@ local function attack_seen(ctx)
         string.format("소환수 공격의 소환수 번호 %d (기대 OID %d)", seen.summon_oid, octopus.oid))
 end
 
+-- A summon whose WZ has no prop puts its status on every mob it damages.
+local function status_hit(ctx, bot, class, skill_id, flag, name)
+    if setup(ctx, bot, class, { skill_id }) == false then
+        return false
+    end
+    local summoned = summon(ctx, bot, skill_id)
+    if summoned == false then
+        return false
+    end
+    local spawned = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. SNAIL }, function(p)
+        return p.mob.mob_id == SNAIL
+    end, 5000)
+    if spawned == false then
+        return ctx:fail("달팽이 생성 응답 없음")
+    end
+    local oid = spawned.mob.oid
+    local applied = bot:request(resp.apply_mob_buff, req.summon_attack {
+        summon_oid = summoned.oid,
+        damages = { { oid = oid, damage_pairs = { { damage = 1 } } } },
+    }, function(p)
+        return p.oid == oid and math.floor(p.status / flag) % 2 == 1
+    end, 3000)
+    return check(ctx, applied ~= false, name .. " 공격에 맞은 달팽이에 상태이상이 걸리지 않음")
+end
+
+local function elquines_stun(ctx)
+    return status_hit(ctx, ctx:bot(0), FP_ARCH_MAGE, ELQUINES, MOB_STUN, "엘퀴네스")
+end
+
+local function ifrit_freeze(ctx)
+    return status_hit(ctx, ctx:bot(1), IL_ARCH_MAGE, IFRIT, MOB_FREEZE, "이프리트")
+end
+
 test_suite {
-    name = "Summon: 고정형 소환수 맵 이동·비홀더스 힐링·가비오타 한 번 공격·공격 표시",
+    name = "Summon: 고정형 소환수 맵 이동·비홀더스 힐링·가비오타 한 번 공격·공격 표시·엘퀴네스 기절·이프리트 빙결",
     bot_count = 2,
 
     scenarios = {
@@ -192,5 +231,7 @@ test_suite {
         healing_interval,
         gaviota_once,
         attack_seen,
+        elquines_stun,
+        ifrit_freeze,
     },
 }

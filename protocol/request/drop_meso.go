@@ -12,6 +12,8 @@ type DropMeso struct {
 func (*DropMeso) Opcode() byte { return 0x4D }
 
 func (p *DropMeso) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.Write32(p.Count)
 	return nil
 }
 
