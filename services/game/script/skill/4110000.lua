@@ -6,11 +6,12 @@ return {
         if effect == nil then
             return
         end
-        if effect.x <= 0 then
-            return
+        if effect.x > 0 then
+            me:potion_heal_rate(effect.x)
         end
-        me:potion_heal_rate(effect.x)
-        me:potion_duration_rate(effect.x)
+        if effect.y > 0 then
+            me:potion_duration_rate(effect.y)
+        end
     end,
 
     on_unpassive = function(me, skill)
