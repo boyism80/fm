@@ -38,7 +38,7 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, i
 		ch.listener.OnUpdateStats(ch, nil, true)
 	}
 
-	if ch.GetHp() <= 0 || ch.dialog.Busy() {
+	if ch.Occupied() {
 		finish()
 		return
 	}
