@@ -49,7 +49,14 @@ func (d *Debuffs) Add(holder *Debuff) {
 	}
 }
 
+// Give leaves a disease already there as it is, and Holy Shield keeps off every disease but seduce and stun.
 func (d *Debuffs) Give(flag constant.DebuffFlag, duration time.Duration, x int16, skillID uint16, skillLevel uint16) {
+	if d.Has(flag) {
+		return
+	}
+	if flag != constant.DebuffFlagSeduce && flag != constant.DebuffFlagStun && d.owner.buffs.Has(constant.BuffFlagHolyShield) {
+		return
+	}
 	if skillID == 0 {
 		skillID = flag.DiseaseSkillID
 	}
