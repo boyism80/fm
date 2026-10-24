@@ -62,7 +62,8 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 
 	character.LieDetector().Escape()
 
-	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
+	// Only this client's packets are dropped while the character is saved and handed over. It stays on the map until it
+	// leaves, so a party meso share or kill reward given in that time is not in the save.
 	gameClient.SetChangingChannel(true)
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise.ThenRPC(findRoute, func(found *response.SwitchChannel) error {
