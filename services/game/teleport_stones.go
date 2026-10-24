@@ -110,7 +110,7 @@ func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, 
 		finish()
 		return
 	}
-	if t.owner.GetHp() <= 0 || t.owner.dialog.Busy() {
+	if t.owner.Occupied() {
 		finish()
 		return
 	}

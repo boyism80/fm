@@ -186,9 +186,6 @@ end
 
 return {
     can_use_return_scroll = function(me, item_id, move_to)
-        if me:hp() <= 0 then
-            return false
-        end
         local map = me:map()
         if map == nil then
             return false

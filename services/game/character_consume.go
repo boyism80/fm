@@ -142,7 +142,7 @@ func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
 
 func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint32) error {
 	item := ch.inventory.GetItem(constant.InventoryTypeConsume, slot)
-	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
+	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID || ch.Occupied() {
 		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
