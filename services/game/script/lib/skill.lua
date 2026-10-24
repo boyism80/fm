@@ -116,11 +116,7 @@ M.get_heal_recovery_amount = function(me, skill)
         max_heal = min_heal
     end
 
-    local heal = math.random(min_heal, max_heal)
-    if me:has_debuff(DebuffFlag.Zombify) then
-        heal = -heal
-    end
-    return heal
+    return math.random(min_heal, max_heal)
 end
 
 M.apply_mana_reflection = function(me, skill)

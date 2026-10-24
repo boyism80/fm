@@ -207,6 +207,9 @@ func (ch *Character) recover(consumeItem *wz.Consume) bool {
 	if hpRate > 0 {
 		hpChange += int(ch.GetMaxHp()) * hpRate / 100
 	}
+	if ch.debuffs.Has(constant.DebuffFlagZombify) {
+		hpChange /= 2
+	}
 	if mpRate > 0 {
 		mpChange += int(ch.GetMaxMp()) * mpRate / 100
 	}
