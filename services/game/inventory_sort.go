@@ -30,13 +30,13 @@ func (inv *Inventory) Merge(inventoryType constant.InventoryType) {
 
 	for key, bucket := range buckets {
 		model := key.model
-		count := uint16(0)
+		count := 0
 		for _, v := range bucket {
-			count += v.GetCount()
+			count += int(v.GetCount())
 		}
-		capacity := model.GetCapacity()
+		capacity := int(model.GetCapacity())
 		for slot, item := range bucket {
-			value := min(capacity, count)
+			value := uint16(min(capacity, count))
 			if item.GetCount() != value {
 				item.SetCount(value)
 				if value == 0 {
@@ -46,7 +46,7 @@ func (inv *Inventory) Merge(inventoryType constant.InventoryType) {
 					inv.owner.listener.OnInventorySlotUpdated(inv.owner, inventoryType, slot, item)
 				}
 			}
-			count -= value
+			count -= int(value)
 		}
 	}
 }

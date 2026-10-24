@@ -162,13 +162,13 @@ func (inv *Inventory) FindSlots(itemID uint32) (invType constant.InventoryType, 
 
 func (inv *Inventory) GetCountByItemID(itemID uint32) uint16 {
 	invType, slots := inv.FindSlots(itemID)
-	var total uint16
+	total := 0
 	for _, slot := range slots {
 		if item := inv.GetItem(invType, slot); item != nil {
-			total += item.GetCount()
+			total += int(item.GetCount())
 		}
 	}
-	return total
+	return uint16(min(total, math.MaxUint16))
 }
 
 func (inv *Inventory) HasItem(itemID uint32) bool {
