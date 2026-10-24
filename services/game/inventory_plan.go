@@ -11,6 +11,7 @@ type planSlot struct {
 	model      wz.Item
 	count      uint16
 	held       uint16
+	holds      int
 	expiration time.Time
 }
 
@@ -25,6 +26,8 @@ type slotPlan struct {
 	limit   int16
 	slots   map[int16]*planSlot
 	blocked map[int16]struct{}
+	// full is set when the escrow's holds no longer fit, which makes newSlotPlan refuse every add to the tab.
+	full bool
 }
 
 // newSlotPlan keeps room for what the escrow holds, since a cancelled room returns it: its own empty slot,
@@ -55,6 +58,7 @@ func newSlotPlan(tab *InventoryTab, invType constant.InventoryType, escrow *Escr
 			}
 		} else if s.stacks(held.item.GetModel(), held.item.GetExpiration()) && int(s.count)+int(s.held)+int(held.item.GetCount()) <= int(s.model.GetCapacity()) {
 			s.held += held.item.GetCount()
+			s.holds++
 			continue
 		}
 		slot, ok := p.free()
@@ -87,6 +91,8 @@ func (p *slotPlan) free() (int16, bool) {
 }
 
 // take removes count of the item from the lowest slots first, like removeByItemIDCountUnchecked.
+// A slot it empties is gone after the real removal, so what the escrow held there is reserved as newSlotPlan
+// would: the slot itself for the first hold, another free slot for each further one.
 func (p *slotPlan) take(itemID uint32, count uint16) bool {
 	for slot := int16(1); slot <= p.limit && count > 0; slot++ {
 		s := p.slots[slot]
@@ -96,8 +102,21 @@ func (p *slotPlan) take(itemID uint32, count uint16) bool {
 		n := min(s.count, count)
 		s.count -= n
 		count -= n
-		if s.count == 0 && s.held == 0 {
-			delete(p.slots, slot)
+		if s.count > 0 {
+			continue
+		}
+		delete(p.slots, slot)
+		if s.holds == 0 {
+			continue
+		}
+		p.blocked[slot] = struct{}{}
+		for range s.holds - 1 {
+			free, ok := p.free()
+			if !ok {
+				p.full = true
+				break
+			}
+			p.blocked[free] = struct{}{}
 		}
 	}
 	return count == 0
@@ -106,6 +125,9 @@ func (p *slotPlan) take(itemID uint32, count uint16) bool {
 // place fills stacks with room in slot order, then free slots; a rechargeable takes one free slot whatever its count.
 // It returns where the count goes and whether all of it fits.
 func (p *slotPlan) place(model wz.Item, count uint16, expiration time.Time) ([]placement, bool) {
+	if p.full {
+		return nil, false
+	}
 	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
 		slot, ok := p.free()
 		if !ok {
