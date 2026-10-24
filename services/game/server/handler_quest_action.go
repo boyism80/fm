@@ -97,7 +97,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		}
 
 	case request.QuestActionScriptedStart:
-		if !questDef.HasStartScript() {
+		if !questDef.HasStartScript() || character.Occupied() {
 			character.Listener().OnUnlockAction(character)
 			return nil
 		}
@@ -113,7 +113,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		}
 
 	case request.QuestActionScriptedEnd:
-		if !questDef.HasEndScript() {
+		if !questDef.HasEndScript() || character.Occupied() {
 			character.Listener().OnUnlockAction(character)
 			return nil
 		}

@@ -34,7 +34,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("character not found")
 	}
 
-	if character.Spectating() || character.UsingCashItem() {
+	if character.Spectating() || character.UsingCashItem() || character.Occupied() {
 		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}

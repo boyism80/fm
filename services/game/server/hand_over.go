@@ -54,6 +54,11 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		block()
 		return
 	}
+	// A dead character is saved at its return map, so the next server would skip the revive.
+	if !character.IsAlive() {
+		block()
+		return
+	}
 
 	character.LieDetector().Escape()
 

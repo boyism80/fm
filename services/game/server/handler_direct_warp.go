@@ -41,7 +41,7 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 	}
 
 	portal := currentMap.FindPortalByName(req.PortalName)
-	if portal == nil || portal.Wz() == nil {
+	if portal == nil || portal.Wz() == nil || character.Occupied() {
 		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}

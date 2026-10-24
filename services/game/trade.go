@@ -96,7 +96,7 @@ func (t *Trade) Invite(ch *Character, targetID uint32) error {
 	case target == nil || target == ch:
 		ch.listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteNotFound, "")
 		t.Leave(ch)
-	case target.miniRoom != nil:
+	case target.miniRoom != nil || target.Occupied():
 		ch.listener.OnTradeInviteResult(ch, pconst.MiniRoomInviteBusy, target.GetName())
 		t.Leave(ch)
 	default:

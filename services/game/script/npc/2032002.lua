@@ -38,7 +38,6 @@ return {
                 return
             end
             local paper_count = pq.item_count(me, PAPER)
-            local scrolls = paper_count >= 30
             local confirm
             if paper_count < 1 then
                 confirm = "#b불의 원석 1개#k는 무사히 가져오셨지만, #b종이 문서#k는 하나도 모으지 못하셨군요. 파티원들이 모으신 물건은 이게 전부가 맞습니까?"
@@ -59,7 +58,11 @@ return {
                 me:dialog(npc, "오류가 발생했습니다.")
                 return
             end
-            me:exchange({ item = { [FIRE_ORE] = 1 } }, nil)
+            if me:exchange({ item = { [FIRE_ORE] = 1 } }, nil) ~= ExchangeResult.OK then
+                me:dialog(npc, "파티원들이 동굴에서 얻은 물건은 파티장이 모두 모아 저에게 주셔야 합니다. 다시 한 번 확인해 주세요.")
+                return
+            end
+            local scrolls = pq.item_count(me, PAPER) >= 30
             pq.remove_all(PAPER, me)
             pq.remove_all(KEY, me)
             sm:set_property("clear", "1")

@@ -39,6 +39,10 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 	var err error
 	switch req.Mode {
 	case pconst.MiniRoomCreate:
+		if ch.Occupied() {
+			err = game.ErrMiniRoomInvalid
+			break
+		}
 		switch req.Type {
 		case pconst.MiniRoomTypeEntrustedShop:
 			var es *game.EntrustedShop

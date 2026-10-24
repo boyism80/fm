@@ -43,6 +43,10 @@ return {
                 clear = group:get_property("clear")
             end
             if clear ~= "1" then
+                if not pq.has_item(me, RICE_CAKE, 10) then
+                    me:dialog(npc, "어흥! 어서 월묘가 만든 떡을 내게 가져와!")
+                    return
+                end
                 local map = me:map()
                 if map ~= nil then
                     map:show_effect("quest/party/clear")

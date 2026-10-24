@@ -672,6 +672,19 @@ func (ch *Character) SetHidden(hidden bool) {
 	ch.listener.OnHiddenChanged(ch, hidden)
 }
 
+// Occupied is true while the character is dead, in an NPC conversation or shop, or in a shop or mini game room;
+// it may not then talk to NPCs, move items, open a room, or leave the map. A trade does not count.
+func (ch *Character) Occupied() bool {
+	if !ch.IsAlive() || ch.dialog.Busy() {
+		return true
+	}
+	switch ch.miniRoom.(type) {
+	case nil, *Trade:
+		return false
+	}
+	return true
+}
+
 func (ch *Character) GetID() uint32 {
 	return ch.id
 }

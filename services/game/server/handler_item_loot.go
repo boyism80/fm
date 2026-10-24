@@ -34,7 +34,7 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		return fmt.Errorf("character is nil")
 	}
 
-	if character.Spectating() {
+	if character.Spectating() || character.Occupied() {
 		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}

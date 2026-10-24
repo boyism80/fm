@@ -14,7 +14,9 @@ return {
         if not me:dialog_yes_no(npc, "정말 타이머 키우기를 포기할거야?") then
             return
         end
-        me:exchange({ item = { [4220046] = 1 } }, nil)
+        if me:exchange({ item = { [4220046] = 1 } }, nil) ~= ExchangeResult.OK then
+            return
+        end
         q:forfeit()
         me:dialog(npc, "수고했어. 다시 키우고 싶어지면 언제든지 나를 찾아와.")
     end
