@@ -23,6 +23,7 @@ const (
 	RemoteEntrustedShopItemID = 5470000
 	entrustedShopCloseTimer   = "entrusted_shop_close"
 	entrustedShopKeptMessage  = "인벤토리에 공간이 부족해 받지 못한 물품은 프레드릭에게 보관되었습니다."
+	entrustedShopEmptyMessage = "프레드릭에게서 아이템을 찾아가시기 바랍니다."
 )
 
 type EntrustedShop struct {
@@ -233,11 +234,19 @@ func (es *EntrustedShop) stopManaging(ctx actor.Context) {
 	}
 
 	es.managing = false
-	if es.published {
+	if es.published && len(es.items) > 0 {
 		es.updateBalloon()
 		return
 	}
+	emptied := es.published && es.onMap != nil
 	es.close(ctx)
+	if emptied {
+		es.gameWorld.Systems().Get[*DispatchSystem]().Visit(es.ownerID, func(ctx actor.Context, c *Character) {
+			if c != nil {
+				c.listener.OnMessage(c, constant.MsgPopup, entrustedShopEmptyMessage)
+			}
+		})
+	}
 }
 
 func (es *EntrustedShop) Leave(ch *Character) {
