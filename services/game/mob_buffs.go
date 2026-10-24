@@ -188,6 +188,7 @@ func (bc *MobBuffs) Add(duration time.Duration, skillWz *wz.Skill, skillLevel ui
 	mob.listener.OnMobBuffApplied(mob, ent, addedReflections, remaining)
 }
 
+// Remove cancels one status; the rest of the entry it came with stays.
 func (bc *MobBuffs) Remove(flag constant.MobBuffFlag) {
 	if bc == nil {
 		return
@@ -196,20 +197,26 @@ func (bc *MobBuffs) Remove(flag constant.MobBuffFlag) {
 	if ent == nil {
 		return
 	}
-	delete(bc.entities, ent)
-	for f := range ent.values {
-		if current := bc.byFlag[f]; current == ent {
-			delete(bc.byFlag, f)
-		}
+	delete(bc.byFlag, flag)
+	delete(ent.values, flag)
+	delete(ent.stacks, flag)
+	if len(ent.values) == 0 {
+		delete(bc.entities, ent)
+	}
+	if (flag == constant.MobBuffWeaponDamageReflect || flag == constant.MobBuffMagicDamageReflect) && len(bc.reflections) > 0 {
+		bc.reflections = bc.reflections[1:]
 	}
 	mob := bc.owner
-	for f := range ent.values {
-		if (f == constant.MobBuffWeaponDamageReflect || f == constant.MobBuffMagicDamageReflect) && len(bc.reflections) > 0 {
-			bc.reflections = bc.reflections[1:]
-		}
+	mob.listener.OnMobBuffCancelled(mob, flag)
+}
+
+func (bc *MobBuffs) removeEntry(ent *MobBuff) {
+	flags := make([]constant.MobBuffFlag, 0, len(ent.values))
+	for flag := range ent.values {
+		flags = append(flags, flag)
 	}
-	for f := range ent.values {
-		mob.listener.OnMobBuffCancelled(mob, f)
+	for _, flag := range flags {
+		bc.Remove(flag)
 	}
 }
 
@@ -225,10 +232,7 @@ func (bc *MobBuffs) Dispel(skillID uint32) {
 		ents = append(ents, ent)
 	}
 	for _, ent := range ents {
-		for flag := range ent.values {
-			bc.Remove(flag)
-			break
-		}
+		bc.removeEntry(ent)
 	}
 }
 
@@ -254,10 +258,7 @@ func (bc *MobBuffs) getExpired(now time.Time) []*MobBuff {
 func (bc *MobBuffs) RemoveExpired() {
 	expired := bc.getExpired(clock.Now())
 	for _, ent := range expired {
-		for flag := range ent.values {
-			bc.Remove(flag)
-			break
-		}
+		bc.removeEntry(ent)
 	}
 }
 
