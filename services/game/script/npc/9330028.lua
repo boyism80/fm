@@ -58,8 +58,8 @@ return {
             else
                 me:dialog(npc, "오류가 발생했다네.")
                 log("night_market_boss start:", err)
-                return
             end
+            return
         end
         record_entry(me)
     end
