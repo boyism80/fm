@@ -176,7 +176,10 @@ export class RankingRepository {
             return JSON.parse(cached) as number[];
         }
         const roundIds = (await this.publishedRounds(kind)).slice(0, KEPT_ROUNDS).map((round) => round.roundId);
-        await this.setCurrentRounds(kind, roundIds);
+        // NX: the scheduler may have published a newer round since publishedRounds was read.
+        await this.ctx
+            .getRedisUnifiedAccess()
+            .client.set(RankingRepository.currentKey(kind), JSON.stringify(roundIds), "EX", CURRENT_TTL_SEC, "NX");
         return roundIds;
     }
 
