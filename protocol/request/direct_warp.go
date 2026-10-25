@@ -12,6 +12,8 @@ type DirectWarp struct {
 func (*DirectWarp) Opcode() byte { return 0x53 }
 
 func (p *DirectWarp) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(p.Mode)
+	writer.WriteStr16(p.PortalName)
 	return nil
 }
 

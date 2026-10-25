@@ -30,6 +30,7 @@ var requests = []outbound{
 	&request.NpcShop{},
 	&request.Dialog{},
 	&request.Warp{},
+	&request.DirectWarp{},
 	&request.PartyOperation{},
 	&request.Buddy{},
 	&request.AutoAssignAP{},
@@ -460,7 +461,9 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		},
 		"send": func(L *lua.LState) int {
 			b := a.checkBot(L)
-			L.Push(lua.LBool(b.Send(a.checkRequest(L, 2)) == nil))
+			pkt := a.checkRequest(L, 2)
+			a.approachPortal(b, pkt)
+			L.Push(lua.LBool(b.Send(pkt) == nil))
 			return 1
 		},
 		"chat": func(L *lua.LState) int {

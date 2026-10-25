@@ -520,6 +520,10 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 	if m == nil {
 		return fmt.Errorf("not on a map")
 	}
+	if portal.wz.Position.DistanceSq(ch.position) > 40000 && !ch.ActsAsGM() {
+		ch.listener.OnUnlockAction(ch)
+		return fmt.Errorf("portal %q is too far", portal.wz.Name)
+	}
 
 	if scriptName := portal.Script(); scriptName != "" {
 		root := m.GetLuaRoot()

@@ -43,10 +43,29 @@ func (a *SuiteActor) Request(thread *lua.LState, sender, listener *bot.Bot, pkt 
 	if pkt == nil {
 		return
 	}
+	a.approachPortal(sender, pkt)
 	if err := sender.Send(pkt); err != nil {
 		a.Fail(fmt.Sprintf("%s send: %v", sender.Name, err))
 		w.timer.Stop()
 		a.actors.Send(a.self, &WaitTimeout{Wait: w.id})
+	}
+}
+
+// The server takes a portal only within reach of it, so the bot first stands on the portal it names, like a client.
+func (a *SuiteActor) approachPortal(b *bot.Bot, pkt outbound) {
+	warp, ok := pkt.(*request.Warp)
+	if !ok || warp.Target != 0xFFFFFFFF || warp.PortalName == "" {
+		return
+	}
+	m, ok := a.wz.Maps[b.Map]
+	if !ok {
+		return
+	}
+	for _, portal := range m.Portals {
+		if portal.Name == warp.PortalName {
+			_ = b.Move(portal.Position, 0)
+			return
+		}
 	}
 }
 
