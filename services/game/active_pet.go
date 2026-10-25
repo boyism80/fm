@@ -17,6 +17,8 @@ import (
 const (
 	petHungerTimer = "pet_hunger"
 	petLifeTimer   = "pet_life"
+	// The longest pet line in the WZ dialogs is 82 bytes.
+	petChatLimit = 100
 )
 
 var (
@@ -58,7 +60,10 @@ func (p *ActivePet) Move(start types.Vector2[int16], fragments []dto.MoveFragmen
 }
 
 func (p *ActivePet) Chat(typ uint8, action uint8, text string) {
-	if text == "" {
+	if p.owner.GetMap() == nil || p.owner.Forbidden("chat") {
+		return
+	}
+	if !p.owner.HasRoleAtLeast(constant.RoleAdmin) && !ClientText(text).Valid(petChatLimit) {
 		return
 	}
 	p.owner.listener.OnPetChat(p.owner, typ, action, text)
