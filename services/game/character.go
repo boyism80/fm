@@ -562,6 +562,10 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 		ch.listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
+	if targetMap.wz != nil && ch.level < targetMap.wz.LevelLimit && !ch.ActsAsGM() {
+		ch.listener.OnUnlockAction(ch)
+		return fmt.Errorf("map %d needs level %d", targetMap.wz.ID, targetMap.wz.LevelLimit)
+	}
 	targetPortal := targetMap.FindPortalByName(portal.wz.Target)
 	if targetPortal == nil || targetPortal.wz == nil {
 		return ch.Warp(ctx, targetMap, 0)

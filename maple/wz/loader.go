@@ -1040,6 +1040,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	if forced := info.Int("forcedReturn", 0); forced > 0 && forced != forcedReturnNone {
 		model.ForcedReturn = uint32(forced)
 	}
+	model.LevelLimit = uint8(info.Int("lvLimit", 0))
 	model.OnFirstUserEnter = info.Text("onFirstUserEnter", "")
 	model.OnUserEnter = info.Text("onUserEnter", "")
 	model.FieldLimit = constant.FieldLimit(info.Int("fieldLimit", 0))

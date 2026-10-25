@@ -71,6 +71,7 @@ type Map struct {
 	Cloud        int
 	ReturnMapId  int
 	ForcedReturn uint32
+	LevelLimit   uint8
 	// OnFirstUserEnter and OnUserEnter name scripts under script/map_enter.
 	OnFirstUserEnter string
 	OnUserEnter      string
