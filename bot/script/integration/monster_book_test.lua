@@ -129,7 +129,8 @@ local function level_and_cover(ctx)
     if p == false then
         return false
     end
-    if check(ctx, p.book_level == 2 and p.book_normal_cards == 11 and p.book_special_cards == 1, string.format("몬스터북 집계가 다름: 레벨 %d 일반 %d 특수 %d", p.book_level, p.book_normal_cards, p.book_special_cards)) == false then
+    -- Every copy counts: five snail cards from collect and ten more cards are 16 in all, level 3 (11 to 30 cards).
+    if check(ctx, p.book_level == 3 and p.book_normal_cards == 15 and p.book_special_cards == 1, string.format("몬스터북 집계가 다름: 레벨 %d 일반 %d 특수 %d", p.book_level, p.book_normal_cards, p.book_special_cards)) == false then
         return false
     end
 
@@ -161,7 +162,7 @@ local function persistence(ctx)
         return false
     end
     return check(ctx,
-        p.book_level == 2 and p.book_normal_cards == 11 and p.book_special_cards == 1 and p.book_cover_mob_id == SNAIL,
+        p.book_level == 3 and p.book_normal_cards == 15 and p.book_special_cards == 1 and p.book_cover_mob_id == SNAIL,
         string.format("채널 이동 후 몬스터북이 다름: 레벨 %d 일반 %d 특수 %d 표지 %d", p.book_level, p.book_normal_cards,
             p.book_special_cards, p.book_cover_mob_id))
 end

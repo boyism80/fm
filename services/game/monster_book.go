@@ -16,20 +16,21 @@ type MonsterBook struct {
 }
 
 func (b *MonsterBook) Count() (normal uint32, special uint32) {
-	for cardID := range b.cards {
+	for cardID, count := range b.cards {
 		model := b.owner.itemModel(cardID)
 		if model != nil && model.GetTraits()&constant.ItemTraitSpecialMonsterCard != 0 {
-			special++
+			special += count
 		} else {
-			normal++
+			normal += count
 		}
 	}
 	return normal, special
 }
 
 func (b *MonsterBook) Level() uint32 {
-	total := uint32(len(b.cards))
-	for i, limit := range []uint32{10, 30, 60, 100, 150, 210, 280} {
+	normal, special := b.Count()
+	total := normal + special
+	for i, limit := range []uint32{0, 10, 30, 60, 100, 150, 210, 280} {
 		if total <= limit {
 			return uint32(i + 1)
 		}
