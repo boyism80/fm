@@ -645,6 +645,9 @@ func (ch *Character) moveTo(m *Map, pos types.Vector2[int16]) types.Vector2[int1
 		if summon == nil || summon.owner != ch {
 			continue
 		}
+		if summon.movementType != constant.SummonMoveFollow && summon.movementType != constant.SummonMoveCircleFollow {
+			continue
+		}
 		summonBefore := summon.position
 		summon.position = pos
 		m.OnMoved(summon, summonBefore)
