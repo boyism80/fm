@@ -93,6 +93,8 @@ local function hypnotize_damage(ctx)
     if pq.command(bot, "/스킬레벨 " .. HYPNOTIZE .. " 20", "스킬레벨 설정") == false then
         return ctx:fail("하이퍼노타이즈 배우기 실패")
     end
+    -- The snail the previous scenario left would be the first mob hypnotize checks.
+    bot:request(resp.notice, req.normal_chat { message = "/맵리셋 인스턴스" }, nil, 300)
 
     local mobs = spawn(ctx, bot, BOMB, 2)
     if mobs == nil then
