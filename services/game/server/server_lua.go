@@ -368,6 +368,7 @@ func (gs *GameServer) loadSkillScripts(luaState *lua.LState) {
 		skill.ManualCooldown = lua.LVAsBool(mod.RawGetString("manual_cooldown"))
 		skill.Dojo = lua.LVAsBool(mod.RawGetString("dojo"))
 		skill.FullHolySymbol = lua.LVAsBool(mod.RawGetString("full_holy_symbol"))
+		skill.FollowUpAttack = lua.LVAsBool(mod.RawGetString("follow_up_attack"))
 		if element, ok := mod.RawGetString("extra_element").(lua.LString); ok {
 			skill.ExtraElement = string(element)
 		}

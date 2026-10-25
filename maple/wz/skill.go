@@ -80,6 +80,7 @@ type Skill struct {
 	ExtraElement   string
 	Dojo           bool
 	FullHolySymbol bool
+	FollowUpAttack bool
 
 	Beginner      bool
 	FourthClass   bool

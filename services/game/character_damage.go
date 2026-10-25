@@ -77,10 +77,16 @@ func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.Att
 	case AttackEnergy:
 		ch.listener.OnEnergyAttack(ch, payload)
 	}
-	if skill != nil {
+	if skill != nil && !followUpAttack(skill) {
 		ch.skills.CallHook(actx, skill, "on_activated")
 	}
 	return nil
+}
+
+// A follow-up attack is a hit the skill's buff triggers under the skill's id, so it neither costs nor activates the
+// skill again.
+func followUpAttack(skill *SkillEntry) bool {
+	return skill != nil && skill.Level() > 0 && skill.wz.FollowUpAttack
 }
 
 // strike validates the reported hits before skill costs and server attack hooks.
@@ -120,7 +126,7 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 		}
 		ammo = count
 	}
-	if info.Skill != 0 && !ch.skills.UseAttack(actx, skill) {
+	if info.Skill != 0 && !followUpAttack(skill) && !ch.skills.UseAttack(actx, skill) {
 		return false, nil
 	}
 	if ammo > 0 && !ch.inventory.useAmmo(int16(info.Slot), ammo) {
