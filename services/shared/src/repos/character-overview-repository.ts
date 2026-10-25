@@ -4,20 +4,26 @@ import type { RepositoryQuery, CharacterLooksQuery } from "../types/repository-c
 import type { CharacterOverviewModel, CharacterOverviewRow } from "../types/repository-models";
 
 const SELECT_COLS = `character_id, account_id, world_id, name, gender, skin_color, face, hair,
-  level, class_id, map_id, spawn_point, base_looks, overlays, deleted, updated_at`;
+  level, class_id, map_id, spawn_point, base_looks, overlays, cash_weapon,
+  str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, skill_point, exp, population, deleted, updated_at`;
 
 const INSERT_COLS = `character_id, account_id, world_id, name, gender, skin_color, face, hair,
-  level, class_id, map_id, spawn_point, base_looks, overlays, deleted, updated_at`;
+  level, class_id, map_id, spawn_point, base_looks, overlays, cash_weapon,
+  str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, skill_point, exp, population, deleted, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id,
   name = EXCLUDED.name, gender = EXCLUDED.gender, skin_color = EXCLUDED.skin_color,
   face = EXCLUDED.face, hair = EXCLUDED.hair, level = EXCLUDED.level,
   class_id = EXCLUDED.class_id, map_id = EXCLUDED.map_id, spawn_point = EXCLUDED.spawn_point,
-  base_looks = EXCLUDED.base_looks, overlays = EXCLUDED.overlays,
+  base_looks = EXCLUDED.base_looks, overlays = EXCLUDED.overlays, cash_weapon = EXCLUDED.cash_weapon,
+  str = EXCLUDED.str, dex = EXCLUDED.dex, int_stat = EXCLUDED.int_stat, luk = EXCLUDED.luk,
+  hp = EXCLUDED.hp, max_hp = EXCLUDED.max_hp, mp = EXCLUDED.mp, max_mp = EXCLUDED.max_mp,
+  ability_point = EXCLUDED.ability_point, skill_point = EXCLUDED.skill_point,
+  exp = EXCLUDED.exp, population = EXCLUDED.population,
   deleted = FALSE, updated_at = NOW()`;
 
-const PER_ROW_PARAMS = 14;
+const PER_ROW_PARAMS = 27;
 
 export type { CharacterOverviewModel };
 
@@ -52,6 +58,19 @@ function rowValues(row: CharacterOverviewRow) {
         row.spawn_point,
         looksFromRow(row.base_looks),
         looksFromRow(row.overlays),
+        row.cash_weapon,
+        row.str,
+        row.dex,
+        row.int_stat,
+        row.luk,
+        row.hp,
+        row.max_hp,
+        row.mp,
+        row.max_mp,
+        row.ability_point,
+        row.skill_point,
+        row.exp,
+        row.population,
     ];
 }
 
@@ -122,6 +141,19 @@ export class CharacterOverviewRepository extends HashRepository<CharacterOvervie
             spawnPoint: row.spawn_point,
             baseLooks: typeof row.base_looks === "string" ? JSON.parse(row.base_looks) : (row.base_looks ?? {}),
             overlays: typeof row.overlays === "string" ? JSON.parse(row.overlays) : (row.overlays ?? {}),
+            cashWeapon: row.cash_weapon,
+            str: row.str,
+            dex: row.dex,
+            intStat: row.int_stat,
+            luk: row.luk,
+            hp: row.hp,
+            maxHp: row.max_hp,
+            mp: row.mp,
+            maxMp: row.max_mp,
+            abilityPoint: row.ability_point,
+            skillPoint: row.skill_point,
+            exp: row.exp,
+            population: row.population,
         };
     }
 
@@ -141,6 +173,19 @@ export class CharacterOverviewRepository extends HashRepository<CharacterOvervie
             spawn_point: model.spawnPoint,
             base_looks: model.baseLooks ?? {},
             overlays: model.overlays ?? {},
+            cash_weapon: model.cashWeapon ?? 0,
+            str: model.str ?? 0,
+            dex: model.dex ?? 0,
+            int_stat: model.intStat ?? 0,
+            luk: model.luk ?? 0,
+            hp: model.hp ?? 0,
+            max_hp: model.maxHp ?? 0,
+            mp: model.mp ?? 0,
+            max_mp: model.maxMp ?? 0,
+            ability_point: model.abilityPoint ?? 0,
+            skill_point: model.skillPoint ?? 0,
+            exp: model.exp ?? 0,
+            population: model.population ?? 0,
         };
     }
 }

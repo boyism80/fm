@@ -6,9 +6,7 @@ import (
 )
 
 func (ch *Character) BuildS2C() *dto.Character {
-	look := ch.inventory.look()
-	equipments, overlays := look.split()
-	weapon := look[constant.EquipmentPartsWeapon]
+	equipments, overlays, weapon := ch.inventory.look().split()
 
 	mapID := uint32(0)
 	if m := ch.GetMap(); m != nil {

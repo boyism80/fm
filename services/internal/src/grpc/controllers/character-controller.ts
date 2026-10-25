@@ -60,6 +60,7 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
         character: grpcMapper.map<Character, CharacterModel>(msgChar, CHARACTER_PROTO, CHARACTER_MODEL),
         baseLooks: protoMapToObject(entry.baseLooks),
         overlays: protoMapToObject(entry.overlays),
+        cashWeapon: entry.cashWeapon,
         inventory: entry.inventory.map((inventory) =>
             grpcMapper.map<Inventory, InventoryModel>(inventory, INVENTORY_PROTO, INVENTORY_MODEL),
         ),
@@ -142,6 +143,19 @@ function makeCharacterOverview(model: CharacterOverviewModel & Partial<Character
         classRankDiff: model.classRankDiff ?? 0,
         baseLooks: (model.baseLooks ?? {}) as Record<number, number>,
         overlays: (model.overlays ?? {}) as Record<number, number>,
+        cashWeapon: model.cashWeapon ?? 0,
+        str: model.str ?? 0,
+        dex: model.dex ?? 0,
+        intStat: model.intStat ?? 0,
+        luk: model.luk ?? 0,
+        hp: model.hp ?? 0,
+        maxHp: model.maxHp ?? 0,
+        mp: model.mp ?? 0,
+        maxMp: model.maxMp ?? 0,
+        abilityPoint: model.abilityPoint ?? 0,
+        skillPoint: model.skillPoint ?? 0,
+        exp: model.exp ?? 0,
+        population: model.population ?? 0,
     };
 }
 
@@ -171,7 +185,7 @@ export class CharacterGrpcController {
             const character = grpcMapper.map<Character, CharacterModel>(msgChar, CHARACTER_PROTO, CHARACTER_MODEL);
             const baseLooks = protoMapToObject(call.request.baseLooks);
             const overlays = protoMapToObject(call.request.overlays);
-            await this.characterService.saveCharacter(character, baseLooks, overlays);
+            await this.characterService.saveCharacter(character, baseLooks, overlays, call.request.cashWeapon);
             callback(null, { ok: true });
         } catch (err) {
             this.grpcError(err, callback);

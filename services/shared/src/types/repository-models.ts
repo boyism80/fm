@@ -162,6 +162,19 @@ export interface CharacterOverviewModel {
     spawnPoint: number;
     baseLooks: Record<string, number> | Record<number, number>;
     overlays: Record<string, number> | Record<number, number>;
+    cashWeapon: number;
+    str: number;
+    dex: number;
+    intStat: number;
+    luk: number;
+    hp: number;
+    maxHp: number;
+    mp: number;
+    maxMp: number;
+    abilityPoint: number;
+    skillPoint: number;
+    exp: number;
+    population: number;
 }
 
 export type CharacterOverviewRow = {
@@ -179,6 +192,19 @@ export type CharacterOverviewRow = {
     spawn_point: number;
     base_looks: string | Record<string, number> | Record<number, number>;
     overlays: string | Record<string, number> | Record<number, number>;
+    cash_weapon: number;
+    str: number;
+    dex: number;
+    int_stat: number;
+    luk: number;
+    hp: number;
+    max_hp: number;
+    mp: number;
+    max_mp: number;
+    ability_point: number;
+    skill_point: number;
+    exp: number;
+    population: number;
     deleted?: boolean;
     updated_at?: Date | string;
 };

@@ -859,6 +859,7 @@ message SaveCharacterRequest {
   Character character = 1;
   map<int32, uint32> base_looks = 2;
   map<int32, uint32> overlays = 3;
+  uint32 cash_weapon = 4;
 }
 
 message SaveCharacterReply {
@@ -882,6 +883,7 @@ message CharacterSaveEntry {
   Account account = 14;
   repeated SkillMacro skill_macros = 15;
   repeated UnsettledRequest unsettled_requests = 16;
+  uint32 cash_weapon = 17;
 }
 
 message Storage {
@@ -1280,6 +1282,19 @@ message CharacterOverview {
   int32 class_rank_diff = 16;
   map<int32, uint32> base_looks = 17;
   map<int32, uint32> overlays = 18;
+  uint32 cash_weapon = 19;
+  uint32 str = 20;
+  uint32 dex = 21;
+  uint32 int_stat = 22;
+  uint32 luk = 23;
+  uint32 hp = 24;
+  uint32 max_hp = 25;
+  uint32 mp = 26;
+  uint32 max_mp = 27;
+  uint32 ability_point = 28;
+  uint32 skill_point = 29;
+  uint32 exp = 30;
+  int32 population = 31;
 }
 
 message GetCharacterListRequest {

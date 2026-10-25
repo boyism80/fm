@@ -32,6 +32,7 @@ import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { AccountRepository } from "@fm/shared/repos/account-repository";
 import { AccountWorldRepository } from "@fm/shared/repos/account-world-repository";
 import { CharacterOverviewRepository } from "@fm/shared/repos/character-overview-repository";
+import type { CharacterOverviewModel } from "@fm/shared/repos/character-overview-repository";
 import { CharacterRepository } from "@fm/shared/repos/character-repository";
 import type { CharacterModel } from "@fm/shared/repos/character-repository";
 import { InventoryRepository } from "@fm/shared/repos/inventory-repository";
@@ -138,7 +139,45 @@ export type SaveCharacterEntry = {
     storage?: { storage: StorageModel; items: InventoryModel[] };
     claimedShops?: number[];
     unsettledRequests?: Omit<UnsettledRequestModel, "characterId">[];
+    cashWeapon?: number;
 };
+
+function characterOverview(
+    character: CharacterInput,
+    baseLooks: Record<string, number>,
+    overlays: Record<string, number>,
+    cashWeapon: number,
+): CharacterOverviewModel {
+    return {
+        characterId: character.characterId,
+        accountId: character.accountId,
+        worldId: character.worldId,
+        name: character.name,
+        gender: character.gender,
+        skinColor: character.skinColor,
+        face: character.face,
+        hair: character.hair,
+        level: character.level,
+        classId: character.classId,
+        mapId: character.mapId,
+        spawnPoint: character.spawnPoint,
+        baseLooks,
+        overlays,
+        cashWeapon,
+        str: character.str ?? 0,
+        dex: character.dex ?? 0,
+        intStat: character.intStat ?? 0,
+        luk: character.luk ?? 0,
+        hp: character.hp ?? 0,
+        maxHp: character.maxHp ?? 0,
+        mp: character.mp ?? 0,
+        maxMp: character.maxMp ?? 0,
+        abilityPoint: character.abilityPoint ?? 0,
+        skillPoint: character.skillPoint ?? 0,
+        exp: character.exp ?? 0,
+        population: character.population ?? 0,
+    };
+}
 
 export class CharacterService {
     private readonly repo: CharacterRepository;
@@ -330,8 +369,9 @@ export class CharacterService {
         character: CharacterInput,
         baseLooks?: Record<string, number>,
         overlays?: Record<string, number>,
+        cashWeapon?: number,
     ) {
-        return this.saveCharacters([{ character, baseLooks, overlays }]);
+        return this.saveCharacters([{ character, baseLooks, overlays, cashWeapon }]);
     }
 
     async load(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
@@ -477,6 +517,7 @@ export class CharacterService {
             storage,
             claimedShops,
             unsettledRequests,
+            cashWeapon,
         } of entries) {
             this.assertWorld(character.worldId);
             this.assertCharacterId(character.characterId);
@@ -507,6 +548,7 @@ export class CharacterService {
                 storage,
                 claimedShops,
                 unsettledRequests,
+                cashWeapon,
             });
         }
 
@@ -553,27 +595,15 @@ export class CharacterService {
                 storage,
                 claimedShops,
                 unsettledRequests,
+                cashWeapon,
             } of latest) {
                 if (!character.accountId) {
                     continue;
                 }
-                const overview = {
-                    characterId: character.characterId,
-                    accountId: character.accountId,
-                    worldId: character.worldId,
-                    name: character.name,
-                    gender: character.gender,
-                    skinColor: character.skinColor,
-                    face: character.face,
-                    hair: character.hair,
-                    level: character.level,
-                    classId: character.classId,
-                    mapId: character.mapId,
-                    spawnPoint: character.spawnPoint,
-                    baseLooks: baseLooks ?? {},
-                    overlays: overlays ?? {},
-                };
-                await this.overviewRepo.set(character.worldId, overview);
+                await this.overviewRepo.set(
+                    character.worldId,
+                    characterOverview(character, baseLooks ?? {}, overlays ?? {}, cashWeapon ?? 0),
+                );
 
                 if (inventory !== undefined) {
                     await this.inventoryRepo.replaceBySnapshot(
@@ -778,22 +808,7 @@ export class CharacterService {
             baseLooks[e.lookSlot] = e.itemId;
         }
 
-        const overview = {
-            characterId,
-            accountId,
-            worldId,
-            name,
-            gender,
-            skinColor,
-            face,
-            hair,
-            level: 1,
-            classId: 0,
-            mapId: DEFAULT_MAP_ID,
-            spawnPoint: DEFAULT_SPAWN,
-            baseLooks,
-            overlays: {},
-        };
+        const overview = characterOverview(character, baseLooks, {}, 0);
 
         try {
             await this.repo.set(worldId, character);

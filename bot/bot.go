@@ -57,6 +57,7 @@ type Bot struct {
 	Stones         map[bool][]uint32
 	Macros         []response.SkillMacroEntry
 	SecondPassword bool
+	listed         *dto.Character
 	spareCharID    uint32
 	cfg            *config.Bot
 	conn           *conn.Conn
@@ -76,6 +77,7 @@ type RelogResult struct {
 	Deleted           *bool
 	DeleteNotice      string
 	Rejected          int
+	Listed            *dto.Character
 }
 
 type ItemSlot struct {

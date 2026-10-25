@@ -2586,6 +2586,7 @@ export interface SaveCharacterRequest {
   character: Character | undefined;
   baseLooks: { [key: number]: number };
   overlays: { [key: number]: number };
+  cashWeapon: number;
 }
 
 export interface SaveCharacterRequest_BaseLooksEntry {
@@ -2619,6 +2620,7 @@ export interface CharacterSaveEntry {
   account: Account | undefined;
   skillMacros: SkillMacro[];
   unsettledRequests: UnsettledRequest[];
+  cashWeapon: number;
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -3063,6 +3065,19 @@ export interface CharacterOverview {
   classRankDiff: number;
   baseLooks: { [key: number]: number };
   overlays: { [key: number]: number };
+  cashWeapon: number;
+  str: number;
+  dex: number;
+  intStat: number;
+  luk: number;
+  hp: number;
+  maxHp: number;
+  mp: number;
+  maxMp: number;
+  abilityPoint: number;
+  skillPoint: number;
+  exp: number;
+  population: number;
 }
 
 export interface CharacterOverview_BaseLooksEntry {
@@ -15025,7 +15040,7 @@ export const AuthorizeCharacterSelectionReply: MessageFns<AuthorizeCharacterSele
 };
 
 function createBaseSaveCharacterRequest(): SaveCharacterRequest {
-  return { character: undefined, baseLooks: {}, overlays: {} };
+  return { character: undefined, baseLooks: {}, overlays: {}, cashWeapon: 0 };
 }
 
 export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
@@ -15039,6 +15054,9 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
     globalThis.Object.entries(message.overlays).forEach(([key, value]: [string, number]) => {
       SaveCharacterRequest_OverlaysEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
     });
+    if (message.cashWeapon !== 0) {
+      writer.uint32(32).uint32(message.cashWeapon);
+    }
     return writer;
   },
 
@@ -15079,6 +15097,14 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
           }
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.cashWeapon = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -15117,6 +15143,11 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
           {},
         )
         : {},
+      cashWeapon: isSet(object.cashWeapon)
+        ? globalThis.Number(object.cashWeapon)
+        : isSet(object.cash_weapon)
+        ? globalThis.Number(object.cash_weapon)
+        : 0,
     };
   },
 
@@ -15142,6 +15173,9 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
           obj.overlays[k] = Math.round(v);
         });
       }
+    }
+    if (message.cashWeapon !== 0) {
+      obj.cashWeapon = Math.round(message.cashWeapon);
     }
     return obj;
   },
@@ -15172,6 +15206,7 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
       },
       {},
     );
+    message.cashWeapon = object.cashWeapon ?? 0;
     return message;
   },
 };
@@ -15412,6 +15447,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     account: undefined,
     skillMacros: [],
     unsettledRequests: [],
+    cashWeapon: 0,
   };
 }
 
@@ -15466,6 +15502,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     for (const v of message.unsettledRequests) {
       UnsettledRequest.encode(v!, writer.uint32(130).fork()).join();
+    }
+    if (message.cashWeapon !== 0) {
+      writer.uint32(136).uint32(message.cashWeapon);
     }
     return writer;
   },
@@ -15621,6 +15660,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.unsettledRequests.push(UnsettledRequest.decode(reader, reader.uint32()));
           continue;
         }
+        case 17: {
+          if (tag !== 136) {
+            break;
+          }
+
+          message.cashWeapon = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -15700,6 +15747,11 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.unsettled_requests)
         ? object.unsettled_requests.map((e: any) => UnsettledRequest.fromJSON(e))
         : [],
+      cashWeapon: isSet(object.cashWeapon)
+        ? globalThis.Number(object.cashWeapon)
+        : isSet(object.cash_weapon)
+        ? globalThis.Number(object.cash_weapon)
+        : 0,
     };
   },
 
@@ -15765,6 +15817,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.unsettledRequests?.length) {
       obj.unsettledRequests = message.unsettledRequests.map((e) => UnsettledRequest.toJSON(e));
     }
+    if (message.cashWeapon !== 0) {
+      obj.cashWeapon = Math.round(message.cashWeapon);
+    }
     return obj;
   },
 
@@ -15809,6 +15864,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
       : undefined;
     message.skillMacros = object.skillMacros?.map((e) => SkillMacro.fromPartial(e)) || [];
     message.unsettledRequests = object.unsettledRequests?.map((e) => UnsettledRequest.fromPartial(e)) || [];
+    message.cashWeapon = object.cashWeapon ?? 0;
     return message;
   },
 };
@@ -22186,6 +22242,19 @@ function createBaseCharacterOverview(): CharacterOverview {
     classRankDiff: 0,
     baseLooks: {},
     overlays: {},
+    cashWeapon: 0,
+    str: 0,
+    dex: 0,
+    intStat: 0,
+    luk: 0,
+    hp: 0,
+    maxHp: 0,
+    mp: 0,
+    maxMp: 0,
+    abilityPoint: 0,
+    skillPoint: 0,
+    exp: 0,
+    population: 0,
   };
 }
 
@@ -22245,6 +22314,45 @@ export const CharacterOverview: MessageFns<CharacterOverview> = {
     globalThis.Object.entries(message.overlays).forEach(([key, value]: [string, number]) => {
       CharacterOverview_OverlaysEntry.encode({ key: key as any, value }, writer.uint32(146).fork()).join();
     });
+    if (message.cashWeapon !== 0) {
+      writer.uint32(152).uint32(message.cashWeapon);
+    }
+    if (message.str !== 0) {
+      writer.uint32(160).uint32(message.str);
+    }
+    if (message.dex !== 0) {
+      writer.uint32(168).uint32(message.dex);
+    }
+    if (message.intStat !== 0) {
+      writer.uint32(176).uint32(message.intStat);
+    }
+    if (message.luk !== 0) {
+      writer.uint32(184).uint32(message.luk);
+    }
+    if (message.hp !== 0) {
+      writer.uint32(192).uint32(message.hp);
+    }
+    if (message.maxHp !== 0) {
+      writer.uint32(200).uint32(message.maxHp);
+    }
+    if (message.mp !== 0) {
+      writer.uint32(208).uint32(message.mp);
+    }
+    if (message.maxMp !== 0) {
+      writer.uint32(216).uint32(message.maxMp);
+    }
+    if (message.abilityPoint !== 0) {
+      writer.uint32(224).uint32(message.abilityPoint);
+    }
+    if (message.skillPoint !== 0) {
+      writer.uint32(232).uint32(message.skillPoint);
+    }
+    if (message.exp !== 0) {
+      writer.uint32(240).uint32(message.exp);
+    }
+    if (message.population !== 0) {
+      writer.uint32(248).int32(message.population);
+    }
     return writer;
   },
 
@@ -22405,6 +22513,110 @@ export const CharacterOverview: MessageFns<CharacterOverview> = {
           }
           continue;
         }
+        case 19: {
+          if (tag !== 152) {
+            break;
+          }
+
+          message.cashWeapon = reader.uint32();
+          continue;
+        }
+        case 20: {
+          if (tag !== 160) {
+            break;
+          }
+
+          message.str = reader.uint32();
+          continue;
+        }
+        case 21: {
+          if (tag !== 168) {
+            break;
+          }
+
+          message.dex = reader.uint32();
+          continue;
+        }
+        case 22: {
+          if (tag !== 176) {
+            break;
+          }
+
+          message.intStat = reader.uint32();
+          continue;
+        }
+        case 23: {
+          if (tag !== 184) {
+            break;
+          }
+
+          message.luk = reader.uint32();
+          continue;
+        }
+        case 24: {
+          if (tag !== 192) {
+            break;
+          }
+
+          message.hp = reader.uint32();
+          continue;
+        }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.maxHp = reader.uint32();
+          continue;
+        }
+        case 26: {
+          if (tag !== 208) {
+            break;
+          }
+
+          message.mp = reader.uint32();
+          continue;
+        }
+        case 27: {
+          if (tag !== 216) {
+            break;
+          }
+
+          message.maxMp = reader.uint32();
+          continue;
+        }
+        case 28: {
+          if (tag !== 224) {
+            break;
+          }
+
+          message.abilityPoint = reader.uint32();
+          continue;
+        }
+        case 29: {
+          if (tag !== 232) {
+            break;
+          }
+
+          message.skillPoint = reader.uint32();
+          continue;
+        }
+        case 30: {
+          if (tag !== 240) {
+            break;
+          }
+
+          message.exp = reader.uint32();
+          continue;
+        }
+        case 31: {
+          if (tag !== 248) {
+            break;
+          }
+
+          message.population = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -22498,6 +22710,43 @@ export const CharacterOverview: MessageFns<CharacterOverview> = {
           {},
         )
         : {},
+      cashWeapon: isSet(object.cashWeapon)
+        ? globalThis.Number(object.cashWeapon)
+        : isSet(object.cash_weapon)
+        ? globalThis.Number(object.cash_weapon)
+        : 0,
+      str: isSet(object.str) ? globalThis.Number(object.str) : 0,
+      dex: isSet(object.dex) ? globalThis.Number(object.dex) : 0,
+      intStat: isSet(object.intStat)
+        ? globalThis.Number(object.intStat)
+        : isSet(object.int_stat)
+        ? globalThis.Number(object.int_stat)
+        : 0,
+      luk: isSet(object.luk) ? globalThis.Number(object.luk) : 0,
+      hp: isSet(object.hp) ? globalThis.Number(object.hp) : 0,
+      maxHp: isSet(object.maxHp)
+        ? globalThis.Number(object.maxHp)
+        : isSet(object.max_hp)
+        ? globalThis.Number(object.max_hp)
+        : 0,
+      mp: isSet(object.mp) ? globalThis.Number(object.mp) : 0,
+      maxMp: isSet(object.maxMp)
+        ? globalThis.Number(object.maxMp)
+        : isSet(object.max_mp)
+        ? globalThis.Number(object.max_mp)
+        : 0,
+      abilityPoint: isSet(object.abilityPoint)
+        ? globalThis.Number(object.abilityPoint)
+        : isSet(object.ability_point)
+        ? globalThis.Number(object.ability_point)
+        : 0,
+      skillPoint: isSet(object.skillPoint)
+        ? globalThis.Number(object.skillPoint)
+        : isSet(object.skill_point)
+        ? globalThis.Number(object.skill_point)
+        : 0,
+      exp: isSet(object.exp) ? globalThis.Number(object.exp) : 0,
+      population: isSet(object.population) ? globalThis.Number(object.population) : 0,
     };
   },
 
@@ -22569,6 +22818,45 @@ export const CharacterOverview: MessageFns<CharacterOverview> = {
         });
       }
     }
+    if (message.cashWeapon !== 0) {
+      obj.cashWeapon = Math.round(message.cashWeapon);
+    }
+    if (message.str !== 0) {
+      obj.str = Math.round(message.str);
+    }
+    if (message.dex !== 0) {
+      obj.dex = Math.round(message.dex);
+    }
+    if (message.intStat !== 0) {
+      obj.intStat = Math.round(message.intStat);
+    }
+    if (message.luk !== 0) {
+      obj.luk = Math.round(message.luk);
+    }
+    if (message.hp !== 0) {
+      obj.hp = Math.round(message.hp);
+    }
+    if (message.maxHp !== 0) {
+      obj.maxHp = Math.round(message.maxHp);
+    }
+    if (message.mp !== 0) {
+      obj.mp = Math.round(message.mp);
+    }
+    if (message.maxMp !== 0) {
+      obj.maxMp = Math.round(message.maxMp);
+    }
+    if (message.abilityPoint !== 0) {
+      obj.abilityPoint = Math.round(message.abilityPoint);
+    }
+    if (message.skillPoint !== 0) {
+      obj.skillPoint = Math.round(message.skillPoint);
+    }
+    if (message.exp !== 0) {
+      obj.exp = Math.round(message.exp);
+    }
+    if (message.population !== 0) {
+      obj.population = Math.round(message.population);
+    }
     return obj;
   },
 
@@ -22611,6 +22899,19 @@ export const CharacterOverview: MessageFns<CharacterOverview> = {
       },
       {},
     );
+    message.cashWeapon = object.cashWeapon ?? 0;
+    message.str = object.str ?? 0;
+    message.dex = object.dex ?? 0;
+    message.intStat = object.intStat ?? 0;
+    message.luk = object.luk ?? 0;
+    message.hp = object.hp ?? 0;
+    message.maxHp = object.maxHp ?? 0;
+    message.mp = object.mp ?? 0;
+    message.maxMp = object.maxMp ?? 0;
+    message.abilityPoint = object.abilityPoint ?? 0;
+    message.skillPoint = object.skillPoint ?? 0;
+    message.exp = object.exp ?? 0;
+    message.population = object.population ?? 0;
     return message;
   },
 };

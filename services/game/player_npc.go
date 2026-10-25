@@ -55,7 +55,7 @@ func NewPlayerNpc(source *Character, npcID uint32, at *Character) (*PlayerNpc, e
 }
 
 func (n *PlayerNpc) BuildS2C() *dto.Character {
-	base, overlays := n.Equips.split()
+	base, overlays, cashWeapon := n.Equips.split()
 	return &dto.Character{
 		Name:      n.Name,
 		Gender:    n.Gender,
@@ -64,15 +64,15 @@ func (n *PlayerNpc) BuildS2C() *dto.Character {
 		Hair:      n.Hair,
 		BaseLooks: base,
 		Overlays:  overlays,
-		Weapon:    n.Equips[constant.EquipmentPartsWeapon],
+		Weapon:    cashWeapon,
 	}
 }
 
 type equippedLook map[constant.EquipmentPartsType]uint32
 
 // split follows the client: cash items (slot -101 and below) cover the regular item in the same slot, which is
-// kept as an overlay.
-func (e equippedLook) split() (base map[int8]uint32, overlays map[int8]uint32) {
+// kept as an overlay. The cash weapon (-111) is sent apart in the weapon sticker field, 0 when there is none.
+func (e equippedLook) split() (base map[int8]uint32, overlays map[int8]uint32, cashWeapon uint32) {
 	base = make(map[int8]uint32)
 	overlays = make(map[int8]uint32)
 	for parts, itemID := range e {
@@ -80,19 +80,18 @@ func (e equippedLook) split() (base map[int8]uint32, overlays map[int8]uint32) {
 			continue
 		}
 		absoluteParts := int8(parts * -1)
-		if absoluteParts < 100 {
-			if _, exists := base[absoluteParts]; !exists {
-				base[absoluteParts] = itemID
-			}
+		_, exists := base[absoluteParts]
+		if absoluteParts < 100 && !exists {
+			base[absoluteParts] = itemID
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := absoluteParts - 100
 			if existing, exists := base[adjustedParts]; exists {
 				overlays[adjustedParts] = existing
 			}
 			base[adjustedParts] = itemID
-		} else if _, exists := base[absoluteParts]; exists {
+		} else if exists {
 			overlays[absoluteParts] = itemID
 		}
 	}
-	return base, overlays
+	return base, overlays, e[constant.EquipmentPartsWeapon.Cash()]
 }

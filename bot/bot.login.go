@@ -104,6 +104,7 @@ func (b *Bot) login() error {
 		break
 	}
 	b.SecondPassword = list.HasSecondPassword
+	b.listed = nil
 	b.spareCharID = 0
 	if len(list.Characters) > 1 {
 		b.spareCharID = list.Characters[1].ID
@@ -117,6 +118,7 @@ func (b *Bot) login() error {
 		b.Name = name
 		return nil
 	}
+	b.listed = &list.Characters[0]
 	b.CharID = list.Characters[0].ID
 	b.Name = list.Characters[0].Name
 	return nil
@@ -253,6 +255,7 @@ func (b *Bot) Relog(opts Relog) (RelogResult, error) {
 		return result, err
 	}
 	result.HasSecondPassword = b.SecondPassword
+	result.Listed = b.listed
 
 	if opts.Set != "" {
 		code, err := b.authSecondPassword(request.SecondPasswordModeSet, opts.Set)

@@ -8,7 +8,6 @@ import (
 	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/maple/constant"
-	"github.com/boyism80/fm/maple/wz"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
@@ -127,34 +126,18 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	return ch
 }
 
-func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint32) {
+func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint32, cashWeapon uint32) {
 	baseLooks = make(map[int32]uint32)
 	overlays = make(map[int32]uint32)
 	if ch == nil {
 		return
 	}
-	for parts, equipment := range ch.inventory.equipped {
-		if equipment == nil || parts < -127 {
-			continue
-		}
-		model, ok := equipment.GetModel().(wz.Equipment)
-		if !ok {
-			continue
-		}
-		absoluteParts := int32(parts * -1)
-		if absoluteParts < 100 {
-			if _, exists := baseLooks[absoluteParts]; !exists {
-				baseLooks[absoluteParts] = model.GetID()
-			}
-		} else if absoluteParts > 100 && absoluteParts != 111 {
-			adjustedParts := absoluteParts - 100
-			if existing, exists := baseLooks[adjustedParts]; exists {
-				overlays[adjustedParts] = existing
-			}
-			baseLooks[adjustedParts] = model.GetID()
-		} else if _, exists := baseLooks[absoluteParts]; exists {
-			overlays[absoluteParts] = model.GetID()
-		}
+	base, covered, cashWeapon := ch.inventory.look().split()
+	for parts, itemID := range base {
+		baseLooks[int32(parts)] = itemID
+	}
+	for parts, itemID := range covered {
+		overlays[int32(parts)] = itemID
 	}
 	return
 }
@@ -181,7 +164,7 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 	if mapID == 0 {
 		return nil
 	}
-	baseLooks, overlays := equipmentLooksForPersist(ch)
+	baseLooks, overlays, cashWeapon := equipmentLooksForPersist(ch)
 	inventory := ch.inventory.BuildRPC()
 	slotLimits := make([]uint32, 0, constant.InventoryTypeCash)
 	for typ := constant.InventoryTypeEquipment; typ <= constant.InventoryTypeCash; typ++ {
@@ -254,5 +237,6 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		ClaimedShops:      slices.Clone(ch.storeBank.claimed),
 		Mount:             &internal.Mount{Level: ch.mount.level, Exp: ch.mount.exp, Fatigue: ch.mount.fatigue},
 		UnsettledRequests: ch.unsettled.BuildRPC(),
+		CashWeapon:        cashWeapon,
 	}
 }
