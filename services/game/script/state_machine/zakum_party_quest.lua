@@ -47,13 +47,6 @@ local function end_run(sm)
     sm:finish(EXIT_MAP)
 end
 
-local function exit_player(sm, player)
-    sm:unregister(player)
-    if player ~= nil then
-        player:map(EXIT_MAP)
-    end
-end
-
 return {
     on_init = function(group)
         group:min_players(1)
@@ -86,10 +79,6 @@ return {
             end
         end
         player:map(sm:map(START_MAP), { callback = on_arrive })
-    end,
-
-    on_left_party = function(sm, player)
-        exit_player(sm, player)
     end,
 
     on_disband_party = function(sm)

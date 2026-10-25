@@ -30,11 +30,6 @@ return {
         player:map(sm:map(BOSS_MAP))
     end,
 
-    on_left_party = function(sm, player)
-        sm:unregister(player)
-        player:map(EXIT_MAP)
-    end,
-
     on_disband_party = function(sm)
         finish(sm)
     end,

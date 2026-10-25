@@ -60,9 +60,6 @@ return {
     on_player_revive = function(sm, player)
     end,
 
-    on_left_party = function(sm, player)
-    end,
-
     on_disband_party = function(sm)
         clear(sm)
     end,
