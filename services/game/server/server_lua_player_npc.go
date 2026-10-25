@@ -17,18 +17,11 @@ func registerPlayerNpcLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LString("no actor context"))
 			return 2
 		}
-		at, ok := L.CheckUserData(1).Value.(*game.Character)
-		if !ok {
-			L.ArgError(1, "Character expected")
-			return 0
-		}
+		at := luax.Check[game.Character](L, 1)
 		npcID := uint32(L.CheckInt(2))
 		source := at
 		if L.GetTop() >= 3 {
-			if source, ok = L.CheckUserData(3).Value.(*game.Character); !ok {
-				L.ArgError(3, "Character expected")
-				return 0
-			}
+			source = luax.Check[game.Character](L, 3)
 		}
 
 		npc, err := game.NewPlayerNpc(source, npcID, at)

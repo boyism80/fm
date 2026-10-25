@@ -20,12 +20,7 @@ func (b *SkillBuff) Type() lua.LValueType {
 func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"causer": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			sk, ok := ud.Value.(*SkillBuff)
-			if !ok {
-				L.ArgError(1, "SkillBuff expected")
-				return 0
-			}
+			sk := luax.Check[SkillBuff](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "causer() is read-only")
 				return 0
@@ -34,12 +29,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			sk, ok := ud.Value.(*SkillBuff)
-			if !ok {
-				L.ArgError(1, "SkillBuff expected")
-				return 0
-			}
+			sk := luax.Check[SkillBuff](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "level() is read-only")
 				return 0
@@ -48,12 +38,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			sk, ok := ud.Value.(*SkillBuff)
-			if !ok {
-				L.ArgError(1, "SkillBuff expected")
-				return 0
-			}
+			sk := luax.Check[SkillBuff](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "wz() is read-only")
 				return 0
@@ -62,12 +47,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			sk, ok := ud.Value.(*SkillBuff)
-			if !ok {
-				L.ArgError(1, "SkillBuff expected")
-				return 0
-			}
+			sk := luax.Check[SkillBuff](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0

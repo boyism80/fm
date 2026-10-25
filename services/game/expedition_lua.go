@@ -12,24 +12,6 @@ func (e *Expedition) String() string { return e.LuaTypeName() }
 func (e *Expedition) Type() lua.LValueType { return lua.LTUserData }
 
 func (e *Expedition) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	check := func(L *lua.LState) *Expedition {
-		ud := L.CheckUserData(1)
-		e, ok := ud.Value.(*Expedition)
-		if !ok || e == nil {
-			L.ArgError(1, "Expedition expected")
-			return nil
-		}
-		return e
-	}
-	character := func(L *lua.LState, n int) *Character {
-		ud := L.CheckUserData(n)
-		ch, ok := ud.Value.(*Character)
-		if !ok || ch == nil {
-			L.ArgError(n, "Character expected")
-			return nil
-		}
-		return ch
-	}
 	result := func(L *lua.LState, err error) int {
 		if err != nil {
 			L.Push(lua.LFalse)
@@ -41,15 +23,15 @@ func (e *Expedition) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 	return map[string]lua.LGFunction{
 		"name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).name))
+			L.Push(lua.LString(luax.Check[Expedition](L, 1).name))
 			return 1
 		},
 		"leader": func(L *lua.LState) int {
-			L.Push(luax.NewLuable(L, check(L).leader))
+			L.Push(luax.NewLuable(L, luax.Check[Expedition](L, 1).leader))
 			return 1
 		},
 		"members": func(L *lua.LState) int {
-			members := check(L).Members()
+			members := luax.Check[Expedition](L, 1).Members()
 			tbl := L.NewTable()
 			for i := range members {
 				tbl.Append(luax.NewLuable(L, &members[i]))
@@ -58,7 +40,7 @@ func (e *Expedition) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"banned": func(L *lua.LState) int {
-			banned := check(L).Banned()
+			banned := luax.Check[Expedition](L, 1).Banned()
 			tbl := L.NewTable()
 			for i := range banned {
 				tbl.Append(luax.NewLuable(L, &banned[i]))
@@ -67,33 +49,33 @@ func (e *Expedition) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"role": func(L *lua.LState) int {
-			e := check(L)
-			L.Push(lua.LNumber(e.Role(character(L, 2))))
+			e := luax.Check[Expedition](L, 1)
+			L.Push(lua.LNumber(e.Role(luax.Check[Character](L, 2))))
 			return 1
 		},
 		"time_left": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).TimeLeft()))
+			L.Push(lua.LNumber(luax.Check[Expedition](L, 1).TimeLeft()))
 			return 1
 		},
 		"join": func(L *lua.LState) int {
-			e := check(L)
-			return result(L, e.Join(character(L, 2)))
+			e := luax.Check[Expedition](L, 1)
+			return result(L, e.Join(luax.Check[Character](L, 2)))
 		},
 		"leave": func(L *lua.LState) int {
-			e := check(L)
-			return result(L, e.Leave(character(L, 2)))
+			e := luax.Check[Expedition](L, 1)
+			return result(L, e.Leave(luax.Check[Character](L, 2)))
 		},
 		"kick": func(L *lua.LState) int {
-			e := check(L)
-			return result(L, e.Kick(character(L, 2), uint32(L.CheckInt(3))))
+			e := luax.Check[Expedition](L, 1)
+			return result(L, e.Kick(luax.Check[Character](L, 2), uint32(L.CheckInt(3))))
 		},
 		"allow": func(L *lua.LState) int {
-			e := check(L)
-			return result(L, e.Allow(character(L, 2), uint32(L.CheckInt(3))))
+			e := luax.Check[Expedition](L, 1)
+			return result(L, e.Allow(luax.Check[Character](L, 2), uint32(L.CheckInt(3))))
 		},
 		"start": func(L *lua.LState) int {
-			e := check(L)
-			sm, skipped, err := e.Start(character(L, 2))
+			e := luax.Check[Expedition](L, 1)
+			sm, skipped, err := e.Start(luax.Check[Character](L, 2))
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))
@@ -117,26 +99,17 @@ func (member *ExpeditionMember) String() string { return member.LuaTypeName() }
 func (member *ExpeditionMember) Type() lua.LValueType { return lua.LTUserData }
 
 func (member *ExpeditionMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	check := func(L *lua.LState) *ExpeditionMember {
-		ud := L.CheckUserData(1)
-		member, ok := ud.Value.(*ExpeditionMember)
-		if !ok || member == nil {
-			L.ArgError(1, "ExpeditionMember expected")
-			return nil
-		}
-		return member
-	}
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).id))
+			L.Push(lua.LNumber(luax.Check[ExpeditionMember](L, 1).id))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).name))
+			L.Push(lua.LString(luax.Check[ExpeditionMember](L, 1).name))
 			return 1
 		},
 		"class": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).class))
+			L.Push(lua.LNumber(luax.Check[ExpeditionMember](L, 1).class))
 			return 1
 		},
 	}
@@ -171,12 +144,7 @@ func RegisterExpeditionLua(gw GameWorld, L *lua.LState) {
 	tbl := L.NewTable()
 	tbl.RawSetString("register", L.NewFunction(func(L *lua.LState) int {
 		name := L.CheckString(1)
-		ud := L.CheckUserData(2)
-		leader, ok := ud.Value.(*Character)
-		if !ok || leader == nil {
-			L.ArgError(2, "Character expected")
-			return 0
-		}
+		leader := luax.Check[Character](L, 2)
 		opts := L.CheckTable(3)
 		spec := ExpeditionSpec{
 			group:      lua.LVAsString(opts.RawGetString("group")),
@@ -215,12 +183,7 @@ func RegisterExpeditionLua(gw GameWorld, L *lua.LState) {
 	}))
 	tbl.RawSetString("reserve", L.NewFunction(func(L *lua.LState) int {
 		name := L.CheckString(1)
-		ud := L.CheckUserData(2)
-		ch, ok := ud.Value.(*Character)
-		if !ok || ch == nil {
-			L.ArgError(2, "Character expected")
-			return 0
-		}
+		ch := luax.Check[Character](L, 2)
 		L.Push(lua.LBool(reg.Reserve(name, ch)))
 		return 1
 	}))

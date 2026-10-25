@@ -387,12 +387,7 @@ func registerWzMobName(gs *GameServer, L *lua.LState) {
 	meta := L.GetTypeMetatable(zero.LuaTypeName()).(*lua.LTable)
 	L.SetFuncs(meta, map[string]lua.LGFunction{
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			m, ok := ud.Value.(*wz.Mob)
-			if !ok || m == nil {
-				L.ArgError(1, "WzMob expected")
-				return 0
-			}
+			m := luax.Check[wz.Mob](L, 1)
 			name := ""
 			if gs.GetResources() != nil {
 				name = gs.GetResources().GetMobName(m.ID)

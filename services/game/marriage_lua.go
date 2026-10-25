@@ -1,21 +1,15 @@
 package game
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"github.com/boyism80/fm/core/luax"
+	lua "github.com/yuin/gopher-lua"
+)
 
 func (m *Marriage) LuaTypeName() string {
 	return "LuaMarriage"
 }
 
 func (m *Marriage) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	check := func(L *lua.LState) *Marriage {
-		ud := L.CheckUserData(1)
-		marriage, ok := ud.Value.(*Marriage)
-		if !ok || marriage == nil {
-			L.ArgError(1, "Marriage expected")
-			return nil
-		}
-		return marriage
-	}
 	wishes := func(L *lua.LState, values []string) *lua.LTable {
 		tbl := L.NewTable()
 		for _, value := range values {
@@ -25,59 +19,59 @@ func (m *Marriage) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).id))
+			L.Push(lua.LNumber(luax.Check[Marriage](L, 1).id))
 			return 1
 		},
 		"status": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).status))
+			L.Push(lua.LNumber(luax.Check[Marriage](L, 1).status))
 			return 1
 		},
 		"married": func(L *lua.LState) int {
-			L.Push(lua.LBool(check(L).status == MarriageStatusMarried))
+			L.Push(lua.LBool(luax.Check[Marriage](L, 1).status == MarriageStatusMarried))
 			return 1
 		},
 		"groom_id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).groomID))
+			L.Push(lua.LNumber(luax.Check[Marriage](L, 1).groomID))
 			return 1
 		},
 		"bride_id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).brideID))
+			L.Push(lua.LNumber(luax.Check[Marriage](L, 1).brideID))
 			return 1
 		},
 		"groom_name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).groomName))
+			L.Push(lua.LString(luax.Check[Marriage](L, 1).groomName))
 			return 1
 		},
 		"bride_name": func(L *lua.LState) int {
-			L.Push(lua.LString(check(L).brideName))
+			L.Push(lua.LString(luax.Check[Marriage](L, 1).brideName))
 			return 1
 		},
 		"partner_id": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).PartnerID(uint32(L.CheckNumber(2)))))
+			L.Push(lua.LNumber(luax.Check[Marriage](L, 1).PartnerID(uint32(L.CheckNumber(2)))))
 			return 1
 		},
 		"ticket": func(L *lua.LState) int {
-			L.Push(lua.LNumber(check(L).ticketItemID))
+			L.Push(lua.LNumber(luax.Check[Marriage](L, 1).ticketItemID))
 			return 1
 		},
 		"wished": func(L *lua.LState) int {
-			L.Push(lua.LBool(check(L).Wished(uint32(L.CheckNumber(2)))))
+			L.Push(lua.LBool(luax.Check[Marriage](L, 1).Wished(uint32(L.CheckNumber(2)))))
 			return 1
 		},
 		"reserved": func(L *lua.LState) int {
-			L.Push(lua.LBool(check(L).Reserved()))
+			L.Push(lua.LBool(luax.Check[Marriage](L, 1).Reserved()))
 			return 1
 		},
 		"groom_wishes": func(L *lua.LState) int {
-			L.Push(wishes(L, check(L).groomWishes))
+			L.Push(wishes(L, luax.Check[Marriage](L, 1).groomWishes))
 			return 1
 		},
 		"bride_wishes": func(L *lua.LState) int {
-			L.Push(wishes(L, check(L).brideWishes))
+			L.Push(wishes(L, luax.Check[Marriage](L, 1).brideWishes))
 			return 1
 		},
 		"divorce_requested_at": func(L *lua.LState) int {
-			marriage := check(L)
+			marriage := luax.Check[Marriage](L, 1)
 			if marriage.divorceRequestedAt.IsZero() {
 				L.Push(lua.LNumber(0))
 				return 1

@@ -15,12 +15,7 @@ func (m *Map) LuaTypeName() string {
 func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"point_below": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			posTbl := L.CheckTable(2)
 			var x, y int16
 			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
@@ -45,12 +40,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"npcs": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			npcs := mapInstance.GetNpcs()
 			tbl := L.NewTable()
 			for _, npc := range npcs {
@@ -62,12 +52,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"reactors": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			tbl := L.NewTable()
 			for _, reactor := range mapInstance.GetReactors() {
 				if reactorObj, ok := reactor.(*Reactor); ok {
@@ -78,12 +63,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"mobs": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			tbl := L.NewTable()
 			if L.GetTop() >= 2 {
 				mobWZID := uint32(L.CheckInt(2))
@@ -105,12 +85,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"mob_by_template": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mobID := uint32(L.CheckInt(2))
 			mobs := mapInstance.TemplateMobs(mobID, 1)
 			if len(mobs) == 0 {
@@ -121,12 +96,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"objects": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			filter := constant.ObjectTypeObject
 			if L.GetTop() >= 2 {
 				if lv := L.Get(2); lv.Type() == lua.LTNumber {
@@ -160,12 +130,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"characters": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			players := mapInstance.GetAllPlayers()
 			tbl := L.NewTable()
 			for _, player := range players {
@@ -177,12 +142,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"items": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			items := mapInstance.GetItems()
 			tbl := L.NewTable()
 			for _, item := range items {
@@ -197,12 +157,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			wzMap := mapInstance.wz
 			if wzMap == nil {
 				L.Push(lua.LNil)
@@ -212,12 +167,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"destroy": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok || mapInstance == nil {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			if !mapInstance.IsInstance() || mapInstance.StateMachine() != nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -227,22 +177,12 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"is_instance": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			L.Push(lua.LBool(mapInstance.IsInstance()))
 			return 1
 		},
 		"state_machine": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			sm := mapInstance.StateMachine()
 			if sm == nil {
 				L.Push(lua.LNil)
@@ -252,12 +192,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"instance_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			if !mapInstance.IsInstance() {
 				L.Push(lua.LNil)
 				return 1
@@ -266,32 +201,17 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"template_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			L.Push(lua.LNumber(mapInstance.TemplateID()))
 			return 1
 		},
 		"recovery_rate": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			L.Push(lua.LNumber(mapInstance.GetRecoveryRate()))
 			return 1
 		},
 		"spawn_meso": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			count := int32(L.CheckInt(2))
 			posTbl := L.CheckTable(3)
 			var x, y int16
@@ -336,12 +256,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"spawn_item": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			if mapInstance.gameWorld == nil {
 				return 0
 			}
@@ -441,12 +356,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"drop": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 
 			entries := L.CheckTable(2)
 			posTbl := L.CheckTable(3)
@@ -475,12 +385,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"spawn_mob": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			if mapInstance.gameWorld == nil {
 				L.RaiseError("spawn_mob: map has no context")
 				return 0
@@ -525,12 +430,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"spawn_npc": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			if mapInstance.gameWorld == nil {
 				L.RaiseError("spawn_npc: map has no context")
 				return 0
@@ -567,12 +467,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"property": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			key := L.CheckString(2)
 			if L.GetTop() == 2 {
 				val, exists := mapInstance.GetProperty(key)
@@ -617,12 +512,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"respawn": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			if mapInstance.gameWorld == nil {
 				L.Push(lua.LNumber(0))
 				return 1
@@ -635,12 +525,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return mapInstance.gameWorld.Systems().Get[*MapSystem]().Respawn(L, mapInstance, cfg.ActorContext, includeOneTime)
 		},
 		"set_respawn": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			argc := L.GetTop()
 			if argc < 2 {
 				L.ArgError(2, "set_respawn(enabled) or set_respawn(enabled, mobId) requires enabled")
@@ -660,22 +545,12 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"set_reactor_respawn": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.SetReactorGenEnabled(L.CheckBool(2))
 			return 0
 		},
 		"remove_npc": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			arg := L.Get(2)
 			var oid uint32
 			switch v := arg.(type) {
@@ -703,12 +578,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"reactor": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			reactorID := uint32(L.CheckInt(2))
 			reactor := mapInstance.FindReactor(reactorID)
 			if reactor == nil {
@@ -719,12 +589,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"find_reactor_name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			name := L.CheckString(2)
 			reactor := mapInstance.FindReactorName(name)
 			if reactor == nil {
@@ -735,12 +600,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"spawn_reactor": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			reactorID := uint32(L.CheckNumber(2))
 			pos := types.Point[int16]{X: int16(L.CheckInt(3)), Y: int16(L.CheckInt(4))}
 			reactor, err := mapInstance.SpawnReactorTemplate(reactorID, pos, L.OptString(5, ""), byte(L.OptInt(6, 0)))
@@ -752,12 +612,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"summon_mob": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mobID := uint32(L.CheckNumber(2))
 			pos := types.Point[int16]{X: int16(L.CheckInt(3)), Y: int16(L.CheckInt(4))}
 			team := constant.CarnivalTeam(L.CheckInt(5))
@@ -765,12 +620,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"kill_all_mobs": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			animType := constant.MobDieAnimationTypeFadeOut
 			if L.GetTop() >= 2 {
 				animType = constant.MobDieAnimationType(L.CheckInt(2))
@@ -779,12 +629,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"remove_mob": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			oid := uint32(L.CheckInt(2))
 			animType := constant.MobDieAnimationTypeFadeOut
 			if L.GetTop() >= 3 {
@@ -798,158 +643,83 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"music": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			song := L.CheckString(2)
 			mapInstance.ChangeMusic(song)
 			return 0
 		},
 		"message": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			message := L.CheckString(2)
 			mapInstance.MapMessage(constant.MsgPinkText, message)
 			return 0
 		},
 		"ox_quiz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.ShowOXQuiz(L.ToBool(2), uint8(L.CheckInt(3)), uint16(L.CheckInt(4)))
 			return 0
 		},
 		"start_weather": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			L.Push(lua.LBool(mapInstance.StartWeather(uint32(L.CheckNumber(2)), L.OptString(3, ""))))
 			return 1
 		},
 		"weather": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.Weather(uint32(L.CheckNumber(2)), L.OptString(3, ""))
 			return 0
 		},
 		"play_song": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			L.Push(lua.LBool(mapInstance.PlaySong(uint32(L.CheckNumber(2)), L.CheckString(3))))
 			return 1
 		},
 		"yellow_chat": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.YellowChat(L.CheckString(2))
 			return 0
 		},
 		"wedding_effect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.WeddingEffect(uint32(L.CheckNumber(2)), uint32(L.CheckNumber(3)))
 			return 0
 		},
 		"clear_effect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.ClearEffect()
 			return 0
 		},
 		"show_effect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			path := L.CheckString(2)
 			mapInstance.ShowEffect(path)
 			return 0
 		},
 		"play_sound": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			path := L.CheckString(2)
 			mapInstance.PlaySound(path)
 			return 0
 		},
 		"tremble": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.Tremble(uint8(L.OptInt(2, 0)), int32(L.OptInt(3, 1)))
 			return 0
 		},
 		"players_in_area": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			index := L.CheckInt(2)
 			L.Push(lua.LNumber(mapInstance.PlayersInArea(index - 1)))
 			return 1
 		},
 		"reload_reactors": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			count := mapInstance.ReloadReactors()
 			L.Push(lua.LNumber(count))
 			return 1
 		},
 		"reset": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			if mapInstance.gameWorld == nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -958,12 +728,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return mapInstance.gameWorld.Systems().Get[*MapSystem]().Reset(L, mapInstance, cfg.ActorContext)
 		},
 		"portal": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			var portal *Portal
 			switch v := L.Get(2).(type) {
 			case lua.LNumber:
@@ -982,12 +747,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"remove_mist": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
+			mapInstance := luax.Check[Map](L, 1)
 			arg := L.Get(2)
 			switch v := arg.(type) {
 			case *lua.LUserData:

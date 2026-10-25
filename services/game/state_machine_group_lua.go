@@ -20,75 +20,40 @@ func (g *StateMachineGroup) Type() lua.LValueType {
 func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"full": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			L.Push(lua.LBool(group.Full()))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			L.Push(lua.LString(group.name))
 			return 1
 		},
 		"set_property": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			key := L.CheckString(2)
 			value := L.CheckString(3)
 			group.SetProperty(key, value)
 			return 0
 		},
 		"get_property": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			key := L.CheckString(2)
 			L.Push(lua.LString(group.GetProperty(key)))
 			return 1
 		},
 		"min_players": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			group.SetMinPlayers(L.CheckInt(2))
 			return 0
 		},
 		"exit_map": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			group.SetExitMap(uint32(L.CheckInt(2)))
 			return 0
 		},
 		"max_machines": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			if L.Get(2) == lua.LNil {
 				group.RemoveMachineLimit()
 				return 0
@@ -97,12 +62,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"override_max_machines": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			if L.Get(2) == lua.LNil {
 				group.OverrideMachineCap(MachineCap{})
 				return 0
@@ -111,22 +71,12 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"reset_max_machines": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			group.ClearMachineCapOverride()
 			return 0
 		},
 		"machine_cap": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			c, overridden := group.MachineCap()
 			if c.limited {
 				L.Push(lua.LNumber(c.max))
@@ -137,12 +87,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 2
 		},
 		"get": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			id := L.CheckString(2)
 			sm := group.Get(id)
 			if sm == nil {
@@ -153,12 +98,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"machines": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			tbl := L.NewTable()
 			for _, sm := range group.Machines() {
 				tbl.Append(luax.NewLuable(L, sm))
@@ -167,31 +107,16 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"create": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			id := L.CheckString(2)
 			opts := CreateOpts{}
 			if L.GetTop() >= 3 && L.Get(3).Type() != lua.LTNil {
-				leaderUd := L.CheckUserData(3)
-				leader, ok := leaderUd.Value.(*Character)
-				if !ok || leader == nil {
-					L.ArgError(3, "Character expected")
-					return 0
-				}
+				leader := luax.Check[Character](L, 3)
 				opts.leader = leader
 				opts.scaleLevel = int(leader.GetLevel())
 			}
 			if L.GetTop() >= 4 && L.Get(4).Type() != lua.LTNil {
-				partyUd := L.CheckUserData(4)
-				party, ok := partyUd.Value.(*Party)
-				if !ok || party == nil {
-					L.ArgError(4, "Party expected")
-					return 0
-				}
+				party := luax.Check[Party](L, 4)
 				opts.party = party
 			}
 			if L.GetTop() >= 5 {
@@ -210,26 +135,11 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"start_party": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
-			leaderUd := L.CheckUserData(2)
-			leader, ok := leaderUd.Value.(*Character)
-			if !ok || leader == nil {
-				L.ArgError(2, "Character expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
+			leader := luax.Check[Character](L, 2)
 			var party *Party
 			if L.GetTop() >= 3 && L.Get(3).Type() != lua.LTNil {
-				partyUd := L.CheckUserData(3)
-				party, ok = partyUd.Value.(*Party)
-				if !ok || party == nil {
-					L.ArgError(3, "Party expected")
-					return 0
-				}
+				party = luax.Check[Party](L, 3)
 			} else {
 				pid := leader.party.ID()
 				if pid == nil || leader.gameWorld == nil {
@@ -253,18 +163,8 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"start_solo": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
-			playerUd := L.CheckUserData(2)
-			player, ok := playerUd.Value.(*Character)
-			if !ok || player == nil {
-				L.ArgError(2, "Character expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
+			player := luax.Check[Character](L, 2)
 			maxLevel := 0
 			if L.GetTop() >= 3 && L.Get(3).Type() == lua.LTNumber {
 				maxLevel = L.CheckInt(3)
@@ -279,12 +179,7 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"start_persistent": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
+			group := luax.Check[StateMachineGroup](L, 1)
 			id := "persistent"
 			if L.GetTop() >= 2 && L.Get(2).Type() == lua.LTString {
 				id = L.CheckString(2)

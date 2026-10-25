@@ -20,9 +20,8 @@ func (b *ItemBuff) Type() lua.LValueType {
 func (b *ItemBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ib, ok := ud.Value.(*ItemBuff)
-			if !ok || ib == nil || ib.wz == nil {
+			ib := luax.Check[ItemBuff](L, 1)
+			if ib.wz == nil {
 				L.ArgError(1, "ItemBuff expected")
 				return 0
 			}

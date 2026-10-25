@@ -12,72 +12,37 @@ func (*Quest) LuaTypeName() string { return luaWzQuestTypeName }
 func (*Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			q, ok := ud.Value.(*Quest)
-			if !ok || q == nil {
-				L.ArgError(1, "WzQuest expected")
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			L.Push(lua.LNumber(q.ID))
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			q, ok := ud.Value.(*Quest)
-			if !ok || q == nil {
-				L.ArgError(1, "WzQuest expected")
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			L.Push(lua.LString(q.Meta.Name))
 			return 1
 		},
 		"complete_requirements": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			q, ok := ud.Value.(*Quest)
-			if !ok || q == nil {
-				L.ArgError(1, "WzQuest expected")
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			L.Push(questRequirementsToLuaTable(L, q.Complete.Requirements))
 			return 1
 		},
 		"start_requirements": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			q, ok := ud.Value.(*Quest)
-			if !ok || q == nil {
-				L.ArgError(1, "WzQuest expected")
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			L.Push(questRequirementsToLuaTable(L, q.Start.Requirements))
 			return 1
 		},
 		"start_cost": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			q, ok := ud.Value.(*Quest)
-			if !ok || q == nil {
-				L.ArgError(1, "WzQuest expected")
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			L.Push(questCostToLuaTable(L, q.Start.Actions))
 			return 1
 		},
 		"complete_cost": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			q, ok := ud.Value.(*Quest)
-			if !ok || q == nil {
-				L.ArgError(1, "WzQuest expected")
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			L.Push(questCostToLuaTable(L, q.Complete.Actions))
 			return 1
 		},
 		"party_ranks": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			q, ok := ud.Value.(*Quest)
-			if !ok || q == nil {
-				L.ArgError(1, "WzQuest expected")
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if len(q.PartyRanks) == 0 {
 				L.Push(lua.LNil)
 				return 1

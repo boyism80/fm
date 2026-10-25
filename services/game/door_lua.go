@@ -12,12 +12,7 @@ func (d *Door) LuaTypeName() string {
 func (d *Door) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"owner_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			door, ok := ud.Value.(*Door)
-			if !ok {
-				L.ArgError(1, "Door expected")
-				return 0
-			}
+			door := luax.Check[Door](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "owner_id() is read-only")
 				return 0
@@ -26,12 +21,7 @@ func (d *Door) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"skill_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			door, ok := ud.Value.(*Door)
-			if !ok {
-				L.ArgError(1, "Door expected")
-				return 0
-			}
+			door := luax.Check[Door](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "skill_id() is read-only")
 				return 0
@@ -40,12 +30,7 @@ func (d *Door) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"remove": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			door, ok := ud.Value.(*Door)
-			if !ok {
-				L.ArgError(1, "Door expected")
-				return 0
-			}
+			door := luax.Check[Door](L, 1)
 			if door.onMap != nil && door.oid != 0 {
 				door.gameWorld.Systems().Get[*MapSystem]().DespawnDoor(door.onMap, door.key, true, true)
 			}

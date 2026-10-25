@@ -12,9 +12,8 @@ func (*NpcSpawn) LuaTypeName() string { return luaWzNpcSpawnTypeName }
 func (*NpcSpawn) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			n, ok := ud.Value.(*NpcSpawn)
-			if !ok || n == nil || n.BaseSpawn == nil {
+			n := luax.Check[NpcSpawn](L, 1)
+			if n.BaseSpawn == nil {
 				L.ArgError(1, "WzNpcSpawn expected")
 				return 0
 			}
@@ -22,9 +21,8 @@ func (*NpcSpawn) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"position": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			n, ok := ud.Value.(*NpcSpawn)
-			if !ok || n == nil || n.BaseSpawn == nil {
+			n := luax.Check[NpcSpawn](L, 1)
+			if n.BaseSpawn == nil {
 				L.ArgError(1, "WzNpcSpawn expected")
 				return 0
 			}
@@ -35,9 +33,8 @@ func (*NpcSpawn) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"collision_y": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			n, ok := ud.Value.(*NpcSpawn)
-			if !ok || n == nil || n.BaseSpawn == nil {
+			n := luax.Check[NpcSpawn](L, 1)
+			if n.BaseSpawn == nil {
 				L.ArgError(1, "WzNpcSpawn expected")
 				return 0
 			}

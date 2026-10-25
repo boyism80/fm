@@ -41,23 +41,10 @@ func (qp *Quest) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-func LuaCheckQuest(L *lua.LState, idx int) (*Quest, bool) {
-	ud := L.CheckUserData(idx)
-	qp, ok := ud.Value.(*Quest)
-	if !ok || qp == nil {
-		L.ArgError(idx, "LuaQuest expected")
-		return nil, false
-	}
-	return qp, true
-}
-
 func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "id() is read-only")
 				return 0
@@ -66,10 +53,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"status": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "status() is read-only")
 				return 0
@@ -78,10 +62,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"record": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() == 1 {
 				L.Push(lua.LString(q.statusRecord.AsString()))
 				return 1
@@ -99,10 +80,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"started": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "started() takes no arguments")
 				return 0
@@ -111,18 +89,12 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"expired": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			L.Push(lua.LBool(q.Expired()))
 			return 1
 		},
 		"completed": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "completed() takes no arguments")
 				return 0
@@ -131,10 +103,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "wz() takes no arguments")
 				return 0
@@ -143,10 +112,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"mob_kills": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 2 {
 				L.ArgError(2, "mob_kills(mob_id) requires mob id")
 				return 0
@@ -160,10 +126,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"set_mob_kills": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 3 {
 				L.ArgError(2, "set_mob_kills(mob_id, count) requires mob id and count")
 				return 0
@@ -189,10 +152,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"sync_progress": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "sync_progress() takes no arguments")
 				return 0
@@ -208,10 +168,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"record_ex": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			argc := L.GetTop()
 			switch argc {
 			case 2:
@@ -242,10 +199,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"start_time": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			argc := L.GetTop()
 			switch argc {
 			case 1:
@@ -269,10 +223,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"start": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if q.quests == nil || q.quests.owner == nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -309,10 +260,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"complete": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() < 2 || L.GetTop() > 3 {
 				L.ArgError(2, "complete(npc[, selection]) requires npc")
 				return 0
@@ -338,10 +286,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"force_complete": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 2 {
 				L.ArgError(2, "force_complete(npc) requires npc")
 				return 0
@@ -362,10 +307,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"forfeit": func(L *lua.LState) int {
-			q, ok := LuaCheckQuest(L, 1)
-			if !ok {
-				return 0
-			}
+			q := luax.Check[Quest](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "forfeit() takes no arguments")
 				return 0

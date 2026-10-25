@@ -1,6 +1,10 @@
 package game
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"github.com/boyism80/fm/core/luax"
+
+	lua "github.com/yuin/gopher-lua"
+)
 
 func (a *Alliance) LuaTypeName() string {
 	return "LuaAlliance"
@@ -9,12 +13,7 @@ func (a *Alliance) LuaTypeName() string {
 func (a *Alliance) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			alliance, ok := ud.Value.(*Alliance)
-			if !ok || alliance == nil {
-				L.ArgError(1, "Alliance expected")
-				return 0
-			}
+			alliance := luax.Check[Alliance](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "id() is read-only")
 				return 0
@@ -23,12 +22,7 @@ func (a *Alliance) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			alliance, ok := ud.Value.(*Alliance)
-			if !ok || alliance == nil {
-				L.ArgError(1, "Alliance expected")
-				return 0
-			}
+			alliance := luax.Check[Alliance](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "name() is read-only")
 				return 0
@@ -37,12 +31,7 @@ func (a *Alliance) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"capacity": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			alliance, ok := ud.Value.(*Alliance)
-			if !ok || alliance == nil {
-				L.ArgError(1, "Alliance expected")
-				return 0
-			}
+			alliance := luax.Check[Alliance](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "capacity() is read-only")
 				return 0
@@ -51,12 +40,7 @@ func (a *Alliance) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"notice": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			alliance, ok := ud.Value.(*Alliance)
-			if !ok || alliance == nil {
-				L.ArgError(1, "Alliance expected")
-				return 0
-			}
+			alliance := luax.Check[Alliance](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "notice() is read-only")
 				return 0

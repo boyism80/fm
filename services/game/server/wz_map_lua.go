@@ -12,12 +12,7 @@ func registerWzMapCreateInstance(gs *GameServer, L *lua.LState) {
 	meta := L.GetTypeMetatable(zero.LuaTypeName()).(*lua.LTable)
 	L.SetFuncs(meta, map[string]lua.LGFunction{
 		"create_instance": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			tmpl, ok := ud.Value.(*wz.Map)
-			if !ok || tmpl == nil {
-				L.ArgError(1, "WzMap expected")
-				return 0
-			}
+			tmpl := luax.Check[wz.Map](L, 1)
 			opts := game.DefaultMapInitOpts()
 			var slot lua.LValue = lua.LNil
 			if L.GetTop() >= 2 && L.Get(2).Type() == lua.LTTable {

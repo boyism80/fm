@@ -1,6 +1,10 @@
 package game
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"github.com/boyism80/fm/core/luax"
+
+	lua "github.com/yuin/gopher-lua"
+)
 
 func (m *GuildMember) LuaTypeName() string {
 	return "LuaGuildMember"
@@ -9,12 +13,7 @@ func (m *GuildMember) LuaTypeName() string {
 func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mm, ok := ud.Value.(*GuildMember)
-			if !ok || mm == nil {
-				L.ArgError(1, "GuildMember expected")
-				return 0
-			}
+			mm := luax.Check[GuildMember](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "id() is read-only")
 				return 0
@@ -23,12 +22,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mm, ok := ud.Value.(*GuildMember)
-			if !ok || mm == nil {
-				L.ArgError(1, "GuildMember expected")
-				return 0
-			}
+			mm := luax.Check[GuildMember](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "name() is read-only")
 				return 0
@@ -37,12 +31,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mm, ok := ud.Value.(*GuildMember)
-			if !ok || mm == nil {
-				L.ArgError(1, "GuildMember expected")
-				return 0
-			}
+			mm := luax.Check[GuildMember](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "level() is read-only")
 				return 0
@@ -51,12 +40,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"class_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mm, ok := ud.Value.(*GuildMember)
-			if !ok || mm == nil {
-				L.ArgError(1, "GuildMember expected")
-				return 0
-			}
+			mm := luax.Check[GuildMember](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "class_id() is read-only")
 				return 0
@@ -65,12 +49,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"rank": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mm, ok := ud.Value.(*GuildMember)
-			if !ok || mm == nil {
-				L.ArgError(1, "GuildMember expected")
-				return 0
-			}
+			mm := luax.Check[GuildMember](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "rank() is read-only")
 				return 0
@@ -79,12 +58,7 @@ func (m *GuildMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"channel_index": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mm, ok := ud.Value.(*GuildMember)
-			if !ok || mm == nil {
-				L.ArgError(1, "GuildMember expected")
-				return 0
-			}
+			mm := luax.Check[GuildMember](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "channel_index() is read-only")
 				return 0

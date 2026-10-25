@@ -17,12 +17,7 @@ func (m *Mob) LuaTypeName() string {
 func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"fake": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			argc := L.GetTop()
 			if argc == 1 {
 				L.Push(lua.LBool(mob.fake))
@@ -36,12 +31,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"parent": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			argc := L.GetTop()
 			if argc == 1 {
 				if mob.sponge.parent != nil {
@@ -83,12 +73,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"children": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(1, "children() takes no arguments")
 				return 0
@@ -105,12 +90,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"revive": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			revivesVal := L.CheckTable(2)
 			reviveIDs := make([]uint32, 0, revivesVal.Len())
 			for i := 1; i <= revivesVal.Len(); i++ {
@@ -152,12 +132,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"kill": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			dieAnim := constant.MobDieAnimationTypeFadeOut
 			if L.GetTop() >= 2 {
 				dieAnim = constant.MobDieAnimationType(L.CheckInt(2))
@@ -167,12 +142,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"relink": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() < 2 {
 				L.ArgError(2, "link oid required")
 				return 0
@@ -186,12 +156,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 
 			argc := L.GetTop()
 			if argc == 1 {
@@ -204,12 +169,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 
 			argc := L.GetTop()
 			if argc == 1 {
@@ -222,12 +182,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"exp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 
 			argc := L.GetTop()
 			if argc == 1 {
@@ -239,12 +194,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"foothold": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 
 			argc := L.GetTop()
 			switch argc {
@@ -261,22 +211,12 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"carnival_team": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			L.Push(lua.LNumber(mob.carnivalTeam))
 			return 1
 		},
 		"map_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "map_id() is read-only (map is fixed at spawn)")
 				return 0
@@ -290,12 +230,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"buff": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			buffTable := L.CheckTable(2)
 			maskLV := buffTable.RawGetString("mask")
 			parseMobBuffs := func(v lua.LValue) (constant.MobBuffFlag, bool) {
@@ -434,12 +369,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"exp_rate": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() == 1 {
 				v := mob.expRate
 				if v <= 0 {
@@ -460,12 +390,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"drop_rate": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() == 1 {
 				v := mob.dropRate
 				if v <= 0 {
@@ -486,12 +411,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"drop": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			entries := L.CheckTable(2)
 			mapInstance := mob.GetMap()
 			if mapInstance == nil {
@@ -506,12 +426,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"drops": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			t := L.NewTable()
 			if mob.gameWorld == nil || mob.wz == nil {
 				L.Push(t)
@@ -543,22 +458,12 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"has_stolen": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			L.Push(lua.LBool(mob.stealOutcome != nil))
 			return 1
 		},
 		"homing": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() != 3 {
 				L.ArgError(2, "homing(causer, skill_or_nil) requires causer and skill (nil to clear)")
 				return 0
@@ -593,12 +498,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"record_stolen_item": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() < 2 {
 				return 0
 			}
@@ -618,23 +518,13 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"record_failed_steal": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			nothing := uint32(0)
 			mob.stealOutcome = &nothing
 			return 0
 		},
 		"clear_buffs": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			buffTable := L.CheckTable(2)
 			maskLV := buffTable.RawGetString("mask")
 			if maskLV.Type() != lua.LTNumber {
@@ -646,12 +536,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"dispel": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			skillID := uint32(L.CheckInt(2))
 			if mob.buffs != nil {
 				mob.buffs.Dispel(skillID)
@@ -659,12 +544,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"has_buff": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			buffTable := L.CheckTable(2)
 			maskLV := buffTable.RawGetString("mask")
 			if maskLV.Type() == lua.LTNumber {
@@ -701,12 +581,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"buff_value": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			buffTable := L.CheckTable(2)
 			maskLV := buffTable.RawGetString("mask")
 			if maskLV.Type() != lua.LTNumber {
@@ -719,12 +594,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 
 		"buff_stack": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			buffTable := L.CheckTable(2)
 			maskLV := buffTable.RawGetString("mask")
 			if maskLV.Type() != lua.LTNumber {
@@ -744,33 +614,18 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"banish": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok || mob == nil {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() != 2 {
 				L.ArgError(2, "banish(character) expected")
 				return 0
 			}
-			chUD := L.CheckUserData(2)
-			ch, ok := chUD.Value.(*Character)
-			if !ok || ch == nil {
-				L.ArgError(2, "Character expected")
-				return 0
-			}
+			ch := luax.Check[Character](L, 2)
 			cfg, _ := luax.GetConfiguration(L)
 			L.Push(lua.LBool(mob.Banish(cfg.ActorContext, ch)))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if mob.wz == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -779,12 +634,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"damage": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 
 			argc := L.GetTop()
 			if argc != 3 {
@@ -818,12 +668,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			if L.GetTop() == 1 {
 				L.Push(lua.LNumber(mob.GetHp()))
 				return 1
@@ -832,12 +677,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"controller": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
 			argc := L.GetTop()
 			if argc == 1 {
 				mapInstance := mob.GetMap()
@@ -881,18 +721,8 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"create_mist": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-			skillUD := L.CheckUserData(2)
-			skill, ok := skillUD.Value.(*MobSkill)
-			if !ok || skill == nil {
-				L.ArgError(2, "MobSkill expected")
-				return 0
-			}
+			mob := luax.Check[Mob](L, 1)
+			skill := luax.Check[MobSkill](L, 2)
 			var spec mistSpec
 			spec.Parse(L)
 			mist := mob.SpawnMist(skill, spec)

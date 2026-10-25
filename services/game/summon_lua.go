@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -12,12 +13,7 @@ func (s *Summon) LuaTypeName() string {
 func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"owner_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			summon, ok := ud.Value.(*Summon)
-			if !ok {
-				L.ArgError(1, "Summon expected")
-				return 0
-			}
+			summon := luax.Check[Summon](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "owner_id() is read-only")
 				return 0
@@ -26,12 +22,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"skill_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			summon, ok := ud.Value.(*Summon)
-			if !ok {
-				L.ArgError(1, "Summon expected")
-				return 0
-			}
+			summon := luax.Check[Summon](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "skill_id() is read-only")
 				return 0
@@ -40,12 +31,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"movement_type": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			summon, ok := ud.Value.(*Summon)
-			if !ok {
-				L.ArgError(1, "Summon expected")
-				return 0
-			}
+			summon := luax.Check[Summon](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "movement_type() is read-only")
 				return 0
@@ -54,12 +40,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"attack": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			summon, ok := ud.Value.(*Summon)
-			if !ok {
-				L.ArgError(1, "Summon expected")
-				return 0
-			}
+			summon := luax.Check[Summon](L, 1)
 			animation := uint8(L.CheckInt(2))
 			targetsTable := L.CheckTable(3)
 			var targets []SummonAttackTarget
@@ -82,12 +63,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"move": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			summon, ok := ud.Value.(*Summon)
-			if !ok {
-				L.ArgError(1, "Summon expected")
-				return 0
-			}
+			summon := luax.Check[Summon](L, 1)
 			x := int16(L.CheckInt(2))
 			y := int16(L.CheckInt(3))
 			start := types.Vector2[int16]{X: x, Y: y}
@@ -95,12 +71,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"use_skill": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			summon, ok := ud.Value.(*Summon)
-			if !ok {
-				L.ArgError(1, "Summon expected")
-				return 0
-			}
+			summon := luax.Check[Summon](L, 1)
 			if L.GetTop() != 2 {
 				L.ArgError(2, "use_skill() requires stance")
 				return 0

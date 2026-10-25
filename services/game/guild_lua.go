@@ -13,10 +13,7 @@ func (g *Guild) LuaTypeName() string {
 func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "id() is read-only")
 				return 0
@@ -25,10 +22,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"world_id": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "world_id() is read-only")
 				return 0
@@ -37,10 +31,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "name() is read-only")
 				return 0
@@ -49,10 +40,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"leader_id": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "leader_id() is read-only")
 				return 0
@@ -61,10 +49,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"gp": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "gp() is read-only")
 				return 0
@@ -73,10 +58,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"level": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "level() is read-only")
 				return 0
@@ -85,10 +67,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"message": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			message := L.CheckString(2)
 			msgType := constant.MsgPinkText
 			if L.GetTop() >= 3 && L.Get(3) != lua.LNil {
@@ -102,10 +81,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"capacity": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "capacity() is read-only")
 				return 0
@@ -114,10 +90,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"alliance": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "alliance() takes no arguments")
 				return 0
@@ -131,10 +104,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"notice": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "notice() is read-only")
 				return 0
@@ -143,10 +113,7 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"members": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "members() takes no arguments")
 				return 0
@@ -162,18 +129,12 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"member": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 2 {
 				L.ArgError(3, "member(character) takes exactly one argument")
 				return 0
 			}
-			ch, ok := LuaCheckCharacterArg(L, 2)
-			if !ok {
-				return 0
-			}
+			ch := luax.Check[Character](L, 2)
 			m := guild.findMember(ch.GetID())
 			if m == nil {
 				L.Push(lua.LNil)
@@ -183,18 +144,12 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"rank": func(L *lua.LState) int {
-			guild, ok := LuaCheckGuild(L, 1)
-			if !ok {
-				return 0
-			}
+			guild := luax.Check[Guild](L, 1)
 			if L.GetTop() != 2 {
 				L.ArgError(3, "rank(character) takes exactly one argument")
 				return 0
 			}
-			ch, ok := LuaCheckCharacterArg(L, 2)
-			if !ok {
-				return 0
-			}
+			ch := luax.Check[Character](L, 2)
 			m := guild.findMember(ch.GetID())
 			if m == nil {
 				L.Push(lua.LNil)
@@ -204,17 +159,11 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"disband": func(L *lua.LState) int {
-			ch, ok := LuaCheckCharacterArg(L, 2)
-			if !ok {
-				return 0
-			}
+			ch := luax.Check[Character](L, 2)
 			return luaGuildDisband(L, ch)
 		},
 		"inc_capacity": func(L *lua.LState) int {
-			ch, ok := LuaCheckCharacterArg(L, 2)
-			if !ok {
-				return 0
-			}
+			ch := luax.Check[Character](L, 2)
 			extendedCap := L.CheckBool(3)
 			return luaGuildIncCapacity(L, ch, extendedCap)
 		},
@@ -232,26 +181,6 @@ func (g *Guild) findMember(characterID uint32) *GuildMember {
 		return m
 	}
 	return nil
-}
-
-func LuaCheckGuild(L *lua.LState, idx int) (*Guild, bool) {
-	ud := L.CheckUserData(idx)
-	guild, ok := ud.Value.(*Guild)
-	if !ok || guild == nil {
-		L.ArgError(idx, "Guild expected")
-		return nil, false
-	}
-	return guild, true
-}
-
-func LuaCheckCharacterArg(L *lua.LState, idx int) (*Character, bool) {
-	ud := L.CheckUserData(idx)
-	ch, ok := ud.Value.(*Character)
-	if !ok || ch == nil {
-		L.ArgError(idx, "Character expected")
-		return nil, false
-	}
-	return ch, true
 }
 
 func (g *Guild) String() string {

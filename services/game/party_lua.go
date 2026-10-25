@@ -12,12 +12,7 @@ func (p *Party) LuaTypeName() string {
 func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			party, ok := ud.Value.(*Party)
-			if !ok || party == nil {
-				L.ArgError(1, "Party expected")
-				return 0
-			}
+			party := luax.Check[Party](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "id() is read-only")
 				return 0
@@ -26,12 +21,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"world_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			party, ok := ud.Value.(*Party)
-			if !ok || party == nil {
-				L.ArgError(1, "Party expected")
-				return 0
-			}
+			party := luax.Check[Party](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "world_id() is read-only")
 				return 0
@@ -40,12 +30,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"leader_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			party, ok := ud.Value.(*Party)
-			if !ok || party == nil {
-				L.ArgError(1, "Party expected")
-				return 0
-			}
+			party := luax.Check[Party](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "leader_id() is read-only")
 				return 0
@@ -54,12 +39,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"state": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			party, ok := ud.Value.(*Party)
-			if !ok || party == nil {
-				L.ArgError(1, "Party expected")
-				return 0
-			}
+			party := luax.Check[Party](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "state() is read-only")
 				return 0
@@ -68,12 +48,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"members": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			party, ok := ud.Value.(*Party)
-			if !ok || party == nil {
-				L.ArgError(1, "Party expected")
-				return 0
-			}
+			party := luax.Check[Party](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "members() takes no arguments")
 				return 0

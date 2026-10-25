@@ -14,12 +14,7 @@ func (s *SkillEntry) LuaTypeName() string {
 func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*SkillEntry)
-			if !ok {
-				L.ArgError(1, "Skill expected")
-				return 0
-			}
+			skill := luax.Check[SkillEntry](L, 1)
 
 			argc := L.GetTop()
 			switch argc {
@@ -38,12 +33,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"master_level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*SkillEntry)
-			if !ok {
-				L.ArgError(1, "Skill expected")
-				return 0
-			}
+			skill := luax.Check[SkillEntry](L, 1)
 
 			argc := L.GetTop()
 			switch argc {
@@ -59,12 +49,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 		},
 		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*SkillEntry)
-			if !ok {
-				L.ArgError(1, "Skill expected")
-				return 0
-			}
+			skill := luax.Check[SkillEntry](L, 1)
 			if skill.wz == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -73,12 +58,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*SkillEntry)
-			if !ok {
-				L.ArgError(1, "Skill expected")
-				return 0
-			}
+			skill := luax.Check[SkillEntry](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0
@@ -92,22 +72,12 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"is_cooling": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*SkillEntry)
-			if !ok {
-				L.ArgError(1, "Skill expected")
-				return 0
-			}
+			skill := luax.Check[SkillEntry](L, 1)
 			L.Push(lua.LBool(skill.CooldownRemaining() > 0))
 			return 1
 		},
 		"cooldown": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*SkillEntry)
-			if !ok {
-				L.ArgError(1, "Skill expected")
-				return 0
-			}
+			skill := luax.Check[SkillEntry](L, 1)
 			argc := L.GetTop()
 			switch argc {
 			case 1:

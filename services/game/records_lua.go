@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boyism80/fm/core/luax"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -19,59 +20,34 @@ func (r *Records) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-func LuaCheckRecords(L *lua.LState, idx int) (*Records, bool) {
-	ud := L.CheckUserData(idx)
-	r, ok := ud.Value.(*Records)
-	if !ok || r == nil {
-		L.ArgError(idx, "LuaRecords expected")
-		return nil, false
-	}
-	return r, true
-}
-
 func (r *Records) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"get": func(L *lua.LState) int {
-			records, ok := LuaCheckRecords(L, 1)
-			if !ok {
-				return 0
-			}
+			records := luax.Check[Records](L, 1)
 			L.Push(lua.LNumber(records.Get(L.CheckString(2))))
 			return 1
 		},
 		"text": func(L *lua.LState) int {
-			records, ok := LuaCheckRecords(L, 1)
-			if !ok {
-				return 0
-			}
+			records := luax.Check[Records](L, 1)
 			L.Push(lua.LString(records.Text(L.CheckString(2))))
 			return 1
 		},
 		"set": func(L *lua.LState) int {
-			records, ok := LuaCheckRecords(L, 1)
-			if !ok {
-				return 0
-			}
+			records := luax.Check[Records](L, 1)
 			var reset RecordReset
 			reset.ParseLua(L, 4)
 			records.Set(L.CheckString(2), int64(L.CheckNumber(3)), reset)
 			return 0
 		},
 		"set_text": func(L *lua.LState) int {
-			records, ok := LuaCheckRecords(L, 1)
-			if !ok {
-				return 0
-			}
+			records := luax.Check[Records](L, 1)
 			var reset RecordReset
 			reset.ParseLua(L, 4)
 			records.SetText(L.CheckString(2), L.CheckString(3), reset)
 			return 0
 		},
 		"add": func(L *lua.LState) int {
-			records, ok := LuaCheckRecords(L, 1)
-			if !ok {
-				return 0
-			}
+			records := luax.Check[Records](L, 1)
 			var reset RecordReset
 			reset.ParseLua(L, 4)
 			value := records.Add(L.CheckString(2), int64(L.OptNumber(3, 1)), reset)
@@ -79,18 +55,12 @@ func (r *Records) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"remove": func(L *lua.LState) int {
-			records, ok := LuaCheckRecords(L, 1)
-			if !ok {
-				return 0
-			}
+			records := luax.Check[Records](L, 1)
 			records.Remove(L.CheckString(2))
 			return 0
 		},
 		"clear": func(L *lua.LState) int {
-			records, ok := LuaCheckRecords(L, 1)
-			if !ok {
-				return 0
-			}
+			records := luax.Check[Records](L, 1)
 			records.Clear()
 			return 0
 		},

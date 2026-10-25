@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/boyism80/fm/core/luax"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -19,9 +20,8 @@ func (p *Portal) Type() lua.LValueType {
 func (p *Portal) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.wz == nil {
+			portal := luax.Check[Portal](L, 1)
+			if portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
@@ -29,9 +29,8 @@ func (p *Portal) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.wz == nil {
+			portal := luax.Check[Portal](L, 1)
+			if portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
@@ -39,9 +38,8 @@ func (p *Portal) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"target": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.wz == nil {
+			portal := luax.Check[Portal](L, 1)
+			if portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
@@ -49,9 +47,8 @@ func (p *Portal) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"target_map": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil || portal.wz == nil {
+			portal := luax.Check[Portal](L, 1)
+			if portal.wz == nil {
 				L.ArgError(1, "Portal expected")
 				return 0
 			}
@@ -59,12 +56,7 @@ func (p *Portal) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"script": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			portal, ok := ud.Value.(*Portal)
-			if !ok || portal == nil {
-				L.ArgError(1, "Portal expected")
-				return 0
-			}
+			portal := luax.Check[Portal](L, 1)
 			if L.GetTop() == 1 {
 				L.Push(lua.LString(portal.Script()))
 				return 1

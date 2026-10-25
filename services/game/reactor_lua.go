@@ -13,12 +13,7 @@ func (r *Reactor) LuaTypeName() string {
 func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "id() is read-only")
 				return 0
@@ -31,12 +26,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "name() is read-only")
 				return 0
@@ -49,12 +39,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"state": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "state() is read-only")
 				return 0
@@ -63,12 +48,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"react_item_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "react_item_id() is read-only")
 				return 0
@@ -77,12 +57,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"react_item_quantity": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "react_item_quantity() is read-only")
 				return 0
@@ -91,12 +66,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"activated_item_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "activated_item_id() is read-only")
 				return 0
@@ -105,12 +75,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"hit": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			var trigger *Character
 			if L.GetTop() >= 2 {
 				arg := L.Get(2)
@@ -131,12 +96,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 0
 		},
 		"trigger": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "trigger() is read-only")
 				return 0
@@ -150,22 +110,12 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"drop_items": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			reactor.DropItems()
 			return 0
 		},
 		"destroy": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
+			reactor := luax.Check[Reactor](L, 1)
 			if reactor.onMap != nil {
 				_ = reactor.onMap.RemoveReactor(reactor.oid, true)
 			}

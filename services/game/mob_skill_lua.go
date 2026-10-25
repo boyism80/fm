@@ -14,12 +14,7 @@ func (s *MobSkill) LuaTypeName() string {
 func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*MobSkill)
-			if !ok || skill == nil {
-				L.ArgError(1, "MobSkill expected")
-				return 0
-			}
+			skill := luax.Check[MobSkill](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "id() is read-only")
 				return 0
@@ -28,12 +23,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*MobSkill)
-			if !ok || skill == nil {
-				L.ArgError(1, "MobSkill expected")
-				return 0
-			}
+			skill := luax.Check[MobSkill](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "level() is read-only")
 				return 0
@@ -42,12 +32,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*MobSkill)
-			if !ok || skill == nil {
-				L.ArgError(1, "MobSkill expected")
-				return 0
-			}
+			skill := luax.Check[MobSkill](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "wz() is read-only")
 				return 0
@@ -60,12 +45,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*MobSkill)
-			if !ok || skill == nil {
-				L.ArgError(1, "MobSkill expected")
-				return 0
-			}
+			skill := luax.Check[MobSkill](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0
@@ -78,12 +58,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"last_used_at": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*MobSkill)
-			if !ok || skill == nil {
-				L.ArgError(1, "MobSkill expected")
-				return 0
-			}
+			skill := luax.Check[MobSkill](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "last_used_at() is read-only")
 				return 0
@@ -96,12 +71,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"is_on_cooldown": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*MobSkill)
-			if !ok || skill == nil {
-				L.ArgError(1, "MobSkill expected")
-				return 0
-			}
+			skill := luax.Check[MobSkill](L, 1)
 			if L.GetTop() != 1 {
 				L.ArgError(2, "is_on_cooldown() takes no args")
 				return 0

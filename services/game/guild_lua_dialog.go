@@ -38,9 +38,7 @@ func luaYieldGuildRPC[T any](L *lua.LState, ch *Character, failCode int, result 
 }
 
 func luaGuildDisband(L *lua.LState, ch *Character) int {
-	if _, ok := LuaCheckGuild(L, 1); !ok || ch == nil {
-		return 0
-	}
+	luax.Check[Guild](L, 1)
 	if L.GetTop() != 2 {
 		L.ArgError(3, "disband(character) takes exactly one argument")
 		return 0
@@ -60,9 +58,7 @@ func luaGuildDisband(L *lua.LState, ch *Character) int {
 }
 
 func luaGuildIncCapacity(L *lua.LState, ch *Character, extendedCap bool) int {
-	if _, ok := LuaCheckGuild(L, 1); !ok || ch == nil {
-		return 0
-	}
+	luax.Check[Guild](L, 1)
 	if L.GetTop() != 3 {
 		L.ArgError(4, "inc_capacity(character, extendedCap) takes exactly two arguments")
 		return 0

@@ -14,12 +14,7 @@ func (n *Npc) LuaTypeName() string {
 func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			npc, ok := ud.Value.(*Npc)
-			if !ok {
-				L.ArgError(1, "Npc expected")
-				return 0
-			}
+			npc := luax.Check[Npc](L, 1)
 			if npc.wz != nil && npc.wz.BaseSpawn != nil {
 				L.Push(lua.LNumber(npc.wz.BaseSpawn.ID))
 			} else {
@@ -28,23 +23,13 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"show_effect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			npc, ok := ud.Value.(*Npc)
-			if !ok {
-				L.ArgError(1, "Npc expected")
-				return 0
-			}
+			npc := luax.Check[Npc](L, 1)
 			action := L.CheckString(2)
 			npc.ShowEffect(action)
 			return 0
 		},
 		"dialogues": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			npc, ok := ud.Value.(*Npc)
-			if !ok {
-				L.ArgError(1, "Npc expected")
-				return 0
-			}
+			npc := luax.Check[Npc](L, 1)
 			lines := L.NewTable()
 			texts := npc.gameWorld.GetResources().Strings.NpcStrings[npc.wz.BaseSpawn.ID]
 			for i := 0; ; i++ {
@@ -58,12 +43,7 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			npc, ok := ud.Value.(*Npc)
-			if !ok {
-				L.ArgError(1, "Npc expected")
-				return 0
-			}
+			npc := luax.Check[Npc](L, 1)
 			if npc.wz == nil {
 				L.Push(lua.LNil)
 				return 1
