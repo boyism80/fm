@@ -2,14 +2,6 @@ local EXIT_MAP = 120000101
 local DURATION_MS = 600000
 
 local function create(map_id)
-    local function finish(sm)
-        local players = sm:players()
-        sm:finish(0)
-        for _, player in ipairs(players) do
-            player:map(EXIT_MAP)
-        end
-    end
-
     return {
         on_init = function(group)
             group:min_players(1)
@@ -32,7 +24,7 @@ local function create(map_id)
         end,
 
         on_scheduled_timeout = function(sm)
-            finish(sm)
+            sm:finish(EXIT_MAP)
         end,
 
     }

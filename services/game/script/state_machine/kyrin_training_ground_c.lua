@@ -2,14 +2,6 @@ local TRAINING_MAP = 912010100
 local EXIT_MAP = 120000101
 local DURATION_MS = 240000
 
-local function finish(sm, map_id)
-    local players = sm:players()
-    sm:finish(0)
-    for _, player in ipairs(players) do
-        player:map(map_id)
-    end
-end
-
 return {
     on_init = function(group)
         group:set_property("started", "false")
@@ -36,7 +28,7 @@ return {
     end,
 
     on_scheduled_timeout = function(sm)
-        finish(sm, EXIT_MAP)
+        sm:finish(EXIT_MAP)
     end,
 
     on_finish = function(sm)

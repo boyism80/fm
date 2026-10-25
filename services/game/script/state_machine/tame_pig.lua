@@ -6,12 +6,8 @@ local TAME_PIG_ID = 9300102
 local DURATION_MS = 300000
 
 local function finish(sm, message)
-    local players = sm:players()
     sm:message(message, Msg.PinkText)
-    sm:finish(0)
-    for _, player in ipairs(players) do
-        player:map(EXIT_MAP)
-    end
+    sm:finish(EXIT_MAP)
 end
 
 return {
