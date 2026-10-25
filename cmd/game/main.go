@@ -87,7 +87,7 @@ anticheat:
 	}
 	log.SetOutput(io.MultiWriter(os.Stderr, logfile.New("game")))
 	log.SetPrefix(fmt.Sprintf("[ch%d] ", g.ChannelId))
-	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
+	log.SetFlags(log.LstdFlags | log.LUTC | log.Lmsgprefix)
 
 	if g.HighRate {
 		g.World = "HighRate"

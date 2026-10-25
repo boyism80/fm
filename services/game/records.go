@@ -38,7 +38,8 @@ func NewRecords() *Records {
 }
 
 func (reset RecordReset) expiresAt(now time.Time) time.Time {
-	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	now = now.In(time.Local)
+	midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	switch reset.kind {
 	case RecordResetDaily:
 		boundary := midnight.Add(reset.at)

@@ -1929,7 +1929,7 @@ message MedalRankingEntry {
   uint64 score = 3;
 }
 
-// month is YYYYMM in KST, decided by the game server's clock.
+// month is YYYYMM in the game server's local time zone.
 message MedalRanking {
   string kind = 1;
   uint32 month = 2;

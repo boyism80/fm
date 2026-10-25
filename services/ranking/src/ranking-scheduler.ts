@@ -22,7 +22,6 @@ import { WorkTable, type RangeStep, type RunningRound } from "./work-table";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
-const KST_OFFSET_MS = 9 * HOUR_MS;
 const POLL_MS = 60 * 1000;
 const BUSY_POLL_MS = 1000;
 const HEARTBEAT_MS = 10 * 1000;
@@ -113,12 +112,13 @@ export class RankingScheduler {
     }
 
     private runs(now: number): KindRun[] {
-        const kstNow = now + KST_OFFSET_MS;
-        let dailyAt = Math.floor(kstNow / DAY_MS) * DAY_MS + this.options.dailyHour * HOUR_MS - KST_OFFSET_MS;
+        // The refresh hour and the day it names are in the server's local time zone.
+        const offset = -new Date(now).getTimezoneOffset() * 60 * 1000;
+        let dailyAt = Math.floor((now + offset) / DAY_MS) * DAY_MS + this.options.dailyHour * HOUR_MS - offset;
         if (dailyAt > now) {
             dailyAt -= DAY_MS;
         }
-        const day = new Date(dailyAt + KST_OFFSET_MS).toISOString().slice(0, 10);
+        const day = new Date(dailyAt + offset).toISOString().slice(0, 10);
 
         // Thursday shows last week's final guild ranking; the current week shows from the first refresh a full day in.
         const week = guildWeek(now);

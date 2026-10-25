@@ -17102,7 +17102,7 @@ func (x *MedalRankingEntry) GetScore() uint64 {
 	return 0
 }
 
-// month is YYYYMM in KST, decided by the game server's clock.
+// month is YYYYMM in the game server's local time zone.
 type MedalRanking struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`

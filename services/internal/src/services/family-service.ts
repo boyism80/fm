@@ -39,7 +39,8 @@ const RELATIVES = `
        OR leader_id IN (SELECT leader_id FROM social_family WHERE character_id = ANY($1::int[]) AND leader_id IS NOT NULL)
     ORDER BY character_id`;
 const COSTS = [300, 500, 700, 800, 1000, 1200, 3000];
-const TODAY = "(NOW() AT TIME ZONE 'Asia/Seoul')::date";
+// A family day is the server's local day, the day its players see.
+const TODAY = `(NOW() AT TIME ZONE '${Intl.DateTimeFormat().resolvedOptions().timeZone}')::date`;
 const UNITY_MEMBERS = 7;
 const MAX_JUNIORS = 2;
 

@@ -20,7 +20,7 @@ func New(service string) *Daily {
 }
 
 func (d *Daily) Write(p []byte) (int, error) {
-	path := filepath.Join("logs", fmt.Sprintf("%s-%s.log", time.Now().Format("2006-01-02"), d.service))
+	path := filepath.Join("logs", fmt.Sprintf("%s-%s.log", time.Now().UTC().Format("2006-01-02"), d.service))
 	if path != d.path {
 		err := d.open(path)
 		if err != nil {

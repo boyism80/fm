@@ -16,8 +16,8 @@ export class DailyLogFile {
 
     write(message: string) {
         const now = new Date();
-        const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        const date = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`;
+        const time = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`;
         const filePath = path.join("logs", `${date}-${this.service}.log`);
         if (filePath !== this.currentPath) {
             this.open(filePath);

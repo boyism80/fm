@@ -30,7 +30,7 @@ func main() {
 	}
 	log.SetOutput(io.MultiWriter(os.Stderr, logfile.New("cashshop")))
 	log.SetPrefix(fmt.Sprintf("[%d] ", cfg.CashShopID))
-	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
+	log.SetFlags(log.LstdFlags | log.LUTC | log.Lmsgprefix)
 	if cfg.Internal.TimeoutSeconds > 0 {
 		core.InternalRPCPerStepTimeout = time.Duration(cfg.Internal.TimeoutSeconds) * time.Second
 	} else {

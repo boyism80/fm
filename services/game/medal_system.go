@@ -17,8 +17,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var kst = time.FixedZone("KST", 9*60*60)
-
 type MedalRankingEntry struct {
 	CharacterID uint32
 	Name        string
@@ -60,7 +58,7 @@ func (s *MedalSystem) Start() error {
 func (s *MedalSystem) Stop() {}
 
 func (s *MedalSystem) month() uint32 {
-	now := clock.Now().In(kst)
+	now := clock.Now().In(time.Local)
 	return uint32(now.Year()*100 + int(now.Month()))
 }
 

@@ -7,21 +7,9 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/robfig/cron/v3"
-	_ "time/tzdata"
 )
 
-var (
-	stateMachineCronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	stateMachineCronLoc    *time.Location
-)
-
-func init() {
-	loc, err := time.LoadLocation("Asia/Seoul")
-	if err != nil {
-		loc = time.Local
-	}
-	stateMachineCronLoc = loc
-}
+var stateMachineCronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 
 func ParseStateMachineCron(expr string) (cron.Schedule, error) {
 	if expr == "" {
@@ -34,7 +22,7 @@ func NextStateMachineCronDelay(sched cron.Schedule, from time.Time) time.Duratio
 	if sched == nil {
 		return 0
 	}
-	now := from.In(stateMachineCronLoc)
+	now := from.In(time.Local)
 	next := sched.Next(now)
 	if next.IsZero() {
 		return 0

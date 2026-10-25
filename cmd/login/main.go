@@ -65,7 +65,7 @@ internal:
 		log.Fatalf("Config: %v", err)
 	}
 	log.SetPrefix(fmt.Sprintf("[%s] ", l.LoginInstanceID))
-	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
+	log.SetFlags(log.LstdFlags | log.LUTC | log.Lmsgprefix)
 	if l.Internal.TimeoutSeconds > 0 {
 		core.InternalRPCPerStepTimeout = time.Duration(l.Internal.TimeoutSeconds) * time.Second
 	} else {

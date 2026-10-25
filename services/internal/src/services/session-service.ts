@@ -22,12 +22,12 @@ import type { CharacterModel } from "@fm/shared/repos/character-repository";
 
 export function formatDateTime(date = new Date()) {
     const pad = (v: number) => String(v).padStart(2, "0");
-    const yyyy = date.getFullYear();
-    const MM = pad(date.getMonth() + 1);
-    const dd = pad(date.getDate());
-    const HH = pad(date.getHours());
-    const mm = pad(date.getMinutes());
-    const ss = pad(date.getSeconds());
+    const yyyy = date.getUTCFullYear();
+    const MM = pad(date.getUTCMonth() + 1);
+    const dd = pad(date.getUTCDate());
+    const HH = pad(date.getUTCHours());
+    const mm = pad(date.getUTCMinutes());
+    const ss = pad(date.getUTCSeconds());
     return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
 }
 

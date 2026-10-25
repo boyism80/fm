@@ -54,12 +54,15 @@ func registerClockLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LString("datetime is required"))
 			return 2
 		}
+		// A GM types the time players see; servers pass it on in UTC.
 		if !reset {
-			if _, err := clock.ParseDateTime(datetime); err != nil {
+			target, err := clock.ParseLocalDateTime(datetime)
+			if err != nil {
 				L.Push(lua.LBool(false))
 				L.Push(lua.LString(err.Error()))
 				return 2
 			}
+			datetime = clock.FormatDateTime(target)
 		}
 
 		return requestServerDateTimeFromLua(gs, L, reset, datetime)

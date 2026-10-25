@@ -3627,7 +3627,7 @@ export interface MedalRankingEntry {
   score: number;
 }
 
-/** month is YYYYMM in KST, decided by the game server's clock. */
+/** month is YYYYMM in the game server's local time zone. */
 export interface MedalRanking {
   kind: string;
   month: number;

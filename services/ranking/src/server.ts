@@ -55,7 +55,7 @@ async function main() {
     const scheduler = new RankingScheduler(internalContext, new RankingRepository(internalContext), options);
     await scheduler.start();
     console.log(
-        `fm ranking scheduler started (daily refresh ${options.dailyHour}:00 KST, workers ${options.workers}, range multiplier ${options.rangeMultiplier})`,
+        `fm ranking scheduler started (daily refresh ${options.dailyHour}:00 local time, workers ${options.workers}, range multiplier ${options.rangeMultiplier})`,
     );
 
     async function shutdown() {

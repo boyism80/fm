@@ -14,7 +14,7 @@ func Now() time.Time {
 	mu.RLock()
 	o := offset
 	mu.RUnlock()
-	return time.Now().In(time.Local).Add(o)
+	return time.Now().UTC().Add(o)
 }
 
 func Offset() time.Duration {
@@ -34,11 +34,11 @@ func Reset() {
 }
 
 func SetAbsolute(target time.Time) error {
-	parsed, err := normalizeLocal(target)
+	parsed, err := normalizeUTC(target)
 	if err != nil {
 		return err
 	}
-	wall := time.Now().In(time.Local)
+	wall := time.Now().UTC()
 	setOffset(parsed.Sub(wall))
 	return nil
 }
@@ -49,9 +49,9 @@ func AddOffset(d time.Duration) {
 	mu.Unlock()
 }
 
-func normalizeLocal(t time.Time) (time.Time, error) {
+func normalizeUTC(t time.Time) (time.Time, error) {
 	if t.IsZero() {
 		return time.Time{}, ErrInvalidDateTime
 	}
-	return t.In(time.Local), nil
+	return t.UTC(), nil
 }

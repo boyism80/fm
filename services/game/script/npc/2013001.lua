@@ -179,7 +179,8 @@ local function handle_stage3(me, npc, sm, map)
         me:dialog(npc, "여신님께서 즐겨들으시던 음악이 나오고 있어요.")
         return
     end
-    local today = os.date("*t").wday
+    -- The weekday the players see, on the server clock in its local time zone.
+    local today = os.date("*t", now()).wday
     if tonumber(music) == today then
         clear_fx(map)
         local box = map:reactor(2002011)
