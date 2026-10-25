@@ -36,11 +36,10 @@ local function apply_shadow_meso_cost(me, skill)
         me:meso(have - cost)
         me:update_stats({ STAT.Meso })
     end
-    return true
 end
 
 return {
-    on_activating = function(me, skill, params)
-        return apply_shadow_meso_cost(me, skill)
+    on_activated = function(me, skill, params)
+        apply_shadow_meso_cost(me, skill)
     end
 }

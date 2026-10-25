@@ -102,7 +102,7 @@ func (sc *Skills) Level(skillID uint32) int {
 	return entry.Level()
 }
 
-// on_activated is left to Character.Attack, which runs it after the hits land.
+// on_activated, which pays the HP/MP, is left to Character.Attack, which runs it after the hits land.
 func (sc *Skills) UseAttack(actx actor.Context, entry *SkillEntry) bool {
 	if entry == nil || entry.Level() <= 0 {
 		log.Printf("Character does not have skill or skill level is 0")

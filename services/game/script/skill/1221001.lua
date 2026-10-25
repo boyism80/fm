@@ -8,10 +8,6 @@ return {
         combat.apply_prob_status(me, skill, damages, MobBuff.Stun)
     end,
 
-    on_activating = function(me, skill, params)
-        return true
-    end,
-
     on_activated = function(me, skill, params)
         util.apply_monster_magnet(me, skill, params)
     end

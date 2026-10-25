@@ -156,10 +156,11 @@ local function apply_concentrate_mp_cost(me, base_mp_con, mp_con_after_amp)
     return out
 end
 
-local function default_skill_cost(me, skill)
+-- on_activating checks this cost before anything is spent, and on_activated pays it.
+local function skill_cost(me, skill)
     local effect = skill:effect()
     if effect == nil then
-        return true
+        return 0, 0
     end
     local mp_con = apply_element_amplification_mp_cost(me, skill, effect.mp_con)
     if me:buff_value(BuffFlag.Infinity) ~= nil then
@@ -167,23 +168,23 @@ local function default_skill_cost(me, skill)
     else
         mp_con = apply_concentrate_mp_cost(me, effect.mp_con, mp_con)
     end
-    local hp_con = effect.hp_con
+    return mp_con, effect.hp_con
+end
+
+local function can_pay_skill_cost(me, skill)
+    local mp_con, hp_con = skill_cost(me, skill)
+    return (mp_con <= 0 or me:mp() >= mp_con) and (hp_con <= 0 or me:hp() > hp_con)
+end
+
+local function pay_skill_cost(me, skill)
+    local mp_con, hp_con = skill_cost(me, skill)
     if mp_con > 0 then
-        local mp = me:mp()
-        if mp < mp_con then
-            return false
-        end
-        me:mp(mp - mp_con, false)
+        me:mp(math.max(me:mp() - mp_con, 0), false)
     end
     if hp_con > 0 then
-        local hp = me:hp()
-        if hp <= hp_con then
-            return false
-        end
-        me:hp(hp - hp_con, false)
+        me:hp(math.max(me:hp() - hp_con, 1), false)
     end
     me:update_stats({ STAT.Hp, STAT.Mp })
-    return true
 end
 
 local function on_energy_charge(me, damages)
@@ -322,19 +323,16 @@ return {
     on_unpassive = function(me, skill)
     end,
 
-    can_activate = function(me, skill, params)
+    on_activating = function(me, skill, params)
         if me:forbidden("skill") then
             me:message("이곳에서 스킬을 사용할 수 없습니다.", Msg.PinkText)
             return false
         end
-        return true
-    end,
-
-    on_activating = function(me, skill, params)
-        return default_skill_cost(me, skill)
+        return can_pay_skill_cost(me, skill)
     end,
 
     on_activated = function(me, skill, params)
+        pay_skill_cost(me, skill)
         return true
     end,
 

@@ -39,8 +39,8 @@ func (sc *Skills) UseActive(actx actor.Context, skillID uint32, level uint8, dir
 	return true
 }
 
-// use is the gate every skill use passes, active or attack. The item is checked before on_activating
-// spends HP/MP and taken only after the effect succeeds.
+// use is the gate every skill use passes, active or attack. on_activating only checks that the skill can be used,
+// so a refused use costs nothing; HP/MP is paid in on_activated and the item is taken only after the effect succeeds.
 func (sc *Skills) use(actx actor.Context, entry *SkillEntry, effect func() bool, args ...interface{}) bool {
 	levelData := entry.wz.GetLevelData(entry.Level())
 	if levelData == nil {
@@ -49,14 +49,11 @@ func (sc *Skills) use(actx actor.Context, entry *SkillEntry, effect func() bool,
 	if levelData.Cooldown > 0 && entry.IsCooling() {
 		return false
 	}
-	if !sc.CallHook(actx, entry, "can_activate", args...) {
+	if !sc.CallHook(actx, entry, "on_activating", args...) {
 		return false
 	}
 	itemCost := levelData.ItemCon != 0 && levelData.ItemConNo > 0
 	if itemCost && !sc.owner.inventory.HasItemCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
-		return false
-	}
-	if !sc.CallHook(actx, entry, "on_activating", args...) {
 		return false
 	}
 	if effect != nil && !effect() {

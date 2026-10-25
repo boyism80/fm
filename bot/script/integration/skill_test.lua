@@ -34,6 +34,9 @@ local NIGHT_LORD = 412
 local PAGE = 120
 local SHOWDOWN = 4121003
 local THREATEN = 1201006
+local MAGICIAN = 200
+local MAGIC_GUARD = 2001002
+local MAGIC_GUARD_MP = 6
 local MOB_WATK = 0x1
 local MOB_MDEF = 0x8
 local MOB_SHOWDOWN = 0x800
@@ -476,6 +479,35 @@ local function magician_mp_recovery(ctx)
     return check(ctx, gain > 100 and gain < 200, "MP 회복력 향상 16레벨 70레벨 마법사의 자연 회복 상한이 다름: " .. gain)
 end
 
+-- A skill takes its MP once, and a use refused for want of MP takes nothing.
+local function skill_cost(ctx)
+    local bot = ctx:bot(1)
+    if setup(ctx, bot, 30, MAGICIAN, "-") == false or learn(ctx, bot, MAGIC_GUARD) == false then
+        return false
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local function mp_changed(p)
+        return p.stats[MP] ~= nil
+    end
+    if pq.command(bot, "/마력바꾸기 100", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    local paid = bot:request(resp.update_stats, req.active_skill { skill_id = MAGIC_GUARD, skill_level = 1 }, mp_changed,
+        3000)
+    if check(ctx, paid ~= false and paid.stats[MP] == 100 - MAGIC_GUARD_MP,
+            "매직 가드 MP 비용이 한 번만 빠지지 않음: " .. tostring(paid and paid.stats[MP])) == false then
+        return false
+    end
+    if pq.command(bot, "/마력바꾸기 " .. (MAGIC_GUARD_MP - 1), "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    local refused = bot:request(resp.update_stats, req.active_skill { skill_id = MAGIC_GUARD, skill_level = 1 },
+        mp_changed, 1500)
+    return check(ctx, refused == false, "MP가 모자라 거절된 매직 가드가 MP를 바꿈")
+end
+
 local function has_flag(status, flag)
     return math.floor(status / flag) % 2 == 1
 end
@@ -553,7 +585,7 @@ local function showdown_threaten(ctx)
 end
 
 test_suite {
-    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협",
+    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용",
     bot_count = 2,
 
     scenarios = {
@@ -568,5 +600,6 @@ test_suite {
         night_walker_alchemist,
         magician_mp_recovery,
         showdown_threaten,
+        skill_cost,
     },
 }
