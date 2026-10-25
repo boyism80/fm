@@ -125,6 +125,21 @@ func (mist *Mist) poisonTargets() []luax.Luable {
 	return targets
 }
 
+// inSmoke reports whether the character stands in a smoke screen of its own or of a party member.
+func (m *Map) inSmoke(ch *Character) bool {
+	pos := types.Point[int32]{X: int32(ch.position.X), Y: int32(ch.position.Y)}
+	for _, obj := range m.objects[constant.ObjectTypeMist] {
+		mist, ok := obj.(*Mist)
+		if !ok || mist.mistType != constant.MistTypeSmoke || mist.mobMist || !mist.bounds.ContainsPoint(pos) {
+			continue
+		}
+		if m.isDropOwnerInParty(ch, mist.causer) {
+			return true
+		}
+	}
+	return false
+}
+
 func (mist *Mist) SendSpawnSyncToViewer(viewer *Character) {
 	if mist == nil || viewer == nil {
 		return

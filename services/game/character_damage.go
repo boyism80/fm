@@ -435,6 +435,10 @@ func (ch *Character) hitDamage(hit Hit, mob *Mob, attack *wz.MobAttack) int32 {
 	if mob != nil && mob.fake {
 		return 0
 	}
+	// Smoke Bomb keeps all damage off, so no guard spends MP or meso either.
+	if m.inSmoke(ch) {
+		return 0
+	}
 	root := m.GetLuaRoot()
 	if root == nil {
 		return hit.Damage
