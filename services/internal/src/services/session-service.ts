@@ -148,9 +148,6 @@ export class SessionService {
         );
         // The caller treats a reply that misses its deadline as a transition that may have committed, so the reply must not wait for this cleanup.
         void (async () => {
-            await this.socialService
-                .leaveMessenger(worldId, characterId)
-                .catch((err) => console.error("[social] messenger cleanup failed", err));
             await this.announcePresence(worldId, characterId, { family: true });
             await this.releaseCharacterNameReservation(accountId);
         })();
@@ -198,6 +195,12 @@ export class SessionService {
                 guildOnline: gameToGameTransfer ? undefined : true,
             });
             const reply = await this.characterService.load(worldId, row);
+            reply.messengerRoomId = await this.socialService
+                .moveMessenger(worldId, characterId, channelId)
+                .catch((err) => {
+                    console.error("[social] messenger move failed", err);
+                    return 0;
+                });
             if (callerGone()) {
                 throw new Error(`enter game: caller left before the reply (character=${characterId})`);
             }

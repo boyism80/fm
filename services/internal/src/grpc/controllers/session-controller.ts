@@ -203,6 +203,7 @@ export class SessionGrpcController {
                     buddies: [],
                     buddyCapacity: 0,
                     debuffs: [],
+                    messengerRoomId: 0,
                     cashWishlist: [],
                     rings: [],
                     monsterBook: [],

@@ -8,7 +8,7 @@ local MEGAPHONE = { sn = 10000804 }
 
 local WHISPER = { find = 5, send = 6, find_result = 9, send_result = 10, receive = 18 }
 local WHISPER_LOCATION = { map = 1 }
-local MESSENGER = { enter = 0, self_enter = 1, leave = 2, invite = 3, invite_result = 4, chat = 6 }
+local MESSENGER = { enter = 0, self_enter = 1, leave = 2, invite = 3, invite_result = 4, chat = 6, avatar = 7 }
 local NOTES = { send = 0, remove = 1, list = 2 }
 local NOTES_PACKET = { list = 3, sent = 4, failed = 5, refresh = 7 }
 local NOTE_KIND = { normal = 0, population = 1 }
@@ -228,6 +228,32 @@ local function messenger_flow(ctx, a, b)
         return false
     end
 
+    -- A channel change keeps the seat: the others see an avatar update instead of a leave, and chat still goes both ways.
+    if b:transfer(1) == false then
+        return ctx:fail(b:name() .. " 채널 이동 실패")
+    end
+    local moved = expect(ctx, a, "messenger", function(p)
+        return p.action == MESSENGER.leave or p.action == MESSENGER.avatar
+    end, "채널 이동 알림")
+    if moved == false or check(ctx, moved.action == MESSENGER.avatar and moved.position == 1,
+            string.format("채널 이동이 다르게 보임: action=%d position=%d", moved.action, moved.position)) == false then
+        return false
+    end
+    send(b, req.messenger { action = MESSENGER.chat, text = b:name() .. " : 채널 이동 뒤" })
+    local relayed = expect(ctx, a, "messenger", function(p)
+        return p.action == MESSENGER.chat and p.text:find("채널 이동 뒤", 1, true) ~= nil
+    end, "채널 이동 뒤 메신저 채팅")
+    if relayed == false then
+        return false
+    end
+    send(a, req.messenger { action = MESSENGER.chat, text = a:name() .. " : 다른 채널로" })
+    local reached = expect(ctx, b, "messenger", function(p)
+        return p.action == MESSENGER.chat and p.text:find("다른 채널로", 1, true) ~= nil
+    end, "다른 채널로 보낸 메신저 채팅")
+    if reached == false then
+        return false
+    end
+
     send(b, req.messenger { action = MESSENGER.leave })
     local left = expect(ctx, a, "messenger", function(p)
         return p.action == MESSENGER.leave
@@ -237,6 +263,9 @@ local function messenger_flow(ctx, a, b)
     end
     send(a, req.messenger { action = MESSENGER.leave })
     ctx:sleep(300)
+    if b:transfer(0) == false then
+        return ctx:fail(b:name() .. " 원래 채널 복귀 실패")
+    end
     return true
 end
 

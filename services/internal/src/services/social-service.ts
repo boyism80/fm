@@ -275,13 +275,16 @@ export class SocialService {
         });
     }
 
-    // A member whose game session changed (relog, channel change) left the
-    // room without a leave request.
+    // A member whose game session changed (relog) left the room without a leave
+    // request. A member changing channels keeps the seat until moveMessenger.
     private async prune(world: number, rooms: Room[]) {
         for (const room of rooms) {
             for (const member of [...room.members]) {
                 const character = await this.characterRepository.get(world, member.characterId);
                 const active = character ? await this.session(world, character) : null;
+                if (active?.state === AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION) {
+                    continue;
+                }
                 if (
                     active?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_GAME ||
                     active.channelId !== member.channelId ||
@@ -304,6 +307,30 @@ export class SocialService {
         for (const room of await this.rooms(world)) {
             await this.remove(world, room, characterId);
         }
+    }
+
+    // A channel change keeps the seat: the member takes the new channel and
+    // session, the others get an avatar update instead of a leave, and the room
+    // id goes back to the game server. 0 when the character is in no room.
+    async moveMessenger(world: number, characterId: number, channelId: number) {
+        const character = await this.characterRepository.get(world, characterId);
+        const session = character ? await this.session(world, character) : null;
+        if (!session) {
+            return 0;
+        }
+
+        await using lock = await this.distributedLockService.acquireWorldDataLock(world, MESSENGER_LOCK);
+        const room = (await this.rooms(world)).find((r) => r.members.some((m) => m.characterId === characterId));
+        if (!room) {
+            return 0;
+        }
+
+        const member = room.members.find((m) => m.characterId === characterId)!;
+        member.channelId = channelId;
+        member.stamp = session.timestamps.stateChangedAt ?? "";
+        await this.store(world, room);
+        await this.broadcast(world, room, { action: MessengerAction.MESSENGER_ACTION_AVATAR, member }, characterId);
+        return room.id;
     }
 
     async messenger(req: MessengerRequest): Promise<MessengerReply> {

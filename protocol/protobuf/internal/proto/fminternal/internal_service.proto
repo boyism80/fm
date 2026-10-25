@@ -752,6 +752,7 @@ message EnterGameReply {
   Account account = 22;
   repeated SkillMacro skill_macros = 23;
   repeated UnsettledRequest unsettled_requests = 24;
+  uint32 messenger_room_id = 25;
 }
 
 enum UnsettledType {

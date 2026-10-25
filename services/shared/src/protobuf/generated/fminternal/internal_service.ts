@@ -2523,6 +2523,7 @@ export interface EnterGameReply {
   account: Account | undefined;
   skillMacros: SkillMacro[];
   unsettledRequests: UnsettledRequest[];
+  messengerRoomId: number;
 }
 
 export interface UnsettledRequest {
@@ -13588,6 +13589,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     account: undefined,
     skillMacros: [],
     unsettledRequests: [],
+    messengerRoomId: 0,
   };
 }
 
@@ -13666,6 +13668,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.unsettledRequests) {
       UnsettledRequest.encode(v!, writer.uint32(194).fork()).join();
+    }
+    if (message.messengerRoomId !== 0) {
+      writer.uint32(200).uint32(message.messengerRoomId);
     }
     return writer;
   },
@@ -13879,6 +13884,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.unsettledRequests.push(UnsettledRequest.decode(reader, reader.uint32()));
           continue;
         }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.messengerRoomId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -13960,6 +13973,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : globalThis.Array.isArray(object?.unsettled_requests)
         ? object.unsettled_requests.map((e: any) => UnsettledRequest.fromJSON(e))
         : [],
+      messengerRoomId: isSet(object.messengerRoomId)
+        ? globalThis.Number(object.messengerRoomId)
+        : isSet(object.messenger_room_id)
+        ? globalThis.Number(object.messenger_room_id)
+        : 0,
     };
   },
 
@@ -14037,6 +14055,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.unsettledRequests?.length) {
       obj.unsettledRequests = message.unsettledRequests.map((e) => UnsettledRequest.toJSON(e));
     }
+    if (message.messengerRoomId !== 0) {
+      obj.messengerRoomId = Math.round(message.messengerRoomId);
+    }
     return obj;
   },
 
@@ -14077,6 +14098,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       : undefined;
     message.skillMacros = object.skillMacros?.map((e) => SkillMacro.fromPartial(e)) || [];
     message.unsettledRequests = object.unsettledRequests?.map((e) => UnsettledRequest.fromPartial(e)) || [];
+    message.messengerRoomId = object.messengerRoomId ?? 0;
     return message;
   },
 };

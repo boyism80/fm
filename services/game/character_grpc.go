@@ -69,7 +69,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	for id, amount := range p.GetFamilyReputation() {
 		ch.family.reputation[id], _ = strconv.ParseUint(amount, 10, 64)
 	}
-	ch.messenger = &Messenger{owner: ch}
+	ch.messenger = &Messenger{owner: ch, roomID: reply.GetMessengerRoomId()}
 	ch.dialog = NewDialog(ch)
 	ch.buffs = NewBuffs(ch)
 	ch.cheat = &CheatTracker{owner: ch}
