@@ -475,6 +475,14 @@ local function fault_command(label, key_name, fault)
     }
 end
 
+-- A command that names no privilege is for GMs only.
+local function privilege(cmd_data)
+    if type(cmd_data) == "table" and cmd_data.privilege ~= nil then
+        return cmd_data.privilege
+    end
+    return ROLE.Admin
+end
+
 local command_funcs = {
     ["명령어"] = {
         privilege = ROLE.User,
@@ -483,23 +491,23 @@ local command_funcs = {
             local user_role = me:role()
             local list = {}
             for cmd_name, cmd_data in pairs(command_funcs) do
-                local priv = ROLE.User
-                local usage_str = ""
+                local usage_str = "- (설명 없음)"
                 if type(cmd_data) == "table" then
-                    priv = cmd_data.privilege or ROLE.Admin
                     usage_str = cmd_data.usage or ""
-                else
-                    priv = ROLE.Admin
-                    usage_str = "- (설명 없음)"
                 end
-                if user_role >= priv then
+                if user_role >= privilege(cmd_data) then
                     table.insert(list, { name = cmd_name, usage = usage_str })
                 end
             end
             table.sort(list, function(a, b) return a.name < b.name end)
+            -- The client keeps chat starting with "/" from players without GM rights, so they see "!".
+            local prefix = "/"
+            if user_role < ROLE.Admin then
+                prefix = "!"
+            end
             me:message("=== 사용 가능한 명령어 목록 ===")
             for i, c in ipairs(list) do
-                me:message(string.format("%d. /%s %s", i, c.name, c.usage))
+                me:message(string.format("%d. %s%s %s", i, prefix, c.name, c.usage))
             end
             me:message(string.format("총 %d개의 명령어가 있습니다.", #list))
             return true
@@ -2619,7 +2627,7 @@ if DEV then
             local roles = { ["유저"] = ROLE.User, ["GM"] = ROLE.Admin }
             local role = roles[args[1] or ""]
             if role == nil then
-                me:message("사용법: /권한 <유저|GM>")
+                me:message("사용법: !권한 <유저|GM>")
                 return true
             end
             if me:role() == role then
@@ -2638,7 +2646,9 @@ end
 
 return {
     on_chat = function(me, message, shout)
-        if string.sub(message, 1, 1) ~= "/" then
+        -- The client keeps chat starting with "/" from players without GM rights, so "!" works too.
+        local prefix = string.sub(message, 1, 1)
+        if prefix ~= "/" and prefix ~= "!" then
             return false
         end
         message = string.sub(message, 2, #message)
@@ -2651,15 +2661,11 @@ return {
         if cmd_data == nil then
             return false
         end
-        local cmd_func = nil
-        local required_privilege = ROLE.User
+        local cmd_func = cmd_data
         if type(cmd_data) == "table" then
             cmd_func = cmd_data.command
-            required_privilege = cmd_data.privilege or ROLE.User
-        else
-            cmd_func = cmd_data
         end
-        if me:role() < required_privilege then
+        if me:role() < privilege(cmd_data) then
             me:message("권한이 부족합니다.")
             return true
         end

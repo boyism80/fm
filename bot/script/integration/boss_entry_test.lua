@@ -15,11 +15,11 @@ local function waiting_room(ctx, bot)
     if bot:map() == WAITING_ROOM then
         return true
     end
-    local warp = bot:request(resp.warp, req.normal_chat { message = "/보스" }, function(p)
+    local warp = bot:request(resp.warp, req.normal_chat { message = "!보스" }, function(p)
         return p.character.map == WAITING_ROOM
     end, 10000)
     if warp == false then
-        return ctx:fail("/보스로 보스 대기실에 가지 못함")
+        return ctx:fail("!보스로 보스 대기실에 가지 못함")
     end
     return true
 end
