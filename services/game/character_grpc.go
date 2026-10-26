@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/boyism80/fm/core/clock"
-
 	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/stream"
@@ -218,8 +216,9 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		MonsterBookCover:  ch.monsterBook.cover,
 		TeleportStones:    ch.teleportStones.regular.Registered(),
 		VipTeleportStones: ch.teleportStones.vip.Registered(),
-		SavedAtUnixMs:     clock.Now().UnixMilli(),
-		ExpReachedUnixMs:  ch.expReachedAt.UnixMilli(),
+		// Wall time, not clock.Now: internal drops a save older than the stored one, and GM time shifts move the game clock.
+		SavedAtUnixMs:    time.Now().UnixMilli(),
+		ExpReachedUnixMs: ch.expReachedAt.UnixMilli(),
 	}
 	return &internal.CharacterSaveEntry{
 		Character:         pb,
