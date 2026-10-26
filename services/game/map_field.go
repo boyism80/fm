@@ -28,9 +28,13 @@ type mapWeather struct {
 
 const healerRiseInterval = time.Second
 
+// The client sends a pull for every click on the pulley, so each character's pulls are spaced on the server.
+const pulleyPullInterval = 500 * time.Millisecond
+
 type mapHealer struct {
-	y      int16
-	rising bool
+	y        int16
+	rising   bool
+	pulledAt map[uint32]time.Time
 }
 
 func (m *Map) ChangeMusic(song string) {
@@ -99,11 +103,19 @@ func (m *Map) CurrentWeather() (uint32, string, bool) {
 }
 
 // PullPulley lowers the healer; at the bottom it heals everyone in the field and goes back to the top.
-func (m *Map) PullPulley() {
+func (m *Map) PullPulley(ch *Character) {
 	healer := m.wz.Healer
-	if healer == nil {
+	if healer == nil || ch.GetHp() == 0 {
 		return
 	}
+	now := clock.Now()
+	if now.Sub(m.healer.pulledAt[ch.GetID()]) < pulleyPullInterval {
+		return
+	}
+	if m.healer.pulledAt == nil {
+		m.healer.pulledAt = map[uint32]time.Time{}
+	}
+	m.healer.pulledAt[ch.GetID()] = now
 
 	m.healer.y += healer.Fall
 	if m.healer.y >= healer.YMax {

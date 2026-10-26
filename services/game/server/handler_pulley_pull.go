@@ -32,6 +32,6 @@ func (h *PulleyPull) Handle(ctx *core.ClientContext, req *request.PulleyPull) er
 	if m == nil {
 		return nil
 	}
-	m.PullPulley()
+	m.PullPulley(ch)
 	return nil
 }
