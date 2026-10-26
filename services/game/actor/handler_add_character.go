@@ -22,7 +22,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		return
 	}
 	msg.Character.ResumeTimers(ctx.Self())
-	msg.Character.Listener().OnPartyMemberFieldsChanged(msg.Character)
+	msg.Character.NotifyMemberFieldsChanged()
 	msg.Character.Wedding().NotifySpouseMap(ctx, msg.Init)
 	if msg.Init {
 		msg.Character.SocialLogin(msg.Notes)

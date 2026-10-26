@@ -20,7 +20,7 @@ import (
 )
 
 type MapListener interface {
-	OnPlayerAdded(ctx actor.Context, mapInstance *Map, character *Character, spawnPoint uint8, init bool)
+	OnPlayerAdded(mapInstance *Map, character *Character, spawnPoint uint8, init bool)
 	OnPlayerRemoved(mapInstance *Map, character *Character)
 	OnPlayerMoved(mapInstance *Map, character *Character)
 	OnPlayerMove(mapInstance *Map, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
@@ -345,7 +345,14 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	m.sections.add(character)
 	m.LuaRoot(ctx)
 
-	m.listener.OnPlayerAdded(ctx, m, character, spawnPoint, init)
+	m.listener.OnPlayerAdded(m, character, spawnPoint, init)
+	// The client has the field by now, so the quests started here show on it.
+	_ = m.gameWorld.Systems().Get[*DispatchSystem]().SetMapPID(character.GetID(), m.LogicActorPID())
+	m.gameWorld.Systems().Get[*PartySystem]().SendPartySilentAsync(ctx, character)
+	character.quests.RunAutoTriggers(ctx, AutoQuestTriggerMapEnter, m.GetMapID())
+	if init {
+		character.quests.RunAutoTriggers(ctx, AutoQuestTriggerLogin, m.GetMapID())
+	}
 	m.controllerTable.EnterPlayer(character)
 	if init {
 		character.skills.RestorePassives()
@@ -479,6 +486,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	character.onMap = nil
 
 	m.listener.OnPlayerRemoved(m, character)
+	_ = m.gameWorld.Systems().Get[*DispatchSystem]().SetMapPID(character.GetID(), nil)
 	m.release()
 
 	return nil

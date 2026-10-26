@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/dto"
@@ -20,7 +19,7 @@ func NewGameMapListener(gs *GameServer) *MapListenerImpl {
 	}
 }
 
-func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map, character *game.Character, spawnPoint uint8, init bool) {
+func (l *MapListenerImpl) OnPlayerAdded(mapInstance *game.Map, character *game.Character, spawnPoint uint8, init bool) {
 	if mapInstance == nil {
 		return
 	}
@@ -101,22 +100,6 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 			match.NotifyCarnivalStart(character)
 		}
 	}
-
-	if character != nil {
-		_ = l.gs.systems.Get[*game.DispatchSystem]().SetMapPID(character.GetID(), mapInstance.LogicActorPID())
-	}
-
-	if l.gs != nil {
-		l.gs.systems.Get[*game.PartySystem]().SendPartySilentAsync(ctx, character)
-	}
-
-	if mapInstance != nil && character != nil && character.Quests() != nil {
-		mapID := mapInstance.GetMapID()
-		character.Quests().RunAutoTriggers(ctx, game.AutoQuestTriggerMapEnter, mapID)
-		if init {
-			character.Quests().RunAutoTriggers(ctx, game.AutoQuestTriggerLogin, mapID)
-		}
-	}
 }
 
 func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *game.Map, character *game.Character) {
@@ -128,10 +111,6 @@ func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *game.Map, character *game
 		ID: character.GetID(),
 	}
 	mapInstance.BroadcastNear(character.GetPosition(), leavePacket, nil)
-
-	if character != nil {
-		_ = l.gs.systems.Get[*game.DispatchSystem]().SetMapPID(character.GetID(), nil)
-	}
 }
 
 func (l *MapListenerImpl) OnPlayerMoved(mapInstance *game.Map, character *game.Character) {

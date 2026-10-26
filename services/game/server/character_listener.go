@@ -1615,13 +1615,6 @@ func (l *CharacterListenerImpl) OnClassChange(ch *game.Character, oldClass const
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
-	l.gs.systems.Get[*game.PartySystem]().UpdateMemberAsync(nil, ch)
-	l.gs.systems.Get[*game.AllianceSystem]().NotifyMemberFieldsChanged(ch)
-}
-
-func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *game.Character) {
-	l.gs.systems.Get[*game.PartySystem]().UpdateMemberAsync(nil, ch)
-	l.gs.systems.Get[*game.AllianceSystem]().NotifyMemberFieldsChanged(ch)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberHP(recipient *game.Character, member *game.Character) {

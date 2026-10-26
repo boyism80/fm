@@ -926,7 +926,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	oldLevel := ch.level
 	ch.level = newLevel
 	ch.expReachedAt = clock.Now()
-	ch.listener.OnPartyMemberFieldsChanged(ch)
+	ch.NotifyMemberFieldsChanged()
 	if newLevel < oldLevel {
 		if ch.gameWorld != nil {
 			resources := ch.gameWorld.GetResources()

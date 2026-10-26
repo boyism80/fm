@@ -193,7 +193,6 @@ type CharacterListener interface {
 	OnUpdateCharacterLook(ch *Character)
 	OnNpcAction(ch *Character, bytes []byte)
 	OnClassChange(ch *Character, oldClass constant.ClassType, newClass constant.ClassType, skillPoint uint16)
-	OnPartyMemberFieldsChanged(ch *Character)
 	OnPartyMemberHP(recipient *Character, member *Character)
 	OnBuffAdded(ch *Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32)
 	OnBuffRemoved(ch *Character, flags []constant.BuffFlag)

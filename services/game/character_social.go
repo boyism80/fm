@@ -25,6 +25,11 @@ func (ch *Character) SocialLogin(notes []Note) {
 	}
 }
 
+func (ch *Character) NotifyMemberFieldsChanged() {
+	ch.gameWorld.Systems().Get[*PartySystem]().UpdateMemberAsync(nil, ch)
+	ch.gameWorld.Systems().Get[*AllianceSystem]().NotifyMemberFieldsChanged(ch)
+}
+
 // ReceiveWhisper claims the request first so only one channel shows it,
 // then reports whether the message actually reached the client. The claim
 // reply returns to this actor even if the character has moved maps since.
