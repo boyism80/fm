@@ -70,6 +70,8 @@ type Character struct {
 	itemEffectID   uint32
 	chalkboard     string
 	chair          uint32
+	// fieldTeam is the coconut team the character plays for on its current map.
+	fieldTeam constant.CarnivalTeam
 	// The map's consume cooldown is shared by the use window and the pet's auto potion.
 	nextConsumeAt  time.Time
 	lastHeal       lastHeal
@@ -138,6 +140,8 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	carnivalTeam := constant.CarnivalTeamNone
 	if team := ch.carnival.Team(); team != nil {
 		carnivalTeam = team.teamID
+	} else if ch.fieldTeam != constant.CarnivalTeamNone {
+		carnivalTeam = ch.fieldTeam
 	}
 	spawnPacket := &response.SpawnPlayer{
 		Character:         ch.BuildS2C(),

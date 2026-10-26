@@ -72,6 +72,26 @@ func (m *Map) ShowOXQuiz(ask bool, set uint8, id uint16) {
 	m.listener.OnOXQuiz(m, ask, set, id)
 }
 
+func (m *Map) ShowCoconutHit(id int16, delay int16, state uint8) {
+	m.listener.OnCoconutHit(m, id, delay, state)
+}
+
+func (m *Map) ShowCoconutScore(maple int16, story int16) {
+	m.listener.OnCoconutScore(m, maple, story)
+}
+
+func (m *Map) ShowSnowballState(state uint8, snowmanHP [2]int32, position [2]int16, stage [2]uint8, damage [3]int16) {
+	m.listener.OnSnowballState(m, state, snowmanHP, position, stage, damage)
+}
+
+func (m *Map) ShowSnowballHit(target uint8, damage int16, delay int16) {
+	m.listener.OnSnowballHit(m, target, damage, delay)
+}
+
+func (m *Map) ShowSnowballMessage(team uint8, message uint8) {
+	m.listener.OnSnowballMessage(m, team, message)
+}
+
 // The client has no way to stop a song, so a map plays one at a time until it ends.
 func (m *Map) PlaySong(itemID uint32, name string) bool {
 	now := clock.Now()

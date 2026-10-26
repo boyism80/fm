@@ -947,6 +947,10 @@ func (l *CharacterListenerImpl) OnStandUp(ch *game.Character) {
 	}, nil)
 }
 
+func (l *CharacterListenerImpl) OnSnowballKnockback(ch *game.Character) {
+	_ = ch.Send(&response.SnowballKnockback{}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnUnlockAction(ch *game.Character) {
 	ch.Send(&response.UpdateStats{
 		UnlockAction: true,

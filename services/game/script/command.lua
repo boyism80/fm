@@ -2538,7 +2538,7 @@ local command_funcs = {
     },
     ["일정이벤트"] = {
         privilege = ROLE.Admin,
-        usage = "<OX|OLA> - 이 채널에서 이벤트 참가 모집 시작",
+        usage = "<OX|OLA|FITNESS|COCONUT|COKE|SNOWBALL> - 이 채널에서 이벤트 참가 모집 시작",
         command = function(me, args)
             local ok, err = channel_event.schedule(args[1])
             if ok then

@@ -153,6 +153,7 @@ type CharacterListener interface {
 	OnShowMobHp(ch *Character, mob *Mob, percentage uint8)
 	OnDojoEnergy(ch *Character, energy int)
 	OnUnlockAction(ch *Character)
+	OnSnowballKnockback(ch *Character)
 	OnInspect(ch *Character, profile *response.CharacterProfile)
 	OnMonsterBookCardRegistered(ch *Character, cardID uint32, count uint32)
 	OnMonsterBookCardFull(ch *Character)

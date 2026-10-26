@@ -36,6 +36,11 @@ type MapListener interface {
 	OnMusicChanged(mapInstance *Map, song string)
 	OnWeather(mapInstance *Map, itemID uint32, message string)
 	OnOXQuiz(mapInstance *Map, ask bool, set uint8, id uint16)
+	OnCoconutHit(mapInstance *Map, id int16, delay int16, state uint8)
+	OnCoconutScore(mapInstance *Map, maple int16, story int16)
+	OnSnowballState(mapInstance *Map, state uint8, snowmanHP [2]int32, position [2]int16, stage [2]uint8, damage [3]int16)
+	OnSnowballHit(mapInstance *Map, target uint8, damage int16, delay int16)
+	OnSnowballMessage(mapInstance *Map, team uint8, message uint8)
 	OnSongPlayed(mapInstance *Map, itemID uint32, name string)
 	OnYellowChat(mapInstance *Map, message string)
 	OnWeddingEffect(mapInstance *Map, groomID uint32, brideID uint32)
@@ -125,6 +130,7 @@ type Map struct {
 	portalsByName     map[string]*Portal
 	song              mapSong
 	weather           mapWeather
+	nextTeam          constant.CarnivalTeam
 }
 
 type BroadcastOption struct {
@@ -309,6 +315,12 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	character.onMap = m
+	// A coconut field puts its players in its two teams in turn, as the original server did.
+	character.fieldTeam = constant.CarnivalTeamNone
+	if m.wz.FieldType == wz.FieldTypeCoconut {
+		character.fieldTeam = m.nextTeam
+		m.nextTeam ^= 1
+	}
 	if m.wz.FieldType != wz.FieldTypeDojo {
 		character.dojo.SetEnergy(0)
 	}

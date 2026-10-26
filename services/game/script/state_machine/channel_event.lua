@@ -3,6 +3,10 @@
 local GAMES = {
     ox_quiz = require("script/lib/event/ox_quiz"),
     ola_ola = require("script/lib/event/ola_ola"),
+    fitness = require("script/lib/event/fitness"),
+    coconut = require("script/lib/event/coconut"),
+    coke_play = require("script/lib/event/coke_play"),
+    snowball = require("script/lib/event/snowball"),
 }
 
 local WINNER_MAP = 109050000
@@ -90,7 +94,7 @@ local hooks = {
         local function on_arrive(player)
             player:event_instructions()
         end
-        player:map(sm:map(game(sm).MAPS[1]), "join00", { callback = on_arrive })
+        player:map(sm:map(game(sm).MAPS[1]), game(sm).ENTRY or "join00", { callback = on_arrive })
         if #sm:players() >= MAX_PLAYERS then
             close(sm)
         end
@@ -106,8 +110,12 @@ local hooks = {
     end,
 
     -- The client drops the clock with the field, so a game that runs on a clock_until keeps it on every event map.
+    -- A game whose last portal leads to the winner map finishes the contestant there.
     on_changed_map = function(sm, player, map_id)
         if map_id == WINNER_MAP then
+            if game(sm).finish ~= nil then
+                game(sm).finish(sm, player)
+            end
             return
         end
         local left = (tonumber(sm:get_property("clock_until")) or 0) - now()

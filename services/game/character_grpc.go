@@ -28,6 +28,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		guildID = &v
 	}
 	ch := &Character{
+		fieldTeam: constant.CarnivalTeamNone,
 		sendable:  sender,
 		listener:  listener,
 		gameWorld: gw,

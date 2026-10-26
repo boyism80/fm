@@ -329,6 +329,26 @@ func (l *MapListenerImpl) OnOXQuiz(mapInstance *game.Map, ask bool, set uint8, i
 	}, nil)
 }
 
+func (l *MapListenerImpl) OnCoconutHit(mapInstance *game.Map, id int16, delay int16, state uint8) {
+	mapInstance.Broadcast(&response.CoconutHit{ID: id, Delay: delay, State: state}, nil)
+}
+
+func (l *MapListenerImpl) OnCoconutScore(mapInstance *game.Map, maple int16, story int16) {
+	mapInstance.Broadcast(&response.CoconutScore{Maple: maple, Story: story}, nil)
+}
+
+func (l *MapListenerImpl) OnSnowballState(mapInstance *game.Map, state uint8, snowmanHP [2]int32, position [2]int16, stage [2]uint8, damage [3]int16) {
+	mapInstance.Broadcast(&response.SnowballState{State: state, SnowmanHP: snowmanHP, Position: position, Stage: stage, Damage: damage}, nil)
+}
+
+func (l *MapListenerImpl) OnSnowballHit(mapInstance *game.Map, target uint8, damage int16, delay int16) {
+	mapInstance.Broadcast(&response.SnowballHit{Target: target, Damage: damage, Delay: delay}, nil)
+}
+
+func (l *MapListenerImpl) OnSnowballMessage(mapInstance *game.Map, team uint8, message uint8) {
+	mapInstance.Broadcast(&response.SnowballMessage{Team: team, Message: message}, nil)
+}
+
 func (l *MapListenerImpl) OnSongPlayed(mapInstance *game.Map, itemID uint32, name string) {
 	mapInstance.Broadcast(&response.CashSong{
 		ItemID: itemID,

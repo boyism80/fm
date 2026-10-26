@@ -659,6 +659,45 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mapInstance.ShowOXQuiz(L.ToBool(2), uint8(L.CheckInt(3)), uint16(L.CheckInt(4)))
 			return 0
 		},
+		"coconut_hit": func(L *lua.LState) int {
+			mapInstance := luax.Check[Map](L, 1)
+			mapInstance.ShowCoconutHit(int16(L.CheckInt(2)), int16(L.CheckInt(3)), uint8(L.CheckInt(4)))
+			return 0
+		},
+		"coconut_score": func(L *lua.LState) int {
+			mapInstance := luax.Check[Map](L, 1)
+			mapInstance.ShowCoconutScore(int16(L.CheckInt(2)), int16(L.CheckInt(3)))
+			return 0
+		},
+		// snowball_state(state, { hp, hp }, { position, position }, { stage, stage }, { damage, damage, damage })
+		"snowball_state": func(L *lua.LState) int {
+			mapInstance := luax.Check[Map](L, 1)
+			hp := L.CheckTable(3)
+			position := L.CheckTable(4)
+			stage := L.CheckTable(5)
+			damage := L.CheckTable(6)
+			number := func(t *lua.LTable, i int) int64 {
+				return int64(lua.LVAsNumber(t.RawGetInt(i)))
+			}
+			mapInstance.ShowSnowballState(
+				uint8(L.CheckInt(2)),
+				[2]int32{int32(number(hp, 1)), int32(number(hp, 2))},
+				[2]int16{int16(number(position, 1)), int16(number(position, 2))},
+				[2]uint8{uint8(number(stage, 1)), uint8(number(stage, 2))},
+				[3]int16{int16(number(damage, 1)), int16(number(damage, 2)), int16(number(damage, 3))},
+			)
+			return 0
+		},
+		"snowball_hit": func(L *lua.LState) int {
+			mapInstance := luax.Check[Map](L, 1)
+			mapInstance.ShowSnowballHit(uint8(L.CheckInt(2)), int16(L.CheckInt(3)), int16(L.CheckInt(4)))
+			return 0
+		},
+		"snowball_message": func(L *lua.LState) int {
+			mapInstance := luax.Check[Map](L, 1)
+			mapInstance.ShowSnowballMessage(uint8(L.CheckInt(2)), uint8(L.CheckInt(3)))
+			return 0
+		},
 		"start_weather": func(L *lua.LState) int {
 			mapInstance := luax.Check[Map](L, 1)
 			L.Push(lua.LBool(mapInstance.StartWeather(uint32(L.CheckNumber(2)), L.OptString(3, ""))))

@@ -9,6 +9,10 @@ local ANCIENT_SCROLL = 4031019
 M.GAMES = {
     OX = { kind = "ox_quiz", name = "스피드 OX 퀴즈" },
     OLA = { kind = "ola_ola", name = "올라올라" },
+    FITNESS = { kind = "fitness", name = "고지를 향해서" },
+    COCONUT = { kind = "coconut", name = "코코넛 시즌" },
+    COKE = { kind = "coke_play", name = "코크 플레이" },
+    SNOWBALL = { kind = "snowball", name = "눈덩이 굴리기" },
 }
 
 local function group()

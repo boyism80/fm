@@ -1828,6 +1828,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(ch.pets.active.item.fullness))
 			return 1
 		},
+		"field_team": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			L.Push(lua.LNumber(ch.fieldTeam))
+			return 1
+		},
+		"snowball_knockback": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			ch.listener.OnSnowballKnockback(ch)
+			return 0
+		},
 		"rename_pet": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
 			if ch.pets.active == nil {
