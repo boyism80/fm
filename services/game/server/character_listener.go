@@ -951,6 +951,13 @@ func (l *CharacterListenerImpl) OnSnowballKnockback(ch *game.Character) {
 	_ = ch.Send(&response.SnowballKnockback{}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnIncubatorResult(ch *game.Character, itemID uint32, count int16) {
+	_ = ch.Send(&response.IncubatorResult{
+		ItemID: itemID,
+		Count:  count,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnUnlockAction(ch *game.Character) {
 	ch.Send(&response.UpdateStats{
 		UnlockAction: true,

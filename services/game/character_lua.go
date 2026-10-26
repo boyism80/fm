@@ -911,6 +911,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.listener.OnShowSelfHPHealedEffect(ch, amount)
 			return 0
 		},
+		"show_incubator_result": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			ch.listener.OnIncubatorResult(ch, uint32(L.OptInt(2, 0)), int16(L.OptInt(3, 0)))
+			return 0
+		},
 		"show_reward_item_animation": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
 			itemID := uint32(L.CheckInt(2))

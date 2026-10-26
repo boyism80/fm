@@ -5,6 +5,8 @@ local TOWN = 100000000
 local SONG = 5100000
 -- A safety charm works while carried, so using it stands for any unsupported cash item.
 local SAFETY_CHARM = 5130000
+local INCUBATOR = 5060002
+local PIGMY_EGG = 4170000
 local ITEM_MEGAPHONE = 5076000
 local TRIPLE_MEGAPHONE = 5077000
 local KITE = 5080000
@@ -357,6 +359,36 @@ local function unsupported(ctx)
     return kept(ctx, bot, SAFETY_CHARM, before, "지원하지 않는 호신부적")
 end
 
+-- An incubator hatches one pigmy egg into an item; with no egg left it is given back.
+local function incubator(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, string.format("%d:2,%d:1", INCUBATOR, PIGMY_EGG)) == false then
+        return false
+    end
+    local before = count(bot, INCUBATOR)
+    local egg = { target_type = ETC, target_slot = bot:slot(PIGMY_EGG) or 0 }
+    local hatched = bot:request(resp.incubator_result, use(bot, INCUBATOR, egg), nil, 5000)
+    if hatched == false or hatched.item_id == 0 or hatched.count < 1 then
+        return ctx:fail("부화 결과가 오지 않음")
+    end
+    if consumed(ctx, bot, INCUBATOR, before, "부화기") == false then
+        return false
+    end
+    if count(bot, PIGMY_EGG) ~= 0 then
+        return ctx:fail("부화한 피그미 에그가 남아 있음")
+    end
+    if count(bot, hatched.item_id) < hatched.count then
+        bot:request(resp.inventory_operation, nil, nil, 3000)
+    end
+    if count(bot, hatched.item_id) < hatched.count then
+        return ctx:fail("부화 결과 아이템을 받지 못함: " .. hatched.item_id)
+    end
+
+    before = count(bot, INCUBATOR)
+    bot:send(use(bot, INCUBATOR, egg))
+    return kept(ctx, bot, INCUBATOR, before, "피그미 에그 없이 부화기")
+end
+
 -- An AP reset moves one point between stats; the stat it leaves keeps the minimum.
 local function ap_reset(ctx)
     local bot = ctx:bot(0)
@@ -489,6 +521,7 @@ test_suite {
 
     scenarios = {
         unsupported,
+        incubator,
         color_lens,
         song,
         chalkboard,

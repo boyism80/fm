@@ -154,6 +154,7 @@ type CharacterListener interface {
 	OnDojoEnergy(ch *Character, energy int)
 	OnUnlockAction(ch *Character)
 	OnSnowballKnockback(ch *Character)
+	OnIncubatorResult(ch *Character, itemID uint32, count int16)
 	OnInspect(ch *Character, profile *response.CharacterProfile)
 	OnMonsterBookCardRegistered(ch *Character, cardID uint32, count uint32)
 	OnMonsterBookCardFull(ch *Character)

@@ -263,6 +263,7 @@ var decoders = func() []decoder {
 		newDecoder[response.SnowballHit](nil),
 		newDecoder[response.SnowballMessage](nil),
 		newDecoder[response.SnowballKnockback](nil),
+		newDecoder[response.IncubatorResult](nil),
 		newDecoder[response.EventInstructions](nil),
 		newDecoder[response.SpawnReactor](nil),
 		newDecoder[response.TriggerReactor](nil),
