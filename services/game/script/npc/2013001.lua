@@ -43,6 +43,7 @@ end
 
 local function handle_exit(me)
     strip_pieces(me)
+    me:unbuff(-2022090, -2022091, -2022092, -2022093)
     me:map(200080101)
 end
 

@@ -16,7 +16,15 @@ local GARDEN = 920010800
 local BONUS = 920011100
 local REWARD = 920011300
 local EXIT = 920011200
+local DIALOG_NEXT = 0
+local DIALOG_YES_NO = 1
 local DIALOG_LIST = 4
+local MENU_ENTER = 0
+local MENU_FEED = 2
+local RED_BEAN_SNOW = 2001002
+local RED_BEAN_SNOW_INDEX = 6
+local FIGHTER = 110
+local FIGHTER_66_70 = 4
 
 local CLOUD = 4001063
 local WALK_PIECE = 4001050
@@ -67,6 +75,27 @@ local function enter_room(ctx, portal, map_id)
     return leader
 end
 
+local function wonky_menu(ctx, bot, selected, reply)
+    local oid = pq.npc(ctx, bot, ENTRY_NPC)
+    if oid == false then
+        return false
+    end
+    local dlg = bot:npc_click(oid)
+    if dlg == false or dlg.selections == nil then
+        return ctx:fail("웡키 선택지가 오지 않음")
+    end
+    return bot:request(reply, req.dialog { dialog_type = DIALOG_LIST, next = true, selected = selected }, nil,
+        5000)
+end
+
+local function feed_wonky(ctx, bot)
+    if wonky_menu(ctx, bot, MENU_FEED, resp.dialog_list) == false then
+        return ctx:fail("웡키 음식 목록이 오지 않음")
+    end
+    return bot:request(resp.dialog, req.dialog { dialog_type = DIALOG_LIST, next = true, selected = RED_BEAN_SNOW_INDEX },
+        nil, 5000)
+end
+
 local function stage4_feedback(text)
     if text:find("축하해요", 1, true) ~= nil then
         return 3
@@ -103,26 +132,53 @@ test_suite {
     end,
 
     scenarios = {
+        function(ctx)
+            local leader = ctx:bot(0)
+            local init = string.format("/봇초기화 70 %d 0 %d:1 - - wonky.mission=%d", FIGHTER, RED_BEAN_SNOW, FIGHTER_66_70)
+            if pq.command(leader, init, "봇초기화 완료") == false then
+                return ctx:fail("파티장 초기화 실패")
+            end
+            local taste = feed_wonky(ctx, leader)
+            if taste == false or taste.text:find("정말 고마워", 1, true) == nil then
+                return ctx:fail("처음 먹는 음식 반응이 오지 않음")
+            end
+            local mood = leader:request(resp.notice, req.dialog { dialog_type = DIALOG_NEXT, next = true }, function(p)
+                return p.message:find("팥빙수을(를) 먹고 웡키의 기분이", 1, true) ~= nil
+            end, 5000)
+            if mood == false then
+                return ctx:fail("웡키의 기분 변화 안내가 없음")
+            end
+            if (leader:items()[RED_BEAN_SNOW] or 0) ~= 0 then
+                return ctx:fail("먹인 팥빙수가 남아 있음")
+            end
+
+            local scold = feed_wonky(ctx, leader)
+            if scold == false or scold.text:find("장난치지 말라구", 1, true) == nil then
+                return ctx:fail("없는 음식을 줬는데 꾸중이 없음")
+            end
+            leader:dialog(false)
+            return true
+        end,
         pq.form_party,
         function(ctx)
             local leader = ctx:bot(0)
-            local oid = pq.npc(ctx, leader, ENTRY_NPC)
-            if oid == false then
-                return false
+            local mission = wonky_menu(ctx, leader, MENU_ENTER, resp.dialog_yes_no)
+            if mission == false or mission.text:find("파이터", 1, true) == nil or mission.text:find("66~70", 1, true) == nil then
+                return ctx:fail("웡키의 축복 미션 안내가 없음")
             end
-            local dlg = leader:npc_click(oid)
-            if dlg == false or dlg.selections == nil then
-                return ctx:fail("웡키 선택지가 오지 않음")
+            local blessed = leader:request(resp.dialog, req.dialog { dialog_type = DIALOG_YES_NO, next = true }, nil,
+                5000)
+            if blessed == false or blessed.text:find("딱 맞췄어", 1, true) == nil then
+                return ctx:fail("미션을 맞췄는데 축복 안내가 없음")
             end
-            local warp = leader:request(resp.warp, req.dialog { dialog_type = DIALOG_LIST, next = true, selected = 0 },
-                function(p)
-                    return p.character.map == START
-                end, 15000)
-            if warp == false then
-                return ctx:fail("여신의 탑 입장 실패")
+            local notice = leader:request(resp.notice, req.dialog { dialog_type = DIALOG_NEXT, next = true }, function(p)
+                return p.message:find("요정 웡키의 미션을 수행하여", 1, true) ~= nil
+            end, 5000)
+            if notice == false then
+                return ctx:fail("웡키의 축복이 적용되지 않음")
             end
             if pq.wait_all(ctx, START, 15000) == false then
-                return false
+                return ctx:fail("여신의 탑 입장 실패")
             end
             for i = 0, ctx:bot_count() - 1 do
                 ctx:bot(i):dialog(false)
