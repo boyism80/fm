@@ -96,6 +96,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, CoconutHit](gs)
 	core.Bind[*GameServer, SnowballHit](gs)
 	core.Bind[*GameServer, SnowballTouch](gs)
+	core.Bind[*GameServer, PulleyPull](gs)
 	core.Bind[*GameServer, ExpireTemporaryStat](gs)
 	core.Bind[*GameServer, ChangeTemporaryStat](gs)
 	core.Bind[*GameServer, SummonPet](gs)

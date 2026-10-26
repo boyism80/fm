@@ -37,6 +37,7 @@ type MapListener interface {
 	OnWeather(mapInstance *Map, itemID uint32, message string)
 	OnOXQuiz(mapInstance *Map, ask bool, set uint8, id uint16)
 	OnCoconutHit(mapInstance *Map, id int16, delay int16, state uint8)
+	OnHealerMove(mapInstance *Map, y int16)
 	OnCoconutScore(mapInstance *Map, maple int16, story int16)
 	OnSnowballState(mapInstance *Map, state uint8, snowmanHP [2]int32, position [2]int16, stage [2]uint8, damage [3]int16)
 	OnSnowballHit(mapInstance *Map, target uint8, damage int16, delay int16)
@@ -130,6 +131,7 @@ type Map struct {
 	portalsByName     map[string]*Portal
 	song              mapSong
 	weather           mapWeather
+	healer            mapHealer
 	nextTeam          constant.CarnivalTeam
 }
 
@@ -179,6 +181,9 @@ func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, ma
 
 	if opts.Instance {
 		mapInstance.instance = &instanceState{}
+	}
+	if wz.Healer != nil {
+		mapInstance.healer.y = wz.Healer.YMin
 	}
 
 	mapInstance.controllerTable = NewControllerTable(func(mob *Mob, before *Character, after *Character, aggro bool) {

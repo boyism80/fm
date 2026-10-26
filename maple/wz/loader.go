@@ -1546,6 +1546,17 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		model.Carnival = parseCarnivalField(mcNode)
 	}
 
+	if healerNode := root.find("healer"); healerNode != nil {
+		model.Healer = &Healer{
+			YMin:    int16(healerNode.Int("yMin", 0)),
+			YMax:    int16(healerNode.Int("yMax", 0)),
+			Fall:    int16(healerNode.Int("fall", 0)),
+			Rise:    int16(healerNode.Int("rise", 0)),
+			HealMin: healerNode.Int("healMin", 0),
+			HealMax: healerNode.Int("healMax", 0),
+		}
+	}
+
 	return &model, nil
 }
 

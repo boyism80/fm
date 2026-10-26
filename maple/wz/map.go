@@ -107,6 +107,7 @@ type Map struct {
 	Areas             []types.Rect[int16]
 	Footholds         *types.QuadTreeNode[int16, Foothold]
 	Carnival          *CarnivalField
+	Healer            *Healer
 	doorReturnPortals []Portal
 }
 

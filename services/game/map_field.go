@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -23,6 +24,13 @@ type mapWeather struct {
 	itemID  uint32
 	message string
 	until   time.Time
+}
+
+const healerRiseInterval = time.Second
+
+type mapHealer struct {
+	y      int16
+	rising bool
 }
 
 func (m *Map) ChangeMusic(song string) {
@@ -88,6 +96,56 @@ func (m *Map) CurrentWeather() (uint32, string, bool) {
 		return 0, "", false
 	}
 	return m.weather.itemID, m.weather.message, true
+}
+
+// PullPulley lowers the healer; at the bottom it heals everyone in the field and goes back to the top.
+func (m *Map) PullPulley() {
+	healer := m.wz.Healer
+	if healer == nil {
+		return
+	}
+
+	m.healer.y += healer.Fall
+	if m.healer.y >= healer.YMax {
+		amount := healer.HealMin + rand.Intn(healer.HealMax-healer.HealMin+1)
+		for _, obj := range m.objects[constant.ObjectTypeCharacter] {
+			ch, ok := obj.(*Character)
+			if !ok || ch.GetHp() == 0 {
+				continue
+			}
+			ch.AddHp(amount)
+		}
+		m.healer.y = healer.YMin
+	}
+	m.listener.OnHealerMove(m, m.healer.y)
+	m.scheduleHealerRise()
+}
+
+func (m *Map) scheduleHealerRise() {
+	if m.healer.rising || m.healer.y <= m.wz.Healer.YMin {
+		return
+	}
+	m.healer.rising = true
+	m.After(healerRiseInterval, m.riseHealer)
+}
+
+func (m *Map) riseHealer() {
+	m.healer.rising = false
+	healer := m.wz.Healer
+	if m.healer.y <= healer.YMin {
+		return
+	}
+	m.healer.y = max(healer.YMin, m.healer.y-healer.Rise)
+	m.listener.OnHealerMove(m, m.healer.y)
+	m.scheduleHealerRise()
+}
+
+// HealerY reports where a lowered healer hangs, for players who enter meanwhile.
+func (m *Map) HealerY() (int16, bool) {
+	if m.wz.Healer == nil || m.healer.y <= m.wz.Healer.YMin {
+		return 0, false
+	}
+	return m.healer.y, true
 }
 
 func (m *Map) ShowOXQuiz(ask bool, set uint8, id uint16) {

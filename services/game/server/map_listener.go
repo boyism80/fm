@@ -79,6 +79,9 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *game.Map
 	if itemID, message, ok := mapInstance.CurrentWeather(); ok {
 		character.Send(&response.Weather{ItemID: itemID, Message: message}, types.SEND_POLICY_ENCRYPT)
 	}
+	if y, ok := mapInstance.HealerY(); ok {
+		character.Send(&response.HealerMove{Y: y}, types.SEND_POLICY_ENCRYPT)
+	}
 
 	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter, &game.SearchOption{IncludeHidden: true}) {
 		if viewer, ok := obj.(*game.Character); ok {
@@ -327,6 +330,10 @@ func (l *MapListenerImpl) OnOXQuiz(mapInstance *game.Map, ask bool, set uint8, i
 		Set: set,
 		ID:  id,
 	}, nil)
+}
+
+func (l *MapListenerImpl) OnHealerMove(mapInstance *game.Map, y int16) {
+	mapInstance.Broadcast(&response.HealerMove{Y: y}, nil)
 }
 
 func (l *MapListenerImpl) OnCoconutHit(mapInstance *game.Map, id int16, delay int16, state uint8) {
