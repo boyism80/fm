@@ -8,6 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/maple/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -30,7 +31,7 @@ type Dialog struct {
 	thread  *lua.LState
 	asked   *npcDialog
 	waiting bool
-	shopID  uint32
+	shop    *wz.Shop
 }
 
 func NewDialog(owner *Character) *Dialog {
@@ -44,19 +45,20 @@ func (d *Dialog) Thread() *lua.LState {
 }
 
 func (d *Dialog) Busy() bool {
-	return d.Thread() != nil || d.shopID != 0
+	return d.Thread() != nil || d.shop != nil
 }
 
-func (d *Dialog) OpenShop(id uint32) {
-	d.shopID = id
+func (d *Dialog) OpenShop(shop *wz.Shop) {
+	d.shop = shop
+	d.owner.listener.OnOpenNpcShop(d.owner, shop.NpcID, shop)
 }
 
-func (d *Dialog) Shop() uint32 {
-	return d.shopID
+func (d *Dialog) Shop() *wz.Shop {
+	return d.shop
 }
 
 func (d *Dialog) CloseShop() {
-	d.shopID = 0
+	d.shop = nil
 }
 
 func (d *Dialog) Set(thread *lua.LState) {
@@ -101,7 +103,7 @@ func (d *Dialog) Reset() {
 
 func (d *Dialog) Close() {
 	d.owner.account.storage.Close()
-	d.shopID = 0
+	d.shop = nil
 	thread := d.Thread()
 	if thread == nil {
 		return

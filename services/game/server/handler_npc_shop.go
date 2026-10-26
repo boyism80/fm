@@ -35,18 +35,7 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 		return nil
 	}
 
-	resources := h.gs.GetResources()
-	if resources == nil {
-		log.Printf("Resources not available")
-		return fmt.Errorf("resources not available")
-	}
-
-	shopID := character.Dialog().Shop()
-	if shopID == 0 {
-		return nil
-	}
-
-	shop := resources.GetShop(shopID)
+	shop := character.Dialog().Shop()
 	if shop == nil {
 		return nil
 	}

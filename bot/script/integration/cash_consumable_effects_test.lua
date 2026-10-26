@@ -7,6 +7,11 @@ local SONG = 5100000
 local SAFETY_CHARM = 5130000
 local INCUBATOR = 5060002
 local PIGMY_EGG = 4170000
+local MU_MU = 5450000
+local MU_MU_SHOP = 9090000
+local APPLE = 2010000
+local APPLE_PRICE = 50
+local SHOP_LEAVE = 3
 local ITEM_MEGAPHONE = 5076000
 local TRIPLE_MEGAPHONE = 5077000
 local KITE = 5080000
@@ -389,6 +394,42 @@ local function incubator(ctx)
     return kept(ctx, bot, INCUBATOR, before, "피그미 에그 없이 부화기")
 end
 
+-- Mu Mu opens the traveling merchant's store anywhere from level 10, and the store sells what it shows.
+local function mu_mu(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 5 0 10000 " .. MU_MU .. ":2", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    local before = count(bot, MU_MU)
+    if bot:request(resp.notice, use(bot, MU_MU), function(p)
+            return p.message:find("레벨 10 이상", 1, true) ~= nil
+        end, 5000) == false then
+        return ctx:fail("레벨 10 미만에 묘묘 제한 안내가 없음")
+    end
+    if kept(ctx, bot, MU_MU, before, "레벨 10 미만 묘묘") == false then
+        return false
+    end
+
+    if pq.command(bot, "/레벨바꾸기 30", "레벨 설정") == false then
+        return ctx:fail("레벨 설정 실패")
+    end
+    local shop = bot:request(resp.open_npc_shop, use(bot, MU_MU), nil, 5000)
+    if shop == false or shop.shop_id ~= MU_MU_SHOP then
+        return ctx:fail("묘묘 상점이 열리지 않음")
+    end
+    if consumed(ctx, bot, MU_MU, before, "묘묘") == false then
+        return false
+    end
+    bot:shop_buy(APPLE, 2)
+    ctx:sleep(500)
+    if count(bot, APPLE) ~= 2 or bot:meso() ~= 10000 - APPLE_PRICE * 2 then
+        return ctx:fail(string.format("묘묘 상점 구매 결과가 다름: 사과 %d, 메소 %d", count(bot, APPLE), bot:meso()))
+    end
+    bot:send(req.npc_shop { mode = SHOP_LEAVE })
+    ctx:sleep(300)
+    return true
+end
+
 -- An AP reset moves one point between stats; the stat it leaves keeps the minimum.
 local function ap_reset(ctx)
     local bot = ctx:bot(0)
@@ -516,12 +557,13 @@ local function item_targets(ctx)
 end
 
 test_suite {
-    name = "Cash consumable effects: 칠판·쪽지·메시지 박스·확성기·컬러렌즈·축하곡·AP/SP 되돌리기·날씨·이름/자물쇠/카르마",
+    name = "Cash consumable effects: 칠판·쪽지·메시지 박스·확성기·컬러렌즈·축하곡·AP/SP 되돌리기·날씨·이름/자물쇠/카르마·부화기·묘묘",
     bot_count = 2,
 
     scenarios = {
         unsupported,
         incubator,
+        mu_mu,
         color_lens,
         song,
         chalkboard,

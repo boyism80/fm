@@ -911,6 +911,29 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.listener.OnShowSelfHPHealedEffect(ch, amount)
 			return 0
 		},
+		"open_shop": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			npcID := uint32(L.CheckInt(2))
+			stock := L.CheckTable(3)
+			if ch.dialog.Busy() {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			shop := &wz.Shop{NpcID: npcID}
+			stock.ForEach(func(_, entry lua.LValue) {
+				row, ok := entry.(*lua.LTable)
+				if !ok {
+					return
+				}
+				shop.Items = append(shop.Items, wz.ShopItem{
+					ItemID: uint32(lua.LVAsNumber(row.RawGetString("item"))),
+					Price:  int(lua.LVAsNumber(row.RawGetString("price"))),
+				})
+			})
+			ch.dialog.OpenShop(shop)
+			L.Push(lua.LTrue)
+			return 1
+		},
 		"show_incubator_result": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
 			ch.listener.OnIncubatorResult(ch, uint32(L.OptInt(2, 0)), int16(L.OptInt(3, 0)))
