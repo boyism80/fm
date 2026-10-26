@@ -1,3 +1,8 @@
+local SAUNA_ROBES = {
+    [1050018] = true,
+    [1051017] = true,
+}
+
 local function hp_recover_check(me)
     if me:class_of(Class.Warrior) then
         local s = me:skill(Skill.ImprovingHpRecovery)
@@ -262,6 +267,10 @@ return {
         local map = me:map()
         if map ~= nil then
             recovery_rate = map:recovery_rate()
+        end
+        local overall = me:equipped(EquipmentPart.Top)
+        if recovery_rate ~= 1.0 and overall ~= nil and SAUNA_ROBES[overall:wz():id()] then
+            recovery_rate = recovery_rate * 1.5
         end
         local stance_mult = me:stance_of(Stance.Sit) and 1.5 or 1.0
         local chair = me:chair()

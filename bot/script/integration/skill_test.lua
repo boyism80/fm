@@ -41,6 +41,10 @@ local MOB_WATK = 0x1
 local MOB_MDEF = 0x8
 local MOB_SHOWDOWN = 0x800
 local HP = 0x400
+local SAUNA = 105040401
+local SAUNA_ROBES = { 1050018, 1051017 }
+local OVERALL_SLOT = -5
+local HP_HEAL_INTERVAL_MS = 10000
 local MP = 0x1000
 
 local function check(ctx, ok, message)
@@ -479,6 +483,57 @@ local function magician_mp_recovery(ctx)
     return check(ctx, gain > 100 and gain < 200, "MP 회복력 향상 16레벨 70레벨 마법사의 자연 회복 상한이 다름: " .. gain)
 end
 
+-- A sauna doubles natural HP recovery (10 x 2.0), and a sauna robe makes it half again (10 x 3.0).
+local function sauna_robe_recovery(ctx)
+    local bot = ctx:bot(0)
+    local items = string.format("%d:1,%d:1", SAUNA_ROBES[1], SAUNA_ROBES[2])
+    if setup(ctx, bot, 30, 0, items) == false then
+        return false
+    end
+    if bot:force_instance_move(SAUNA, "사우나 자연 회복") == false then
+        return ctx:fail("사우나 이동 실패")
+    end
+    if pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false then
+        return ctx:fail("체력 설정 실패")
+    end
+    local function hp_changed(p)
+        return p.stats[HP] ~= nil
+    end
+    local function heal()
+        local hurt = bot:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 1000 }, hp_changed, 3000)
+        if hurt == false then
+            return nil
+        end
+        local p = bot:request(resp.update_stats, req.heal_over_time { heal_hp = 200 }, hp_changed, 3000)
+        if p == false then
+            return nil
+        end
+        return p.stats[HP] - hurt.stats[HP]
+    end
+
+    local plain = heal()
+    if check(ctx, plain == 20, "사우나의 자연 회복이 2배가 아님: " .. tostring(plain)) == false then
+        return false
+    end
+    local worn = false
+    for _, robe in ipairs(SAUNA_ROBES) do
+        bot:request(resp.inventory_operation,
+            req.move_item { inventory_type = EQUIP, source = bot:slot(robe) or 0, dest = OVERALL_SLOT, count = 1 }, nil,
+            2000)
+        ctx:sleep(500)
+        if bot:slot(robe) == nil then
+            worn = true
+            break
+        end
+    end
+    if check(ctx, worn, "사우나 가운을 입지 못함") == false then
+        return false
+    end
+    ctx:sleep(HP_HEAL_INTERVAL_MS)
+    local robed = heal()
+    return check(ctx, robed == 30, "사우나 가운을 입은 자연 회복이 1.5배가 아님: " .. tostring(robed))
+end
+
 -- A skill takes its MP once, and a use refused for want of MP takes nothing.
 local function skill_cost(ctx)
     local bot = ctx:bot(1)
@@ -601,5 +656,6 @@ test_suite {
         magician_mp_recovery,
         showdown_threaten,
         skill_cost,
+        sauna_robe_recovery,
     },
 }
