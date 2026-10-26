@@ -320,7 +320,7 @@ return {
         if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
             return 12
         end
-        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) or me:class_of(Class.Aran2) then
+        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
             return 24 + bonus
         end
         if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
@@ -340,7 +340,7 @@ return {
         if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
             return 8
         end
-        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) or me:class_of(Class.Aran2) then
+        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
             return 4
         end
         if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
