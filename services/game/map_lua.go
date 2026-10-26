@@ -703,6 +703,11 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(mapInstance.StartWeather(uint32(L.CheckNumber(2)), L.OptString(3, ""))))
 			return 1
 		},
+		"give_state_change": func(L *lua.LState) int {
+			mapInstance := luax.Check[Map](L, 1)
+			mapInstance.GiveStateChange(uint32(L.CheckNumber(2)))
+			return 0
+		},
 		"weather": func(L *lua.LState) int {
 			mapInstance := luax.Check[Map](L, 1)
 			mapInstance.Weather(uint32(L.CheckNumber(2)), L.OptString(3, ""))

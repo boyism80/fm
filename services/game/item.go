@@ -36,6 +36,7 @@ type Item interface {
 	Tradable() bool
 	Storable() bool
 	prepareFieldDrop() bool
+	karma() constant.ItemFlag
 	consumeKarma()
 	Increase(count uint16) uint16
 	Reduce(count uint16) uint16

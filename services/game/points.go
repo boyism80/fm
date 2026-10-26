@@ -99,6 +99,82 @@ func (p *Points) AssignHPMP(stat constant.StatType) bool {
 	return true
 }
 
+// ResetAP moves one point from one stat to another, as the AP reset scroll does.
+func (p *Points) ResetAP(to, from constant.StatType) bool {
+	if to == from {
+		return false
+	}
+	switch to {
+	case constant.StatTypeHP:
+		if p.hpmpUsed >= constant.HpAPUsedMax || int64(p.owner.baseHp)+int64(p.owner.bonusHp) >= int64(constant.StatMaxHPMP) {
+			return false
+		}
+	case constant.StatTypeMP:
+		if p.hpmpUsed >= constant.HpAPUsedMax || int64(p.owner.baseMp)+int64(p.owner.bonusMp) >= int64(constant.StatMaxHPMP) {
+			return false
+		}
+	default:
+		if !p.owner.stats.canAdd(to, 1) {
+			return false
+		}
+	}
+
+	statUpdate := map[constant.Stat]int32{}
+	switch from {
+	case constant.StatTypeHP:
+		loss := p.hpmpIncrease("get_ap_reset_hp", 10)
+		if p.hpmpUsed == 0 || p.owner.baseHp <= loss {
+			return false
+		}
+		p.owner.SetBaseHp(p.owner.baseHp-loss, false)
+		p.hpmpUsed--
+	case constant.StatTypeMP:
+		loss := p.hpmpIncrease("get_ap_reset_mp", 5)
+		if p.hpmpUsed == 0 || p.owner.baseMp <= loss {
+			return false
+		}
+		p.owner.SetBaseMp(p.owner.baseMp-loss, false)
+		p.hpmpUsed--
+	default:
+		if !p.owner.stats.removeOne(from, p.resetFloor(from), statUpdate) {
+			return false
+		}
+	}
+
+	switch to {
+	case constant.StatTypeHP:
+		p.owner.AddBaseHp(p.hpmpIncrease("get_ap_to_hp", 10), false)
+		p.hpmpUsed++
+	case constant.StatTypeMP:
+		p.owner.AddBaseMp(p.hpmpIncrease("get_ap_to_mp", 5), false)
+		p.hpmpUsed++
+	default:
+		p.owner.stats.add(to, 1, statUpdate)
+	}
+	if to == constant.StatTypeHP || to == constant.StatTypeMP || from == constant.StatTypeHP || from == constant.StatTypeMP {
+		statUpdate[constant.StatHP] = int32(p.owner.GetHp())
+		statUpdate[constant.StatMaxHP] = int32(p.owner.GetMaxHp())
+		statUpdate[constant.StatMP] = int32(p.owner.GetMp())
+		statUpdate[constant.StatMaxMP] = int32(p.owner.GetMaxMp())
+	}
+	p.owner.listener.OnUpdateStats(p.owner, statUpdate, true)
+	return true
+}
+
+// resetFloor keeps 4 of each stat and the minimum a class needs of its main stat, as the original server did.
+func (p *Points) resetFloor(stat constant.StatType) uint16 {
+	class := p.owner.class
+	switch {
+	case stat == constant.StatTypeStr && (class.Of(constant.ClassWarrior) || class.Of(constant.ClassDawnWarrior1)):
+		return 35
+	case stat == constant.StatTypeDex && (class.Of(constant.ClassBowman) || class.Of(constant.ClassThief) || class.Of(constant.ClassWindArcher1) || class.Of(constant.ClassNightWalker1)):
+		return 25
+	case stat == constant.StatTypeInt && (class.Of(constant.ClassMagician) || class.Of(constant.ClassBlazeWizard1)):
+		return 20
+	}
+	return 4
+}
+
 func (p *Points) hpmpIncrease(query string, fallback uint32) uint32 {
 	m := p.owner.GetMap()
 	if m == nil {

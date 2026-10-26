@@ -114,6 +114,44 @@ local function ap_to_mp_base(me)
     return math.random(50, 100)
 end
 
+local function skill_y(me, skill_id)
+    local s = me:skill(skill_id)
+    if s == nil then
+        return 0
+    end
+    local effect = s:effect()
+    if effect == nil then
+        return 0
+    end
+    return effect.y
+end
+
+local function hp_skill_bonus(me)
+    if me:class_of(Class.Warrior) then
+        return skill_y(me, Skill.ImprovingMaxhpIncrease)
+    end
+    if me:class_of(Class.Pirate) then
+        return skill_y(me, Skill.HpIncrease)
+    end
+    if me:class_of(Class.ThunderBreaker1) then
+        return skill_y(me, Skill.HpIncreaseCygnus)
+    end
+    if me:class_of(Class.DawnWarrior1) then
+        return skill_y(me, Skill.ImprovingMaxhpIncreaseCygnus)
+    end
+    return 0
+end
+
+local function mp_skill_bonus(me)
+    if me:class_of(Class.Magician) then
+        return skill_y(me, Skill.ImprovingMaxMpIncrease)
+    end
+    if me:class_of(Class.BlazeWizard1) then
+        return skill_y(me, Skill.ImprovingMaxMpIncreaseCygnus)
+    end
+    return 0
+end
+
 local function endure_hp_interval(me)
     if me:class_of(Class.Warrior) then
         local s = me:skill(Skill.Endure)
@@ -260,62 +298,49 @@ return {
     end,
 
     get_ap_to_hp = function(me)
-        local base = ap_to_hp_base(me)
-        local bonus = 0
-        if me:class_of(Class.Warrior) then
-            local s = me:skill(Skill.ImprovingMaxhpIncrease)
-            if s ~= nil then
-                local effect = s:effect()
-                bonus = effect.y
-            end
-        elseif me:class_of(Class.Pirate) then
-            local s = me:skill(Skill.HpIncrease)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus = effect.y
-                end
-            end
-        elseif me:class_of(Class.ThunderBreaker1) then
-            local s = me:skill(Skill.HpIncreaseCygnus)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus = effect.y
-                end
-            end
-        elseif me:class_of(Class.DawnWarrior1) then
-            local s = me:skill(Skill.ImprovingMaxhpIncreaseCygnus)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus = effect.y
-                end
-            end
-        end
-        return base + bonus
+        return ap_to_hp_base(me) + hp_skill_bonus(me)
     end,
 
     get_ap_to_mp = function(me)
-        local base = ap_to_mp_base(me)
+        return ap_to_mp_base(me) + mp_skill_bonus(me)
+    end,
 
-        local bonus = 0
-        if me:class_of(Class.Magician) then
-            local s = me:skill(Skill.ImprovingMaxMpIncrease)
-            if s ~= nil then
-                local effect = s:effect()
-                bonus = effect.y
-            end
-        elseif me:class_of(Class.BlazeWizard1) then
-            local s = me:skill(Skill.ImprovingMaxMpIncreaseCygnus)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus = effect.y
-                end
-            end
+    -- An AP reset takes back a fixed amount of HP or MP, as the original server did.
+    get_ap_reset_hp = function(me)
+        local bonus = hp_skill_bonus(me)
+        if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+            return 12
         end
-        return base + bonus
+        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) or me:class_of(Class.Aran2) then
+            return 24 + bonus
+        end
+        if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
+            return 10
+        end
+        if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
+            return 15
+        end
+        if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
+            return 20 + bonus
+        end
+        return 50
+    end,
+
+    get_ap_reset_mp = function(me)
+        local bonus = mp_skill_bonus(me)
+        if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+            return 8
+        end
+        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) or me:class_of(Class.Aran2) then
+            return 4
+        end
+        if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
+            return 20 + bonus
+        end
+        if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.Pirate) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) or me:class_of(Class.ThunderBreaker1) then
+            return 10
+        end
+        return 50
     end,
 
     get_recharge_capacity = function(me, capacity)

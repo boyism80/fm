@@ -53,6 +53,11 @@ func (h *UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) 
 		Attached:     req.Attached,
 		AttachedType: req.AttachedType,
 		AttachedSlot: req.AttachedSlot,
+		From:         req.From,
+		To:           req.To,
+		TargetType:   req.TargetType,
+		TargetSlot:   req.TargetSlot,
+		EquipSlot:    req.EquipSlot,
 	})
 	return nil
 }

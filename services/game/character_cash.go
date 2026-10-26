@@ -26,6 +26,11 @@ type CashItemInput struct {
 	Attached     bool
 	AttachedType uint32
 	AttachedSlot uint32
+	From         uint32
+	To           uint32
+	TargetType   uint32
+	TargetSlot   uint32
+	EquipSlot    int16
 }
 
 func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, input CashItemInput) {
@@ -74,6 +79,11 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, i
 		lines.Append(lua.LString(line))
 	}
 	extra.RawSetString("lines", lines)
+	extra.RawSetString("from", lua.LNumber(input.From))
+	extra.RawSetString("to", lua.LNumber(input.To))
+	extra.RawSetString("target_type", lua.LNumber(input.TargetType))
+	extra.RawSetString("target_slot", lua.LNumber(input.TargetSlot))
+	extra.RawSetString("equip_slot", lua.LNumber(input.EquipSlot))
 	if input.Attached {
 		extra.RawSetString("inventory", lua.LNumber(input.AttachedType))
 		extra.RawSetString("slot", lua.LNumber(input.AttachedSlot))

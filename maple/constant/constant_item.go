@@ -49,6 +49,9 @@ const (
 	ItemTraitPartyQuest
 	ItemTraitScroll
 	ItemTraitMakerGem
+	// ItemTraitKarma and ItemTraitPlatinumKarma name the scissors of karma an untradeable item takes.
+	ItemTraitKarma
+	ItemTraitPlatinumKarma
 )
 
 const ChaosScrollRange = 5

@@ -3,7 +3,8 @@ local pq = require("script/integration/lib/party_quest")
 local HUNTING_GROUND = 104040000
 local TOWN = 100000000
 local SONG = 5100000
-local MEGAPHONE = 5070000
+-- A safety charm works while carried, so using it stands for any unsupported cash item.
+local SAFETY_CHARM = 5130000
 local ITEM_MEGAPHONE = 5076000
 local TRIPLE_MEGAPHONE = 5077000
 local KITE = 5080000
@@ -19,6 +20,27 @@ local MSG_TRIPLE_MEGAPHONE = 10
 local NOTES_SENT = 4
 local NOTES_FAILED = 5
 local QUIET_MS = 1500
+
+local AP_RESET = 5050000
+local SP_RESET_1 = 5050001
+local MAP_MEGAPHONE = 5070000
+local HEART_MEGAPHONE = 5073000
+local SKULL_MEGAPHONE = 5074000
+local WEATHER = 5120000
+local ITEM_TAG = 5060000
+local SEALING_LOCK = 5060001
+local KARMA = 5520000
+local HAT = 1002008
+local KARMA_ACCESSORY = 1022073
+local ETC_ITEM = 4000000
+local STAT_STR = 0x40
+local STAT_DEX = 0x80
+local IMPROVED_HP_RECOVERY = 1000000
+local IRON_BODY = 1001003
+local MSG_MAP_MEGAPHONE = 2
+local MSG_HEART_MEGAPHONE = 9
+local EQUIP = 1
+local ETC = 4
 
 local function setup(ctx, bot, items)
     if pq.command(bot, "/봇초기화 30 0 0 " .. items, "봇초기화 완료") == false then
@@ -48,8 +70,13 @@ local function consumed(ctx, bot, item_id, before, label)
     return true
 end
 
+-- A refused cash item is taken before its script runs and given back after, so wait until the inventory settles.
 local function kept(ctx, bot, item_id, before, label)
-    bot:request(resp.inventory_operation, nil, nil, 500)
+    for _ = 1, 4 do
+        if bot:request(resp.inventory_operation, nil, nil, 500) == false then
+            break
+        end
+    end
     if count(bot, item_id) ~= before then
         return ctx:fail(label .. " 실패했는데 아이템이 소모됨")
     end
@@ -318,20 +345,146 @@ end
 
 local function unsupported(ctx)
     local bot = ctx:bot(0)
-    if setup(ctx, bot, MEGAPHONE .. ":1") == false then
+    if setup(ctx, bot, SAFETY_CHARM .. ":1") == false then
         return false
     end
-    local before = count(bot, MEGAPHONE)
-    if bot:request(resp.notice, use(bot, MEGAPHONE, { text = "맵 확성기" }), function(p)
+    local before = count(bot, SAFETY_CHARM)
+    if bot:request(resp.notice, use(bot, SAFETY_CHARM), function(p)
             return p.message:find("사용할 수 없는 아이템", 1, true) ~= nil
         end, 5000) == false then
         return ctx:fail("지원하지 않는 캐시 아이템에 안내가 오지 않음")
     end
-    return kept(ctx, bot, MEGAPHONE, before, "지원하지 않는 확성기")
+    return kept(ctx, bot, SAFETY_CHARM, before, "지원하지 않는 호신부적")
+end
+
+-- An AP reset moves one point between stats; the stat it leaves keeps the minimum.
+local function ap_reset(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, AP_RESET .. ":2") == false then
+        return false
+    end
+    if pq.command(bot, "/힘바꾸기 20", "힘 설정") == false then
+        return ctx:fail("힘 설정 실패")
+    end
+    local before = count(bot, AP_RESET)
+    local p = bot:request(resp.update_stats, use(bot, AP_RESET, { to = STAT_DEX, from = STAT_STR }), function(p)
+        return p.stats[STAT_STR] == 19 and p.stats[STAT_DEX] ~= nil
+    end, 5000)
+    if p == false then
+        return ctx:fail("AP 되돌리기 후 힘이 덱스로 옮겨지지 않음")
+    end
+    if consumed(ctx, bot, AP_RESET, before, "AP 되돌리기") == false then
+        return false
+    end
+    before = count(bot, AP_RESET)
+    bot:send(use(bot, AP_RESET, { to = STAT_DEX, from = STAT_DEX }))
+    return kept(ctx, bot, AP_RESET, before, "같은 능력치 AP 되돌리기")
+end
+
+-- An SP reset moves a level between skills of its own job advancement.
+local function sp_reset(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, SP_RESET_1 .. ":1") == false then
+        return false
+    end
+    if pq.command(bot, "/직업바꾸기 100", "직업") == false then
+        return ctx:fail("직업 설정 실패")
+    end
+    if pq.command(bot, "/스킬레벨 " .. IMPROVED_HP_RECOVERY .. " 3", "스킬레벨 설정") == false then
+        return ctx:fail("스킬 배우기 실패")
+    end
+    local before = count(bot, SP_RESET_1)
+    local p = bot:request(resp.update_skills, use(bot, SP_RESET_1, { to = IRON_BODY, from = IMPROVED_HP_RECOVERY }),
+        function(p)
+            return p.skill_id == IRON_BODY and p.level == 1
+        end, 5000)
+    if p == false then
+        return ctx:fail("SP 되돌리기 후 아이언 바디가 오르지 않음")
+    end
+    return consumed(ctx, bot, SP_RESET_1, before, "SP 되돌리기")
+end
+
+local function heard(ctx, actor, observer, item_id, fields, name, match, label)
+    local before = count(actor, item_id)
+    if actor:request_on(observer, name, use(actor, item_id, fields), match, 5000) == false then
+        return ctx:fail(label .. " 메시지가 전달되지 않음")
+    end
+    return consumed(ctx, actor, item_id, before, label)
+end
+
+local function megaphones(ctx)
+    local actor = ctx:bot(0)
+    local observer = ctx:bot(1)
+    if setup(ctx, actor, MAP_MEGAPHONE .. ":1," .. HEART_MEGAPHONE .. ":1," .. SKULL_MEGAPHONE .. ":1") == false or meet(ctx, actor, observer) == false then
+        return false
+    end
+    if heard(ctx, actor, observer, MAP_MEGAPHONE, { text = "맵 확성기" }, resp.notice, function(p)
+            return p.type == MSG_MAP_MEGAPHONE and p.message:find("맵 확성기", 1, true) ~= nil
+        end, "일반 확성기") == false then
+        return false
+    end
+    if heard(ctx, actor, observer, HEART_MEGAPHONE, { text = "하트 확성기", ear = true }, resp.notice, function(p)
+            return p.type == MSG_HEART_MEGAPHONE and p.message:find("하트 확성기", 1, true) ~= nil
+        end, "하트 확성기") == false then
+        return false
+    end
+    return heard(ctx, actor, observer, SKULL_MEGAPHONE, { text = "해골 확성기", ear = true }, resp.megaphone, function(p)
+        return p.type == MSG_TRIPLE_MEGAPHONE and #p.lines == 1 and p.lines[1]:find("해골 확성기", 1, true) ~= nil
+    end, "해골 확성기")
+end
+
+-- A weather item shows to the whole map, and a second one waits until the first ends.
+local function weather(ctx)
+    local actor = ctx:bot(0)
+    local observer = ctx:bot(1)
+    if setup(ctx, actor, WEATHER .. ":2") == false or meet(ctx, actor, observer) == false then
+        return false
+    end
+    if heard(ctx, actor, observer, WEATHER, { text = "눈이 내려요" }, resp.weather, function(p)
+            return p.item_id == WEATHER and p.message == "눈이 내려요"
+        end, "날씨 아이템") == false then
+        return false
+    end
+    local before = count(actor, WEATHER)
+    actor:send(use(actor, WEATHER, { text = "또 눈" }))
+    return kept(ctx, actor, WEATHER, before, "진행 중인 날씨 위 날씨 아이템")
+end
+
+local function used_once(ctx, bot, item_id, fields, label)
+    local before = count(bot, item_id)
+    bot:send(use(bot, item_id, fields))
+    if consumed(ctx, bot, item_id, before, label) == false then
+        return false
+    end
+    before = count(bot, item_id)
+    bot:send(use(bot, item_id, fields))
+    return kept(ctx, bot, item_id, before, "이미 쓴 대상에 다시 " .. label)
+end
+
+-- The item tag, sealing lock and scissors of karma each work once on their target.
+local function item_targets(ctx)
+    local bot = ctx:bot(0)
+    local items = string.format("%d:2,%d:2,%d:2,%d:1,%d:1,%d:1", ITEM_TAG, SEALING_LOCK, KARMA, HAT, KARMA_ACCESSORY,
+        ETC_ITEM)
+    if setup(ctx, bot, items) == false then
+        return false
+    end
+    local p = bot:request(resp.inventory_operation,
+        req.move_item { inventory_type = EQUIP, source = bot:slot(HAT) or 0, dest = -1, count = 1 }, nil, 3000)
+    if p == false then
+        return ctx:fail("모자 착용 응답 없음")
+    end
+    if used_once(ctx, bot, ITEM_TAG, { equip_slot = -1 }, "이름 새기기") == false then
+        return false
+    end
+    if used_once(ctx, bot, SEALING_LOCK, { target_type = ETC, target_slot = bot:slot(ETC_ITEM) or 0 }, "봉인의 자물쇠") == false then
+        return false
+    end
+    return used_once(ctx, bot, KARMA, { target_type = EQUIP, target_slot = bot:slot(KARMA_ACCESSORY) or 0 }, "카르마의 가위")
 end
 
 test_suite {
-    name = "Cash consumable effects: 칠판·쪽지·메시지 박스·세 줄/아이템 확성기·컬러렌즈·축하곡",
+    name = "Cash consumable effects: 칠판·쪽지·메시지 박스·확성기·컬러렌즈·축하곡·AP/SP 되돌리기·날씨·이름/자물쇠/카르마",
     bot_count = 2,
 
     scenarios = {
@@ -343,5 +496,10 @@ test_suite {
         message_box,
         triple_megaphone,
         item_megaphone,
+        ap_reset,
+        sp_reset,
+        megaphones,
+        weather,
+        item_targets,
     },
 }

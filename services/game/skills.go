@@ -32,6 +32,39 @@ func (sc *Skills) Bind(skillID uint32, entry *SkillEntry) {
 	sc.entries[skillID] = entry
 }
 
+// MoveSP takes one level off from and gives it to to, as the SP reset scroll of that job advancement does.
+func (sc *Skills) MoveSP(to, from uint32, advancement int) bool {
+	resources := sc.owner.gameWorld.GetResources()
+	toWz := resources.GetSkill(to)
+	fromWz := resources.GetSkill(from)
+	if toWz == nil || fromWz == nil || toWz.Beginner || fromWz.Beginner || !toWz.Distributable || !toWz.LearnableBy(sc.owner.class) {
+		return false
+	}
+	if constant.ClassType(from/10000).Advancement() != advancement || constant.ClassType(to/10000).Advancement() != advancement {
+		return false
+	}
+	source := sc.Learned(from)
+	if source == nil || source.Level() == 0 {
+		return false
+	}
+	target := sc.Learned(to)
+	if target == nil {
+		target = NewSkillEntry(sc.owner, toWz, 0, toWz.DefaultMasterLevel())
+	}
+	if target.Level() >= min(target.masterLevel, target.wz.MaxLevel) {
+		return false
+	}
+
+	source.SetLevel(source.Level() - 1)
+	if target.Level() == 0 {
+		target.SetLevel(1)
+		sc.Bind(to, target)
+	} else {
+		target.SetLevel(target.Level() + 1)
+	}
+	return true
+}
+
 func (sc *Skills) Register(skillID uint32, entry *SkillEntry) {
 	if entry == nil || entry.Level() < 1 && entry.masterLevel < 1 {
 		return

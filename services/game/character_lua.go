@@ -1838,6 +1838,40 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.listener.OnSnowballKnockback(ch)
 			return 0
 		},
+		"reset_ap": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			L.Push(lua.LBool(ch.points.ResetAP(constant.StatType(L.CheckInt(2)), constant.StatType(L.CheckInt(3)))))
+			return 1
+		},
+		"tag_equipment": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			L.Push(lua.LBool(ch.inventory.TagEquipment(int16(L.CheckInt(2)))))
+			return 1
+		},
+		"extend_equipment": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			L.Push(lua.LBool(ch.inventory.ExtendEquipment(int16(L.CheckInt(2)), L.CheckInt(3))))
+			return 1
+		},
+		"lock_item": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			L.Push(lua.LBool(ch.inventory.LockItem(constant.InventoryType(L.CheckInt(2)), int16(L.CheckInt(3)))))
+			return 1
+		},
+		"use_karma": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			scissors := constant.ItemTraitKarma
+			if L.OptBool(4, false) {
+				scissors = constant.ItemTraitPlatinumKarma
+			}
+			L.Push(lua.LBool(ch.inventory.UseKarma(constant.InventoryType(L.CheckInt(2)), int16(L.CheckInt(3)), scissors)))
+			return 1
+		},
+		"reset_sp": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			L.Push(lua.LBool(ch.skills.MoveSP(uint32(L.CheckInt(2)), uint32(L.CheckInt(3)), L.CheckInt(4))))
+			return 1
+		},
 		"rename_pet": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
 			if ch.pets.active == nil {

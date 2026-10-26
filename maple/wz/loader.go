@@ -53,6 +53,8 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 					model.SlotMax = uint16(intField.Value)
 				case "life":
 					model.Life = intField.Value
+				case "stateChangeItem":
+					model.StateChangeItem = uint32(intField.Value)
 				case "add":
 					model.PetSkillAdd = intField.Value == 1
 				case "pickupItem":

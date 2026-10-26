@@ -5,6 +5,7 @@ import (
 
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/maple/wz"
 )
 
 const songDuration = 5 * time.Minute
@@ -59,6 +60,27 @@ func (m *Map) StartWeather(itemID uint32, message string) bool {
 		m.listener.OnWeather(m, 0, "")
 	})
 	return true
+}
+
+// GiveStateChange gives everyone on the map the consume item effect a weather item names.
+func (m *Map) GiveStateChange(itemID uint32) {
+	model, ok := m.gameWorld.GetResources().Items[itemID].(*wz.CashItem)
+	if !ok || model.StateChangeItem == 0 {
+		return
+	}
+	for _, obj := range m.objects[constant.ObjectTypeCharacter] {
+		ch, ok := obj.(*Character)
+		if !ok {
+			continue
+		}
+		item, err := NewItem(model.StateChangeItem, 1, m.gameWorld)
+		if err != nil {
+			return
+		}
+		if consume, ok := item.(*Consume); ok {
+			ch.UseConsume(consume)
+		}
+	}
 }
 
 func (m *Map) CurrentWeather() (uint32, string, bool) {

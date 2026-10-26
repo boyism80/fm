@@ -95,6 +95,22 @@ func (c ClassType) parent() (ClassType, bool) {
 	}
 }
 
+// Advancement is the job advancement a class stands at: 0 for a beginner class, 1 for the first job, up to 4.
+func (c ClassType) Advancement() int {
+	advancement := 0
+	for {
+		parent, ok := c.parent()
+		if !ok {
+			if c == ClassBeginner || c == ClassNoblesse || c == ClassLegend {
+				return advancement
+			}
+			return advancement + 1
+		}
+		advancement++
+		c = parent
+	}
+}
+
 func (c ClassType) Of(ancestor ClassType) bool {
 	for {
 		if c == ancestor {

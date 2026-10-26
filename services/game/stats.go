@@ -87,6 +87,39 @@ func (s *Stats) add(stat constant.StatType, amount uint16, statUpdate map[consta
 	}
 }
 
+// removeOne takes one point off a base stat that stays at or above floor.
+func (s *Stats) removeOne(stat constant.StatType, floor uint16, statUpdate map[constant.Stat]int32) bool {
+	var base *uint16
+	var key constant.Stat
+	switch stat {
+	case constant.StatTypeStr:
+		base, key = &s.base.str, constant.StatStr
+	case constant.StatTypeDex:
+		base, key = &s.base.dex, constant.StatDex
+	case constant.StatTypeInt:
+		base, key = &s.base.int, constant.StatInt
+	case constant.StatTypeLuk:
+		base, key = &s.base.luk, constant.StatLuk
+	default:
+		return false
+	}
+	if *base <= floor {
+		return false
+	}
+	*base--
+	switch stat {
+	case constant.StatTypeStr:
+		statUpdate[key] = int32(s.TotalStr())
+	case constant.StatTypeDex:
+		statUpdate[key] = int32(s.TotalDex())
+	case constant.StatTypeInt:
+		statUpdate[key] = int32(s.TotalInt())
+	case constant.StatTypeLuk:
+		statUpdate[key] = int32(s.TotalLuk())
+	}
+	return true
+}
+
 func (s *Stats) TotalStr() uint16 {
 	total := int32(s.base.str) + int32(s.bonus.str)
 	if total < 0 {

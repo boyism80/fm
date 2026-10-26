@@ -31,6 +31,12 @@ func (model *ItemCore) setTradeFlags(info *node) {
 	if info.Int("notSale", 0) == 1 {
 		model.Traits |= constant.ItemTraitNotSale
 	}
+	switch info.Int("tradeAvailable", 0) {
+	case 1:
+		model.Traits |= constant.ItemTraitKarma
+	case 2:
+		model.Traits |= constant.ItemTraitPlatinumKarma
+	}
 }
 
 var crushRings = []uint32{1112001, 1112002, 1112003, 1112005, 1112006, 1112007, 1112012, 1112015, 1048000, 1048001, 1048002}

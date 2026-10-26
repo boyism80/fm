@@ -9,4 +9,6 @@ type CashItem struct {
 	PetSkillAdd bool
 	PetFood     *PetFood
 	SoldInform  bool
+	// StateChangeItem is the consume item a weather item gives everyone on the map.
+	StateChangeItem uint32
 }

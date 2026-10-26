@@ -16,8 +16,16 @@ type UseCashItem struct {
 	Attached     bool
 	AttachedType uint32
 	AttachedSlot uint32
-	Tick         uint32
-	Malformed    bool
+	// From and To are the stat flags of an AP reset, or the skills of an SP reset.
+	From uint32
+	To   uint32
+	// TargetType and TargetSlot name the item a karma scissors, sealing lock or incubator works on;
+	// EquipSlot is the worn equipment an item tag or magic hourglass works on.
+	TargetType uint32
+	TargetSlot uint32
+	EquipSlot  int16
+	Tick       uint32
+	Malformed  bool
 }
 
 func (*UseCashItem) Opcode() byte { return 0x3E }
@@ -41,11 +49,33 @@ func (p *UseCashItem) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteBoolean(p.HighFirst)
 		writer.WriteU32(0)
 		return nil
+	case 505:
+		writer.WriteU32(p.To)
+		writer.WriteU32(p.From)
+		return nil
+	case 506:
+		if p.ItemID == 5060000 {
+			writer.Write16(p.EquipSlot)
+			return nil
+		}
+		writer.WriteU32(p.TargetType)
+		writer.WriteU32(p.TargetSlot)
+		return nil
+	case 550:
+		writer.Write16(p.EquipSlot)
+		return nil
+	case 552:
+		writer.WriteU32(p.TargetType)
+		writer.WriteU32(p.TargetSlot)
+		return nil
+	case 512:
+		writer.WriteStr16(p.Text)
+		return nil
 	case 507:
 		switch p.ItemID % 10000 / 1000 {
-		case 1:
+		case 0, 1:
 			writer.WriteStr16(p.Text)
-		case 2:
+		case 2, 3, 4:
 			writer.WriteStr16(p.Text)
 			writer.WriteBoolean(p.Ear)
 		case 6:
@@ -95,11 +125,33 @@ func (p *UseCashItem) Deserialize(reader *stream.StreamReader) {
 		p.SearchID = reader.ReadU32()
 		p.HighFirst = reader.ReadU8() != 0
 		return
+	case 505:
+		p.To = reader.ReadU32()
+		p.From = reader.ReadU32()
+		return
+	case 506:
+		if p.ItemID == 5060000 {
+			p.EquipSlot = reader.Read16()
+			return
+		}
+		p.TargetType = reader.ReadU32()
+		p.TargetSlot = reader.ReadU32()
+		return
+	case 550:
+		p.EquipSlot = reader.Read16()
+		return
+	case 552:
+		p.TargetType = reader.ReadU32()
+		p.TargetSlot = reader.ReadU32()
+		return
+	case 512:
+		p.Text = reader.ReadStr16()
+		return
 	case 507:
 		switch p.ItemID % 10000 / 1000 {
-		case 1:
+		case 0, 1:
 			p.Text = reader.ReadStr16()
-		case 2:
+		case 2, 3, 4:
 			p.Text = reader.ReadStr16()
 			p.Ear = reader.ReadU8() != 0
 		case 6:
