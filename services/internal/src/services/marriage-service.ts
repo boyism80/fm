@@ -1,4 +1,3 @@
-import type { PoolClient } from "pg";
 import {
     Inventory,
     MarriageResult,
@@ -120,29 +119,10 @@ export class MarriageService {
         }
     }
 
-    private async loadActive(
-        worldId: number,
-        find: (client: PoolClient) => Promise<MarriageRow | null>,
-    ): Promise<MarriageRow | null> {
-        const loaded = await this.marriageRepo.withTransaction(worldId, async (client) => {
-            const row = await find(client);
-            if (row == null) {
-                return { row: null, divorced: null };
-            }
-            if (this.divorceDue(row, Date.now())) {
-                await this.marriageRepo.end(client, row.marriage_id);
-                return { row: null, divorced: row };
-            }
-            return { row, divorced: null };
-        });
-        if (loaded.divorced != null) {
-            await this.notify(worldId, [loaded.divorced.groom_id, loaded.divorced.bride_id], "divorced");
-        }
-        return loaded.row;
-    }
-
     async loadMarriage(worldId: number, characterId: number): Promise<MarriageReply> {
-        const row = await this.loadActive(worldId, (client) => this.marriageRepo.findByCharacter(client, characterId));
+        const row = await this.marriageRepo.withTransaction(worldId, (client) =>
+            this.marriageRepo.findByCharacter(client, characterId),
+        );
         if (row == null) {
             return { result: MarriageResult.MARRIAGE_RESULT_NOT_FOUND, marriage: undefined };
         }
@@ -150,7 +130,9 @@ export class MarriageService {
     }
 
     async getMarriage(worldId: number, marriageId: number): Promise<MarriageReply> {
-        const row = await this.loadActive(worldId, (client) => this.marriageRepo.find(client, marriageId));
+        const row = await this.marriageRepo.withTransaction(worldId, (client) =>
+            this.marriageRepo.find(client, marriageId),
+        );
         if (row == null) {
             return { result: MarriageResult.MARRIAGE_RESULT_NOT_FOUND, marriage: undefined };
         }
