@@ -128,6 +128,7 @@ test_suite {
     end,
 
     on_finished = function(ctx)
+        pq.command(ctx:bot(0), "/SM상한 orbis_party_quest 기본", "SM상한 orbis_party_quest: 기본")
         ctx:bot(0):request(resp.party_update_disband, req.party_operation { operation = PARTY.Leave }, nil, 5000)
     end,
 
@@ -160,6 +161,44 @@ test_suite {
             return true
         end,
         pq.form_party,
+        -- Another party in the tower: Wonky refuses before blessing, so the mission stays for the next entry.
+        function(ctx)
+            local leader = ctx:bot(0)
+            if pq.command(leader, "/SM상한 orbis_party_quest 0", "SM상한 orbis_party_quest: 0") == false then
+                return ctx:fail("SM상한 변경 실패")
+            end
+            local blessed = false
+            ctx:hook("notice", function(_, _, p)
+                if p.message ~= nil and p.message:find("요정 웡키의 미션을 수행하여", 1, true) ~= nil then
+                    blessed = true
+                end
+            end)
+            local mission = wonky_menu(ctx, leader, MENU_ENTER, resp.dialog_yes_no)
+            if mission == false then
+                ctx:unhook("notice")
+                return ctx:fail("웡키의 축복 미션 안내가 없음")
+            end
+            local matched = leader:request(resp.dialog, req.dialog { dialog_type = DIALOG_YES_NO, next = true }, nil,
+                5000)
+            if matched == false or matched.text:find("딱 맞췄어", 1, true) == nil then
+                ctx:unhook("notice")
+                return ctx:fail("미션을 맞췄는데 축복 안내가 없음")
+            end
+            local refused = leader:request(resp.dialog, req.dialog { dialog_type = DIALOG_NEXT, next = true }, nil, 5000)
+            ctx:sleep(1000)
+            ctx:unhook("notice")
+            leader:dialog(false)
+            if refused == false or refused.text:find("이미 다른 파티가", 1, true) == nil then
+                return ctx:fail("다른 파티 진행 중 거절 대사가 없음")
+            end
+            if blessed then
+                return ctx:fail("입장이 거절됐는데 웡키의 축복이 걸림")
+            end
+            if pq.command(leader, "/SM상한 orbis_party_quest 기본", "SM상한 orbis_party_quest: 기본") == false then
+                return ctx:fail("SM상한 복원 실패")
+            end
+            return true
+        end,
         function(ctx)
             local leader = ctx:bot(0)
             local mission = wonky_menu(ctx, leader, MENU_ENTER, resp.dialog_yes_no)

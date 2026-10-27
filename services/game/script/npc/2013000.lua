@@ -343,6 +343,10 @@ local function try_start(me, npc)
         me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
         return
     end
+    if group:full() then
+        me:dialog(npc, "이미 다른 파티가 이 안에서 퀘스트에 도전하는 중이야. 잠시 후 다시 시도해 주거나 채널을 변경해 봐.")
+        return
+    end
     if blessing ~= nil then
         bless(me, party, blessing)
     end
