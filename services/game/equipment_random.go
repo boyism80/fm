@@ -81,6 +81,44 @@ func (c *EquipmentCore) RandomizeStats(model wz.Equipment) {
 	}
 }
 
+// A maker catalyst raises each stat the result already has, gems included, by up to a tenth; it never lowers one.
+func (c *EquipmentCore) RandomizeStatsAbove(model wz.Equipment) {
+	if c.bonusStats == nil {
+		c.bonusStats = &EquipmentBonusStats{}
+	}
+	const rMain = 5
+	const rDefHPMP = 10
+	ab := model.GetAbility()
+	for _, s := range []struct {
+		base     uint16
+		bonus    *int16
+		maxRange int
+	}{
+		{ab.Str, &c.bonusStats.Str, rMain},
+		{ab.Dex, &c.bonusStats.Dex, rMain},
+		{ab.Int, &c.bonusStats.Int, rMain},
+		{ab.Luk, &c.bonusStats.Luk, rMain},
+		{ab.MAD, &c.bonusStats.MAD, rMain},
+		{ab.PAD, &c.bonusStats.PAD, rMain},
+		{ab.ACC, &c.bonusStats.ACC, rMain},
+		{ab.Avoid, &c.bonusStats.Avoid, rMain},
+		{ab.Jump, &c.bonusStats.Jump, rMain},
+		{ab.Hands, &c.bonusStats.Hands, rMain},
+		{ab.Speed, &c.bonusStats.Speed, rMain},
+		{ab.PDD, &c.bonusStats.PDD, rDefHPMP},
+		{ab.MDD, &c.bonusStats.MDD, rDefHPMP},
+		{ab.MaxHP, &c.bonusStats.MaxHP, rDefHPMP},
+		{ab.MaxMP, &c.bonusStats.MaxMP, rDefHPMP},
+	} {
+		total := int(s.base) + int(*s.bonus)
+		if total <= 0 {
+			continue
+		}
+		lMax := int(math.Min(math.Ceil(float64(total)*0.1), float64(s.maxRange)))
+		*s.bonus = int16(util.ClampInt(int(*s.bonus)+rand.Intn(lMax+1), -32768, 32767))
+	}
+}
+
 // A black crystal (option) or dark crystal (stat) moves each attack or main stat the result already has up or down.
 func (c *EquipmentCore) RandomizeMakerOption(model wz.Equipment, option int16, stat int16) {
 	if option == 0 && stat == 0 {

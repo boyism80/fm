@@ -117,13 +117,13 @@ func (inv *Inventory) makeItem(itemID uint32, catalyst bool, enhancers []uint32)
 			if !ok {
 				return
 			}
-			if catalyst {
-				equipment.GetEquipmentCore().RandomizeStats(model)
-			}
 			for _, gem := range gems {
 				bonus := gem.GetMakerBonus()
 				equipment.GetEquipmentCore().AddBonus(bonus)
 				equipment.GetEquipmentCore().RandomizeMakerOption(model, bonus["randOption"], bonus["randStat"])
+			}
+			if catalyst {
+				equipment.GetEquipmentCore().RandomizeStatsAbove(model)
 			}
 		}
 		made = item

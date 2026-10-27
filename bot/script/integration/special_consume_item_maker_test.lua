@@ -12,6 +12,10 @@ local MAKER_MATERIAL = 4021007
 local CRYSTAL_SOURCE = 4000013
 local LOW_CRYSTAL_SOURCE = 4000673
 local CRYSTAL = 4260000
+local CATALYST_HELMET = 1002028
+local CATALYST_HELMET_MATERIAL = 4007001
+local CATALYST = 4130018
+local CATALYST_CRAFTS = 10
 local DISASSEMBLE_WEAPON = 1302009
 local REWARD_BOX = 2022354
 local REWARD_BOX_REWARDS = { 2022335, 4031991, 4031992 }
@@ -146,6 +150,57 @@ local function item_maker(ctx)
     return true
 end
 
+-- A catalyst only ever raises the crafted helmet's stats, by at most a tenth of each.
+local function item_maker_catalyst(ctx)
+    local bot = ctx:bot(0)
+    local items = string.format("%d:%d,%d:%d,%d:%d", CATALYST_HELMET_MATERIAL, 5 * CATALYST_CRAFTS, CRYSTAL,
+        5 * CATALYST_CRAFTS, CATALYST, CATALYST_CRAFTS)
+    if setup(ctx, bot, 112, 80000 * CATALYST_CRAFTS, items) == false then
+        return false
+    end
+    if pq.command(bot, "/스킬레벨 1007 1 3", "스킬레벨 설정") == false then
+        return ctx:fail("메이커 스킬 설정 실패")
+    end
+    local made = 0
+    for _ = 1, CATALYST_CRAFTS do
+        local p = bot:request(resp.inventory_operation, req.item_maker {
+            type = 1,
+            item_id = CATALYST_HELMET,
+            catalyst = true,
+            enhancers = {},
+        }, function(p)
+            for _, change in ipairs(p.changes) do
+                if change.item ~= nil and change.item.item_id == CATALYST_HELMET then
+                    return true
+                end
+            end
+            return false
+        end, 1500)
+        if p ~= false then
+            for _, change in ipairs(p.changes) do
+                local helmet = change.item
+                if helmet ~= nil and helmet.item_id == CATALYST_HELMET then
+                    made = made + 1
+                    local pdd = helmet.pdd >= 54 and helmet.pdd <= 60
+                    local mdd = helmet.mdd >= 24 and helmet.mdd <= 27
+                    local str = helmet.str >= 2 and helmet.str <= 3
+                    if not (pdd and mdd and str) then
+                        return ctx:fail(string.format("촉진제 결과가 기본치 이상 범위를 벗어남: 물방 %d 마방 %d 힘 %d",
+                            helmet.pdd, helmet.mdd, helmet.str))
+                    end
+                end
+            end
+        end
+    end
+    if made < 5 then
+        return ctx:fail("촉진제 제작 성공 횟수가 너무 적음: " .. made)
+    end
+    if (bot:items()[CATALYST] or 0) ~= 0 then
+        return ctx:fail("촉진제가 소비되지 않음")
+    end
+    return true
+end
+
 local function make_crystal(ctx)
     local bot = ctx:bot(0)
     if setup(ctx, bot, 112, 0, CRYSTAL_SOURCE .. ":100," .. LOW_CRYSTAL_SOURCE .. ":100") == false then
@@ -247,5 +302,5 @@ end
 test_suite {
     name = "Item: 스킬북·소환 가방·아이템 메이커",
     bot_count = 1,
-    scenarios = { skill_book, skill_book_unlock, summon_bag, item_maker, make_crystal, disassemble, reward_box },
+    scenarios = { skill_book, skill_book_unlock, summon_bag, item_maker, item_maker_catalyst, make_crystal, disassemble, reward_box },
 }
