@@ -39,7 +39,8 @@ local function stop_of(oid)
     end
 end
 
--- The attacker takes control of the mob with aggro; a non-controller's move is refused unless the mob chases it.
+-- The attacker takes control of the mob with aggro; a non-controller's move never takes control, and only one
+-- sent before the stop arrived is answered with another stop.
 local function attacker_takes_control(ctx)
     local first = ctx:bot(0)
     local second = ctx:bot(1)
@@ -67,21 +68,23 @@ local function attacker_takes_control(ctx)
     if first:request(resp.stop_control_mob, req.move_mob { oid = oid, center_split = -1 }, stop_of(oid), 3000) == false then
         return ctx:fail("컨트롤러가 아닌 봇의 이동에 컨트롤 중지가 오지 않음")
     end
-    if first:request(resp.start_control_mob, req.move_mob { oid = oid, center_split = -1, aggro = true }, control_of(oid, true), 3000) == false then
-        return ctx:fail("몹이 쫓는 봇의 이동인데 컨트롤이 넘어오지 않음")
+    local leftover = first:request({ resp.start_control_mob, resp.stop_control_mob },
+        req.move_mob { oid = oid, center_split = -1, control_stopped = true }, nil, 1000)
+    if leftover ~= false then
+        return ctx:fail("컨트롤 중지 뒤 남은 이동에 서버가 응답함")
     end
 
-    if second:request(resp.start_control_mob, req.aggro { oid = oid }, nil, 1000) ~= false then
+    if first:request(resp.start_control_mob, req.aggro { oid = oid }, nil, 1000) ~= false then
         return ctx:fail("컨트롤러가 맵에 있는데 자동 어그로로 컨트롤이 넘어감")
     end
-    if second:request(resp.start_control_mob, attack(oid), control_of(oid, true), 3000) == false then
-        return ctx:fail("때린 봇에게 어그로 컨트롤이 오지 않음")
+    if first:request(resp.start_control_mob, attack(oid), control_of(oid, true), 3000) == false then
+        return ctx:fail("다시 때린 봇에게 어그로 컨트롤이 오지 않음")
     end
     return true
 end
 
 test_suite {
-    name = "Mob aggro: 공격자 컨트롤 전환·어그로 이동·자동 어그로",
+    name = "Mob aggro: 공격자 컨트롤 전환·컨트롤러가 아닌 이동·자동 어그로",
     bot_count = 2,
 
     on_finished = function(ctx)

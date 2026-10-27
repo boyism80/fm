@@ -54,15 +54,11 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 
 	controllerTable := mapInstance.GetControllerTable()
 	if controller, _ := controllerTable.GetController(mob); controller != ch {
-		// A client that sees the mob chasing it keeps moving the mob; any other move from it is stale.
-		if !req.Aggro {
+		// The client flags a move it sends after it was told to stop; a move without the flag means it still thinks it controls the mob.
+		if !req.ControlStopped {
 			ch.Listener().OnStopControlMob(ch, mob)
-			return nil
 		}
-		controllerTable.SwitchController(mob, ch, true)
-		if controller, _ := controllerTable.GetController(mob); controller != ch {
-			return nil
-		}
+		return nil
 	}
 
 	startPoint := mob.GetPosition()
