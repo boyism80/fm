@@ -320,6 +320,11 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	character.onMap = m
+	// A new key per entry tells packets the client made on its previous field apart; 0 means no field to the client.
+	character.fieldKey++
+	if character.fieldKey == 0 {
+		character.fieldKey = 1
+	}
 	// A coconut field puts its players in its two teams in turn, as the original server did.
 	character.fieldTeam = constant.CarnivalTeamNone
 	if m.wz.FieldType == wz.FieldTypeCoconut {

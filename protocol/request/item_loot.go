@@ -6,6 +6,7 @@ import (
 )
 
 type ItemLoot struct {
+	FieldKey uint8
 	Tick     uint32
 	Position types.Vector2[int16]
 	OID      uint32
@@ -14,8 +15,8 @@ type ItemLoot struct {
 func (*ItemLoot) Opcode() byte { return 0xA3 }
 
 func (p *ItemLoot) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(p.FieldKey)
 	writer.WriteU32(p.Tick)
-	writer.WriteU8(0)
 	writer.Write16(p.Position.X)
 	writer.Write16(p.Position.Y)
 	writer.WriteU32(p.OID)
@@ -23,8 +24,8 @@ func (p *ItemLoot) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ItemLoot) Deserialize(reader *stream.StreamReader) {
+	p.FieldKey = reader.ReadU8()
 	p.Tick = reader.ReadU32()
-	reader.Skip(1)
 	p.Position = types.Vector2[int16]{
 		X: reader.Read16(),
 		Y: reader.Read16(),

@@ -29,6 +29,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *game.Map, character *game.C
 		characterDTO.SpawnPoint = spawnPoint
 		loginPacket := &response.Login{
 			Channel:       l.gs.config.ChannelId,
+			FieldKey:      character.FieldKey(),
 			CharacterInfo: response.CharacterInfo{Character: characterDTO},
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
@@ -42,6 +43,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *game.Map, character *game.C
 		warpPacket := &response.Warp{
 			Character: characterDTO,
 			Channel:   0,
+			FieldKey:  character.FieldKey(),
 		}
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}

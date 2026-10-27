@@ -42,6 +42,10 @@ func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.Att
 		return nil
 	}
 	info := payload.ToAttackInfo()
+	// An attack the client made on the field it left names that field's objects.
+	if info.FieldKey != ch.fieldKey {
+		return nil
+	}
 	if !ch.IsAlive() {
 		if ch.GetMap() != nil {
 			ch.cheat.Register(actx, CheatAttackWhileDead, info, "attacked while dead")

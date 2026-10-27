@@ -6,13 +6,15 @@ import (
 )
 
 type MovePlayer struct {
+	FieldKey  uint8
 	Fragments []dto.MoveFragment
 }
 
 func (*MovePlayer) Opcode() byte { return 0x18 }
 
 func (m *MovePlayer) Serialize(writer *stream.StreamWriter) error {
-	writer.Write(make([]byte, 5))
+	writer.WriteU8(m.FieldKey)
+	writer.Write(make([]byte, 4))
 	writer.WriteU8(uint8(len(m.Fragments)))
 	for _, frag := range m.Fragments {
 		frag.Serialize(writer)
@@ -21,6 +23,7 @@ func (m *MovePlayer) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (m *MovePlayer) Deserialize(reader *stream.StreamReader) {
-	reader.Read(5)
+	m.FieldKey = reader.ReadU8()
+	reader.Read(4)
 	m.Fragments = dto.ReadMovements(reader)
 }

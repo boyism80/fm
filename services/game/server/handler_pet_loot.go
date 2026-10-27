@@ -25,7 +25,7 @@ func (h *PetLoot) Handle(ctx *core.ClientContext, req *request.PetLoot) error {
 	if character == nil || character.Pets().Active() == nil {
 		return nil
 	}
-	if character.Spectating() || character.Occupied() {
+	if character.Spectating() || character.Occupied() || req.FieldKey != character.FieldKey() {
 		character.Listener().OnUnlockAction(character)
 		return nil
 	}

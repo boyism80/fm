@@ -32,6 +32,10 @@ func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) er
 		log.Printf("Character is nil for client")
 		return fmt.Errorf("character is nil")
 	}
+	// A move the client made on the field it left still carries that field's key.
+	if req.FieldKey != character.FieldKey() {
+		return nil
+	}
 
 	beforePosition := character.GetPosition()
 

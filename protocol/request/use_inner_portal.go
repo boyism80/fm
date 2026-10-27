@@ -5,7 +5,7 @@ import (
 )
 
 type UseInnerPortal struct {
-	Mode       uint8
+	FieldKey   uint8
 	PortalName string
 	ToX        int16
 	ToY        int16
@@ -20,7 +20,7 @@ func (p *UseInnerPortal) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *UseInnerPortal) Deserialize(reader *stream.StreamReader) {
-	p.Mode = reader.ReadU8()
+	p.FieldKey = reader.ReadU8()
 	p.PortalName = reader.ReadStr16()
 	p.ToX = reader.Read16()
 	p.ToY = reader.Read16()

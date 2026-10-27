@@ -5,7 +5,7 @@ import (
 )
 
 type Warp struct {
-	Reason     uint8
+	FieldKey   uint8
 	Target     uint32
 	PortalName string
 	Wheel      bool
@@ -14,7 +14,7 @@ type Warp struct {
 func (*Warp) Opcode() byte { return 0x15 }
 
 func (p *Warp) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU8(p.Reason)
+	writer.WriteU8(p.FieldKey)
 	writer.WriteU32(p.Target)
 	writer.WriteStr16(p.PortalName)
 	writer.WriteU8(0)
@@ -23,7 +23,7 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *Warp) Deserialize(reader *stream.StreamReader) {
-	p.Reason = reader.ReadU8()
+	p.FieldKey = reader.ReadU8()
 	p.Target = reader.ReadU32()
 	p.PortalName = reader.ReadStr16()
 	reader.Skip(1)

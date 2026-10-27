@@ -17,6 +17,7 @@ type AttackPair struct {
 }
 
 type AttackHeader struct {
+	FieldKey uint8
 	Targets  uint8
 	Hits     uint8
 	Skill    uint32
@@ -43,7 +44,7 @@ type AttackInfo struct {
 }
 
 func (header *AttackHeader) deserialize(sr *stream.StreamReader) {
-	sr.Skip(1)
+	header.FieldKey = sr.ReadU8()
 	tbyte := sr.ReadU8()
 	header.Targets = (tbyte >> 4) & 0xF
 	header.Hits = tbyte & 0xF
@@ -88,7 +89,7 @@ func (header *AttackHeader) parseNormalDamages(sr *stream.StreamReader, skipByte
 }
 
 func (header *AttackHeader) serialize(sw *stream.StreamWriter) {
-	sw.WriteU8(0)
+	sw.WriteU8(header.FieldKey)
 	sw.WriteU8((header.Targets << 4) | header.Hits)
 	sw.WriteU32(header.Skill)
 

@@ -10,11 +10,13 @@ import (
 type Warp struct {
 	Character *dto.Character
 	Channel   uint32
+	FieldKey  uint8
 }
 
 func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.Channel)
-	writer.WriteU16(2)
+	writer.WriteU8(p.FieldKey)
+	writer.WriteU8(0)
 	writer.WriteU16(0)
 	writer.WriteU32(p.Character.Map)
 	writer.WriteU8(p.Character.SpawnPoint)
@@ -25,7 +27,8 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 
 func (a *Warp) Deserialize(reader *stream.StreamReader) {
 	a.Channel = reader.ReadU32()
-	reader.ReadU16()
+	a.FieldKey = reader.ReadU8()
+	reader.ReadU8()
 	reader.ReadU16()
 	if a.Character == nil {
 		a.Character = &dto.Character{}

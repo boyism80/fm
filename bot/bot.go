@@ -3,6 +3,7 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"time"
 
@@ -33,6 +34,7 @@ type Bot struct {
 	CharID         uint32
 	Gen            int
 	Map            uint32
+	FieldKey       uint8
 	Spawn          uint8
 	Moved          *types.Point[int16]
 	HP             uint16
@@ -117,6 +119,16 @@ func (b *Bot) Send(pkt outbound) error {
 	if b.conn == nil {
 		return fmt.Errorf("bot %s is not connected", b.Name)
 	}
+	// Like the client, a packet bound to a field carries the key of the field the bot was last sent; a test sets
+	// its own key to send a stale one.
+	if v := reflect.ValueOf(pkt); v.Kind() == reflect.Pointer && v.Elem().Kind() == reflect.Struct {
+		if field, ok := v.Elem().Type().FieldByName("FieldKey"); ok {
+			key, err := v.Elem().FieldByIndexErr(field.Index)
+			if err == nil && key.CanSet() && key.Kind() == reflect.Uint8 && key.Uint() == 0 {
+				key.SetUint(uint64(b.FieldKey))
+			}
+		}
+	}
 	return b.conn.Send(pkt)
 }
 
@@ -149,6 +161,7 @@ func (b *Bot) Listen(onPacket func(gen int, opcode uint16, body []byte), onClose
 func (b *Bot) Update(pkt any) {
 	switch p := pkt.(type) {
 	case *response.Login:
+		b.FieldKey = p.FieldKey
 		b.load(p.Character)
 	case *response.SetCashShop:
 		b.load(p.Character)
@@ -192,6 +205,7 @@ func (b *Bot) Update(pkt any) {
 			b.Stones[p.VIP] = p.Maps
 		}
 	case *response.Warp:
+		b.FieldKey = p.FieldKey
 		if p.Character != nil {
 			b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
 		}

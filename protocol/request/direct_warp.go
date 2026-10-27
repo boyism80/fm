@@ -5,19 +5,19 @@ import (
 )
 
 type DirectWarp struct {
-	Mode       uint8
+	FieldKey   uint8
 	PortalName string
 }
 
 func (*DirectWarp) Opcode() byte { return 0x53 }
 
 func (p *DirectWarp) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU8(p.Mode)
+	writer.WriteU8(p.FieldKey)
 	writer.WriteStr16(p.PortalName)
 	return nil
 }
 
 func (p *DirectWarp) Deserialize(reader *stream.StreamReader) {
-	p.Mode = reader.ReadU8()
+	p.FieldKey = reader.ReadU8()
 	p.PortalName = reader.ReadStr16()
 }

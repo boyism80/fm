@@ -30,6 +30,10 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 	if character == nil {
 		return fmt.Errorf("character not found")
 	}
+	if req.FieldKey != character.FieldKey() {
+		character.Listener().OnUpdateStats(character, nil, true)
+		return nil
+	}
 
 	currentMap := character.GetMap()
 	if currentMap == nil {

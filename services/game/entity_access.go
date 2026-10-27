@@ -76,6 +76,10 @@ func (x *Character) Family() *Family {
 	return x.family
 }
 
+func (x *Character) FieldKey() uint8 {
+	return x.fieldKey
+}
+
 func (x *Character) Guild() *GuildMembership {
 	return x.guild
 }

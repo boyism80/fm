@@ -462,7 +462,20 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"move": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			pos := types.Point[int16]{X: int16(L.CheckInt(2)), Y: int16(L.CheckInt(3))}
-			L.Push(lua.LBool(b.Move(pos, int16(L.OptInt(4, 0))) == nil))
+			foothold := int16(L.OptInt(4, 0))
+			// A fifth argument sends the move with that field key, as a client does with a move made before a warp
+			// reached it; the bot's own position is left alone.
+			if L.GetTop() >= 5 {
+				L.Push(lua.LBool(b.Send(&request.MovePlayer{FieldKey: uint8(L.CheckInt(5)), Fragments: []dto.MoveFragment{
+					&dto.AbsoluteLifeMovement{BasicMovement: &dto.BasicMovement{}, Position: pos, Foothold: foothold},
+				}}) == nil))
+				return 1
+			}
+			L.Push(lua.LBool(b.Move(pos, foothold) == nil))
+			return 1
+		},
+		"field_key": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).FieldKey))
 			return 1
 		},
 		"send": func(L *lua.LState) int {

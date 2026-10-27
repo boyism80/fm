@@ -29,6 +29,9 @@ func (h *UseInnerPortal) Handle(ctx *core.ClientContext, req *request.UseInnerPo
 	if ch == nil {
 		return fmt.Errorf("character not found")
 	}
+	if req.FieldKey != ch.FieldKey() {
+		return nil
+	}
 	if err := ch.EnterInnerPortal(req.PortalName, types.Vector2[int16]{X: req.ToX, Y: req.ToY}); err != nil {
 		log.Printf("UseInnerPortal: character=%d: %v", ch.GetID(), err)
 	}

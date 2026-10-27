@@ -7,7 +7,8 @@ import (
 )
 
 type Login struct {
-	Channel uint32
+	Channel  uint32
+	FieldKey uint8
 	CharacterInfo
 }
 
@@ -20,7 +21,7 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 	}
 
 	writer.WriteU32(p.Channel)
-	writer.WriteU8(0)
+	writer.WriteU8(p.FieldKey)
 	writer.WriteU8(1)
 
 	isEvent := false
@@ -43,7 +44,7 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 
 func (a *Login) Deserialize(reader *stream.StreamReader) {
 	a.Channel = reader.ReadU32()
-	reader.ReadU8()
+	a.FieldKey = reader.ReadU8()
 	reader.ReadU8()
 	if reader.ReadU16() != 0 {
 		return

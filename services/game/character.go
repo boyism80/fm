@@ -72,6 +72,8 @@ type Character struct {
 	chair          uint32
 	// fieldTeam is the coconut team the character plays for on its current map.
 	fieldTeam constant.CarnivalTeam
+	// The client puts the key of the last field it was sent into its moves, portals, attacks and loots.
+	fieldKey uint8
 	// The map's consume cooldown is shared by the use window and the pet's auto potion.
 	nextConsumeAt  time.Time
 	lastHeal       lastHeal
