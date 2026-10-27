@@ -2049,6 +2049,7 @@ func loadMob(path string) (*Mob, error) {
 	model.DropItemPeriod = info.Int("dropItemPeriod", 0)
 	model.DamagedByMob = info.Int("damagedByMob", 0) > 0
 	model.Invincible = info.Int("invincible", 0) != 0
+	model.FirstAttack = info.Int("firstAttack", 0) != 0
 	model.FixedDamage = info.Int("fixedDamage", 0)
 	model.OnlyNormalAttack = info.Int("onlyNormalAttack", 0) != 0
 	model.CP = info.Int("getCP", 0)

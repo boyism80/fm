@@ -53,13 +53,16 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	}
 
 	controllerTable := mapInstance.GetControllerTable()
-	controller, exists := controllerTable.GetController(mob)
-	if !exists {
-		return fmt.Errorf("no controller found for this mob")
-	}
-
-	if controller.GetID() != ch.GetID() {
-		return nil
+	if controller, _ := controllerTable.GetController(mob); controller != ch {
+		// A client that sees the mob chasing it keeps moving the mob; any other move from it is stale.
+		if !req.Aggro {
+			ch.Listener().OnStopControlMob(ch, mob)
+			return nil
+		}
+		controllerTable.SwitchController(mob, ch, true)
+		if controller, _ := controllerTable.GetController(mob); controller != ch {
+			return nil
+		}
 	}
 
 	startPoint := mob.GetPosition()

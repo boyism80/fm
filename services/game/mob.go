@@ -497,6 +497,9 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 	m.sponge.damage(damage)
 
 	if !killed {
+		if mapInstance := m.GetMap(); attacker != nil && mapInstance != nil {
+			mapInstance.GetControllerTable().SwitchController(m, attacker, true)
+		}
 		if attacker != nil && spongeParent == nil {
 			if m.wz == nil || !m.wz.DamagedByMob {
 				maxHp := m.GetMaxHp()

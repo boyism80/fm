@@ -150,6 +150,7 @@ type CharacterListener interface {
 	OnGuildMessage(ch *Character, code pconst.GuildResponseCode)
 	OnExpGain(ch *Character, exp uint32)
 	OnControlMoveMob(ch *Character, mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
+	OnStopControlMob(ch *Character, mob *Mob)
 	OnShowMobHp(ch *Character, mob *Mob, percentage uint8)
 	OnDojoEnergy(ch *Character, energy int)
 	OnUnlockAction(ch *Character)

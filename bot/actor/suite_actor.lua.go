@@ -48,6 +48,8 @@ var requests = []outbound{
 	&request.SnowballHit{},
 	&request.SnowballTouch{},
 	&request.PulleyPull{},
+	&request.Aggro{},
+	&request.MoveMob{},
 	&request.MoveItem{},
 	&request.DamageReactor{},
 	&request.Carnival{},

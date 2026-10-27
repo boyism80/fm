@@ -265,6 +265,8 @@ var decoders = func() []decoder {
 		newDecoder[response.SnowballKnockback](nil),
 		newDecoder[response.IncubatorResult](nil),
 		newDecoder[response.HealerMove](nil),
+		newDecoder[response.StopControlMob](sub(0)),
+		newDecoder[response.StartControlMob](func(body []byte) bool { return len(body) > 0 && body[0] != 0 }),
 		newDecoder[response.EventInstructions](nil),
 		newDecoder[response.SpawnReactor](nil),
 		newDecoder[response.TriggerReactor](nil),

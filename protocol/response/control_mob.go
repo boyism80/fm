@@ -44,6 +44,8 @@ func (p *StartControlMob) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *StartControlMob) Deserialize(reader *stream.StreamReader) {
+	p.Aggro = reader.ReadU8() == 2
+	p.Mob = &dto.Mob{OID: reader.ReadU32()}
 }
 
 func (p *StopControlMob) Serialize(writer *stream.StreamWriter) error {
@@ -53,4 +55,6 @@ func (p *StopControlMob) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *StopControlMob) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.OID = reader.ReadU32()
 }

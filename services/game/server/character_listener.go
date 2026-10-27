@@ -744,6 +744,10 @@ func (l *CharacterListenerImpl) OnControlMoveMob(ch *game.Character, mob *game.M
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnStopControlMob(ch *game.Character, mob *game.Mob) {
+	ch.Send(&response.StopControlMob{OID: mob.GetOID()}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnShowMobHp(ch *game.Character, mob *game.Mob, percentage uint8) {
 	ch.Send(&response.ShowMobHp{
 		OID:        mob.GetOID(),

@@ -4,6 +4,8 @@ import (
 	"github.com/boyism80/fm/maple/constant"
 )
 
+const autoAggroDistanceSq = 200000
+
 type ControllerTable struct {
 	controllers        map[uint32]*Character
 	mobs               map[uint32]*Mob
@@ -112,7 +114,7 @@ func (t *ControllerTable) Update(character *Character) {
 	for _, mob := range afterNear {
 		nearSet[mob] = struct{}{}
 		if _, controlled := t.GetController(mob); !controlled {
-			t.assign(mob, nil, character, false)
+			t.assign(mob, nil, character, mob.wz.FirstAttack)
 		}
 	}
 
@@ -165,7 +167,18 @@ func (t *ControllerTable) reassign(mob *Mob) {
 	if next == current {
 		return
 	}
-	t.assign(mob, current, next, false)
+	t.assign(mob, current, next, mob.wz.FirstAttack)
+}
+
+// AutoAggro hands a mob chasing ch to it, unless someone on the map already controls the mob.
+func (t *ControllerTable) AutoAggro(mob *Mob, ch *Character) {
+	if _, controlled := t.GetController(mob); controlled {
+		return
+	}
+	if ch.GetPosition().DistanceSq(mob.GetPosition()) >= autoAggroDistanceSq {
+		return
+	}
+	t.SwitchController(mob, ch, true)
 }
 
 func (t *ControllerTable) choiceNearbyPlayer(mob *Mob, excludeID uint32) *Character {
@@ -233,6 +246,12 @@ func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character, 
 	}
 
 	if after != nil {
+		// A carnival mob never chases its own team.
+		if mob.carnivalTeam != constant.CarnivalTeamNone {
+			if team := after.carnival.Team(); team != nil && team.teamID == mob.carnivalTeam {
+				aggro = false
+			}
+		}
 		t.mob2controller[mobOID] = after.GetID()
 		if _, ok := t.controller2mob[after.GetID()]; !ok {
 			t.controller2mob[after.GetID()] = map[uint32]struct{}{}

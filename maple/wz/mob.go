@@ -38,6 +38,7 @@ type Mob struct {
 	DropItemPeriod        int
 	DamagedByMob          bool
 	Invincible            bool
+	FirstAttack           bool
 	FixedDamage           int
 	OnlyNormalAttack      bool
 	DamagedBySkills       []uint32
