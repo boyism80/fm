@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import type { InternalContext } from "@fm/shared/context/internal-context";
 import { guildWeek, guildWeekStart } from "@fm/shared/guild-week";
+import { AccountRepository } from "@fm/shared/repos/account-repository";
 import {
     JOB_GROUP_SQL,
     JOB_ID_SQL,
@@ -41,7 +42,7 @@ type KindRun = {
     kind: RankingKind;
     period: string;
     // Columns in ranking_inputs order. Every key is ascending, so (k1, k2, k3, k4) order is ranking order.
-    select: (roundId: number) => string;
+    select: (roundId: number, bannedAccounts: number[]) => string;
 };
 
 // A round freezes every shard's inputs, splits the key space into ranges, counts every range per filter, gives
@@ -51,6 +52,7 @@ type KindRun = {
 export class RankingScheduler {
     private readonly ctx: InternalContext;
     private readonly rankings: RankingRepository;
+    private readonly accounts: AccountRepository;
     private readonly work: WorkTable;
     private readonly options: RankingSchedulerOptions;
     private readonly nodeId = randomUUID();
@@ -67,6 +69,7 @@ export class RankingScheduler {
     ) {
         this.ctx = internalContext;
         this.rankings = rankingRepository;
+        this.accounts = new AccountRepository(internalContext);
         this.work = new WorkTable(internalContext.getRedisUnifiedAccess().client);
         this.options = options;
     }
@@ -127,23 +130,26 @@ export class RankingScheduler {
         const guildPeriod = progress ? `w${week}:${day}` : `w${week - 1}`;
 
         const worlds = Object.keys(this.ctx.appConfiguration.postgresql.worlds).map(Number).join(", ");
-        const ranked = `world_id IN (${worlds}) AND NOT deleted AND NOT hidden AND role = 0 AND ${RANKED_CLASS_SQL}`;
+        // Banned accounts live in the unified database, so their ids reach the shard query as a literal.
+        const ranked = (bannedAccounts: number[]) =>
+            `world_id IN (${worlds}) AND NOT deleted AND NOT hidden AND role = 0 AND ${RANKED_CLASS_SQL}
+             AND account_id <> ALL('{${bannedAccounts.join(",")}}'::bigint[])`;
         return [
             {
                 kind: "overall",
                 period: day,
-                select: (roundId) =>
+                select: (roundId, bannedAccounts) =>
                     `SELECT 'overall', ${roundId}, -level, -exp, (EXTRACT(EPOCH FROM exp_reached_at) * 1000000)::bigint, id,
                             id, name, world_id, class_id, ${JOB_GROUP_SQL}, ${JOB_ID_SQL}, level, exp
-                     FROM characters WHERE ${ranked} AND level >= ${OVERALL_MIN_LEVEL}`,
+                     FROM characters WHERE ${ranked(bannedAccounts)} AND level >= ${OVERALL_MIN_LEVEL}`,
             },
             {
                 kind: "fame",
                 period: day,
-                select: (roundId) =>
+                select: (roundId, bannedAccounts) =>
                     `SELECT 'fame', ${roundId}, -population, -level, -exp, id,
                             id, name, world_id, class_id, NULL, NULL, level, population
-                     FROM characters WHERE ${ranked}`,
+                     FROM characters WHERE ${ranked(bannedAccounts)}`,
             },
             {
                 kind: "guild",
@@ -208,11 +214,12 @@ export class RankingScheduler {
         await this.dropUnattached(run.kind, roundId);
         await this.rankings.createRoundTable(table, roundId);
 
+        const bannedAccounts = await this.accounts.bannedIds();
         const shards = this.shardPools();
         const counts = await Promise.all(
             shards.map(async (shard) => {
                 await this.rankings.clearInputs(shard, run.kind);
-                return this.rankings.freezeInputs(shard, run.select(roundId));
+                return this.rankings.freezeInputs(shard, run.select(roundId, bannedAccounts));
             }),
         );
         const total = counts.reduce((sum, n) => sum + n, 0);
