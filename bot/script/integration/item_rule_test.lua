@@ -15,6 +15,11 @@ local LEGENDARY_SPIRIT = 1003
 local EVERLAST_MAP = 209000001
 local SNAIL_SHELL = 4000000
 local MESO = 0x40000
+local TWO_HANDED_SWORD = 1402001
+local SHIELD = 1092000
+local WARRIOR = 100
+local SHIELD_SLOT = -10
+local WEAPON_SLOT = -11
 
 local function check(ctx, ok, message)
     if ok == false then
@@ -260,8 +265,41 @@ local function everlast_drops(ctx)
     return true
 end
 
+-- A two-handed weapon and a shield never stay on together: wearing one takes the other off.
+local function two_handed_shield(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 30 " .. WARRIOR .. " 0 " .. TWO_HANDED_SWORD .. ":1," .. SHIELD .. ":1 -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    if pq.command(bot, "/힘바꾸기 40", "힘 설정") == false then
+        return ctx:fail("힘 설정 실패")
+    end
+    if wear(ctx, bot, TWO_HANDED_SWORD, WEAPON_SLOT) == false then
+        return false
+    end
+    if wear(ctx, bot, SHIELD, SHIELD_SLOT) == false then
+        return false
+    end
+    ctx:sleep(300)
+    if check(ctx, bot:slot(SHIELD) == nil, "방패를 착용하지 못함") == false then
+        return false
+    end
+    if check(ctx, bot:slot(TWO_HANDED_SWORD) ~= nil, "방패를 끼웠는데 두손검이 벗겨지지 않음") == false then
+        return false
+    end
+
+    if wear(ctx, bot, TWO_HANDED_SWORD, WEAPON_SLOT) == false then
+        return false
+    end
+    ctx:sleep(300)
+    if check(ctx, bot:slot(TWO_HANDED_SWORD) == nil, "두손검을 착용하지 못함") == false then
+        return false
+    end
+    return check(ctx, bot:slot(SHIELD) ~= nil, "두손검을 끼웠는데 방패가 벗겨지지 않음")
+end
+
 test_suite {
-    name = "Item: 착용한 고유 장비 줍기·주문서 아닌 강화·레전드리 스피릿·정렬 묶음 합계·사망 중 버리기와 귀환 주문서·에버라스트 드롭",
+    name = "Item: 착용한 고유 장비 줍기·주문서 아닌 강화·레전드리 스피릿·정렬 묶음 합계·사망 중 버리기와 귀환 주문서·에버라스트 드롭·양손 무기와 방패",
     bot_count = 2,
 
     scenarios = {
@@ -271,5 +309,6 @@ test_suite {
         merge_overflow,
         dead_refusals,
         everlast_drops,
+        two_handed_shield,
     },
 }

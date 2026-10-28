@@ -5,6 +5,7 @@ import "github.com/boyism80/fm/maple/constant"
 type Weapon struct {
 	*EquipmentCore
 	WeaponType constant.WeaponType
+	TwoHanded  bool
 }
 
 func (model *Weapon) setWeaponType() {
@@ -56,5 +57,12 @@ func (model *Weapon) setWeaponType() {
 		model.WeaponType = constant.WeaponTypeCannon
 	default:
 		model.WeaponType = constant.WeaponTypeNone
+	}
+
+	switch model.WeaponType {
+	case constant.WeaponTypeSword2H, constant.WeaponTypeAxe2H, constant.WeaponTypeBlunt2H, constant.WeaponTypeSpear,
+		constant.WeaponTypePoleArm, constant.WeaponTypeBow, constant.WeaponTypeCrossbow, constant.WeaponTypeClaw,
+		constant.WeaponTypeKnuckle, constant.WeaponTypeGun, constant.WeaponTypeCannon:
+		model.TwoHanded = true
 	}
 }

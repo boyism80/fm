@@ -585,6 +585,30 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 				}
 			}
 		}
+	case constant.EquipmentPartsShield:
+		weaponEq := equipments[constant.EquipmentPartsWeapon]
+		if weaponEq != nil {
+			if weapon, ok := weaponEq.GetModel().(*wz.Weapon); ok && weapon.TwoHanded {
+				storageSlot, isFree := inv.slotFor(constant.InventoryTypeEquipment, weaponEq)
+				if !isFree {
+					return ErrInventoryFull
+				}
+				if err := inv.UnequipToSlot(constant.EquipmentPartsWeapon, int16(storageSlot)); err != nil {
+					return err
+				}
+			}
+		}
+	case constant.EquipmentPartsWeapon:
+		shieldEq := equipments[constant.EquipmentPartsShield]
+		if weapon, ok := model.(*wz.Weapon); ok && weapon.TwoHanded && shieldEq != nil {
+			storageSlot, isFree := inv.slotFor(constant.InventoryTypeEquipment, shieldEq)
+			if !isFree {
+				return ErrInventoryFull
+			}
+			if err := inv.UnequipToSlot(constant.EquipmentPartsShield, int16(storageSlot)); err != nil {
+				return err
+			}
+		}
 	}
 
 	if newEq.GetEquipmentCore().bindToWearer() {
