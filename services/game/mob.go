@@ -170,7 +170,7 @@ func (m *Mob) canReceiveMobBuff(flag constant.MobBuffFlag, skillWz *wz.Skill) bo
 	if skillWz != nil && skillWz.MobSkill {
 		return true
 	}
-	if m.fake {
+	if m.fake || (m.wz != nil && m.wz.DamagedByMob) {
 		switch flag {
 		case constant.MobBuffStun, constant.MobBuffSpeed, constant.MobBuffPoison, constant.MobBuffVenom:
 			return false

@@ -16,6 +16,8 @@ local STAR = 2070000
 local LUCKY_SEVEN = 4001344
 local POISON_MIST = 2111003
 local MOB_POISON = 0x200
+-- Takes mob hits (damagedByMob), so player skills cannot stun, slow, or poison it.
+local MOON_BUNNY = 9300061
 local PRIEST = 231
 local ROGUE = 400
 local HERMIT = 411
@@ -385,10 +387,32 @@ local function poison_mist(ctx)
     if golem == nil then
         return false
     end
-    local p = bot:request(resp.apply_mob_buff, req.active_skill { skill_id = POISON_MIST, skill_level = 30 }, function(p)
-        return p.oid == golem and math.floor(p.status / MOB_POISON) % 2 == 1
-    end, 13000)
-    return check(ctx, p ~= false, "독 안개 안의 스톤골렘이 중독되지 않음")
+    local bunny = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. MOON_BUNNY }, function(p)
+        return p.mob.mob_id == MOON_BUNNY
+    end)
+    if bunny == false then
+        return ctx:fail("월묘 생성 응답 없음")
+    end
+
+    local bunny_poisoned = false
+    local function poisoned(oid)
+        return function(p)
+            if p.oid == bunny.mob.oid and math.floor(p.status / MOB_POISON) % 2 == 1 then
+                bunny_poisoned = true
+            end
+            return p.oid == oid and math.floor(p.status / MOB_POISON) % 2 == 1
+        end
+    end
+    local p = bot:request(resp.apply_mob_buff, req.active_skill { skill_id = POISON_MIST, skill_level = 30 },
+        poisoned(golem), 13000)
+    if check(ctx, p ~= false, "독 안개 안의 스톤골렘이 중독되지 않음") == false then
+        return false
+    end
+    -- A friendly mob stays in the mist for several more ticks without being poisoned.
+    bot:request(resp.apply_mob_buff, nil, poisoned(bunny.mob.oid), 5000)
+    -- The mist lasts 40 s and would poison the golem of a later scenario on this map.
+    bot:request(resp.notice, req.normal_chat { message = "/맵리셋 인스턴스" }, nil, 300)
+    return check(ctx, bunny_poisoned == false, "독 안개 안의 월묘가 중독됨")
 end
 
 local function hp_changed(p)
