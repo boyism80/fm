@@ -6,24 +6,6 @@ local MAPS = {
 
 return {
     on_click = function(me, npc)
-        if me:map():wz():id() / 400000000 >= 5 then
-            local saved = me:saved_location("WORLDTOUR")
-            if saved == nil then
-                return
-            end
-            local sel = me:dialog_list(npc, "어디로 가겠나?", { "이전에 있던 #m" .. saved .. "# 마을로 돌아갑니다." })
-            if sel == nil then
-                return
-            end
-            if not me:dialog_yes_no(npc, "ㅇㅇ #b#m" .. saved .. "##k ㅇㅇ") then
-                me:dialog(npc, "...기회 되면 보지.")
-                return
-            end
-            me:clear_saved_location("WORLDTOUR")
-            me:map(saved)
-            return
-        end
-
         local names = {}
         for i, m in ipairs(MAPS) do
             names[i] = m.name
@@ -47,7 +29,6 @@ return {
             me:dialog(npc, "흐음. 메소가 부족한 것 같은데? 요금이 없으면 할복해.")
             return
         end
-        me:save_location("WORLDTOUR")
         me:map(selected.map)
     end
 }

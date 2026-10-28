@@ -30,7 +30,6 @@ return {
             me:dialog(npc, "흐음. 메소가 부족하신 것 같은데요? 요금이 없으시다면 선택하신 곳으로 보내드릴 수 없답니다.")
             return
         end
-        me:save_location("WORLDTOUR")
         me:map(dest.map)
     end
 }

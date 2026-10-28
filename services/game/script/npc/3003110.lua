@@ -30,7 +30,6 @@ return {
             me:dialog(npc, "흐음. 메소가 부족한 것 같은데? 요금이 없으면 할복해.")
             return
         end
-        me:save_location("WORLDTOUR")
         me:map(dest.map)
     end
 }
