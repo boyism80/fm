@@ -79,6 +79,9 @@ func (m *Map) collectOwnedFieldDrops(character *Character) {
 			if fp == nil || fp.owner != character.GetID() {
 				continue
 			}
+			if drop.GetModel().GetTraits()&constant.ItemTraitPartyQuest == 0 && character.inventory.hasUniqueItem(drop.GetModel()) {
+				continue
+			}
 			if _, err := character.inventory.AddItem(drop, true); err != nil {
 				log.Printf("collectOwnedFieldDrops: inventory full, leaving drop %d on map: %v", oid, err)
 				continue

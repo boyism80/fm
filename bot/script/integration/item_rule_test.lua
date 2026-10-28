@@ -15,6 +15,7 @@ local LEGENDARY_SPIRIT = 1003
 local EVERLAST_MAP = 209000001
 local SNAIL_SHELL = 4000000
 local MESO = 0x40000
+local ONLY_MEDAL = 1142667
 local TWO_HANDED_SWORD = 1402001
 local SHIELD = 1092000
 local WARRIOR = 100
@@ -298,6 +299,28 @@ local function two_handed_shield(ctx)
     return check(ctx, bot:slot(SHIELD) ~= nil, "두손검을 끼웠는데 방패가 벗겨지지 않음")
 end
 
+-- A one-of-a-kind item left on an everlast map stays there when the character already holds another.
+local function everlast_unique(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 30 0 0 " .. ONLY_MEDAL .. ":1 -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    if bot:force_instance_move(EVERLAST_MAP, "버린 아이템이 다른 스위트와 섞이지 않게") == false then
+        return ctx:fail("에버라스트 맵 이동 실패")
+    end
+    if bot:drop(ONLY_MEDAL, 1) == nil then
+        return ctx:fail("고유 훈장을 버리지 못함")
+    end
+    if pq.command(bot, "/봇초기화 30 0 0 " .. ONLY_MEDAL .. ":1 -", "봇초기화 완료") == false then
+        return ctx:fail("고유 훈장을 다시 받지 못함")
+    end
+    if bot:relog({ passwords = { "" } }) == false then
+        return ctx:fail("재접속 실패")
+    end
+    return check(ctx, (bot:items()[ONLY_MEDAL] or 0) == 1,
+        "바닥의 고유 훈장까지 돌아와 두 개가 됨: " .. tostring(bot:items()[ONLY_MEDAL]))
+end
+
 test_suite {
     name = "Item: 착용한 고유 장비 줍기·주문서 아닌 강화·레전드리 스피릿·정렬 묶음 합계·사망 중 버리기와 귀환 주문서·에버라스트 드롭·양손 무기와 방패",
     bot_count = 2,
@@ -310,5 +333,6 @@ test_suite {
         dead_refusals,
         everlast_drops,
         two_handed_shield,
+        everlast_unique,
     },
 }
