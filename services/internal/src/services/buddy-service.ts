@@ -4,7 +4,11 @@ import type { InternalContext } from "@fm/shared/context/internal-context";
 import type { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { CharacterBuddyRepository } from "@fm/shared/repos/character-buddy-repository";
 import type { CharacterBuddyModel } from "@fm/shared/repos/character-buddy-repository";
-import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import {
+    BuddyCapacityRequestRepository,
+    CharacterRealtimeStateRepository,
+} from "@fm/shared/repos/character-realtime-state-repository";
+import { DEFAULT_BUDDY_CAPACITY } from "@fm/shared/buddy-defaults";
 import { CharacterRepository } from "@fm/shared/repos/character-repository";
 import { SessionRepository } from "@fm/shared/repos/session-repository";
 import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
@@ -21,8 +25,12 @@ const MAX_MULTI_CHAT_MSG_LEN = 500;
 const MAX_MULTI_CHAT_NAME_LEN = 32;
 const MAX_BUDDY_NAME_LEN = 13;
 const MAX_BUDDY_GROUP_LEN = 16;
+const BUDDY_CAPACITY_STEP = 5;
+const BUDDY_CAPACITY_MAX = 100;
 
 export type BuddyMutationResult = { ok: boolean; code?: BuddyErrorCode };
+
+export type IncreaseBuddyCapacityResult = { ok: true; capacity: number } | { ok: false; code: BuddyErrorCode };
 
 export type BuddyListEntry = {
     characterId: number;
@@ -59,6 +67,7 @@ export class BuddyService {
     private readonly app: AppConfiguration;
     private readonly buddyRepo: CharacterBuddyRepository;
     private readonly realtimeStateRepo: CharacterRealtimeStateRepository;
+    private readonly capacityRequestRepo: BuddyCapacityRequestRepository;
     private readonly characterRepo: CharacterRepository;
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
@@ -70,6 +79,7 @@ export class BuddyService {
         appConfiguration: AppConfiguration,
         characterBuddyRepository: CharacterBuddyRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
+        buddyCapacityRequestRepository: BuddyCapacityRequestRepository,
         characterRepository: CharacterRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
@@ -80,6 +90,7 @@ export class BuddyService {
         this.app = appConfiguration;
         this.buddyRepo = characterBuddyRepository;
         this.realtimeStateRepo = characterRealtimeStateRepository;
+        this.capacityRequestRepo = buddyCapacityRequestRepository;
         this.characterRepo = characterRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
@@ -98,6 +109,46 @@ export class BuddyService {
         }
         buddies.sort((a, b) => a.characterId - b.characterId);
         return { capacity, buddies };
+    }
+
+    async increaseBuddyCapacity(
+        worldId: number,
+        characterId: number,
+        requestId: string,
+    ): Promise<IncreaseBuddyCapacityResult> {
+        this.assertWorld(worldId);
+        this.assertCharacterId(characterId);
+
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `character_realtime:${characterId}`,
+        );
+
+        const result = await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
+            const state = await this.realtimeStateRepo.get(worldId, characterId, { txClient });
+            const capacity = state?.buddyCapacity ?? DEFAULT_BUDDY_CAPACITY;
+            if ((await this.capacityRequestRepo.find(worldId, characterId, requestId, { txClient })) != null) {
+                return { ok: true as const, capacity };
+            }
+            if (capacity + BUDDY_CAPACITY_STEP > BUDDY_CAPACITY_MAX) {
+                return { ok: false as const, code: BuddyErrorCode.BUDDY_ERROR_CAPACITY_REACHED };
+            }
+            await this.realtimeStateRepo.set(
+                worldId,
+                {
+                    worldId,
+                    characterId,
+                    partyId: state?.partyId ?? null,
+                    guildId: state?.guildId ?? null,
+                    buddyCapacity: capacity + BUDDY_CAPACITY_STEP,
+                },
+                { txClient },
+            );
+            await this.capacityRequestRepo.insert(worldId, characterId, requestId, {}, txClient);
+            return { ok: true as const, capacity: capacity + BUDDY_CAPACITY_STEP };
+        });
+        await this.realtimeStateRepo.invalidateCache(worldId, characterId);
+        return result;
     }
 
     async publishBuddyChannel(worldId: number, characterId: number, channelIndex: number) {

@@ -3581,12 +3581,27 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"buddy_capacity": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
-			if L.GetTop() == 1 {
-				L.Push(lua.LNumber(ch.buddies.Capacity()))
+			L.Push(lua.LNumber(ch.buddies.Capacity()))
+			return 1
+		},
+		"expand_buddy_list": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
 				return 1
 			}
-			ch.buddies.SetCapacity(uint32(L.CheckInt(2)))
-			return 0
+			promise, err := ch.buddies.Expand(cfg.ActorContext, int32(L.CheckInt(2)))
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			return LuaYieldPromise(L, ch.gameWorld, promise, func(expanded bool, err error) []lua.LValue {
+				if err != nil {
+					return []lua.LValue{lua.LNil}
+				}
+				return []lua.LValue{lua.LBool(expanded)}
+			})
 		},
 		"sync_item": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)

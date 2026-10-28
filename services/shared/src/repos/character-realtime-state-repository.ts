@@ -1,5 +1,6 @@
 import { redisCacheKey } from "../redis-cache-key";
 import { toPgIntOrNull } from "./pg-int";
+import { RequestRepository } from "./request-repository";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
 import { DEFAULT_BUDDY_CAPACITY } from "../buddy-defaults";
@@ -97,4 +98,8 @@ export class CharacterRealtimeStateRepository extends ValueRepository<
             buddy_capacity: model.buddyCapacity ?? null,
         };
     }
+}
+
+export class BuddyCapacityRequestRepository extends RequestRepository {
+    protected readonly kind = "buddy_capacity";
 }

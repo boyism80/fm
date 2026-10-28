@@ -19,4 +19,7 @@ func (p *BuddyCapacityUpdate) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *BuddyCapacityUpdate) Deserialize(*stream.StreamReader) {}
+func (p *BuddyCapacityUpdate) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.Capacity = r.ReadU8()
+}

@@ -1,12 +1,23 @@
 package game
 
 import (
+	"encoding/json"
+	"errors"
+	"log"
 	"sort"
 
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 )
+
+var ErrBuddyNotEnoughMeso = errors.New("not enough meso for buddy list")
+
+type buddyCapacityDetail struct {
+	Meso int32
+}
 
 type BuddyListEntry struct {
 	CharacterID uint32
@@ -36,6 +47,50 @@ func (bl *BuddyList) SetCapacity(n uint32) {
 	}
 	bl.capacity = n
 	bl.owner.listener.OnBuddyCapacity(bl.owner, uint8(bl.Capacity()))
+}
+
+// Expand pays the fee and raises the capacity on internal, which owns it; the promise is false when internal refuses.
+func (bl *BuddyList) Expand(actx actor.Context, fee int32) (*async.Promise[bool], error) {
+	if !bl.owner.inventory.RemoveMeso(fee) {
+		return nil, ErrBuddyNotEnoughMeso
+	}
+	detail := buddyCapacityDetail{Meso: fee}
+	id := bl.owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_BUDDY_CAPACITY, 0, detail)
+
+	return bl.owner.gameWorld.Systems().Get[*InternalSystem]().IncreaseBuddyCapacityAsync(actx, bl.owner, id).Bind(bl.owner).Then(func(v *internal.IncreaseBuddyCapacityReply) (bool, error) {
+		bl.closeExpansion(id, detail, v)
+		return v.GetOk(), nil
+	}).OnError(func(err error) {
+		bl.owner.unsettled.Find(id).inFlight = false
+
+		log.Printf("BuddyList.Expand character=%d id=%d: %v", bl.owner.GetID(), id, err)
+	}), nil
+}
+
+func (bl *BuddyList) closeExpansion(id uint64, detail buddyCapacityDetail, reply *internal.IncreaseBuddyCapacityReply) {
+	bl.owner.unsettled.Erase(id)
+	if !reply.GetOk() {
+		bl.owner.inventory.AddMeso(detail.Meso)
+		return
+	}
+	bl.SetCapacity(reply.GetCapacity())
+}
+
+// A resend under the same id answers with the capacity the first request reached, so it never raises twice.
+func (bl *BuddyList) settleExpansion(actx actor.Context, request *UnsettledRequest) {
+	var detail buddyCapacityDetail
+	if err := json.Unmarshal([]byte(request.detail), &detail); err != nil {
+		log.Printf("BuddyList.settleExpansion character=%d id=%d: %v", bl.owner.GetID(), request.id, err)
+		return
+	}
+	bl.owner.gameWorld.Systems().Get[*InternalSystem]().IncreaseBuddyCapacityAsync(actx, bl.owner, request.id).Bind(bl.owner).Do(func(v *internal.IncreaseBuddyCapacityReply) error {
+		bl.closeExpansion(request.id, detail, v)
+		return nil
+	}).OnError(func(err error) {
+		request.inFlight = false
+
+		log.Printf("BuddyList.settleExpansion character=%d id=%d: %v", bl.owner.GetID(), request.id, err)
+	})
 }
 
 func (bl *BuddyList) Capacity() uint32 {

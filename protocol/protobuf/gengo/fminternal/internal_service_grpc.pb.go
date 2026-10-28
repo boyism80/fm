@@ -109,6 +109,7 @@ const (
 	Internal_RequestBuddy_FullMethodName                   = "/fm.internal.Internal/RequestBuddy"
 	Internal_AcceptBuddy_FullMethodName                    = "/fm.internal.Internal/AcceptBuddy"
 	Internal_RemoveBuddy_FullMethodName                    = "/fm.internal.Internal/RemoveBuddy"
+	Internal_IncreaseBuddyCapacity_FullMethodName          = "/fm.internal.Internal/IncreaseBuddyCapacity"
 	Internal_BroadcastMultiChat_FullMethodName             = "/fm.internal.Internal/BroadcastMultiChat"
 	Internal_SetServerDateTime_FullMethodName              = "/fm.internal.Internal/SetServerDateTime"
 	Internal_BroadcastNotice_FullMethodName                = "/fm.internal.Internal/BroadcastNotice"
@@ -244,6 +245,7 @@ type InternalClient interface {
 	RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error)
 	AcceptBuddy(ctx context.Context, in *AcceptBuddyRequest, opts ...grpc.CallOption) (*AcceptBuddyReply, error)
 	RemoveBuddy(ctx context.Context, in *RemoveBuddyRequest, opts ...grpc.CallOption) (*RemoveBuddyReply, error)
+	IncreaseBuddyCapacity(ctx context.Context, in *IncreaseBuddyCapacityRequest, opts ...grpc.CallOption) (*IncreaseBuddyCapacityReply, error)
 	BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error)
 	SetServerDateTime(ctx context.Context, in *SetServerDateTimeRequest, opts ...grpc.CallOption) (*SetServerDateTimeReply, error)
 	BroadcastNotice(ctx context.Context, in *BroadcastNoticeRequest, opts ...grpc.CallOption) (*BroadcastNoticeReply, error)
@@ -1193,6 +1195,16 @@ func (c *internalClient) RemoveBuddy(ctx context.Context, in *RemoveBuddyRequest
 	return out, nil
 }
 
+func (c *internalClient) IncreaseBuddyCapacity(ctx context.Context, in *IncreaseBuddyCapacityRequest, opts ...grpc.CallOption) (*IncreaseBuddyCapacityReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IncreaseBuddyCapacityReply)
+	err := c.cc.Invoke(ctx, Internal_IncreaseBuddyCapacity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BroadcastMultiChatReply)
@@ -1677,6 +1689,7 @@ type InternalServer interface {
 	RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error)
 	AcceptBuddy(context.Context, *AcceptBuddyRequest) (*AcceptBuddyReply, error)
 	RemoveBuddy(context.Context, *RemoveBuddyRequest) (*RemoveBuddyReply, error)
+	IncreaseBuddyCapacity(context.Context, *IncreaseBuddyCapacityRequest) (*IncreaseBuddyCapacityReply, error)
 	BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error)
 	SetServerDateTime(context.Context, *SetServerDateTimeRequest) (*SetServerDateTimeReply, error)
 	BroadcastNotice(context.Context, *BroadcastNoticeRequest) (*BroadcastNoticeReply, error)
@@ -1995,6 +2008,9 @@ func (UnimplementedInternalServer) AcceptBuddy(context.Context, *AcceptBuddyRequ
 }
 func (UnimplementedInternalServer) RemoveBuddy(context.Context, *RemoveBuddyRequest) (*RemoveBuddyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBuddy not implemented")
+}
+func (UnimplementedInternalServer) IncreaseBuddyCapacity(context.Context, *IncreaseBuddyCapacityRequest) (*IncreaseBuddyCapacityReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IncreaseBuddyCapacity not implemented")
 }
 func (UnimplementedInternalServer) BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BroadcastMultiChat not implemented")
@@ -3754,6 +3770,24 @@ func _Internal_RemoveBuddy_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_IncreaseBuddyCapacity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IncreaseBuddyCapacityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).IncreaseBuddyCapacity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_IncreaseBuddyCapacity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).IncreaseBuddyCapacity(ctx, req.(*IncreaseBuddyCapacityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_BroadcastMultiChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BroadcastMultiChatRequest)
 	if err := dec(in); err != nil {
@@ -4822,6 +4856,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveBuddy",
 			Handler:    _Internal_RemoveBuddy_Handler,
+		},
+		{
+			MethodName: "IncreaseBuddyCapacity",
+			Handler:    _Internal_IncreaseBuddyCapacity_Handler,
 		},
 		{
 			MethodName: "BroadcastMultiChat",

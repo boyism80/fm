@@ -296,6 +296,10 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(a.checkBot(L).EXP))
 			return 1
 		},
+		"buddy_capacity": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).BuddyCapacity))
+			return 1
+		},
 		"meso": func(L *lua.LState) int {
 			L.Push(lua.LNumber(a.checkBot(L).Meso))
 			return 1

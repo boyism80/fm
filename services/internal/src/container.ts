@@ -56,7 +56,10 @@ import {
 import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "@fm/shared/repos/guild-bulletin-board-repository";
 import { CharacterBuddyRepository } from "@fm/shared/repos/character-buddy-repository";
-import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
+import {
+    BuddyCapacityRequestRepository,
+    CharacterRealtimeStateRepository,
+} from "@fm/shared/repos/character-realtime-state-repository";
 import { NoteRemoveRequestRepository } from "@fm/shared/repos/note-request-repository";
 import { FamilyMoveRequestRepository } from "@fm/shared/repos/family-request-repository";
 import { PlayerNpcRepository } from "@fm/shared/repos/player-npc-repository";
@@ -146,6 +149,7 @@ export function createAppContainer() {
         guildBulletinBoardRepository: awilix.asClass(GuildBulletinBoardRepository).scoped(),
         characterBuddyRepository: awilix.asClass(CharacterBuddyRepository).scoped(),
         characterRealtimeStateRepository: awilix.asClass(CharacterRealtimeStateRepository).scoped(),
+        buddyCapacityRequestRepository: awilix.asClass(BuddyCapacityRequestRepository).scoped(),
         noteRemoveRequestRepository: awilix.asClass(NoteRemoveRequestRepository).scoped(),
         familyMoveRequestRepository: awilix.asClass(FamilyMoveRequestRepository).scoped(),
         playerNpcRepository: awilix.asClass(PlayerNpcRepository).scoped(),

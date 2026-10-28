@@ -3,6 +3,8 @@ import {
     type AcceptBuddyReply,
     type AcceptBuddyRequest,
     type BuddyEntry,
+    type IncreaseBuddyCapacityReply,
+    type IncreaseBuddyCapacityRequest,
     type RemoveBuddyReply,
     type RemoveBuddyRequest,
     type RequestBuddyReply,
@@ -93,6 +95,24 @@ export class BuddyGrpcController {
                 buddyWasAccepted: result.buddyWasAccepted ?? false,
                 removedFromOwner: result.removedFromOwner ?? false,
             });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("increaseBuddyCapacity")
+    async increaseBuddyCapacity(
+        call: GrpcCall<IncreaseBuddyCapacityRequest>,
+        callback: GrpcCallback<IncreaseBuddyCapacityReply>,
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.buddyService.increaseBuddyCapacity(req.worldId, req.characterId, req.requestId);
+            if (!result.ok) {
+                callback(null, { ok: false, errorCode: result.code, capacity: 0 });
+                return;
+            }
+            callback(null, { ok: true, errorCode: BuddyErrorCode.BUDDY_ERROR_NONE, capacity: result.capacity });
         } catch (err) {
             this.grpcError(err, callback);
         }

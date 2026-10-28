@@ -44,6 +44,7 @@ type Bot struct {
 	Meso           int32
 	Population     int32
 	CP             uint16
+	BuddyCapacity  uint8
 	NPCs           map[uint32]dto.Npc
 	Mobs           map[uint32]dto.Mob
 	Drops          map[uint32]Drop
@@ -167,6 +168,8 @@ func (b *Bot) Update(pkt any) {
 		b.load(p.Character)
 	case *response.CashShopBalance:
 		b.NXCash, b.MaplePoint = p.NXCash, p.MaplePoint
+	case *response.BuddyCapacityUpdate:
+		b.BuddyCapacity = p.Capacity
 	case *response.SkillMacro:
 		b.Macros = p.Entries
 	case *response.CashShopResult:
@@ -326,6 +329,7 @@ func (b *Bot) load(character *dto.Character) {
 	b.Map, b.Spawn, b.HP = character.Map, character.SpawnPoint, character.Hp
 	b.Level, b.Class, b.EXP, b.Population = character.Level, character.Class, int32(character.Exp), int32(character.Population)
 	b.Meso = character.Inventory.Meso
+	b.BuddyCapacity = character.BuddyCapacity
 	b.Stones[false], b.Stones[true] = character.TeleportStones, character.VipTeleportStones
 	for typ, tab := range character.Inventory.Tabs {
 		b.SlotLimits[typ] = tab.SlotLimit

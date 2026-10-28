@@ -154,3 +154,17 @@ func (s *InternalSystem) FinishFamilyMoveAsync(ctx actor.Context, ch *Character,
 		nil,
 	)
 }
+
+func (s *InternalSystem) IncreaseBuddyCapacityAsync(ctx actor.Context, ch *Character, requestID uint64) *async.Promise[*internal.IncreaseBuddyCapacityReply] {
+	req := &internal.IncreaseBuddyCapacityRequest{
+		WorldId:     s.gw.GetWorldID(),
+		CharacterId: ch.GetID(),
+		RequestId:   requestID,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.IncreaseBuddyCapacityReply, error) {
+			return s.client.IncreaseBuddyCapacity(c, req)
+		},
+		nil,
+	)
+}

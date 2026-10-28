@@ -96,6 +96,7 @@ service Internal {
   rpc RequestBuddy (RequestBuddyRequest) returns (RequestBuddyReply);
   rpc AcceptBuddy (AcceptBuddyRequest) returns (AcceptBuddyReply);
   rpc RemoveBuddy (RemoveBuddyRequest) returns (RemoveBuddyReply);
+  rpc IncreaseBuddyCapacity (IncreaseBuddyCapacityRequest) returns (IncreaseBuddyCapacityReply);
   rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
   rpc SetServerDateTime (SetServerDateTimeRequest) returns (SetServerDateTimeReply);
   rpc BroadcastNotice (BroadcastNoticeRequest) returns (BroadcastNoticeReply);
@@ -775,6 +776,7 @@ enum UnsettledType {
   UNSETTLED_TYPE_SHOP_OPEN = 16;
   UNSETTLED_TYPE_WEDDING_INVITE = 17;
   UNSETTLED_TYPE_TRADE_RESTORE = 18;
+  UNSETTLED_TYPE_BUDDY_CAPACITY = 19;
 }
 
 message UnsettledRequest {
@@ -2221,6 +2223,7 @@ enum BuddyErrorCode {
   BUDDY_ERROR_NOT_PENDING = 6;
   BUDDY_ERROR_CANNOT_ADD_SELF = 7;
   BUDDY_ERROR_TARGET_IS_HIDDEN_GM = 8;
+  BUDDY_ERROR_CAPACITY_REACHED = 9;
 }
 
 message BuddyEntry {
@@ -2274,6 +2277,18 @@ message RemoveBuddyReply {
   uint32 buddy_channel_id = 4;
   bool buddy_was_accepted = 5;
   bool removed_from_owner = 6;
+}
+
+message IncreaseBuddyCapacityRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint64 request_id = 3 [jstype = JS_STRING];
+}
+
+message IncreaseBuddyCapacityReply {
+  bool ok = 1;
+  BuddyErrorCode error_code = 2;
+  uint32 capacity = 3;
 }
 
 message SetServerDateTimeRequest {

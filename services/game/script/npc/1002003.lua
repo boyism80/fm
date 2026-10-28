@@ -22,11 +22,11 @@ return {
             me:dialog(npc, lack, false, true)
             return
         end
-        if me:exchange({ meso = FEE }, nil) ~= ExchangeResult.OK then
+        -- nil means the raise is still settling; the fee stays held until it does.
+        if me:expand_buddy_list(FEE) ~= true then
             me:dialog(npc, lack, false, true)
             return
         end
-        me:buddy_capacity(capacity + 5)
         me:dialog(npc,
             "좋았어! 자네의 친구 목록이 5개 늘어나 있을 것일세. 한 번 확인해 보게나. 그리고 만일 그래도 친구 목록이 부족하다면 언제든지 날 찾아와 주게. 몇 번이라도 늘려줄테니까 말야. 물론 공짜로는 안되지만... 그럼 잘가게~")
     end

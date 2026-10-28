@@ -404,6 +404,7 @@ export enum UnsettledType {
   UNSETTLED_TYPE_SHOP_OPEN = 16,
   UNSETTLED_TYPE_WEDDING_INVITE = 17,
   UNSETTLED_TYPE_TRADE_RESTORE = 18,
+  UNSETTLED_TYPE_BUDDY_CAPACITY = 19,
   UNRECOGNIZED = -1,
 }
 
@@ -466,6 +467,9 @@ export function unsettledTypeFromJSON(object: any): UnsettledType {
     case 18:
     case "UNSETTLED_TYPE_TRADE_RESTORE":
       return UnsettledType.UNSETTLED_TYPE_TRADE_RESTORE;
+    case 19:
+    case "UNSETTLED_TYPE_BUDDY_CAPACITY":
+      return UnsettledType.UNSETTLED_TYPE_BUDDY_CAPACITY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -513,6 +517,8 @@ export function unsettledTypeToJSON(object: UnsettledType): string {
       return "UNSETTLED_TYPE_WEDDING_INVITE";
     case UnsettledType.UNSETTLED_TYPE_TRADE_RESTORE:
       return "UNSETTLED_TYPE_TRADE_RESTORE";
+    case UnsettledType.UNSETTLED_TYPE_BUDDY_CAPACITY:
+      return "UNSETTLED_TYPE_BUDDY_CAPACITY";
     case UnsettledType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -1501,6 +1507,7 @@ export enum BuddyErrorCode {
   BUDDY_ERROR_NOT_PENDING = 6,
   BUDDY_ERROR_CANNOT_ADD_SELF = 7,
   BUDDY_ERROR_TARGET_IS_HIDDEN_GM = 8,
+  BUDDY_ERROR_CAPACITY_REACHED = 9,
   UNRECOGNIZED = -1,
 }
 
@@ -1533,6 +1540,9 @@ export function buddyErrorCodeFromJSON(object: any): BuddyErrorCode {
     case 8:
     case "BUDDY_ERROR_TARGET_IS_HIDDEN_GM":
       return BuddyErrorCode.BUDDY_ERROR_TARGET_IS_HIDDEN_GM;
+    case 9:
+    case "BUDDY_ERROR_CAPACITY_REACHED":
+      return BuddyErrorCode.BUDDY_ERROR_CAPACITY_REACHED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -1560,6 +1570,8 @@ export function buddyErrorCodeToJSON(object: BuddyErrorCode): string {
       return "BUDDY_ERROR_CANNOT_ADD_SELF";
     case BuddyErrorCode.BUDDY_ERROR_TARGET_IS_HIDDEN_GM:
       return "BUDDY_ERROR_TARGET_IS_HIDDEN_GM";
+    case BuddyErrorCode.BUDDY_ERROR_CAPACITY_REACHED:
+      return "BUDDY_ERROR_CAPACITY_REACHED";
     case BuddyErrorCode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -3936,6 +3948,18 @@ export interface RemoveBuddyReply {
   buddyChannelId: number;
   buddyWasAccepted: boolean;
   removedFromOwner: boolean;
+}
+
+export interface IncreaseBuddyCapacityRequest {
+  worldId: number;
+  characterId: number;
+  requestId: string;
+}
+
+export interface IncreaseBuddyCapacityReply {
+  ok: boolean;
+  errorCode: BuddyErrorCode;
+  capacity: number;
 }
 
 export interface SetServerDateTimeRequest {
@@ -37605,6 +37629,206 @@ export const RemoveBuddyReply: MessageFns<RemoveBuddyReply> = {
   },
 };
 
+function createBaseIncreaseBuddyCapacityRequest(): IncreaseBuddyCapacityRequest {
+  return { worldId: 0, characterId: 0, requestId: "0" };
+}
+
+export const IncreaseBuddyCapacityRequest: MessageFns<IncreaseBuddyCapacityRequest> = {
+  encode(message: IncreaseBuddyCapacityRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.requestId !== "0") {
+      writer.uint32(24).uint64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): IncreaseBuddyCapacityRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIncreaseBuddyCapacityRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requestId = reader.uint64().toString();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IncreaseBuddyCapacityRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.String(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.String(object.request_id)
+        : "0",
+    };
+  },
+
+  toJSON(message: IncreaseBuddyCapacityRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.requestId !== "0") {
+      obj.requestId = globalThis.String(message.requestId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IncreaseBuddyCapacityRequest>, I>>(base?: I): IncreaseBuddyCapacityRequest {
+    return IncreaseBuddyCapacityRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<IncreaseBuddyCapacityRequest>, I>>(object: I): IncreaseBuddyCapacityRequest {
+    const message = createBaseIncreaseBuddyCapacityRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.requestId = object.requestId ?? "0";
+    return message;
+  },
+};
+
+function createBaseIncreaseBuddyCapacityReply(): IncreaseBuddyCapacityReply {
+  return { ok: false, errorCode: 0, capacity: 0 };
+}
+
+export const IncreaseBuddyCapacityReply: MessageFns<IncreaseBuddyCapacityReply> = {
+  encode(message: IncreaseBuddyCapacityReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.capacity !== 0) {
+      writer.uint32(24).uint32(message.capacity);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): IncreaseBuddyCapacityReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIncreaseBuddyCapacityReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.capacity = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IncreaseBuddyCapacityReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? buddyErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? buddyErrorCodeFromJSON(object.error_code)
+        : 0,
+      capacity: isSet(object.capacity) ? globalThis.Number(object.capacity) : 0,
+    };
+  },
+
+  toJSON(message: IncreaseBuddyCapacityReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = buddyErrorCodeToJSON(message.errorCode);
+    }
+    if (message.capacity !== 0) {
+      obj.capacity = Math.round(message.capacity);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IncreaseBuddyCapacityReply>, I>>(base?: I): IncreaseBuddyCapacityReply {
+    return IncreaseBuddyCapacityReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<IncreaseBuddyCapacityReply>, I>>(object: I): IncreaseBuddyCapacityReply {
+    const message = createBaseIncreaseBuddyCapacityReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.capacity = object.capacity ?? 0;
+    return message;
+  },
+};
+
 function createBaseSetServerDateTimeRequest(): SetServerDateTimeRequest {
   return { worldId: 0, datetime: "", reset: false };
 }
@@ -42573,6 +42797,17 @@ export const InternalService = {
     responseSerialize: (value: RemoveBuddyReply): Buffer => Buffer.from(RemoveBuddyReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): RemoveBuddyReply => RemoveBuddyReply.decode(value),
   },
+  increaseBuddyCapacity: {
+    path: "/fm.internal.Internal/IncreaseBuddyCapacity" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: IncreaseBuddyCapacityRequest): Buffer =>
+      Buffer.from(IncreaseBuddyCapacityRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): IncreaseBuddyCapacityRequest => IncreaseBuddyCapacityRequest.decode(value),
+    responseSerialize: (value: IncreaseBuddyCapacityReply): Buffer =>
+      Buffer.from(IncreaseBuddyCapacityReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): IncreaseBuddyCapacityReply => IncreaseBuddyCapacityReply.decode(value),
+  },
   broadcastMultiChat: {
     path: "/fm.internal.Internal/BroadcastMultiChat" as const,
     requestStream: false as const,
@@ -43083,6 +43318,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   requestBuddy: handleUnaryCall<RequestBuddyRequest, RequestBuddyReply>;
   acceptBuddy: handleUnaryCall<AcceptBuddyRequest, AcceptBuddyReply>;
   removeBuddy: handleUnaryCall<RemoveBuddyRequest, RemoveBuddyReply>;
+  increaseBuddyCapacity: handleUnaryCall<IncreaseBuddyCapacityRequest, IncreaseBuddyCapacityReply>;
   broadcastMultiChat: handleUnaryCall<BroadcastMultiChatRequest, BroadcastMultiChatReply>;
   setServerDateTime: handleUnaryCall<SetServerDateTimeRequest, SetServerDateTimeReply>;
   broadcastNotice: handleUnaryCall<BroadcastNoticeRequest, BroadcastNoticeReply>;
@@ -44468,6 +44704,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: RemoveBuddyReply) => void,
+  ): ClientUnaryCall;
+  increaseBuddyCapacity(
+    request: IncreaseBuddyCapacityRequest,
+    callback: (error: ServiceError | null, response: IncreaseBuddyCapacityReply) => void,
+  ): ClientUnaryCall;
+  increaseBuddyCapacity(
+    request: IncreaseBuddyCapacityRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: IncreaseBuddyCapacityReply) => void,
+  ): ClientUnaryCall;
+  increaseBuddyCapacity(
+    request: IncreaseBuddyCapacityRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: IncreaseBuddyCapacityReply) => void,
   ): ClientUnaryCall;
   broadcastMultiChat(
     request: BroadcastMultiChatRequest,

@@ -94,6 +94,8 @@ func (u *UnsettledRequests) Settle(actx actor.Context) {
 			u.owner.storeBank.settleShopOpen(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_TRADE_RESTORE:
 			u.owner.escrow.settleRestore(actx, request)
+		case internal.UnsettledType_UNSETTLED_TYPE_BUDDY_CAPACITY:
+			u.owner.buddies.settleExpansion(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_FAMILY_MOVE:
 			u.owner.family.settleMove(actx, request)
 		case internal.UnsettledType_UNSETTLED_TYPE_GUILD_CREATE:
