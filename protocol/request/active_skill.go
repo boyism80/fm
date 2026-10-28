@@ -1,6 +1,8 @@
 package request
 
 import (
+	"fmt"
+
 	"github.com/boyism80/fm/stream"
 )
 
@@ -41,6 +43,9 @@ func (s *ActiveSkill) Deserialize(reader *stream.StreamReader) {
 	switch s.SkillID {
 	case 1121001, 1221001, 1321001:
 		count := reader.ReadU32()
+		if uint64(count)*5+1 > uint64(reader.Remaining()) {
+			panic(fmt.Errorf("active_skill: magnet count %d exceeds payload", count))
+		}
 		s.MagnetMobData = &MagnetMobData{
 			Mobs: make([]MagnetMobEntry, 0, count),
 		}
