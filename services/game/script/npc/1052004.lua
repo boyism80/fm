@@ -1,36 +1,34 @@
 -- NPC name (String.wz/Npc.img.xml): 덴마
 
-local GROUP_NAME = "gojarani"
+local COUPON = 5152001
 
 return {
     on_click = function(me, npc)
-        local sm = me:state_machine()
-        if sm ~= nil and sm:group() ~= nil and sm:group():name() == GROUP_NAME then
-            me:dialog(npc, "밖으로 나가려면 포탈을 이용하세요.")
+        if me:dialog(npc, "어서오게. 헤네시스 성형외과에 온걸 환영하네. #b#t" .. COUPON .. "##k 을 가져온다면 자네의 얼굴을 다른 얼굴로 바꿔줄수 있다네.", false, true) == false then
             return
         end
-        local group = state_machine(GROUP_NAME)
-        if group == nil then
-            me:dialog(npc, "지금은 입장할 수 없습니다.")
+
+        local face = me:face()
+        local styles = nil
+        if me:gender() == 0 then
+            styles = { 20000, 20001, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20012, 20014, 20016, 20020, 20017 }
+        else
+            styles = { 21000, 21001, 21002, 21003, 21004, 21005, 21006, 21007, 21008, 21012, 21014, 21016, 21020, 21017 }
+        end
+        for i = 1, #styles do
+            styles[i] = styles[i] + face % 1000 - face % 100
+        end
+
+        local pick = me:dialog_style(npc, "어떤 얼굴로 바꿔보고 싶은가?", styles)
+        if pick == nil or styles[pick] == nil then
             return
         end
-        if group:full() then
-            me:dialog(npc, "이미 다른 사람이 안에 있습니다.")
+
+        if me:exchange({ item = { [COUPON] = 1 } }) ~= ExchangeResult.OK then
+            me:dialog(npc, "미안하지만 쿠폰 없이는 성형수술을 해 줄수 없다네.")
             return
         end
-        if not me:dialog_yes_no(npc, "입장하시겠습니까?") then
-            return
-        end
-        local started, err = group:start_solo(me)
-        if started == nil then
-            if err == StateMachineError.Full then
-                me:dialog(npc, "이미 다른 사람이 안에 있습니다.")
-            else
-                me:dialog(npc, "지금은 입장할 수 없습니다.")
-                if err ~= nil then
-                    log("gojarani start_solo:", err)
-                end
-            end
-        end
+        me:face(styles[pick])
+        me:dialog(npc, "자아~ 다 됐다네. 어떤가? 맘에 들지? 다음에 또 이 덴마 님을 찾아주게나~")
     end,
 }

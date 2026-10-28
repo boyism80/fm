@@ -20,6 +20,9 @@ local CHALKBOARD = 5370000
 local GREEN_LENS = 5152103
 local BLACK_LENS = 5152100
 local FACE = 0x2
+local FACE_COUPON = 5152001
+local DENMA = 1052004
+local HENESYS_CLINIC = 100000103
 local ATTACHMENT = 4000000
 local ETC = 4
 local MSG_ITEM_MEGAPHONE = 8
@@ -313,6 +316,39 @@ local function color_lens(ctx)
     return consumed(ctx, bot, BLACK_LENS, 1, "검은색 렌즈")
 end
 
+-- Denma at the Henesys clinic turns a face coupon into the face picked from the style list.
+local function denma(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, FACE_COUPON .. ":1") == false then
+        return false
+    end
+    if bot:instance_move(HENESYS_CLINIC) == false then
+        return ctx:fail("헤네시스 성형외과 이동 실패")
+    end
+    local oid = pq.npc(ctx, bot, DENMA)
+    if oid == false then
+        return false
+    end
+    if bot:npc_click(oid) == false then
+        return ctx:fail("덴마 대화가 오지 않음")
+    end
+    local style = bot:request(resp.dialog_style, req.dialog { dialog_type = 0, next = true }, nil, 5000)
+    if style == false or style.styles == nil or #style.styles == 0 then
+        return ctx:fail("덴마가 성형 목록을 보여 주지 않음")
+    end
+    -- The last face differs from the starting one, which the setter would skip.
+    local picked = #style.styles
+    local changed = bot:request(resp.update_stats, req.dialog { dialog_type = 7, next = true, selected = picked - 1 },
+        function(p)
+            return p.stats[FACE] ~= nil
+        end, 5000)
+    bot:dialog(false)
+    if changed == false or changed.stats[FACE] ~= style.styles[picked] then
+        return ctx:fail("고른 얼굴로 바뀌지 않음: " .. style.styles[picked])
+    end
+    return consumed(ctx, bot, FACE_COUPON, 1, "헤네시스 성형외과 쿠폰")
+end
+
 local function song(ctx)
     local actor = ctx:bot(0)
     local observer = ctx:bot(1)
@@ -565,6 +601,7 @@ test_suite {
         incubator,
         mu_mu,
         color_lens,
+        denma,
         song,
         chalkboard,
         note,
