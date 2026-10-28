@@ -554,13 +554,13 @@ func (m *Mob) runDieScript(attacker *Character) {
 	mapInstance.runMobLuaHook(root, scriptPath, "on_mob_die", m, attackerArg, mapInstance)
 }
 
-func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, reward bool) bool {
+func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, drops bool) bool {
 	mapInstance := m.GetMap()
 	if mapInstance == nil {
 		return true
 	}
 
-	if reward && attacker != nil {
+	if attacker != nil {
 		credit := m.credit(attacker)
 		m.applyCredit(credit)
 		if m.wz != nil {
@@ -574,7 +574,9 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 				}
 			}
 		}
-		m.dropItems(credit.dropOwner, attacker)
+		if drops {
+			m.dropItems(credit.dropOwner, attacker)
+		}
 	}
 
 	pos := m.position
@@ -631,6 +633,10 @@ func (m *Mob) SelfDestruct(attacker *Character) bool {
 	}
 	mapInstance := m.GetMap()
 	if mapInstance == nil || mapInstance.GetMob(m.oid) == nil || m.deathStarted || !m.IsAlive() {
+		return false
+	}
+	// A mob with an hp threshold blows up only once its hp falls to it; one without explodes on a timer or a skill.
+	if m.wz.SelfDestructionHP > 0 && int(m.GetHp()) > m.wz.SelfDestructionHP {
 		return false
 	}
 	m.deathStarted = true

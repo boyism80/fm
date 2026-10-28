@@ -79,8 +79,24 @@ local function monster_bomb(ctx)
     if bomb == nil then
         return false
     end
+    -- The bomb blows up only once its hp falls to the WZ threshold (1800 of 3600).
+    if died(bot, bomb[1], req.monster_bomb { oid = bomb[1] }, QUIET_MS) ~= false then
+        return ctx:fail("HP가 가득한 자폭 몬스터가 자폭함")
+    end
+    if pq.command(bot, "/몹피해 " .. bomb[1] .. " 2000", "몹 피해") == false then
+        return ctx:fail("자폭 몬스터에게 피해를 주지 못함")
+    end
+    local exp = bot:exp()
+    local drops = #bot:drops()
     if died(bot, bomb[1], req.monster_bomb { oid = bomb[1] }, 5000) == false then
         return ctx:fail("자폭 몬스터가 자폭하지 않음")
+    end
+    ctx:sleep(500)
+    if bot:exp() <= exp then
+        return ctx:fail("자폭한 몬스터를 때린 경험치가 없음")
+    end
+    if #bot:drops() ~= drops then
+        return ctx:fail("자폭한 몬스터가 아이템을 떨어뜨림")
     end
     return true
 end
