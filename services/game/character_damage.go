@@ -106,6 +106,13 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 			return false, nil
 		}
 	}
+	switch constant.SkillID(info.Skill) {
+	case constant.SkillPanicSword, constant.SkillPanicAxe, constant.SkillComaSword, constant.SkillComaAxe, constant.SkillPanic, constant.SkillComa:
+		// The combo value counts one more than the orbs, and a finisher needs at least one orb.
+		if ch.buffs.value(constant.BuffFlagCombo) <= 1 {
+			return false, nil
+		}
+	}
 
 	var err error
 	switch {

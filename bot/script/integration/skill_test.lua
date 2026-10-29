@@ -23,6 +23,10 @@ local DAWN_WARRIOR3 = 1111
 local SWORD = 1302000
 -- Immune to lightning, neutral to holy, and not a boss.
 local LIGHTNING_IMMUNE = 8148001
+local CRUSADER = 111
+local COMBO_ATTACK = 1111002
+local COMA = 1111005
+local QUIET_MS = 1500
 local PRIEST = 231
 local ROGUE = 400
 local HERMIT = 411
@@ -721,6 +725,55 @@ local function soul_charge(ctx)
     return check(ctx, hit ~= false, "소울 차지 공격이 번개 면역 몹에 들어가지 않음")
 end
 
+-- A finisher needs a combo orb; without one the whole attack is dropped.
+local function finisher_orbs(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, CRUSADER, SWORD .. ":1") == false then
+        return false
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(SWORD) or 0, dest = WEAPON_SLOT, count = 1 }
+    if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("검 착용 실패")
+    end
+    if pq.command(bot, "/스킬레벨 " .. COMBO_ATTACK .. " 30", "스킬레벨 설정") == false
+        or pq.command(bot, "/스킬레벨 " .. COMA .. " 30", "스킬레벨 설정") == false then
+        return ctx:fail("콤보 어택·코마 배우기 실패")
+    end
+    -- Starting stats leave the mob's defense above any hit.
+    if pq.command(bot, "/전능 999", "전능 설정") == false or pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("능력치 설정 실패")
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    if bot:request(resp.update_stats, req.active_skill { skill_id = COMBO_ATTACK, skill_level = 30 }, function(p)
+            return p.unlock_action
+        end, 3000) == false then
+        return ctx:fail("콤보 어택 사용 실패")
+    end
+    local x, y = bot:position()
+    local golem = spawn_golem(ctx, bot, x, y)
+    if golem == nil then
+        return false
+    end
+    local function hit(skill_id, timeout)
+        return bot:request(resp.show_mob_hp, melee(bot, golem, 10, skill_id), function(p)
+            return p.oid == golem
+        end, timeout) ~= false
+    end
+
+    if hit(COMA, QUIET_MS) then
+        return ctx:fail("구슬 없는 코마가 들어감")
+    end
+    if hit(0, 3000) == false then
+        return ctx:fail("일반 공격이 들어가지 않음")
+    end
+    return check(ctx, hit(COMA, 3000), "구슬을 모은 뒤 코마가 들어가지 않음")
+end
+
 test_suite {
     name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용",
     bot_count = 2,
@@ -738,6 +791,7 @@ test_suite {
         magician_mp_recovery,
         showdown_threaten,
         soul_charge,
+        finisher_orbs,
         skill_cost,
         sauna_robe_recovery,
     },
