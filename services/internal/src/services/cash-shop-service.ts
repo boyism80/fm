@@ -367,17 +367,25 @@ export class CashShopService {
     }
 
     private async settleSlot(worldId: number, request: CashTransferRequest): Promise<void> {
-        const detail = request.detail as { index: number; amount: number; max: number };
+        const detail = request.detail as { index: number; amount: number; max: number; refund: CashBalance };
         const result = await this.receive(worldId, request, async (txClient) => {
             const character = await this.characterRepo.get(worldId, request.target_id, { txClient });
             if (character == null || character.slotLimits == null) {
                 throw new Error(`character not found: ${request.target_id}`);
             }
             const slotLimits = [...character.slotLimits];
-            slotLimits[detail.index] = Math.min((slotLimits[detail.index] ?? 0) + detail.amount, detail.max);
+            const slots = (slotLimits[detail.index] ?? 0) + detail.amount;
+            if (slots > detail.max) {
+                return TransferOutcome.Full;
+            }
+            slotLimits[detail.index] = slots;
             await this.characterRepo.set(worldId, { ...character, slotLimits }, { txClient });
             return TransferOutcome.Placed;
         });
+        if (result === TransferOutcome.Full) {
+            await this.refundBalance(request, detail.refund);
+            return;
+        }
         await this.finishSettled(request, result);
     }
 
@@ -408,37 +416,49 @@ export class CashShopService {
     }
 
     private async settleStorageSlot(worldId: number, request: CashTransferRequest): Promise<void> {
-        const detail = request.detail as { amount: number; max: number };
+        const detail = request.detail as { amount: number; max: number; refund: CashBalance };
         const result = await this.receive(worldId, request, async (txClient) => {
             const storage = await this.storageRepo.get(worldId, request.target_id, { txClient });
+            const slots = (storage?.slots ?? DEFAULT_STORAGE_SLOTS) + detail.amount;
+            if (slots > detail.max) {
+                return TransferOutcome.Full;
+            }
             await this.storageRepo.set(
                 worldId,
                 {
                     accountId: request.target_id,
                     worldId,
-                    slots: Math.min((storage?.slots ?? DEFAULT_STORAGE_SLOTS) + detail.amount, detail.max),
+                    slots,
                     meso: storage?.meso ?? 0,
                 },
                 { txClient },
             );
             return TransferOutcome.Placed;
         });
+        if (result === TransferOutcome.Full) {
+            await this.refundBalance(request, detail.refund);
+            return;
+        }
         await this.finishSettled(request, result);
         await this.storageRepo.invalidateCache(worldId, request.target_id);
     }
 
     private async settleCharacterSlot(worldId: number, request: CashTransferRequest): Promise<void> {
-        const detail = request.detail as { amount: number; max: number };
+        const detail = request.detail as { amount: number; max: number; refund: CashBalance };
         const result = await this.receive(worldId, request, async (txClient) => {
-            const slots = await this.accountWorldRepo.findCharacterSlotCount(worldId, request.target_id, { txClient });
-            await this.accountWorldRepo.setCharacterSlotCount(
-                worldId,
-                request.target_id,
-                Math.min(slots + detail.amount, detail.max),
-                { txClient },
-            );
+            const slots =
+                (await this.accountWorldRepo.findCharacterSlotCount(worldId, request.target_id, { txClient })) +
+                detail.amount;
+            if (slots > detail.max) {
+                return TransferOutcome.Full;
+            }
+            await this.accountWorldRepo.setCharacterSlotCount(worldId, request.target_id, slots, { txClient });
             return TransferOutcome.Placed;
         });
+        if (result === TransferOutcome.Full) {
+            await this.refundBalance(request, detail.refund);
+            return;
+        }
         await this.finishSettled(request, result);
     }
 
