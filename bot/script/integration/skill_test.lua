@@ -27,6 +27,11 @@ local CRUSADER = 111
 local COMBO_ATTACK = 1111002
 local COMA = 1111005
 local QUIET_MS = 1500
+local DRAGON_KNIGHT = 131
+local SPEAR = 1432000
+local SACRIFICE = 1311005
+local SACRIFICE_HP_PERCENT = 5
+local MUSHMOM = 6130101
 local PRIEST = 231
 local ROGUE = 400
 local HERMIT = 411
@@ -774,6 +779,46 @@ local function finisher_orbs(ctx)
     return check(ctx, hit(COMA, 3000), "구슬을 모은 뒤 코마가 들어가지 않음")
 end
 
+-- Sacrifice costs the attacker a part of the damage dealt, a boss included.
+local function sacrifice_boss(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, DRAGON_KNIGHT, SPEAR .. ":1") == false then
+        return false
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(SPEAR) or 0, dest = WEAPON_SLOT, count = 1 }
+    if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("창 착용 실패")
+    end
+    if pq.command(bot, "/스킬레벨 " .. SACRIFICE .. " 30", "스킬레벨 설정") == false then
+        return ctx:fail("새크리파이스 배우기 실패")
+    end
+    if pq.command(bot, "/전능 999", "전능 설정") == false or pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false
+        or pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false then
+        return ctx:fail("능력치 설정 실패")
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local spawned = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. MUSHMOM }, function(p)
+        return p.mob.mob_id == MUSHMOM
+    end)
+    if spawned == false then
+        return ctx:fail("머쉬맘 생성 응답 없음")
+    end
+
+    local p = bot:request(resp.update_stats, melee(bot, spawned.mob.oid, 1000, SACRIFICE), function(p)
+        return p.stats[HP] ~= nil and p.stats[HP] < 3000
+    end, 3000)
+    if p == false then
+        return ctx:fail("보스에게 쓴 새크리파이스가 HP를 깎지 않음")
+    end
+    return check(ctx, p.stats[HP] == 3000 - 1000 * SACRIFICE_HP_PERCENT / 100,
+        "새크리파이스 HP 감소량이 피해의 5%가 아님: " .. tostring(p.stats[HP]))
+end
+
 test_suite {
     name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용",
     bot_count = 2,
@@ -792,6 +837,7 @@ test_suite {
         showdown_threaten,
         soul_charge,
         finisher_orbs,
+        sacrifice_boss,
         skill_cost,
         sauna_robe_recovery,
     },

@@ -20,10 +20,6 @@ return {
         if target == nil or total == 0 then
             return
         end
-        local wz = target:wz()
-        if wz and wz:boss() then
-            return
-        end
         local hp_loss = math.floor(total * effect.x / 100)
         if hp_loss <= 0 then
             return
