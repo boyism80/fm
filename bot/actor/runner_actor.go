@@ -2,7 +2,6 @@ package actor
 
 import (
 	"log"
-	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -18,9 +17,7 @@ type RunnerActor struct {
 	wz       *wz.Resources
 	atlas    *Atlas
 	filter   string
-	names    []string
 	junit    string
-	watch    func(msg any)
 	done     chan<- int
 	runID    string
 	botSeq   atomic.Int32
@@ -32,17 +29,13 @@ type RunnerActor struct {
 	started  time.Time
 }
 
-// NewRunnerActor runs the suites named in names, or the suites whose name contains filter when names is empty.
-// watch, when set, is called on the runner's goroutine with RunStarted, SuiteStarted and SuiteFinished.
-func NewRunnerActor(cfg *config.Bot, resources *wz.Resources, filter string, names []string, junit string, watch func(msg any), done chan<- int) *RunnerActor {
+func NewRunnerActor(cfg *config.Bot, resources *wz.Resources, filter, junit string, done chan<- int) *RunnerActor {
 	r := &RunnerActor{
 		cfg:    cfg,
 		wz:     resources,
 		atlas:  NewAtlas(resources),
 		filter: filter,
-		names:  names,
 		junit:  junit,
-		watch:  watch,
 		done:   done,
 		runID:  strconv.FormatInt(time.Now().Unix(), 36),
 	}
@@ -67,26 +60,14 @@ func (r *RunnerActor) Receive(ctx actor.Context) {
 			return
 		}
 		log.Printf("run %s: %d parallel, %d serial suites", r.runID, len(r.parallel), len(r.serial))
-		if r.watch != nil {
-			r.watch(&RunStarted{ID: r.runID, Parallel: slices.Clone(r.parallel), Serial: slices.Clone(r.serial)})
-		}
 		r.schedule(ctx)
 	case *SuiteFinished:
 		r.results = append(r.results, msg)
-		if r.watch != nil {
-			r.watch(msg)
-		}
 		if !msg.Serial {
 			r.seats = append(r.seats, msg.Seat)
 		}
 		r.running--
 		r.schedule(ctx)
-	case *RunStop:
-		// The run ends once every running suite reports SuiteFinished.
-		r.parallel, r.serial = nil, nil
-		for _, child := range ctx.Children() {
-			ctx.Send(child, &SuiteStop{})
-		}
 	}
 }
 
@@ -96,10 +77,10 @@ func (r *RunnerActor) loadRegistry() error {
 		return err
 	}
 	for _, s := range suites {
-		if len(r.names) > 0 && !slices.Contains(r.names, s.Name) {
+		if !strings.Contains(s.Name, r.filter) {
 			continue
 		}
-		if len(r.names) == 0 && (!strings.Contains(s.Name, r.filter) || (s.Explicit && r.filter == "")) {
+		if s.Explicit && r.filter == "" {
 			continue
 		}
 		if s.Serial {
@@ -132,9 +113,6 @@ func (r *RunnerActor) schedule(ctx actor.Context) {
 
 func (r *RunnerActor) start(ctx actor.Context, s *Suite, seat int) {
 	r.running++
-	if r.watch != nil {
-		r.watch(&SuiteStarted{Suite: s.Name, Seat: seat})
-	}
 	ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
 		return NewSuiteActor(r.cfg, r.wz, r.atlas, s, seat, r.runID, &r.botSeq)
 	}))

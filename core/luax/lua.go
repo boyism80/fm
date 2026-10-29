@@ -22,6 +22,7 @@ var (
 	compileMu       sync.Mutex
 	compiledProtos  = make(map[string]compiledScript)
 	alwaysReload    = false
+	recompile       = false
 )
 
 func init() {
@@ -35,6 +36,14 @@ func SetAlwaysReload(enabled bool) {
 	if enabled {
 		compiledProtos = make(map[string]compiledScript)
 	}
+}
+
+// SetRecompileChanged recompiles a script whose file changed since it was compiled. Unlike SetAlwaysReload, a
+// module already required in a state is not run again in that state.
+func SetRecompileChanged(enabled bool) {
+	compileMu.Lock()
+	defer compileMu.Unlock()
+	recompile = enabled
 }
 
 type Luable interface {
@@ -63,7 +72,7 @@ func preloadProto(root *lua.LState, path string) (*lua.FunctionProto, error) {
 	defer compileMu.Unlock()
 
 	var modTime time.Time
-	if alwaysReload {
+	if alwaysReload || recompile {
 		if info, err := os.Stat(path); err == nil {
 			modTime = info.ModTime()
 		}

@@ -43,13 +43,16 @@ type SuiteStop struct{}
 
 type CleanupDone struct{}
 
-type RunStarted struct {
-	ID       string
-	Parallel []*Suite
-	Serial   []*Suite
-}
-
 type RunStop struct{}
+
+// AssignSuite runs Suite on Seat for a cluster run. Bots replaces the run ID in bot names, so bots of different
+// agents in one run do not share a name.
+type AssignSuite struct {
+	Run   string
+	Bots  string
+	Suite *Suite
+	Seat  int
+}
 
 type SuiteStarted struct {
 	Suite string

@@ -24,7 +24,7 @@
         <a data-view="run">실행</a>
         <a data-view="history">기록</a>
       </nav>
-      <div class="online off" id="online">봇 러너 연결 중</div>
+      <div class="online off" id="online">Master 연결 중</div>
     </header>
 
     <main class="view" id="view-run" hidden>
@@ -33,7 +33,8 @@
           <div class="eyebrow">bot / script/integration/registry.lua</div>
           <h1>통합 테스트</h1>
           <p class="lead">
-            고른 스위트를 seat 수만큼 병렬로 돌리고, serial 스위트는 병렬 단계가 끝난 뒤 하나씩 실행합니다.
+            고른 스위트를 연결된 Agent의 빈 seat에 나눠 병렬로 돌리고, serial 스위트는 병렬 단계가 끝난 뒤 클러스터
+            전체에서 하나씩 실행합니다.
           </p>
         </div>
         <div class="badge idle" id="status"><i></i><span>IDLE</span><b id="status-clock">00:00</b></div>
@@ -76,7 +77,7 @@
         </div>
         <div class="card kpi">
           <div>
-            <div class="k">사용 중인 seat</div>
+            <div class="k">연결된 Agent · 사용 중인 seat</div>
             <div class="v" id="k-seats">0 / 0</div>
             <div class="s" id="k-seats-sub">-</div>
           </div>
@@ -100,23 +101,27 @@
 
       <section class="grid">
         <aside class="card settings">
-          <div class="head"><h2>실행 설정</h2><span class="mono faint">config/bot.yaml</span></div>
+          <div class="head"><h2>실행 설정</h2><span class="faint">선택한 스위트에 적용</span></div>
           <div class="form">
             <div class="fld">
-              <label for="seats">seat 수 <span class="faint" id="seats-max"></span></label>
+              <label for="retry">Agent 끊김 재시도</label>
               <div class="stepper">
-                <button type="button" id="seats-down" aria-label="seat 줄이기">−</button>
-                <input id="seats" type="number" min="1" value="1" />
-                <button type="button" id="seats-up" aria-label="seat 늘리기">+</button>
+                <button type="button" id="retry-down" aria-label="재시도 줄이기">−</button>
+                <input id="retry" type="number" min="0" value="1" />
+                <button type="button" id="retry-up" aria-label="재시도 늘리기">+</button>
               </div>
             </div>
             <p class="tip">
               <b>serial 스위트</b>(결혼·택배·고용상인처럼 서버 전역 상태를 쓰는 스위트)는 병렬 단계가 끝난 뒤
-              seat 1에서 하나씩 실행합니다.
+              클러스터 전체에서 하나씩 실행합니다.
             </p>
             <p class="help">
-              실행마다 registry.lua와 스위트 파일을 새로 읽으므로 스크립트 변경은 다음 실행에 바로 반영됩니다.
-              explicit 스위트는 직접 골랐을 때만 실행됩니다.
+              Agent는 스위트를 시작할 때마다 자기 디스크의 스위트 파일과 바뀐 lib 스크립트를 다시 읽으므로, 스크립트
+              수정은 재시작 없이 다음 스위트에 반영됩니다. 스위트 목록이 바뀌면 다시 읽기를 누르세요.
+            </p>
+            <p class="help">
+              seat 수는 Agent마다 <span class="mono">-seats</span>로 정하고, Master가 Agent마다 겹치지 않는 seat
+              번호(인스턴스 슬롯)를 나눠 줍니다.
             </p>
             <button class="btn go" id="start">실행</button>
             <button class="btn danger" id="stop">중지</button>
@@ -131,6 +136,7 @@
           <div class="card tabs" role="tablist">
             <button role="tab" data-tab="pick" aria-selected="true">스위트 선택<em id="tab-pick"></em></button>
             <button role="tab" data-tab="progress" aria-selected="false">진행 상황<em id="tab-progress"></em></button>
+            <button role="tab" data-tab="agents" aria-selected="false">Agent<em id="tab-agents"></em></button>
             <button role="tab" data-tab="failures" aria-selected="false">실패<em class="bad" id="tab-failures"></em></button>
           </div>
 
@@ -154,7 +160,7 @@
           <div class="panel" data-panel="progress" hidden>
             <div class="card">
               <div class="head"><h2>seat 보드</h2><span class="faint" id="board-note">-</span></div>
-              <div class="board" id="board"></div>
+              <div class="groups" id="board"></div>
             </div>
             <div class="card">
               <div class="head"><h2>실행 계획</h2><span class="faint" id="plan-note">-</span></div>
@@ -165,11 +171,35 @@
                       <th>단계</th>
                       <th>스위트</th>
                       <th>상태</th>
+                      <th>Agent</th>
                       <th class="num">seat</th>
+                      <th class="num">시도</th>
                       <th class="num">소요</th>
                     </tr>
                   </thead>
                   <tbody id="plan"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="agents" hidden>
+            <div class="card">
+              <div class="head"><h2>Agent</h2><span class="faint" id="agents-note">-</span></div>
+              <div class="tbl">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Agent</th>
+                      <th>호스트</th>
+                      <th>상태</th>
+                      <th>seat</th>
+                      <th>맡은 스위트</th>
+                      <th class="num">마지막 보고</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="agents"></tbody>
                 </table>
               </div>
             </div>
@@ -198,7 +228,7 @@
                 <th>실행 ID</th>
                 <th>시작</th>
                 <th class="num">소요</th>
-                <th class="num">seat</th>
+                <th class="num">Agent</th>
                 <th>결과</th>
               </tr>
             </thead>
@@ -217,7 +247,9 @@
               <tr>
                 <th>스위트</th>
                 <th>상태</th>
+                <th>Agent</th>
                 <th class="num">seat</th>
+                <th class="num">시도</th>
                 <th class="num">소요</th>
               </tr>
             </thead>
@@ -228,7 +260,7 @@
       </div>
     </main>
 
-    <footer class="foot"><span>REGISTRY → SELECT → PARALLEL → SERIAL → REPORT</span><span id="foot"></span></footer>
+    <footer class="foot"><span>REGISTRY → SELECT → AGENTS → PARALLEL → SERIAL → REPORT</span><span id="foot"></span></footer>
     <script src="js/app.js"></script>
   </body>
 </html>

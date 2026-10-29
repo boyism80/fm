@@ -1,4 +1,4 @@
-package dashboard
+package cluster
 
 import (
 	"embed"
@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/config"
 	"github.com/boyism80/fm/maple/wz"
 )
@@ -17,29 +16,31 @@ import (
 //go:embed web
 var web embed.FS
 
-// Server runs one integration run at a time and streams its state to the dashboard page.
-type Server struct {
+// Master serves the dashboard, takes agent connections and hands the suites of one run at a time to them.
+// Agents run the bots; the master runs none.
+type Master struct {
 	cfg       *config.Bot
 	wz        *wz.Resources
-	root      *actor.RootContext
 	dir       string
+	token     string
 	mu        sync.Mutex
 	run       *Run
-	runner    *actor.PID
+	agents    []*agentConn
+	nextBase  int
 	listeners map[chan []byte]bool
 }
 
-func New(cfg *config.Bot, resources *wz.Resources, root *actor.RootContext, dir string) *Server {
-	return &Server{
+func NewMaster(cfg *config.Bot, resources *wz.Resources, dir, token string) *Master {
+	return &Master{
 		cfg:       cfg,
 		wz:        resources,
-		root:      root,
 		dir:       dir,
+		token:     token,
 		listeners: make(map[chan []byte]bool),
 	}
 }
 
-func (s *Server) ListenAndServe(addr string) error {
+func (m *Master) ListenAndServe(addr string) error {
 	files, err := fs.Sub(web, "web")
 	if err != nil {
 		return err
@@ -51,25 +52,35 @@ func (s *Server) ListenAndServe(addr string) error {
 		w.Header().Set("Cache-Control", "no-cache")
 		static.ServeHTTP(w, r)
 	})
-	mux.HandleFunc("GET /api/suites", s.suites)
-	mux.HandleFunc("GET /api/events", s.events)
-	mux.HandleFunc("GET /api/runs", s.runs)
-	mux.HandleFunc("POST /api/runs", s.start)
-	mux.HandleFunc("POST /api/runs/current/stop", s.stop)
-	mux.HandleFunc("GET /api/runs/{id}", s.history)
+	mux.HandleFunc("GET /api/suites", m.suites)
+	mux.HandleFunc("GET /api/events", m.events)
+	mux.HandleFunc("GET /api/runs", m.runs)
+	mux.HandleFunc("POST /api/runs", m.start)
+	mux.HandleFunc("POST /api/runs/current/stop", m.stop)
+	mux.HandleFunc("GET /api/runs/{id}", m.history)
+	mux.HandleFunc("POST /api/agents/{id}/quit", m.quit)
+	mux.HandleFunc("GET /ws/agent", m.accept)
+
+	go func() {
+		for range time.Tick(heartbeatInterval) {
+			m.mu.Lock()
+			m.broadcast()
+			m.mu.Unlock()
+		}
+	}()
 	return http.ListenAndServe(addr, mux)
 }
 
-func (s *Server) suites(w http.ResponseWriter, _ *http.Request) {
-	suites, err := s.catalog()
+func (m *Master) suites(w http.ResponseWriter, _ *http.Request) {
+	suites, err := m.catalog()
 	if err != nil {
 		reply(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	reply(w, http.StatusOK, map[string]any{"seats": s.cfg.Seats, "loaded_at": time.Now(), "suites": suites})
+	reply(w, http.StatusOK, map[string]any{"loaded_at": time.Now(), "suites": suites})
 }
 
-func (s *Server) events(w http.ResponseWriter, r *http.Request) {
+func (m *Master) events(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
@@ -79,14 +90,14 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 
 	updates := make(chan []byte, 1)
-	s.mu.Lock()
-	s.listeners[updates] = true
-	first := s.state()
-	s.mu.Unlock()
+	m.mu.Lock()
+	m.listeners[updates] = true
+	first := m.state()
+	m.mu.Unlock()
 	defer func() {
-		s.mu.Lock()
-		delete(s.listeners, updates)
-		s.mu.Unlock()
+		m.mu.Lock()
+		delete(m.listeners, updates)
+		m.mu.Unlock()
 	}()
 
 	fmt.Fprintf(w, "data: %s\n\n", first)
@@ -103,15 +114,19 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 }
 
 // state must be called with mu held.
-func (s *Server) state() []byte {
-	data, _ := json.Marshal(map[string]any{"now": time.Now(), "seats": s.cfg.Seats, "run": s.run})
+func (m *Master) state() []byte {
+	agents := make([]agentRow, 0, len(m.agents))
+	for _, a := range m.agents {
+		agents = append(agents, a.row())
+	}
+	data, _ := json.Marshal(map[string]any{"now": time.Now(), "run": m.run, "agents": agents})
 	return data
 }
 
 // broadcast must be called with mu held. A slow page only misses the states between its reads.
-func (s *Server) broadcast() {
-	data := s.state()
-	for updates := range s.listeners {
+func (m *Master) broadcast() {
+	data := m.state()
+	for updates := range m.listeners {
 		select {
 		case <-updates:
 		default:

@@ -5,6 +5,7 @@ go 1.27
 require (
 	github.com/asynkron/goconsole v0.0.0-20160504192649-bfa12eebf716
 	github.com/asynkron/protoactor-go v0.0.0-20240822202345-3c0e61ca19c9
+	github.com/coder/websocket v1.8.14
 	github.com/google/uuid v1.6.0
 )
 
