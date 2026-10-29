@@ -9,6 +9,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	botactor "github.com/boyism80/fm/bot/actor"
+	"github.com/boyism80/fm/bot/dashboard"
 	"github.com/boyism80/fm/common/config"
 	coreactor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/maple/wz"
@@ -17,18 +18,20 @@ import (
 func main() {
 	var (
 		help    = flag.Bool("help", false, "Show help and example bot YAML layout")
-		mode    = flag.String("mode", "integration", "Run mode: integration or load")
+		mode    = flag.String("mode", "integration", "Run mode: integration, dashboard or load")
 		cfgPath = flag.String("config", "config/bot.yaml", "Path to bot YAML (default: config/bot.yaml)")
 		filter  = flag.String("filter", "", "Run suites whose name contains this substring")
 		seats   = flag.Int("seats", -1, "Override config seats when >= 0")
 		junit   = flag.String("junit", "", "Write JUnit XML to this path")
+		addr    = flag.String("addr", ":8090", "Dashboard listen address")
+		runs    = flag.String("runs", "out/runs", "Dashboard run history directory")
 	)
 	flag.Parse()
 
 	if *help {
 		flag.Usage()
 		log.Println("\nMapleStory Bot")
-		log.Println("Runtime options are read from a bot YAML file. CLI flags: -help, -mode, -config, -filter, -seats, -junit.")
+		log.Println("Runtime options are read from a bot YAML file. CLI flags: -help, -mode, -config, -filter, -seats, -junit, -addr, -runs.")
 		log.Println("If the file is not in cwd, the binary directory and parents of cwd are searched.")
 		log.Println("\nExample config/bot.yaml:")
 		log.Println(strings.TrimSpace(`
@@ -52,6 +55,7 @@ wz_path: "resources/wz"
 		log.Println("\nExample usage (cwd bot):")
 		log.Println("  go run ../cmd/bot -mode integration -config config/bot.yaml")
 		log.Println("  go run ../cmd/bot -mode integration -filter npc_ -seats 3 -junit out/bot.xml")
+		log.Println("  go run ../cmd/bot -mode dashboard -addr :8090   (then open http://localhost:8090)")
 		return
 	}
 
@@ -78,6 +82,8 @@ wz_path: "resources/wz"
 	switch *mode {
 	case "integration":
 		os.Exit(runIntegration(cfg, *filter, *junit))
+	case "dashboard":
+		os.Exit(runDashboard(cfg, *addr, *runs))
 	case "load":
 		// TODO(load): per-bot actors and a spawn rate.
 		log.Println("load mode: 미구현")
@@ -107,7 +113,25 @@ func runIntegration(cfg *config.Bot, filter, junit string) int {
 	done := make(chan int, 1)
 	system := coreactor.NewActorSystem()
 	system.GetRoot().Spawn(actor.PropsFromProducer(func() actor.Actor {
-		return botactor.NewRunnerActor(cfg, resources, filter, junit, done)
+		return botactor.NewRunnerActor(cfg, resources, filter, nil, junit, nil, done)
 	}))
 	return <-done
+}
+
+func runDashboard(cfg *config.Bot, addr, runs string) int {
+	log.Printf("loading wz %s", cfg.WzPath)
+	resources := wz.NewResources(cfg.WzPath)
+	if resources == nil {
+		log.Printf("failed to load wz %s", cfg.WzPath)
+		return 2
+	}
+
+	system := coreactor.NewActorSystem()
+	server := dashboard.New(cfg, resources, system.GetRoot(), runs)
+	log.Printf("dashboard: listening on %s (login=%s:%d seats=%d)", addr, cfg.Login.Host, cfg.Login.Port, cfg.Seats)
+	if err := server.ListenAndServe(addr); err != nil {
+		log.Printf("dashboard: %v", err)
+		return 2
+	}
+	return 0
 }

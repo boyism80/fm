@@ -39,15 +39,33 @@ type SleepDone struct {
 
 type SuiteDeadline struct{}
 
+type SuiteStop struct{}
+
 type CleanupDone struct{}
 
+type RunStarted struct {
+	ID       string
+	Parallel []*Suite
+	Serial   []*Suite
+}
+
+type RunStop struct{}
+
+type SuiteStarted struct {
+	Suite string
+	Seat  int
+}
+
 type SuiteFinished struct {
+	Suite    string
 	Name     string
 	Seat     int
 	Serial   bool
 	Passed   bool
 	Skipped  bool
+	Stopped  bool
 	Infra    bool
 	Failures []string
+	Log      []string
 	Elapsed  time.Duration
 }

@@ -2,7 +2,6 @@ package actor
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -92,7 +91,7 @@ func (a *SuiteActor) warpByCommand(thread *lua.LState, b *bot.Bot, text string, 
 		case ok:
 			done(true)
 		case retry:
-			log.Printf("[%s] %s %s: retry", a.name, b.Name, text)
+			a.logf("%s %s: retry", b.Name, text)
 			a.warpByCommand(thread, b, text, mapID, false, done)
 		default:
 			done(a.Fail(fmt.Sprintf("%s %s: 이동하지 않음", b.Name, text)))
@@ -188,7 +187,7 @@ func (a *SuiteActor) disconnected(msg *Disconnected) {
 	if _, ok := a.moving[b]; ok || a.finished || msg.Gen != b.Gen {
 		return
 	}
-	log.Printf("[%s] %s disconnected: %v", a.name, b.Name, msg.Err)
+	a.logf("%s disconnected: %v", b.Name, msg.Err)
 	a.Fail(fmt.Sprintf("%s 연결 끊김: %v", b.Name, msg.Err))
 	b.Close()
 	a.endWaiters(b)

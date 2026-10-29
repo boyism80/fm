@@ -2,7 +2,6 @@ package actor
 
 import (
 	"fmt"
-	"log"
 	"maps"
 	"math"
 	"os"
@@ -124,7 +123,7 @@ func (a *SuiteActor) register() {
 		return 0
 	}))
 	L.SetGlobal("log", L.NewFunction(func(L *lua.LState) int {
-		log.Printf("[%s] %s: %s", a.name, L.CheckString(1), L.CheckString(2))
+		a.logf("%s: %s", L.CheckString(1), L.CheckString(2))
 		return 0
 	}))
 
@@ -237,7 +236,7 @@ func (a *SuiteActor) ctxFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				a.report = f
-				log.Printf("[%s] report: %s", a.name, path)
+				a.logf("report: %s", path)
 			}
 			if _, err := a.report.WriteString(text + "\n"); err != nil {
 				L.RaiseError("report: %v", err)
@@ -254,7 +253,7 @@ func (a *SuiteActor) ctxFuncs() map[string]lua.LGFunction {
 			fn := L.CheckFunction(3)
 			a.hooks[name] = func(b *bot.Bot, pkt any) {
 				if _, err := luax.CallFunction(a.L, fn, a.ctxUD, a.botUDs[b], a.marshal.ToLua(a.L, pkt), lua.LString(a.packetName(pkt))); err != nil {
-					log.Printf("[%s] hook %s: %v", a.name, name, err)
+					a.logf("hook %s: %v", name, err)
 				}
 			}
 			return 0
@@ -670,13 +669,13 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"force_move": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			mapID := uint32(L.CheckInt(2))
-			log.Printf("[%s] %s 맵 %d 강제 이동: %s", a.name, b.Name, mapID, L.CheckString(3))
+			a.logf("%s 맵 %d 강제 이동: %s", b.Name, mapID, L.CheckString(3))
 			return a.moveByCommand(L, b, fmt.Sprintf("/맵이동 %d", mapID), mapID)
 		},
 		"force_instance_move": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			mapID := uint32(L.CheckInt(2))
-			log.Printf("[%s] %s 맵 %d 강제 인스턴스 이동: %s", a.name, b.Name, mapID, L.CheckString(3))
+			a.logf("%s 맵 %d 강제 인스턴스 이동: %s", b.Name, mapID, L.CheckString(3))
 			return a.moveByCommand(L, b, fmt.Sprintf("/인스턴스이동 %d %d", mapID, a.seat), mapID)
 		},
 		"npc": func(L *lua.LState) int {
@@ -1098,7 +1097,7 @@ func (a *SuiteActor) dialogPacket(pkt any) bool {
 func (a *SuiteActor) callPredicate(pred *lua.LFunction, pkt any) bool {
 	ret, err := luax.CallFunction(a.L, pred, a.marshal.ToLua(a.L, pkt), lua.LString(a.packetName(pkt)))
 	if err != nil {
-		log.Printf("[%s] predicate: %v", a.name, err)
+		a.logf("predicate: %v", err)
 		return false
 	}
 	return lua.LVAsBool(ret)

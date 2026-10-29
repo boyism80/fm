@@ -2,7 +2,7 @@ package actor
 
 import (
 	"log"
-	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -10,9 +10,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/config"
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/wz"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type RunnerActor struct {
@@ -20,7 +18,9 @@ type RunnerActor struct {
 	wz       *wz.Resources
 	atlas    *Atlas
 	filter   string
+	names    []string
 	junit    string
+	watch    func(msg any)
 	done     chan<- int
 	runID    string
 	botSeq   atomic.Int32
@@ -32,13 +32,17 @@ type RunnerActor struct {
 	started  time.Time
 }
 
-func NewRunnerActor(cfg *config.Bot, resources *wz.Resources, filter, junit string, done chan<- int) *RunnerActor {
+// NewRunnerActor runs the suites named in names, or the suites whose name contains filter when names is empty.
+// watch, when set, is called on the runner's goroutine with RunStarted, SuiteStarted and SuiteFinished.
+func NewRunnerActor(cfg *config.Bot, resources *wz.Resources, filter string, names []string, junit string, watch func(msg any), done chan<- int) *RunnerActor {
 	r := &RunnerActor{
 		cfg:    cfg,
 		wz:     resources,
 		atlas:  NewAtlas(resources),
 		filter: filter,
+		names:  names,
 		junit:  junit,
+		watch:  watch,
 		done:   done,
 		runID:  strconv.FormatInt(time.Now().Unix(), 36),
 	}
@@ -63,43 +67,48 @@ func (r *RunnerActor) Receive(ctx actor.Context) {
 			return
 		}
 		log.Printf("run %s: %d parallel, %d serial suites", r.runID, len(r.parallel), len(r.serial))
+		if r.watch != nil {
+			r.watch(&RunStarted{ID: r.runID, Parallel: slices.Clone(r.parallel), Serial: slices.Clone(r.serial)})
+		}
 		r.schedule(ctx)
 	case *SuiteFinished:
 		r.results = append(r.results, msg)
+		if r.watch != nil {
+			r.watch(msg)
+		}
 		if !msg.Serial {
 			r.seats = append(r.seats, msg.Seat)
 		}
 		r.running--
 		r.schedule(ctx)
+	case *RunStop:
+		// The run ends once every running suite reports SuiteFinished.
+		r.parallel, r.serial = nil, nil
+		for _, child := range ctx.Children() {
+			ctx.Send(child, &SuiteStop{})
+		}
 	}
 }
 
 func (r *RunnerActor) loadRegistry() error {
-	L := luax.NewState()
-	defer L.Close()
-	L.SetGlobal("register_test", L.NewFunction(func(L *lua.LState) int {
-		s := &Suite{Name: L.CheckString(1)}
-		if opts := L.OptTable(2, nil); opts != nil {
-			s.Serial = lua.LVAsBool(opts.RawGetString("serial"))
-			s.Explicit = lua.LVAsBool(opts.RawGetString("explicit"))
-			if n, ok := opts.RawGetString("timeout_ms").(lua.LNumber); ok {
-				s.TimeoutMs = int(n)
-			}
+	suites, err := LoadSuites(r.cfg.ScriptDir)
+	if err != nil {
+		return err
+	}
+	for _, s := range suites {
+		if len(r.names) > 0 && !slices.Contains(r.names, s.Name) {
+			continue
 		}
-		if !strings.Contains(s.Name, r.filter) {
-			return 0
-		}
-		if s.Explicit && r.filter == "" {
-			return 0
+		if len(r.names) == 0 && (!strings.Contains(s.Name, r.filter) || (s.Explicit && r.filter == "")) {
+			continue
 		}
 		if s.Serial {
 			r.serial = append(r.serial, s)
 		} else {
 			r.parallel = append(r.parallel, s)
 		}
-		return 0
-	}))
-	return L.DoFile(filepath.Join(r.cfg.ScriptDir, "registry.lua"))
+	}
+	return nil
 }
 
 func (r *RunnerActor) schedule(ctx actor.Context) {
@@ -123,6 +132,9 @@ func (r *RunnerActor) schedule(ctx actor.Context) {
 
 func (r *RunnerActor) start(ctx actor.Context, s *Suite, seat int) {
 	r.running++
+	if r.watch != nil {
+		r.watch(&SuiteStarted{Suite: s.Name, Seat: seat})
+	}
 	ctx.Spawn(actor.PropsFromProducer(func() actor.Actor {
 		return NewSuiteActor(r.cfg, r.wz, r.atlas, s, seat, r.runID, &r.botSeq)
 	}))

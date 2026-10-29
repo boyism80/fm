@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/boyism80/fm/maple/wz"
 	lua "github.com/yuin/gopher-lua"
 )
+
+const suiteLogLines = 200
 
 type SuiteActor struct {
 	cfg      *config.Bot
@@ -39,9 +42,11 @@ type SuiteActor struct {
 	started  time.Time
 	deadline *time.Timer
 	failures []string
+	lines    []string
 	report   *os.File
 	infra    bool
 	skipped  bool
+	stopped  bool
 	ended    bool
 	finished bool
 	closed   bool
@@ -105,6 +110,13 @@ func (a *SuiteActor) Receive(ctx actor.Context) {
 	case *SuiteDeadline:
 		a.Fail(fmt.Sprintf("suite deadline %dms", a.timeoutMs()))
 		a.cleanup()
+	case *SuiteStop:
+		if a.finished {
+			return
+		}
+		a.stopped = true
+		a.Fail("실행 중지")
+		a.cleanup()
 	case *CleanupDone:
 		a.close(ctx)
 	}
@@ -118,21 +130,10 @@ func (a *SuiteActor) start(ctx actor.Context) {
 		a.actors.Send(a.self, &SuiteDeadline{})
 	})
 
-	a.L = luax.NewState()
-	a.register()
-	path := filepath.Join(a.cfg.ScriptDir, a.suite.Name+"_test.lua")
-	if err := a.L.DoFile(path); err != nil {
-		a.Fail(fmt.Sprintf("load %s: %v", path, err))
+	if err := a.load(); err != nil {
+		a.Fail(err.Error())
 		a.cleanup()
 		return
-	}
-	if a.def == nil {
-		a.Fail(fmt.Sprintf("%s does not call test_suite", path))
-		a.cleanup()
-		return
-	}
-	if name, ok := a.def.RawGetString("name").(lua.LString); ok {
-		a.name = string(name)
 	}
 
 	if fn, ok := a.def.RawGetString("should_skip").(*lua.LFunction); ok {
@@ -149,11 +150,7 @@ func (a *SuiteActor) start(ctx actor.Context) {
 		}
 	}
 
-	count := 1
-	if n, ok := a.def.RawGetString("bot_count").(lua.LNumber); ok {
-		count = int(n)
-	}
-	for i := 0; i < count; i++ {
+	for i := 0; i < a.botCount(); i++ {
 		b, err := bot.New(a.cfg, a.runID, int(a.botSeq.Add(1)-1))
 		if err != nil {
 			a.Fail(err.Error())
@@ -163,7 +160,7 @@ func (a *SuiteActor) start(ctx actor.Context) {
 		a.bots = append(a.bots, b)
 		a.botUDs[b] = a.newUserData(b, "bot")
 	}
-	log.Printf("[%s] seat %d starts with %d bots", a.name, a.seat, len(a.bots))
+	a.logf("seat %d starts with %d bots", a.seat, len(a.bots))
 
 	for i, b := range a.bots {
 		a.entering[b] = true
@@ -171,6 +168,30 @@ func (a *SuiteActor) start(ctx actor.Context) {
 			a.actors.Send(a.self, &BotEntered{Bot: i, Err: b.Enter()})
 		}()
 	}
+}
+
+// load runs the suite file, which only defines the suite; no scenario runs until bots enter.
+func (a *SuiteActor) load() error {
+	a.L = luax.NewState()
+	a.register()
+	path := filepath.Join(a.cfg.ScriptDir, a.suite.Name+"_test.lua")
+	if err := a.L.DoFile(path); err != nil {
+		return fmt.Errorf("load %s: %v", path, err)
+	}
+	if a.def == nil {
+		return fmt.Errorf("%s does not call test_suite", path)
+	}
+	if name, ok := a.def.RawGetString("name").(lua.LString); ok {
+		a.name = string(name)
+	}
+	return nil
+}
+
+func (a *SuiteActor) botCount() int {
+	if n, ok := a.def.RawGetString("bot_count").(lua.LNumber); ok {
+		return int(n)
+	}
+	return 1
 }
 
 func (a *SuiteActor) botEntered(msg *BotEntered) {
@@ -367,7 +388,16 @@ func (a *SuiteActor) timeoutMs() int {
 }
 
 func (a *SuiteActor) Fail(msg string) bool {
-	log.Printf("[%s] %s", a.name, msg)
+	a.logf("%s", msg)
 	a.failures = append(a.failures, msg)
 	return false
+}
+
+func (a *SuiteActor) logf(format string, args ...any) {
+	text := fmt.Sprintf(format, args...)
+	log.Printf("[%s] %s", a.name, text)
+	if len(a.lines) == suiteLogLines {
+		a.lines = slices.Delete(a.lines, 0, 1)
+	}
+	a.lines = append(a.lines, text)
 }

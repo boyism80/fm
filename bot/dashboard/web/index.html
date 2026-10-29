@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FM · 통합 테스트</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <svg class="leaf" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 2l1.6 3.7 3.2-1.4-.6 3.6 3.6-.4-1.9 3 3.1 1.6-3.4 1.4 1.5 3.3-3.7-.6-.9 3.5-2.5-2.6v4.5h-2v-4.5l-2.5 2.6-.9-3.5-3.7.6 1.5-3.3L1.9 13l3.1-1.6-1.9-3 3.6.4-.6-3.6 3.2 1.4z"
+          />
+        </svg>
+        <b>FM</b><span>통합 테스트</span>
+      </div>
+      <nav class="views">
+        <a data-view="run">실행</a>
+        <a data-view="history">기록</a>
+      </nav>
+      <div class="online off" id="online">봇 러너 연결 중</div>
+    </header>
+
+    <main class="view" id="view-run" hidden>
+      <section class="card hero">
+        <div>
+          <div class="eyebrow">bot / script/integration/registry.lua</div>
+          <h1>통합 테스트</h1>
+          <p class="lead">
+            고른 스위트를 seat 수만큼 병렬로 돌리고, serial 스위트는 병렬 단계가 끝난 뒤 하나씩 실행합니다.
+          </p>
+        </div>
+        <div class="badge idle" id="status"><i></i><span>IDLE</span><b id="status-clock">00:00</b></div>
+      </section>
+
+      <div class="notice" id="notice" hidden></div>
+
+      <section class="card ribbon-card">
+        <div class="ribbon-head">
+          <div><b>전체 진행률</b><span class="mono faint" id="ribbon-text">실행 전</span></div>
+          <span class="mono faint" id="run-id"></span>
+        </div>
+        <div class="ribbon" id="ribbon">
+          <i class="passed"></i><i class="failed"></i><i class="running"></i><i class="skipped"></i
+          ><i class="stopped"></i>
+        </div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <section class="kpis">
+        <div class="card kpi">
+          <div>
+            <div class="k">진행</div>
+            <div class="v" id="k-progress">0 / 0</div>
+            <div class="s" id="k-progress-sub">-</div>
+          </div>
+          <span class="icon orange"
+            ><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6" /></svg
+          ></span>
+        </div>
+        <div class="card kpi">
+          <div>
+            <div class="k">통과 · 실패</div>
+            <div class="v" id="k-result">0 · 0</div>
+            <div class="s" id="k-result-sub">-</div>
+          </div>
+          <span class="icon rose"
+            ><svg viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.5" /></svg
+          ></span>
+        </div>
+        <div class="card kpi">
+          <div>
+            <div class="k">사용 중인 seat</div>
+            <div class="v" id="k-seats">0 / 0</div>
+            <div class="s" id="k-seats-sub">-</div>
+          </div>
+          <span class="icon amber"
+            ><svg viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+              <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" /></svg
+          ></span>
+        </div>
+        <div class="card kpi">
+          <div>
+            <div class="k">경과 시간</div>
+            <div class="v" id="k-elapsed">-</div>
+            <div class="s" id="k-elapsed-sub">-</div>
+          </div>
+          <span class="icon sand"
+            ><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg
+          ></span>
+        </div>
+      </section>
+
+      <section class="grid">
+        <aside class="card settings">
+          <div class="head"><h2>실행 설정</h2><span class="mono faint">config/bot.yaml</span></div>
+          <div class="form">
+            <div class="fld">
+              <label for="seats">seat 수 <span class="faint" id="seats-max"></span></label>
+              <div class="stepper">
+                <button type="button" id="seats-down" aria-label="seat 줄이기">−</button>
+                <input id="seats" type="number" min="1" value="1" />
+                <button type="button" id="seats-up" aria-label="seat 늘리기">+</button>
+              </div>
+            </div>
+            <p class="tip">
+              <b>serial 스위트</b>(결혼·택배·고용상인처럼 서버 전역 상태를 쓰는 스위트)는 병렬 단계가 끝난 뒤
+              seat 1에서 하나씩 실행합니다.
+            </p>
+            <p class="help">
+              실행마다 registry.lua와 스위트 파일을 새로 읽으므로 스크립트 변경은 다음 실행에 바로 반영됩니다.
+              explicit 스위트는 직접 골랐을 때만 실행됩니다.
+            </p>
+            <button class="btn go" id="start">실행</button>
+            <button class="btn danger" id="stop">중지</button>
+          </div>
+          <div class="settings-foot">
+            <span class="mono faint" id="loaded">-</span>
+            <button class="link" id="reload">다시 읽기</button>
+          </div>
+        </aside>
+
+        <div class="main">
+          <div class="card tabs" role="tablist">
+            <button role="tab" data-tab="pick" aria-selected="true">스위트 선택<em id="tab-pick"></em></button>
+            <button role="tab" data-tab="progress" aria-selected="false">진행 상황<em id="tab-progress"></em></button>
+            <button role="tab" data-tab="failures" aria-selected="false">실패<em class="bad" id="tab-failures"></em></button>
+          </div>
+
+          <div class="panel" data-panel="pick">
+            <div class="card toolbar">
+              <div class="row">
+                <div class="seg">
+                  <button id="pick-all">전체 선택</button><button id="pick-none">선택 해제</button
+                  ><button id="pick-failed" class="warn">실패만 다시 선택</button>
+                </div>
+                <label class="search"
+                  ><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="M20 20l-4.5-4.5" /></svg
+                  ><input id="search" placeholder="스위트 검색 (이름 또는 제목)" aria-label="스위트 검색"
+                /></label>
+              </div>
+              <div class="chips" id="filters"></div>
+            </div>
+            <div class="card list" id="suites"></div>
+          </div>
+
+          <div class="panel" data-panel="progress" hidden>
+            <div class="card">
+              <div class="head"><h2>seat 보드</h2><span class="faint" id="board-note">-</span></div>
+              <div class="board" id="board"></div>
+            </div>
+            <div class="card">
+              <div class="head"><h2>실행 계획</h2><span class="faint" id="plan-note">-</span></div>
+              <div class="tbl">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>단계</th>
+                      <th>스위트</th>
+                      <th>상태</th>
+                      <th class="num">seat</th>
+                      <th class="num">소요</th>
+                    </tr>
+                  </thead>
+                  <tbody id="plan"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="failures" hidden>
+            <div id="failures"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <main class="view" id="view-history" hidden>
+      <section class="card hero">
+        <div>
+          <div class="eyebrow">bot / out/runs</div>
+          <h1>실행 기록</h1>
+          <p class="lead">끝난 실행의 스위트 결과와 실패 로그를 다시 보고 summary.json을 내려받습니다.</p>
+        </div>
+      </section>
+      <div class="card">
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>실행 ID</th>
+                <th>시작</th>
+                <th class="num">소요</th>
+                <th class="num">seat</th>
+                <th>결과</th>
+              </tr>
+            </thead>
+            <tbody id="runs"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card detail" id="detail" hidden>
+        <div class="head">
+          <div><h2 class="mono" id="detail-title"></h2><div class="faint" id="detail-sub"></div></div>
+          <a class="chip-link" id="detail-file" download>summary.json</a>
+        </div>
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>스위트</th>
+                <th>상태</th>
+                <th class="num">seat</th>
+                <th class="num">소요</th>
+              </tr>
+            </thead>
+            <tbody id="detail-suites"></tbody>
+          </table>
+        </div>
+        <div class="detail-failures" id="detail-failures"></div>
+      </div>
+    </main>
+
+    <footer class="foot"><span>REGISTRY → SELECT → PARALLEL → SERIAL → REPORT</span><span id="foot"></span></footer>
+    <script src="js/app.js"></script>
+  </body>
+</html>

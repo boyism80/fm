@@ -2,6 +2,7 @@ package actor
 
 import (
 	"log"
+	"slices"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -35,7 +36,7 @@ func (a *SuiteActor) cleanup() {
 		}
 		for _, text := range commands {
 			if err := a.Command(b, text); err != nil {
-				log.Printf("[%s] cleanup %s %s: %v", a.name, b.Name, text, err)
+				a.logf("cleanup %s %s: %v", b.Name, text, err)
 			}
 		}
 	}
@@ -52,15 +53,18 @@ func (a *SuiteActor) close(ctx actor.Context) {
 		b.Close()
 	}
 	elapsed := time.Since(a.started)
-	log.Printf("[%s] seat %d finished in %s (%d failures)", a.name, a.seat, elapsed.Round(time.Millisecond), len(a.failures))
+	a.logf("seat %d finished in %s (%d failures)", a.seat, elapsed.Round(time.Millisecond), len(a.failures))
 	ctx.Send(ctx.Parent(), &SuiteFinished{
+		Suite:    a.suite.Name,
 		Name:     a.name,
 		Seat:     a.seat,
 		Serial:   a.suite.Serial,
 		Passed:   len(a.failures) == 0,
 		Skipped:  a.skipped,
+		Stopped:  a.stopped,
 		Infra:    a.infra,
-		Failures: a.failures,
+		Failures: slices.Clone(a.failures),
+		Log:      slices.Clone(a.lines),
 		Elapsed:  elapsed,
 	})
 
