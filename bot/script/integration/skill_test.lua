@@ -18,6 +18,11 @@ local POISON_MIST = 2111003
 local MOB_POISON = 0x200
 -- Takes mob hits (damagedByMob), so player skills cannot stun, slow, or poison it.
 local MOON_BUNNY = 9300061
+local SOUL_CHARGE = 11111007
+local DAWN_WARRIOR3 = 1111
+local SWORD = 1302000
+-- Immune to lightning, neutral to holy, and not a boss.
+local LIGHTNING_IMMUNE = 8148001
 local PRIEST = 231
 local ROGUE = 400
 local HERMIT = 411
@@ -663,6 +668,59 @@ local function showdown_threaten(ctx)
     return check(ctx, cancelled[MOB_MDEF] == nil, "위협이 쇼다운의 마법 방어 감소를 풀어 버림")
 end
 
+-- The attack is sent by the request itself, so its reply cannot arrive before the wait starts.
+local function melee(bot, oid, damage, skill_id)
+    local x, y = bot:position()
+    return req.attack {
+        close_attack_info = {
+            attack_header = { targets = 1, hits = 1, skill = skill_id },
+            damages = { { oid = oid, damage_pairs = { { damage = damage } } } },
+            position = { x = x, y = y },
+        },
+    }
+end
+
+-- Soul charge gives the sword the holy element, so a lightning-immune mob still takes the hit.
+local function soul_charge(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, DAWN_WARRIOR3, SWORD .. ":1") == false then
+        return false
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(SWORD) or 0, dest = WEAPON_SLOT, count = 1 }
+    if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("검 착용 실패")
+    end
+    if pq.command(bot, "/스킬레벨 " .. SOUL_CHARGE .. " 20", "스킬레벨 설정") == false then
+        return ctx:fail("소울 차지 배우기 실패")
+    end
+    -- Starting stats leave the mob's defense above any hit.
+    if pq.command(bot, "/전능 999", "전능 설정") == false or pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("능력치 설정 실패")
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    if bot:request(resp.update_stats, req.active_skill { skill_id = SOUL_CHARGE, skill_level = 20 }, function(p)
+            return p.unlock_action
+        end, 3000) == false then
+        return ctx:fail("소울 차지 사용 실패")
+    end
+
+    local spawned = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. LIGHTNING_IMMUNE }, function(p)
+        return p.mob.mob_id == LIGHTNING_IMMUNE
+    end)
+    if spawned == false then
+        return ctx:fail("번개 면역 몹 생성 응답 없음")
+    end
+    local hit = bot:request(resp.show_mob_hp, melee(bot, spawned.mob.oid, 10, 0), function(p)
+        return p.oid == spawned.mob.oid
+    end, 3000)
+    return check(ctx, hit ~= false, "소울 차지 공격이 번개 면역 몹에 들어가지 않음")
+end
+
 test_suite {
     name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용",
     bot_count = 2,
@@ -679,6 +737,7 @@ test_suite {
         night_walker_alchemist,
         magician_mp_recovery,
         showdown_threaten,
+        soul_charge,
         skill_cost,
         sauna_robe_recovery,
     },

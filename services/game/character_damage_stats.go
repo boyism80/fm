@@ -196,9 +196,9 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 			b.ChargeElement = "f"
 		case constant.SkillIceChargeSword, constant.SkillBlizzardChargeBw:
 			b.ChargeElement = "i"
-		case constant.SkillThunderChargeSword, constant.SkillLightningChargeBw, constant.SkillRadiantCharge, constant.SkillLightningCharge:
+		case constant.SkillThunderChargeSword, constant.SkillLightningChargeBw, constant.SkillLightningCharge:
 			b.ChargeElement = "l"
-		case constant.SkillHolyChargeSword, constant.SkillDivineChargeMace:
+		case constant.SkillHolyChargeSword, constant.SkillDivineChargeMace, constant.SkillRadiantCharge:
 			b.ChargeElement = "h"
 		}
 	}
