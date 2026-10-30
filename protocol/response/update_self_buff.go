@@ -98,4 +98,24 @@ func (p *UpdateSelfBuff) Serialize(writer *stream.StreamWriter) error {
 	}
 }
 
-func (p *UpdateSelfBuff) Deserialize(_ *stream.StreamReader) {}
+// Deserialize reads the common layout; the energy charge, dash, and wind booster layouts are not decoded.
+func (p *UpdateSelfBuff) Deserialize(reader *stream.StreamReader) {
+	var flags []constant.BuffFlag
+	for i := 0; i < constant.MaxBuffFlag; i++ {
+		mask := uint32(reader.Read32())
+		for bit := uint32(1); bit != 0; bit <<= 1 {
+			if mask&bit != 0 {
+				flags = append(flags, constant.BuffFlag{Mask: bit, Position: i + 1})
+			}
+		}
+	}
+	for _, flag := range flags {
+		if reader.Remaining() < 10 {
+			return
+		}
+		value := reader.Read16()
+		p.BuffID = reader.Read32()
+		p.Duration = time.Duration(reader.Read32()) * time.Millisecond
+		p.Buffs = append(p.Buffs, dto.BuffEntry{Buff: flag, Value: int32(value)})
+	}
+}

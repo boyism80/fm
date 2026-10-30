@@ -2054,6 +2054,7 @@ func loadMob(path string) (*Mob, error) {
 	model.OnlyNormalAttack = info.Int("onlyNormalAttack", 0) != 0
 	model.CP = info.Int("getCP", 0)
 	model.Point = info.Int("point", 0)
+	model.Buff = uint32(info.Int("buff", 0))
 	model.Link = info.Text("link", "")
 	model.FS = float32(info.Float("fs", 0))
 	if elemAttr := info.Text("elemAttr", ""); elemAttr != "" {

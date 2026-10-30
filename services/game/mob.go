@@ -585,6 +585,13 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 		revives = m.wz.Revives
 	}
 
+	if !m.fake && m.wz != nil && m.wz.Buff != 0 {
+		for _, obj := range mapInstance.GetAllPlayers() {
+			if ch, ok := obj.(*Character); ok && ch.IsAlive() {
+				ch.UseItemEffect(m.wz.Buff)
+			}
+		}
+	}
 	m.runDieScript(attacker)
 	if len(revives) > 0 {
 		m.revive(pos, revives)

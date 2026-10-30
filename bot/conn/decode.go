@@ -112,6 +112,29 @@ var decoders = func() []decoder {
 		newDecoder[response.DialogAccept](dialog(constant.DialogTypeAccept, constant.DialogTypeAcceptEscape)),
 		newDecoder[response.Dialog](func(body []byte) bool { return len(body) >= 6 }),
 		newDecoder[response.UpdateStats](nil),
+		newDecoder[response.UpdateSelfBuff](func(body []byte) bool {
+			if len(body) < constant.MaxBuffFlag*4 {
+				return false
+			}
+			known := make(map[constant.BuffFlag]bool)
+			for _, flag := range constant.AllBuffFlags() {
+				known[flag] = flag != constant.BuffFlagMonsterRiding
+			}
+			found := false
+			for i := 0; i < constant.MaxBuffFlag; i++ {
+				mask := binary.LittleEndian.Uint32(body[i*4:])
+				for bit := uint32(1); bit != 0; bit <<= 1 {
+					if mask&bit == 0 {
+						continue
+					}
+					if !known[constant.BuffFlag{Mask: bit, Position: i + 1}] {
+						return false
+					}
+					found = true
+				}
+			}
+			return found
+		}),
 		newDecoder[response.GiveDebuff](func(body []byte) bool {
 			if len(body) < 4+constant.MaxBuffFlag*4 {
 				return false

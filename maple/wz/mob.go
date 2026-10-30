@@ -29,6 +29,7 @@ type Mob struct {
 	Attacks               []MobAttack
 	Banish                *MobBanish
 	Revives               []uint32
+	Buff                  uint32
 	RemoveAfter           int
 	HasSelfDestruction    bool
 	SelfDestructionAction int8
