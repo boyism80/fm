@@ -116,48 +116,6 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
-		"bonus_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			acc, ok := ud.Value.(Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(acc.GetBonusHp()))
-				return 1
-			case 2:
-				v := int32(L.CheckInt(2))
-				acc.SetBonusHp(v, true)
-				return 0
-			default:
-				L.ArgError(2, "bonus_hp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"bonus_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			acc, ok := ud.Value.(Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(acc.GetBonusMp()))
-				return 1
-			case 2:
-				v := int32(L.CheckInt(2))
-				acc.SetBonusMp(v, true)
-				return 0
-			default:
-				L.ArgError(2, "bonus_mp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
 		"add_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			acc, ok := ud.Value.(Life)
@@ -176,16 +134,6 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			acc.AddMp(L.CheckInt(2))
-			return 0
-		},
-		"add_mp_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			acc, ok := ud.Value.(Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			acc.AddHpMp(L.CheckInt(2), L.CheckInt(3))
 			return 0
 		},
 		"invincible": func(L *lua.LState) int {
