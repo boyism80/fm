@@ -19,7 +19,7 @@ local function roll(drops, owner)
             if drop.meso then
                 spawned[#spawned + 1] = { meso = count }
             else
-                spawned[#spawned + 1] = { item = drop.item, count = count }
+                spawned[#spawned + 1] = { item = drop.item, count = count, quest = drop.quest }
             end
         end
     end

@@ -107,10 +107,11 @@ func (r *Reactor) DropItems() {
 			}
 		} else {
 			if err := r.onMap.SpawnItem(spawn.item, ItemSpawn{
-				Position: destPoint,
-				From:     spawnPoint,
-				Owner:    ownerID,
-				DropType: dropType,
+				Position:    destPoint,
+				From:        spawnPoint,
+				Owner:       ownerID,
+				DropType:    dropType,
+				QuestTagged: true,
 			}); err != nil {
 				log.Printf("Failed to spawn reactor item drop: %v", err)
 			}

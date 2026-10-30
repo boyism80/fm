@@ -6,6 +6,12 @@ local FOLK_TOWN_FIELD = 222010401
 local ROCK_PILE = 2221000
 local SKEWER = 2022050
 local YELLOW_GOBLIN = 7130400
+local ETC = 4
+local STONE_TABLE_FIELD = 250010301
+local STONE_TABLE = 2502002
+local TABLE_OFFERING = 4031794
+local QUEST_DRINK = 2022252
+local DRINK_QUEST = 3839
 
 local function approach_reactor(ctx, bot, template)
     for _, spot in ipairs(bot:reactor_spots()) do
@@ -23,9 +29,43 @@ local function approach_reactor(ctx, bot, template)
     return ctx:fail("맵에 리액터 배치가 없음: " .. template)
 end
 
+-- A quest item a reactor script drops is shown only to someone on that quest.
+local function quest_drop(ctx)
+    local bot = ctx:bot(0)
+    local other = ctx:bot(1)
+    if pq.command(bot, "/봇초기화 71 0 0 " .. TABLE_OFFERING .. ":1 " .. DRINK_QUEST .. ":1", "봇초기화 완료") == false then
+        return ctx:fail("퀘스트 진행 봇 초기화 실패")
+    end
+    if pq.command(other, "/봇초기화 71 0 0 - -", "봇초기화 완료") == false then
+        return ctx:fail("퀘스트 없는 봇 초기화 실패")
+    end
+    for _, b in ipairs({ bot, other }) do
+        if b:force_instance_move(STONE_TABLE_FIELD, "무릉 바위탁자 맵") == false then
+            return ctx:fail(b:name() .. " 맵 이동 실패")
+        end
+    end
+    local reactor = approach_reactor(ctx, bot, STONE_TABLE)
+    if reactor == false then
+        return false
+    end
+
+    local offer = req.move_item { inventory_type = ETC, source = bot:slot(TABLE_OFFERING) or 0, dest = 0, count = 1 }
+    local p = bot:request(resp.spawn_item, offer, function(p)
+        return p.item_model ~= nil and p.item_model.id == QUEST_DRINK
+    end, 10000)
+    if p == false then
+        return ctx:fail("바위탁자가 퀘스트 아이템을 떨어뜨리지 않음")
+    end
+    ctx:sleep(1000)
+    if #other:drops(QUEST_DRINK) ~= 0 then
+        return ctx:fail("퀘스트가 없는 캐릭터에게 퀘스트 아이템이 보임")
+    end
+    return true
+end
+
 test_suite {
-    name = "Reactor Smoke (타격, 아이템 리액터)",
-    bot_count = 1,
+    name = "Reactor Smoke (타격, 아이템 리액터, 퀘스트 드롭)",
+    bot_count = 2,
 
     scenarios = {
         function(ctx)
@@ -90,5 +130,6 @@ test_suite {
             end
             return true
         end,
+        quest_drop,
     },
 }
