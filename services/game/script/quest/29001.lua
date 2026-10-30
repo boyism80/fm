@@ -9,10 +9,12 @@ return {
             return
         end
 
-        me:dialog(npc, "#v1112980# #e#b#t1112980##k\r\n\r\n - 퀘스트 1000개 완료\r\n\r\n#n이 훈장의 주인이 될 자격이 있는지 시험해 보시겠소?", false,
-            true)
-        me:dialog(npc, "자, 퀘스트 스페셜 리스트가 될 자격이 있으려면, 1000개의 퀘스트를 완료해야만 하네. 내 인생에 그런 모험가는 본적이 없지만. 그대라면 가능할지도 모른다고 생각하오.",
-            false, true)
+        if not me:dialog(npc, "#v1112980# #e#b#t1112980##k\r\n\r\n - 퀘스트 1000개 완료\r\n\r\n#n이 훈장의 주인이 될 자격이 있는지 시험해 보시겠소?", false, true) then
+            return
+        end
+        if not me:dialog(npc, "자, 퀘스트 스페셜 리스트가 될 자격이 있으려면, 1000개의 퀘스트를 완료해야만 하네. 내 인생에 그런 모험가는 본적이 없지만. 그대라면 가능할지도 모른다고 생각하오.", false, true) then
+            return
+        end
         q:start(npc, true)
     end,
 

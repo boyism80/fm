@@ -9,12 +9,14 @@ return {
             return
         end
 
-        me:dialog(npc,
-            "#v1142003# #e#b#t1142003##k\r\n\r\n - 제한시간 30일\r\n - 인기도 1000상승\r\n\r\n#n이 훈장의 주인이 될 자격이 있는지 시험해 보시겠소?",
-            false, true)
-        me:dialog(npc,
-            "자, 30일의 시간을 줄테니 목적을 이루고 나에게 돌아오시오. 제한시간 내에 나에게 와서 확인을 받아야만 인정받을 수 있다는 것을 꼭 명심하시오. 그리고 이 도전을 완료하거나 포기하지 않는 이상 다른 칭호에 도전할 수는 없다는 것도 알아두시오.",
-            false, true)
+        if not me:dialog(npc,
+                "#v1142003# #e#b#t1142003##k\r\n\r\n - 제한시간 30일\r\n - 인기도 1000상승\r\n\r\n#n이 훈장의 주인이 될 자격이 있는지 시험해 보시겠소?", false, true) then
+            return
+        end
+        if not me:dialog(npc,
+                "자, 30일의 시간을 줄테니 목적을 이루고 나에게 돌아오시오. 제한시간 내에 나에게 와서 확인을 받아야만 인정받을 수 있다는 것을 꼭 명심하시오. 그리고 이 도전을 완료하거나 포기하지 않는 이상 다른 칭호에 도전할 수는 없다는 것도 알아두시오.", false, true) then
+            return
+        end
         local deadline = now() * 1000 + 86400000 * 30
         q:start(npc, "time_" .. deadline)
         q:record_ex("popG", "1000")
