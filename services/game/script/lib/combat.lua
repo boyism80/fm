@@ -221,8 +221,8 @@ M.compute_ninja_ambush_tick_damage = function(me, skill)
     end
     local skill_level = skill:level() or 1
     local dmg_field = tonumber(effect.damage) or 0
-    local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
-    local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
+    local str = me:total_str()
+    local luk = me:total_luk()
     local raw = (skill_level + 30) * dmg_field * (str + luk) / 2000
     local pdam = math.max(1, math.floor(raw))
     if pdam > 30000 then
@@ -639,9 +639,9 @@ M.roll_venom_tick_damage = function(me, venom_skill)
     if matk < 1 then
         matk = 1
     end
-    local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
-    local dex = math.floor(tonumber(me:base_dex()) or 0) + math.floor(tonumber(me:bonus_dex()) or 0)
-    local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
+    local str = me:total_str()
+    local dex = me:total_dex()
+    local luk = me:total_luk()
     local v55 = str + luk
     if v55 < 1 then
         v55 = 1

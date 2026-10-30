@@ -122,7 +122,7 @@ M.get_heal_recovery_amount = function(me, skill)
         return 0
     end
 
-    local total_magic = me:base_int() + me:bonus_int()
+    local total_magic = me:total_magic()
     if total_magic <= 0 then
         total_magic = 1
     end

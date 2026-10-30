@@ -277,7 +277,7 @@ return {
             me:skill_point(me:skill_point() + diff * 3, false)
         end
         local hp_low, hp_high, mp_low, mp_high = level_up_ranges(me)
-        local int_mp = math.floor((me:base_int() + me:bonus_int()) / 10)
+        local int_mp = math.floor(me:total_int() / 10)
         local total_hp = 0
         local total_mp = 0
         for _ = old_level + 1, new_level do

@@ -2841,69 +2841,30 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
-		"bonus_str": func(L *lua.LState) int {
+		"total_str": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(ch.stats.bonus.str))
-				return 1
-			case 2:
-				ch.stats.bonus.str = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.StatStr)
-				return 0
-			default:
-				L.ArgError(2, "bonus_str() requires 0 or 1 arguments")
-				return 0
-			}
+			L.Push(lua.LNumber(ch.totalStats().STR))
+			return 1
 		},
-		"bonus_dex": func(L *lua.LState) int {
+		"total_dex": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(ch.stats.bonus.dex))
-				return 1
-			case 2:
-				ch.stats.bonus.dex = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.StatDex)
-				return 0
-			default:
-				L.ArgError(2, "bonus_dex() requires 0 or 1 arguments")
-				return 0
-			}
+			L.Push(lua.LNumber(ch.totalStats().DEX))
+			return 1
 		},
-		"bonus_int": func(L *lua.LState) int {
+		"total_int": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(ch.stats.bonus.int))
-				return 1
-			case 2:
-				ch.stats.bonus.int = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.StatInt)
-				return 0
-			default:
-				L.ArgError(2, "bonus_int() requires 0 or 1 arguments")
-				return 0
-			}
+			L.Push(lua.LNumber(ch.totalStats().INT))
+			return 1
 		},
-		"bonus_luk": func(L *lua.LState) int {
+		"total_luk": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(ch.stats.bonus.luk))
-				return 1
-			case 2:
-				ch.stats.bonus.luk = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.StatLuk)
-				return 0
-			default:
-				L.ArgError(2, "bonus_luk() requires 0 or 1 arguments")
-				return 0
-			}
+			L.Push(lua.LNumber(ch.totalStats().LUK))
+			return 1
+		},
+		"total_magic": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			L.Push(lua.LNumber(ch.totalStats().MAD))
+			return 1
 		},
 		"bonus_watk": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)

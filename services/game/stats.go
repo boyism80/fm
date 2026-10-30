@@ -10,10 +10,6 @@ type BaseStats struct {
 }
 
 type BonusStats struct {
-	str                int16
-	dex                int16
-	int                int16
-	luk                int16
 	watk               int16
 	matk               int16
 	wdef               int16
@@ -42,13 +38,13 @@ type Stats struct {
 func (s *Stats) canAdd(stat constant.StatType, amount uint16) bool {
 	switch stat {
 	case constant.StatTypeStr:
-		return s.TotalStr()+amount <= constant.StatMaxStrDexIntLuk
+		return s.base.str+amount <= constant.StatMaxStrDexIntLuk
 	case constant.StatTypeDex:
-		return s.TotalDex()+amount <= constant.StatMaxStrDexIntLuk
+		return s.base.dex+amount <= constant.StatMaxStrDexIntLuk
 	case constant.StatTypeInt:
-		return s.TotalInt()+amount <= constant.StatMaxStrDexIntLuk
+		return s.base.int+amount <= constant.StatMaxStrDexIntLuk
 	case constant.StatTypeLuk:
-		return s.TotalLuk()+amount <= constant.StatMaxStrDexIntLuk
+		return s.base.luk+amount <= constant.StatMaxStrDexIntLuk
 	default:
 		return false
 	}
@@ -62,28 +58,28 @@ func (s *Stats) add(stat constant.StatType, amount uint16, statUpdate map[consta
 			newStr = constant.StatMaxStrDexIntLuk
 		}
 		s.base.str = newStr
-		statUpdate[constant.StatStr] = int32(s.TotalStr())
+		statUpdate[constant.StatStr] = int32(s.base.str)
 	case constant.StatTypeDex:
 		newDex := s.base.dex + amount
 		if newDex > constant.StatMaxStrDexIntLuk {
 			newDex = constant.StatMaxStrDexIntLuk
 		}
 		s.base.dex = newDex
-		statUpdate[constant.StatDex] = int32(s.TotalDex())
+		statUpdate[constant.StatDex] = int32(s.base.dex)
 	case constant.StatTypeInt:
 		newInt := s.base.int + amount
 		if newInt > constant.StatMaxStrDexIntLuk {
 			newInt = constant.StatMaxStrDexIntLuk
 		}
 		s.base.int = newInt
-		statUpdate[constant.StatInt] = int32(s.TotalInt())
+		statUpdate[constant.StatInt] = int32(s.base.int)
 	case constant.StatTypeLuk:
 		newLuk := s.base.luk + amount
 		if newLuk > constant.StatMaxStrDexIntLuk {
 			newLuk = constant.StatMaxStrDexIntLuk
 		}
 		s.base.luk = newLuk
-		statUpdate[constant.StatLuk] = int32(s.TotalLuk())
+		statUpdate[constant.StatLuk] = int32(s.base.luk)
 	}
 }
 
@@ -109,59 +105,15 @@ func (s *Stats) removeOne(stat constant.StatType, floor uint16, statUpdate map[c
 	*base--
 	switch stat {
 	case constant.StatTypeStr:
-		statUpdate[key] = int32(s.TotalStr())
+		statUpdate[key] = int32(s.base.str)
 	case constant.StatTypeDex:
-		statUpdate[key] = int32(s.TotalDex())
+		statUpdate[key] = int32(s.base.dex)
 	case constant.StatTypeInt:
-		statUpdate[key] = int32(s.TotalInt())
+		statUpdate[key] = int32(s.base.int)
 	case constant.StatTypeLuk:
-		statUpdate[key] = int32(s.TotalLuk())
+		statUpdate[key] = int32(s.base.luk)
 	}
 	return true
-}
-
-func (s *Stats) TotalStr() uint16 {
-	total := int32(s.base.str) + int32(s.bonus.str)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
-}
-
-func (s *Stats) TotalDex() uint16 {
-	total := int32(s.base.dex) + int32(s.bonus.dex)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
-}
-
-func (s *Stats) TotalInt() uint16 {
-	total := int32(s.base.int) + int32(s.bonus.int)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
-}
-
-func (s *Stats) TotalLuk() uint16 {
-	total := int32(s.base.luk) + int32(s.bonus.luk)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.StatMaxStrDexIntLuk) {
-		return constant.StatMaxStrDexIntLuk
-	}
-	return uint16(total)
 }
 
 func (s *Stats) PotionHealMultiplierPercent() int {

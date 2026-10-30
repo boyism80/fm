@@ -20,8 +20,8 @@ return {
         if y == nil then
             y = 0
         end
-        local luk = me:base_luk() + me:bonus_luk()
-        local dex = me:base_dex() + me:bonus_dex()
+        local luk = me:total_luk()
+        local dex = me:total_dex()
         local v42 = y + 100
         local v38 = math.random(1, 100) + 100
         local hpchange = math.floor((v38 * luk * 0.033 + dex) * v42 * 0.002)

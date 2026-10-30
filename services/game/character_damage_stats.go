@@ -54,10 +54,10 @@ func (ch *Character) comboPercent(finisher bool) float64 {
 // actually serialized to this client, equipment, passive skills and buffs.
 func (ch *Character) damageStats() (damageStats, damageModifiers) {
 	s := damageStats{
-		STR:   float64(ch.stats.TotalStr()),
-		DEX:   float64(ch.stats.TotalDex()),
-		INT:   float64(ch.stats.TotalInt()),
-		LUK:   float64(ch.stats.TotalLuk()),
+		STR:   float64(ch.stats.base.str),
+		DEX:   float64(ch.stats.base.dex),
+		INT:   float64(ch.stats.base.int),
+		LUK:   float64(ch.stats.base.luk),
 		Level: int(ch.GetLevel()),
 		Class: ch.class,
 	}
