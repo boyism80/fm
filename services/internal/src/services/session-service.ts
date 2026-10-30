@@ -195,12 +195,20 @@ export class SessionService {
                 guildOnline: gameToGameTransfer ? undefined : true,
             });
             const reply = await this.characterService.load(worldId, row);
-            reply.messengerRoomId = await this.socialService
-                .moveMessenger(worldId, characterId, channelId)
-                .catch((err) => {
-                    console.error("[social] messenger move failed", err);
-                    return 0;
+            // Only a move between servers keeps the seat; a new login starts with no messenger window, so a seat
+            // left by a transfer that never arrived is given up.
+            if (gameToGameTransfer) {
+                reply.messengerRoomId = await this.socialService
+                    .moveMessenger(worldId, characterId, channelId)
+                    .catch((err) => {
+                        console.error("[social] messenger move failed", err);
+                        return 0;
+                    });
+            } else {
+                await this.socialService.leaveMessenger(worldId, characterId).catch((err) => {
+                    console.error("[social] messenger leave failed", err);
                 });
+            }
             if (callerGone()) {
                 throw new Error(`enter game: caller left before the reply (character=${characterId})`);
             }
