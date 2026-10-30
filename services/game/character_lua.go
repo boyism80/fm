@@ -1133,18 +1133,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.ArgError(7, "position table or nil expected")
 						return 0
 					}
-					var x, y int16
-					if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-						x = int16(lua.LVAsNumber(lx))
-					} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-						x = int16(lua.LVAsNumber(lx))
-					}
-					if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-						y = int16(lua.LVAsNumber(ly))
-					} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-						y = int16(lua.LVAsNumber(ly))
-					}
-					pos = types.Point[int16]{X: x, Y: y}
+					pos = luax.ParsePoint(posTbl)
 				}
 			}
 

@@ -4,7 +4,6 @@ import (
 	"log"
 	"math/rand"
 
-	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/types"
 )
@@ -96,7 +95,7 @@ func (r *Reactor) DropItems() {
 
 	spawnPoint := r.position
 	dropX := spawnPoint.X - int16(12*len(spawns))
-	ownerID, dropType := reactorDropOwner(trigger)
+	ownerID, dropType := trigger.dropOwner()
 
 	for _, spawn := range spawns {
 		destPoint := types.Point[int16]{X: dropX, Y: spawnPoint.Y}
@@ -127,14 +126,4 @@ func questInProgress(ch *Character, questID uint32) bool {
 		return false
 	}
 	return ch.quests != nil && ch.quests.Get(questID).IsStarted()
-}
-
-func reactorDropOwner(trigger *Character) (uint32, constant.DropType) {
-	if trigger == nil {
-		return 0, constant.DropTypeFFA
-	}
-	if trigger.party.ID() != nil {
-		return trigger.GetID(), constant.DropTypeParty
-	}
-	return trigger.GetID(), constant.DropTypeOwnerOnly
 }

@@ -16,19 +16,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"point_below": func(L *lua.LState) int {
 			mapInstance := luax.Check[Map](L, 1)
-			posTbl := L.CheckTable(2)
-			var x, y int16
-			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			}
-			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			}
-			out := mapInstance.PointBelow(types.Point[int16]{X: x, Y: y})
+			out := mapInstance.PointBelow(luax.ParsePoint(L.CheckTable(2)))
 			if out == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -213,18 +201,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"spawn_meso": func(L *lua.LState) int {
 			mapInstance := luax.Check[Map](L, 1)
 			count := int32(L.CheckInt(2))
-			posTbl := L.CheckTable(3)
-			var x, y int16
-			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			}
-			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			}
+			pos := luax.ParsePoint(L.CheckTable(3))
 			var owner *Character
 			if ownerLV := L.Get(4); ownerLV != lua.LNil {
 				if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
@@ -236,17 +213,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if count <= 0 {
 				return 0
 			}
-			pos := types.Point[int16]{X: x, Y: y}
-			dropType := constant.DropTypeFFA
-			ownerID := uint32(0)
-			if owner != nil {
-				if owner.party.ID() != nil {
-					dropType = constant.DropTypeParty
-				} else {
-					dropType = constant.DropTypeOwnerOnly
-				}
-				ownerID = owner.GetID()
-			}
+			ownerID, dropType := owner.dropOwner()
 			meso, err := mapInstance.SpawnMeso(count, pos, pos, ownerID, dropType, false)
 			if err != nil {
 				L.Push(lua.LNil)
@@ -295,19 +262,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				count = uint16(n)
 			}
 
-			posTbl := L.CheckTable(4)
-			var x, y int16
-			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			}
-			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			}
-			pos := types.Point[int16]{X: x, Y: y}
+			pos := luax.ParsePoint(L.CheckTable(4))
 
 			var owner *Character
 			if argc >= 5 && L.Get(5) != lua.LNil {
@@ -333,16 +288,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 				}
 			}
-			dropType := constant.DropTypeFFA
-			ownerID := uint32(0)
-			if owner != nil {
-				if owner.party.ID() != nil {
-					dropType = constant.DropTypeParty
-				} else {
-					dropType = constant.DropTypeOwnerOnly
-				}
-				ownerID = owner.GetID()
-			}
+			ownerID, dropType := owner.dropOwner()
 			if err := mapInstance.SpawnItem(item, ItemSpawn{
 				Position: pos,
 				From:     pos,
@@ -359,19 +305,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mapInstance := luax.Check[Map](L, 1)
 
 			entries := L.CheckTable(2)
-			posTbl := L.CheckTable(3)
-			var ox, oy int16
-			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-				ox = int16(lua.LVAsNumber(lx))
-			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-				ox = int16(lua.LVAsNumber(lx))
-			}
-			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-				oy = int16(lua.LVAsNumber(ly))
-			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-				oy = int16(lua.LVAsNumber(ly))
-			}
-			spawnPoint := types.Point[int16]{X: ox, Y: oy}
+			spawnPoint := luax.ParsePoint(L.CheckTable(3))
 
 			var owner *Character
 			if ownerLV := L.Get(4); ownerLV != lua.LNil {
@@ -828,16 +762,7 @@ func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16],
 		return
 	}
 
-	dropType := constant.DropTypeFFA
-	ownerID := uint32(0)
-	if owner != nil {
-		if owner.party.ID() != nil {
-			dropType = constant.DropTypeParty
-		} else {
-			dropType = constant.DropTypeOwnerOnly
-		}
-		ownerID = owner.GetID()
-	}
+	ownerID, dropType := owner.dropOwner()
 
 	spacing := int16(25)
 	d := int16(1)

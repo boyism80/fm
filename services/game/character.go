@@ -706,6 +706,16 @@ func (ch *Character) GetID() uint32 {
 	return ch.id
 }
 
+func (ch *Character) dropOwner() (uint32, constant.DropType) {
+	if ch == nil {
+		return 0, constant.DropTypeFFA
+	}
+	if ch.party.ID() != nil {
+		return ch.id, constant.DropTypeParty
+	}
+	return ch.id, constant.DropTypeOwnerOnly
+}
+
 func (ch *Character) MarkLoggedOut() <-chan *internal.CharacterSaveEntry {
 	ch.session.logoutEntry = make(chan *internal.CharacterSaveEntry, 1)
 	ch.session.loggedOut.Store(true)

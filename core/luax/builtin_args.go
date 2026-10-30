@@ -3,6 +3,7 @@ package luax
 import (
 	"strings"
 
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -30,4 +31,20 @@ func ParseTable(L *lua.LState, argument lua.LValue, argIndex int) (map[lua.LValu
 		out[key] = value
 	})
 	return out, true
+}
+
+// ParsePoint reads {x, y} or {x = x, y = y}.
+func ParsePoint(table *lua.LTable) types.Point[int16] {
+	var point types.Point[int16]
+	if x := table.RawGetInt(1); x != lua.LNil {
+		point.X = int16(lua.LVAsNumber(x))
+	} else if x := table.RawGetString("x"); x != lua.LNil {
+		point.X = int16(lua.LVAsNumber(x))
+	}
+	if y := table.RawGetInt(2); y != lua.LNil {
+		point.Y = int16(lua.LVAsNumber(y))
+	} else if y := table.RawGetString("y"); y != lua.LNil {
+		point.Y = int16(lua.LVAsNumber(y))
+	}
+	return point
 }
