@@ -20,12 +20,10 @@ return {
         if y == nil then
             y = 0
         end
-        local luk = me:total_luk()
-        local dex = me:total_dex()
         local v42 = y + 100
         local v38 = math.random(1, 100) + 100
-        local hpchange = math.floor((v38 * luk * 0.033 + dex) * v42 * 0.002)
-        hpchange = hpchange + make_heal_hp(y / 100.0, luk, 2.3, 3.5)
+        local hpchange = math.floor((v38 * me:base_luk() * 0.033 + me:base_dex()) * v42 * 0.002)
+        hpchange = hpchange + make_heal_hp(y / 100.0, me:total_luk(), 2.3, 3.5)
         if hpchange <= 0 then
             return
         end
