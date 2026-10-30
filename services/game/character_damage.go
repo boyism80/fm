@@ -144,7 +144,7 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 		return false, nil
 	}
 
-	ch.callAttackHooks(actx, kind, skill, info.Damages)
+	ch.callAttackHooks(actx, kind, skill, info)
 	ch.damageTo(info.Damages)
 	if len(info.Damages) > 0 {
 		ch.lieDetector.huntedAt = clock.Now()
@@ -156,16 +156,21 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 }
 
 // Scripts may change the reported damage, so the hits are read back from the table they edited.
-func (ch *Character) callAttackHooks(actx actor.Context, kind AttackKind, skill *SkillEntry, damages []dto.AttackPair) {
+func (ch *Character) callAttackHooks(actx actor.Context, kind AttackKind, skill *SkillEntry, info dto.AttackInfo) {
 	root := ch.GetMap().GetLuaRoot()
 	if root == nil {
 		return
 	}
 
+	damages := info.Damages
 	damagesTable := ch.damagesTable(root, damages)
 	attackInfoTable := root.NewTable()
 	attackInfoTable.RawSetString("magic", lua.LBool(kind == AttackMagic))
 	attackInfoTable.RawSetString("ranged", lua.LBool(kind == AttackRanged))
+	if info.Position.X != 0 || info.Position.Y != 0 {
+		attackInfoTable.RawSetString("x", lua.LNumber(info.Position.X))
+		attackInfoTable.RawSetString("y", lua.LNumber(info.Position.Y))
+	}
 	ch.skills.CallHook(actx, skill, "on_attack", damagesTable, attackInfoTable)
 
 	oidToPairs := make(map[uint32][]dto.DamagePair)

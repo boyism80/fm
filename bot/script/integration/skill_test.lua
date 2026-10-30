@@ -16,6 +16,9 @@ local STAR = 2070000
 local LUCKY_SEVEN = 4001344
 local POISON_MIST = 2111003
 local MOB_POISON = 0x200
+local POISON_BOMB = 14111006
+-- Does not move, so it stays in the small poison bomb mist.
+local POISON_FLOWER = 9300174
 -- Takes mob hits (damagedByMob), so player skills cannot stun, slow, or poison it.
 local MOON_BUNNY = 9300061
 local SOUL_CHARGE = 11111007
@@ -62,6 +65,20 @@ local SAUNA_ROBES = { 1050018, 1051017 }
 local OVERALL_SLOT = -5
 local HP_HEAL_INTERVAL_MS = 10000
 local MP = 0x1000
+local DRAGON_ROAR = 1311006
+local DRAGON_ROAR_HP_PERCENT = 59
+local DRAGON_ROAR_STUN_MS = 4000
+local GM_HYPER_BODY = 9001008
+local MARAUDER = 511
+local TRANSFORM = 5111005
+local BUFF = {
+    weapon_def = { mask = 0x2, position = 4 },
+    magic_def = { mask = 0x8, position = 4 },
+    speed = { mask = 0x80, position = 4 },
+    jump = { mask = 0x100, position = 4 },
+    max_hp = { mask = 0x2000, position = 4 },
+    morph = { mask = 0x2, position = 3 },
+}
 
 local function check(ctx, ok, message)
     if ok == false then
@@ -427,6 +444,54 @@ local function poison_mist(ctx)
     -- The mist lasts 40 s and would poison the golem of a later scenario on this map.
     bot:request(resp.notice, req.normal_chat { message = "/맵리셋 인스턴스" }, nil, 300)
     return check(ctx, bunny_poisoned == false, "독 안개 안의 월묘가 중독됨")
+end
+
+-- A poison bomb leaves a poison mist where it is thrown, which poisons a mob that comes in later.
+local function poison_bomb(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 120, NIGHT_WALKER, CLAW .. ":1," .. STAR .. ":100") == false then
+        return false
+    end
+    if pq.command(bot, "/스킬레벨 " .. POISON_BOMB .. " 30", "스킬레벨 설정") == false then
+        return ctx:fail("포이즌 봄 배우기 실패")
+    end
+    if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(CLAW) or 0, dest = WEAPON_SLOT, count = 1 }
+    if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("아대 장착 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+
+    -- The flower lands on the foothold below, so the bomb is thrown from where it stands.
+    local flower = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. POISON_FLOWER }, function(p)
+        return p.mob.mob_id == POISON_FLOWER
+    end)
+    if flower == false then
+        return ctx:fail("포이즌 플라워 생성 응답 없음")
+    end
+    if pq.move(bot, flower.mob.position.x, flower.mob.position.y) == false then
+        return ctx:fail("포이즌 플라워 위치로 이동 실패")
+    end
+    local snail = spawn_snail(ctx, bot)
+    if snail == nil then
+        return false
+    end
+    if check(ctx, bot:shoot(snail, bot:slot(STAR), POISON_BOMB), "포이즌 봄이 맞지 않음") == false then
+        return false
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    local p = bot:request(resp.apply_mob_buff, nil, function(p)
+        return p.oid == flower.mob.oid and math.floor(p.status / MOB_POISON) % 2 == 1
+    end, 10000)
+    -- The mist would poison the golem of a later scenario on this map.
+    bot:request(resp.notice, req.normal_chat { message = "/맵리셋 인스턴스" }, nil, 300)
+    return check(ctx, p ~= false, "포이즌 봄 독구름 안의 몹이 중독되지 않음")
 end
 
 local function hp_changed(p)
@@ -819,8 +884,131 @@ local function sacrifice_boss(ctx)
         "새크리파이스 HP 감소량이 피해의 5%가 아님: " .. tostring(p.stats[HP]))
 end
 
+local function buff_value(p, flag)
+    for _, entry in ipairs(p.buffs or {}) do
+        if entry.buff.mask == flag.mask and entry.buff.position == flag.position then
+            return entry.value
+        end
+    end
+    return nil
+end
+
+-- The GM hyper body reaches the living players in its area, not only the GM.
+local function gm_hyper_body(ctx)
+    local gm = ctx:bot(1)
+    local other = ctx:bot(0)
+    if setup(ctx, gm, 120, GM, "-") == false or setup(ctx, other, 30, 0, "-") == false then
+        return false
+    end
+    if learn(ctx, gm, GM_HYPER_BODY) == false then
+        return false
+    end
+    if gm:instance_move(GM_GROUND) == false or other:instance_move(GM_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local x, y = gm:position()
+    if pq.move(other, x, y) == false then
+        return ctx:fail("GM 옆으로 이동 실패")
+    end
+    local p = gm:request_on(other, resp.update_self_buff,
+        req.active_skill { skill_id = GM_HYPER_BODY, skill_level = 1 }, function(p)
+            return p.buff_id == GM_HYPER_BODY
+        end, 3000)
+    if p == false then
+        return ctx:fail("범위 안의 다른 캐릭터가 GM 하이퍼 바디를 받지 않음")
+    end
+    return check(ctx, buff_value(p, BUFF.max_hp) == 60,
+        "GM 하이퍼 바디 최대 HP 증가가 60%가 아님: " .. tostring(buff_value(p, BUFF.max_hp)))
+end
+
+-- A transformation carries the skill's defense, speed, and jump along with the look.
+local function transform_stats(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, MARAUDER, "-") == false or learn(ctx, bot, TRANSFORM) == false then
+        return false
+    end
+    if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local p = bot:request(resp.update_self_buff, req.active_skill { skill_id = TRANSFORM, skill_level = 1 }, function(p)
+        return p.buff_id == TRANSFORM
+    end, 3000)
+    if p == false then
+        return ctx:fail("트랜스폼 버프 응답 없음")
+    end
+    local got = string.format("morph=%s speed=%s jump=%s wdef=%s mdef=%s", tostring(buff_value(p, BUFF.morph)),
+        tostring(buff_value(p, BUFF.speed)), tostring(buff_value(p, BUFF.jump)), tostring(buff_value(p, BUFF.weapon_def)),
+        tostring(buff_value(p, BUFF.magic_def)))
+    return check(ctx, (buff_value(p, BUFF.morph) or 0) > 0 and buff_value(p, BUFF.speed) == 40 and
+        buff_value(p, BUFF.jump) == 20 and buff_value(p, BUFF.weapon_def) == 2 and buff_value(p, BUFF.magic_def) == 2,
+        "트랜스폼 버프 능력치가 WZ와 다름: " .. got)
+end
+
+-- Dragon Roar under half HP is refused before it hits; above half it costs the WZ share of max HP.
+local function dragon_roar_half_hp(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, DRAGON_KNIGHT, SPEAR .. ":1") == false then
+        return false
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(SPEAR) or 0, dest = WEAPON_SLOT, count = 1 }
+    if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("창 착용 실패")
+    end
+    if learn(ctx, bot, DRAGON_ROAR) == false then
+        return false
+    end
+    if pq.command(bot, "/전능 999", "전능 설정") == false or pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false
+        or pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false then
+        return ctx:fail("능력치 설정 실패")
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local x, y = bot:position()
+    local golem = spawn_golem(ctx, bot, x, y)
+    if golem == nil then
+        return false
+    end
+
+    for _ = 1, 2 do
+        local hurt = bot:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 1000 }, function(p)
+            return p.stats[HP] ~= nil
+        end, 3000)
+        if hurt == false then
+            return ctx:fail("피해를 받지 않음")
+        end
+    end
+    if bot:request(resp.show_mob_hp, melee(bot, golem, 10, DRAGON_ROAR), function(p)
+            return p.oid == golem
+        end, QUIET_MS) ~= false then
+        return ctx:fail("HP 절반 아래에서 드래곤 로어가 들어감")
+    end
+
+    if pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false then
+        return ctx:fail("체력 회복 실패")
+    end
+    local p = bot:request(resp.update_stats, melee(bot, golem, 10, DRAGON_ROAR), function(p)
+        return p.stats[HP] ~= nil and p.stats[HP] < 3000
+    end, 3000)
+    if p == false then
+        return ctx:fail("HP 절반 이상에서 드래곤 로어가 HP를 쓰지 않음")
+    end
+    local expected = 3000 - math.floor(3000 * DRAGON_ROAR_HP_PERCENT / 100)
+    if check(ctx, p.stats[HP] == expected, string.format("드래곤 로어 HP 소모가 다름: %d (기대 %d)", p.stats[HP], expected)) == false then
+        return false
+    end
+    ctx:sleep(DRAGON_ROAR_STUN_MS + 500)
+    return true
+end
+
 test_suite {
-    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용",
+    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용·GM 하이퍼 바디·변신 능력치·드래곤 로어 HP 조건",
     bot_count = 2,
 
     scenarios = {
@@ -831,6 +1019,7 @@ test_suite {
         shadow_web_front,
         ranged_ammo,
         poison_mist,
+        poison_bomb,
         hermit_alchemist,
         night_walker_alchemist,
         magician_mp_recovery,
@@ -840,5 +1029,9 @@ test_suite {
         sacrifice_boss,
         skill_cost,
         sauna_robe_recovery,
+        dragon_roar_half_hp,
+        transform_stats,
+        -- Last: the hyper body stays on the other bot and would raise its max HP.
+        gm_hyper_body,
     },
 }

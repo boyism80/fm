@@ -1155,7 +1155,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			area := ld.Area(int32(ch.position.X), int32(ch.position.Y), ch.stance%2 != 0)
+			x, y := int32(ch.position.X), int32(ch.position.Y)
+			// An attack reports the point it used; one far from the character is not trusted.
+			const reach = 500
+			if dx, dy := int32(L.OptInt(3, int(x)))-x, int32(L.OptInt(4, int(y)))-y; dx >= -reach && dx <= reach && dy >= -reach && dy <= reach {
+				x, y = x+dx, y+dy
+			}
+			area := ld.Area(x, y, ch.stance%2 != 0)
 			tbl := L.NewTable()
 			tbl.RawSetString("left", lua.LNumber(area.Left))
 			tbl.RawSetString("top", lua.LNumber(area.Top))
