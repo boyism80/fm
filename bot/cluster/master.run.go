@@ -218,7 +218,7 @@ func (m *Master) assign(run *Run, a *agentConn, seat int, suite *RunSuite) {
 	a.send(Message{
 		Type:      MessageRunSuite,
 		Run:       run.ID,
-		Bots:      run.ID + strconv.FormatInt(int64(a.id%36), 36),
+		Bots:      run.ID + strconv.FormatInt(int64(a.tag%36), 36),
 		Suite:     suite.Name,
 		Serial:    suite.Serial,
 		TimeoutMs: suite.TimeoutMs,

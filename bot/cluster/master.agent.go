@@ -27,6 +27,7 @@ type agentConn struct {
 	name  string
 	host  string
 	pid   int
+	tag   int
 	seats int
 	base  int
 	busy  map[int]string
@@ -152,6 +153,11 @@ func (m *Master) join(hello Message, conn *websocket.Conn) *agentConn {
 	} else {
 		a = &agentConn{id: len(m.agents) + 1, name: hello.Name, host: hello.Host}
 		m.agents = append(m.agents, a)
+	}
+	// A new process numbers its bots from zero again, so it gets a bot tag no earlier process used.
+	if index < 0 || a.pid != hello.PID {
+		a.tag = m.nextTag
+		m.nextTag++
 	}
 	if a.seats < hello.Seats {
 		a.base = m.nextBase

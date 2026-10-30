@@ -27,6 +27,7 @@ type Master struct {
 	run       *Run
 	agents    []*agentConn
 	nextBase  int
+	nextTag   int
 	listeners map[chan []byte]bool
 }
 
