@@ -423,8 +423,9 @@ func (a attack) physical(gap int) (damageRange, bool, error) {
 		d = a.element(charged, a.modifiers.ChargeElement, a.modifiers.ChargeStrength*clientPercent)
 	}
 
-	switch a.skill {
-	case constant.SkillSacrifice, constant.SkillShadowMeso, constant.SkillAssaulter, constant.SkillSuperTransformation:
+	switch {
+	case a.skill == constant.SkillSacrifice && !a.mob.wz.Boss:
+	case a.skill == constant.SkillShadowMeso, a.skill == constant.SkillAssaulter, a.skill == constant.SkillSuperTransformation:
 	default:
 		pdd := min(1999, max(0, float64(a.mob.wz.PDDamage)+float64(a.mob.buffs.GetValue(constant.MobBuffWdef))))
 		d = d.add(newDamageRange(-.6*pdd, -.5*pdd))
@@ -476,7 +477,7 @@ func (a attack) physical(gap int) (damageRange, bool, error) {
 	}
 
 	defense := float64(a.mob.buffs.GetValue(constant.MobBuffWeaponDefenseUp))
-	if a.skill != constant.SkillSacrifice && defense != 0 {
+	if (a.skill != constant.SkillSacrifice || a.mob.wz.Boss) && defense != 0 {
 		d = d.scale(defense / 100)
 	}
 
