@@ -2863,7 +2863,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"total_magic": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
-			L.Push(lua.LNumber(ch.totalStats().MAD))
+			total := ch.totalStats()
+			L.Push(lua.LNumber(total.MAD + total.INT + ch.buffs.value(constant.BuffFlagMagicAtk)))
 			return 1
 		},
 		"bonus_watk": func(L *lua.LState) int {

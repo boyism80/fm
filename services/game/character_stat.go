@@ -1,6 +1,9 @@
 package game
 
-import "github.com/boyism80/fm/maple/constant"
+import (
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/maple/wz"
+)
 
 func (ch *Character) GetMaxHp() uint32 {
 	base := int32(ch.baseHp) + ch.bonusHp
@@ -34,18 +37,16 @@ func (ch *Character) GetMaxMp() uint32 {
 	return uint32(total)
 }
 
-type statTotals struct {
-	STR, DEX, INT, LUK, MAD int
-}
-
 // totalStats adds every equipped item to the base stats, as the legacy server's
-// total stats did; MAD is that INT plus equipped and buffed magic attack.
-func (ch *Character) totalStats() statTotals {
-	t := statTotals{
-		STR: int(ch.stats.base.str),
-		DEX: int(ch.stats.base.dex),
-		INT: int(ch.stats.base.int),
-		LUK: int(ch.stats.base.luk),
+// total stats did.
+func (ch *Character) totalStats() damageStats {
+	t := damageStats{
+		STR:   float64(ch.stats.base.str),
+		DEX:   float64(ch.stats.base.dex),
+		INT:   float64(ch.stats.base.int),
+		LUK:   float64(ch.stats.base.luk),
+		Level: int(ch.GetLevel()),
+		Class: ch.class,
 	}
 	for slot, item := range ch.inventory.equipped {
 		// Cash appearance items have no stats.
@@ -56,13 +57,17 @@ func (ch *Character) totalStats() statTotals {
 		if e == nil {
 			continue
 		}
-		t.STR += int(e.Str)
-		t.DEX += int(e.Dex)
-		t.INT += int(e.Int)
-		t.LUK += int(e.Luk)
-		t.MAD += int(e.MAD)
+		t.STR += float64(e.Str)
+		t.DEX += float64(e.Dex)
+		t.INT += float64(e.Int)
+		t.LUK += float64(e.Luk)
+		t.PAD += float64(e.PAD)
+		t.MAD += float64(e.MAD)
+		t.ACC += float64(e.ACC)
+		if weapon, ok := item.GetModel().(*wz.Weapon); ok && slot == constant.EquipmentPartsWeapon {
+			t.Weapon = weapon.WeaponType
+		}
 	}
-	t.MAD += t.INT + int(ch.buffs.value(constant.BuffFlagMagicAtk))
 	return t
 }
 

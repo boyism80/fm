@@ -12,10 +12,10 @@ import (
 func (ch *Character) canEquip(required wz.RequiredStats) bool {
 	total := ch.totalStats()
 	return ch.GetLevel() >= required.Level &&
-		total.STR >= int(required.Str) &&
-		total.DEX >= int(required.Dex) &&
-		total.INT >= int(required.Int) &&
-		total.LUK >= int(required.Luk) &&
+		total.STR >= float64(required.Str) &&
+		total.DEX >= float64(required.Dex) &&
+		total.INT >= float64(required.Int) &&
+		total.LUK >= float64(required.Luk) &&
 		ch.stats.population >= required.Popularity
 }
 

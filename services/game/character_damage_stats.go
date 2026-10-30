@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/boyism80/fm/maple/constant"
-	"github.com/boyism80/fm/maple/wz"
 )
 
 // comboPercent implements the client's stored-count minus one convention.
@@ -53,44 +52,15 @@ func (ch *Character) comboPercent(finisher bool) float64 {
 // damageStats snapshots what the client damage formula reads: the basic stats
 // actually serialized to this client, equipment, passive skills and buffs.
 func (ch *Character) damageStats() (damageStats, damageModifiers) {
-	s := damageStats{
-		STR:   float64(ch.stats.base.str),
-		DEX:   float64(ch.stats.base.dex),
-		INT:   float64(ch.stats.base.int),
-		LUK:   float64(ch.stats.base.luk),
-		Level: int(ch.GetLevel()),
-		Class: ch.class,
-	}
-	base := s
-
 	// Include all equipped bonuses as an envelope when client eligibility is
 	// unavailable; ineligible pieces can only increase this nonnegative bound.
-	for slot, item := range ch.inventory.equipped {
-		// Cash appearance items have no stats.
-		if slot <= -100 || item == nil {
-			continue
-		}
-		e := item.GetEquipmentCore().BuildEquipmentS2C()
-		if e == nil {
-			continue
-		}
-		s.STR += float64(e.Str)
-		s.DEX += float64(e.Dex)
-		s.INT += float64(e.Int)
-		s.LUK += float64(e.Luk)
-		s.PAD += float64(e.PAD)
-		s.MAD += float64(e.MAD)
-		s.ACC += float64(e.ACC)
-		if weapon, ok := item.GetModel().(*wz.Weapon); ok && slot == constant.EquipmentPartsWeapon {
-			s.Weapon = weapon.WeaponType
-		}
-	}
+	s := ch.totalStats()
 
 	mapleWarrior := ch.buffs.value(constant.BuffFlagMapleWarrior)
-	s.STR += math.Trunc(base.STR * mapleWarrior / 100)
-	s.DEX += math.Trunc(base.DEX * mapleWarrior / 100)
-	s.INT += math.Trunc(base.INT * mapleWarrior / 100)
-	s.LUK += math.Trunc(base.LUK * mapleWarrior / 100)
+	s.STR += math.Trunc(float64(ch.stats.base.str) * mapleWarrior / 100)
+	s.DEX += math.Trunc(float64(ch.stats.base.dex) * mapleWarrior / 100)
+	s.INT += math.Trunc(float64(ch.stats.base.int) * mapleWarrior / 100)
+	s.LUK += math.Trunc(float64(ch.stats.base.luk) * mapleWarrior / 100)
 	s.MAD += s.INT
 	if s.Weapon == constant.WeaponTypeNone && (s.Class.Of(constant.ClassPirate) || s.Class.Of(constant.ClassThunderBreaker1)) {
 		s.PAD += min(math.Trunc(.7*float64(s.Level)+10), 31)
