@@ -71,6 +71,12 @@ local NAMES = {
     [Class.Aran5] = "아란",
 }
 
+-- Cygnus and Aran classes descend from Noblesse and Legend, so a beginner is the exact class.
+function M.is_beginner(me)
+    local class = me:class()
+    return class == Class.Beginner or class == Class.Noblesse or class == Class.Legend
+end
+
 function M.name(class_id)
     return NAMES[class_id] or "?"
 end

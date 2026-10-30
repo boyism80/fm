@@ -1,3 +1,5 @@
+local class_lib = require("script/lib/class")
+
 local SAUNA_ROBES = {
     [1050018] = true,
     [1051017] = true,
@@ -87,14 +89,8 @@ local function mp_recover_check(me)
     return 0
 end
 
--- Cygnus and Aran classes descend from Noblesse and Legend, so a beginner is the exact class.
-local function is_beginner(me)
-    local class = me:class()
-    return class == Class.Beginner or class == Class.Noblesse or class == Class.Legend
-end
-
 local function ap_to_hp_base(me)
-    if is_beginner(me) then
+    if class_lib.is_beginner(me) then
         return math.random(8, 12)
     end
     if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
@@ -116,7 +112,7 @@ local function ap_to_hp_base(me)
 end
 
 local function ap_to_mp_base(me)
-    if is_beginner(me) then
+    if class_lib.is_beginner(me) then
         return math.random(6, 8)
     end
     if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
@@ -335,7 +331,7 @@ return {
     -- An AP reset takes back a fixed amount of HP or MP, as the original server did.
     get_ap_reset_hp = function(me)
         local bonus = hp_skill_bonus(me)
-        if is_beginner(me) then
+        if class_lib.is_beginner(me) then
             return 12
         end
         if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
@@ -355,7 +351,7 @@ return {
 
     get_ap_reset_mp = function(me)
         local bonus = mp_skill_bonus(me)
-        if is_beginner(me) then
+        if class_lib.is_beginner(me) then
             return 8
         end
         if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then

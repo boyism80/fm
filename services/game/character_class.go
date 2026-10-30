@@ -13,7 +13,7 @@ func (ch *Character) ChangeClass(newClass constant.ClassType) {
 }
 
 func (ch *Character) grantClassChangeSP(newClass constant.ClassType) {
-	if ch.class == constant.ClassBeginner {
+	if newClass == constant.ClassBeginner || newClass == constant.ClassNoblesse || newClass == constant.ClassLegend {
 		return
 	}
 

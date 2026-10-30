@@ -1,6 +1,7 @@
 local combat = require("script/lib/combat")
 local skill_lib = require("script/lib/skill")
 local medal = require("script/lib/medal")
+local class_lib = require("script/lib/class")
 
 local function unbuff_stationary_summons_for_map(me, map_id)
     if me == nil then
