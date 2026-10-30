@@ -2,6 +2,7 @@ package game
 
 import (
 	"log"
+	"maps"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
@@ -20,12 +21,19 @@ func (ch *Character) canEquip(required wz.RequiredStats) bool {
 }
 
 func (ch *Character) Equip(actx actor.Context, slot int16, parts constant.EquipmentPartsType) error {
-	before := ch.inventory.equipped[parts]
+	equipped := maps.Clone(ch.inventory.equipped)
 	after, _ := ch.inventory.GetItem(constant.InventoryTypeEquipment, slot).(Equipment)
 	if err := ch.inventory.Equip(slot, parts); err != nil {
 		return err
 	}
-	ch.onEquipmentChanged(actx, parts, before, after)
+
+	// Equipping a shield or pants can take off the two-handed weapon or the longcoat.
+	for other, before := range equipped {
+		if other != parts && ch.inventory.equipped[other] == nil {
+			ch.onEquipmentChanged(actx, other, before, nil)
+		}
+	}
+	ch.onEquipmentChanged(actx, parts, equipped[parts], after)
 	return nil
 }
 

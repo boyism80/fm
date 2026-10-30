@@ -18,7 +18,8 @@ local MESO = 0x40000
 local ONLY_MEDAL = 1142667
 local TWO_HANDED_SWORD = 1402001
 local SHIELD = 1092000
-local WARRIOR = 100
+local FIGHTER = 110
+local SWORD_BOOSTER = 1101004
 local SHIELD_SLOT = -10
 local WEAPON_SLOT = -11
 local BOWMAN = 300
@@ -270,20 +271,37 @@ local function everlast_drops(ctx)
     return true
 end
 
--- A two-handed weapon and a shield never stay on together: wearing one takes the other off.
+-- A two-handed weapon and a shield never stay on together: wearing one takes the other off,
+-- and a weapon taken off by the shield ends the weapon buffs.
 local function two_handed_shield(ctx)
     local bot = ctx:bot(0)
-    if pq.command(bot, "/봇초기화 30 " .. WARRIOR .. " 0 " .. TWO_HANDED_SWORD .. ":1," .. SHIELD .. ":1 -", "봇초기화 완료") == false then
+    if pq.command(bot, "/봇초기화 30 " .. FIGHTER .. " 0 " .. TWO_HANDED_SWORD .. ":1," .. SHIELD .. ":1 -", "봇초기화 완료") == false then
         return ctx:fail("봇 초기화 실패")
     end
     if pq.command(bot, "/힘바꾸기 40", "힘 설정") == false then
         return ctx:fail("힘 설정 실패")
     end
+    if pq.command(bot, "/마력바꾸기 1000", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    if pq.command(bot, "/스킬레벨 " .. SWORD_BOOSTER .. " 1", "스킬레벨 설정") == false then
+        return ctx:fail("소드 부스터 설정 실패")
+    end
     if wear(ctx, bot, TWO_HANDED_SWORD, WEAPON_SLOT) == false then
         return false
     end
-    if wear(ctx, bot, SHIELD, SHIELD_SLOT) == false then
-        return false
+    local cast = bot:request(resp.update_self_buff, req.active_skill { skill_id = SWORD_BOOSTER, skill_level = 1 },
+        function(p)
+            return p.buff_id == SWORD_BOOSTER
+        end, 3000)
+    if cast == false then
+        return ctx:fail("소드 부스터를 쓰지 못함")
+    end
+    local cancel = bot:request(resp.cancel_self_buff,
+        req.move_item { inventory_type = EQUIP, source = bot:slot(SHIELD) or 0, dest = SHIELD_SLOT, count = 1 }, nil,
+        3000)
+    if cancel == false then
+        return ctx:fail("방패가 두손검을 벗겼는데 소드 부스터가 풀리지 않음")
     end
     ctx:sleep(300)
     if check(ctx, bot:slot(SHIELD) == nil, "방패를 착용하지 못함") == false then
