@@ -12,6 +12,8 @@ type DistributeAP struct {
 func (*DistributeAP) Opcode() byte { return 0x46 }
 
 func (p *DistributeAP) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU32(p.StatType)
 	return nil
 }
 

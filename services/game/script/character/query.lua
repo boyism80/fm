@@ -87,34 +87,52 @@ local function mp_recover_check(me)
     return 0
 end
 
+-- Cygnus and Aran classes descend from Noblesse and Legend, so a beginner is the exact class.
+local function is_beginner(me)
+    local class = me:class()
+    return class == Class.Beginner or class == Class.Noblesse or class == Class.Legend
+end
+
 local function ap_to_hp_base(me)
-    if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+    if is_beginner(me) then
         return math.random(8, 12)
     end
-    if me:class_of(Class.Warrior) then
+    if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
         return math.random(12, 20)
     end
-    if me:class_of(Class.Magician) then
+    if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
         return math.random(6, 11)
     end
-    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) then
+    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
         return math.random(14, 18)
+    end
+    if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
+        return math.random(16, 20)
+    end
+    if me:class_of(Class.Legend) then
+        return math.random(34, 38)
     end
     return math.random(50, 100)
 end
 
 local function ap_to_mp_base(me)
-    if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+    if is_beginner(me) then
         return math.random(6, 8)
     end
-    if me:class_of(Class.Magician) then
+    if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
         return math.random(10, 20)
     end
-    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) then
+    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
         return math.random(8, 12)
     end
-    if me:class_of(Class.Warrior) then
+    if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
         return math.random(4, 7)
+    end
+    if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
+        return math.random(10, 12)
+    end
+    if me:class_of(Class.Legend) then
+        return math.random(4, 6)
     end
     return math.random(50, 100)
 end
@@ -317,7 +335,7 @@ return {
     -- An AP reset takes back a fixed amount of HP or MP, as the original server did.
     get_ap_reset_hp = function(me)
         local bonus = hp_skill_bonus(me)
-        if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+        if is_beginner(me) then
             return 12
         end
         if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
@@ -337,7 +355,7 @@ return {
 
     get_ap_reset_mp = function(me)
         local bonus = mp_skill_bonus(me)
-        if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+        if is_beginner(me) then
             return 8
         end
         if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
