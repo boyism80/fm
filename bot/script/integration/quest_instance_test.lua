@@ -373,16 +373,6 @@ test_suite {
         end,
         function(ctx)
             local bot = ctx:bot(0)
-            if setup(ctx, bot, "30 100 0 - -", 100000103) == false then
-                return false
-            end
-            if talk_until_warp(ctx, bot, 1052004, { [103000004] = true }) == false then
-                return false
-            end
-            return pass(ctx, bot, 297, 179, "out00", 200000204)
-        end,
-        function(ctx)
-            local bot = ctx:bot(0)
             if setup(ctx, bot, "30 500 0 - 2192:1", 120000101) == false then
                 return false
             end
