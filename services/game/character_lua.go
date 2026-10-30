@@ -226,17 +226,27 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 			return ExchangeSide{}, false
 		}
 		side.Bonus = map[string]int16{}
+		invalid := ""
 		bonusTbl.ForEach(func(key, value lua.LValue) {
+			if invalid != "" {
+				return
+			}
 			name, ok := key.(lua.LString)
-			if !ok {
+			if !ok || (&EquipmentBonusStats{}).stat(string(name)) == nil {
+				invalid = "exchange side.bonus: unknown stat " + key.String()
 				return
 			}
 			n, ok := value.(lua.LNumber)
-			if !ok {
+			if !ok || n < math.MinInt16 || n > math.MaxInt16 || n != lua.LNumber(math.Trunc(float64(n))) {
+				invalid = "exchange side.bonus." + string(name) + " must be an int16 integer"
 				return
 			}
 			side.Bonus[string(name)] = int16(n)
 		})
+		if invalid != "" {
+			L.ArgError(argIndex, invalid)
+			return ExchangeSide{}, false
+		}
 	}
 
 	return side, true
