@@ -21,6 +21,10 @@ local SHIELD = 1092000
 local WARRIOR = 100
 local SHIELD_SLOT = -10
 local WEAPON_SLOT = -11
+local BOWMAN = 300
+local DEX_ACCESSORY = 1012101
+local BOW = 1452003
+local FACE_SLOT = -2
 
 local function check(ctx, ok, message)
     if ok == false then
@@ -299,6 +303,28 @@ local function two_handed_shield(ctx)
     return check(ctx, bot:slot(SHIELD) ~= nil, "두손검을 끼웠는데 방패가 벗겨지지 않음")
 end
 
+-- An equipped item's DEX counts toward a weapon's DEX requirement.
+local function equip_with_item_stats(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 30 " .. BOWMAN .. " 0 " .. DEX_ACCESSORY .. ":1," .. BOW .. ":1 -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    if pq.command(bot, "/힘바꾸기 40", "힘 설정") == false then
+        return ctx:fail("힘 설정 실패")
+    end
+    if pq.command(bot, "/덱스바꾸기 37", "덱스 설정") == false then
+        return ctx:fail("덱스 설정 실패")
+    end
+    if wear(ctx, bot, DEX_ACCESSORY, FACE_SLOT) == false then
+        return false
+    end
+    if wear(ctx, bot, BOW, WEAPON_SLOT) == false then
+        return false
+    end
+    ctx:sleep(300)
+    return check(ctx, bot:slot(BOW) == nil, "DEX 37에 장신구 DEX 5로 요구 DEX 40을 채웠는데 활을 착용하지 못함")
+end
+
 -- A one-of-a-kind item left on an everlast map stays there when the character already holds another.
 local function everlast_unique(ctx)
     local bot = ctx:bot(0)
@@ -322,7 +348,7 @@ local function everlast_unique(ctx)
 end
 
 test_suite {
-    name = "Item: 착용한 고유 장비 줍기·주문서 아닌 강화·레전드리 스피릿·정렬 묶음 합계·사망 중 버리기와 귀환 주문서·에버라스트 드롭·양손 무기와 방패",
+    name = "Item: 착용한 고유 장비 줍기·주문서 아닌 강화·레전드리 스피릿·정렬 묶음 합계·사망 중 버리기와 귀환 주문서·에버라스트 드롭·양손 무기와 방패·장비 스탯으로 채운 착용 요구치",
     bot_count = 2,
 
     scenarios = {
@@ -334,5 +360,6 @@ test_suite {
         everlast_drops,
         two_handed_shield,
         everlast_unique,
+        equip_with_item_stats,
     },
 }
