@@ -32,6 +32,26 @@ M.apply_iron_body = function(me, skill)
     me:buff(skill, BuffFlag.WeaponDef, effect.pdd)
 end
 
+-- A transformation carries the skill's defense, speed, and jump along with the look.
+M.apply_morph = function(me, skill, morph)
+    local vals = { [BuffFlag.Morph] = morph }
+    local effect = skill:effect()
+    if effect ~= nil then
+        local stats = {
+            [BuffFlag.WeaponDef] = effect.pdd,
+            [BuffFlag.MagicDef] = effect.mdd,
+            [BuffFlag.Speed] = effect.speed,
+            [BuffFlag.Jump] = effect.jump,
+        }
+        for flag, value in pairs(stats) do
+            if value > 0 then
+                vals[flag] = value
+            end
+        end
+    end
+    me:buff(skill, vals)
+end
+
 M.apply_monster_magnet = function(me, skill, params)
     if params == nil or params.magnet == nil then
         return
