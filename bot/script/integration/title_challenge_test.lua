@@ -7,7 +7,6 @@ local CHALLENGE_NPC = 9000040
 local NPC_X = 527
 local NPC_Y = 454
 local POPULARITY = 29002
-local CHALLENGES = { 29001, 29002 }
 local MAX_NOTICES = 5
 
 local function status(bot, quest)
@@ -23,11 +22,8 @@ end
 -- Closing the notices of the popularity title challenge leaves it unstarted.
 local function close_notices(ctx)
     local bot = ctx:bot(0)
-    -- Only one title challenge runs at a time, so clear both.
-    for _, id in ipairs(CHALLENGES) do
-        if pq.command(bot, "/퀘스트초기화 " .. id, "퀘스트 " .. id .. " ") == false then
-            return ctx:fail(id .. " 초기화 실패")
-        end
+    if pq.command(bot, "/퀘스트초기화 " .. POPULARITY, "퀘스트 " .. POPULARITY .. " ") == false then
+        return ctx:fail("초기화 실패")
     end
     if bot:request(resp.warp, req.normal_chat { message = "/퀘스트시작준비 " .. POPULARITY }) == false then
         return ctx:fail("시작 준비 실패")
