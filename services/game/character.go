@@ -786,9 +786,6 @@ func (ch *Character) AddExp(exp uint32) {
 	if exp == 0 {
 		return
 	}
-	if ch.validateExpExchange(0, exp) != ExchangeOK {
-		return
-	}
 	ch.addExpUnchecked(exp)
 }
 

@@ -16,18 +16,13 @@ func (ch *Character) itemModel(itemID uint32) wz.Item {
 	return resources.Items[itemID]
 }
 
-func (ch *Character) validateExpExchange(costExp, rewardExp uint32) ExchangeResult {
+// A reward's exp past the max level is dropped when it is granted, so only the cost is checked.
+func (ch *Character) validateExpExchange(costExp uint32) ExchangeResult {
 	if ch == nil {
 		return ExchangeLackCost
 	}
 	if costExp > 0 && ch.exp < costExp {
 		return ExchangeLackCost
-	}
-	if rewardExp == 0 {
-		return ExchangeOK
-	}
-	if rewardExp > ch.remainingExpToMaxLevel() {
-		return ExchangeLackCapacity
 	}
 	return ExchangeOK
 }

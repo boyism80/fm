@@ -80,7 +80,7 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 	if result := ch.inventory.validateMeso(spec.Cost.Meso, spec.Reward.Meso); result != ExchangeOK {
 		return result
 	}
-	if result := ch.validateExpExchange(spec.Cost.Exp, spec.Reward.Exp); result != ExchangeOK {
+	if result := ch.validateExpExchange(spec.Cost.Exp); result != ExchangeOK {
 		return result
 	}
 	if result := ch.stats.validatePopulation(spec.Cost.Population, spec.Reward.Population); result != ExchangeOK {
