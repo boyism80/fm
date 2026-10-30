@@ -40,6 +40,7 @@ export interface InternalConfig {
         log_level: string;
         server_alive_ttl_seconds?: number;
         max_parcels?: number;
+        starting_items?: { item_id: number; count: number }[];
     };
     grpc: {
         host: string;

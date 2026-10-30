@@ -2,6 +2,10 @@ app:
   log_level: "info"
   server_alive_ttl_seconds: 45
   max_parcels: 50
+  # Items every new character starts with, besides the equipment picked at creation.
+  starting_items:
+    - item_id: 4161001 # 초보자 안내서
+      count: 1
 
 grpc:
   host: "0.0.0.0"

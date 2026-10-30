@@ -820,18 +820,27 @@ export class CharacterService {
             });
             await this.mountRepo.set(worldId, { characterId, worldId, level: 1, exp: 0, fatigue: 0 });
 
-            if (equips.length) {
-                const enhances = await Promise.all(equips.map((e) => this.wzService.getEnhanceChance(e.itemId)));
+            const nextSlots: Record<number, number> = {};
+            const items = [
+                ...equips.map((e) => ({ inventoryType: 1, itemId: e.itemId, slot: e.slot, count: 1 })),
+                ...this.app.getStartingItems().map((e) => {
+                    const inventoryType = Math.floor(e.itemId / 1000000);
+                    nextSlots[inventoryType] = (nextSlots[inventoryType] ?? 0) + 1;
+                    return { inventoryType, itemId: e.itemId, slot: nextSlots[inventoryType], count: e.count };
+                }),
+            ];
+            if (items.length) {
+                const enhances = await Promise.all(items.map((e) => this.wzService.getEnhanceChance(e.itemId)));
                 await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), []);
                 await this.inventoryRepo.setAll(
                     worldId,
-                    equips.map((e, idx) => ({
+                    items.map((e, idx) => ({
                         uniqueId: null,
                         ownerId: characterId,
-                        inventoryType: 1,
+                        inventoryType: e.inventoryType,
                         itemId: e.itemId,
                         slot: e.slot,
-                        count: 1,
+                        count: e.count,
                         expiration: null,
                         enhanceChance: Number.isFinite(enhances[idx]) ? Math.max(0, enhances[idx] as number) : 0,
                         enhanceCount: 0,

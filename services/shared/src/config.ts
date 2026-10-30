@@ -214,6 +214,7 @@ export function withDefaults(raw: RawConfig): Omit<InternalConfig, "configPath">
         log_level: appObject.log_level ?? "info",
         server_alive_ttl_seconds: appObject.server_alive_ttl_seconds ?? 45,
         max_parcels: appObject.max_parcels ?? 50,
+        starting_items: appObject.starting_items ?? [],
     };
     const grpcObject = doc.grpc ?? {};
     const rabbitmqObject = doc.rabbitmq ?? {};

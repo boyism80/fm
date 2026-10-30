@@ -76,6 +76,16 @@ export class AppConfiguration {
         return 50;
     }
 
+    getStartingItems(): { itemId: number; count: number }[] {
+        const items = this.config.app?.starting_items;
+        if (!Array.isArray(items)) {
+            return [];
+        }
+        return items
+            .filter((e) => Number.isInteger(e?.item_id) && e.item_id > 0 && Number.isInteger(e?.count) && e.count > 0)
+            .map((e) => ({ itemId: e.item_id, count: e.count }));
+    }
+
     getSection(section: "app" | "grpc" | "postgresql" | "redis" | "rabbitmq" | "cache" | "sequelize" | "resources") {
         return this.config[section];
     }

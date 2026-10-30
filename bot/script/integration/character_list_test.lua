@@ -3,12 +3,19 @@ local pq = require("script/integration/lib/party_quest")
 local EQUIP = 1
 local CASH_WEAPON = 1702000
 local CASH_WEAPON_SLOT = -111
+local BEGINNER_GUIDE = 4161001
 
 local function check(ctx, ok, message)
     if ok == false then
         return ctx:fail(message)
     end
     return true
+end
+
+-- A new character starts with the beginner's guide, from the internal server's starting items.
+local function starting_items(ctx)
+    local count = ctx:bot(0):items()[BEGINNER_GUIDE] or 0
+    return check(ctx, count == 1, string.format("새 캐릭터의 초보자 안내서 %d개 (기대 1개)", count))
 end
 
 -- The character list shows the stats the character was saved with and its cash weapon in the weapon sticker field.
@@ -60,10 +67,11 @@ local function saved_overview(ctx)
 end
 
 test_suite {
-    name = "CharacterList: 능력치·캐시 무기",
+    name = "CharacterList: 시작 아이템·능력치·캐시 무기",
     bot_count = 1,
 
     scenarios = {
+        starting_items,
         saved_overview,
     },
 }
