@@ -1,23 +1,18 @@
 -- NPC name (String.wz/Npc.img.xml): 이상한 모양의 석상
 
+local item_count = require("script/lib/party_quest").item_count
+
 return {
     on_click = function(me, npc)
-        local function item_count(item_id)
-            local count = 0
-            for _, it in pairs(me:item(item_id)) do
-                count = count + it:count()
-            end
-            return count
-        end
-        if item_count(4031025) >= 10 then
+        if item_count(me, 4031025) >= 10 then
             me:dialog(npc, "이미 #t4031025#를 가지고 있는 것 같습니다.")
             return
         end
-        if item_count(4031028) >= 30 then
+        if item_count(me, 4031028) >= 30 then
             me:dialog(npc, "이미 #t4031028#를 가지고 있는 것 같습니다.")
             return
         end
-        if item_count(4031026) >= 20 then
+        if item_count(me, 4031026) >= 20 then
             me:dialog(npc, "이미 #t4031026#를 가지고 있는 것 같습니다.")
             return
         end
