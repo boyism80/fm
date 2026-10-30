@@ -1,5 +1,6 @@
 -- NPC name (String.wz/Npc.img.xml): 카이린
 
+local class_lib = require("script/lib/class")
 local MAIN_MAP = 120000101
 local CLEAR_MAP = 912010200
 local BLACK_CHARM = 4031059
@@ -70,22 +71,7 @@ local TRAINING_GROUPS = {
     },
 }
 
-local function item_count(me, item_id)
-    local count = 0
-    for _, it in pairs(me:item(item_id)) do
-        count = count + it:count()
-    end
-    return count
-end
-
-local function reset_stats(me, str, dex, int, luk)
-    local gained = (me:base_str() - str) + (me:base_dex() - dex) + (me:base_int() - int) + (me:base_luk() - luk)
-    me:ability_point(math.max(0, me:ability_point() + gained))
-    me:base_str(str)
-    me:base_dex(dex)
-    me:base_int(int)
-    me:base_luk(luk)
-end
+local item_count = require("script/lib/party_quest").item_count
 
 local function is_second_class(me)
     local class = me:class()
@@ -123,7 +109,7 @@ local function first_class(me, npc)
         return
     end
     me:class(Class.Pirate)
-    reset_stats(me, weapon.stats[1], weapon.stats[2], weapon.stats[3], weapon.stats[4])
+    class_lib.reset_stats(me, weapon.stats[1], weapon.stats[2], weapon.stats[3], weapon.stats[4])
     if me:dialog(npc, "당신에게 약간의 #bSP#k를 드렸습니다. 왼쪽 하 단에 있는 #bSkill 메뉴#k를 열어보세요. 스킬을 올릴 수 있을 꺼에요. 단 처음부터 전부 올릴수 있는 건 아니에요... 다른 스킬들을 어느 정도 익혀야만 배울수 있는 스킬도 있어요.", false, true) == false then
         return
     end

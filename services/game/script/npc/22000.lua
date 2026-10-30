@@ -3,13 +3,7 @@
 local LETTER = 4031801
 local FARE = 150
 
-local function item_count(me, item_id)
-    local count = 0
-    for _, it in pairs(me:item(item_id)) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 return {
     on_click = function(me, npc)

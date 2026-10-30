@@ -77,6 +77,15 @@ function M.is_beginner(me)
     return class == Class.Beginner or class == Class.Noblesse or class == Class.Legend
 end
 
+function M.reset_stats(me, str, dex, int, luk)
+    local gained = (me:base_str() - str) + (me:base_dex() - dex) + (me:base_int() - int) + (me:base_luk() - luk)
+    me:ability_point(math.max(0, me:ability_point() + gained))
+    me:base_str(str)
+    me:base_dex(dex)
+    me:base_int(int)
+    me:base_luk(luk)
+end
+
 function M.name(class_id)
     return NAMES[class_id] or "?"
 end

@@ -76,13 +76,7 @@ local tabs = {
     InventoryType.Cash,
 }
 
-local function item_count(me, item_id)
-    local count = 0
-    for _, it in pairs(me:item(item_id)) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 local function room_for_two(me)
     for _, tab in ipairs(tabs) do

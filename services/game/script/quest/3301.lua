@@ -4,14 +4,7 @@ local gem_items = {
     4010006, 4010004, 4010007, 4020000, 4020001, 4020002, 4020003, 4020004, 4020005, 4020006, 4020007, 4020008,
 }
 
-local function item_count(me, item_id)
-    local slots = me:item(item_id)
-    local count = 0
-    for _, it in pairs(slots) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 return {
     on_end = function(me, npc)

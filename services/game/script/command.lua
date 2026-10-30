@@ -113,19 +113,7 @@ local function effect_show_dice(me, effect_id, skill_arg)
     return true
 end
 
-local function item_count(me, item_id)
-    local slots = me:item(item_id)
-    if slots == nil then
-        return 0
-    end
-    local total = 0
-    for _, it in pairs(slots) do
-        if it ~= nil then
-            total = total + it:count()
-        end
-    end
-    return total
-end
+local item_count = require("script/lib/party_quest").item_count
 
 local unsupported_quest_req_kinds = {
     pet = true,

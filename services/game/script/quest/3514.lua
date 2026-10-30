@@ -2,14 +2,7 @@
 
 local quest_id = 3514
 
-local function item_count(me, item_id)
-    local slots = me:item(item_id)
-    local count = 0
-    for _, it in pairs(slots) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 return {
     on_end = function(me, npc)

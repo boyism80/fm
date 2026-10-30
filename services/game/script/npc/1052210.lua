@@ -7,13 +7,7 @@ local ZAKUM_PIECE = 4033329
 local CHAOS_PIECE = 4033330
 local CHAOS_ZAKUM_ARMS = { 8800103, 8800104, 8800105, 8800106, 8800107, 8800108, 8800109, 8800110 }
 
-local function item_count(me, item_id)
-    local count = 0
-    for _, it in pairs(me:item(item_id)) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 return {
     on_click = function(me, npc)

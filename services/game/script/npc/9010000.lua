@@ -34,13 +34,7 @@ local SHIELDS = { 1092045, 1092046, 1092047 }
 
 local SCROLLS = { 2040315, 2040912, 2043013, 2043108, 2043208, 2043308, 2043708, 2043808, 2044008, 2044108, 2044208, 2044308, 2044408, 2044508, 2044608, 2044708 }
 
-local function item_count(me, item_id)
-    local count = 0
-    for _, it in pairs(me:item(item_id)) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 local function trade(me, npc, material, leaf, result)
     local cost = { item = { [LEAF] = leaf } }

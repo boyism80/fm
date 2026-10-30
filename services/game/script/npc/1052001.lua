@@ -1,5 +1,6 @@
 -- NPC name (String.wz/Npc.img.xml): 다크로드
 
+local class_lib = require("script/lib/class")
 local SCRIPT = "script/npc/1052001.lua"
 local TRAINING_MAP = 910300000
 local TRAINING_RETURN = 103000003
@@ -40,13 +41,7 @@ local SECOND_CLASSES = {
     },
 }
 
-local function item_count(me, item_id)
-    local count = 0
-    for _, it in pairs(me:item(item_id)) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 local function enter_training(me, npc)
     local ok, count = run_on_map(TRAINING_MAP, "script/lib/party_quest.lua", "character_count")
@@ -91,12 +86,7 @@ local function first_class(me, npc)
         return
     end
     me:class(Class.Thief)
-    local total = me:base_str() + me:base_dex() + me:base_int() + me:base_luk()
-    me:ability_point(me:ability_point() + total - (4 + 25 + 4 + 4))
-    me:base_str(4)
-    me:base_dex(25)
-    me:base_int(4)
-    me:base_luk(4)
+    class_lib.reset_stats(me, 4, 25, 4, 4)
     if me:dialog(npc, "너에게 약간의 #bSP#k를 주었으니 #bSkill 메뉴#k를 열어보도록 해. 스킬을 올릴 수 있을거야. 단 처음부터 전부 올릴수 있는 건 아냐. 다른 스킬들을 어느 정도 익혀야만 배울수 있는 스킬도 있어. 명심해 둬.", false, true) == false then
         return
     end

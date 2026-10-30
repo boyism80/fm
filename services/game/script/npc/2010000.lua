@@ -30,13 +30,7 @@ local rewards = {
 
 local materials = { 4000073, 4000059, 4000076, 4000058, 4000078, 4000060, 4000062, 4000048, 4000081, 4000061, 4000070, 4000071, 4000072, 4000051, 4000055, 4000069, 4000052, 4000050, 4000057, 4000049, 4000056, 4000079, 4000053, 4000054, 4000080 }
 
-local function item_count(me, item_id)
-    local count = 0
-    for _, it in pairs(me:item(item_id)) do
-        count = count + it:count()
-    end
-    return count
-end
+local item_count = require("script/lib/party_quest").item_count
 
 local function pick(spec)
     local roll = math.random(1, spec[1])
