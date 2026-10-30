@@ -30,6 +30,31 @@ local function unbuff_stationary_summons_for_map(me, map_id)
     end
 end
 
+local MAX_HP_MP = 30000
+
+-- HP and MP a level up adds, by class line, as the original server rolled them.
+local function level_up_ranges(me)
+    if class_lib.is_beginner(me) then
+        return 12, 16, 10, 12
+    end
+    if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) or me:class_of(Class.Legend) then
+        return 24, 28, 4, 6
+    end
+    if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
+        return 10, 14, 22, 24
+    end
+    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
+        return 20, 24, 14, 16
+    end
+    if me:class_of(Class.Brawler) or me:class_of(Class.ThunderBreaker2) then
+        return 37, 41, 18, 22
+    end
+    if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
+        return 20, 24, 18, 22
+    end
+    return 0, 0, 0, 0
+end
+
 return {
     on_mob_kill = function(attacker, mobs)
         if attacker == nil or mobs == nil then
@@ -248,14 +273,16 @@ return {
         end
         local diff = new_level - old_level
         me:ability_point(me:ability_point() + diff * 5, false)
-        if not me:class_of(Class.Beginner) then
+        if not class_lib.is_beginner(me) then
             me:skill_point(me:skill_point() + diff * 3, false)
         end
+        local hp_low, hp_high, mp_low, mp_high = level_up_ranges(me)
+        local int_mp = math.floor((me:base_int() + me:bonus_int()) / 10)
         local total_hp = 0
         local total_mp = 0
-        for level = old_level + 1, new_level do
-            total_hp = total_hp + (20 + level * 2)
-            total_mp = total_mp + (10 + level)
+        for _ = old_level + 1, new_level do
+            total_hp = total_hp + math.random(hp_low, hp_high)
+            total_mp = total_mp + math.random(mp_low, mp_high) + int_mp
         end
         local bonus_hp = 0
         local bonus_mp = 0
@@ -293,19 +320,19 @@ return {
             local s = me:skill(Skill.ImprovingMaxMpIncrease)
             if s ~= nil then
                 local effect = s:effect()
-                bonus_mp = bonus_mp + diff * effect.x
+                bonus_mp = bonus_mp + diff * effect.x * 2
             end
         elseif me:class_of(Class.BlazeWizard1) then
             local s = me:skill(Skill.ImprovingMaxMpIncreaseCygnus)
             if s ~= nil then
                 local effect = s:effect()
                 if effect ~= nil then
-                    bonus_mp = bonus_mp + diff * effect.x
+                    bonus_mp = bonus_mp + diff * effect.x * 2
                 end
             end
         end
-        me:base_hp(me:base_hp() + total_hp + bonus_hp, false)
-        me:base_mp(me:base_mp() + total_mp + bonus_mp, false)
+        me:base_hp(math.min(me:base_hp() + total_hp + bonus_hp, MAX_HP_MP), false)
+        me:base_mp(math.min(me:base_mp() + total_mp + bonus_mp, MAX_HP_MP), false)
         me:hp(me:max_hp(), false)
         me:mp(me:max_mp(), false)
         me:update_stats({
