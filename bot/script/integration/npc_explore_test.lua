@@ -431,7 +431,7 @@ local function explore(ctx, bot, entry)
                         ctx:fail(where .. ": 맵 " .. spot.map .. " 이동 실패")
                         return
                     end
-                    bot:move(spot.x, spot.y, spot.foothold)
+                    bot:move(spot.x, spot.y)
                 end
                 local oid = bot:npc(entry.npc, 3000)
                 if oid == nil then

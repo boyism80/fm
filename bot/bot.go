@@ -60,6 +60,7 @@ type Bot struct {
 	Stones         map[bool][]uint32
 	Macros         []response.SkillMacroEntry
 	SecondPassword bool
+	buffs          map[constant.BuffFlag]int32
 	listed         *dto.Character
 	spareCharID    uint32
 	cfg            *config.Bot
@@ -84,8 +85,9 @@ type RelogResult struct {
 }
 
 type ItemSlot struct {
-	ItemID uint32
-	Count  uint16
+	ItemID      uint32
+	Count       uint16
+	Speed, Jump int16
 }
 
 type Drop struct {
@@ -112,6 +114,7 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		Items:      make(map[constant.InventoryType]map[int16]ItemSlot),
 		SlotLimits: make(map[constant.InventoryType]uint8),
 		Stones:     make(map[bool][]uint32),
+		buffs:      make(map[constant.BuffFlag]int32),
 		cfg:        cfg,
 	}, nil
 }
@@ -219,6 +222,14 @@ func (b *Bot) Update(pkt any) {
 		clear(b.Reactors)
 	case *response.FieldRelocate:
 		b.Spawn, b.Moved = p.Portal, nil
+	case *response.UpdateSelfBuff:
+		for _, buff := range p.Buffs {
+			b.buffs[buff.Buff] = buff.Value
+		}
+	case *response.CancelSelfBuff:
+		for _, flag := range p.Buffs {
+			delete(b.buffs, flag)
+		}
 	case *response.UpdateStats:
 		for stat, value := range p.Stats {
 			switch stat {
@@ -323,6 +334,7 @@ func (b *Bot) load(character *dto.Character) {
 	clear(b.Reactors)
 	clear(b.Quests)
 	clear(b.Items)
+	clear(b.buffs)
 	if character == nil {
 		return
 	}
@@ -366,7 +378,25 @@ func (b *Bot) setItem(typ constant.InventoryType, slot int16, item dto.Item) {
 		tab = make(map[int16]ItemSlot)
 		b.Items[typ] = tab
 	}
-	tab[slot] = ItemSlot{ItemID: item.GetItemID(), Count: item.GetCount()}
+	entry := ItemSlot{ItemID: item.GetItemID(), Count: item.GetCount()}
+	if equip, ok := item.(*dto.Equipment); ok {
+		entry.Speed, entry.Jump = int16(equip.Speed), int16(equip.Jump)
+	}
+	tab[slot] = entry
+}
+
+// moveStats are the speed and jump the client moves the character with: 100 with the bonus of what it wears and
+// of its buffs, within the client's limits.
+func (b *Bot) moveStats() (speed, jump int) {
+	speed, jump = 100, 100
+	for slot, item := range b.Items[constant.InventoryTypeEquipment] {
+		if slot < 0 {
+			speed, jump = speed+int(item.Speed), jump+int(item.Jump)
+		}
+	}
+	speed += int(b.buffs[constant.BuffFlagSpeed])
+	jump += int(b.buffs[constant.BuffFlagJump])
+	return min(max(speed, 80), 140), min(max(jump, 80), 123)
 }
 
 func (b *Bot) FindNPC(templateID uint32) (uint32, bool) {
@@ -378,14 +408,27 @@ func (b *Bot) FindNPC(templateID uint32) (uint32, bool) {
 	return 0, false
 }
 
-func (b *Bot) Move(pos types.Point[int16], foothold int16) error {
-	err := b.Send(&request.MovePlayer{Fragments: []dto.MoveFragment{
-		&dto.AbsoluteLifeMovement{BasicMovement: &dto.BasicMovement{}, Position: pos, Foothold: foothold},
-	}})
-	if err != nil {
-		return err
+// Move walks the bot to pos the way the client moves; where the map leaves no walk there, it steps straight onto pos.
+func (b *Bot) Move(resources *wz.Resources, pos types.Point[int16]) error {
+	from, known := b.Position(resources)
+	packets := []outbound{&request.MovePlayer{Position: from, Fragments: []dto.MoveFragment{
+		&dto.AbsoluteLifeMovement{BasicMovement: &dto.BasicMovement{}, Position: pos},
+	}}}
+	end := pos
+	speed, jump := b.moveStats()
+	graph := routeMaps.find(routeKey{mapID: b.Map, speed: speed, jump: jump}, resources.Maps[b.Map])
+	graph.mu.Lock()
+	if w := newWalker(graph, from); known && w.moveTo(pos) {
+		packets, end = w.packets, types.Point[int16]{X: int16(w.x), Y: int16(w.y)}
 	}
-	b.Moved = &pos
+	graph.mu.Unlock()
+
+	for _, pkt := range packets {
+		if err := b.Send(pkt); err != nil {
+			return err
+		}
+	}
+	b.Moved = &end
 	return nil
 }
 

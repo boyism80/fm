@@ -1064,6 +1064,10 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	model.BGM = info.Text("bgm", "")
 	model.MapMark = info.Text("mapMark", "")
 	model.MapDesc = info.Text("mapDesc", "")
+	model.Swim = info.Int("swim", 0) != 0
+	if model.FS = info.Float("fs", 0); model.FS == 0 {
+		model.FS = 1
+	}
 
 	if root.find("clock") != nil {
 		model.HasClock = true
@@ -1227,6 +1231,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	if footholds != nil {
 		for _, v1 := range footholds.Children {
 			for _, v2 := range v1.Children {
+				zmass, _ := strconv.Atoi(v2.Name)
 				for _, v3 := range v2.Children {
 
 					id, err := strconv.Atoi(v3.Name)
@@ -1287,14 +1292,21 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 					}
 
 					foothold := Foothold{
-						ID:   int16(id),
-						X1:   int16(x1),
-						Y1:   int16(y1),
-						X2:   int16(x2),
-						Y2:   int16(y2),
-						Prev: int16(prev),
-						Next: int16(next),
-						Wall: x1 == x2,
+						ID:    int16(id),
+						X1:    int16(x1),
+						Y1:    int16(y1),
+						X2:    int16(x2),
+						Y2:    int16(y2),
+						Prev:  int16(prev),
+						Next:  int16(next),
+						Wall:  x1 == x2,
+						ZMass: int16(zmass),
+					}
+					if force, ok := findIntValue("force"); ok {
+						foothold.Force = float64(force) / 100
+					}
+					if forbid, ok := findIntValue("forbidFallDown"); ok {
+						foothold.ForbidFallDown = forbid != 0
 					}
 					buffer = append(buffer, foothold)
 
@@ -1310,6 +1322,34 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		for _, foothold := range buffer {
 			model.Footholds.Insert(foothold)
 		}
+	}
+
+	if ladderRopes := root.find("ladderRope"); ladderRopes != nil {
+		for _, child := range ladderRopes.Children {
+			id, err := strconv.Atoi(child.Name)
+			if err != nil {
+				continue
+			}
+			ladderRope := LadderRope{ID: int16(id)}
+			for _, field := range child.Ints {
+				switch field.Name {
+				case "l":
+					ladderRope.Ladder = field.Value != 0
+				case "uf":
+					ladderRope.UpperFloor = field.Value != 0
+				case "x":
+					ladderRope.X = int16(field.Value)
+				case "y1":
+					ladderRope.Y1 = int16(field.Value)
+				case "y2":
+					ladderRope.Y2 = int16(field.Value)
+				}
+			}
+			model.LadderRopes = append(model.LadderRopes, ladderRope)
+		}
+		sort.Slice(model.LadderRopes, func(i, j int) bool {
+			return model.LadderRopes[i].ID < model.LadderRopes[j].ID
+		})
 	}
 
 	lives := root.find("life")

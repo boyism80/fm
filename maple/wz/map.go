@@ -106,6 +106,9 @@ type Map struct {
 	ReactorSpawns     map[uint32]ReactorSpawn
 	Areas             []types.Rect[int16]
 	Footholds         *types.QuadTreeNode[int16, Foothold]
+	LadderRopes       []LadderRope
+	Swim              bool    // the whole map is water
+	FS                float64 // scales the force and friction of walking; ice is 0.2
 	Carnival          *CarnivalField
 	Healer            *Healer
 	doorReturnPortals []Portal

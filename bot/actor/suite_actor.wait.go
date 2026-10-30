@@ -62,7 +62,7 @@ func (a *SuiteActor) approachPortal(b *bot.Bot, pkt outbound) {
 	}
 	for _, portal := range m.Portals {
 		if portal.Name == warp.PortalName {
-			_ = b.Move(portal.Position, 0)
+			_ = b.Move(a.wz, portal.Position)
 			return
 		}
 	}

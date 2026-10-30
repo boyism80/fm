@@ -8,7 +8,7 @@ local function click(ctx, bot, entry)
     if bot:force_instance_move(entry.map, "스크립트 전수 점검") == false then
         return
     end
-    bot:move(entry.x, entry.y, entry.foothold)
+    bot:move(entry.x, entry.y)
 
     local oid = bot:npc(entry.npc, 3000)
     if oid == nil then

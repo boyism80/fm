@@ -26,8 +26,9 @@ local function stale_move(ctx)
     end
     local old = bot:field_key()
     bot:move(FAR_X, FAR_Y)
+    local moved_x, moved_y = bot:position()
     local x, y = server_position(ctx, bot)
-    if x ~= FAR_X or y ~= FAR_Y then
+    if x ~= moved_x or y ~= moved_y then
         return ctx:fail(string.format("현재 필드 키의 이동이 반영되지 않음: %s, %s", tostring(x), tostring(y)))
     end
 
@@ -44,8 +45,9 @@ local function stale_move(ctx)
     end
 
     bot:move(FAR_X, FAR_Y)
+    moved_x, moved_y = bot:position()
     x, y = server_position(ctx, bot)
-    if x ~= FAR_X or y ~= FAR_Y then
+    if x ~= moved_x or y ~= moved_y then
         return ctx:fail(string.format("새 필드 키의 이동이 반영되지 않음: %s, %s", tostring(x), tostring(y)))
     end
     return true

@@ -8,6 +8,7 @@ end
 
 function M.move(bot, x, y)
     bot:move(x, y)
+    x, y = bot:position()
     return M.command(bot, "/좌표", string.format("Position: %d, %d", x, y)) ~= false
 end
 

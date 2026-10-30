@@ -6,11 +6,25 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
+// Foothold is one segment of a map's ground. ZMass is its group in Map.wz (foothold/page/zmass/id); in the air the
+// client hits walls and ceilings only of the group it last stood on. Force is the conveyor push of the foothold
+// (Map.wz force / 100), and ForbidFallDown refuses a jump down through it.
 type Foothold struct {
 	X1, Y1, X2, Y2 int16
 	ID             int16
 	Prev, Next     int16
 	Wall           bool
+	ZMass          int16
+	Force          float64
+	ForbidFallDown bool
+}
+
+// LadderRope is a ladder or rope at X from the top Y1 to the bottom Y2; UpperFloor lets a climber step off its top.
+type LadderRope struct {
+	ID         int16
+	X, Y1, Y2  int16
+	Ladder     bool
+	UpperFloor bool
 }
 
 func (f Foothold) Bounds() types.Rect[int16] {

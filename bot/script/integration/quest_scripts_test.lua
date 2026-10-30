@@ -57,7 +57,7 @@ local function visit(bot, spot)
         return false
     end
     if spot.x ~= nil then
-        bot:move(spot.x, spot.y, spot.foothold)
+        bot:move(spot.x, spot.y)
     end
     return true
 end

@@ -20,4 +20,13 @@ func (p *CancelSelfBuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CancelSelfBuff) Deserialize(_ *stream.StreamReader) {}
+func (p *CancelSelfBuff) Deserialize(reader *stream.StreamReader) {
+	for i := 0; i < constant.MaxBuffFlag; i++ {
+		mask := uint32(reader.Read32())
+		for bit := uint32(1); bit != 0; bit <<= 1 {
+			if mask&bit != 0 {
+				p.Buffs = append(p.Buffs, constant.BuffFlag{Mask: bit, Position: i + 1})
+			}
+		}
+	}
+}

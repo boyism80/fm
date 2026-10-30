@@ -466,16 +466,15 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"move": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			pos := types.Point[int16]{X: int16(L.CheckInt(2)), Y: int16(L.CheckInt(3))}
-			foothold := int16(L.OptInt(4, 0))
 			// A fifth argument sends the move with that field key, as a client does with a move made before a warp
 			// reached it; the bot's own position is left alone.
 			if L.GetTop() >= 5 {
 				L.Push(lua.LBool(b.Send(&request.MovePlayer{FieldKey: uint8(L.CheckInt(5)), Fragments: []dto.MoveFragment{
-					&dto.AbsoluteLifeMovement{BasicMovement: &dto.BasicMovement{}, Position: pos, Foothold: foothold},
+					&dto.AbsoluteLifeMovement{BasicMovement: &dto.BasicMovement{}, Position: pos, Foothold: int16(L.CheckInt(4))},
 				}}) == nil))
 				return 1
 			}
-			L.Push(lua.LBool(b.Move(pos, foothold) == nil))
+			L.Push(lua.LBool(b.Move(a.wz, pos) == nil))
 			return 1
 		},
 		"field_key": func(L *lua.LState) int {
@@ -936,7 +935,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			// The server refuses a pickup reported away from the drop, so the bot steps onto it first like a client.
 			if drop, ok := b.Drops[oid]; ok {
 				pos = drop.Position
-				if err := b.Move(pos, 0); err != nil {
+				if err := b.Move(a.wz, pos); err != nil {
 					L.Push(lua.LFalse)
 					return 1
 				}
