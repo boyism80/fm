@@ -127,6 +127,20 @@ function M.stamp(me, key)
     me:records():set(M.BOSS[key].cooldown_record, now())
 end
 
+function M.in_battle(map)
+    local sm = map:state_machine()
+    if sm == nil or sm:group() == nil then
+        return false
+    end
+    local name = sm:group():name()
+    for _, boss in pairs(M.BOSS) do
+        if boss.group == name then
+            return true
+        end
+    end
+    return false
+end
+
 local function member_list(members)
     local lines = {}
     for i, member in ipairs(members) do

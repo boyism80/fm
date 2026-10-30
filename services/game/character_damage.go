@@ -439,7 +439,7 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 	}
 
 	// A banish to another actor's map hands the character over, so nothing may touch it afterwards.
-	if banish && ch.IsAlive() {
+	if banish {
 		mob.Banish(actx, ch)
 	}
 }

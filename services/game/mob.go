@@ -437,7 +437,7 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 }
 
 func (m *Mob) Banish(actx actor.Context, ch *Character) bool {
-	if m.wz.Banish == nil {
+	if m.wz.Banish == nil || !ch.IsAlive() || ch.dialog.Busy() {
 		return false
 	}
 	b := m.wz.Banish
