@@ -865,6 +865,28 @@ local function summon_succeeds(ctx, senior, junior)
     return reputation_is(ctx, senior, before - SUMMON_COST, "주기 정리 뒤 (환불 없음)")
 end
 
+-- A declined summon tells the summoner and costs nothing, so the summon stays unused for summon_succeeds.
+local function summon_declined(ctx, senior, junior)
+    local before = prepare_family(ctx, senior, junior, SUMMON_COST)
+    if before == nil then
+        return false
+    end
+    inbox[junior:id()] = {}
+    send(senior, req.family_use { feature = FAMILY_FEATURE.summon, name = junior:name() })
+    if expect(ctx, junior, "family_summon", nil, "소환 요청 수신") == false then
+        return false
+    end
+
+    local declined = junior:request_on(senior, resp.notice, req.family_summon { name = senior:name(), accepted = false },
+        function(p)
+            return p.message == junior:name() .. "님께서 소환을 거절하셨습니다."
+        end)
+    if declined == false then
+        return ctx:fail("소환 거절 알림이 소환자에게 오지 않음")
+    end
+    return reputation_is(ctx, senior, before, "소환 거절 뒤 (비용 없음)")
+end
+
 test_suite {
     name = "Social: 귓속말·메신저·쪽지·감사 쪽지·인기도·패밀리·응답 유실 복구",
     bot_count = 14,
@@ -892,6 +914,7 @@ test_suite {
         flow(move_not_sent, 4, 5),
         flow(late_move_after_refund, 4, 5),
         flow(teleport_succeeds, 4, 5),
+        flow(summon_declined, 4, 5),
         flow(summon_succeeds, 4, 5),
     },
 }

@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"slices"
 	"time"
@@ -290,6 +291,12 @@ func (f *Family) AnswerSummon(name string, accepted bool) {
 		return
 	}
 	if !accepted {
+		message := fmt.Sprintf(constant.FamilySummonDeclinedMessage, f.owner.GetName())
+		f.owner.gameWorld.Systems().Get[*DispatchSystem]().Visit(summoned.from, func(_ actor.Context, summoner *Character) {
+			if summoner != nil {
+				summoner.listener.OnMessage(summoner, constant.MsgPinkText, message)
+			}
+		})
 		f.owner.listener.OnUnlockAction(f.owner)
 		return
 	}

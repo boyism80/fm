@@ -60,6 +60,8 @@ func AllMessageScopes() map[string]MessageScope {
 
 const DoorNoTownPortalMessage = "마을의 미스틱 도어 지점이 꽉 차서 지금은 사용할 수 없습니다."
 
+const FamilySummonDeclinedMessage = "%s님께서 소환을 거절하셨습니다."
+
 const (
 	ExpeditionJoinedMessage    = "%s님이 원정대에 참가하였습니다."
 	ExpeditionLeftMessage      = "%s님이 원정대에서 탈퇴하였습니다."
