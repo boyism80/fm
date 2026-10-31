@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -57,6 +58,23 @@ func (s *InternalSystem) SendNoteAsync(ctx actor.Context, ch *Character, recipie
 		},
 		nil,
 	)
+}
+
+func (s *InternalSystem) UpdateFamilyMemberAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.UpdateFamilyMemberReply] {
+	req := &internal.UpdateFamilyMemberRequest{
+		WorldId:     s.gw.GetWorldID(),
+		CharacterId: ch.GetID(),
+		Level:       uint32(ch.GetLevel()),
+		ClassId:     uint32(ch.class),
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.UpdateFamilyMemberReply, error) {
+			return s.client.UpdateFamilyMember(c, req)
+		},
+		nil,
+	).OnError(func(err error) {
+		log.Printf("family update member: character=%d: %v", req.CharacterId, err)
+	})
 }
 
 func (s *InternalSystem) GetFamilyAsync(ctx actor.Context, ch *Character, name string) *async.Promise[*internal.GetFamilyReply] {

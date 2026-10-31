@@ -5,6 +5,7 @@ import {
     type GuildMember,
     type GuildLogo as GuildLogoMessage,
     type Guild as GuildMessage,
+    type UpdateGuildMemberRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
 import { AppConfiguration } from "@fm/shared/config/app-configuration";
@@ -83,6 +84,7 @@ const EVT = {
     CAPACITY_CHANGED: "capacity_changed",
     GP_CHANGED: "gp_changed",
     MEMBER_ONLINE_CHANGED: "member_online_changed",
+    MEMBER_FIELDS_CHANGED: "member_fields_changed",
     DISBANDED: "disbanded",
     MESSAGE: "message",
 } as const;
@@ -1463,6 +1465,28 @@ export class GuildService {
             character_id: characterId,
             online,
             channel_index: channelIndex,
+        });
+    }
+
+    async updateMember(req: UpdateGuildMemberRequest) {
+        this.assertWorld(req.worldId);
+        this.assertGuildId(req.guildId);
+        this.assertCharacterId(req.characterId);
+
+        const changed = await this.guildMemberRepo.updateLevelClass(
+            req.worldId,
+            req.guildId,
+            req.characterId,
+            req.level,
+            req.classId,
+        );
+        if (!changed) {
+            return;
+        }
+        await this.publishToGuildRoutes(EVT.MEMBER_FIELDS_CHANGED, req.worldId, req.guildId, {
+            character_id: req.characterId,
+            level: req.level,
+            class_id: req.classId,
         });
     }
 

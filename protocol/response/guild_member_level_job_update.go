@@ -25,4 +25,10 @@ func (p *GuildMemberLevelClassUpdate) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *GuildMemberLevelClassUpdate) Deserialize(*stream.StreamReader) {}
+func (p *GuildMemberLevelClassUpdate) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.GuildID = r.ReadU32()
+	p.CharacterID = r.ReadU32()
+	p.Level = r.ReadU32()
+	p.ClassID = r.ReadU32()
+}

@@ -40,6 +40,26 @@ type allianceCreateDetail struct {
 	Meso    int32
 }
 
+func (s *GuildSystem) UpdateMemberAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.UpdateGuildMemberReply] {
+	guildID, inGuild := ch.guild.ID()
+	if !inGuild {
+		return nil
+	}
+
+	req := &internal.UpdateGuildMemberRequest{
+		WorldId:     s.gw.GetWorldID(),
+		GuildId:     guildID,
+		CharacterId: ch.GetID(),
+		Level:       uint32(ch.GetLevel()),
+		ClassId:     uint32(ch.class),
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.UpdateGuildMemberReply, error) {
+		return s.gw.Systems().Get[*InternalSystem]().client.UpdateGuildMember(c, req)
+	}, nil).OnError(func(err error) {
+		log.Printf("guild update member: character=%d guild=%d: %v", req.CharacterId, guildID, err)
+	})
+}
+
 func (s *GuildSystem) StoreGuild(ch *Character, guildPb *internal.Guild) {
 	guildID := guildPb.GetGuildId()
 	ch.guild.SetID(&guildID)

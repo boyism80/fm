@@ -913,7 +913,7 @@ func (ch *Character) tryLevelUp() bool {
 		}
 		ch.listener.OnUpdateStats(ch, stats, false)
 		for i := 0; i < levelDiff; i++ {
-			ch.broadcastLevelUpEffect()
+			ch.listener.OnShowEffect(ch, response.EffectTypeLevelUp)
 		}
 		ch.quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
 	}
@@ -935,7 +935,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	oldLevel := ch.level
 	ch.level = newLevel
 	ch.expReachedAt = clock.Now()
-	ch.NotifyMemberFieldsChanged()
+	ch.NotifyLevelClassChanged()
 	if newLevel < oldLevel {
 		if ch.gameWorld != nil {
 			resources := ch.gameWorld.GetResources()
@@ -981,16 +981,4 @@ func (ch *Character) SpawnMist(skill *SkillEntry, spec mistSpec) *Mist {
 	}
 	mist.spread(m, spec)
 	return mist
-}
-
-func (ch *Character) broadcastLevelUpEffect() {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-
-	ch.Broadcast(&response.ShowEffect{
-		CharacterID: ch.id,
-		Type:        response.EffectTypeLevelUp,
-	}, nil)
 }

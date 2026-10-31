@@ -64,6 +64,8 @@ import type {
     GetGuildRequest,
     LeaveGuildReply,
     LeaveGuildRequest,
+    UpdateGuildMemberReply,
+    UpdateGuildMemberRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type {
     AcceptGuildInviteResult,
@@ -166,6 +168,16 @@ export class GuildGrpcController {
             }
             const guild = await this.guildService.guildToPb(worldId, result.guild, result.members ?? []);
             callback(null, { found: true, guild });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("updateGuildMember")
+    async updateGuildMember(call: GrpcCall<UpdateGuildMemberRequest>, callback: GrpcCallback<UpdateGuildMemberReply>) {
+        try {
+            await this.guildService.updateMember(call.request);
+            callback(null, {});
         } catch (err) {
             this.grpcError(err, callback);
         }

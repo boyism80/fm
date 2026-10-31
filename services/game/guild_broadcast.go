@@ -72,17 +72,7 @@ func (s *GuildSystem) BroadcastMemberRankChanged(guildID uint32, targetCharacter
 	})
 }
 
-func (s *GuildSystem) NotifyMemberFieldsChanged(ch *Character) {
-	if s == nil || s.gw == nil || ch == nil {
-		return
-	}
-	guildID, inGuild := ch.guild.ID()
-	if !inGuild {
-		return
-	}
-	subjectID := ch.GetID()
-	level := uint32(ch.GetLevel())
-	classID := uint32(ch.class)
+func (s *GuildSystem) UpdateMemberFields(guildID uint32, subjectID uint32, level uint32, classID uint32) {
 	s.mu.Lock()
 	g := s.guilds[guildID]
 	if g == nil {
@@ -95,17 +85,6 @@ func (s *GuildSystem) NotifyMemberFieldsChanged(ch *Character) {
 	}
 	s.mu.Unlock()
 
-	s.BroadcastMemberFieldsChanged(guildID, subjectID, level, classID)
-}
-
-func (s *GuildSystem) BroadcastMemberFieldsChanged(guildID uint32, subjectID uint32, level uint32, classID uint32) {
-	if subjectID == 0 {
-		return
-	}
-	g := s.Get(guildID)
-	if g == nil {
-		return
-	}
 	gid := g.GetGuildId()
 	s.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
 		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
@@ -115,6 +94,10 @@ func (s *GuildSystem) BroadcastMemberFieldsChanged(guildID uint32, subjectID uin
 			ch.listener.OnGuildMemberFieldsChange(ch, gid, subjectID, level, classID)
 		})
 	})
+	allianceID, inAlliance := g.GetAllianceID()
+	if inAlliance && allianceID > 0 {
+		s.gw.Systems().Get[*AllianceSystem]().broadcastMemberFieldsChanged(allianceID, gid, subjectID, level, classID)
+	}
 }
 
 func (s *GuildSystem) BroadcastMemberOnlineChanged(guildID uint32, subjectID uint32, online bool) {

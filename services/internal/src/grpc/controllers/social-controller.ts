@@ -12,6 +12,8 @@ import type {
     NotesRequest,
     SeparateFamilyRequest,
     SetFamilyPreceptRequest,
+    UpdateFamilyMemberReply,
+    UpdateFamilyMemberRequest,
     UseFamilyFeatureRequest,
     WhisperReply,
     WhisperRequest,
@@ -118,6 +120,19 @@ export class SocialGrpcController {
     async finishFamilyMove(call: GrpcCall<FinishFamilyMoveRequest>, callback: GrpcCallback<FamilyReply>) {
         try {
             callback(null, await this.familyService.finishMove(call.request));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("updateFamilyMember")
+    async updateFamilyMember(
+        call: GrpcCall<UpdateFamilyMemberRequest>,
+        callback: GrpcCallback<UpdateFamilyMemberReply>,
+    ) {
+        try {
+            await this.familyService.updateMember(call.request);
+            callback(null, {});
         } catch (err) {
             this.grpcError(err, callback);
         }

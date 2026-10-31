@@ -86,6 +86,31 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
         await this.invalidateAfterWrite(worldId, groupKey, pool, options);
     }
 
+    // Returns false when the member is not in the guild or already has these values.
+    async updateLevelClass(
+        worldId: number,
+        guildId: number,
+        characterId: number,
+        level: number,
+        classId: number,
+        options: RepositoryTxOptions = {},
+    ) {
+        const groupKey = String(guildId);
+        const pool = this.pool(worldId, groupKey);
+        const result = await this.query(
+            pool,
+            `UPDATE guild_members SET level = $4, class_id = $5, updated_at = NOW()
+             WHERE world_id = $1 AND guild_id = $2 AND character_id = $3 AND (level <> $4 OR class_id <> $5)`,
+            [worldId, guildId, characterId, level, classId],
+            options,
+        );
+        if (!result.rowCount) {
+            return false;
+        }
+        await this.invalidateAfterWrite(worldId, groupKey, pool, options);
+        return true;
+    }
+
     override normalizeRow(row: GuildMemberRow): GuildMemberRow {
         return {
             ...row,

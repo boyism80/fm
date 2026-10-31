@@ -431,7 +431,7 @@ func (s *MapSystem) Warp(actorCtx actor.Context, character *Character, targetMap
 			return err
 		}
 		character.ResumeTimers(actorCtx.Self())
-		character.NotifyMemberFieldsChanged()
+		s.gw.Systems().Get[*PartySystem]().UpdateMemberAsync(nil, character)
 		character.Wedding().NotifySpouseMap(actorCtx, false)
 		if onEnter != nil {
 			// Deferred so a Lua caller finishes its own call before onEnter starts on the same root.

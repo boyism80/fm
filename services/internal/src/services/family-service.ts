@@ -16,6 +16,7 @@ import type {
     JoinFamilyRequest,
     SeparateFamilyRequest,
     SetFamilyPreceptRequest,
+    UpdateFamilyMemberRequest,
     UseFamilyFeatureRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { Family, FamilyFeature, FamilyResult } from "@fm/shared/protobuf/generated/fminternal/internal_service";
@@ -286,6 +287,20 @@ export class FamilyService {
         if (receivers.length > 0) {
             await this.publish(world, receivers);
         }
+    }
+
+    async updateMember(req: UpdateFamilyMemberRequest) {
+        const updated = await this.internalContext.withPgGlobalTransaction(req.worldId, (tx) =>
+            tx.query(
+                `UPDATE social_family SET level=$2, class_id=$3
+                WHERE character_id=$1 AND (level<>$2 OR class_id<>$3)`,
+                [req.characterId, req.level, req.classId],
+            ),
+        );
+        if (!updated.rowCount) {
+            return;
+        }
+        await this.publish(req.worldId, [req.characterId]);
     }
 
     async presence(world: number, characterId: number) {

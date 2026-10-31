@@ -3881,6 +3881,17 @@ export interface GetGuildReply {
   guild: Guild | undefined;
 }
 
+export interface UpdateGuildMemberRequest {
+  worldId: number;
+  guildId: number;
+  characterId: number;
+  level: number;
+  classId: number;
+}
+
+export interface UpdateGuildMemberReply {
+}
+
 export interface BroadcastMultiChatRequest {
   worldId: number;
   memberId: number;
@@ -4130,6 +4141,16 @@ export interface FinishFamilyMoveRequest {
   characterId: number;
   requestId: string;
   complete: boolean;
+}
+
+export interface UpdateFamilyMemberRequest {
+  worldId: number;
+  characterId: number;
+  level: number;
+  classId: number;
+}
+
+export interface UpdateFamilyMemberReply {
 }
 
 export interface WhisperRequest {
@@ -36381,6 +36402,189 @@ export const GetGuildReply: MessageFns<GetGuildReply> = {
   },
 };
 
+function createBaseUpdateGuildMemberRequest(): UpdateGuildMemberRequest {
+  return { worldId: 0, guildId: 0, characterId: 0, level: 0, classId: 0 };
+}
+
+export const UpdateGuildMemberRequest: MessageFns<UpdateGuildMemberRequest> = {
+  encode(message: UpdateGuildMemberRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(16).uint32(message.guildId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.level !== 0) {
+      writer.uint32(32).uint32(message.level);
+    }
+    if (message.classId !== 0) {
+      writer.uint32(40).uint32(message.classId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateGuildMemberRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateGuildMemberRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.classId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateGuildMemberRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      classId: isSet(object.classId)
+        ? globalThis.Number(object.classId)
+        : isSet(object.class_id)
+        ? globalThis.Number(object.class_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: UpdateGuildMemberRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.classId !== 0) {
+      obj.classId = Math.round(message.classId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateGuildMemberRequest>, I>>(base?: I): UpdateGuildMemberRequest {
+    return UpdateGuildMemberRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateGuildMemberRequest>, I>>(object: I): UpdateGuildMemberRequest {
+    const message = createBaseUpdateGuildMemberRequest();
+    message.worldId = object.worldId ?? 0;
+    message.guildId = object.guildId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.level = object.level ?? 0;
+    message.classId = object.classId ?? 0;
+    return message;
+  },
+};
+
+function createBaseUpdateGuildMemberReply(): UpdateGuildMemberReply {
+  return {};
+}
+
+export const UpdateGuildMemberReply: MessageFns<UpdateGuildMemberReply> = {
+  encode(_: UpdateGuildMemberReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateGuildMemberReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateGuildMemberReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): UpdateGuildMemberReply {
+    return {};
+  },
+
+  toJSON(_: UpdateGuildMemberReply): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateGuildMemberReply>, I>>(base?: I): UpdateGuildMemberReply {
+    return UpdateGuildMemberReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateGuildMemberReply>, I>>(_: I): UpdateGuildMemberReply {
+    const message = createBaseUpdateGuildMemberReply();
+    return message;
+  },
+};
+
 function createBaseBroadcastMultiChatRequest(): BroadcastMultiChatRequest {
   return {
     worldId: 0,
@@ -40480,6 +40684,169 @@ export const FinishFamilyMoveRequest: MessageFns<FinishFamilyMoveRequest> = {
   },
 };
 
+function createBaseUpdateFamilyMemberRequest(): UpdateFamilyMemberRequest {
+  return { worldId: 0, characterId: 0, level: 0, classId: 0 };
+}
+
+export const UpdateFamilyMemberRequest: MessageFns<UpdateFamilyMemberRequest> = {
+  encode(message: UpdateFamilyMemberRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.level !== 0) {
+      writer.uint32(24).uint32(message.level);
+    }
+    if (message.classId !== 0) {
+      writer.uint32(32).uint32(message.classId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateFamilyMemberRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateFamilyMemberRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.classId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateFamilyMemberRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      classId: isSet(object.classId)
+        ? globalThis.Number(object.classId)
+        : isSet(object.class_id)
+        ? globalThis.Number(object.class_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: UpdateFamilyMemberRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.classId !== 0) {
+      obj.classId = Math.round(message.classId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateFamilyMemberRequest>, I>>(base?: I): UpdateFamilyMemberRequest {
+    return UpdateFamilyMemberRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateFamilyMemberRequest>, I>>(object: I): UpdateFamilyMemberRequest {
+    const message = createBaseUpdateFamilyMemberRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.level = object.level ?? 0;
+    message.classId = object.classId ?? 0;
+    return message;
+  },
+};
+
+function createBaseUpdateFamilyMemberReply(): UpdateFamilyMemberReply {
+  return {};
+}
+
+export const UpdateFamilyMemberReply: MessageFns<UpdateFamilyMemberReply> = {
+  encode(_: UpdateFamilyMemberReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateFamilyMemberReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateFamilyMemberReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): UpdateFamilyMemberReply {
+    return {};
+  },
+
+  toJSON(_: UpdateFamilyMemberReply): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateFamilyMemberReply>, I>>(base?: I): UpdateFamilyMemberReply {
+    return UpdateFamilyMemberReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateFamilyMemberReply>, I>>(_: I): UpdateFamilyMemberReply {
+    const message = createBaseUpdateFamilyMemberReply();
+    return message;
+  },
+};
+
 function createBaseWhisperRequest(): WhisperRequest {
   return { worldId: 0, characterId: 0, channelId: 0, mode: 0, targetName: "", message: "", requestId: "" };
 }
@@ -41970,6 +42337,17 @@ export const InternalService = {
     responseSerialize: (value: FamilyReply): Buffer => Buffer.from(FamilyReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): FamilyReply => FamilyReply.decode(value),
   },
+  updateFamilyMember: {
+    path: "/fm.internal.Internal/UpdateFamilyMember" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: UpdateFamilyMemberRequest): Buffer =>
+      Buffer.from(UpdateFamilyMemberRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): UpdateFamilyMemberRequest => UpdateFamilyMemberRequest.decode(value),
+    responseSerialize: (value: UpdateFamilyMemberReply): Buffer =>
+      Buffer.from(UpdateFamilyMemberReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): UpdateFamilyMemberReply => UpdateFamilyMemberReply.decode(value),
+  },
   ping: {
     path: "/fm.internal.Internal/Ping" as const,
     requestStream: false as const,
@@ -42404,6 +42782,17 @@ export const InternalService = {
     requestDeserialize: (value: Buffer): GetGuildRequest => GetGuildRequest.decode(value),
     responseSerialize: (value: GetGuildReply): Buffer => Buffer.from(GetGuildReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): GetGuildReply => GetGuildReply.decode(value),
+  },
+  updateGuildMember: {
+    path: "/fm.internal.Internal/UpdateGuildMember" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: UpdateGuildMemberRequest): Buffer =>
+      Buffer.from(UpdateGuildMemberRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): UpdateGuildMemberRequest => UpdateGuildMemberRequest.decode(value),
+    responseSerialize: (value: UpdateGuildMemberReply): Buffer =>
+      Buffer.from(UpdateGuildMemberReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): UpdateGuildMemberReply => UpdateGuildMemberReply.decode(value),
   },
   createAlliance: {
     path: "/fm.internal.Internal/CreateAlliance" as const,
@@ -43220,6 +43609,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   setFamilyPrecept: handleUnaryCall<SetFamilyPreceptRequest, FamilyReply>;
   useFamilyFeature: handleUnaryCall<UseFamilyFeatureRequest, FamilyReply>;
   finishFamilyMove: handleUnaryCall<FinishFamilyMoveRequest, FamilyReply>;
+  updateFamilyMember: handleUnaryCall<UpdateFamilyMemberRequest, UpdateFamilyMemberReply>;
   ping: handleUnaryCall<PingRequest, PingReply>;
   getGameChannelStatus: handleUnaryCall<GetGameChannelStatusRequest, GetGameChannelStatusReply>;
   getServerCatalog: handleUnaryCall<GetServerCatalogRequest, GetServerCatalogReply>;
@@ -43264,6 +43654,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   denyParty: handleUnaryCall<DenyPartyRequest, DenyPartyReply>;
   createGuild: handleUnaryCall<CreateGuildRequest, CreateGuildReply>;
   getGuild: handleUnaryCall<GetGuildRequest, GetGuildReply>;
+  updateGuildMember: handleUnaryCall<UpdateGuildMemberRequest, UpdateGuildMemberReply>;
   createAlliance: handleUnaryCall<CreateAllianceRequest, CreateAllianceReply>;
   getAlliance: handleUnaryCall<GetAllianceRequest, GetAllianceReply>;
   disbandAlliance: handleUnaryCall<DisbandAllianceRequest, DisbandAllianceReply>;
@@ -43507,6 +43898,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: FamilyReply) => void,
+  ): ClientUnaryCall;
+  updateFamilyMember(
+    request: UpdateFamilyMemberRequest,
+    callback: (error: ServiceError | null, response: UpdateFamilyMemberReply) => void,
+  ): ClientUnaryCall;
+  updateFamilyMember(
+    request: UpdateFamilyMemberRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: UpdateFamilyMemberReply) => void,
+  ): ClientUnaryCall;
+  updateFamilyMember(
+    request: UpdateFamilyMemberRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: UpdateFamilyMemberReply) => void,
   ): ClientUnaryCall;
   ping(request: PingRequest, callback: (error: ServiceError | null, response: PingReply) => void): ClientUnaryCall;
   ping(
@@ -44164,6 +44570,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GetGuildReply) => void,
+  ): ClientUnaryCall;
+  updateGuildMember(
+    request: UpdateGuildMemberRequest,
+    callback: (error: ServiceError | null, response: UpdateGuildMemberReply) => void,
+  ): ClientUnaryCall;
+  updateGuildMember(
+    request: UpdateGuildMemberRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: UpdateGuildMemberReply) => void,
+  ): ClientUnaryCall;
+  updateGuildMember(
+    request: UpdateGuildMemberRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: UpdateGuildMemberReply) => void,
   ): ClientUnaryCall;
   createAlliance(
     request: CreateAllianceRequest,

@@ -29,6 +29,7 @@ const (
 	Internal_SetFamilyPrecept_FullMethodName               = "/fm.internal.Internal/SetFamilyPrecept"
 	Internal_UseFamilyFeature_FullMethodName               = "/fm.internal.Internal/UseFamilyFeature"
 	Internal_FinishFamilyMove_FullMethodName               = "/fm.internal.Internal/FinishFamilyMove"
+	Internal_UpdateFamilyMember_FullMethodName             = "/fm.internal.Internal/UpdateFamilyMember"
 	Internal_Ping_FullMethodName                           = "/fm.internal.Internal/Ping"
 	Internal_GetGameChannelStatus_FullMethodName           = "/fm.internal.Internal/GetGameChannelStatus"
 	Internal_GetServerCatalog_FullMethodName               = "/fm.internal.Internal/GetServerCatalog"
@@ -73,6 +74,7 @@ const (
 	Internal_DenyParty_FullMethodName                      = "/fm.internal.Internal/DenyParty"
 	Internal_CreateGuild_FullMethodName                    = "/fm.internal.Internal/CreateGuild"
 	Internal_GetGuild_FullMethodName                       = "/fm.internal.Internal/GetGuild"
+	Internal_UpdateGuildMember_FullMethodName              = "/fm.internal.Internal/UpdateGuildMember"
 	Internal_CreateAlliance_FullMethodName                 = "/fm.internal.Internal/CreateAlliance"
 	Internal_GetAlliance_FullMethodName                    = "/fm.internal.Internal/GetAlliance"
 	Internal_DisbandAlliance_FullMethodName                = "/fm.internal.Internal/DisbandAlliance"
@@ -165,6 +167,7 @@ type InternalClient interface {
 	SetFamilyPrecept(ctx context.Context, in *SetFamilyPreceptRequest, opts ...grpc.CallOption) (*FamilyReply, error)
 	UseFamilyFeature(ctx context.Context, in *UseFamilyFeatureRequest, opts ...grpc.CallOption) (*FamilyReply, error)
 	FinishFamilyMove(ctx context.Context, in *FinishFamilyMoveRequest, opts ...grpc.CallOption) (*FamilyReply, error)
+	UpdateFamilyMember(ctx context.Context, in *UpdateFamilyMemberRequest, opts ...grpc.CallOption) (*UpdateFamilyMemberReply, error)
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error)
 	GetGameChannelStatus(ctx context.Context, in *GetGameChannelStatusRequest, opts ...grpc.CallOption) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(ctx context.Context, in *GetServerCatalogRequest, opts ...grpc.CallOption) (*GetServerCatalogReply, error)
@@ -209,6 +212,7 @@ type InternalClient interface {
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
 	CreateGuild(ctx context.Context, in *CreateGuildRequest, opts ...grpc.CallOption) (*CreateGuildReply, error)
 	GetGuild(ctx context.Context, in *GetGuildRequest, opts ...grpc.CallOption) (*GetGuildReply, error)
+	UpdateGuildMember(ctx context.Context, in *UpdateGuildMemberRequest, opts ...grpc.CallOption) (*UpdateGuildMemberReply, error)
 	CreateAlliance(ctx context.Context, in *CreateAllianceRequest, opts ...grpc.CallOption) (*CreateAllianceReply, error)
 	GetAlliance(ctx context.Context, in *GetAllianceRequest, opts ...grpc.CallOption) (*GetAllianceReply, error)
 	DisbandAlliance(ctx context.Context, in *DisbandAllianceRequest, opts ...grpc.CallOption) (*DisbandAllianceReply, error)
@@ -389,6 +393,16 @@ func (c *internalClient) FinishFamilyMove(ctx context.Context, in *FinishFamilyM
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FamilyReply)
 	err := c.cc.Invoke(ctx, Internal_FinishFamilyMove_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) UpdateFamilyMember(ctx context.Context, in *UpdateFamilyMemberRequest, opts ...grpc.CallOption) (*UpdateFamilyMemberReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateFamilyMemberReply)
+	err := c.cc.Invoke(ctx, Internal_UpdateFamilyMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -829,6 +843,16 @@ func (c *internalClient) GetGuild(ctx context.Context, in *GetGuildRequest, opts
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetGuildReply)
 	err := c.cc.Invoke(ctx, Internal_GetGuild_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) UpdateGuildMember(ctx context.Context, in *UpdateGuildMemberRequest, opts ...grpc.CallOption) (*UpdateGuildMemberReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateGuildMemberReply)
+	err := c.cc.Invoke(ctx, Internal_UpdateGuildMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1609,6 +1633,7 @@ type InternalServer interface {
 	SetFamilyPrecept(context.Context, *SetFamilyPreceptRequest) (*FamilyReply, error)
 	UseFamilyFeature(context.Context, *UseFamilyFeatureRequest) (*FamilyReply, error)
 	FinishFamilyMove(context.Context, *FinishFamilyMoveRequest) (*FamilyReply, error)
+	UpdateFamilyMember(context.Context, *UpdateFamilyMemberRequest) (*UpdateFamilyMemberReply, error)
 	Ping(context.Context, *PingRequest) (*PingReply, error)
 	GetGameChannelStatus(context.Context, *GetGameChannelStatusRequest) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(context.Context, *GetServerCatalogRequest) (*GetServerCatalogReply, error)
@@ -1653,6 +1678,7 @@ type InternalServer interface {
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
 	CreateGuild(context.Context, *CreateGuildRequest) (*CreateGuildReply, error)
 	GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error)
+	UpdateGuildMember(context.Context, *UpdateGuildMemberRequest) (*UpdateGuildMemberReply, error)
 	CreateAlliance(context.Context, *CreateAllianceRequest) (*CreateAllianceReply, error)
 	GetAlliance(context.Context, *GetAllianceRequest) (*GetAllianceReply, error)
 	DisbandAlliance(context.Context, *DisbandAllianceRequest) (*DisbandAllianceReply, error)
@@ -1768,6 +1794,9 @@ func (UnimplementedInternalServer) UseFamilyFeature(context.Context, *UseFamilyF
 }
 func (UnimplementedInternalServer) FinishFamilyMove(context.Context, *FinishFamilyMoveRequest) (*FamilyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FinishFamilyMove not implemented")
+}
+func (UnimplementedInternalServer) UpdateFamilyMember(context.Context, *UpdateFamilyMemberRequest) (*UpdateFamilyMemberReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateFamilyMember not implemented")
 }
 func (UnimplementedInternalServer) Ping(context.Context, *PingRequest) (*PingReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
@@ -1900,6 +1929,9 @@ func (UnimplementedInternalServer) CreateGuild(context.Context, *CreateGuildRequ
 }
 func (UnimplementedInternalServer) GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGuild not implemented")
+}
+func (UnimplementedInternalServer) UpdateGuildMember(context.Context, *UpdateGuildMemberRequest) (*UpdateGuildMemberReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateGuildMember not implemented")
 }
 func (UnimplementedInternalServer) CreateAlliance(context.Context, *CreateAllianceRequest) (*CreateAllianceReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAlliance not implemented")
@@ -2326,6 +2358,24 @@ func _Internal_FinishFamilyMove_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).FinishFamilyMove(ctx, req.(*FinishFamilyMoveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_UpdateFamilyMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateFamilyMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).UpdateFamilyMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_UpdateFamilyMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).UpdateFamilyMember(ctx, req.(*UpdateFamilyMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3118,6 +3168,24 @@ func _Internal_GetGuild_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).GetGuild(ctx, req.(*GetGuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_UpdateGuildMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGuildMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).UpdateGuildMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_UpdateGuildMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).UpdateGuildMember(ctx, req.(*UpdateGuildMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4538,6 +4606,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Internal_FinishFamilyMove_Handler,
 		},
 		{
+			MethodName: "UpdateFamilyMember",
+			Handler:    _Internal_UpdateFamilyMember_Handler,
+		},
+		{
 			MethodName: "Ping",
 			Handler:    _Internal_Ping_Handler,
 		},
@@ -4712,6 +4784,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGuild",
 			Handler:    _Internal_GetGuild_Handler,
+		},
+		{
+			MethodName: "UpdateGuildMember",
+			Handler:    _Internal_UpdateGuildMember_Handler,
 		},
 		{
 			MethodName: "CreateAlliance",

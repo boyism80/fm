@@ -50,6 +50,7 @@ func (gs *GameServer) mqQueues() []mq.Queue {
 			d.Bind[guildMqCapacityChanged](gs)
 			d.Bind[guildMqGPChanged](gs)
 			d.Bind[guildMqMemberOnlineChanged](gs)
+			d.Bind[guildMqMemberFieldsChanged](gs)
 			d.Bind[guildMqDisbanded](gs)
 			d.Bind[guildMqChat](gs)
 			d.Bind[guildMqMessage](gs)

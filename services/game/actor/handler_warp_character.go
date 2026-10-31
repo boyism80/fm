@@ -38,7 +38,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		a.GameWorld.Systems().Get[*game.MapSystem]().CloseInstance(msg.TargetMap)
 	}
 	msg.Character.ResumeTimers(ctx.Self())
-	msg.Character.NotifyMemberFieldsChanged()
+	a.GameWorld.Systems().Get[*game.PartySystem]().UpdateMemberAsync(nil, msg.Character)
 	msg.Character.Wedding().NotifySpouseMap(ctx, false)
 	if msg.OnEnter != nil {
 		msg.OnEnter(ctx)

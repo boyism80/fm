@@ -16,6 +16,7 @@ service Internal {
   rpc SetFamilyPrecept (SetFamilyPreceptRequest) returns (FamilyReply);
   rpc UseFamilyFeature (UseFamilyFeatureRequest) returns (FamilyReply);
   rpc FinishFamilyMove (FinishFamilyMoveRequest) returns (FamilyReply);
+  rpc UpdateFamilyMember (UpdateFamilyMemberRequest) returns (UpdateFamilyMemberReply);
   rpc Ping (PingRequest) returns (PingReply);
   rpc GetGameChannelStatus (GetGameChannelStatusRequest) returns (GetGameChannelStatusReply);
   rpc GetServerCatalog (GetServerCatalogRequest) returns (GetServerCatalogReply);
@@ -60,6 +61,7 @@ service Internal {
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
   rpc CreateGuild (CreateGuildRequest) returns (CreateGuildReply);
   rpc GetGuild (GetGuildRequest) returns (GetGuildReply);
+  rpc UpdateGuildMember (UpdateGuildMemberRequest) returns (UpdateGuildMemberReply);
   rpc CreateAlliance (CreateAllianceRequest) returns (CreateAllianceReply);
   rpc GetAlliance (GetAllianceRequest) returns (GetAllianceReply);
   rpc DisbandAlliance (DisbandAllianceRequest) returns (DisbandAllianceReply);
@@ -2197,6 +2199,16 @@ message GetGuildReply {
   Guild guild = 2;
 }
 
+message UpdateGuildMemberRequest {
+  uint32 world_id = 1;
+  uint32 guild_id = 2;
+  uint32 character_id = 3;
+  uint32 level = 4;
+  uint32 class_id = 5;
+}
+
+message UpdateGuildMemberReply {}
+
 message BroadcastMultiChatRequest {
   uint32 world_id = 1;
   uint32 member_id = 2;
@@ -2477,6 +2489,15 @@ message FinishFamilyMoveRequest {
   uint64 request_id = 3 [jstype = JS_STRING];
   bool complete = 4;
 }
+
+message UpdateFamilyMemberRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 level = 3;
+  uint32 class_id = 4;
+}
+
+message UpdateFamilyMemberReply {}
 
 // Values are the client's whisper packet modes.
 enum WhisperMode {

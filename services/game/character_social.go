@@ -25,9 +25,10 @@ func (ch *Character) SocialLogin(notes []Note) {
 	}
 }
 
-func (ch *Character) NotifyMemberFieldsChanged() {
+func (ch *Character) NotifyLevelClassChanged() {
 	ch.gameWorld.Systems().Get[*PartySystem]().UpdateMemberAsync(nil, ch)
-	ch.gameWorld.Systems().Get[*AllianceSystem]().NotifyMemberFieldsChanged(ch)
+	ch.gameWorld.Systems().Get[*GuildSystem]().UpdateMemberAsync(nil, ch)
+	ch.gameWorld.Systems().Get[*InternalSystem]().UpdateFamilyMemberAsync(nil, ch)
 }
 
 // ReceiveWhisper claims the request first so only one channel shows it,

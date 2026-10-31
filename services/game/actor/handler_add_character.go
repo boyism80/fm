@@ -22,13 +22,15 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		return
 	}
 	msg.Character.ResumeTimers(ctx.Self())
-	msg.Character.NotifyMemberFieldsChanged()
 	msg.Character.Wedding().NotifySpouseMap(ctx, msg.Init)
-	if msg.Init {
-		msg.Character.SocialLogin(msg.Notes)
-		msg.Character.Buddies().SyncLogin()
-		msg.Character.Duey().CheckArrivals(ctx)
-		msg.Character.Unsettled().Settle(ctx)
-		msg.Character.Unsettled().ScheduleSettle()
+	if !msg.Init {
+		a.GameWorld.Systems().Get[*game.PartySystem]().UpdateMemberAsync(nil, msg.Character)
+		return
 	}
+	msg.Character.NotifyLevelClassChanged()
+	msg.Character.SocialLogin(msg.Notes)
+	msg.Character.Buddies().SyncLogin()
+	msg.Character.Duey().CheckArrivals(ctx)
+	msg.Character.Unsettled().Settle(ctx)
+	msg.Character.Unsettled().ScheduleSettle()
 }

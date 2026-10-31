@@ -138,29 +138,6 @@ func (s *AllianceSystem) GuildIDs(allianceID uint32) []uint32 {
 	return append([]uint32(nil), stored.guildIDs...)
 }
 
-func (s *AllianceSystem) NotifyMemberFieldsChanged(ch *Character) {
-	if s.gw == nil || ch == nil {
-		return
-	}
-	s.gw.Systems().Get[*GuildSystem]().NotifyMemberFieldsChanged(ch)
-	guildID, inGuild := ch.guild.ID()
-	if !inGuild {
-		return
-	}
-	g := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
-	if g == nil {
-		return
-	}
-	allianceID, inAlliance := g.GetAllianceID()
-	if !inAlliance {
-		return
-	}
-	subjectID := ch.GetID()
-	level := uint32(ch.GetLevel())
-	classID := uint32(ch.class)
-	s.broadcastMemberFieldsChanged(allianceID, guildID, subjectID, level, classID)
-}
-
 func (s *AllianceSystem) broadcastMemberFieldsChanged(allianceID uint32, subjectGuildID uint32, subjectID uint32, level uint32, classID uint32) {
 	if s.gw == nil || subjectID == 0 {
 		return

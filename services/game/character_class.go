@@ -9,7 +9,7 @@ func (ch *Character) ChangeClass(newClass constant.ClassType) {
 	ch.grantClassChangeSP(newClass)
 
 	ch.listener.OnClassChange(ch, oldClass, newClass, ch.points.sp)
-	ch.NotifyMemberFieldsChanged()
+	ch.NotifyLevelClassChanged()
 }
 
 func (ch *Character) grantClassChangeSP(newClass constant.ClassType) {

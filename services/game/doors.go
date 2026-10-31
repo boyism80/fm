@@ -67,7 +67,7 @@ func (dc *Doors) SpawnField(key DoorKey, skillID constant.SkillID, returnEp, fie
 	door.fieldRef = ref
 	cast.door = door
 	m.AddDoor(door)
-	dc.owner.NotifyMemberFieldsChanged()
+	dc.owner.gameWorld.Systems().Get[*PartySystem]().UpdateMemberAsync(nil, dc.owner)
 	return door
 }
 
@@ -88,7 +88,7 @@ func (dc *Doors) despawn(skillID constant.SkillID, cast *doorCast, animated bool
 	}
 
 	dc.owner.gameWorld.Systems().Get[*MapSystem]().DespawnDoor(cast.door.field.Map, cast.key, animated, false)
-	dc.owner.NotifyMemberFieldsChanged()
+	dc.owner.gameWorld.Systems().Get[*PartySystem]().UpdateMemberAsync(nil, dc.owner)
 }
 
 func (dc *Doors) forget(door *Door) {
