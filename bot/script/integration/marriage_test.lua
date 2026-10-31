@@ -15,6 +15,9 @@ local ANNA = 9201007
 local MARGARET = 9201013
 local PILA = 9201014
 local ANGELIQUE = 9201036
+local ALLEGRO = 9201000
+local MAYA = 1012101
+local MAYA_HOUSE = 100000001
 
 local RING_BOX = 2240004
 local ENGAGEMENT_RING = 4210000
@@ -32,6 +35,9 @@ local SETTLE_WAIT_MS = 40000
 local REPLY_DELAY_MS = 4000
 local DUEY = { send = 3, receive = 5, delete = 6, close = 8 }
 local ETC = 4
+local TOKEN_QUEST = 1100
+local MAYA_TOKEN_QUEST = 1115
+local QUEST_START = 1
 
 local state = {}
 
@@ -1237,6 +1243,45 @@ local function invite_guest_full(ctx)
     return clear_duey(ctx, guest)
 end
 
+local function started(p, quest)
+    return p.quest_status.quest_id == quest and p.quest_status.status == 1
+end
+
+-- The token quests start only while Allegro's quest is in progress.
+local function token_quest(ctx)
+    local guest = ctx:bot(2)
+    if command(ctx, guest, "/성별 0", "성별 변경: 0") == false or setup(ctx, guest, "-") == false then
+        return false
+    end
+    local dlg = click(ctx, guest, ALLEGRO)
+    if dlg == false or said(ctx, guest, dlg, "사랑의 증표 4개", "알레그로 안내") == false then
+        return false
+    end
+    local p = guest:request(resp.update_quest, req.dialog { dialog_type = DIALOG.normal, next = true }, function(p)
+        return started(p, TOKEN_QUEST)
+    end, 5000)
+    guest:dialog(false)
+    if p == false then
+        return ctx:fail("알레그로가 퀘스트 1100을 시작하지 않음")
+    end
+
+    if guest:force_instance_move(MAYA_HOUSE, "증표 퀘스트") == false then
+        return ctx:fail("마야의 집 이동 실패")
+    end
+    if pq.npc(ctx, guest, MAYA) == false then
+        return false
+    end
+    p = guest:request(resp.update_quest,
+        req.quest_action { mode = QUEST_START, quest_id = MAYA_TOKEN_QUEST, npcid = MAYA },
+        function(p)
+            return started(p, MAYA_TOKEN_QUEST)
+        end, 5000)
+    if p == false then
+        return ctx:fail("마야의 사랑의 증표 퀘스트를 시작하지 못함")
+    end
+    return true
+end
+
 local function cleanup(ctx)
     break_off(ctx, ctx:bot(0))
     ctx:sleep(1000)
@@ -1245,7 +1290,7 @@ local function cleanup(ctx)
 end
 
 test_suite {
-    name = "Marriage: 약혼·예약·청첩장·예식·선물·이혼·응답 유실 복구",
+    name = "Marriage: 약혼·예약·청첩장·예식·선물·이혼·사랑의 증표 퀘스트·응답 유실 복구",
     bot_count = 3,
 
     on_scenario_finished = function(ctx)
@@ -1275,6 +1320,7 @@ test_suite {
         invite_not_sent,
         invite_late,
         invite_guest_full,
+        token_quest,
         cleanup,
     },
 }

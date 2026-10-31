@@ -10,6 +10,8 @@ local TOKEN_COUNT = 4
 local BOX_FIRST = 2240004
 local BOX_LAST = 2240015
 local CRAFT_EXP = 2360
+-- The token quests 1115~1124 start only while this quest records "ing".
+local TOKEN_QUEST = 1100
 
 local RINGS = {
     { box = 2240004, material = 4011007, meso = 80000 },
@@ -71,6 +73,7 @@ local function craft(me, npc, owned)
         me:dialog(npc, "부족한 재료가 있으신건 아닌지, 메소는 충분한지, 인벤토리 공간은 충분한지 확인해 주십시오.")
         return
     end
+    me:quest(TOKEN_QUEST):force_complete(npc)
     me:dialog(npc, "약혼반지가 완성되었습니다. 약혼하실 여성분께 프로포즈 하시면 됩니다. 사랑에 행운이 깃들기를..")
 end
 
@@ -95,6 +98,10 @@ return {
             me:dialog(npc,
                 INTRO ..
                 " 반지를 원한다면 사랑의 진실함을 증명하고, 사랑의 증표 4개를 가져오세요. #b헤네시스의 마야, 엘리니아의 로웬, 페리온의 이얀, 커닝시티의 넬라, 오르비스의 에릭손, 루디브리엄의 보자관티군, 아쿠아리움의 뮤즈, 리프레의 팜, 무릉의 한태수, 아리안트의 지유르#k를 찾아가보세요.")
+            local quest = me:quest(TOKEN_QUEST)
+            if not quest:started() then
+                quest:start(npc, "ing")
+            end
             return
         end
         craft(me, npc, owned)
