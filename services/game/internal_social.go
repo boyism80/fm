@@ -60,21 +60,47 @@ func (s *InternalSystem) SendNoteAsync(ctx actor.Context, ch *Character, recipie
 	)
 }
 
-func (s *InternalSystem) UpdateFamilyMemberAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.UpdateFamilyMemberReply] {
+// One update per character is in flight at a time; changes made meanwhile
+// are sent as one update with the latest values when it ends.
+func (s *InternalSystem) UpdateFamilyMemberAsync(ctx actor.Context, ch *Character) *async.Task {
 	req := &internal.UpdateFamilyMemberRequest{
 		WorldId:     s.gw.GetWorldID(),
 		CharacterId: ch.GetID(),
 		Level:       uint32(ch.GetLevel()),
 		ClassId:     uint32(ch.class),
 	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-		func(c context.Context) (*internal.UpdateFamilyMemberReply, error) {
-			return s.client.UpdateFamilyMember(c, req)
-		},
-		nil,
-	).OnError(func(err error) {
+	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	s.mu.Lock()
+	if _, sending := s.familyUpdates[req.CharacterId]; sending {
+		s.familyUpdates[req.CharacterId] = req
+		s.mu.Unlock()
+		return p
+	}
+	s.familyUpdates[req.CharacterId] = nil
+	s.mu.Unlock()
+	return s.sendFamilyUpdate(p, req)
+}
+
+func (s *InternalSystem) sendFamilyUpdate(p *async.Task, req *internal.UpdateFamilyMemberRequest) *async.Task {
+	p.OnError(func(err error) {
 		log.Printf("family update member: character=%d: %v", req.CharacterId, err)
 	})
+	p.Finally(func() {
+		s.mu.Lock()
+		next := s.familyUpdates[req.CharacterId]
+		if next == nil {
+			delete(s.familyUpdates, req.CharacterId)
+			s.mu.Unlock()
+			return
+		}
+		s.familyUpdates[req.CharacterId] = nil
+		s.mu.Unlock()
+		s.sendFamilyUpdate(async.NewTask(nil, core.InternalRPCPerStepTimeout), next)
+	})
+	p.ThenRPC(func(c context.Context) (*internal.UpdateFamilyMemberReply, error) {
+		return s.client.UpdateFamilyMember(c, req)
+	}, nil)
+	return p
 }
 
 func (s *InternalSystem) GetFamilyAsync(ctx actor.Context, ch *Character, name string) *async.Promise[*internal.GetFamilyReply] {

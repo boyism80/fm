@@ -3,6 +3,7 @@ package game
 import (
 	"context"
 	"log"
+	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -14,10 +15,13 @@ import (
 type InternalSystem struct {
 	gw     GameWorld
 	client internal.InternalClient
+
+	mu            sync.Mutex
+	familyUpdates map[uint32]*internal.UpdateFamilyMemberRequest
 }
 
 func NewInternalSystem(gw GameWorld, conn *rpc.InternalConnection) *InternalSystem {
-	return &InternalSystem{gw: gw, client: conn.Client}
+	return &InternalSystem{gw: gw, client: conn.Client, familyUpdates: make(map[uint32]*internal.UpdateFamilyMemberRequest)}
 }
 
 func (s *InternalSystem) Start() error {

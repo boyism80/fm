@@ -16,17 +16,19 @@ type GuildEventEnvelope struct {
 }
 
 type GuildSystem struct {
-	gw      GameWorld
-	worldID uint32
-	mu      sync.Mutex
-	guilds  map[uint32]*Guild
+	gw            GameWorld
+	worldID       uint32
+	mu            sync.Mutex
+	guilds        map[uint32]*Guild
+	memberUpdates map[uint32]*internal.UpdateGuildMemberRequest
 }
 
 func NewGuildSystem(gw GameWorld) *GuildSystem {
 	return &GuildSystem{
-		gw:      gw,
-		worldID: gw.GetWorldID(),
-		guilds:  make(map[uint32]*Guild),
+		gw:            gw,
+		worldID:       gw.GetWorldID(),
+		guilds:        make(map[uint32]*Guild),
+		memberUpdates: make(map[uint32]*internal.UpdateGuildMemberRequest),
 	}
 }
 

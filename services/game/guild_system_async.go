@@ -40,10 +40,13 @@ type allianceCreateDetail struct {
 	Meso    int32
 }
 
-func (s *GuildSystem) UpdateMemberAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.UpdateGuildMemberReply] {
+// One update per character is in flight at a time; changes made meanwhile
+// are sent as one update with the latest values when it ends.
+func (s *GuildSystem) UpdateMemberAsync(ctx actor.Context, ch *Character) *async.Task {
+	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	guildID, inGuild := ch.guild.ID()
 	if !inGuild {
-		return nil
+		return p
 	}
 
 	req := &internal.UpdateGuildMemberRequest{
@@ -53,11 +56,37 @@ func (s *GuildSystem) UpdateMemberAsync(ctx actor.Context, ch *Character) *async
 		Level:       uint32(ch.GetLevel()),
 		ClassId:     uint32(ch.class),
 	}
-	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.UpdateGuildMemberReply, error) {
-		return s.gw.Systems().Get[*InternalSystem]().client.UpdateGuildMember(c, req)
-	}, nil).OnError(func(err error) {
-		log.Printf("guild update member: character=%d guild=%d: %v", req.CharacterId, guildID, err)
+	s.mu.Lock()
+	if _, sending := s.memberUpdates[req.CharacterId]; sending {
+		s.memberUpdates[req.CharacterId] = req
+		s.mu.Unlock()
+		return p
+	}
+	s.memberUpdates[req.CharacterId] = nil
+	s.mu.Unlock()
+	return s.sendMemberUpdate(p, req)
+}
+
+func (s *GuildSystem) sendMemberUpdate(p *async.Task, req *internal.UpdateGuildMemberRequest) *async.Task {
+	p.OnError(func(err error) {
+		log.Printf("guild update member: character=%d guild=%d: %v", req.CharacterId, req.GuildId, err)
 	})
+	p.Finally(func() {
+		s.mu.Lock()
+		next := s.memberUpdates[req.CharacterId]
+		if next == nil {
+			delete(s.memberUpdates, req.CharacterId)
+			s.mu.Unlock()
+			return
+		}
+		s.memberUpdates[req.CharacterId] = nil
+		s.mu.Unlock()
+		s.sendMemberUpdate(async.NewTask(nil, core.InternalRPCPerStepTimeout), next)
+	})
+	p.ThenRPC(func(c context.Context) (*internal.UpdateGuildMemberReply, error) {
+		return s.gw.Systems().Get[*InternalSystem]().client.UpdateGuildMember(c, req)
+	}, nil)
+	return p
 }
 
 func (s *GuildSystem) StoreGuild(ch *Character, guildPb *internal.Guild) {
