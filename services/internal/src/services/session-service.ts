@@ -188,17 +188,12 @@ export class SessionService {
         // The game server reads an error reply as "did not enter the game", and a caller that already timed out never reads the reply,
         // so every failure after the session moved, and a caller gone by the end, leaves it again.
         try {
-            await this.announcePresence(worldId, characterId, {
-                family: true,
-                party: true,
-                buddyChannel: channelId,
-                guildOnline: gameToGameTransfer ? undefined : true,
-            });
-            const reply = await this.characterService.load(worldId, row);
             // Only a move between servers keeps the seat; a new login starts with no messenger window, so a seat
-            // left by a transfer that never arrived is given up.
+            // left by a transfer that never arrived is given up. The seat moves right after the session does,
+            // since a messenger request from anyone in the world prunes a seat whose channel no longer matches.
+            let messengerRoomId = 0;
             if (gameToGameTransfer) {
-                reply.messengerRoomId = await this.socialService
+                messengerRoomId = await this.socialService
                     .moveMessenger(worldId, characterId, channelId)
                     .catch((err) => {
                         console.error("[social] messenger move failed", err);
@@ -209,6 +204,14 @@ export class SessionService {
                     console.error("[social] messenger leave failed", err);
                 });
             }
+            await this.announcePresence(worldId, characterId, {
+                family: true,
+                party: true,
+                buddyChannel: channelId,
+                guildOnline: gameToGameTransfer ? undefined : true,
+            });
+            const reply = await this.characterService.load(worldId, row);
+            reply.messengerRoomId = messengerRoomId;
             if (callerGone()) {
                 throw new Error(`enter game: caller left before the reply (character=${characterId})`);
             }
