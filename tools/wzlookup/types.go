@@ -279,11 +279,8 @@ type Shop struct {
 }
 
 type ShopItem struct {
-	ItemID    uint32  `yaml:"item_id"`
-	Price     int     `yaml:"price"`
-	Period    int     `yaml:"period,omitempty"`
-	Stock     int     `yaml:"stock,omitempty"`
-	UnitPrice float64 `yaml:"unit_price,omitempty"`
+	ItemID uint32 `yaml:"item_id"`
+	Price  int    `yaml:"price"`
 }
 
 type NpcsFile struct {

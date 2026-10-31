@@ -768,11 +768,8 @@ func exportShops(res *wz.Resources, wzPath, outDir string) error {
 		items := make([]ShopItem, 0, len(shop.Items))
 		for _, item := range shop.Items {
 			items = append(items, ShopItem{
-				ItemID:    item.ItemID,
-				Price:     item.Price,
-				Period:    item.Period,
-				Stock:     item.Stock,
-				UnitPrice: item.UnitPrice,
+				ItemID: item.ItemID,
+				Price:  item.Price,
 			})
 		}
 		shops[npcID] = Shop{

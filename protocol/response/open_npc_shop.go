@@ -3,6 +3,7 @@ package response
 import (
 	"math"
 
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/stream"
 )
@@ -25,10 +26,8 @@ func (p *OpenNpcShop) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU32(item.ItemID)
 		writer.Write32(int32(item.Price))
 
-		isShuriken := item.ItemID/10000 == 207
-		isBullet := item.ItemID/10000 == 233
-
-		if isShuriken || isBullet {
+		category := item.ItemID / 10000
+		if category == constant.ItemCategoryShuriken || category == constant.ItemCategoryBullet {
 			writer.WriteU8(0)
 			writer.WriteU8(0)
 			writer.WriteU8(0)
@@ -37,9 +36,7 @@ func (p *OpenNpcShop) Serialize(writer *stream.StreamWriter) error {
 			writer.WriteU8(0)
 
 			priceAsDouble := 1.0
-			if item.UnitPrice > 0 {
-				priceAsDouble = item.UnitPrice
-			} else if itemData, ok := p.Items[item.ItemID].(*wz.Consume); ok {
+			if itemData, ok := p.Items[item.ItemID].(*wz.Consume); ok {
 				priceAsDouble = itemData.UnitPrice
 			}
 			writer.Write16(doubleToShortBits(priceAsDouble))

@@ -1913,19 +1913,6 @@ func loadStringResources(path string) (*map[uint32]map[string]string, error) {
 	return &result, nil
 }
 
-func parseUnitPrice(unitPriceStr string) float64 {
-
-	priceStr := strings.TrimPrefix(unitPriceStr, "[R8]")
-	priceStr = strings.TrimPrefix(priceStr, "[R4]")
-	priceStr = strings.Trim(priceStr, "[]")
-
-	price, err := strconv.ParseFloat(priceStr, 64)
-	if err != nil {
-		return 0
-	}
-	return price
-}
-
 var rechargeableItems = []uint32{
 	2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
 	2070006, 2070007, 2070008, 2070009, 2070010, 2070011,
@@ -1968,16 +1955,6 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 					item.ItemID = uint32(intField.Value)
 				case "price":
 					item.Price = intField.Value
-				case "period":
-					item.Period = intField.Value
-				case "stock":
-					item.Stock = intField.Value
-				}
-			}
-
-			for _, strField := range itemNode.Strings {
-				if strField.Name == "unitPrice" {
-					item.UnitPrice = parseUnitPrice(strField.Value)
 				}
 			}
 
@@ -1999,13 +1976,7 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 
 		for _, rechargeID := range rechargeableItems {
 			if !existingRechargeable[rechargeID] {
-				shop.Items = append(shop.Items, ShopItem{
-					ItemID:    rechargeID,
-					Price:     0,
-					Period:    0,
-					Stock:     0,
-					UnitPrice: 0,
-				})
+				shop.Items = append(shop.Items, ShopItem{ItemID: rechargeID})
 			}
 		}
 

@@ -1,11 +1,8 @@
 package wz
 
 type ShopItem struct {
-	ItemID    uint32
-	Price     int
-	Period    int
-	Stock     int
-	UnitPrice float64
+	ItemID uint32
+	Price  int
 }
 
 type Shop struct {
