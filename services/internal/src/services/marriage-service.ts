@@ -416,7 +416,8 @@ export class MarriageService {
             return { result: loaded.result, marriage: undefined };
         }
         if (loaded.divorced) {
-            await this.notify(worldId, [loaded.row.groom_id, loaded.row.bride_id], "divorced");
+            const partnerId = loaded.row.groom_id === characterId ? loaded.row.bride_id : loaded.row.groom_id;
+            await this.notify(worldId, [partnerId], "divorced");
             return { result: loaded.result, marriage: undefined };
         }
         if (loaded.requested) {

@@ -656,9 +656,9 @@ local function divorce(ctx)
         return ctx:fail("이혼 확인 질문이 오지 않음")
     end
     local hidden = {}
-    ctx:hook("spouse_hidden", function(_, bot, p)
-        if p.map_id == 0 and p.character_id == 0 then
-            hidden[bot:id()] = true
+    ctx:hook("spouse_hidden", function(_, bot, p, name)
+        if name == "spouse_map" and p.map_id == 0 and p.character_id == 0 then
+            hidden[bot:id()] = (hidden[bot:id()] or 0) + 1
         end
     end)
     local divorced = groom:request(resp.engage_result, req.dialog { dialog_type = DIALOG.yes_no, next = true },
@@ -671,7 +671,9 @@ local function divorce(ctx)
     end
     ctx:sleep(1000)
     ctx:unhook("spouse_hidden")
-    if check(ctx, hidden[groom:id()] == true and hidden[bride:id()] == true, "이혼 후 배우자 위치가 지워지지 않음") == false then
+    if check(ctx, hidden[groom:id()] == 1 and hidden[bride:id()] == 1,
+            string.format("이혼 후 배우자 위치 지움 횟수 신청자 %s, 배우자 %s (기대 1, 1)", tostring(hidden[groom:id()]),
+                tostring(hidden[bride:id()]))) == false then
         return false
     end
     if shift_clock(ctx, groom, "/현재시간초기화", "현재 시간 보정 초기화") == false then
