@@ -19,6 +19,16 @@ M.apply_buff_fixed = function(me, skill, flag, value)
     me:buff(skill, flag, value)
 end
 
+-- Dark sight slows its user by the skill's speed.
+M.apply_dark_sight = function(me, skill)
+    local vals = { [BuffFlag.Darksight] = 1 }
+    local effect = skill:effect()
+    if effect ~= nil and effect.speed ~= 0 then
+        vals[BuffFlag.Speed] = effect.speed
+    end
+    me:buff(skill, vals)
+end
+
 M.apply_iron_body = function(me, skill)
     local effect = skill:effect()
     if effect == nil then

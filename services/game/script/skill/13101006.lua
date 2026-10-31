@@ -4,6 +4,6 @@ local util = require("script/lib/skill")
 
 return {
     on_activated = function(me, skill, params)
-        util.apply_buff_fixed(me, skill, BuffFlag.Darksight, 1)
+        util.apply_dark_sight(me, skill)
     end
 }

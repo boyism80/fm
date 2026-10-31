@@ -45,6 +45,8 @@ local EQUIP = 1
 local WEAPON_SLOT = -11
 local RED_POTION = 2000000
 local ALCHEMIST = 4110000
+local DARK_SIGHT = 4001003
+local DARK_SIGHT_SPEED = -30
 local ALCHEMIST_CYGNUS = 14110003
 local IMPROVING_MP_RECOVERY = 2000000
 local MP_BURN_MOB = 8110300
@@ -78,6 +80,7 @@ local BUFF = {
     jump = { mask = 0x100, position = 4 },
     max_hp = { mask = 0x2000, position = 4 },
     morph = { mask = 0x2, position = 3 },
+    darksight = { mask = 0x400, position = 4 },
 }
 
 local function check(ctx, ok, message)
@@ -947,6 +950,25 @@ local function transform_stats(ctx)
         "트랜스폼 버프 능력치가 WZ와 다름: " .. got)
 end
 
+local function dark_sight_speed(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 30, ROGUE, "-") == false or learn(ctx, bot, DARK_SIGHT) == false then
+        return false
+    end
+    if pq.command(bot, "/마력바꾸기 1000", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    local p = bot:request(resp.update_self_buff, req.active_skill { skill_id = DARK_SIGHT, skill_level = 1 }, function(p)
+        return p.buff_id == DARK_SIGHT
+    end, 3000)
+    if p == false then
+        return ctx:fail("다크 사이트 버프 응답 없음")
+    end
+    return check(ctx, buff_value(p, BUFF.darksight) == 1 and buff_value(p, BUFF.speed) == DARK_SIGHT_SPEED,
+        string.format("다크 사이트 버프가 WZ와 다름: darksight=%s speed=%s (기대 1, %d)",
+            tostring(buff_value(p, BUFF.darksight)), tostring(buff_value(p, BUFF.speed)), DARK_SIGHT_SPEED))
+end
+
 -- Dragon Roar under half HP is refused before it hits; above half it costs the WZ share of max HP.
 local function dragon_roar_half_hp(ctx)
     local bot = ctx:bot(0)
@@ -1008,7 +1030,7 @@ local function dragon_roar_half_hp(ctx)
 end
 
 test_suite {
-    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용·GM 하이퍼 바디·변신 능력치·드래곤 로어 HP 조건",
+    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용·GM 하이퍼 바디·변신 능력치·드래곤 로어 HP 조건·다크 사이트 감속",
     bot_count = 2,
 
     scenarios = {
@@ -1031,6 +1053,7 @@ test_suite {
         sauna_robe_recovery,
         dragon_roar_half_hp,
         transform_stats,
+        dark_sight_speed,
         -- Last: the hyper body stays on the other bot and would raise its max HP.
         gm_hyper_body,
     },
