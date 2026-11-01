@@ -5,13 +5,11 @@ import (
 	"math/rand"
 	"slices"
 	"time"
-	"unicode"
 
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/types"
-	"golang.org/x/text/encoding/korean"
 )
 
 const (
@@ -194,14 +192,8 @@ func (p *ActivePet) FeedCash(itemID uint32) error {
 }
 
 func (p *ActivePet) Rename(name string) error {
-	encoded, err := korean.EUCKR.NewEncoder().String(name)
-	if err != nil || len(encoded) < constant.PetNameMinBytes || len(encoded) > constant.PetNameMaxBytes {
+	if !p.owner.gameWorld.GetResources().ValidName(name) {
 		return ErrPetNameInvalid
-	}
-	for _, r := range name {
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-			return ErrPetNameInvalid
-		}
 	}
 
 	p.item.name = name

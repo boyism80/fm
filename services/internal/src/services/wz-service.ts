@@ -134,7 +134,7 @@ export class WzService {
         return looks.every((id, idx) => parts[idx]?.has(id) === true);
     }
 
-    /** Character, guild and alliance names: letters, digits and Hangul only, 3-12 bytes in the client's CP949. */
+    /** Character and guild names (the game server checks alliance and pet names the same way): letters, digits and Hangul only, 3-12 bytes in the client's CP949. */
     isValidName(name: string): boolean {
         if (typeof name !== "string" || NAME_PATTERN.test(name) === false) {
             return false;
