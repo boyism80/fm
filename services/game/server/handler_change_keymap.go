@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
@@ -19,6 +20,18 @@ func (ChangeKeymap) New(gs *GameServer) *ChangeKeymap {
 	}
 }
 
+// petPotion is the item the pets drink, or 0 to clear it when the client sends anything but a consume item.
+func (h *ChangeKeymap) petPotion(data int32) uint32 {
+	if data <= 0 {
+		return 0
+	}
+	model, ok := h.gs.GetResources().Items[uint32(data)]
+	if !ok || model.GetInventoryType() != constant.InventoryTypeConsume {
+		return 0
+	}
+	return uint32(data)
+}
+
 func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap) error {
 	gc, ok := ctx.Client.(*client.GameClient)
 	if !ok {
@@ -30,10 +43,10 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 	}
 	switch req.Mode {
 	case 1:
-		ch.Pets().SetHPItem(uint32(req.Data))
+		ch.Pets().SetHPItem(h.petPotion(req.Data))
 		return nil
 	case 2:
-		ch.Pets().SetMPItem(uint32(req.Data))
+		ch.Pets().SetMPItem(h.petPotion(req.Data))
 		return nil
 	}
 

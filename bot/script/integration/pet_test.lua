@@ -337,6 +337,22 @@ local function auto_potion(ctx)
     return check(ctx, (bot:items()[POTION] or 0) == 4, "펫이 물약을 먹이지 않음")
 end
 
+-- A pet potion that is not a consume item (here -1) clears the setting; stored as is, it overflowed the save and
+-- broke the save of everyone on the map.
+local function invalid_auto_potion(ctx)
+    local bot = ctx:bot(5)
+    if setup(ctx, bot, PET .. ":1") == false then
+        return false
+    end
+    bot:send(req.change_keymap { mode = 1, data = -1 })
+    bot:send(req.change_keymap { mode = 2, data = -1 })
+    ctx:sleep(300)
+    if pq.command(bot, "/서버저장", "서버 저장이 완료되었습니다") == false then
+        return ctx:fail("펫 물약을 -1로 지정한 뒤 서버 저장 실패")
+    end
+    return true
+end
+
 local function equip_scroll(ctx)
     local bot = ctx:bot(6)
     if setup(ctx, bot, PET .. ":1," .. PET_EQUIP .. ":1," .. PET_EQUIP_SCROLL .. ":1," .. HELMET_SCROLL .. ":1") == false then
@@ -398,6 +414,7 @@ test_suite {
         closeness_and_hunger,
         loot,
         auto_potion,
+        invalid_auto_potion,
         equip_scroll,
         abnormal,
     },
