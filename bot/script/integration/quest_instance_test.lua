@@ -152,6 +152,37 @@ local function read_documents(ctx, bot, count)
     return true
 end
 
+-- A completion item with no count takes every one the character has, not only what the check asked for.
+local function count_free_item_taken(ctx)
+    local bot = ctx:bot(0)
+    local pink_viola, lith_harbor, quest, npc = 4031025, 104000000, 2052, 20000
+    if setup(ctx, bot, "30 0 0 " .. pink_viola .. ":15 -", lith_harbor) == false then
+        return false
+    end
+    for _, spot in ipairs(bot:npc_spots()) do
+        if spot.id == npc then
+            bot:move(spot.x, spot.y)
+        end
+    end
+    -- Mode 1 starts the quest (status 1), mode 2 completes it (status 2).
+    for _, status in ipairs({ 1, 2 }) do
+        local mode = status
+        local p = bot:request(resp.update_quest, req.quest_action { mode = mode, quest_id = quest, npcid = npc },
+            function(p)
+                return p.quest_status.quest_id == quest and p.quest_status.status == status
+            end, 5000)
+        if p == false then
+            return ctx:fail(string.format("퀘스트 %d 상태 %d가 되지 않음", quest, status))
+        end
+    end
+    ctx:sleep(500)
+    local left = bot:items()[pink_viola] or 0
+    if left ~= 0 then
+        return ctx:fail(string.format("완료 뒤 핑크 비올라 %d개 남음 (기대 0)", left))
+    end
+    return true
+end
+
 test_suite {
     name = "Quest: 1인 퀘스트 인스턴스",
     bot_count = 1,
@@ -170,6 +201,7 @@ test_suite {
         return true
     end,
     scenarios = {
+        count_free_item_taken,
         function(ctx)
             local bot = ctx:bot(0)
             if setup(ctx, bot, "30 100 0 - 2174:2,2175:1", 120000100) == false then

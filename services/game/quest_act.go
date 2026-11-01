@@ -314,14 +314,22 @@ func (qc *Quests) appendPhaseActItems(spec *ExchangeSpec, classID constant.Class
 
 	extNum := 0
 	for _, item := range items {
-		if !qc.matchesRewardItem(item, classID) || item.Count == 0 {
+		if !qc.matchesRewardItem(item, classID) {
 			continue
 		}
-		if item.Count < 0 {
+		// A count of 0 takes every one the character has.
+		if item.Count <= 0 {
+			take := uint16(-item.Count)
+			if item.Count == 0 {
+				take = qc.owner.inventory.GetCountByItemID(item.ItemID)
+			}
+			if take == 0 {
+				continue
+			}
 			if spec.Cost.Items == nil {
 				spec.Cost.Items = make(map[uint32]uint16)
 			}
-			spec.Cost.Items[item.ItemID] += uint16(-item.Count)
+			spec.Cost.Items[item.ItemID] += take
 			continue
 		}
 
