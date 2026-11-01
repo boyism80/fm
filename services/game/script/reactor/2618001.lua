@@ -1,9 +1,7 @@
 -- Reactor name (Reactor.wz/2618001.img.xml): 메이플아일랜드 범용리엑터
 
-local rnj32_out_hit, on_reactor
-
 return {
-    rnj32_out_hit = function(map, reactor_name)
+    open_out_door = function(map, reactor_name)
         local reactor = map:find_reactor_name(reactor_name)
         if reactor == nil then
             return false
@@ -29,6 +27,6 @@ return {
         if wz:id() == 926100200 then
             reactor_name = "rnj32_out"
         end
-        run_on_map(wz:id() + 2, "script/reactor/2618001.lua", "rnj32_out_hit", reactor_name)
+        run_on_map(wz:id() + 2, "script/reactor/2618001.lua", "open_out_door", reactor_name)
     end
 }

@@ -3,8 +3,6 @@
 local quest_id = 2291
 local vip_base = 103040440
 
-local player_count, reset_vip_map, on_end
-
 local function map_player_count(map_id)
     local ok, count = run_on_map(map_id, "script/quest/2291.lua", "player_count")
     if not ok then
