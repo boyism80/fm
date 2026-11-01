@@ -19,6 +19,21 @@ M.apply_buff_fixed = function(me, skill, flag, value)
     me:buff(skill, flag, value)
 end
 
+-- Homing marks the first mob the attack hurt; a new mark replaces the old one.
+M.mark_homing = function(me, skill, damages)
+    if skill == nil or me == nil or damages == nil then
+        return
+    end
+    for mob, hits in pairs(damages) do
+        for i = 1, #hits do
+            if (hits[i] or 0) > 0 then
+                mob:homing(me, skill)
+                return
+            end
+        end
+    end
+end
+
 -- Dark sight slows its user by the skill's speed.
 M.apply_dark_sight = function(me, skill)
     local vals = { [BuffFlag.Darksight] = 1 }
