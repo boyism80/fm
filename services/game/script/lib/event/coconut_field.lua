@@ -80,14 +80,14 @@ M.hooks = {
         if id < 0 or id >= COCONUTS or sm:get_property("coconut_gone:" .. id) == "true" then
             return
         end
-        if now() < number(sm, "coconut_next:" .. id) then
+        if now_ms() < number(sm, "coconut_next:" .. id) then
             return
         end
         local map = field(sm)
         local hits = number(sm, "coconut_hits:" .. id)
         if hits <= 2 or math.random() >= 0.4 then
             sm:set_property("coconut_hits:" .. id, tostring(hits + 1))
-            sm:set_property("coconut_next:" .. id, tostring(now() + 1))
+            sm:set_property("coconut_next:" .. id, tostring(now_ms() + 1000))
             map:coconut_hit(id, 0, STATE.Hit)
             return
         end

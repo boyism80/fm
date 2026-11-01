@@ -34,6 +34,18 @@ local function play(ctx, key, name, map_id)
     if check(ctx, shaken ~= false, "때린 코코넛이 흔들리지 않음") == false then
         return false
     end
+    -- The same coconut takes no hit for a full second after one lands, whatever the clock's second.
+    local again = false
+    for _ = 1, 4 do
+        if bot:request(resp.coconut_hit, req.coconut_hit { id = 0, delay = 0 }, function(p)
+                return p.id == 0
+            end, 200) ~= false then
+            again = true
+        end
+    end
+    if check(ctx, again == false, "1초가 지나기 전에 같은 코코넛이 다시 맞음") == false then
+        return false
+    end
 
     local scored = false
     for _ = 1, HITS_EACH do

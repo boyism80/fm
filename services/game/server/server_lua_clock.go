@@ -25,6 +25,11 @@ func registerClockLuaFuncs(gs *GameServer, luaState *lua.LState) {
 		return 1
 	})
 
+	luax.RegisterFunc(luaState, "now_ms", func(L *lua.LState) int {
+		L.Push(lua.LNumber(clock.Now().UnixMilli()))
+		return 1
+	})
+
 	luax.RegisterFunc(luaState, "now", func(L *lua.LState) int {
 		argc := L.GetTop()
 		if argc == 0 {
