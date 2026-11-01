@@ -419,6 +419,26 @@ export class FamilyService {
         return this.reply(world, status, id, juniorId, seniorId);
     }
 
+    // A deleted character leaves its senior and lets its juniors go, the same as separating, so it no longer holds
+    // a junior slot or the family's lead; then its row goes.
+    async removeMember(world: number, characterId: number) {
+        const rows = await this.internalContext.withPgGlobalTransaction(world, (tx) =>
+            tx.query<{ character_id: number; senior_id: number }>(
+                "SELECT character_id, senior_id FROM social_family WHERE character_id=$1 OR senior_id=$1",
+                [characterId],
+            ),
+        );
+        for (const row of rows.rows) {
+            if (row.character_id === characterId && row.senior_id === 0) {
+                continue;
+            }
+            await this.separate({ worldId: world, characterId, juniorId: row.character_id });
+        }
+        await this.internalContext.withPgGlobalTransaction(world, (tx) =>
+            tx.query("DELETE FROM social_family WHERE character_id=$1", [characterId]),
+        );
+    }
+
     async setPrecept(req: SetFamilyPreceptRequest): Promise<FamilyReply> {
         const world = req.worldId;
         const id = req.characterId;

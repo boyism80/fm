@@ -920,6 +920,7 @@ export class CharacterService {
         if (!partyLeft.ok && partyLeft.code !== PartyErrorCode.NOT_IN_PARTY) {
             return { success: false };
         }
+        await this.familyService.removeMember(worldId, characterId);
 
         await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.skillRepo.replaceBySnapshot(worldId, String(characterId), []);
