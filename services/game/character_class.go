@@ -6,13 +6,13 @@ func (ch *Character) ChangeClass(newClass constant.ClassType) {
 	oldClass := ch.class
 	ch.class = newClass
 
-	ch.grantClassChangeSP(newClass)
+	ch.grantClassChangePoints(newClass)
 
-	ch.listener.OnClassChange(ch, oldClass, newClass, ch.points.sp)
+	ch.listener.OnClassChange(ch, oldClass, newClass, ch.points.sp, ch.points.ap)
 	ch.NotifyLevelClassChanged()
 }
 
-func (ch *Character) grantClassChangeSP(newClass constant.ClassType) {
+func (ch *Character) grantClassChangePoints(newClass constant.ClassType) {
 	if newClass == constant.ClassBeginner || newClass == constant.ClassNoblesse || newClass == constant.ClassLegend {
 		return
 	}
@@ -21,6 +21,10 @@ func (ch *Character) grantClassChangeSP(newClass constant.ClassType) {
 
 	if newClass%10 >= 2 {
 		ch.points.sp += 2
+	}
+
+	if newClass%10 >= 1 && ch.level >= 70 {
+		ch.points.ap += 5
 	}
 
 	if newClass%100 == 0 {

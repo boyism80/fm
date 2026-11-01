@@ -1609,10 +1609,11 @@ func (l *CharacterListenerImpl) OnNpcAction(ch *game.Character, bytes []byte) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnClassChange(ch *game.Character, oldClass constant.ClassType, newClass constant.ClassType, skillPoint uint16) {
+func (l *CharacterListenerImpl) OnClassChange(ch *game.Character, oldClass constant.ClassType, newClass constant.ClassType, skillPoint uint16, abilityPoint uint16) {
 	stats := map[constant.Stat]int32{
 		constant.StatClass:       int32(newClass),
 		constant.StatAvailableSP: int32(skillPoint),
+		constant.StatAvailableAP: int32(abilityPoint),
 	}
 
 	ch.Send(&response.UpdateStats{

@@ -9,6 +9,9 @@ local DARK_CRYSTAL = 4005004
 local STRENGTH_NECKLACE = 4031057
 local WISDOM_NECKLACE = 4031058
 local TRUTH = "진실이다"
+local CLASS = 0x20
+local AVAILABLE_AP = 0x4000
+local THIRD_CLASS_AP = 5
 
 local ANSWERS = {
     ["레벨1에서 2로 갈때 필요한 경험치량"] = { "15" },
@@ -139,12 +142,25 @@ local function advance(ctx, path)
     if (bot:items()[WISDOM_NECKLACE] or 0) ~= 1 then
         return ctx:fail("지혜의 목걸이를 받지 못함")
     end
+    if pq.command(bot, "/AP바꾸기 0", "AP 설정: 0") == false then
+        return ctx:fail("AP 설정 실패")
+    end
+    local ap = nil
+    ctx:hook("third_class_ap", function(_, _, p, name)
+        if name == "update_stats" and p.stats[CLASS] ~= nil then
+            ap = p.stats[AVAILABLE_AP]
+        end
+    end)
     local said = visit(ctx, bot, CHIEFS, path.chief)
+    ctx:unhook("third_class_ap")
     if said == false then
         return false
     end
     if bot:class() ~= path.third then
         return ctx:fail(string.format("3차 전직 실패: %d (기대 %d) %s", bot:class(), path.third, tostring(said)))
+    end
+    if ap ~= THIRD_CLASS_AP then
+        return ctx:fail(string.format("3차 전직 AP %s (기대 %d)", tostring(ap), THIRD_CLASS_AP))
     end
     return true
 end
