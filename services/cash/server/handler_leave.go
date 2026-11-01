@@ -71,6 +71,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 			ClientIp:         ctx.Client.GetRemoteIP(),
 			Debuffs:          character.DebuffsRPC(),
 			SourceCashShopId: &cashShopID,
+			Presentation:     character.PresentationRPC(),
 		}, grpc.WaitForReady(true))
 	}, func(reply *internal.BeginGameTransitionReply) error {
 		transitionPending = false

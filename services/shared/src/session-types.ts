@@ -1,5 +1,5 @@
 import type { AccountSessionState } from "./session-state";
-import type { Debuff } from "./protobuf/generated/fminternal/internal_service";
+import type { CharacterPresentation, Debuff } from "./protobuf/generated/fminternal/internal_service";
 
 export interface AccountSession {
     version: number;
@@ -14,5 +14,6 @@ export interface AccountSession {
     returnChannelId: number | null;
     gameToGameTransfer: boolean;
     debuffs: Debuff[];
+    presentation: CharacterPresentation | null;
     timestamps: { createdAt: string | null; updatedAt: string | null; stateChangedAt: string | null };
 }

@@ -755,6 +755,13 @@ message EnterGameReply {
   repeated SkillMacro skill_macros = 23;
   repeated UnsettledRequest unsettled_requests = 24;
   uint32 messenger_room_id = 25;
+  CharacterPresentation presentation = 26;
+}
+
+// What other players see on a character that lives only while it is online: it follows a channel change or a cash shop visit.
+message CharacterPresentation {
+  string chalkboard = 1;
+  uint32 item_effect_id = 2;
 }
 
 enum UnsettledType {
@@ -804,6 +811,7 @@ message BeginGameTransitionRequest {
   repeated Debuff debuffs = 5;
   optional uint32 source_channel_id = 6;
   optional uint32 source_cash_shop_id = 7;
+  CharacterPresentation presentation = 8;
 }
 
 enum SessionErrorCode {

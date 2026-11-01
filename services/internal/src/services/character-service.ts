@@ -441,6 +441,7 @@ export class CharacterService {
             ),
             buddyCapacity: buddyPack.capacity >>> 0,
             debuffs: [],
+            presentation: undefined,
             messengerRoomId: 0,
             marriage: marriage.marriage,
             cashWishlist: cashWishlist.filter((sn) => sn !== 0),

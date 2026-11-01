@@ -2536,6 +2536,13 @@ export interface EnterGameReply {
   skillMacros: SkillMacro[];
   unsettledRequests: UnsettledRequest[];
   messengerRoomId: number;
+  presentation: CharacterPresentation | undefined;
+}
+
+/** What other players see on a character that lives only while it is online: it follows a channel change or a cash shop visit. */
+export interface CharacterPresentation {
+  chalkboard: string;
+  itemEffectId: number;
 }
 
 export interface UnsettledRequest {
@@ -2562,6 +2569,7 @@ export interface BeginGameTransitionRequest {
   debuffs: Debuff[];
   sourceChannelId?: number | undefined;
   sourceCashShopId?: number | undefined;
+  presentation: CharacterPresentation | undefined;
 }
 
 export interface BeginGameTransitionReply {
@@ -13622,6 +13630,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     skillMacros: [],
     unsettledRequests: [],
     messengerRoomId: 0,
+    presentation: undefined,
   };
 }
 
@@ -13703,6 +13712,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     if (message.messengerRoomId !== 0) {
       writer.uint32(200).uint32(message.messengerRoomId);
+    }
+    if (message.presentation !== undefined) {
+      CharacterPresentation.encode(message.presentation, writer.uint32(210).fork()).join();
     }
     return writer;
   },
@@ -13924,6 +13936,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.messengerRoomId = reader.uint32();
           continue;
         }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.presentation = CharacterPresentation.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14010,6 +14030,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : isSet(object.messenger_room_id)
         ? globalThis.Number(object.messenger_room_id)
         : 0,
+      presentation: isSet(object.presentation) ? CharacterPresentation.fromJSON(object.presentation) : undefined,
     };
   },
 
@@ -14090,6 +14111,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.messengerRoomId !== 0) {
       obj.messengerRoomId = Math.round(message.messengerRoomId);
     }
+    if (message.presentation !== undefined) {
+      obj.presentation = CharacterPresentation.toJSON(message.presentation);
+    }
     return obj;
   },
 
@@ -14131,6 +14155,89 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.skillMacros = object.skillMacros?.map((e) => SkillMacro.fromPartial(e)) || [];
     message.unsettledRequests = object.unsettledRequests?.map((e) => UnsettledRequest.fromPartial(e)) || [];
     message.messengerRoomId = object.messengerRoomId ?? 0;
+    message.presentation = (object.presentation !== undefined && object.presentation !== null)
+      ? CharacterPresentation.fromPartial(object.presentation)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCharacterPresentation(): CharacterPresentation {
+  return { chalkboard: "", itemEffectId: 0 };
+}
+
+export const CharacterPresentation: MessageFns<CharacterPresentation> = {
+  encode(message: CharacterPresentation, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.chalkboard !== "") {
+      writer.uint32(10).string(message.chalkboard);
+    }
+    if (message.itemEffectId !== 0) {
+      writer.uint32(16).uint32(message.itemEffectId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CharacterPresentation {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCharacterPresentation();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.chalkboard = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.itemEffectId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CharacterPresentation {
+    return {
+      chalkboard: isSet(object.chalkboard) ? globalThis.String(object.chalkboard) : "",
+      itemEffectId: isSet(object.itemEffectId)
+        ? globalThis.Number(object.itemEffectId)
+        : isSet(object.item_effect_id)
+        ? globalThis.Number(object.item_effect_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CharacterPresentation): unknown {
+    const obj: any = {};
+    if (message.chalkboard !== "") {
+      obj.chalkboard = message.chalkboard;
+    }
+    if (message.itemEffectId !== 0) {
+      obj.itemEffectId = Math.round(message.itemEffectId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CharacterPresentation>, I>>(base?: I): CharacterPresentation {
+    return CharacterPresentation.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CharacterPresentation>, I>>(object: I): CharacterPresentation {
+    const message = createBaseCharacterPresentation();
+    message.chalkboard = object.chalkboard ?? "";
+    message.itemEffectId = object.itemEffectId ?? 0;
     return message;
   },
 };
@@ -14404,6 +14511,7 @@ function createBaseBeginGameTransitionRequest(): BeginGameTransitionRequest {
     debuffs: [],
     sourceChannelId: undefined,
     sourceCashShopId: undefined,
+    presentation: undefined,
   };
 }
 
@@ -14429,6 +14537,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     }
     if (message.sourceCashShopId !== undefined) {
       writer.uint32(56).uint32(message.sourceCashShopId);
+    }
+    if (message.presentation !== undefined) {
+      CharacterPresentation.encode(message.presentation, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -14496,6 +14607,14 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
           message.sourceCashShopId = reader.uint32();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.presentation = CharacterPresentation.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14540,6 +14659,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
         : isSet(object.source_cash_shop_id)
         ? globalThis.Number(object.source_cash_shop_id)
         : undefined,
+      presentation: isSet(object.presentation) ? CharacterPresentation.fromJSON(object.presentation) : undefined,
     };
   },
 
@@ -14566,6 +14686,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     if (message.sourceCashShopId !== undefined) {
       obj.sourceCashShopId = Math.round(message.sourceCashShopId);
     }
+    if (message.presentation !== undefined) {
+      obj.presentation = CharacterPresentation.toJSON(message.presentation);
+    }
     return obj;
   },
 
@@ -14581,6 +14704,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     message.debuffs = object.debuffs?.map((e) => Debuff.fromPartial(e)) || [];
     message.sourceChannelId = object.sourceChannelId ?? undefined;
     message.sourceCashShopId = object.sourceCashShopId ?? undefined;
+    message.presentation = (object.presentation !== undefined && object.presentation !== null)
+      ? CharacterPresentation.fromPartial(object.presentation)
+      : undefined;
     return message;
   },
 };

@@ -4,6 +4,7 @@ import {
     SessionErrorCode,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type {
+    CharacterPresentation,
     Debuff,
     EnterCashShopReply,
     EnterGameReply,
@@ -122,6 +123,7 @@ export class SessionService {
         characterName: string,
         clientIp: string,
         debuffs: Debuff[],
+        presentation: CharacterPresentation | null,
         sourceChannelId: number | null,
         sourceCashShopId: number | null,
     ) {
@@ -137,6 +139,7 @@ export class SessionService {
                 sourceChannelId,
                 sourceCashShopId,
                 debuffs,
+                presentation,
             ),
         );
         if (ok !== 1) {
@@ -216,6 +219,7 @@ export class SessionService {
                 throw new Error(`enter game: caller left before the reply (character=${characterId})`);
             }
             reply.debuffs = gameToGameTransfer ? (account?.debuffs ?? []) : [];
+            reply.presentation = gameToGameTransfer ? (account?.presentation ?? undefined) : undefined;
             return reply;
         } catch (err) {
             await this.logout(worldId, accountId, {
@@ -273,6 +277,7 @@ export class SessionService {
                 throw new Error(`enter cash shop: caller left before the reply (character=${characterId})`);
             }
             game.debuffs = account?.debuffs ?? [];
+            game.presentation = account?.presentation ?? undefined;
             return { game, returnChannelId: Number(raw[2]), ...cashShop };
         } catch (err) {
             await this.logout(worldId, accountId, {

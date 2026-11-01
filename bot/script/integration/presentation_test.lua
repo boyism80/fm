@@ -1,6 +1,7 @@
 local pq = require("script/integration/lib/party_quest")
 
 local HUNTING_GROUND = 104040000
+local HENESYS = 100000000
 local BRAWLER = 510
 local CORKSCREW_BLOW = 5101004
 local KNUCKLE_BOOSTER = 5101006
@@ -9,6 +10,8 @@ local PANIC = 5160001
 local SUN_EFFECT = 5010000
 local MOON_EFFECT = 5010001
 local QUIET_MS = 1500
+local CHALKBOARD = 5370000
+local CHALKBOARD_TEXT = "칠판 유지"
 
 local function setup(ctx, bot, level, class, items)
     if pq.command(bot, "/봇초기화 " .. level .. " " .. class .. " 0 " .. items, "봇초기화 완료") == false then
@@ -103,6 +106,49 @@ local function close_chalkboard(ctx)
     return true
 end
 
+-- The item effect and the chalkboard follow a channel change. Setting the same one again is not shown again,
+-- so silence after the move means the new channel already has it.
+local function presentation_after_transfer(ctx)
+    local actor = ctx:bot(0)
+    local observer = ctx:bot(1)
+    -- Level 1: a level 8 beginner is left in a script dialog after entering the next channel, which blocks moving back.
+    if setup(ctx, actor, 1, 0, SUN_EFFECT .. ":1," .. CHALKBOARD .. ":1") == false then
+        return false
+    end
+    -- A town, so no monster kills the actor while it moves between channels.
+    if actor:instance_move(HENESYS) == false or observer:instance_move(HENESYS) == false then
+        return ctx:fail("헤네시스 이동 실패")
+    end
+    local chalkboard = function()
+        return req.use_cash_item { slot = actor:slot(CHALKBOARD) or 0, item_id = CHALKBOARD, text = CHALKBOARD_TEXT }
+    end
+    if seen(actor, observer, resp.item_effect, req.item_effect { item_id = SUN_EFFECT }) == false then
+        return ctx:fail("이펙트 아이템이 켜지지 않음")
+    end
+    if seen(actor, observer, resp.chalkboard, chalkboard()) == false then
+        return ctx:fail("칠판이 세워지지 않음")
+    end
+
+    if actor:transfer(1) == false or observer:transfer(1) == false then
+        return ctx:fail("채널 이동 실패")
+    end
+    ctx:sleep(1000)
+    local effect_again = seen(actor, observer, resp.item_effect, req.item_effect { item_id = SUN_EFFECT }, nil, QUIET_MS)
+    local chalkboard_again = seen(actor, observer, resp.chalkboard, chalkboard(), nil, QUIET_MS)
+    seen(actor, observer, resp.item_effect, req.item_effect { item_id = 0 }, nil, QUIET_MS)
+    seen(actor, observer, resp.chalkboard, req.close_chalkboard {}, nil, QUIET_MS)
+    if actor:transfer(0) == false or observer:transfer(0) == false then
+        return ctx:fail("원래 채널 복귀 실패")
+    end
+    if effect_again ~= false then
+        return ctx:fail("채널 이동 뒤 아이템 이펙트가 사라짐")
+    end
+    if chalkboard_again ~= false then
+        return ctx:fail("채널 이동 뒤 칠판이 사라짐")
+    end
+    return true
+end
+
 local function charge_skill_effect(ctx)
     local actor = ctx:bot(0)
     local observer = ctx:bot(1)
@@ -144,13 +190,14 @@ local function charge_skill_effect(ctx)
 end
 
 test_suite {
-    name = "Presentation: 표정·아이템 이펙트·칠판 닫기·충전 이펙트·충전 취소",
+    name = "Presentation: 표정·아이템 이펙트·칠판 닫기·채널 이동 유지·충전 이펙트·충전 취소",
     bot_count = 2,
 
     scenarios = {
         face_expression,
         item_effect,
         close_chalkboard,
+        presentation_after_transfer,
         charge_skill_effect,
     },
 }

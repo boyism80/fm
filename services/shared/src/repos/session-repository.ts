@@ -1,7 +1,7 @@
 import { redisSessionKey } from "../redis-session-key";
 import { AccountSessionState, accountSessionStateFromRedisHash } from "../session-state";
 import { SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
-import type { Debuff } from "../protobuf/generated/fminternal/internal_service";
+import type { CharacterPresentation, Debuff } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AccountSession } from "../session-types";
 import type { CharacterRepository } from "./character-repository";
@@ -46,6 +46,7 @@ export class SessionRepository {
             returnChannelId: toNumberOrNull(hash.return_channel_id),
             gameToGameTransfer: (hash.game_to_game_transfer || "0") === "1",
             debuffs: hash.debuffs ? (JSON.parse(hash.debuffs) as Debuff[]) : [],
+            presentation: hash.presentation ? (JSON.parse(hash.presentation) as CharacterPresentation) : null,
             timestamps: {
                 createdAt: hash.created_at || null,
                 updatedAt: hash.updated_at || null,
@@ -102,6 +103,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         sourceChannelId: number | null,
         sourceCashShopId: number | null,
         debuffs: Debuff[],
+        presentation: CharacterPresentation | null,
     ) {
         const { client } = this.ctx.getRedisUnifiedAccess();
         const accountKey = this.accountKey(accountId);
@@ -122,6 +124,7 @@ local source_channel_id = ARGV[6]
 local client_ip = ARGV[7]
 local debuffs = ARGV[8]
 local source_cash_shop_id = ARGV[9]
+local presentation = ARGV[10]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
@@ -157,6 +160,7 @@ redis.call("HSET", account_key,
   "client_ip", client_ip,
   "game_to_game_transfer", game_to_game_transfer,
   "debuffs", debuffs,
+  "presentation", presentation,
   "updated_at", now,
   "state_changed_at", now
 )
@@ -180,6 +184,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
             clientIp,
             (sourceCh >= 0 || sourceCs >= 0) && debuffs.length > 0 ? JSON.stringify(debuffs) : "",
             String(sourceCs),
+            (sourceCh >= 0 || sourceCs >= 0) && presentation != null ? JSON.stringify(presentation) : "",
         )) as Array<number | string>;
     }
 
@@ -291,7 +296,7 @@ redis.call("HSET", account_key,
   "updated_at", now,
   "state_changed_at", now
 )
-redis.call("HDEL", account_key, "debuffs")
+redis.call("HDEL", account_key, "debuffs", "presentation")
 redis.call("EXPIRE", account_key, ttl)
 return {1, ${SessionErrorCode.SESSION_NONE}}
 `;

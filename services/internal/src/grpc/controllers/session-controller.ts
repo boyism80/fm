@@ -94,6 +94,7 @@ export class SessionGrpcController {
                 row.name,
                 call.request.clientIp,
                 call.request.debuffs ?? [],
+                call.request.presentation ?? null,
                 call.request.sourceChannelId ?? null,
                 call.request.sourceCashShopId ?? null,
             );
@@ -154,6 +155,7 @@ export class SessionGrpcController {
                 [],
                 null,
                 null,
+                null,
             );
             callback(null, {
                 status: transition.ok
@@ -188,6 +190,7 @@ export class SessionGrpcController {
             if (!row) {
                 callback(null, {
                     family: undefined,
+                    presentation: undefined,
                     notes: [],
                     found: false,
                     character: undefined,
