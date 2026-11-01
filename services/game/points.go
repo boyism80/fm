@@ -217,6 +217,11 @@ func (p *Points) DistributeSkill(skillID uint32) bool {
 	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.class) {
 		return false
 	}
+	for reqID, reqLevel := range wzSkill.RequiredSkills {
+		if entry := p.owner.skills.Learned(reqID); entry == nil || entry.Level() < reqLevel {
+			return false
+		}
+	}
 
 	// The distributable beginner skills share their own budget, level - 1 up to 6, instead of SP.
 	beginner := wzSkill.Beginner && wzSkill.Distributable

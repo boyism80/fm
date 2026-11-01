@@ -2531,6 +2531,17 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 			}
 		}
 
+		if req := skillChild.find("req"); req != nil {
+			skill.RequiredSkills = make(map[uint32]int, len(req.Ints))
+			for _, intField := range req.Ints {
+				reqID, err := strconv.ParseUint(intField.Name, 10, 32)
+				if err != nil {
+					continue
+				}
+				skill.RequiredSkills[uint32(reqID)] = intField.Value
+			}
+		}
+
 		info := skillChild.find("info")
 		if info != nil {
 			for _, intField := range info.Ints {

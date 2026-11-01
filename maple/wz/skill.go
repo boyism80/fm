@@ -75,6 +75,8 @@ type Skill struct {
 	ElemAttr     string
 	MobSkill     bool
 	LevelData    map[int]*SkillLevelData
+	// RequiredSkills maps each skill that must be learned first to the level it needs.
+	RequiredSkills map[uint32]int
 
 	ManualCooldown bool
 	ExtraElement   string
