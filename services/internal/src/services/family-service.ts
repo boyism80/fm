@@ -183,21 +183,24 @@ export class FamilyService {
         fn: (tx: PoolClient, rows: Map<number, Relative>) => Promise<T>,
     ): Promise<T> {
         const sorted = [...new Set(ids)].sort((a, b) => a - b);
-        const memberships = async (tx: PoolClient, lock: boolean) => {
+        const memberships = async (tx: PoolClient) => {
             const result = await tx.query<{ leader_id: number | null }>(
-                `SELECT leader_id FROM social_family WHERE character_id = ANY($1::int[]) ORDER BY character_id${lock ? " FOR UPDATE" : ""}`,
+                "SELECT leader_id FROM social_family WHERE character_id = ANY($1::int[]) ORDER BY character_id",
                 [sorted],
             );
             return result.rows.map((r) => r.leader_id);
         };
         for (;;) {
             const result = await this.internalContext.withPgGlobalTransaction(world, async (tx) => {
-                const before = await memberships(tx, false);
+                const before = await memberships(tx);
                 await tx.query(
                     "SELECT leader_id FROM families WHERE leader_id = ANY($1::int[]) ORDER BY leader_id FOR UPDATE",
                     [before.filter((id) => id !== null)],
                 );
-                if ((await memberships(tx, true)).join() !== before.join()) {
+                // Every row of both families is locked at once in id order, the order a save (progress) locks
+                // its rows in, since fn may update any of them.
+                await tx.query(`${RELATIVES} FOR UPDATE`, [sorted]);
+                if ((await memberships(tx)).join() !== before.join()) {
                     return undefined;
                 }
 
