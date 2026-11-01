@@ -106,7 +106,6 @@ service Internal {
   rpc ListPlayerNpcs (ListPlayerNpcsRequest) returns (ListPlayerNpcsReply);
   rpc CreatePlayerNpc (CreatePlayerNpcRequest) returns (CreatePlayerNpcReply);
   rpc RemovePlayerNpc (RemovePlayerNpcRequest) returns (RemovePlayerNpcReply);
-  rpc WriteOperationLog (WriteOperationLogRequest) returns (WriteOperationLogReply);
   rpc FindCashShop (FindCashShopRequest) returns (FindCashShopReply);
   rpc EnterCashShop (EnterCashShopRequest) returns (EnterCashShopReply);
   rpc BuyCashItem (BuyCashItemRequest) returns (BuyCashItemReply);
@@ -2378,19 +2377,6 @@ message BroadcastNoticeRequest {
 }
 
 message BroadcastNoticeReply {
-  bool ok = 1;
-}
-
-message WriteOperationLogRequest {
-  uint32 world_id = 1;
-  uint32 channel_id = 2;
-  uint32 character_id = 3;
-  string kind = 4;
-  int64 meso = 5;
-  string detail = 6;
-}
-
-message WriteOperationLogReply {
   bool ok = 1;
 }
 

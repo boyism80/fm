@@ -80,7 +80,6 @@ import { BuddyService } from "./services/buddy-service";
 import { DistributedLock } from "@fm/shared/system/distributed-lock";
 import { DistributedLockService } from "./services/distributed-lock-service";
 import { ServerTimeService } from "./services/server-time-service";
-import { OperationLogService } from "./services/operation-log-service";
 import { ParcelService } from "./services/parcel-service";
 import { ShopSearchRanking, ShopService } from "./services/shop-service";
 import { CashShopService } from "./services/cash-shop-service";
@@ -168,7 +167,6 @@ export function createAppContainer() {
         allianceService: awilix.asClass(AllianceService).transient(),
         buddyService: awilix.asClass(BuddyService).transient(),
         serverTimeService: awilix.asClass(ServerTimeService).singleton(),
-        operationLogService: awilix.asClass(OperationLogService).transient(),
         parcelService: awilix.asClass(ParcelService).transient(),
         shopService: awilix.asClass(ShopService).transient(),
         shopSearchRanking: awilix.asClass(ShopSearchRanking).singleton(),

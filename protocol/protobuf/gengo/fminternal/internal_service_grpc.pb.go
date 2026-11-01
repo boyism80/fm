@@ -119,7 +119,6 @@ const (
 	Internal_ListPlayerNpcs_FullMethodName                 = "/fm.internal.Internal/ListPlayerNpcs"
 	Internal_CreatePlayerNpc_FullMethodName                = "/fm.internal.Internal/CreatePlayerNpc"
 	Internal_RemovePlayerNpc_FullMethodName                = "/fm.internal.Internal/RemovePlayerNpc"
-	Internal_WriteOperationLog_FullMethodName              = "/fm.internal.Internal/WriteOperationLog"
 	Internal_FindCashShop_FullMethodName                   = "/fm.internal.Internal/FindCashShop"
 	Internal_EnterCashShop_FullMethodName                  = "/fm.internal.Internal/EnterCashShop"
 	Internal_BuyCashItem_FullMethodName                    = "/fm.internal.Internal/BuyCashItem"
@@ -257,7 +256,6 @@ type InternalClient interface {
 	ListPlayerNpcs(ctx context.Context, in *ListPlayerNpcsRequest, opts ...grpc.CallOption) (*ListPlayerNpcsReply, error)
 	CreatePlayerNpc(ctx context.Context, in *CreatePlayerNpcRequest, opts ...grpc.CallOption) (*CreatePlayerNpcReply, error)
 	RemovePlayerNpc(ctx context.Context, in *RemovePlayerNpcRequest, opts ...grpc.CallOption) (*RemovePlayerNpcReply, error)
-	WriteOperationLog(ctx context.Context, in *WriteOperationLogRequest, opts ...grpc.CallOption) (*WriteOperationLogReply, error)
 	FindCashShop(ctx context.Context, in *FindCashShopRequest, opts ...grpc.CallOption) (*FindCashShopReply, error)
 	EnterCashShop(ctx context.Context, in *EnterCashShopRequest, opts ...grpc.CallOption) (*EnterCashShopReply, error)
 	BuyCashItem(ctx context.Context, in *BuyCashItemRequest, opts ...grpc.CallOption) (*BuyCashItemReply, error)
@@ -1299,16 +1297,6 @@ func (c *internalClient) RemovePlayerNpc(ctx context.Context, in *RemovePlayerNp
 	return out, nil
 }
 
-func (c *internalClient) WriteOperationLog(ctx context.Context, in *WriteOperationLogRequest, opts ...grpc.CallOption) (*WriteOperationLogReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(WriteOperationLogReply)
-	err := c.cc.Invoke(ctx, Internal_WriteOperationLog_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *internalClient) FindCashShop(ctx context.Context, in *FindCashShopRequest, opts ...grpc.CallOption) (*FindCashShopReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FindCashShopReply)
@@ -1723,7 +1711,6 @@ type InternalServer interface {
 	ListPlayerNpcs(context.Context, *ListPlayerNpcsRequest) (*ListPlayerNpcsReply, error)
 	CreatePlayerNpc(context.Context, *CreatePlayerNpcRequest) (*CreatePlayerNpcReply, error)
 	RemovePlayerNpc(context.Context, *RemovePlayerNpcRequest) (*RemovePlayerNpcReply, error)
-	WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error)
 	FindCashShop(context.Context, *FindCashShopRequest) (*FindCashShopReply, error)
 	EnterCashShop(context.Context, *EnterCashShopRequest) (*EnterCashShopReply, error)
 	BuyCashItem(context.Context, *BuyCashItemRequest) (*BuyCashItemReply, error)
@@ -2064,9 +2051,6 @@ func (UnimplementedInternalServer) CreatePlayerNpc(context.Context, *CreatePlaye
 }
 func (UnimplementedInternalServer) RemovePlayerNpc(context.Context, *RemovePlayerNpcRequest) (*RemovePlayerNpcReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemovePlayerNpc not implemented")
-}
-func (UnimplementedInternalServer) WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method WriteOperationLog not implemented")
 }
 func (UnimplementedInternalServer) FindCashShop(context.Context, *FindCashShopRequest) (*FindCashShopReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FindCashShop not implemented")
@@ -3982,24 +3966,6 @@ func _Internal_RemovePlayerNpc_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Internal_WriteOperationLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WriteOperationLogRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InternalServer).WriteOperationLog(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Internal_WriteOperationLog_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).WriteOperationLog(ctx, req.(*WriteOperationLogRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Internal_FindCashShop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FindCashShopRequest)
 	if err := dec(in); err != nil {
@@ -4964,10 +4930,6 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemovePlayerNpc",
 			Handler:    _Internal_RemovePlayerNpc_Handler,
-		},
-		{
-			MethodName: "WriteOperationLog",
-			Handler:    _Internal_WriteOperationLog_Handler,
 		},
 		{
 			MethodName: "FindCashShop",
