@@ -69,12 +69,40 @@ func (h *Operation) Handle(ctx *core.ClientContext, req *request.CashShopOperati
 	return nil
 }
 
+// A failed request may still have committed in internal (its reply timed out), so the character stays busy until
+// its meso, inventory, locker and balance are read again; later requests would otherwise pick slots from stale state.
 func (h *Operation) start(ctx *core.ClientContext, character *cash.Character, failed constant.CashShopResultKind) *async.Task {
 	character.Busy = true
+	reload := false
 	return async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).
 		OnError(func(err error) {
 			log.Printf("cash shop operation (async): character %d: %v", character.ID(), err)
 			_ = ctx.Client.Send(&response.CashShopResult{Kind: failed, Failure: constant.CashShopFailureUnknown}, types.SEND_POLICY_ENCRYPT)
+			reload = true
+		}).
+		Finally(func() {
+			if !reload {
+				character.Busy = false
+				return
+			}
+			h.reload(ctx, character)
+		})
+}
+
+func (h *Operation) reload(ctx *core.ClientContext, character *cash.Character) {
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).
+		ThenRPC(func(c context.Context) (*internal.ReloadCashShopReply, error) {
+			return h.cs.systems.Get[*rpc.InternalConnection]().Client.ReloadCashShop(c, &internal.ReloadCashShopRequest{
+				WorldId:     uint32(h.cs.config.WorldID),
+				AccountId:   character.AccountID(),
+				CharacterId: character.ID(),
+			})
+		}, func(reply *internal.ReloadCashShopReply) error {
+			character.Update(reply)
+			return nil
+		}).
+		OnError(func(err error) {
+			log.Printf("cash shop reload: character %d: %v", character.ID(), err)
 		}).
 		Finally(func() {
 			character.Busy = false

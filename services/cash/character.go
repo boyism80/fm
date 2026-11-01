@@ -198,6 +198,20 @@ func (ch *Character) SetMeso(meso int32) {
 	ch.meso = meso
 }
 
+// Update replaces what internal may have changed behind a request that timed out.
+func (ch *Character) Update(reply *internal.ReloadCashShopReply) {
+	ch.meso = reply.GetMeso()
+	ch.inventory = ch.inventory[:0]
+	for _, pb := range reply.GetInventory() {
+		ch.inventory = append(ch.inventory, ItemFromProto(pb))
+	}
+	ch.locker = ch.locker[:0]
+	for _, pb := range reply.GetLocker() {
+		ch.locker = append(ch.locker, LockerItemFromProto(pb))
+	}
+	ch.SetBalance(reply.GetNxCash(), reply.GetMaplePoint())
+}
+
 func (ch *Character) FindLocker(serial uint64) *LockerItem {
 	for _, item := range ch.locker {
 		if item.Serial() == serial {

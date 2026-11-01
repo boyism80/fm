@@ -1047,6 +1047,22 @@ export class CashShopService {
         return reply;
     }
 
+    async reload(worldId: number, accountId: number, characterId: number) {
+        const [character, inventory, balance, items] = await Promise.all([
+            this.characterRepo.get(worldId, characterId),
+            this.inventoryRepo.getAll(worldId, String(characterId)),
+            this.cashShopRepo.findBalance(accountId),
+            this.cashShopRepo.findItems(worldId, accountId),
+        ]);
+        return {
+            meso: character?.meso ?? 0,
+            inventory: [...inventory.values()],
+            nxCash: balance.nxCash,
+            maplePoint: balance.maplePoint,
+            locker: items.map((row) => this.toProto(row)),
+        };
+    }
+
     async findCoupon(worldId: number, code: string, accountId: number): Promise<FindCashCouponReply> {
         const coupon = await this.cashShopRepo.findCoupon(worldId, code);
         if (coupon == null) {

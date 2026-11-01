@@ -2000,6 +2000,21 @@ export interface CashItem {
   item: Inventory | undefined;
 }
 
+/** What a timed-out cash shop request may have changed, read again so the cash shop stops deciding from stale state. */
+export interface ReloadCashShopRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+}
+
+export interface ReloadCashShopReply {
+  meso: number;
+  inventory: Inventory[];
+  nxCash: number;
+  maplePoint: number;
+  locker: CashItem[];
+}
+
 export interface EnterCashShopReply {
   game: EnterGameReply | undefined;
   returnChannelId: number;
@@ -4788,6 +4803,244 @@ export const CashItem: MessageFns<CashItem> = {
     message.commoditySn = object.commoditySn ?? 0;
     message.buyerName = object.buyerName ?? "";
     message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseReloadCashShopRequest(): ReloadCashShopRequest {
+  return { worldId: 0, accountId: 0, characterId: 0 };
+}
+
+export const ReloadCashShopRequest: MessageFns<ReloadCashShopRequest> = {
+  encode(message: ReloadCashShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ReloadCashShopRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReloadCashShopRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReloadCashShopRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ReloadCashShopRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReloadCashShopRequest>, I>>(base?: I): ReloadCashShopRequest {
+    return ReloadCashShopRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ReloadCashShopRequest>, I>>(object: I): ReloadCashShopRequest {
+    const message = createBaseReloadCashShopRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseReloadCashShopReply(): ReloadCashShopReply {
+  return { meso: 0, inventory: [], nxCash: 0, maplePoint: 0, locker: [] };
+}
+
+export const ReloadCashShopReply: MessageFns<ReloadCashShopReply> = {
+  encode(message: ReloadCashShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.meso !== 0) {
+      writer.uint32(8).int32(message.meso);
+    }
+    for (const v of message.inventory) {
+      Inventory.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(24).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(32).uint32(message.maplePoint);
+    }
+    for (const v of message.locker) {
+      CashItem.encode(v!, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ReloadCashShopReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReloadCashShopReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.meso = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.inventory.push(Inventory.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.locker.push(CashItem.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReloadCashShopReply {
+    return {
+      meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
+      inventory: globalThis.Array.isArray(object?.inventory)
+        ? object.inventory.map((e: any) => Inventory.fromJSON(e))
+        : [],
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+      locker: globalThis.Array.isArray(object?.locker) ? object.locker.map((e: any) => CashItem.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ReloadCashShopReply): unknown {
+    const obj: any = {};
+    if (message.meso !== 0) {
+      obj.meso = Math.round(message.meso);
+    }
+    if (message.inventory?.length) {
+      obj.inventory = message.inventory.map((e) => Inventory.toJSON(e));
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    if (message.locker?.length) {
+      obj.locker = message.locker.map((e) => CashItem.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReloadCashShopReply>, I>>(base?: I): ReloadCashShopReply {
+    return ReloadCashShopReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ReloadCashShopReply>, I>>(object: I): ReloadCashShopReply {
+    const message = createBaseReloadCashShopReply();
+    message.meso = object.meso ?? 0;
+    message.inventory = object.inventory?.map((e) => Inventory.fromPartial(e)) || [];
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    message.locker = object.locker?.map((e) => CashItem.fromPartial(e)) || [];
     return message;
   },
 };
@@ -43293,6 +43546,16 @@ export const InternalService = {
       Buffer.from(BuyCashQuestItemReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): BuyCashQuestItemReply => BuyCashQuestItemReply.decode(value),
   },
+  reloadCashShop: {
+    path: "/fm.internal.Internal/ReloadCashShop" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ReloadCashShopRequest): Buffer =>
+      Buffer.from(ReloadCashShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ReloadCashShopRequest => ReloadCashShopRequest.decode(value),
+    responseSerialize: (value: ReloadCashShopReply): Buffer => Buffer.from(ReloadCashShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ReloadCashShopReply => ReloadCashShopReply.decode(value),
+  },
   findCashCoupon: {
     path: "/fm.internal.Internal/FindCashCoupon" as const,
     requestStream: false as const,
@@ -43621,6 +43884,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   buyCashRing: handleUnaryCall<BuyCashRingRequest, BuyCashRingReply>;
   payBackCashItem: handleUnaryCall<PayBackCashItemRequest, PayBackCashItemReply>;
   buyCashQuestItem: handleUnaryCall<BuyCashQuestItemRequest, BuyCashQuestItemReply>;
+  reloadCashShop: handleUnaryCall<ReloadCashShopRequest, ReloadCashShopReply>;
   findCashCoupon: handleUnaryCall<FindCashCouponRequest, FindCashCouponReply>;
   redeemCashCoupon: handleUnaryCall<RedeemCashCouponRequest, RedeemCashCouponReply>;
   createCashCoupons: handleUnaryCall<CreateCashCouponsRequest, CreateCashCouponsReply>;
@@ -45316,6 +45580,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: BuyCashQuestItemReply) => void,
+  ): ClientUnaryCall;
+  reloadCashShop(
+    request: ReloadCashShopRequest,
+    callback: (error: ServiceError | null, response: ReloadCashShopReply) => void,
+  ): ClientUnaryCall;
+  reloadCashShop(
+    request: ReloadCashShopRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ReloadCashShopReply) => void,
+  ): ClientUnaryCall;
+  reloadCashShop(
+    request: ReloadCashShopRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ReloadCashShopReply) => void,
   ): ClientUnaryCall;
   findCashCoupon(
     request: FindCashCouponRequest,

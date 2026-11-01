@@ -118,6 +118,7 @@ service Internal {
   rpc BuyCashRing (BuyCashRingRequest) returns (BuyCashRingReply);
   rpc PayBackCashItem (PayBackCashItemRequest) returns (PayBackCashItemReply);
   rpc BuyCashQuestItem (BuyCashQuestItemRequest) returns (BuyCashQuestItemReply);
+  rpc ReloadCashShop (ReloadCashShopRequest) returns (ReloadCashShopReply);
   rpc FindCashCoupon (FindCashCouponRequest) returns (FindCashCouponReply);
   rpc RedeemCashCoupon (RedeemCashCouponRequest) returns (RedeemCashCouponReply);
   rpc CreateCashCoupons (CreateCashCouponsRequest) returns (CreateCashCouponsReply);
@@ -177,6 +178,21 @@ message CashItem {
   uint32 commodity_sn = 1;
   string buyer_name = 2;
   Inventory item = 3;
+}
+
+// What a timed-out cash shop request may have changed, read again so the cash shop stops deciding from stale state.
+message ReloadCashShopRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+}
+
+message ReloadCashShopReply {
+  int32 meso = 1;
+  repeated Inventory inventory = 2;
+  uint32 nx_cash = 3;
+  uint32 maple_point = 4;
+  repeated CashItem locker = 5;
 }
 
 message EnterCashShopReply {

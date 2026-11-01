@@ -22,6 +22,8 @@ import type {
     PutInCashItemRequest,
     RedeemCashCouponReply,
     RedeemCashCouponRequest,
+    ReloadCashShopReply,
+    ReloadCashShopRequest,
     SetCashWishlistReply,
     SetCashWishlistRequest,
     TakeOutCashItemReply,
@@ -162,6 +164,22 @@ export class CashShopGrpcController {
             }
             const item = grpcMapper.map<Inventory, InventoryModel>(req.item, INVENTORY_PROTO, INVENTORY_MODEL);
             callback(null, await this.cashShopService.buyQuestItem(req.worldId, req.characterId, req.price, item));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("reloadCashShop")
+    async reloadCashShop(call: GrpcCall<ReloadCashShopRequest>, callback: GrpcCallback<ReloadCashShopReply>) {
+        try {
+            const req = call.request;
+            const state = await this.cashShopService.reload(req.worldId, req.accountId, req.characterId);
+            callback(null, {
+                ...state,
+                inventory: state.inventory.map((item) =>
+                    grpcMapper.map<InventoryModel, Inventory>(item, INVENTORY_MODEL, INVENTORY_PROTO),
+                ),
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }
