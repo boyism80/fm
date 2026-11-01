@@ -21,6 +21,9 @@ import type { CharacterService } from "./character-service";
 import type { CashShopService } from "./cash-shop-service";
 import type { CharacterModel } from "@fm/shared/repos/character-repository";
 
+// How long a client has to reach the next channel or the cash shop before the move counts as a disconnect.
+const TRANSITION_TIMEOUT_MS = 30_000;
+
 export function formatDateTime(date = new Date()) {
     const pad = (v: number) => String(v).padStart(2, "0");
     const yyyy = date.getUTCFullYear();
@@ -73,8 +76,9 @@ export class SessionService {
         switch (state) {
             case AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN:
                 return 120;
+            // Outlives TRANSITION_TIMEOUT_MS so the session is still there when the timeout looks at it.
             case AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION:
-                return 30;
+                return 40;
             case AccountSessionState.ACCOUNT_SESSION_STATE_GAME:
             case AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP:
                 return 180;
@@ -127,6 +131,7 @@ export class SessionService {
         sourceChannelId: number | null,
         sourceCashShopId: number | null,
     ) {
+        const now = this.now();
         const [ok, code] = this.atomicResultTuple(
             await this.repo.beginTransition(
                 worldId,
@@ -134,7 +139,7 @@ export class SessionService {
                 characterId,
                 characterName,
                 clientIp,
-                this.now(),
+                now,
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
                 sourceChannelId,
                 sourceCashShopId,
@@ -154,7 +159,32 @@ export class SessionService {
             await this.announcePresence(worldId, characterId, { family: true });
             await this.releaseCharacterNameReservation(accountId);
         })();
+        if (sourceChannelId != null || sourceCashShopId != null) {
+            setTimeout(() => {
+                this.expireTransition(worldId, accountId, characterId, now).catch((err) =>
+                    console.error("[session] transition timeout failed", err),
+                );
+            }, TRANSITION_TIMEOUT_MS);
+        }
         return { ok: true };
+    }
+
+    // A character that left a channel or the cash shop and never reached the next one is logged out, so the
+    // others stop seeing it online. A lost timer (internal restarting) only leaves that stale mark, as before.
+    private async expireTransition(worldId: number, accountId: number, characterId: number, stateChangedAt: string) {
+        if ((await this.repo.expireTransition(accountId, stateChangedAt)) === false) {
+            return;
+        }
+        console.log(`[session] transition timed out account=${accountId} character=${characterId}`);
+        await this.socialService
+            .leaveMessenger(worldId, characterId)
+            .catch((err) => console.error("[social] messenger cleanup failed", err));
+        await this.announcePresence(worldId, characterId, {
+            family: true,
+            party: true,
+            buddyChannel: -1,
+            guildOnline: false,
+        });
     }
 
     async enterGame(

@@ -171,7 +171,7 @@ func (a *SuiteActor) register() {
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
 	a.wrapWaits(ctxIndex, "sleep")
-	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "force_move", "force_instance_move", "warp", "transfer", "enter_cash_shop", "leave_cash_shop", "npc", "npc_click", "dialog", "kill", "catch", "loot", "drop", "hit_reactor")
+	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "force_move", "force_instance_move", "warp", "transfer", "abandon_transfer", "enter_cash_shop", "leave_cash_shop", "npc", "npc_click", "dialog", "kill", "catch", "loot", "drop", "hit_reactor")
 	L.SetField(L.NewTypeMetatable("bot_ctx"), "__index", ctxIndex)
 	L.SetField(L.NewTypeMetatable("bot"), "__index", botIndex)
 	a.ctxUD = a.newUserData(a, "bot_ctx")
@@ -556,6 +556,33 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			a.park(L)
 			a.move(L, i, &request.SwitchChannel{Channel: uint8(channel)}, fmt.Sprintf("채널 %d", channel), b.EnterChannel, func(ok bool) {
 				a.wake(L, lua.LBool(ok))
+			})
+			return L.Yield()
+		},
+		// abandon_transfer leaves the channel but never connects to the next one, as a client closed while loading.
+		"abandon_transfer": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			channel := L.CheckInt(2)
+			if channel < 0 || channel > 255 {
+				L.ArgError(2, "channel must fit in one byte")
+			}
+			a.park(L)
+			a.Request(L, b, b, &request.SwitchChannel{Channel: uint8(channel)}, a.timeout(), func(pkt any) bool {
+				switch pkt.(type) {
+				case *response.SwitchChannel, *response.ServerBlocked:
+					return true
+				default:
+					return false
+				}
+			}, func(pkt any, ok bool) {
+				if _, routed := pkt.(*response.SwitchChannel); !ok || !routed {
+					a.wake(L, lua.LFalse)
+					return
+				}
+				// A new generation keeps the closed connection from counting as a lost one.
+				b.Close()
+				b.Gen++
+				a.wake(L, lua.LTrue)
 			})
 			return L.Yield()
 		},

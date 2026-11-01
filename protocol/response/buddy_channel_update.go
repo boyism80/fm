@@ -22,4 +22,9 @@ func (p *BuddyChannelUpdate) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *BuddyChannelUpdate) Deserialize(*stream.StreamReader) {}
+func (p *BuddyChannelUpdate) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.CharacterID = r.ReadU32()
+	r.ReadU8()
+	p.Channel = r.Read32()
+}

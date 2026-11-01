@@ -255,6 +255,7 @@ var decoders = func() []decoder {
 		}),
 		newDecoder[response.BuddyAddRequest](sub(uint8(pconst.BuddyS2CAddRequest))),
 		newDecoder[response.BuddyCapacityUpdate](sub(uint8(pconst.BuddyS2CCapacityUpdate))),
+		newDecoder[response.BuddyChannelUpdate](sub(uint8(pconst.BuddyS2CChannelUpdate))),
 		newDecoder[response.BuddyListUpdate](func(body []byte) bool {
 			if len(body) == 0 {
 				return false

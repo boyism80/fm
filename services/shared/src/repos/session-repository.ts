@@ -188,6 +188,24 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         )) as Array<number | string>;
     }
 
+    // Ends a transition that never reached its server: the session goes only if it is still that same transition,
+    // so a client entering at the same moment either enters first or is refused.
+    async expireTransition(accountId: number, stateChangedAt: string): Promise<boolean> {
+        const { client } = this.ctx.getRedisUnifiedAccess();
+        const script = `
+local account_key = KEYS[1]
+if redis.call("HGET", account_key, "state") ~= "${AS.ACCOUNT_SESSION_STATE_TRANSITION}" then
+  return 0
+end
+if redis.call("HGET", account_key, "state_changed_at") ~= ARGV[1] then
+  return 0
+end
+redis.call("DEL", account_key)
+return 1
+`;
+        return Number(await client.eval(script, 1, this.accountKey(accountId), stateChangedAt)) === 1;
+    }
+
     async enterCashShop(
         worldId: number,
         accountId: number,
