@@ -44,9 +44,6 @@ export type InvitePartyResult = PartyMutationResult & { targetCharacterId?: numb
 export type DenyPartyResult = { ok: boolean; code?: number };
 export type LeavePartyResult = PartyMutationResult & {
     disbanded?: boolean;
-    leaderChanged?: boolean;
-    oldLeaderCharacterId?: number;
-    newLeaderCharacterId?: number;
     realtimeStateCharacterIds?: number[];
 };
 export type ExpelPartyResult = PartyMutationResult & { disbanded?: boolean; realtimeStateCharacterIds?: number[] };
@@ -784,20 +781,12 @@ export class PartyService {
                     };
                 }
 
-                const previousLeaderCharacterId = party.leaderCharacterId;
-                const updatedParty = await this.partyRepo.set(
-                    worldId,
-                    { ...party, leaderCharacterId: previousLeaderCharacterId },
-                    { txClient },
-                );
+                const updatedParty = await this.partyRepo.set(worldId, party, { txClient });
                 return {
                     ok: true as const,
                     partyId: updatedParty.partyId,
                     revision: updatedParty.revision,
                     disbanded: false as const,
-                    leaderChanged: false,
-                    oldLeaderCharacterId: previousLeaderCharacterId,
-                    newLeaderCharacterId: previousLeaderCharacterId,
                     realtimeStateCharacterIds: [characterId],
                 };
             },
@@ -833,9 +822,6 @@ export class PartyService {
         } else {
             await this.publishPartyChange(EVT.MEMBER_LEFT, worldId, result.partyId, {
                 character_id: characterId,
-                leader_changed: result.leaderChanged ?? false,
-                old_leader_character_id: result.oldLeaderCharacterId ?? 0,
-                new_leader_character_id: result.newLeaderCharacterId ?? 0,
             });
         }
         return result;

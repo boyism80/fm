@@ -27,10 +27,8 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 		return nil
 	}
 	var extra struct {
-		CharacterID          uint32 `json:"character_id"`
-		ExpelledByCharacter  uint32 `json:"expelled_by_character_id"`
-		LeaderChanged        bool   `json:"leader_changed"`
-		NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
+		CharacterID         uint32 `json:"character_id"`
+		ExpelledByCharacter uint32 `json:"expelled_by_character_id"`
 	}
 	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
@@ -51,8 +49,5 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error
 	}
 	party := pc.Get(evt.PartyID)
 	pc.BroadcastMemberLeft(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
-	if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {
-		pc.BroadcastLeaderChanged(party, extra.NewLeaderCharacterID, true)
-	}
 	return nil
 }
