@@ -699,9 +699,21 @@ export class PartyService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
+        for (;;) {
+            const result = await this.leavePartyLocked(worldId, characterId);
+            if (result !== undefined) {
+                return result;
+            }
+        }
+    }
+
+    // Character locks come before the party lock on every path. A leaving leader disbands the party and so locks
+    // every member, read before any lock; undefined means the party changed in between and the caller tries again.
+    private async leavePartyLocked(worldId: number, characterId: number): Promise<LeavePartyResult | undefined> {
+        const keyRests = await this.leavingKeyRests(worldId, characterId);
+        await using _characterRealtimeLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
-            `character_realtime:${characterId}`,
+            keyRests,
         );
 
         const lockedState = await this.characterRealtimeStateRepo.get(worldId, characterId);
@@ -718,18 +730,9 @@ export class PartyService {
             `party:${lockedPartyId}`,
         );
 
-        const partyPreview = await this.partyRepo.get(worldId, lockedPartyId);
-        const membersPreview = await this.partyMemberRepo.getAll(worldId, String(lockedPartyId));
-        const coMemberKeyRests: string[] = [];
-        if (partyPreview && partyPreview.leaderCharacterId === characterId) {
-            for (const member of membersPreview.values()) {
-                if (member.characterId !== characterId) {
-                    coMemberKeyRests.push(`character_realtime:${member.characterId}`);
-                }
-            }
+        if ((await this.leavingKeyRests(worldId, characterId)).join() !== keyRests.join()) {
+            return undefined;
         }
-
-        await using _coMemberLocks = await this.distributedLockService.acquireWorldDataLocks(worldId, coMemberKeyRests);
 
         const partyResult = await this.ctx.withPgDataTransaction(
             worldId,
@@ -836,6 +839,21 @@ export class PartyService {
             });
         }
         return result;
+    }
+
+    // The character itself, and every other member when it leads the party, sorted as the locks take them.
+    private async leavingKeyRests(worldId: number, characterId: number): Promise<string[]> {
+        const keyRests = [`character_realtime:${characterId}`];
+        const partyId = (await this.characterRealtimeStateRepo.get(worldId, characterId))?.partyId;
+        if (partyId != null) {
+            const party = await this.partyRepo.get(worldId, partyId);
+            if (party?.leaderCharacterId === characterId) {
+                for (const member of (await this.partyMemberRepo.getAll(worldId, String(partyId))).values()) {
+                    keyRests.push(`character_realtime:${member.characterId}`);
+                }
+            }
+        }
+        return [...new Set(keyRests)].sort();
     }
 
     async expelParty(

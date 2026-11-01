@@ -1337,9 +1337,21 @@ export class GuildService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
+        for (;;) {
+            const result = await this.disbandGuildLocked(worldId, characterId);
+            if (result !== undefined) {
+                return result;
+            }
+        }
+    }
+
+    // Character locks come before the guild lock on every path, so every member is locked first, read before any
+    // lock; undefined means the members changed in between and the caller tries again.
+    private async disbandGuildLocked(worldId: number, characterId: number): Promise<DisbandGuildResult | undefined> {
+        const keyRests = await this.disbandingKeyRests(worldId, characterId);
+        await using _characterRealtimeLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
-            `character_realtime:${characterId}`,
+            keyRests,
         );
 
         const lockedState = await this.characterRealtimeStateRepo.get(worldId, characterId);
@@ -1356,17 +1368,9 @@ export class GuildService {
             `guild:${lockedGuildId}`,
         );
 
-        const membersMap = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId));
-        const otherMemberKeyRests = [...membersMap.values()]
-            .map((member) => member.characterId)
-            .filter((memberCharacterId) => memberCharacterId !== characterId)
-            .sort((a, b) => a - b)
-            .map((memberCharacterId) => `character_realtime:${memberCharacterId}`);
-
-        await using _otherMemberLocks = await this.distributedLockService.acquireWorldDataLocks(
-            worldId,
-            otherMemberKeyRests,
-        );
+        if ((await this.disbandingKeyRests(worldId, characterId)).join() !== keyRests.join()) {
+            return undefined;
+        }
 
         const guildResult = await this.ctx.withPgDataTransaction(
             worldId,
@@ -1436,6 +1440,18 @@ export class GuildService {
         });
 
         return { ok: true, guildId: result.guildId, allianceId: result.allianceId };
+    }
+
+    // The character and every other member of its guild, sorted as the locks take them.
+    private async disbandingKeyRests(worldId: number, characterId: number): Promise<string[]> {
+        const keyRests = [`character_realtime:${characterId}`];
+        const guildId = (await this.characterRealtimeStateRepo.get(worldId, characterId))?.guildId;
+        if (guildId != null) {
+            for (const member of (await this.guildMemberRepo.getAll(worldId, String(guildId))).values()) {
+                keyRests.push(`character_realtime:${member.characterId}`);
+            }
+        }
+        return [...new Set(keyRests)].sort();
     }
 
     async publishMemberOnline(worldId: number, characterId: number, online: boolean) {
