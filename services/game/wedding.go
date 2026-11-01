@@ -850,16 +850,19 @@ func (w *Wedding) ReceiveGift(actx actor.Context, invType constant.InventoryType
 				break
 			}
 		}
+		// The gift is off the list either way, so the window gets the tab again or its slots would point at the wrong gifts.
+		tabs := map[constant.InventoryType][]Item{invType: w.giftTab(invType)}
 		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
 			w.owner.unsettled.Erase(id)
+			w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceived, nil, tabs)
 			w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
 			return nil
 		}
-		if !w.receiveClaimed(id, v.GetGift()) {
+		received := w.receiveClaimed(id, v.GetGift())
+		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceived, nil, tabs)
+		if !received {
 			w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceiveFail, nil, nil)
-			return nil
 		}
-		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftReceived, nil, map[constant.InventoryType][]Item{invType: w.giftTab(invType)})
 		return nil
 	}).OnError(func(err error) {
 		w.gift.pending = false
