@@ -314,10 +314,6 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
         }
 
-        if (this.wzService.isValidName(allianceName) === false) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID };
-        }
-
         const [firstCharacterId, secondCharacterId] = [leaderCharacterId, partnerCharacterId].sort((a, b) => a - b);
         await using _firstCharacterLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,

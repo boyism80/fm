@@ -425,7 +425,7 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 		return nil
 	}
 	trimmed := strings.TrimSpace(allianceName)
-	if len(trimmed) < 3 || len(trimmed) > 12 {
+	if !s.gw.GetResources().ValidName(trimmed) {
 		*result = int(constant.AllianceCreateResultInvalidName)
 		return nil
 	}

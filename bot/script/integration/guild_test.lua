@@ -879,6 +879,38 @@ local function create_alliance(ctx, leader, what)
     return made
 end
 
+local SYLLABLES = { "가", "나", "다", "라", "마", "바", "사", "아", "자", "차", "카", "타", "파", "하" }
+
+-- A Hangul syllable takes 2 of the client's 12 name bytes, so five of them make a valid alliance name.
+local function alliance_hangul_name(ctx)
+    local leader = ctx:bot(0)
+    watch(ctx)
+    if setup(ctx, leader) == false then
+        return false
+    end
+    local name = ""
+    local tail = leader:name():sub(-5)
+    for i = 1, #tail do
+        name = name .. SYLLABLES[tail:byte(i) % #SYLLABLES + 1]
+    end
+    if ask(ctx, leader, LENARIO, LENARIO_MENU.create, "정말 길드 연합을 만들고") == false then
+        return false
+    end
+    if leader:dialog(true) == nil then
+        return ctx:fail("연합 이름 입력창이 오지 않음")
+    end
+    if leader:dialog(true, 0, name) == nil then
+        return ctx:fail("연합 이름 확인 질문이 오지 않음")
+    end
+    yes(leader)
+    local made = created(ctx, leader, "한글 다섯 글자 연합 이름 " .. name)
+    leader:dialog(false)
+    if made == false then
+        return false
+    end
+    return disband_alliance(ctx, leader)
+end
+
 -- An alliance capacity resend after the alliance was disbanded and formed again is not applied to the new alliance.
 local function alliance_capacity_lost_recreate(ctx)
     local leader = ctx:bot(0)
@@ -944,5 +976,6 @@ test_suite {
         alliance_create_delayed,
         alliance_capacity_delayed,
         alliance_capacity_lost_recreate,
+        alliance_hangul_name,
     },
 }
