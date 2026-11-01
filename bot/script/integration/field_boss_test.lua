@@ -69,8 +69,43 @@ local function kill_boss(ctx, bot, mob_id)
     return true
 end
 
+-- A field boss comes back mobTime after it died, however long it lived first.
+local function respawn_after_death(ctx)
+    local bot = ctx:bot(0)
+    local mushmom, field = 6130101, 100000005
+    if bot:instance_move(field) == false then
+        return ctx:fail("머쉬맘 맵 이동 실패")
+    end
+    if bot:mobs(mushmom)[1] == nil and bot:request(resp.spawn_mob, nil, function(p)
+            return p.mob.mob_id == mushmom
+        end, 15000) == false then
+        return ctx:fail("머쉬맘이 나오지 않음")
+    end
+    -- The boss has now lived past its mobTime.
+    if pq.command(bot, "/시간가속 00:31:00", "시간가속 적용 요청") == false then
+        return ctx:fail("시간가속 실패")
+    end
+    ctx:sleep(2000)
+    local killed = kill_boss(ctx, bot, mushmom)
+    local respawned = false
+    if killed ~= false then
+        respawned = bot:request(resp.spawn_mob, nil, function(p)
+            return p.mob.mob_id == mushmom
+        end, 12000) ~= false
+    end
+    pq.command(bot, "/현재시간초기화", "현재 시간 보정 초기화")
+    ctx:sleep(2000)
+    if killed == false then
+        return false
+    end
+    if respawned then
+        return ctx:fail("오래 살아 있던 머쉬맘이 죽은 뒤 mobTime 안에 다시 나옴")
+    end
+    return true
+end
+
 test_suite {
-    name = "Boss: 대왕지네·포장마차",
+    name = "Boss: 대왕지네·포장마차·필드 보스 재생성",
     bot_count = 1,
 
     on_initialize = function(ctx)
@@ -114,5 +149,6 @@ test_suite {
             end
             return confirm_warp(ctx, bot, 9330032, 741020100)
         end,
+        respawn_after_death,
     },
 }

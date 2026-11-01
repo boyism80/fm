@@ -29,7 +29,7 @@ func (m *Map) Reset() {
 			continue
 		}
 		spawn.Spawned = false
-		spawn.LastSpawnedAt = time.Time{}
+		spawn.LastRemovedAt = time.Time{}
 	}
 }
 

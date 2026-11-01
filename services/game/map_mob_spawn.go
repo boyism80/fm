@@ -75,8 +75,9 @@ func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativ
 	if mobSpawn.Wz.MobTime < 0 && !includeNegativeMobTime {
 		return false
 	}
+	// mobTime counts from when the last mob of this spawn died, not from when it appeared.
 	if !immediate && mobSpawn.Wz.MobTime > 0 {
-		if now.Sub(mobSpawn.LastSpawnedAt) < mobSpawn.Wz.MobTime {
+		if now.Sub(mobSpawn.LastRemovedAt) < mobSpawn.Wz.MobTime {
 			return false
 		}
 	}
@@ -92,7 +93,6 @@ func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativ
 	}
 
 	mobSpawn.Spawned = true
-	mobSpawn.LastSpawnedAt = now
 	return true
 }
 

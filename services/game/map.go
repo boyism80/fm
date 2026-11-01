@@ -9,6 +9,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -67,7 +68,7 @@ type MapListener interface {
 type MobSpawn struct {
 	Wz            *wz.MobSpawn
 	Spawned       bool
-	LastSpawnedAt time.Time
+	LastRemovedAt time.Time
 }
 
 type MapInitOpts struct {
@@ -1018,7 +1019,7 @@ func (m *Map) initMobs() {
 		m.mobSpawns[spawnId] = &MobSpawn{
 			Wz:            &spawnWz,
 			Spawned:       false,
-			LastSpawnedAt: time.Time{},
+			LastRemovedAt: time.Time{},
 		}
 	}
 }
@@ -1202,6 +1203,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob.buffs.Clear()
 	if mob.spawn != nil {
 		mob.spawn.Spawned = false
+		mob.spawn.LastRemovedAt = clock.Now()
 	}
 	m.controllerTable.LeaveMob(mob)
 	m.listener.OnMobRemoved(m, mob, animationType)
