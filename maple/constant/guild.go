@@ -26,6 +26,7 @@ const (
 	GuildCreateNotAllowedMessage       = "길드를 만들 수 없습니다."
 	GuildCreateInsufficientMesoMessage = "길드를 생성할 메소가 부족합니다."
 	GuildCreateFailedMessage           = "잠시 후 다시 시도해 주세요."
+	GuildNameInvalidMessage            = "허용되지 않는 문자가 포함되어 있습니다."
 )
 
 type GuildDisbandResult int

@@ -77,9 +77,12 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		h.gs.systems.Get[*game.GuildSystem]().CreateAsync(ctx.ActorContext, ch, id, detail.Name).Bind(ch).Do(func(reply *internal.CreateGuildReply) error {
 			ch.Unsettled().Erase(id)
 			if !reply.GetOk() {
-				if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
+				switch reply.GetErrorCode() {
+				case internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD:
 					ch.Listener().OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
-				} else {
+				case internal.GuildErrorCode_GUILD_ERROR_GUILD_NAME_INVALID:
+					ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildNameInvalidMessage)
+				default:
 					log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
 					ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.GuildCreateFailedMessage)
 				}

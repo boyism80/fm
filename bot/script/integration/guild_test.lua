@@ -313,6 +313,30 @@ local function create_cancelled(ctx)
     return holds(ctx, bot, MESO, "이름 입력 취소 뒤")
 end
 
+-- A name the rules reject says so, and the fee comes back.
+local function create_invalid_name(ctx)
+    local bot = ctx:bot(5)
+    if setup(ctx, bot) == false then
+        return false
+    end
+    if ask_guild_create(ctx, bot) == false then
+        return false
+    end
+    if name_input(bot) == false then
+        return ctx:fail("길드 이름 입력창이 오지 않음")
+    end
+    local refused = bot:request(resp.notice, req.guild_operation { operation = GUILD.Create, guild_name = "a!b" },
+        function(p)
+            return p.message:find("허용되지 않는 문자", 1, true) ~= nil
+        end, 10000)
+    bot:dialog(false)
+    if refused == false then
+        return ctx:fail("규칙에 맞지 않는 길드 이름에 안내가 오지 않음")
+    end
+    ctx:sleep(500)
+    return holds(ctx, bot, MESO, "이름 거절 뒤 (환불)")
+end
+
 local function create_during_question(ctx)
     local bot = ctx:bot(5)
     if ask_guild_create(ctx, bot) == false then
@@ -884,7 +908,7 @@ local function alliance_capacity_lost_recreate(ctx)
 end
 
 test_suite {
-    name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구",
+    name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구·이름 규칙",
     bot_count = 6,
 
     on_scenario_finished = function(ctx)
@@ -892,6 +916,7 @@ test_suite {
     end,
 
     scenarios = {
+        create_invalid_name,
         create_cancelled,
         create_during_question,
         create_lost_timer,
