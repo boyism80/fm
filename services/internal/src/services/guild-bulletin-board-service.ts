@@ -398,13 +398,26 @@ export class GuildBulletinBoardService {
         if (!this.canModifyBulletinContent(existing.posterCharacterId, characterId, membership.member.guildRank)) {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
         }
-        existing.title = normalizedTitle;
-        existing.body = normalizedBody;
-        existing.icon = icon;
-        existing.updatedAt = new Date();
-        const updated = await this.guildBulletinBoardRepo.updateThread(worldId, existing);
-        if (!updated) {
-            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND };
+
+        // An edit shares the cooldown of new threads and replies.
+        const isCooldown = await this.setBulletinBoardCooldown(worldId, characterId);
+        if (!isCooldown) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_COOLDOWN };
+        }
+
+        try {
+            existing.title = normalizedTitle;
+            existing.body = normalizedBody;
+            existing.icon = icon;
+            existing.updatedAt = new Date();
+            const updated = await this.guildBulletinBoardRepo.updateThread(worldId, existing);
+            if (!updated) {
+                await this.unsetBulletinBoardCooldown(worldId, characterId);
+                return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND };
+            }
+        } catch (err) {
+            await this.unsetBulletinBoardCooldown(worldId, characterId);
+            throw err;
         }
         const thread = await this.loadBulletinThreadDetail(worldId, membership.guildId, localThreadId);
         if (!thread) {
