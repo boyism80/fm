@@ -1,5 +1,10 @@
+local pq = require("script/integration/lib/party_quest")
+
 local SUCCESS = 0
 local INVALID = 0x14
+local SEALING_LOCK = 5060001
+local ETC_ITEM = 4000000
+local ETC = 4
 
 local function relog(ctx, bot, opts, label)
     local result = bot:relog(opts)
@@ -78,11 +83,42 @@ local function set_select_remove(ctx)
             tostring(r.deleted)))
 end
 
+-- A character holding a sealed item is not deleted, and the login server says why.
+local function sealed_item_blocks_delete(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 30 0 0 " .. SEALING_LOCK .. ":1," .. ETC_ITEM .. ":1", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    local use = req.use_cash_item {
+        slot = bot:slot(SEALING_LOCK) or 0,
+        item_id = SEALING_LOCK,
+        target_type = ETC,
+        target_slot = bot:slot(ETC_ITEM) or 0,
+    }
+    if bot:request(resp.inventory_operation, use, nil, 3000) == false then
+        return ctx:fail("봉인의 자물쇠 사용 응답 없음")
+    end
+
+    local r = relog(ctx, bot, { delete_self = true, passwords = { "" } }, "봉인된 캐릭터 삭제")
+    if r == nil then
+        return false
+    end
+    if expect(ctx, r.deleted == false and r.delete_notice:find("봉인", 1, true) ~= nil,
+            string.format("봉인된 아이템이 있는 캐릭터의 삭제 결과가 다름: deleted=%s notice=%q", tostring(r.deleted), r.delete_notice)) == false then
+        return false
+    end
+    if pq.command(bot, "/봇초기화 30 0 0 -", "봇초기화 완료") == false then
+        return ctx:fail("봇 정리 실패")
+    end
+    return true
+end
+
 test_suite {
     name = "SecondPassword: 설정·선택·해제",
     bot_count = 1,
 
     scenarios = {
         set_select_remove,
+        sealed_item_blocks_delete,
     },
 }

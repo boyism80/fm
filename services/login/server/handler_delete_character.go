@@ -52,6 +52,12 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 					Message: "처리 중인 거래가 남아 있어 캐릭터를 삭제할 수 없습니다. 게임에 접속해 정리된 뒤 다시 시도해주세요.",
 				}, types.SEND_POLICY_ENCRYPT)
 			}
+			if reply.GetSealed() {
+				_ = ctx.Client.Send(&response.Notice{
+					Type:    constant.MsgPopup,
+					Message: "봉인된 아이템이 있어 캐릭터를 삭제할 수 없습니다.",
+				}, types.SEND_POLICY_ENCRYPT)
+			}
 			deleteResp := &response.DeleteCharacter{
 				ID:      req.ID,
 				Success: reply.Success,

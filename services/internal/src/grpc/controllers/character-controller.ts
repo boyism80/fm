@@ -267,6 +267,7 @@ export class CharacterGrpcController {
                 success: result.success,
                 secondPasswordSet: result.secondPasswordSet ?? false,
                 unsettled: result.unsettled ?? false,
+                sealed: result.sealed ?? false,
             });
         } catch (err) {
             this.grpcError(err, callback);

@@ -3176,6 +3176,7 @@ export interface DeleteCharacterReply {
   success: boolean;
   secondPasswordSet: boolean;
   unsettled: boolean;
+  sealed: boolean;
 }
 
 export interface RefreshSessionRequest {
@@ -24297,7 +24298,7 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
 };
 
 function createBaseDeleteCharacterReply(): DeleteCharacterReply {
-  return { success: false, secondPasswordSet: false, unsettled: false };
+  return { success: false, secondPasswordSet: false, unsettled: false, sealed: false };
 }
 
 export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
@@ -24310,6 +24311,9 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
     }
     if (message.unsettled !== false) {
       writer.uint32(24).bool(message.unsettled);
+    }
+    if (message.sealed !== false) {
+      writer.uint32(32).bool(message.sealed);
     }
     return writer;
   },
@@ -24345,6 +24349,14 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
           message.unsettled = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.sealed = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -24363,6 +24375,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
         ? globalThis.Boolean(object.second_password_set)
         : false,
       unsettled: isSet(object.unsettled) ? globalThis.Boolean(object.unsettled) : false,
+      sealed: isSet(object.sealed) ? globalThis.Boolean(object.sealed) : false,
     };
   },
 
@@ -24377,6 +24390,9 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
     if (message.unsettled !== false) {
       obj.unsettled = message.unsettled;
     }
+    if (message.sealed !== false) {
+      obj.sealed = message.sealed;
+    }
     return obj;
   },
 
@@ -24388,6 +24404,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
     message.success = object.success ?? false;
     message.secondPasswordSet = object.secondPasswordSet ?? false;
     message.unsettled = object.unsettled ?? false;
+    message.sealed = object.sealed ?? false;
     return message;
   },
 };

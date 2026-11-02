@@ -1375,6 +1375,7 @@ message DeleteCharacterReply {
   bool success = 1;
   bool second_password_set = 2;
   bool unsettled = 3;
+  bool sealed = 4;
 }
 
 message RefreshSessionRequest {

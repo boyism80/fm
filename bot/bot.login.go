@@ -185,7 +185,15 @@ func (b *Bot) deleteSpareCharacter() (bool, string, error) {
 		b.spareCharID = id
 	}
 
-	if err := b.conn.Send(&request.DeleteCharacter{ID: b.spareCharID}); err != nil {
+	deleted, notice, err := b.deleteCharacter(b.spareCharID)
+	if deleted {
+		b.spareCharID = 0
+	}
+	return deleted, notice, err
+}
+
+func (b *Bot) deleteCharacter(id uint32) (bool, string, error) {
+	if err := b.conn.Send(&request.DeleteCharacter{ID: id}); err != nil {
 		return false, "", err
 	}
 	var notice string
@@ -203,11 +211,7 @@ func (b *Bot) deleteSpareCharacter() (bool, string, error) {
 	if err != nil {
 		return false, "", err
 	}
-	deleted := pkt.(*response.DeleteCharacter).Success
-	if deleted {
-		b.spareCharID = 0
-	}
-	return deleted, notice, nil
+	return pkt.(*response.DeleteCharacter).Success, notice, nil
 }
 
 func (b *Bot) openGame() error {
@@ -275,6 +279,15 @@ func (b *Bot) Relog(opts Relog) (RelogResult, error) {
 	}
 	if opts.DeleteSpare {
 		deleted, notice, err := b.deleteSpareCharacter()
+		if err != nil {
+			b.Close()
+			return result, err
+		}
+		result.Deleted = &deleted
+		result.DeleteNotice = notice
+	}
+	if opts.DeleteSelf {
+		deleted, notice, err := b.deleteCharacter(b.CharID)
 		if err != nil {
 			b.Close()
 			return result, err

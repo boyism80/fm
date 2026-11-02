@@ -1,5 +1,7 @@
 const DEFAULT_MAP_ID = 10000;
 const DEFAULT_SPAWN = 3;
+// The same bit as Go constant.ItemFlagLock, set by the sealing lock.
+const ITEM_FLAG_LOCK = 0x01;
 import { EQUIP_SLOT, LOOK_SLOT } from "../constants/equipment-slots";
 import { getDefaultKeyLayoutBindings } from "../constants/default-key-layout-bindings";
 import { bindingsToJsonString, jsonStringToBindings, makeKeyLayoutProtoList } from "../grpc/key-layout-io";
@@ -875,7 +877,7 @@ export class CharacterService {
         accountId: number,
         characterId: number,
         worldId: number,
-    ): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean }> {
+    ): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean; sealed?: boolean }> {
         this.assertWorld(worldId);
         this.assertAccountId(accountId);
         this.assertCharacterId(characterId);
@@ -910,6 +912,11 @@ export class CharacterService {
         const shops = await this.shopRepo.findByAccount(worldId, accountId);
         if (shops.some((shop) => Number(shop.character_id) === characterId)) {
             return { success: false };
+        }
+        // A sealed item would be lost with the character, so the seal keeps the character from being deleted.
+        const inventory = await this.inventoryRepo.getAll(worldId, String(characterId));
+        if ([...inventory.values()].some((item) => ((item.flag ?? 0) & ITEM_FLAG_LOCK) !== 0)) {
+            return { success: false, sealed: true };
         }
 
         const guildLeft = await this.guildService.leaveGuild(worldId, characterId);

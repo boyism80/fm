@@ -71,6 +71,7 @@ type Relog struct {
 	Set         string
 	Remove      string
 	DeleteSpare bool
+	DeleteSelf  bool
 	Passwords   []string
 }
 
