@@ -8,12 +8,16 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/login"
 	"github.com/boyism80/fm/types"
 )
+
+// The client shows a locked second password as a wrong one, so the popup says why.
+const secondPasswordLockedMessage = "2차 비밀번호를 여러 번 틀려 잠시 사용할 수 없습니다. 15분 뒤 다시 시도해주세요."
 
 type SelectCharacter struct {
 	ls *LoginServer
@@ -66,6 +70,9 @@ func (h *SelectCharacter) selectCharacter(ctx *core.ClientContext, characterID u
 				SecondPassword: secondPassword,
 			})
 		}, func(reply *internal.AuthorizeCharacterSelectionReply) error {
+			if reply.GetStatus() == internal.SecondPasswordStatus_SECOND_PASSWORD_LOCKED {
+				_ = ctx.Client.Send(&response.Notice{Type: constant.MsgPopup, Message: secondPasswordLockedMessage}, types.SEND_POLICY_ENCRYPT)
+			}
 			if reply.GetStatus() != internal.SecondPasswordStatus_SECOND_PASSWORD_SUCCESS {
 				return ctx.Client.Send(&response.SecondPasswordResult{
 					Mode:   request.SecondPasswordModeSet,

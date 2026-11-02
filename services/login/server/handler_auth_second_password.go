@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -50,6 +51,9 @@ func (h *AuthSecondPassword) Handle(ctx *core.ClientContext, req *request.AuthSe
 				Password:  req.Password,
 			})
 		}, func(reply *internal.SecondPasswordReply) error {
+			if reply.GetStatus() == internal.SecondPasswordStatus_SECOND_PASSWORD_LOCKED {
+				_ = ctx.Client.Send(&response.Notice{Type: constant.MsgPopup, Message: secondPasswordLockedMessage}, types.SEND_POLICY_ENCRYPT)
+			}
 			result := uint8(response.SecondPasswordResultInvalid)
 			mode := uint8(request.SecondPasswordModeSet)
 			if reply.GetStatus() == internal.SecondPasswordStatus_SECOND_PASSWORD_SUCCESS {
