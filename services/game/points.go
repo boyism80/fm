@@ -214,13 +214,8 @@ func (p *Points) SetSP(v uint16, notify bool) {
 
 func (p *Points) DistributeSkill(skillID uint32) bool {
 	wzSkill := p.owner.gameWorld.GetResources().GetSkill(skillID)
-	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.class) {
+	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.class) || !p.owner.skills.passesRequirements(wzSkill) {
 		return false
-	}
-	for reqID, reqLevel := range wzSkill.RequiredSkills {
-		if entry := p.owner.skills.Learned(reqID); entry == nil || entry.Level() < reqLevel {
-			return false
-		}
 	}
 
 	// The distributable beginner skills share their own budget, level - 1 up to 6, instead of SP.

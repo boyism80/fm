@@ -46,7 +46,7 @@ local ETC_ITEM = 4000000
 local STAT_STR = 0x40
 local STAT_DEX = 0x80
 local IMPROVED_HP_RECOVERY = 1000000
-local IRON_BODY = 1001003
+local POWER_STRIKE = 1001004
 local MSG_MAP_MEGAPHONE = 2
 local MSG_HEART_MEGAPHONE = 9
 local EQUIP = 1
@@ -503,12 +503,12 @@ local function sp_reset(ctx)
         return ctx:fail("스킬 배우기 실패")
     end
     local before = count(bot, SP_RESET_1)
-    local p = bot:request(resp.update_skills, use(bot, SP_RESET_1, { to = IRON_BODY, from = IMPROVED_HP_RECOVERY }),
+    local p = bot:request(resp.update_skills, use(bot, SP_RESET_1, { to = POWER_STRIKE, from = IMPROVED_HP_RECOVERY }),
         function(p)
-            return p.skill_id == IRON_BODY and p.level == 1
+            return p.skill_id == POWER_STRIKE and p.level == 1
         end, 5000)
     if p == false then
-        return ctx:fail("SP 되돌리기 후 아이언 바디가 오르지 않음")
+        return ctx:fail("SP 되돌리기 후 파워 스트라이크가 오르지 않음")
     end
     return consumed(ctx, bot, SP_RESET_1, before, "SP 되돌리기")
 end

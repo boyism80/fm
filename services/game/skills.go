@@ -47,6 +47,14 @@ func (sc *Skills) MoveSP(to, from uint32, advancement int) bool {
 	if source == nil || source.Level() == 0 {
 		return false
 	}
+	if !sc.passesRequirements(toWz) || toWz.RequiredSkills[from] > source.Level()-1 {
+		return false
+	}
+	for _, entry := range sc.entries {
+		if entry.Level() > 0 && entry.wz.RequiredSkills[from] > source.Level()-1 {
+			return false
+		}
+	}
 	target := sc.Learned(to)
 	if target == nil {
 		target = NewSkillEntry(sc.owner, toWz, 0, toWz.DefaultMasterLevel())
@@ -61,6 +69,15 @@ func (sc *Skills) MoveSP(to, from uint32, advancement int) bool {
 		sc.Bind(to, target)
 	} else {
 		target.SetLevel(target.Level() + 1)
+	}
+	return true
+}
+
+func (sc *Skills) passesRequirements(skill *wz.Skill) bool {
+	for reqID, reqLevel := range skill.RequiredSkills {
+		if entry := sc.Learned(reqID); entry == nil || entry.Level() < reqLevel {
+			return false
+		}
 	}
 	return true
 }
