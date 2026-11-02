@@ -31,6 +31,14 @@ func (s *ActiveSkill) Serialize(writer *stream.StreamWriter) error {
 	writer.Write16(s.OldY)
 	writer.WriteU32(s.SkillID)
 	writer.WriteU8(s.SkillLevel)
+	if s.MagnetMobData != nil {
+		writer.WriteU32(uint32(len(s.MagnetMobData.Mobs)))
+		for _, entry := range s.MagnetMobData.Mobs {
+			writer.WriteU32(entry.OID)
+			writer.WriteBoolean(entry.Success)
+		}
+		writer.WriteU8(s.MagnetMobData.Direction)
+	}
 	return nil
 }
 

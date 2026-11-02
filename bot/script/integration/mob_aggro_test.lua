@@ -4,6 +4,9 @@ local FIELD = 100000000
 local SNAIL = 100100
 local SWORD = 1302000
 local WEAPON_SLOT = -11
+local HERO = 112
+local MONSTER_MAGNET = 1121001
+local MISSING_OID = 999999
 
 local function prepare(ctx, bot)
     if pq.command(bot, "/봇초기화 30 100 0 " .. SWORD .. ":1 -", "봇초기화 완료") == false then
@@ -83,6 +86,45 @@ local function attacker_takes_control(ctx)
     return true
 end
 
+-- A magnet entry for a mob no longer in the map is skipped alone; the mobs after it are still pulled.
+local function magnet_skips_missing_mob(ctx)
+    local first = ctx:bot(0)
+    local second = ctx:bot(1)
+    if prepare(ctx, first) == false then
+        return false
+    end
+    if pq.command(second, "/봇초기화 120 " .. HERO .. " 0 -", "봇초기화 완료") == false then
+        return ctx:fail("히어로 봇 초기화 실패")
+    end
+    if pq.command(second, "/스킬레벨 " .. MONSTER_MAGNET .. " 1", "스킬레벨 설정") == false then
+        return ctx:fail("몬스터 마그넷 배우기 실패")
+    end
+    if pq.command(second, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("히어로 마력 설정 실패")
+    end
+    if first:instance_move(FIELD) == false then
+        return ctx:fail("첫 봇 맵 이동 실패")
+    end
+    local started = first:request(resp.start_control_mob, req.normal_chat { message = "/몬스터생성 " .. SNAIL }, nil, 3000)
+    if started == false then
+        return ctx:fail("생성한 달팽이의 컨트롤이 첫 봇에게 오지 않음")
+    end
+    local oid = started.mob.oid
+    if second:instance_move(FIELD) == false then
+        return ctx:fail("히어로 봇 맵 이동 실패")
+    end
+
+    local magnet = req.active_skill {
+        skill_id = MONSTER_MAGNET,
+        skill_level = 1,
+        magnet_mob_data = { mobs = { { oid = MISSING_OID, success = true }, { oid = oid, success = true } } },
+    }
+    if second:request(resp.start_control_mob, magnet, control_of(oid, false), 3000) == false then
+        return ctx:fail("앞에 없는 몹이 있는 마그넷에서 뒤의 몹 컨트롤이 넘어오지 않음")
+    end
+    return true
+end
+
 test_suite {
     name = "Mob aggro: 공격자 컨트롤 전환·컨트롤러가 아닌 이동·자동 어그로",
     bot_count = 2,
@@ -94,5 +136,6 @@ test_suite {
 
     scenarios = {
         attacker_takes_control,
+        magnet_skips_missing_mob,
     },
 }

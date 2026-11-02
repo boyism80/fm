@@ -53,15 +53,16 @@ func (h *ActiveSkill) skillParams(L *lua.LState, mapInstance *game.Map, req *req
 	if req.MagnetMobData != nil {
 		magnet := L.NewTable()
 		mobs := L.NewTable()
-		for i, entry := range req.MagnetMobData.Mobs {
+		for _, entry := range req.MagnetMobData.Mobs {
 			mob := mapInstance.GetMob(entry.OID)
-			if mob != nil {
-				entryTbl := L.NewTable()
-				entryTbl.RawSetString("mob", luax.NewLuable(L, mob))
-				entryTbl.RawSetString("oid", lua.LNumber(entry.OID))
-				entryTbl.RawSetString("success", lua.LBool(entry.Success))
-				mobs.RawSetInt(i+1, entryTbl)
+			if mob == nil {
+				continue
 			}
+			entryTbl := L.NewTable()
+			entryTbl.RawSetString("mob", luax.NewLuable(L, mob))
+			entryTbl.RawSetString("oid", lua.LNumber(entry.OID))
+			entryTbl.RawSetString("success", lua.LBool(entry.Success))
+			mobs.Append(entryTbl)
 		}
 		magnet.RawSetString("mobs", mobs)
 		magnet.RawSetString("direction", lua.LNumber(req.MagnetMobData.Direction))
