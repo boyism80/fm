@@ -1,9 +1,14 @@
 -- NPC name (String.wz/Npc.img.xml): 지로큰
 
+local maker = require("script/lib/maker")
+
 local STIMULATOR = 4130000
 
 local CATEGORIES = {
+    { text = " 촉진제가 뭐죠?", info = "촉진제는 여러 아이템을 만들때 첨가할 수 있는 특수한 약이죠. 몬스터에게서 구하실 수 있을거에요. 어쨌든, 촉진제는 아이템을 만들때 일정 확률로 옵션이 더 좋아질 수 있게 됩니다. 하지만 10%의 확률로 제작에 실패할 수도 있으니 신중하게 결정해주세요." },
     {
+        text = " 전사 장갑 제작",
+        equip = true,
         prompt = "전사 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         recipes = {
             { item = 1082007, label = "전사 레벨. 30", cost = 18000, mats = { { 4011000, 3 }, { 4011001, 2 }, { 4003000, 15 } } },
@@ -13,6 +18,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 궁수 장갑 제작",
+        equip = true,
         prompt = "궁수 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         recipes = {
             { item = 1082048, label = "궁수 레벨. 30", cost = 18000, mats = { { 4000021, 50 }, { 4011006, 2 }, { 4021001, 1 } } },
@@ -22,6 +29,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 마법사 장갑 제작",
+        equip = true,
         prompt = "마법사 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         recipes = {
             { item = 1082051, label = "마법사 레벨. 30", cost = 22500, mats = { { 4000021, 60 }, { 4021006, 1 }, { 4021000, 2 } } },
@@ -31,6 +40,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 도적 장갑 제작",
+        equip = true,
         prompt = "돚거 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         recipes = {
             { item = 1082042, label = "도적 레벨. 30", cost = 22500, mats = { { 4011001, 2 }, { 4000021, 50 }, { 4003000, 10 } } },
@@ -40,6 +51,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 촉진제로 전사 장갑 제작",
+        equip = true,
         prompt = "촉진제를 통한 전사 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         stimulator = true,
         recipes = {
@@ -54,6 +67,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 촉진제로 궁수 장갑 제작",
+        equip = true,
         prompt = "촉진제를 통한 궁수 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         stimulator = true,
         recipes = {
@@ -68,6 +83,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 촉진제로 마법사 장갑 제작",
+        equip = true,
         prompt = "촉진제를 통한 마법사 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         stimulator = true,
         recipes = {
@@ -82,6 +99,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 촉진제로 돚거 장갑 제작",
+        equip = true,
         prompt = "촉진제를 통한 돚거 장갑이 필요하신가요? 어떤 아이템이 필요하세요?#b",
         stimulator = true,
         recipes = {
@@ -97,86 +116,24 @@ local CATEGORIES = {
     },
 }
 
+local TEXT = {
+    greet = "안녕하세요, 루디브리엄 장갑 상점이에요. 무엇을 도와드릴까요?#b",
+    option = function(recipe)
+        return " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
+    end,
+    confirm = function(item)
+        return "#t" .. item .. "# 아이템이 필요한가요? 그렇다면 재료는 아래와 같이 모아오셔야 합니다. 그리고 인벤토리 공간이 충분한지도 확인해 주세요.\r\n#b"
+    end,
+    unit = "개",
+    stimulator = STIMULATOR,
+    no_meso = "음.. 메소가 부족하신 것 같은데요?",
+    failed = "죄송하지만 재료를 올바르게 가져오신 것 같지 않네요. 혹은 인벤토리 공간이 부족한건 아니신가요?",
+    broken = "헉! 아무래도.. 촉진제를 사용하다가 사고가 발생한 모양이에요. 아쉽하지만 촉진제로 아이템 제작에 실패한 것 같네요.",
+    done = "자, 장갑이 다 만들어 졌어요. 조심하세요. 아직 뜨겁거든요.",
+}
+
 return {
     on_click = function(me, npc)
-        local type_sel = me:dialog_list(npc, "안녕하세요, 루디브리엄 장갑 상점이에요. 무엇을 도와드릴까요?#b", {
-            " 촉진제가 뭐죠?",
-            " 전사 장갑 제작",
-            " 궁수 장갑 제작",
-            " 마법사 장갑 제작",
-            " 도적 장갑 제작",
-            " 촉진제로 전사 장갑 제작",
-            " 촉진제로 궁수 장갑 제작",
-            " 촉진제로 마법사 장갑 제작",
-            " 촉진제로 돚거 장갑 제작",
-        })
-        if type_sel == nil then
-            return
-        end
-        if type_sel == 1 then
-            me:dialog(npc,
-                "촉진제는 여러 아이템을 만들때 첨가할 수 있는 특수한 약이죠. 몬스터에게서 구하실 수 있을거에요. 어쨌든, 촉진제는 아이템을 만들때 일정 확률로 옵션이 더 좋아질 수 있게 됩니다. 하지만 10%의 확률로 제작에 실패할 수도 있으니 신중하게 결정해주세요.",
-                false, true)
-            return
-        end
-
-        local category = CATEGORIES[type_sel - 1]
-        local options = {}
-        for i, recipe in ipairs(category.recipes) do
-            options[i] = " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
-        end
-        local item_sel = me:dialog_list(npc, category.prompt, options)
-        if item_sel == nil then
-            return
-        end
-
-        local recipe = category.recipes[item_sel]
-        local prompt = "#t" ..
-            recipe.item .. "# 아이템이 필요한가요? 그렇다면 재료는 아래와 같이 모아오셔야 합니다. 그리고 인벤토리 공간이 충분한지도 확인해 주세요.\r\n#b"
-        for _, mat in ipairs(recipe.mats) do
-            prompt = prompt .. "\r\n#i" .. mat[1] .. "# #t" .. mat[1] .. "# " .. mat[2] .. "개"
-        end
-        prompt = prompt .. "\r\n#i4031138# " .. recipe.cost .. " 메소"
-        if not me:dialog_yes_no(npc, prompt) then
-            return
-        end
-
-        if me:meso() < recipe.cost then
-            me:dialog(npc, "음.. 메소가 부족하신 것 같은데요?")
-            return
-        end
-        local fail = "죄송하지만 재료를 올바르게 가져오신 것 같지 않네요. 혹은 인벤토리 공간이 부족한건 아니신가요?"
-        local cost_items = {}
-        for _, mat in ipairs(recipe.mats) do
-            cost_items[mat[1]] = mat[2]
-        end
-
-        if category.stimulator ~= true then
-            local code = me:exchange({ item = cost_items, meso = recipe.cost }, { item = { [recipe.item] = 1 } })
-            if code ~= ExchangeResult.OK then
-                me:dialog(npc, fail)
-                return
-            end
-            me:dialog(npc, "자, 장갑이 다 만들어 졌어요. 조심하세요. 아직 뜨겁거든요.")
-            return
-        end
-
-        cost_items[STIMULATOR] = 1
-        if math.random(0, 9) == 0 then
-            local code = me:exchange({ item = cost_items, meso = recipe.cost }, nil)
-            if code ~= ExchangeResult.OK then
-                me:dialog(npc, fail)
-                return
-            end
-            me:dialog(npc, "헉! 아무래도.. 촉진제를 사용하다가 사고가 발생한 모양이에요. 아쉽하지만 촉진제로 아이템 제작에 실패한 것 같네요.")
-            return
-        end
-        local code = me:exchange({ item = cost_items, meso = recipe.cost },
-            { item = { [recipe.item] = 1 }, random = true })
-        if code ~= ExchangeResult.OK then
-            me:dialog(npc, fail)
-            return
-        end
-        me:dialog(npc, "자, 장갑이 다 만들어 졌어요. 조심하세요. 아직 뜨겁거든요.")
+        maker.run(me, npc, CATEGORIES, TEXT)
     end
 }

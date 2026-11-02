@@ -1,7 +1,11 @@
 -- NPC name (String.wz/Npc.img.xml): 네브
 
+local maker = require("script/lib/maker")
+
 local CATEGORIES = {
     {
+        text = "  전사 장갑 제작/합성",
+        equip = true,
         prompt = "전사의 장갑이 필요하다구? 문제없지. 원하는게 뭐야?#b",
         recipes = {
             { item = 1082103, label = "전사 레벨. 70", cost = 90000, mats = { { 4005000, 2 }, { 4011000, 8 }, { 4011006, 3 }, { 4000030, 70 }, { 4003000, 55 } } },
@@ -14,6 +18,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = "  궁수 장갑 제작/합성",
+        equip = true,
         prompt = "궁수의 장갑이 필요하다구? 문제없지. 원하는게 뭐야?#b",
         recipes = {
             { item = 1082106, label = "궁수 레벨. 70", cost = 90000, mats = { { 4005002, 2 }, { 4021005, 8 }, { 4011004, 3 }, { 4000030, 70 }, { 4003000, 55 } } },
@@ -26,6 +32,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = "  마법사 장갑 제작/합성",
+        equip = true,
         prompt = "마법사의 장갑이 필요하다구? 문제 없지. 원하는게 뭐야?#b",
         recipes = {
             { item = 1082098, label = "마법사 레벨. 70", cost = 90000, mats = { { 4005001, 2 }, { 4011000, 6 }, { 4011004, 6 }, { 4000030, 70 }, { 4003000, 55 } } },
@@ -37,6 +45,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = "  돚거 장갑 제작/합성",
+        equip = true,
         prompt = "돚거의 장갑이 필요하다구? 문제 없지. 원하는게 뭐야?#b",
         recipes = {
             { item = 1082095, label = "도적 레벨. 70", cost = 90000, mats = { { 4005003, 2 }, { 4011000, 6 }, { 4011003, 6 }, { 4000030, 70 }, { 4003000, 55 } } },
@@ -49,52 +59,22 @@ local CATEGORIES = {
     },
 }
 
+local TEXT = {
+    greet = "오르비스에서 최고의 장갑 제작자인 나에게 원하는거라도 있어?#b",
+    option = function(recipe)
+        return " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
+    end,
+    confirm = function(item)
+        return "#t" .. item .. "# 아이템을 만들어 보고 싶은거야? 필요한 재료는 아래와 같으니 재료를 제대로 갖고 있는지, 인벤토리 공간은 충분한지 확인해 봐.#b"
+    end,
+    unit = "개",
+    no_meso = "메소가 부족한것 같은데? 미안하지만 요금을 제대로 지불해야 서비스를 이용할 수 있다구.",
+    failed = "흐음. 재료는 제대로 갖고 있는지, 인벤토리 공간은 충분한지 다시 한번 확인해 봐.",
+    done = "다 됐다구. 더 이상 필요한게 있으면 다시 내게 말을 걸어줘.",
+}
+
 return {
     on_click = function(me, npc)
-        local type_sel = me:dialog_list(npc, "오르비스에서 최고의 장갑 제작자인 나에게 원하는거라도 있어?#b", {
-            "  전사 장갑 제작/합성",
-            "  궁수 장갑 제작/합성",
-            "  마법사 장갑 제작/합성",
-            "  돚거 장갑 제작/합성",
-        })
-        if type_sel == nil then
-            return
-        end
-
-        local category = CATEGORIES[type_sel]
-        local options = {}
-        for i, recipe in ipairs(category.recipes) do
-            options[i] = " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
-        end
-        local item_sel = me:dialog_list(npc, category.prompt, options)
-        if item_sel == nil then
-            return
-        end
-
-        local recipe = category.recipes[item_sel]
-        local prompt = "#t" ..
-            recipe.item .. "# 아이템을 만들어 보고 싶은거야? 필요한 재료는 아래와 같으니 재료를 제대로 갖고 있는지, 인벤토리 공간은 충분한지 확인해 봐.#b"
-        for _, mat in ipairs(recipe.mats) do
-            prompt = prompt .. "\r\n#i" .. mat[1] .. "# #t" .. mat[1] .. "# " .. mat[2] .. "개"
-        end
-        prompt = prompt .. "\r\n#i4031138# " .. recipe.cost .. " 메소"
-        if not me:dialog_yes_no(npc, prompt) then
-            return
-        end
-
-        if me:meso() < recipe.cost then
-            me:dialog(npc, "메소가 부족한것 같은데? 미안하지만 요금을 제대로 지불해야 서비스를 이용할 수 있다구.")
-            return
-        end
-        local cost_items = {}
-        for _, mat in ipairs(recipe.mats) do
-            cost_items[mat[1]] = mat[2]
-        end
-        local code = me:exchange({ item = cost_items, meso = recipe.cost }, { item = { [recipe.item] = 1 } })
-        if code ~= ExchangeResult.OK then
-            me:dialog(npc, "흐음. 재료는 제대로 갖고 있는지, 인벤토리 공간은 충분한지 다시 한번 확인해 봐.")
-            return
-        end
-        me:dialog(npc, "다 됐다구. 더 이상 필요한게 있으면 다시 내게 말을 걸어줘.")
+        maker.run(me, npc, CATEGORIES, TEXT)
     end
 }

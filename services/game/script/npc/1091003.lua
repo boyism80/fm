@@ -1,7 +1,11 @@
 -- NPC name (String.wz/Npc.img.xml): 세릴
 
+local maker = require("script/lib/maker")
+
 local CATEGORIES = {
     {
+        text = " 너클 제작",
+        equip = true,
         prompt = "만들 너클을 골라봐.#b",
         recipes = {
             { item = 1482001, label = "#t1482001# (레벨 제한: 15, 해적)", level = 15, cost = 1000, mats = { { 4000021, 20 } } },
@@ -14,6 +18,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 건 제작",
+        equip = true,
         prompt = "만들 건을 골라봐.#b",
         recipes = {
             { item = 1492001, label = "#t1492001# (레벨 제한: 15, 해적)", level = 15, cost = 1000, mats = { { 4011000, 1 }, { 4003000, 5 }, { 4003001, 1 } } },
@@ -26,6 +32,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 장갑 제작",
+        equip = true,
         prompt = "만들 장갑을 골라봐.#b",
         recipes = {
             { item = 1082180, label = "#t1082180#", level = 15, cost = 1000, mats = { { 4000021, 15 }, { 4021003, 1 } } },
@@ -40,51 +48,23 @@ local CATEGORIES = {
     },
 }
 
+local TEXT = {
+    greet = "무기나 장갑을 만들고 싶다구? 그렇다면 제대로 찾아온 것 같군. 해적 세월 20년 동안 갈고 닦은 나의 장인 실력을 보여주지.#b",
+    option = function(recipe)
+        return " " .. recipe.label
+    end,
+    confirm = function(item, _, recipe)
+        return "#t" .. item .. "# 제작에 필요한 아이템들이야. 레벨 제한은 " .. recipe.level .. " 이니까 착용 가능한지 확인해보라구.\r\n"
+    end,
+    unit = " 개",
+    no_meso = "메소는 제대로 갖고 있는거야?",
+    failed = "재료가 부족한 것 같은데? 다시 확인해봐.",
+    failed_next = true,
+    done = "자, 다 됐어. 근사하지 않아?",
+}
+
 return {
     on_click = function(me, npc)
-        local type_sel = me:dialog_list(npc, "무기나 장갑을 만들고 싶다구? 그렇다면 제대로 찾아온 것 같군. 해적 세월 20년 동안 갈고 닦은 나의 장인 실력을 보여주지.#b",
-            {
-                " 너클 제작",
-                " 건 제작",
-                " 장갑 제작",
-            })
-        if type_sel == nil then
-            return
-        end
-
-        local category = CATEGORIES[type_sel]
-        local options = {}
-        for i, recipe in ipairs(category.recipes) do
-            options[i] = " " .. recipe.label
-        end
-        local item_sel = me:dialog_list(npc, category.prompt, options)
-        if item_sel == nil then
-            return
-        end
-
-        local recipe = category.recipes[item_sel]
-        local prompt = "#t" .. recipe.item .. "# 제작에 필요한 아이템들이야. 레벨 제한은 " .. recipe.level .. " 이니까 착용 가능한지 확인해보라구.\r\n"
-        for _, mat in ipairs(recipe.mats) do
-            prompt = prompt .. "\r\n#i" .. mat[1] .. "# #t" .. mat[1] .. "#" .. mat[2] .. " 개 "
-        end
-        prompt = prompt .. "\r\n#i4031138# " .. recipe.cost .. " 메소"
-        if not me:dialog_yes_no(npc, prompt) then
-            return
-        end
-
-        if me:meso() < recipe.cost then
-            me:dialog(npc, "메소는 제대로 갖고 있는거야?")
-            return
-        end
-        local cost_items = {}
-        for _, mat in ipairs(recipe.mats) do
-            cost_items[mat[1]] = mat[2]
-        end
-        local code = me:exchange({ item = cost_items, meso = recipe.cost }, { item = { [recipe.item] = 1 } })
-        if code ~= ExchangeResult.OK then
-            me:dialog(npc, "재료가 부족한 것 같은데? 다시 확인해봐.", false, true)
-            return
-        end
-        me:dialog(npc, "자, 다 됐어. 근사하지 않아?")
+        maker.run(me, npc, CATEGORIES, TEXT)
     end
 }

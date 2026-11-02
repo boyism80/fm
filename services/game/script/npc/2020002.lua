@@ -1,7 +1,11 @@
 -- NPC name (String.wz/Npc.img.xml): 고든
 
+local maker = require("script/lib/maker")
+
 local CATEGORIES = {
     {
+        text = "  전사 신발 제작",
+        equip = true,
         prompt = "전사의 신발이라.. 문제 없다네. 무얼 원하는가?#b",
         recipes = {
             { item = 1072147, label = "전사 레벨. 60", cost = 60000, mats = { { 4021008, 1 }, { 4011007, 1 }, { 4021005, 8 }, { 4000030, 80 }, { 4003000, 55 } } },
@@ -16,6 +20,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = "  궁수 신발 제작",
+        equip = true,
         prompt = "궁수의 신발이라.. 문제 없다네. 무얼 원하는가?#b",
         recipes = {
             { item = 1072144, label = "궁수 레벨. 60", cost = 60000, mats = { { 4011006, 5 }, { 4021000, 8 }, { 4021007, 1 }, { 4000030, 75 }, { 4003000, 50 } } },
@@ -32,6 +38,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = "  마법사 신발 제작",
+        equip = true,
         prompt = "마법사의 신발이라.. 문제 없다네. 무얼 원하는가?#b",
         recipes = {
             { item = 1072136, label = "마법사 레벨. 60", cost = 60000, mats = { { 4021009, 1 }, { 4011006, 4 }, { 4011005, 5 }, { 4000030, 70 }, { 4003000, 50 } } },
@@ -48,6 +56,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = "  돚거 신발 제작",
+        equip = true,
         prompt = "돚거의 신발이라.. 문제 없다네. 무얼 원하는가?#b",
         recipes = {
             { item = 1072150, label = "도적 레벨. 60", cost = 60000, mats = { { 4021007, 1 }, { 4011007, 1 }, { 4021000, 8 }, { 4000030, 75 }, { 4003000, 50 } } },
@@ -63,53 +73,24 @@ local CATEGORIES = {
     },
 }
 
+local TEXT = {
+    greet = "엘나스의 겨울은 무척 춥다네. 이 엘나스의 겨울에서도 따뜻할 수 있도록 신발을 만들어 주고 있다네. 원하는 것이 있는가?#b",
+    option = function(recipe)
+        return " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
+    end,
+    confirm = function(item)
+        return "#t" ..
+        item ..
+        "# 아이템을 원하는 것인가? 그렇다면 자네를 위해 그 물건을 만들어 주도록 하지. 단지 약간의 수수료가 필요하겠지만 말이야.. 재료는 다음과 같다네. 그리고 인벤토리 공간이 충분한지 확인해 주게.\r\n#b"
+    end,
+    unit = "개",
+    no_meso = "흐음.. 메소는 충분히 갖고 있는건가?",
+    failed = "재료가 부족한건 아닌지, 인벤토리 공간이 충분한지 다시 한번 확인하게나.",
+    done = "자, 다 됐다네.",
+}
+
 return {
     on_click = function(me, npc)
-        local type_sel = me:dialog_list(npc, "엘나스의 겨울은 무척 춥다네. 이 엘나스의 겨울에서도 따뜻할 수 있도록 신발을 만들어 주고 있다네. 원하는 것이 있는가?#b", {
-            "  전사 신발 제작",
-            "  궁수 신발 제작",
-            "  마법사 신발 제작",
-            "  돚거 신발 제작",
-        })
-        if type_sel == nil then
-            return
-        end
-
-        local category = CATEGORIES[type_sel]
-        local options = {}
-        for i, recipe in ipairs(category.recipes) do
-            options[i] = " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
-        end
-        local item_sel = me:dialog_list(npc, category.prompt, options)
-        if item_sel == nil then
-            return
-        end
-
-        local recipe = category.recipes[item_sel]
-        local prompt = "#t" ..
-            recipe.item ..
-            "# 아이템을 원하는 것인가? 그렇다면 자네를 위해 그 물건을 만들어 주도록 하지. 단지 약간의 수수료가 필요하겠지만 말이야.. 재료는 다음과 같다네. 그리고 인벤토리 공간이 충분한지 확인해 주게.\r\n#b"
-        for _, mat in ipairs(recipe.mats) do
-            prompt = prompt .. "\r\n#i" .. mat[1] .. "# #t" .. mat[1] .. "# " .. mat[2] .. "개"
-        end
-        prompt = prompt .. "\r\n#i4031138# " .. recipe.cost .. " 메소"
-        if not me:dialog_yes_no(npc, prompt) then
-            return
-        end
-
-        if me:meso() < recipe.cost then
-            me:dialog(npc, "흐음.. 메소는 충분히 갖고 있는건가?")
-            return
-        end
-        local cost_items = {}
-        for _, mat in ipairs(recipe.mats) do
-            cost_items[mat[1]] = mat[2]
-        end
-        local code = me:exchange({ item = cost_items, meso = recipe.cost }, { item = { [recipe.item] = 1 } })
-        if code ~= ExchangeResult.OK then
-            me:dialog(npc, "재료가 부족한건 아닌지, 인벤토리 공간이 충분한지 다시 한번 확인하게나.")
-            return
-        end
-        me:dialog(npc, "자, 다 됐다네.")
+        maker.run(me, npc, CATEGORIES, TEXT)
     end
 }

@@ -1,9 +1,13 @@
 -- NPC name (String.wz/Npc.img.xml): 페이
 
+local maker = require("script/lib/maker")
+
 local STIMULATOR = 4130001
 
 local CATEGORIES = {
     {
+        text = " 전사 신발 제작",
+        equip = true,
         prompt = "전사의 신발을 원하세요? 어떤 아이템을 만들어 드릴까요?#b",
         recipes = {
             { item = 1072003, label = "전사 레벨. 30", cost = 20000, mats = { { 4021003, 4 }, { 4011001, 2 }, { 4000021, 45 }, { 4003000, 15 } } },
@@ -23,6 +27,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 궁수 신발 제작",
+        equip = true,
         prompt = "궁수의 신발을 원하세요? 어떤 아이템을 만들어 드릴까요?#b",
         recipes = {
             { item = 1072079, label = "궁수 레벨. 30", cost = 19000, mats = { { 4000021, 50 }, { 4021000, 2 }, { 4003000, 15 } } },
@@ -44,6 +50,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 마법사 신발 제작",
+        equip = true,
         prompt = "마법사의 신발을 원하세요? 어떤 아이템을 만들어 드릴까요?#b",
         recipes = {
             { item = 1072075, label = "마법사 레벨. 30", cost = 18000, mats = { { 4021000, 2 }, { 4000021, 50 }, { 4003000, 15 } } },
@@ -64,6 +72,8 @@ local CATEGORIES = {
         },
     },
     {
+        text = " 돚거 신발 제작",
+        equip = true,
         prompt = "도적의 신발을 원하세요? 어떤 아이템을 만들어 드릴까요?#b",
         recipes = {
             { item = 1072032, label = "도적 레벨. 30", cost = 19000, mats = { { 4011000, 3 }, { 4000021, 50 }, { 4003000, 15 } } },
@@ -85,93 +95,38 @@ local CATEGORIES = {
     },
 }
 
+-- The shoe shop takes nine tenths of the listed price, and the stimulator makes use the same recipes.
+for i, name in ipairs({ "전사 신발 제작", "궁수 신발 제작", "마법사 신발 제작", "돚거 신발 제작" }) do
+    local category = CATEGORIES[i]
+    for _, recipe in ipairs(category.recipes) do
+        recipe.cost = math.floor(recipe.cost * 9 / 10)
+    end
+    CATEGORIES[i + 4] = { text = " 촉진제로 " .. name, prompt = category.prompt, equip = true, stimulator = true, recipes =
+    category.recipes }
+end
+table.insert(CATEGORIES, 1,
+    { text = " 촉진제가 뭐죠?", info =
+    "촉진제는 여러 아이템을 만들때 첨가할 수 있는 특수한 약이죠. 몬스터에게서 구하실 수 있을거에요. 어쨌든, 촉진제는 아이템을 만들때 일정 확률로 옵션이 더 좋아질 수 있게 됩니다. 하지만 10%의 확률로 제작에 실패할 수도 있으니 신중하게 결정해주세요." })
+
+local TEXT = {
+    greet = "루디브리엄 신발 상점에 잘 오셨어요~ 무엇을 도와드릴까요?#b",
+    option = function(recipe)
+        return " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
+    end,
+    confirm = function(item)
+        return "#t" .. item .. "# 아이템이 필요한가요? 그렇다면 재료는 아래와 같이 모아오셔야 합니다. 그리고 인벤토리 공간이 충분한지도 확인해 주세요.\r\n#b"
+    end,
+    unit = "개",
+    stimulator = STIMULATOR,
+    lists_stimulator = true,
+    no_meso = "음.. 메소가 부족하신 것 같은데요?",
+    failed = "죄송하지만 재료를 올바르게 가져오신 것 같지 않네요. 혹은 인벤토리 공간이 부족한건 아니신가요?",
+    broken = "헉! 아무래도.. 촉진제를 사용하다가 사고가 발생한 모양이에요. 아쉽하지만 촉진제로 아이템 제작에 실패한 것 같네요.",
+    done = "자, 신발이 다 만들어 졌어요. 조심하세요. 아직 뜨겁거든요.",
+}
+
 return {
     on_click = function(me, npc)
-        local type_sel = me:dialog_list(npc, "루디브리엄 신발 상점에 잘 오셨어요~ 무엇을 도와드릴까요?#b", {
-            " 촉진제가 뭐죠?",
-            " 전사 신발 제작",
-            " 궁수 신발 제작",
-            " 마법사 신발 제작",
-            " 돚거 신발 제작",
-            " 촉진제로 전사 신발 제작",
-            " 촉진제로 궁수 신발 제작",
-            " 촉진제로 마법사 신발 제작",
-            " 촉진제로 돚거 신발 제작",
-        })
-        if type_sel == nil then
-            return
-        end
-        if type_sel == 1 then
-            me:dialog(npc,
-                "촉진제는 여러 아이템을 만들때 첨가할 수 있는 특수한 약이죠. 몬스터에게서 구하실 수 있을거에요. 어쨌든, 촉진제는 아이템을 만들때 일정 확률로 옵션이 더 좋아질 수 있게 됩니다. 하지만 10%의 확률로 제작에 실패할 수도 있으니 신중하게 결정해주세요.",
-                false, true)
-            return
-        end
-
-        local stimulator = type_sel > 5
-        local category = CATEGORIES[type_sel - 1]
-        if stimulator then
-            category = CATEGORIES[type_sel - 5]
-        end
-        local options = {}
-        for i, recipe in ipairs(category.recipes) do
-            options[i] = " #z" .. recipe.item .. "##k - " .. recipe.label .. "#b"
-        end
-        local item_sel = me:dialog_list(npc, category.prompt, options)
-        if item_sel == nil then
-            return
-        end
-
-        local recipe = category.recipes[item_sel]
-        local cost = math.floor(recipe.cost * 9 / 10)
-        local prompt = "#t" ..
-            recipe.item .. "# 아이템이 필요한가요? 그렇다면 재료는 아래와 같이 모아오셔야 합니다. 그리고 인벤토리 공간이 충분한지도 확인해 주세요.\r\n#b"
-        if stimulator then
-            prompt = prompt .. "\r\n#i" .. STIMULATOR .. "# #t" .. STIMULATOR .. "# 1개"
-        end
-        for _, mat in ipairs(recipe.mats) do
-            prompt = prompt .. "\r\n#i" .. mat[1] .. "# #t" .. mat[1] .. "# " .. mat[2] .. "개"
-        end
-        prompt = prompt .. "\r\n#i4031138# " .. cost .. " 메소"
-        if not me:dialog_yes_no(npc, prompt) then
-            return
-        end
-
-        if me:meso() < cost then
-            me:dialog(npc, "음.. 메소가 부족하신 것 같은데요?")
-            return
-        end
-        local fail = "죄송하지만 재료를 올바르게 가져오신 것 같지 않네요. 혹은 인벤토리 공간이 부족한건 아니신가요?"
-        local cost_items = {}
-        for _, mat in ipairs(recipe.mats) do
-            cost_items[mat[1]] = mat[2]
-        end
-
-        if stimulator == false then
-            local code = me:exchange({ item = cost_items, meso = cost }, { item = { [recipe.item] = 1 } })
-            if code ~= ExchangeResult.OK then
-                me:dialog(npc, fail)
-                return
-            end
-            me:dialog(npc, "자, 신발이 다 만들어 졌어요. 조심하세요. 아직 뜨겁거든요.")
-            return
-        end
-
-        cost_items[STIMULATOR] = 1
-        if math.random(0, 9) == 0 then
-            local code = me:exchange({ item = cost_items, meso = cost }, nil)
-            if code ~= ExchangeResult.OK then
-                me:dialog(npc, fail)
-                return
-            end
-            me:dialog(npc, "헉! 아무래도.. 촉진제를 사용하다가 사고가 발생한 모양이에요. 아쉽하지만 촉진제로 아이템 제작에 실패한 것 같네요.")
-            return
-        end
-        local code = me:exchange({ item = cost_items, meso = cost }, { item = { [recipe.item] = 1 }, random = true })
-        if code ~= ExchangeResult.OK then
-            me:dialog(npc, fail)
-            return
-        end
-        me:dialog(npc, "자, 신발이 다 만들어 졌어요. 조심하세요. 아직 뜨겁거든요.")
+        maker.run(me, npc, CATEGORIES, TEXT)
     end
 }
