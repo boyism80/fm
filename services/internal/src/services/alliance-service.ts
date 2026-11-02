@@ -16,6 +16,7 @@ import {
 } from "@fm/shared/repos/alliance-repository";
 import { RequestStatus } from "@fm/shared/repos/request-repository";
 import { GuildRepository } from "@fm/shared/repos/guild-repository";
+import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
 import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
 import type { AllianceModel } from "@fm/shared/repos/alliance-repository";
@@ -148,6 +149,7 @@ export class AllianceService {
     private readonly distributedLockService: DistributedLockService;
     private readonly guildService: GuildService;
     private readonly wzService: WzService;
+    private readonly unifiedRepo: UnifiedRepository;
 
     constructor(
         internalContext: InternalContext,
@@ -162,6 +164,7 @@ export class AllianceService {
         distributedLockService: DistributedLockService,
         guildService: GuildService,
         wzService: WzService,
+        unifiedRepository: UnifiedRepository,
     ) {
         this.ctx = internalContext;
         this.app = appConfiguration;
@@ -175,6 +178,7 @@ export class AllianceService {
         this.distributedLockService = distributedLockService;
         this.guildService = guildService;
         this.wzService = wzService;
+        this.unifiedRepo = unifiedRepository;
     }
 
     private assertWorld(worldId: number) {
@@ -291,6 +295,7 @@ export class AllianceService {
                 await this.allianceRepo.delete({ worldId, allianceId }, { txClient: dataTx });
             })
             .catch(() => {});
+        await this.unifiedRepo.deleteAllianceName(worldId, allianceId).catch(() => {});
         await this.allianceRepo.invalidateCache(worldId, allianceId).catch(() => {});
         for (const guildId of guildIds) {
             await this.guildRepo.invalidateCache(worldId, guildId).catch(() => {});
@@ -406,6 +411,9 @@ export class AllianceService {
             });
             allianceId = newAllianceId;
 
+            // Each data shard sees only its own alliances, so the name is reserved in the unified DB first.
+            await this.unifiedRepo.reserveAllianceName(worldId, newAllianceId, allianceName);
+
             savedAlliance = await this.ctx.withPgDataTransaction(worldId, newAllianceId, async (dataTx: PoolClient) => {
                 return this.allianceRepo.set(
                     worldId,
@@ -444,6 +452,9 @@ export class AllianceService {
         } catch (err: unknown) {
             const code = (err as { code?: string })?.code;
             if (code === "23505") {
+                if (allianceId != null) {
+                    await this.unifiedRepo.deleteAllianceName(worldId, allianceId).catch(() => {});
+                }
                 return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN };
             }
             if (allianceId != null) {
@@ -545,6 +556,7 @@ export class AllianceService {
             return result;
         }
 
+        await this.unifiedRepo.deleteAllianceName(worldId, result.allianceId).catch(() => {});
         await this.allianceRepo.invalidateCache(worldId, result.allianceId);
         for (const gid of result.guildIds) {
             await this.guildRepo.invalidateCache(worldId, gid);

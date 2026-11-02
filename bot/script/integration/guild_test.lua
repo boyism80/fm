@@ -939,6 +939,51 @@ local function alliance_capacity_lost_recreate(ctx)
     return disband_alliance(ctx, leader)
 end
 
+-- Alliance names are unique without regard to case, and a disbanded alliance frees its name.
+local function alliance_name_taken(ctx)
+    local leader, other, partner = ctx:bot(0), ctx:bot(2), ctx:bot(3)
+    watch(ctx)
+    if setup(ctx, leader) == false or setup(ctx, other) == false or setup(ctx, partner) == false then
+        return false
+    end
+    if create_alliance(ctx, leader, "연합 생성") == false or form_party(ctx, other, partner) == false then
+        return false
+    end
+    local name = leader:name():upper()
+    if ask(ctx, other, LENARIO, LENARIO_MENU.create, "정말 길드 연합을 만들고") == false then
+        return false
+    end
+    if other:dialog(true) == nil or other:dialog(true, 0, name) == nil then
+        return ctx:fail("연합 이름 입력·확인 대화가 오지 않음")
+    end
+    local refused = other:dialog(true)
+    other:dialog(false)
+    if check(ctx, refused ~= nil and refused.text ~= nil and refused.text:find("이미 존재하는 이름", 1, true) ~= nil,
+            "대소문자만 다른 연합 이름이 거절되지 않음: " .. tostring(refused and refused.text)) == false then
+        return false
+    end
+    if holds(ctx, other, MESO, "이름 거절 뒤 (수수료 그대로)") == false then
+        return false
+    end
+    if disband_alliance(ctx, leader) == false then
+        return false
+    end
+
+    if ask(ctx, other, LENARIO, LENARIO_MENU.create, "정말 길드 연합을 만들고") == false then
+        return false
+    end
+    if other:dialog(true) == nil or other:dialog(true, 0, name) == nil then
+        return ctx:fail("연합 이름 입력·확인 대화가 오지 않음")
+    end
+    yes(other)
+    local made = created(ctx, other, "해체된 연합 이름으로 생성")
+    other:dialog(false)
+    if made == false then
+        return false
+    end
+    return disband_alliance(ctx, other)
+end
+
 test_suite {
     name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구·이름 규칙",
     bot_count = 6,
@@ -977,5 +1022,6 @@ test_suite {
         alliance_capacity_delayed,
         alliance_capacity_lost_recreate,
         alliance_hangul_name,
+        alliance_name_taken,
     },
 }

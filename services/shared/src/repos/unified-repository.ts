@@ -191,4 +191,18 @@ export class UnifiedRepository {
     async deleteGuildName(guildId: number) {
         await this.pool().query("DELETE FROM guild_name_registry WHERE guild_id = $1", [guildId]);
     }
+
+    async reserveAllianceName(worldId: number, allianceId: number, name: string) {
+        await this.pool().query(
+            "INSERT INTO alliance_name_registry (world_id, alliance_id, name) VALUES ($1, $2, $3)",
+            [worldId, allianceId, name],
+        );
+    }
+
+    async deleteAllianceName(worldId: number, allianceId: number) {
+        await this.pool().query("DELETE FROM alliance_name_registry WHERE world_id = $1 AND alliance_id = $2", [
+            worldId,
+            allianceId,
+        ]);
+    }
 }
