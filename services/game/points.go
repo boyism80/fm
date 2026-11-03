@@ -242,6 +242,10 @@ func (p *Points) DistributeSkill(skillID uint32) bool {
 	if !skillEntry.wz.Distributable {
 		return false
 	}
+	// A hidden skill below the fourth class with fewer than ten levels is given by quests, not learned with SP.
+	if skillEntry.wz.Invisible && skillEntry.Level() == 0 && !beginner && !skillEntry.wz.FourthClass && skillEntry.wz.MaxLevel < 10 {
+		return false
+	}
 	if skillEntry.Level() >= min(skillEntry.masterLevel, skillEntry.wz.MaxLevel) {
 		return false
 	}
