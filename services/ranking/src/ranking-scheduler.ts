@@ -155,10 +155,15 @@ export class RankingScheduler {
                 kind: "guild",
                 period: guildPeriod,
                 select: (roundId) =>
-                    `SELECT 'guild', ${roundId}, -weekly_gp, guild_id, 0, 0,
-                            guild_id, name, world_id, NULL, NULL, NULL, NULL, weekly_gp
-                     FROM guilds
-                     WHERE world_id IN (${worlds}) AND disbanded_at IS NULL AND gp_week = ${guildWeekShown} AND weekly_gp > 0`,
+                    `SELECT 'guild', ${roundId}, -week_gp, guild_id, 0, 0,
+                            guild_id, name, world_id, NULL, NULL, NULL, NULL, week_gp
+                     FROM (SELECT guild_id, name, world_id,
+                                  CASE WHEN gp_week = ${guildWeekShown} THEN weekly_gp
+                                       WHEN last_gp_week = ${guildWeekShown} THEN last_week_gp
+                                       ELSE 0 END AS week_gp
+                           FROM guilds
+                           WHERE world_id IN (${worlds}) AND disbanded_at IS NULL) shown
+                     WHERE week_gp > 0`,
             },
         ];
     }

@@ -427,6 +427,8 @@ export interface GuildModel {
     gp: number;
     weeklyGp: number;
     gpWeek: number;
+    lastWeekGp: number;
+    lastGpWeek: number;
     capacity: number;
     notice: string;
     logo: GuildLogoModel;
@@ -446,6 +448,8 @@ export type GuildRow = {
     gp: number;
     weekly_gp: number;
     gp_week: number;
+    last_week_gp: number;
+    last_gp_week: number;
     capacity: number;
     notice: string;
     logo: GuildLogoModel | null;

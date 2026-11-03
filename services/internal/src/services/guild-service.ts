@@ -369,6 +369,8 @@ export class GuildService {
                         gp: 0,
                         weeklyGp: 0,
                         gpWeek: 0,
+                        lastWeekGp: 0,
+                        lastGpWeek: 0,
                         capacity: DEFAULT_GUILD_CAPACITY,
                         notice: "",
                         logo: DEFAULT_GUILD_LOGO,
@@ -1257,8 +1259,10 @@ export class GuildService {
             }
 
             // Only earned GP counts toward the weekly ranking; spending GP leaves the week's total alone.
+            // Last week's final ranking is frozen after the week turns, so the first change of a week keeps last week's total.
             const week = guildWeek(Date.now());
-            const weeklyGp = guild.gpWeek === week ? guild.weeklyGp : 0;
+            const rolled = guild.gpWeek !== week;
+            const weeklyGp = rolled ? 0 : guild.weeklyGp;
             const updatedGuild = await this.guildRepo.set(
                 worldId,
                 {
@@ -1266,6 +1270,8 @@ export class GuildService {
                     gp: nextGP,
                     weeklyGp: Math.min(GUILD_GP_MAX, weeklyGp + Math.max(0, nextGP - guild.gp)),
                     gpWeek: week,
+                    lastWeekGp: rolled ? guild.weeklyGp : guild.lastWeekGp,
+                    lastGpWeek: rolled ? guild.gpWeek : guild.lastGpWeek,
                 },
                 { txClient },
             );
