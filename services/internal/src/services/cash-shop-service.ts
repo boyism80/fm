@@ -325,20 +325,50 @@ export class CashShopService {
     }
 
     private async settleTakeOut(worldId: number, request: CashTransferRequest): Promise<void> {
+        const detail = request.detail as { inventory: InventoryModel; locker: unknown };
         const result = await this.receive(worldId, request, async (txClient) => {
-            const item = request.detail as InventoryModel;
+            const item = detail.inventory;
             if (item.expiration != null) {
                 item.expiration = new Date(item.expiration);
             }
-            const inventory = await this.inventoryRepo.getAll(worldId, String(request.target_id), { txClient });
-            await this.inventoryRepo.replaceBySnapshot(
-                worldId,
-                String(request.target_id),
-                [...inventory.values(), item],
-                { txClient },
+            const inventory = [
+                ...(await this.inventoryRepo.getAll(worldId, String(request.target_id), { txClient })).values(),
+            ];
+            // A take-out whose reply timed out may still be settling when the next one is given the same free slot.
+            const used = new Set(
+                inventory.filter((model) => model.inventoryType === item.inventoryType).map((model) => model.slot),
             );
+            if (used.has(item.slot)) {
+                const character = await this.characterRepo.get(worldId, request.target_id, { txClient });
+                const limit = character?.slotLimits?.[item.inventoryType - 1] ?? 0;
+                let slot = 1;
+                while (slot <= limit && used.has(slot)) {
+                    slot++;
+                }
+                if (slot > limit) {
+                    return TransferOutcome.Full;
+                }
+                item.slot = slot;
+            }
+            await this.inventoryRepo.replaceBySnapshot(worldId, String(request.target_id), [...inventory, item], {
+                txClient,
+            });
             return TransferOutcome.Placed;
         });
+        if (result === TransferOutcome.Full) {
+            await this.cashShopRepo.withAccountLock(worldId, request.source_id, async (txClient) => {
+                if (await this.cashShopRepo.claimTransfer(request.request_id, txClient)) {
+                    await this.cashShopRepo.insertItem(
+                        worldId,
+                        request.source_id,
+                        String(detail.inventory.uniqueId),
+                        detail.locker,
+                        { txClient },
+                    );
+                }
+            });
+            return;
+        }
         if ((await this.finishSettled(request, result)) === false) {
             return;
         }
@@ -637,7 +667,13 @@ export class CashShopService {
                 return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
             }
 
-            await this.cashShopRepo.queueTransfer(accountId, characterId, CashTransferKind.TakeOut, item, txClient);
+            await this.cashShopRepo.queueTransfer(
+                accountId,
+                characterId,
+                CashTransferKind.TakeOut,
+                { inventory: item, locker: row.item },
+                txClient,
+            );
             return CashShopResult.CASH_SHOP_RESULT_OK;
         });
         if (result === CashShopResult.CASH_SHOP_RESULT_OK) {
