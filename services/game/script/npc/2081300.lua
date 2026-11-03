@@ -1,5 +1,7 @@
 -- NPC name (String.wz/Npc.img.xml): 레고르
 
+local fourth_class = require("script/lib/fourth_class")
+
 local INTRO = "자유로움을 누리고 다니는 궁수는 항상 자유롭게 활동하는 직업입니다."
 
 local ADVANCED = {
@@ -22,49 +24,22 @@ local ADVANCE = {
     },
 }
 
+local CFG = {
+    quest = 6924,
+    advanced = ADVANCED,
+    advance = ADVANCE,
+    text = {
+        intro = INTRO,
+        choose = "어느 클레스로 전직하기를 원하는가?\r\n그대의 영웅으로써의 자질은 증명되었다.\r\n",
+        wait = "그대는 그대의 영웅으로서의 자질을 증명했습니다. \r\n이제 남은 것은 궁수 궁극의 길로 향하는 것 뿐.\r\n전직을 할 준비가 되면 다시 말을 걸어주세요.",
+        sp_left = "흠... 당신은 너무 많은 #bSP#k를 갖고 있는 것 같군요. 최소한 레벨 120 이전에 얻은 스킬포인트를 모두 사용하셔야 4차 전직을 하실 수 있습니다.",
+        no_space = "흠.. 소비 인벤토리 공간이 부족한 건 아닌가요? 다시 한번 확인해 보세요.",
+        farewell = "난 자네가 더욱 더 수련하여 지상 최고의 궁수가 되는 것을 뒤에서 지켜봐주도록 하겠네.",
+    },
+}
+
 return {
     on_click = function(me, npc)
-        if me:level() < 120 then
-            me:dialog(npc, INTRO)
-            return
-        end
-        local advanced = ADVANCED[me:class()]
-        if advanced ~= nil then
-            me:dialog(npc, advanced)
-            return
-        end
-        local q = me:quest(6924)
-        if q == nil or not q:completed() then
-            me:dialog(npc, INTRO)
-            return
-        end
-        local advance = ADVANCE[me:class()]
-        if advance == nil then
-            return
-        end
-
-        local sel = me:dialog_list(npc, "어느 클레스로 전직하기를 원하는가?\r\n그대의 영웅으로써의 자질은 증명되었다.\r\n", {
-            advance.option,
-            "#r#h # : #b잠시만 생각할 시간이 필요합니다.",
-        })
-        if sel == nil then
-            return
-        end
-        if sel == 2 then
-            me:dialog(npc, "그대는 그대의 영웅으로서의 자질을 증명했습니다. \r\n이제 남은 것은 궁수 궁극의 길로 향하는 것 뿐.\r\n전직을 할 준비가 되면 다시 말을 걸어주세요.")
-            return
-        end
-        if me:skill_point() > me:level() * 3 then
-            me:dialog(npc, "흠... 당신은 너무 많은 #bSP#k를 갖고 있는 것 같군요. 최소한 레벨 120 이전에 얻은 스킬포인트를 모두 사용하셔야 4차 전직을 하실 수 있습니다.")
-            return
-        end
-
-        local code = me:exchange(nil, { item = { [2280003] = 1 } })
-        if code ~= ExchangeResult.OK then
-            me:dialog(npc, "흠.. 소비 인벤토리 공간이 부족한 건 아닌가요? 다시 한번 확인해 보세요.")
-            return
-        end
-        me:class(advance.class)
-        me:dialog(npc, advance.done, false, true)
+        fourth_class.advance(me, npc, CFG)
     end
 }
