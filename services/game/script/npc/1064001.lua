@@ -1,11 +1,39 @@
 -- NPC name (String.wz/Npc.img.xml): 의문의 소녀
 
+local pq = require("script/lib/party_quest")
+
 local SCRIPT = "script/npc/1064001.lua"
 local TICKET = 3980069
 local TICKET_PRICE = 100000000
 local MAX_MEMBERS = 4
 local FIRST_MOB = 8910000
 local WAVES = { 123456772, 123456773, 123456774, 123456775, 123456776 }
+local ENTRY_KEY = "seed_entry"
+local BUSY = "이미 다른 파티가 입장 중이거나, 파티장이 파티원 수만큼 입장권을 가지고 있지 않습니다."
+
+local function enter(me, party, characters, size)
+    for _, map_id in ipairs(WAVES) do
+        local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
+        if ok and count ~= nil and count > 0 then
+            return BUSY
+        end
+    end
+    if me:exchange({ item = { [TICKET] = size } }, nil) ~= ExchangeResult.OK then
+        return "입장권은 파티장이 파티원 수만큼 모아서 내야 합니다. 지금은 그 수에 미치지 못합니다."
+    end
+    for _, map_id in ipairs(WAVES) do
+        run_on_map(map_id, SCRIPT, "reset_map")
+    end
+    run_on_map(WAVES[1], SCRIPT, "spawn_first", FIRST_MOB, -63, 112)
+    local pid = party:id()
+    for _, ch in pairs(characters) do
+        local p = ch:party()
+        if p ~= nil and p:id() == pid then
+            ch:map(WAVES[1], 0)
+        end
+    end
+    return nil
+end
 
 local function challenge(me, npc)
     local party = me:party()
@@ -41,27 +69,15 @@ local function challenge(me, npc)
         return
     end
 
-    for _, map_id in ipairs(WAVES) do
-        local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
-        if ok and count ~= nil and count > 0 then
-            me:dialog(npc, "이미 다른 파티가 입장 중이거나, 파티장이 파티원 수만큼 입장권을 가지고 있지 않습니다.")
-            return
-        end
-    end
-    if me:exchange({ item = { [TICKET] = size } }, nil) ~= ExchangeResult.OK then
-        me:dialog(npc, "입장권은 파티장이 파티원 수만큼 모아서 내야 합니다. 지금은 그 수에 미치지 못합니다.")
+    local lobby = me:map()
+    if not pq.hold_entry(lobby, ENTRY_KEY) then
+        me:dialog(npc, BUSY)
         return
     end
-    for _, map_id in ipairs(WAVES) do
-        run_on_map(map_id, SCRIPT, "reset_map")
-    end
-    run_on_map(WAVES[1], SCRIPT, "spawn_first", FIRST_MOB, -63, 112)
-    local pid = party:id()
-    for _, ch in pairs(characters) do
-        local p = ch:party()
-        if p ~= nil and p:id() == pid then
-            ch:map(WAVES[1], 0)
-        end
+    local refused = enter(me, party, characters, size)
+    pq.release_entry(lobby, ENTRY_KEY)
+    if refused ~= nil then
+        me:dialog(npc, refused)
     end
 end
 

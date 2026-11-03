@@ -1,7 +1,11 @@
 -- VIP존 입장하기 (Quest.wz/QuestData/2291.img): VIP존 입장하기
 
+local pq = require("script/lib/party_quest")
+
 local quest_id = 2291
 local vip_base = 103040440
+local ENTRY_KEY = "vip_entry"
+local BUSY = "모든 VIP존에 누군가 있군요. 다른 채널을 이용해주세요."
 
 local function map_player_count(map_id)
     local ok, count = run_on_map(map_id, "script/quest/2291.lua", "player_count")
@@ -16,6 +20,34 @@ end
 
 local function reset_vip_maps(map_id)
     run_on_map(map_id, "script/quest/2291.lua", "reset_vip_map")
+end
+
+local function enter(me, npc, q)
+    for i = 0, 9 do
+        local empty = true
+        local ids = { vip_base + i, vip_base + 10 + i, vip_base + 20 + i }
+        for _, map_id in ipairs(ids) do
+            if map_player_count(map_id) ~= 0 then
+                empty = false
+                break
+            end
+        end
+        if empty then
+            for _, map_id in ipairs(ids) do
+                reset_vip_maps(map_id)
+            end
+            local code = me:exchange({ item = { [4032521] = 10 } }, {})
+            if code ~= ExchangeResult.OK then
+                return true
+            end
+            q:force_complete(npc)
+            me:show_effect(EffectType.QuestCompletion)
+            me:play_portal_sound()
+            me:map(vip_base + i, 1)
+            return true
+        end
+    end
+    return false
 end
 
 return {
@@ -43,31 +75,15 @@ return {
             return
         end
 
-        for i = 0, 9 do
-            local empty = true
-            local ids = { vip_base + i, vip_base + 10 + i, vip_base + 20 + i }
-            for _, map_id in ipairs(ids) do
-                if map_player_count(map_id) ~= 0 then
-                    empty = false
-                    break
-                end
-            end
-            if empty then
-                for _, map_id in ipairs(ids) do
-                    reset_vip_maps(map_id)
-                end
-                local code = me:exchange({ item = { [4032521] = 10 } }, {})
-                if code ~= ExchangeResult.OK then
-                    return
-                end
-                q:force_complete(npc)
-                me:show_effect(EffectType.QuestCompletion)
-                me:play_portal_sound()
-                me:map(vip_base + i, 1)
-                return
-            end
+        local lobby = me:map()
+        if not pq.hold_entry(lobby, ENTRY_KEY) then
+            me:dialog(npc, BUSY, false, false)
+            return
         end
-
-        me:dialog(npc, "모든 VIP존에 누군가 있군요. 다른 채널을 이용해주세요.", false, false)
+        local entered = enter(me, npc, q)
+        pq.release_entry(lobby, ENTRY_KEY)
+        if not entered then
+            me:dialog(npc, BUSY, false, false)
+        end
     end
 }

@@ -1,5 +1,7 @@
 local M = {}
 
+local ENTRY_HOLD_SECONDS = 30
+
 function M.item_count(me, id)
     if me == nil or id == nil then
         return 0
@@ -171,6 +173,22 @@ function M.character_count(map)
         n = n + 1
     end
     return n
+end
+
+-- Checking the instance maps and moving into them yields to their actors, so another leader on the same map could
+-- pass the same check in between. The hold lets one entry through at a time and lapses on its own if an error skips
+-- the release.
+function M.hold_entry(map, key)
+    local held_until = map:property(key)
+    if held_until ~= nil and held_until > now() then
+        return false
+    end
+    map:property(key, now() + ENTRY_HOLD_SECONDS)
+    return true
+end
+
+function M.release_entry(map, key)
+    map:property(key, nil)
 end
 
 function M.mob_count(map, mob_id)
