@@ -9,7 +9,7 @@ local GUILD_SHOW_INFO = 0x1A
 local GUILD_DISBAND = 0x32
 local GUILD_EMBLEM_CHANGE = 0x42
 local DIALOG = { yes_no = 1 }
-local HERACLE_MENU = { create = 0, disband = 1, capacity = 2 }
+local HERACLE_MENU = { create = 0, disband = 1, capacity = 2, gp_capacity = 3 }
 local GUILD_NAME_INPUT = 1
 local LENARIO_MENU = { create = 2, capacity = 3, disband = 4 }
 
@@ -1008,6 +1008,34 @@ local function alliance_partner_refused(ctx)
     return disband_alliance(ctx, leader)
 end
 
+-- Heracle turns a short purse away with a popup, and the GP extension has one line for both refusals.
+local function capacity_refusals(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 50 0 0 - -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    if bot:instance_move(GUILD_HQ) == false then
+        return ctx:fail("길드 본부 이동 실패")
+    end
+    if ask_guild_capacity(ctx, bot) == false then
+        return false
+    end
+    local popup = bot:request(resp.notice, req.dialog { dialog_type = DIALOG.yes_no, next = true }, function(p)
+        return p.message:find("메소는 충분히", 1, true) ~= nil
+    end, 5000)
+    bot:dialog(false)
+    if popup == false then
+        return ctx:fail("메소가 부족한데 팝업 안내가 오지 않음")
+    end
+    if ask(ctx, bot, HERACLE, HERACLE_MENU.gp_capacity, "길드포인트") == false then
+        return false
+    end
+    local refused = bot:dialog(true)
+    bot:dialog(false)
+    return check(ctx, refused ~= nil and refused.text ~= nil and refused.text:find("길드 포인트가 충분히 있는지", 1, true) ~= nil,
+        "GP 확장 거절 안내가 다름: " .. tostring(refused and refused.text))
+end
+
 test_suite {
     name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구·이름 규칙",
     bot_count = 6,
@@ -1048,5 +1076,6 @@ test_suite {
         alliance_hangul_name,
         alliance_name_taken,
         alliance_partner_refused,
+        capacity_refusals,
     },
 }

@@ -68,7 +68,7 @@ return {
             if result == guild_capacity_increase_ok then
                 -- me:dialog(npc, '길드 최대 인원이 증가했습니다.')
             elseif result == guild_capacity_increase_insufficient_meso then
-                me:dialog(npc, '자네.. 메소는 충분히 갖고 있는건가?')
+                me:message('자네.. 메소는 충분히 갖고 있는건가?', Msg.Popup)
             elseif result == guild_capacity_increase_not_master then
                 me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
             elseif result == guild_capacity_increase_not_in_guild then
@@ -95,10 +95,8 @@ return {
                 me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
             elseif result == guild_capacity_increase_not_in_guild then
                 me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
-            elseif result == guild_capacity_increase_insufficient_gp then
-                me:dialog(npc, '길드 포인트가 충분하지 않다네.')
-            elseif result == guild_capacity_increase_capacity_reached then
-                me:dialog(npc, '이미 길드 최대 인원 제한인 200 명이 된 것 같군.')
+            elseif result == guild_capacity_increase_insufficient_gp or result == guild_capacity_increase_capacity_reached then
+                me:dialog(npc, '길드 포인트가 충분히 있는지, 또는 이미 최대 인원 200명이 된건 아닌지 확인해 보게나.')
             else
                 me:dialog(npc, '길드 최대 인원 증가에 실패했습니다.')
             end
