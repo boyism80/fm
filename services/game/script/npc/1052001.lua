@@ -5,6 +5,7 @@ local SCRIPT = "script/npc/1052001.lua"
 local TRAINING_MAP = 910300000
 local TRAINING_RETURN = 103000003
 local TRAINING_SECONDS = 300
+local TRAINING_BUSY = "흠.. 훈련장에 이미 누군가가 들어간 것 같구만. 나중에 다시 찾아오게나."
 local LETTER = 4031011
 local PROOF = 4031012
 local BLACK_CHARM = 4031059
@@ -41,17 +42,16 @@ local SECOND_CLASSES = {
     },
 }
 
-local item_count = require("script/lib/party_quest").item_count
+local pq = require("script/lib/party_quest")
+local item_count = pq.item_count
 
-local function enter_training(me, npc)
+local function train(me)
     local ok, count = run_on_map(TRAINING_MAP, "script/lib/party_quest.lua", "character_count")
     if ok and count ~= nil and count > 0 then
-        me:dialog(npc, "흠.. 훈련장에 이미 누군가가 들어간 것 같구만. 나중에 다시 찾아오게나.")
-        return
+        return TRAINING_BUSY
     end
     if me:records():get("training.dark_lord") > 0 then
-        me:dialog(npc, "훈련장은 5분에 한번씩만 입장할 수 있다네. 나중에 다시 찾아와보게나.")
-        return
+        return "훈련장은 5분에 한번씩만 입장할 수 있다네. 나중에 다시 찾아와보게나."
     end
     me:records():set("training.dark_lord", 1, { every = TRAINING_SECONDS })
     run_on_map(TRAINING_MAP, SCRIPT, "reset_map")
@@ -61,6 +61,20 @@ local function enter_training(me, npc)
         end)
     end
     me:map(TRAINING_MAP, 0, { callback = on_arrive })
+    return nil
+end
+
+local function enter_training(me, npc)
+    local lobby = me:map()
+    if not pq.hold_entry(lobby, SCRIPT) then
+        me:dialog(npc, TRAINING_BUSY)
+        return
+    end
+    local refused = train(me)
+    pq.release_entry(lobby, SCRIPT)
+    if refused ~= nil then
+        me:dialog(npc, refused)
+    end
 end
 
 local function first_class(me, npc)

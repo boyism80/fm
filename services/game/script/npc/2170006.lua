@@ -1,8 +1,32 @@
 -- NPC name (String.wz/Npc.img.xml): 콜로세움
 
+local pq = require("script/lib/party_quest")
+
 local SCRIPT = "script/npc/2170006.lua"
 local BASE_MAP = 200101500
 local ROOMS = 10
+local BUSY = "모든 지역에 다른 파티가 입장 중입니다."
+
+local function enter(me, party)
+    for i = 0, ROOMS - 1 do
+        local map_id = BASE_MAP + i
+        if id2map(map_id) ~= nil then
+            local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
+            if ok and count == 0 then
+                run_on_map(map_id, SCRIPT, "prepare_room")
+                local pid = party:id()
+                for _, ch in pairs(me:map():characters()) do
+                    local p = ch:party()
+                    if p ~= nil and p:id() == pid then
+                        ch:map(map_id, 1)
+                    end
+                end
+                return nil
+            end
+        end
+    end
+    return BUSY
+end
 
 return {
 
@@ -28,23 +52,15 @@ return {
             me:dialog(npc, "파티장만 입장하실 수 있습니다.")
             return
         end
-        for i = 0, ROOMS - 1 do
-            local map_id = BASE_MAP + i
-            if id2map(map_id) ~= nil then
-                local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
-                if ok and count == 0 then
-                    run_on_map(map_id, SCRIPT, "prepare_room")
-                    local pid = party:id()
-                    for _, ch in pairs(me:map():characters()) do
-                        local p = ch:party()
-                        if p ~= nil and p:id() == pid then
-                            ch:map(map_id, 1)
-                        end
-                    end
-                    return
-                end
-            end
+        local lobby = me:map()
+        if not pq.hold_entry(lobby, SCRIPT) then
+            me:dialog(npc, BUSY)
+            return
         end
-        me:dialog(npc, "모든 지역에 다른 파티가 입장 중입니다.")
+        local refused = enter(me, party)
+        pq.release_entry(lobby, SCRIPT)
+        if refused ~= nil then
+            me:dialog(npc, refused)
+        end
     end
 }

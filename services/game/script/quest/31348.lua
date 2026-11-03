@@ -1,8 +1,26 @@
 -- Quest name (custom Resonance): [암벽 거인] 수상한 움직임
 
+local pq = require("script/lib/party_quest")
+
 local quest_id = 31348
 local SCRIPT = "script/quest/31348.lua"
 local ROOM = 924030000
+local BUSY = "누군가 안에 퀘스트를 진행중입니다"
+
+local function enter(me, npc, q)
+    local ok, count = run_on_map(ROOM, "script/lib/party_quest.lua", "character_count")
+    if ok == false or count ~= 0 then
+        me:message(BUSY, Msg.PinkText)
+        return
+    end
+
+    run_on_map(ROOM, SCRIPT, "prepare_room")
+    q:start(npc, true)
+    local function on_arrive(me)
+        me:open_npc(2210009)
+    end
+    me:map(ROOM, { callback = on_arrive })
+end
 
 return {
     on_start = function(me, npc)
@@ -16,18 +34,13 @@ return {
             return
         end
 
-        local ok, count = run_on_map(ROOM, "script/lib/party_quest.lua", "character_count")
-        if ok == false or count ~= 0 then
-            me:message("누군가 안에 퀘스트를 진행중입니다", Msg.PinkText)
+        local map = me:map()
+        if not pq.hold_entry(map, SCRIPT) then
+            me:message(BUSY, Msg.PinkText)
             return
         end
-
-        run_on_map(ROOM, SCRIPT, "prepare_room")
-        q:start(npc, true)
-        local function on_arrive(me)
-            me:open_npc(2210009)
-        end
-        me:map(ROOM, { callback = on_arrive })
+        enter(me, npc, q)
+        pq.release_entry(map, SCRIPT)
     end,
 
     prepare_room = function(map)

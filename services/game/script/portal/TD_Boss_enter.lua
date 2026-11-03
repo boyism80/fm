@@ -1,5 +1,21 @@
+local pq = require("script/lib/party_quest")
+
 local SCRIPT = "script/portal/TD_Boss_enter.lua"
 local ROOMS = 6
+
+local function enter(me)
+    local map_id = me:map():wz():id()
+    for i = 1, ROOMS do
+        local ok, count = run_on_map(map_id + i, "script/lib/party_quest.lua", "character_count")
+        if ok and count == 0 then
+            run_on_map(map_id + i, SCRIPT, "reset_map")
+            me:play_portal_sound()
+            me:map(map_id + i, 1)
+            return
+        end
+    end
+    me:message("이미 다른 누군가가 들어가 있는 것 같다. 지금은 들어갈 수 없을 것 같다.", Msg.PinkText)
+end
 
 return {
 
@@ -8,16 +24,12 @@ return {
     end,
 
     on_enter = function(me)
-        local map_id = me:map():wz():id()
-        for i = 1, ROOMS do
-            local ok, count = run_on_map(map_id + i, "script/lib/party_quest.lua", "character_count")
-            if ok and count == 0 then
-                run_on_map(map_id + i, SCRIPT, "reset_map")
-                me:play_portal_sound()
-                me:map(map_id + i, 1)
-                return
-            end
+        local map = me:map()
+        if not pq.hold_entry(map, SCRIPT) then
+            me:message("이미 다른 누군가가 들어가 있는 것 같다. 지금은 들어갈 수 없을 것 같다.", Msg.PinkText)
+            return
         end
-        me:message("이미 다른 누군가가 들어가 있는 것 같다. 지금은 들어갈 수 없을 것 같다.", Msg.PinkText)
+        enter(me)
+        pq.release_entry(map, SCRIPT)
     end
 }

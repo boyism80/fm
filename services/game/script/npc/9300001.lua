@@ -1,11 +1,14 @@
 -- NPC name (String.wz/Npc.img.xml): 사장법사
 
+local pq = require("script/lib/party_quest")
+
 local SCRIPT = "script/npc/9300001.lua"
 local DEST = 950101100
 local FLAME = 4001433
 local FLAME_COST = 30
 local MIN_LEVEL = 50
 local MAX_LEVEL = 190
+local BUSY = "이 안에 이미 다른 파티가 입장하여 클리어에 도전중입니다. 잠시 후에 다시 시도해보세요."
 
 local function busy_maps()
     local maps = { DEST }
@@ -13,6 +16,33 @@ local function busy_maps()
         maps[#maps + 1] = id
     end
     return maps
+end
+
+local function enter(me, party, characters, members)
+    for _, map_id in ipairs(busy_maps()) do
+        local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
+        if ok and count ~= nil and count > 0 then
+            return BUSY
+        end
+    end
+    for _, mem in pairs(members) do
+        if mem:level() < MIN_LEVEL or mem:level() > MAX_LEVEL then
+            return "파티원 중에서 레벨 #r50~90#k 에 해당하지 않는 캐릭터가 있습니다."
+        end
+    end
+
+    if me:exchange({ item = { [FLAME] = FLAME_COST } }, nil) ~= ExchangeResult.OK then
+        return "파티를 구성한게 맞는지 혹은 태양의 불꽃 30개를 소지하고 계신게 맞는지 확인 해주세요."
+    end
+    run_on_map(DEST, SCRIPT, "prepare_stage")
+    local pid = party:id()
+    for _, ch in pairs(characters) do
+        local p = ch:party()
+        if p ~= nil and p:id() == pid then
+            ch:map(DEST, 0)
+        end
+    end
+    return nil
 end
 
 return {
@@ -46,31 +76,15 @@ return {
                 return
             end
         end
-        for _, map_id in ipairs(busy_maps()) do
-            local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
-            if ok and count ~= nil and count > 0 then
-                me:dialog(npc, "이 안에 이미 다른 파티가 입장하여 클리어에 도전중입니다. 잠시 후에 다시 시도해보세요.")
-                return
-            end
-        end
-        for _, mem in pairs(members) do
-            if mem:level() < MIN_LEVEL or mem:level() > MAX_LEVEL then
-                me:dialog(npc, "파티원 중에서 레벨 #r50~90#k 에 해당하지 않는 캐릭터가 있습니다.")
-                return
-            end
-        end
-
-        if me:exchange({ item = { [FLAME] = FLAME_COST } }, nil) ~= ExchangeResult.OK then
-            me:dialog(npc, "파티를 구성한게 맞는지 혹은 태양의 불꽃 30개를 소지하고 계신게 맞는지 확인 해주세요.")
+        local lobby = me:map()
+        if not pq.hold_entry(lobby, SCRIPT) then
+            me:dialog(npc, BUSY)
             return
         end
-        run_on_map(DEST, SCRIPT, "prepare_stage")
-        local pid = party:id()
-        for _, ch in pairs(characters) do
-            local p = ch:party()
-            if p ~= nil and p:id() == pid then
-                ch:map(DEST, 0)
-            end
+        local refused = enter(me, party, characters, members)
+        pq.release_entry(lobby, SCRIPT)
+        if refused ~= nil then
+            me:dialog(npc, refused)
         end
     end
 }

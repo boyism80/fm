@@ -1,6 +1,26 @@
 -- NPC name (String.wz/Npc.img.xml): 다오
 
-local item_count = require("script/lib/party_quest").item_count
+local pq = require("script/lib/party_quest")
+local item_count = pq.item_count
+
+local SCRIPT = "script/npc/9000080.lua"
+local BUSY = "누군가 이미 맵에 들어가있습니다."
+
+local function enter(me, target, ticket, free_ticket)
+    local ok, count = run_on_map(target, "script/lib/party_quest.lua", "character_count")
+    if ok and count ~= nil and count > 0 then
+        return BUSY
+    end
+
+    if ticket >= 1 and free_ticket < 1 then
+        local code = me:exchange({ item = { [4001431] = 1 } }, nil)
+        if code ~= ExchangeResult.OK then
+            return "골드 티켓이 필요합니다."
+        end
+    end
+    me:map(target, 0)
+    return nil
+end
 
 return {
 
@@ -21,19 +41,15 @@ return {
             return
         end
         local target = me:map():wz():id() + 100 + (sel - 1) * 100
-        local ok, count = run_on_map(target, "script/lib/party_quest.lua", "character_count")
-        if ok and count ~= nil and count > 0 then
-            me:dialog(npc, "누군가 이미 맵에 들어가있습니다.")
+        local lobby = me:map()
+        if not pq.hold_entry(lobby, SCRIPT) then
+            me:dialog(npc, BUSY)
             return
         end
-
-        if ticket >= 1 and free_ticket < 1 then
-            local code = me:exchange({ item = { [4001431] = 1 } }, nil)
-            if code ~= ExchangeResult.OK then
-                me:dialog(npc, "골드 티켓이 필요합니다.")
-                return
-            end
+        local refused = enter(me, target, ticket, free_ticket)
+        pq.release_entry(lobby, SCRIPT)
+        if refused ~= nil then
+            me:dialog(npc, refused)
         end
-        me:map(target, 0)
     end
 }

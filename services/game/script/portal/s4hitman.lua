@@ -4,6 +4,30 @@ local SCRIPT = "script/portal/s4hitman.lua"
 local ROOM = 910200000
 local EXIT = 101030104
 
+local function enter(me)
+    if me:quest(6201):started() == false then
+        me:message("알 수 없는 힘으로 봉인되어 있습니다.")
+        return
+    end
+    if pq.has_item(me, 4031452) then
+        me:message("샨이 요청한 것을 끝냈습니다. 더 이상 입장할 필요가 없습니다.")
+        return
+    end
+    local ok, count = run_on_map(ROOM, "script/lib/party_quest.lua", "character_count")
+    if ok == false or count ~= 0 then
+        me:message("이미 다른 누군가가 퀘스트에 도전중입니다.")
+        return
+    end
+    me:play_portal_sound()
+    run_on_map(ROOM, SCRIPT, "reset_map")
+    local function on_arrive(me)
+        me:clock(1200, function(me)
+            me:map(EXIT)
+        end)
+    end
+    me:map(ROOM, 0, { callback = on_arrive })
+end
+
 return {
 
     reset_map = function(map)
@@ -11,26 +35,12 @@ return {
     end,
 
     on_enter = function(me)
-        if me:quest(6201):started() == false then
-            me:message("알 수 없는 힘으로 봉인되어 있습니다.")
+        local map = me:map()
+        if not pq.hold_entry(map, SCRIPT) then
+            me:message("이미 다른 누군가가 퀘스트에 도전중입니다.", Msg.PinkText)
             return
         end
-        if pq.has_item(me, 4031452) then
-            me:message("샨이 요청한 것을 끝냈습니다. 더 이상 입장할 필요가 없습니다.")
-            return
-        end
-        local ok, count = run_on_map(ROOM, "script/lib/party_quest.lua", "character_count")
-        if ok == false or count ~= 0 then
-            me:message("이미 다른 누군가가 퀘스트에 도전중입니다.")
-            return
-        end
-        me:play_portal_sound()
-        run_on_map(ROOM, SCRIPT, "reset_map")
-        local function on_arrive(me)
-            me:clock(1200, function(me)
-                me:map(EXIT)
-            end)
-        end
-        me:map(ROOM, 0, { callback = on_arrive })
+        enter(me)
+        pq.release_entry(map, SCRIPT)
     end
 }
