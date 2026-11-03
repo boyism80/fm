@@ -42,13 +42,14 @@ type CarnivalChallenge struct {
 	requestedAt time.Time
 }
 
-func (m *CarnivalMatch) PendingChallengeMembers() []*CarnivalMember {
+// PendingChallenge returns the waiting challenge's leader, which accepting or rejecting it must name, and its members.
+func (m *CarnivalMatch) PendingChallenge() (uint32, []*CarnivalMember) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.pending == nil {
-		return nil
+		return 0, nil
 	}
-	return m.pending.members
+	return m.pending.leaderID, m.pending.members
 }
 
 type CarnivalMatch struct {
@@ -223,10 +224,10 @@ func (m *CarnivalMatch) Conclude(gw GameWorld) bool {
 	return true
 }
 
-func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld) bool {
+func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld, leaderID uint32) bool {
 	m.mu.Lock()
 	challenge := m.pending
-	if challenge == nil || m.teams[constant.CarnivalTeamRed] == nil || m.state != CarnivalStateWaiting {
+	if challenge == nil || challenge.leaderID != leaderID || m.teams[constant.CarnivalTeamRed] == nil || m.state != CarnivalStateWaiting {
 		m.mu.Unlock()
 		return false
 	}
@@ -297,11 +298,11 @@ func (m *CarnivalMatch) dropChallenge(challenge *CarnivalChallenge) {
 	m.StateMachine().CallHook("on_challenge_failed")
 }
 
-func (m *CarnivalMatch) RejectPendingChallenge() {
+func (m *CarnivalMatch) RejectPendingChallenge(leaderID uint32) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.pending == nil || len(m.queue) == 0 {
+	if m.pending == nil || m.pending.leaderID != leaderID || len(m.queue) == 0 {
 		return
 	}
 	m.queue = m.queue[1:]

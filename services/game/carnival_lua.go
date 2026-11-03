@@ -153,24 +153,25 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"pending_challenge_members": func(L *lua.LState) int {
 			match := luax.Check[CarnivalMatch](L, 1)
-			members := match.PendingChallengeMembers()
+			leaderID, members := match.PendingChallenge()
 			tbl := L.NewTable()
 			for i, member := range members {
 				tbl.RawSetInt(i+1, luax.NewLuable(L, member))
 			}
 			L.Push(tbl)
 			L.Push(lua.LNumber(len(members)))
-			return 2
+			L.Push(lua.LNumber(leaderID))
+			return 3
 		},
 		"accept_pending_challenge": func(L *lua.LState) int {
 			match := luax.Check[CarnivalMatch](L, 1)
 			gw := match.gameWorld()
-			L.Push(lua.LBool(match.AcceptPendingChallenge(gw)))
+			L.Push(lua.LBool(match.AcceptPendingChallenge(gw, uint32(L.CheckNumber(2)))))
 			return 1
 		},
 		"reject_pending_challenge": func(L *lua.LState) int {
 			match := luax.Check[CarnivalMatch](L, 1)
-			match.RejectPendingChallenge()
+			match.RejectPendingChallenge(uint32(L.CheckNumber(2)))
 			return 0
 		},
 		"result": func(L *lua.LState) int {

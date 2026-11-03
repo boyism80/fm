@@ -8,11 +8,18 @@ return {
         if match == nil then
             return
         end
+        local red = match:red_team()
+        local leader = red ~= nil and red:leader() or nil
+        if leader == nil or leader:id() ~= me:id() then
+            return
+        end
+        local challenger = nil
         while true do
             if not match:has_pending_challenge() then
                 return
             end
-            local members, size = match:pending_challenge_members()
+            local members, size
+            members, size, challenger = match:pending_challenge_members()
             local info = cpq.challenge_info(members, size)
             local msg = "이 파티의 카니발 도전을 수락하겠는가?"
             if info ~= nil and info ~= "" then
@@ -21,9 +28,9 @@ return {
             if me:dialog_yes_no(npc, msg) then
                 break
             end
-            match:reject_pending_challenge()
+            match:reject_pending_challenge(challenger)
         end
-        if not match:accept_pending_challenge() then
+        if not match:accept_pending_challenge(challenger) then
             me:dialog(npc, "도전을 수락하는데 실패하였네.")
         end
     end
