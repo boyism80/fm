@@ -2351,6 +2351,11 @@ export interface TakeOutCashItemRequest {
 
 export interface TakeOutCashItemReply {
   result: CashShopResult;
+  /**
+   * The slot the item was placed in, which settling may change when the asked slot is taken; 0 when it is not in the
+   * inventory (returned to the locker, or not settled yet).
+   */
+  slot: number;
 }
 
 export interface PutInCashItemRequest {
@@ -10789,13 +10794,16 @@ export const TakeOutCashItemRequest: MessageFns<TakeOutCashItemRequest> = {
 };
 
 function createBaseTakeOutCashItemReply(): TakeOutCashItemReply {
-  return { result: 0 };
+  return { result: 0, slot: 0 };
 }
 
 export const TakeOutCashItemReply: MessageFns<TakeOutCashItemReply> = {
   encode(message: TakeOutCashItemReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.result !== 0) {
       writer.uint32(8).int32(message.result);
+    }
+    if (message.slot !== 0) {
+      writer.uint32(16).uint32(message.slot);
     }
     return writer;
   },
@@ -10815,6 +10823,14 @@ export const TakeOutCashItemReply: MessageFns<TakeOutCashItemReply> = {
           message.result = reader.int32() as any;
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.slot = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10825,13 +10841,19 @@ export const TakeOutCashItemReply: MessageFns<TakeOutCashItemReply> = {
   },
 
   fromJSON(object: any): TakeOutCashItemReply {
-    return { result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0 };
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      slot: isSet(object.slot) ? globalThis.Number(object.slot) : 0,
+    };
   },
 
   toJSON(message: TakeOutCashItemReply): unknown {
     const obj: any = {};
     if (message.result !== 0) {
       obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.slot !== 0) {
+      obj.slot = Math.round(message.slot);
     }
     return obj;
   },
@@ -10842,6 +10864,7 @@ export const TakeOutCashItemReply: MessageFns<TakeOutCashItemReply> = {
   fromPartial<I extends Exact<DeepPartial<TakeOutCashItemReply>, I>>(object: I): TakeOutCashItemReply {
     const message = createBaseTakeOutCashItemReply();
     message.result = object.result ?? 0;
+    message.slot = object.slot ?? 0;
     return message;
   },
 };

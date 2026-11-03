@@ -660,7 +660,7 @@ export class CashShopService {
         accountId: number,
         characterId: number,
         item: InventoryModel,
-    ): Promise<CashShopResult> {
+    ): Promise<{ result: CashShopResult; slot: number }> {
         const result = await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
             const row = await this.cashShopRepo.deleteItem(worldId, accountId, String(item.uniqueId), { txClient });
             if (row == null) {
@@ -676,10 +676,16 @@ export class CashShopService {
             );
             return CashShopResult.CASH_SHOP_RESULT_OK;
         });
-        if (result === CashShopResult.CASH_SHOP_RESULT_OK) {
-            await this.settleTransfers(worldId);
+        if (result !== CashShopResult.CASH_SHOP_RESULT_OK) {
+            return { result, slot: 0 };
         }
-        return result;
+        await this.settleTransfers(worldId);
+        // Settling moves the item when its slot was taken and returns it to the locker when no slot is free.
+        const inventory = await this.inventoryRepo.getAll(worldId, String(characterId));
+        const placed = [...inventory.values()].find(
+            (model) => model.inventoryType === item.inventoryType && String(model.uniqueId) === String(item.uniqueId),
+        );
+        return { result, slot: placed?.slot ?? 0 };
     }
 
     async putIn(worldId: number, accountId: number, characterId: number, item: CashItem): Promise<CashShopResult> {

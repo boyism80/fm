@@ -400,6 +400,19 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *cash.Character, 
 			fail(constant.CashShopFailureUnknown)
 			return nil
 		}
+		// Settling may have put the item in another slot, or back in the locker when none was free; the reload after
+		// the error reads where it is.
+		placed := int16(reply.GetSlot())
+		if placed == 0 {
+			return fmt.Errorf("cash shop take out %d: not placed in the inventory", req.Serial)
+		}
+		if placed != slot {
+			slot = placed
+			record.SetSlot(int32(slot))
+			if shown, err = item.BuildS2C(record.BuildRPC(), h.cs.GetResources(), h.cs.NewUniqueID); err != nil {
+				return err
+			}
+		}
 		character.TakeOut(req.Serial, record)
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultTakenOut, Slot: slot, TakenOut: shown}, types.SEND_POLICY_ENCRYPT)
 		return nil

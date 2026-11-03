@@ -582,6 +582,9 @@ message TakeOutCashItemRequest {
 
 message TakeOutCashItemReply {
   CashShopResult result = 1;
+  // The slot the item was placed in, which settling may change when the asked slot is taken; 0 when it is not in the
+  // inventory (returned to the locker, or not settled yet).
+  uint32 slot = 2;
 }
 
 message PutInCashItemRequest {

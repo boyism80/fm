@@ -66,8 +66,13 @@ export class CashShopGrpcController {
                 throw Object.assign(new Error("item with unique_id is required"), { code: "INVALID_PAYLOAD" });
             }
             const item = grpcMapper.map<Inventory, InventoryModel>(req.item, INVENTORY_PROTO, INVENTORY_MODEL);
-            const result = await this.cashShopService.takeOut(req.worldId, req.accountId, req.characterId, item);
-            callback(null, { result });
+            const { result, slot } = await this.cashShopService.takeOut(
+                req.worldId,
+                req.accountId,
+                req.characterId,
+                item,
+            );
+            callback(null, { result, slot });
         } catch (err) {
             this.grpcError(err, callback);
         }
