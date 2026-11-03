@@ -154,8 +154,9 @@ return {
         sm:after("vow", VOWS[index + 1].at - vow.at, "on_vow")
     end,
 
-    on_finale = function(sm)
-        if sm:get_property("state") ~= "kissed" then
+    -- seen is the step the couple agreed to leave; a step another click or the timer already left is not left twice.
+    on_finale = function(sm, seen)
+        if sm:get_property("state") ~= "kissed" or sm:get_property("finale") ~= seen then
             return
         end
         finale(sm)

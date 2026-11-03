@@ -41,7 +41,12 @@ return {
                 me:dialog(npc, "시간이 다 되면 자동으로 퇴장되니 그 이전에 나가고 싶으시다면 언제든지 제게 말을 걸어주세요.")
                 return
             end
-            sm:call_hook("on_finale")
+            -- The partner or the ceremony timer may have started the finale while the question was open.
+            if sm:get_property("finale") ~= "0" then
+                me:dialog(npc, "이미 이벤트 피날레가 시작되었습니다.")
+                return
+            end
+            sm:call_hook("on_finale", "0")
             return
         end
         if not me:dialog_yes_no(npc, "웨딩 홀로 돌아가시고 싶으세요? 결혼식이 시작하기 전까지는 언제든지 이곳으로 돌아오실 수 있습니다.") then
