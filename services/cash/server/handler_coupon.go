@@ -50,13 +50,19 @@ func (h *Coupon) fail(ctx *core.ClientContext, failure constant.CashShopFailure)
 
 func (h *Coupon) start(ctx *core.ClientContext, character *cash.Character) *async.Task {
 	character.Busy = true
+	reload := false
 	return async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).
 		OnError(func(err error) {
 			log.Printf("cash shop coupon (async): character %d: %v", character.ID(), err)
 			h.fail(ctx, constant.CashShopFailureUnknown)
+			reload = true
 		}).
 		Finally(func() {
-			character.Busy = false
+			if !reload {
+				character.Busy = false
+				return
+			}
+			h.cs.reloadCashShop(ctx, character)
 		})
 }
 

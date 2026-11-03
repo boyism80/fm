@@ -18,6 +18,7 @@ import (
 	"github.com/boyism80/fm/core/uniqueid"
 	"github.com/boyism80/fm/maple/wz"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/cash"
 	"github.com/boyism80/fm/services/cash/client"
 	"google.golang.org/grpc"
 )
@@ -78,6 +79,28 @@ func (cs *CashShopServer) GetResources() *wz.Resources {
 
 func (cs *CashShopServer) NewUniqueID() uint64 {
 	return cs.systems.Get[*uniqueid.Generator]().Next()
+}
+
+// A failed request may still have committed in internal (its reply timed out), so the character stays busy until
+// its meso, inventory, locker and balance are read again; later requests would otherwise pick slots from stale state.
+func (cs *CashShopServer) reloadCashShop(ctx *core.ClientContext, character *cash.Character) {
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).
+		ThenRPC(func(c context.Context) (*internal.ReloadCashShopReply, error) {
+			return cs.systems.Get[*rpc.InternalConnection]().Client.ReloadCashShop(c, &internal.ReloadCashShopRequest{
+				WorldId:     uint32(cs.config.WorldID),
+				AccountId:   character.AccountID(),
+				CharacterId: character.ID(),
+			})
+		}, func(reply *internal.ReloadCashShopReply) error {
+			character.Update(reply)
+			return nil
+		}).
+		OnError(func(err error) {
+			log.Printf("cash shop reload: character %d: %v", character.ID(), err)
+		}).
+		Finally(func() {
+			character.Busy = false
+		})
 }
 
 func (cs *CashShopServer) handleClient(c core.Client) {
