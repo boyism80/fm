@@ -1,16 +1,14 @@
 -- NPC name (String.wz/Npc.img.xml): 코-크베어 운영자
 
 local TOWN = 219000000
+local HENESYS = 100000000
 
 return {
     on_click = function(me, npc)
         local map = me:map()
         local in_town = map ~= nil and map:template_id() == TOWN
         if in_town then
-            local back = me:saved_location("FISHING")
-            if back == nil then
-                back = 0
-            end
+            local back = me:saved_location("FISHING") or HENESYS
             local sel = me:dialog_list(npc, "언제나 코-카 콜라~♪ #b코-크 타운#k에서 즐거운 시간 보냈어? 무엇을 도와줄까?", {
                 "이전에 있던 #m" .. back .. "# 마을로 보내주세요.",
             })

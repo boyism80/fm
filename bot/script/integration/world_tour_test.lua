@@ -63,11 +63,31 @@ local function showa_keeps_departure(ctx)
     return true
 end
 
+-- Abroad without a saved departure, Spinel sends the traveler to Henesys.
+local function no_departure_returns_henesys(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 30 0 10000 -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    if bot:instance_move(MUSHROOM_SHRINE) == false then
+        return ctx:fail("버섯신사 이동 실패")
+    end
+    local back = travel(ctx, bot, SPINEL, 0, HENESYS)
+    if back == false then
+        return false
+    end
+    if back.selections[1]:find("#m" .. HENESYS .. "#", 1, true) == nil then
+        return ctx:fail("저장 위치 없는 귀환지가 헤네시스가 아님: " .. back.selections[1])
+    end
+    return true
+end
+
 test_suite {
-    name = "World tour: 쇼와 마을 이동 뒤 스피넬 귀환",
+    name = "World tour: 쇼와 마을 이동 뒤 스피넬 귀환·저장 위치 없는 귀환",
     bot_count = 1,
 
     scenarios = {
+        no_departure_returns_henesys,
         showa_keeps_departure,
     },
 }

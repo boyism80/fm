@@ -3,6 +3,8 @@
 local PROMPT =
 "안녕하세요~ 새로운 세계로 여행을 떠나보고 싶으세요? 그렇다면 저희 세계여행 서비스를 이용해보시기 바랍니다! 어디로 여행해보고 싶으세요? 초보자에게는 특별히 90% 할인된 요금으로 제공해드립니다."
 
+local HENESYS = 100000000
+
 local MAPS = {
     { map = 500000000, name = "태국 플로팅 마켓", tail = "#k으" },
     { map = 740000000, name = "대만 서문정", tail = "#k으" },
@@ -15,10 +17,7 @@ local MAPS = {
 return {
     on_click = function(me, npc)
         if me:map():wz():id() / 100000000 >= 5 then
-            local saved = me:saved_location("WORLDTOUR")
-            if saved == nil then
-                return
-            end
+            local saved = me:saved_location("WORLDTOUR") or HENESYS
             local sel = me:dialog_list(npc, PROMPT, { "이전에 있던 #m" .. saved .. "# 마을로 돌아갑니다." })
             if sel == nil then
                 return
