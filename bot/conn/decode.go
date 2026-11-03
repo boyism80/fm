@@ -345,6 +345,9 @@ var decoders = func() []decoder {
 		newDecoder[response.MonsterBookSetCover](nil),
 		newDecoder[response.TeleportStoneResult](nil),
 		newDecoder[response.ShowSelfEffect](nil),
+		newDecoder[response.ShowSkillEffect](func(body []byte) bool {
+			return len(body) > 4 && (pconst.SkillEffectType(body[4]) == pconst.SkillEffectTypeCast || pconst.SkillEffectType(body[4]) == pconst.SkillEffectTypeAffected)
+		}),
 		newDecoder[response.ShowEffect](nil),
 		newDecoder[response.Whisper](nil),
 		newDecoder[response.Messenger](nil),

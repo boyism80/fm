@@ -6,6 +6,15 @@ import (
 	"github.com/boyism80/fm/maple/constant"
 )
 
+// inBerserk is the Dark Knight's Berserk: HP at most x percent of max HP, counted in whole percent like the client.
+func (ch *Character) inBerserk() bool {
+	berserk := ch.skills.LevelData(constant.SkillBerserk)
+	if ch.class != constant.ClassDarkKnight || berserk == nil || ch.GetMaxHp() == 0 {
+		return false
+	}
+	return uint64(ch.GetHp())*100/uint64(ch.GetMaxHp()) <= uint64(berserk.X)
+}
+
 // comboPercent implements the client's stored-count minus one convention.
 func (ch *Character) comboPercent(finisher bool) float64 {
 	baseID, advancedID, capLevel := constant.SkillComboAttack, constant.SkillAdvancedCombo, 30
@@ -173,10 +182,8 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		}
 	}
 
-	if berserk := ch.skills.LevelData(constant.SkillBerserk); s.Class == constant.ClassDarkKnight && berserk != nil {
-		if float64(ch.GetHp()) <= math.Trunc(float64(ch.GetMaxHp())*float64(berserk.X)/100) {
-			b.Berserk = float64(berserk.Damage)
-		}
+	if ch.inBerserk() {
+		b.Berserk = float64(ch.skills.LevelData(constant.SkillBerserk).Damage)
 	}
 
 	return s, b

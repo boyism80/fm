@@ -11,6 +11,7 @@ import (
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
@@ -70,6 +71,8 @@ type Character struct {
 	itemEffectID   uint32
 	chalkboard     string
 	chair          uint32
+	// berserk is the Berserk state others were last shown.
+	berserk bool
 	// fieldTeam is the coconut team the character plays for on its current map.
 	fieldTeam constant.CarnivalTeam
 	// The client puts the key of the last field it was sent into its moves, portals, attacks and loots.
@@ -310,10 +313,30 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 	if notify {
 		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 	}
+	ch.showBerserk()
 
 	if wasAlive && !ch.IsAlive() {
 		ch.die()
 	}
+}
+
+// showBerserk shows the Berserk aura to the character and its map when it turns on or off; the client does not
+// draw it for others by itself.
+func (ch *Character) showBerserk() {
+	on := ch.inBerserk()
+	if on == ch.berserk {
+		return
+	}
+	ch.berserk = on
+	flag := uint8(0)
+	if on {
+		flag = 1
+	}
+	level := uint8(0)
+	if entry := ch.skills.Get(uint32(constant.SkillBerserk)); entry != nil {
+		level = uint8(entry.Level())
+	}
+	ch.listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, uint32(constant.SkillBerserk), level, &flag)
 }
 
 func (ch *Character) die() {
