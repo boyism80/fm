@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"strings"
+	"unicode"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
@@ -433,9 +434,18 @@ func (w *Wedding) SubmitWishlist(actx actor.Context, wishes []string) {
 		w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultInventoryFull)
 		return
 	}
-	if len(wishes) > 10 {
-		wishes = wishes[:10]
+	// Guests get the wishes split by line again, so an empty wish or one with a control character is dropped.
+	kept := make([]string, 0, 10)
+	for _, wish := range wishes {
+		if wish == "" || strings.ContainsFunc(wish, unicode.IsControl) {
+			continue
+		}
+		kept = append(kept, wish)
+		if len(kept) == 10 {
+			break
+		}
 	}
+	wishes = kept
 
 	id := w.owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_WEDDING_WISHLIST, uint64(w.marriage.id), weddingWishlistDetail{Ticket: ticket.Invitation, Wishes: wishes})
 	w.owner.gameWorld.Systems().Get[*InternalSystem]().SetWeddingWishlistAsync(actx, w.owner, id, w.marriage.id, wishes).Bind(w.owner).Do(func(v *internal.MarriageReply) error {

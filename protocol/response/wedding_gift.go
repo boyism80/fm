@@ -1,6 +1,8 @@
 package response
 
 import (
+	"math"
+
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
@@ -54,19 +56,25 @@ func (p *WeddingGift) Opcode() uint16 {
 	return 0x39
 }
 
+// The count is one byte, so the list stops at 255 wishes.
+func (p *WeddingGift) serializeWishes(writer *stream.StreamWriter) {
+	wishes := p.Wishes
+	if len(wishes) > math.MaxUint8 {
+		wishes = wishes[:math.MaxUint8]
+	}
+	writer.WriteU8(uint8(len(wishes)))
+	for _, wish := range wishes {
+		writer.WriteStr16(wish)
+	}
+}
+
 func (p *WeddingGift) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Mode))
 	switch p.Mode {
 	case pconst.WeddingGiftOpenGive:
-		writer.WriteU8(uint8(len(p.Wishes)))
-		for _, wish := range p.Wishes {
-			writer.WriteStr16(wish)
-		}
+		p.serializeWishes(writer)
 	case pconst.WeddingGiftGiven:
-		writer.WriteU8(uint8(len(p.Wishes)))
-		for _, wish := range p.Wishes {
-			writer.WriteStr16(wish)
-		}
+		p.serializeWishes(writer)
 		p.Tabs.serialize(writer)
 	case pconst.WeddingGiftOpenReceive, pconst.WeddingGiftReceived:
 		p.Tabs.serialize(writer)

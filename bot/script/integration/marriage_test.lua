@@ -260,7 +260,8 @@ local function reserve(ctx)
         return false
     end
 
-    groom:send(req.ring_action { mode = RING.wishlist, wishes = { "모래 주머니", "달팽이 껍질" } })
+    -- An empty wish and one with a line break are dropped, so guests see the two real ones.
+    groom:send(req.ring_action { mode = RING.wishlist, wishes = { "모래 주머니", "", "가" .. string.char(10) .. "나", "달팽이 껍질" } })
     ctx:sleep(1000)
     if has(ctx, groom, INVITATION, 5) == false then
         return false
@@ -363,7 +364,8 @@ local function ceremony(ctx)
     if open == false then
         return ctx:fail("하객 선물 창이 열리지 않음")
     end
-    if check(ctx, #open.wishes == 2 and open.wishes[1] == "모래 주머니", "신랑 위시리스트가 다름") == false then
+    if check(ctx, #open.wishes == 2 and open.wishes[1] == "모래 주머니" and open.wishes[2] == "달팽이 껍질",
+            string.format("신랑 위시리스트가 다름: %d개", #open.wishes)) == false then
         return false
     end
     local given = guest:request(resp.wedding_gift,
