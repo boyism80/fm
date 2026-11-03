@@ -234,9 +234,7 @@ func CallFunction(root *lua.LState, fn *lua.LFunction, args ...interface{}) (lua
 	for _, lv := range lvArgs {
 		root.Push(lv)
 	}
-	err = root.PCall(len(lvArgs), 1, nil)
-	if err != nil {
-		root.Pop(1)
+	if err := root.PCall(len(lvArgs), 1, nil); err != nil {
 		return nil, err
 	}
 	ret := root.Get(-1)
