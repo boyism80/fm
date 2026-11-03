@@ -1,5 +1,7 @@
 -- NPC name (String.wz/Npc.img.xml): 라이돌
 
+local maker = require("script/lib/maker")
+
 local ONE_HANDED = {
     {
         name = " 한손검",
@@ -158,6 +160,30 @@ local TWO_HANDED = {
     },
 }
 
+-- A weapon's stimulator goes with its plain recipes; the claw recipes for stimulators carry it among the materials.
+for _, weapons in ipairs({ ONE_HANDED, TWO_HANDED }) do
+    for _, weapon in ipairs(weapons) do
+        for _, recipe in ipairs(weapon.items) do
+            recipe.stimulator = weapon.stimulator
+        end
+    end
+end
+
+local TEXT = {
+    confirm = function(item)
+        return "만들고 싶은 아이템이 #b#t" .. item .. "##k 인가? 재료는 아래와 같다네.#b"
+    end,
+    unit = "개",
+    lists_stimulator = true,
+    ask = "#k\r\n\r\n이 아이템을 정말 만들어 보겠나?",
+    declined = "그런가? 아직 재료가 부족한 모양이지? 준비가 되면 언제든지 나를 찾아오게나.",
+    no_meso = "제작 수수료는 올바르게 갖고 있는건가? 다시 한번 확인해 주겠나?",
+    no_space = "인벤토리 공간이 부족한거 아닌가..? 제대로 다시 한번 확인해 보게.",
+    failed = "흐음. 재료중에 부족한 재료가 있는 것 같군. 다시 한번 확인해 주겠나?",
+    broken = "이런.. 촉진제를 넣다가 무기가 부서져 버렸군. 아쉽지만 이번 제작은 실패라네.",
+    done = "자, 다 되었다네. 어떤가? 멋진 물건이지? 다음에도 필요하면 언제든지 나를 찾아오게나!",
+}
+
 return {
     on_click = function(me, npc)
         local sel = me:dialog_list(npc, "공장 여기까지 어쩐 일인가..? 필요한 것이라도 있나? \r\n#b", {
@@ -210,56 +236,6 @@ return {
         end
 
         local recipe = recipes[item_sel]
-        local mats = recipe.mats
-        if stimulator and weapon.stimulator ~= nil then
-            mats = { recipe.mats[1], { weapon.stimulator, 1 } }
-            for i = 2, #recipe.mats do
-                mats[#mats + 1] = recipe.mats[i]
-            end
-        end
-        local text = "만들고 싶은 아이템이 #b#t" .. recipe.item .. "##k 인가? 재료는 아래와 같다네.\r\n"
-        for _, mat in ipairs(mats) do
-            text = text .. "#b#v" .. mat[1] .. "# #t" .. mat[1] .. "# " .. mat[2] .. "개#k\r\n"
-        end
-        text = text .. "#b#i4031138# " .. recipe.cost .. " 메소#k\r\n"
-        text = text .. "\r\n이 아이템을 정말 만들어 보겠나?"
-        if not me:dialog_yes_no(npc, text) then
-            me:dialog(npc, "그런가? 아직 재료가 부족한 모양이지? 준비가 되면 언제든지 나를 찾아오게나.")
-            return
-        end
-
-        if me:meso() < recipe.cost then
-            me:dialog(npc, "제작 수수료는 올바르게 갖고 있는건가? 다시 한번 확인해 주겠나?")
-            return
-        end
-        local cost_items = {}
-        for _, mat in ipairs(mats) do
-            cost_items[mat[1]] = mat[2]
-        end
-
-        if stimulator then
-            local code = me:exchange({ item = cost_items, meso = recipe.cost },
-                { item = { [recipe.item] = 1 }, random = true })
-            if code == ExchangeResult.LackCapacity then
-                me:dialog(npc, "인벤토리 공간이 부족한거 아닌가..? 제대로 다시 한번 확인해 보게.")
-                return
-            end
-            if code ~= ExchangeResult.OK then
-                me:dialog(npc, "흐음. 재료중에 부족한 재료가 있는 것 같군. 다시 한번 확인해 주겠나?")
-                return
-            end
-            me:dialog(npc, "자, 다 되었다네. 어떤가? 멋진 물건이지? 다음에도 필요하면 언제든지 나를 찾아오게나!")
-            return
-        end
-        local code = me:exchange({ item = cost_items, meso = recipe.cost }, { item = { [recipe.item] = 1 } })
-        if code == ExchangeResult.LackCapacity then
-            me:dialog(npc, "인벤토리 공간이 부족한거 아닌가..? 제대로 다시 한번 확인해 보게.")
-            return
-        end
-        if code ~= ExchangeResult.OK then
-            me:dialog(npc, "흐음. 재료중에 부족한 재료가 있는 것 같군. 다시 한번 확인해 주겠나?")
-            return
-        end
-        me:dialog(npc, "자, 다 되었다네. 어떤가? 멋진 물건이지? 다음에도 필요하면 언제든지 나를 찾아오게나!")
+        maker.craft(me, npc, { equip = true, stimulator = stimulator }, recipe, TEXT)
     end
 }
