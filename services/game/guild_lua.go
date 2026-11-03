@@ -158,6 +158,21 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(guildRankToUint32(m.rank)))
 			return 1
 		},
+		"alliance_rank": func(L *lua.LState) int {
+			guild := luax.Check[Guild](L, 1)
+			if L.GetTop() != 2 {
+				L.ArgError(3, "alliance_rank(character) takes exactly one argument")
+				return 0
+			}
+			ch := luax.Check[Character](L, 2)
+			rank, ok := guild.findMember(ch.GetID()).GetAllianceRank()
+			if !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LNumber(rank))
+			return 1
+		},
 		"disband": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 2)
 			return luaGuildDisband(L, ch)

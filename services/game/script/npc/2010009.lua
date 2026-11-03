@@ -98,7 +98,7 @@ local function try_disband_alliance(npc, me)
         me:dialog(npc, '길드 연합이 존재하지 않습니다.')
         return
     end
-    if g:rank(me) ~= 1 then
+    if g:rank(me) ~= 1 or g:alliance_rank(me) ~= 1 then
         me:dialog(npc, '길드 연합장만 길드 연합을 해체할 수 있어요.')
         return
     end
@@ -123,7 +123,7 @@ local function try_inc_alliance_capacity(npc, me)
         me:dialog(npc, '길드 연합이 존재하지 않습니다.')
         return
     end
-    if g:rank(me) ~= 1 then
+    if g:rank(me) ~= 1 or g:alliance_rank(me) ~= 1 then
         me:dialog(npc, '길드 연합장만 길드 수를 늘릴 수 있어요.')
         return
     end
@@ -135,6 +135,10 @@ local function try_inc_alliance_capacity(npc, me)
         me:dialog(npc, '길드 연합의 길드수를 늘렸어요.')
     elseif result == alliance_inc_capacity_capacity_max or result == alliance_inc_capacity_insufficient_meso then
         me:dialog(npc, '최대 길드 연합의 길드 수는 5개 까지 늘릴 수 있습니다. 또는 수수료가 부족하신 건 아닌지 확인해 주세요.')
+    elseif result == alliance_inc_capacity_not_leader or result == alliance_inc_capacity_not_guild_master then
+        me:dialog(npc, '길드 연합장만 길드 수를 늘릴 수 있어요.')
+    elseif result == alliance_inc_capacity_not_in_alliance then
+        me:dialog(npc, '길드 연합이 존재하지 않습니다.')
     else
         me:dialog(npc, '길드 연합의 길드 수를 늘리지 못했습니다. 잠시 후 다시 시도해 주세요.')
     end

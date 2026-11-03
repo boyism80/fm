@@ -984,6 +984,30 @@ local function alliance_name_taken(ctx)
     return disband_alliance(ctx, other)
 end
 
+-- A guild master who does not lead the alliance is turned away before the fee question.
+local function alliance_partner_refused(ctx)
+    local leader, partner = ctx:bot(0), ctx:bot(1)
+    watch(ctx)
+    if setup(ctx, leader) == false or setup(ctx, partner) == false then
+        return false
+    end
+    if create_alliance(ctx, leader, "연합 생성") == false then
+        return false
+    end
+    if ask(ctx, partner, LENARIO, LENARIO_MENU.capacity, "길드 연합장만 길드 수를 늘릴 수 있어요") == false then
+        return false
+    end
+    partner:dialog(false)
+    if ask(ctx, partner, LENARIO, LENARIO_MENU.disband, "길드 연합장만 길드 연합을 해체할 수 있어요") == false then
+        return false
+    end
+    partner:dialog(false)
+    if holds(ctx, partner, MESO, "연합장이 아닌 길드장 거절 뒤") == false then
+        return false
+    end
+    return disband_alliance(ctx, leader)
+end
+
 test_suite {
     name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구·이름 규칙",
     bot_count = 6,
@@ -1023,5 +1047,6 @@ test_suite {
         alliance_capacity_lost_recreate,
         alliance_hangul_name,
         alliance_name_taken,
+        alliance_partner_refused,
     },
 }
