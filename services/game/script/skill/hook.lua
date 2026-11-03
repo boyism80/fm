@@ -204,7 +204,8 @@ local function on_energy_charge(me, damages)
     if effect == nil then
         return
     end
-    local value = me:buff_value(BuffFlag.EnergyCharge) or 0
+    local charged = me:buff_value(BuffFlag.EnergyCharge)
+    local value = charged or 0
     if value >= 10000 then
         return
     end
@@ -217,6 +218,10 @@ local function on_energy_charge(me, damages)
     end
     local inc = effect.x * targets
     value = math.min(value + inc, 10000)
+    -- Each charge after the first shows the charging effect to the character and the map, as the legacy server did.
+    if charged ~= nil then
+        me:show_skill_effect(ec, SkillEffectType.Affected)
+    end
     if value < 10000 then
         me:buff(ec, BuffFlag.EnergyCharge, value, { time = 0 })
     else

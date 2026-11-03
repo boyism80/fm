@@ -226,6 +226,14 @@ local function energy_attack(ctx)
     if golem == nil then
         return false
     end
+    -- Every charge after the first shows the charging effect to the map.
+    local charging = 0
+    ctx:hook("energy_charge", function(_, b, p, name)
+        if b:id() == observer:id() and name == resp.show_skill_effect and p.character_id == bot:id()
+            and p.skill_id == ENERGY_CHARGE then
+            charging = charging + 1
+        end
+    end)
     local function released()
         bot:energy_attack(golem[1], 1, 1)
         return bot:request_on(observer, resp.energy_attack, nil, function(p)
@@ -242,6 +250,9 @@ local function energy_attack(ctx)
             ctx:sleep(50)
         end
         if released() then
+            if charging == 0 then
+                return ctx:fail("에너지를 모을 때 충전 이펙트가 주변에 오지 않음")
+            end
             return true
         end
     end
