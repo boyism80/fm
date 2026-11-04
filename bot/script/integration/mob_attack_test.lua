@@ -1,6 +1,8 @@
 local pq = require("script/integration/lib/party_quest")
 
 local HUNTING_GROUND = 104040000
+local RETURN_MAP = 100000000
+local HIT_ENV = -3
 local DISEASE_MOB = 5000007
 local MP_BURN_MOB = 8110300
 local BANISH_MOB = 9300160
@@ -147,6 +149,27 @@ local function lethal_touch(ctx)
     return true
 end
 
+-- A character that leaves dead logs in alive on the return map, without the revive request.
+local function left_dead(ctx)
+    local actor = ctx:bot(0)
+    if setup(ctx, actor) == false then
+        return false
+    end
+    local dead = actor:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 30000 }, function(p)
+        return p.stats[HP] == 0
+    end, 5000)
+    if dead == false then
+        return ctx:fail("죽을 만큼 맞았는데 HP가 0이 되지 않음")
+    end
+    if actor:relog { passwords = { "" } } == false then
+        return false
+    end
+    if actor:hp() ~= 50 or actor:map() ~= RETURN_MAP then
+        return ctx:fail(string.format("죽은 채 나간 뒤 HP %d, 맵 %d (기대 50, %d)", actor:hp(), actor:map(), RETURN_MAP))
+    end
+    return true
+end
+
 local function map_debuff(skill_id)
     return req.damaged { type = HIT_MAP_DEBUFF, damage = 1, level = 1, skill_id = skill_id }
 end
@@ -282,6 +305,7 @@ test_suite {
         hp_mp,
         banish,
         lethal_touch,
+        left_dead,
         holy_shield,
         zombify_potion,
         il_mana_reflection,

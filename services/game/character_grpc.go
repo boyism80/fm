@@ -161,6 +161,11 @@ func (ch *Character) PersistMapID() uint32 {
 }
 
 func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
+	// A character that leaves dead starts its next login alive on the return map PersistMapID saves.
+	hp := ch.GetHp()
+	if hp < 1 {
+		hp = 50
+	}
 	mapID := ch.PersistMapID()
 	if mapID == 0 {
 		return nil
@@ -193,7 +198,7 @@ func (ch *Character) BuildRPC(worldID uint32) *internal.CharacterSaveEntry {
 		Dex:               uint32(ch.stats.base.dex),
 		IntStat:           uint32(ch.stats.base.int),
 		Luk:               uint32(ch.stats.base.luk),
-		Hp:                ch.GetHp(),
+		Hp:                hp,
 		MaxHp:             ch.baseHp,
 		Mp:                ch.GetMp(),
 		MaxMp:             ch.baseMp,
