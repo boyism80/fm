@@ -15,7 +15,6 @@ local guild_capacity_increase_failed = 6
 
 return {
     on_click = function(me, npc)
-        local npc = 2010007
         local selected = me:dialog_list(npc,
             '길드를 만들고 싶은가? 혹은 길드 관련 업무를 위해서 찾아왔는가? 원하는 것을 말해보게.',
             {
