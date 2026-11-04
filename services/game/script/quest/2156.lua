@@ -35,8 +35,10 @@ return {
             return
         end
 
-        me:dialog(npc, "좋아. 이게 바로 무지개색 달팽이 껍질이라 이거지? \r\n\r\n" .. file .. "4/0#\r\n\r\n\r\n" .. file .. "8/0# 7500 exp",
-            false, true)
+        if not me:dialog(npc, "좋아. 이게 바로 무지개색 달팽이 껍질이라 이거지? \r\n\r\n" .. file .. "4/0#\r\n\r\n\r\n" .. file .. "8/0# 7500 exp",
+                false, true) then
+            return
+        end
 
         local is_morph = morph_source(me) == 2210006
         local code

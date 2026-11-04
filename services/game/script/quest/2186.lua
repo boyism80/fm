@@ -57,8 +57,12 @@ return {
             reward_exp = 2000
         end
 
-        me:dialog(npc, str, false, true)
-        me:dialog(npc, "후후훗... 다시 낚시를 즐겨 볼까요?", false, true)
+        if not me:dialog(npc, str, false, true) then
+            return
+        end
+        if not me:dialog(npc, "후후훗... 다시 낚시를 즐겨 볼까요?", false, true) then
+            return
+        end
 
         local cost_items = { [4031853] = c1853 }
         if c1854 > 0 then

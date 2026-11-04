@@ -27,7 +27,9 @@ return {
             return
         end
 
-        me:dialog(npc, "#b(거미줄로 범벅이 된 구겨진 종이조각을 꺼냈다. 그리고 2000메소를 넣었다..)", false, true)
+        if not me:dialog(npc, "#b(거미줄로 범벅이 된 구겨진 종이조각을 꺼냈다. 그리고 2000메소를 넣었다..)", false, true) then
+            return
+        end
 
         local code = me:exchange({ meso = 2000 }, { item = { [4031894] = 1 } })
         if code == ExchangeResult.LackCost then

@@ -49,10 +49,14 @@ return {
         end
 
         local file = "#fUI/UIWindow.img/QuestIcon/"
-        me:dialog(npc, "어때? 타이머 기르는 건 재미있어?", false, true)
-        me:dialog(npc,
-            "응? 타이머가 벌써 다 자라 버렸다고? 헉... 태엽벌레를 열심히 먹인 모양이구나... 그럼 이제 그만 타이머를 돌려줘. 이제 그만 녀석을 원래세계로 보내줘야지...\r\n\r\n" ..
-            file .. "4/0#\r\n\r\n" .. file .. "6/0# 11", false, true)
+        if not me:dialog(npc, "어때? 타이머 기르는 건 재미있어?", false, true) then
+            return
+        end
+        if not me:dialog(npc,
+                "응? 타이머가 벌써 다 자라 버렸다고? 헉... 태엽벌레를 열심히 먹인 모양이구나... 그럼 이제 그만 타이머를 돌려줘. 이제 그만 녀석을 원래세계로 보내줘야지...\r\n\r\n" ..
+                file .. "4/0#\r\n\r\n" .. file .. "6/0# 11", false, true) then
+            return
+        end
 
         local code = me:exchange({ item = { [4220046] = 1 } }, { population = 11 })
         if code == ExchangeResult.LackCapacity then
