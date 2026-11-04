@@ -313,18 +313,18 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 	if notify {
 		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 	}
-	ch.showBerserk()
+	ch.ShowBerserk()
 
 	if wasAlive && !ch.IsAlive() {
 		ch.die()
 	}
 }
 
-// showBerserk shows the Berserk aura to the character and its map when it turns on or off; the client does not
-// draw it for others by itself.
-func (ch *Character) showBerserk() {
+// ShowBerserk shows the Berserk aura to the character and its map when it turns on or off; the client does not
+// draw it for others by itself. Without a map, as while loading, nobody can be shown, so the state waits for login.
+func (ch *Character) ShowBerserk() {
 	on := ch.inBerserk()
-	if on == ch.berserk {
+	if on == ch.berserk || ch.GetMap() == nil {
 		return
 	}
 	ch.berserk = on

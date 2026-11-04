@@ -28,6 +28,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		return
 	}
 	msg.Character.NotifyLevelClassChanged()
+	msg.Character.ShowBerserk()
 	msg.Character.SocialLogin(msg.Notes)
 	msg.Character.Buddies().SyncLogin()
 	msg.Character.Duey().CheckArrivals(ctx)
