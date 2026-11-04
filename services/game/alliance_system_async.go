@@ -13,15 +13,6 @@ import (
 )
 
 func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.IncreaseAllianceCapacityReply] {
-	fail := int(constant.AllianceIncreaseCapacityResultFailed)
-	if result == nil {
-		result = &fail
-	}
-	if ch == nil {
-		*result = fail
-		return nil
-	}
-	*result = fail
 	guildID, inGuild := ch.guild.ID()
 	if !inGuild {
 		*result = int(constant.AllianceIncreaseCapacityResultNotInAlliance)

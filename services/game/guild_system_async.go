@@ -181,15 +181,6 @@ func (s *GuildSystem) SettleEmblem(ctx actor.Context, ch *Character, request *Un
 }
 
 func (s *GuildSystem) DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandGuildReply] {
-	fail := int(constant.GuildDisbandResultFailed)
-	if result == nil {
-		result = &fail
-	}
-	if ch == nil {
-		*result = fail
-		return nil
-	}
-	*result = fail
 	worldID := s.gw.GetWorldID()
 	charID := ch.GetID()
 	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
@@ -223,14 +214,6 @@ func (s *GuildSystem) DisbandAsync(ctx actor.Context, ch *Character, result *int
 }
 
 func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise[*internal.IncreaseGuildCapacityReply] {
-	fail := int(constant.GuildIncreaseCapacityResultFailed)
-	if result == nil {
-		result = &fail
-	}
-	if ch == nil {
-		*result = fail
-		return nil
-	}
 	detail := guildCapacityDetail{Extended: extendedCap}
 	if !extendedCap {
 		detail.Meso = constant.GuildCapacityIncreaseMesoCost
@@ -239,7 +222,6 @@ func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extende
 			return nil
 		}
 	}
-	*result = fail
 	guildID, _ := ch.guild.ID()
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CAPACITY, uint64(guildID), detail)
 	return s.incCapacityAsync(ctx, ch, id, guildID, extendedCap).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
@@ -411,14 +393,6 @@ func (s *GuildSystem) ShowRankingAsync(ctx actor.Context, ch *Character, npcID u
 }
 
 func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise[*internal.CreateAllianceReply] {
-	fail := int(constant.AllianceCreateResultFailed)
-	if result == nil {
-		result = &fail
-	}
-	if ch == nil {
-		*result = fail
-		return nil
-	}
 	partnerID, ok := s.gw.Systems().Get[*AllianceSystem]().ValidateCreateAlliance(ch)
 	if !ok || partnerID == 0 {
 		*result = int(constant.AllianceCreateResultInvalidRequirements)
@@ -433,7 +407,6 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 		*result = int(constant.AllianceCreateResultInsufficientMeso)
 		return nil
 	}
-	*result = fail
 	guildID, _ := ch.guild.ID()
 	detail := allianceCreateDetail{Name: trimmed, Partner: partnerID, Meso: constant.AllianceCreateMesoCost}
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CREATE, uint64(guildID), detail)
@@ -509,15 +482,6 @@ func (s *GuildSystem) SettleAllianceCreate(ctx actor.Context, ch *Character, req
 }
 
 func (s *GuildSystem) DisbandAllianceAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandAllianceReply] {
-	fail := int(constant.AllianceDisbandResultFailed)
-	if result == nil {
-		result = &fail
-	}
-	if ch == nil {
-		*result = fail
-		return nil
-	}
-	*result = fail
 	guildID, ok := ch.guild.ID()
 	if !ok {
 		*result = int(constant.AllianceDisbandResultNotInAlliance)
