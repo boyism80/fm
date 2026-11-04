@@ -47,6 +47,7 @@ return {
     end,
 
     on_scheduled_timeout = function(sm)
+        sm:message("제한시간이 다 되어 실패하였습니다.")
         end_run(sm)
     end,
 
