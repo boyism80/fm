@@ -47,7 +47,6 @@ const ALLIANCE_EVT = {
 } as const;
 
 const MAX_ALLIANCE_NOTICE_LEN = 100;
-const ALLIANCE_LOCK_ATTEMPTS = 3;
 
 function sameGuildIds(a: number[], b: number[]): boolean {
     if (a.length !== b.length) {
@@ -804,35 +803,34 @@ export class AllianceService {
     }
 
     // Every alliance operation locks characters, then every guild of the alliance, then the alliance, so none can
-    // hold the alliance while waiting for a guild. The guild list is read unlocked and checked again under the locks.
+    // hold the alliance while waiting for a guild. The guild list is read unlocked; if it changed meanwhile, the request
+    // fails.
     private async lockAllianceGuilds(worldId: number, allianceId: number, extraGuildIds: number[]) {
-        for (let attempt = 0; attempt < ALLIANCE_LOCK_ATTEMPTS; attempt++) {
-            const seen = await this.allianceRepo.get(worldId, allianceId);
-            if (!seen) {
-                return null;
-            }
-            const keys = [...new Set([...extraGuildIds, ...seen.guildIds].map((id) => `guild:${id}`))].sort();
-            const guards: DistributedLockGuard[] = [];
-            try {
-                for (const key of keys) {
-                    guards.push(await this.distributedLockService.acquireWorldDataLock(worldId, key));
-                }
-                guards.push(await this.distributedLockService.acquireWorldDataLock(worldId, `alliance:${allianceId}`));
-            } catch (err) {
-                await new DistributedLockMultiGuard(guards).release();
-                throw err;
-            }
-
-            const alliance = await this.allianceRepo.get(worldId, allianceId);
-            if (alliance && sameGuildIds(alliance.guildIds, seen.guildIds)) {
-                return { guards, alliance };
-            }
-            await new DistributedLockMultiGuard(guards).release();
-            if (!alliance) {
-                return null;
-            }
+        const seen = await this.allianceRepo.get(worldId, allianceId);
+        if (!seen) {
+            return null;
         }
-        throw new Error(`alliance ${allianceId} guilds kept changing while locking`);
+        const keys = [...new Set([...extraGuildIds, ...seen.guildIds].map((id) => `guild:${id}`))].sort();
+        const guards: DistributedLockGuard[] = [];
+        try {
+            for (const key of keys) {
+                guards.push(await this.distributedLockService.acquireWorldDataLock(worldId, key));
+            }
+            guards.push(await this.distributedLockService.acquireWorldDataLock(worldId, `alliance:${allianceId}`));
+        } catch (err) {
+            await new DistributedLockMultiGuard(guards).release();
+            throw err;
+        }
+
+        const alliance = await this.allianceRepo.get(worldId, allianceId);
+        if (alliance && sameGuildIds(alliance.guildIds, seen.guildIds)) {
+            return { guards, alliance };
+        }
+        await new DistributedLockMultiGuard(guards).release();
+        if (!alliance) {
+            return null;
+        }
+        throw new Error(`alliance ${allianceId} guilds changed while locking`);
     }
 
     private async lockRequesterAlliance(worldId: number, characterId: number, otherCharacterIds: number[] = []) {
