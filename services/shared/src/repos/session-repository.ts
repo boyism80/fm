@@ -1,3 +1,4 @@
+import type Redis from "ioredis";
 import { redisSessionKey } from "../redis-session-key";
 import { AccountSessionState, accountSessionStateFromRedisHash } from "../session-state";
 import { SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
@@ -5,20 +6,27 @@ import type { CharacterPresentation, Debuff } from "../protobuf/generated/fminte
 import type { InternalContext } from "../context/internal-context";
 import type { AccountSession } from "../session-types";
 import type { CharacterRepository } from "./character-repository";
+import { redisLockKey, type DistributedLock } from "../system/distributed-lock";
 
 export type { AccountSession } from "../session-types";
 
-type SessionHash = Record<string, string>;
+type SessionHash = Record<string, string | undefined>;
 
 const AS = AccountSessionState;
 
 export class SessionRepository {
     private readonly ctx: InternalContext;
     private readonly characterRepo: CharacterRepository;
+    private readonly distributedLock: DistributedLock;
 
-    constructor(internalContext: InternalContext, characterRepository: CharacterRepository) {
+    constructor(
+        internalContext: InternalContext,
+        characterRepository: CharacterRepository,
+        distributedLock: DistributedLock,
+    ) {
         this.ctx = internalContext;
         this.characterRepo = characterRepository;
+        this.distributedLock = distributedLock;
     }
 
     private accountKey(accountId: number) {
@@ -55,41 +63,51 @@ export class SessionRepository {
         };
     }
 
-    async beginLogin(accountId: number, loginServerId: string, now: string, ttlSeconds: number) {
+    // Every change reads the session and writes it back under the account's lock; a request that cannot take the lock fails.
+    private async locked<T>(
+        accountId: number,
+        fn: (session: SessionHash, key: string, client: Redis) => Promise<T>,
+    ): Promise<T> {
         const { client } = this.ctx.getRedisUnifiedAccess();
-        const accountKey = this.accountKey(accountId);
-        const script = `
-local key = KEYS[1]
-local account_id = tonumber(ARGV[1])
-local login_server_id = ARGV[2]
-local now = ARGV[3]
-local ttl = tonumber(ARGV[4])
-if redis.call("EXISTS", key) == 1 then
-  return {0, ${SessionErrorCode.SESSION_ALREADY_LOGGED_IN}}
-end
-redis.call("HSET", key,
-  "version", "1",
-  "world_id", "",
-  "account_id", tostring(account_id),
-  "state", "${AS.ACCOUNT_SESSION_STATE_LOGIN}",
-  "login_server_id", login_server_id,
-  "login_server_connected", "1",
-  "created_at", now,
-  "updated_at", now,
-  "state_changed_at", now
-)
-redis.call("EXPIRE", key, ttl)
-return {1, ${SessionErrorCode.SESSION_NONE}}
-`;
-        return (await client.eval(
-            script,
-            1,
-            accountKey,
-            String(accountId),
-            String(loginServerId),
-            String(now),
-            String(ttlSeconds),
-        )) as Array<number | string>;
+        await using _lock = await this.distributedLock.acquire(client, redisLockKey(`session:${accountId}`));
+        const key = this.accountKey(accountId);
+        return fn(await client.hgetall(key), key, client);
+    }
+
+    private exists(session: SessionHash) {
+        return Object.keys(session).length > 0;
+    }
+
+    private isOwner(session: SessionHash, state: number, characterId: number, idField: string, id: number) {
+        return (
+            Number(session.state ?? 0) === state &&
+            session.character_id === String(characterId) &&
+            session[idField] === String(id)
+        );
+    }
+
+    async beginLogin(accountId: number, loginServerId: string, now: string, ttlSeconds: number) {
+        return this.locked(accountId, async (session, key, client): Promise<Array<number | string>> => {
+            if (this.exists(session)) {
+                return [0, SessionErrorCode.SESSION_ALREADY_LOGGED_IN];
+            }
+            await client
+                .multi()
+                .hset(key, {
+                    version: "1",
+                    world_id: "",
+                    account_id: String(accountId),
+                    state: String(AS.ACCOUNT_SESSION_STATE_LOGIN),
+                    login_server_id: String(loginServerId),
+                    login_server_connected: "1",
+                    created_at: now,
+                    updated_at: now,
+                    state_changed_at: now,
+                })
+                .expire(key, ttlSeconds)
+                .exec();
+            return [1, SessionErrorCode.SESSION_NONE];
+        });
     }
 
     async beginTransition(
@@ -105,105 +123,89 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         debuffs: Debuff[],
         presentation: CharacterPresentation | null,
     ) {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const accountKey = this.accountKey(accountId);
-        const sourceCh =
-            sourceChannelId != null && Number.isInteger(sourceChannelId) && sourceChannelId >= 0 ? sourceChannelId : -1;
-        const sourceCs =
-            sourceCashShopId != null && Number.isInteger(sourceCashShopId) && sourceCashShopId >= 0
-                ? sourceCashShopId
-                : -1;
-        const script = `
-local account_key = KEYS[1]
-local world_id = ARGV[1]
-local character_id = ARGV[2]
-local character_name = ARGV[3]
-local now = ARGV[4]
-local ttl = tonumber(ARGV[5])
-local source_channel_id = ARGV[6]
-local client_ip = ARGV[7]
-local debuffs = ARGV[8]
-local source_cash_shop_id = ARGV[9]
-local presentation = ARGV[10]
-if redis.call("EXISTS", account_key) == 0 then
-  return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
-end
-local prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
-local game_to_game_transfer = "0"
-local return_channel_id = ""
-if source_cash_shop_id ~= "-1" then
-  local session_character_id = redis.call("HGET", account_key, "character_id") or ""
-  local cash_shop_id = redis.call("HGET", account_key, "cash_shop_id") or ""
-  if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_CASH_SHOP} or session_character_id ~= character_id or cash_shop_id ~= source_cash_shop_id then
-    return {0, ${SessionErrorCode.SESSION_NOT_OWNER}}
-  end
-  game_to_game_transfer = "1"
-elseif source_channel_id == "-1" then
-  local from_game = redis.call("HGET", account_key, "game_to_game_transfer") or "0"
-  if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_LOGIN} and (prev_state ~= ${AS.ACCOUNT_SESSION_STATE_TRANSITION} or from_game == "1") then
-    return {0, ${SessionErrorCode.SESSION_NOT_OWNER}}
-  end
-else
-  local session_character_id = redis.call("HGET", account_key, "character_id") or ""
-  local channel_id = redis.call("HGET", account_key, "channel_id") or ""
-  if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_GAME} or session_character_id ~= character_id or channel_id ~= source_channel_id then
-    return {0, ${SessionErrorCode.SESSION_NOT_OWNER}}
-  end
-  game_to_game_transfer = "1"
-  return_channel_id = source_channel_id
-end
-redis.call("HSET", account_key,
-  "world_id", world_id,
-  "state", "${AS.ACCOUNT_SESSION_STATE_TRANSITION}",
-  "character_id", character_id,
-  "character_name", character_name,
-  "client_ip", client_ip,
-  "game_to_game_transfer", game_to_game_transfer,
-  "debuffs", debuffs,
-  "presentation", presentation,
-  "updated_at", now,
-  "state_changed_at", now
-)
-redis.call("HDEL", account_key, "channel_id", "cash_shop_id", "return_channel_id")
-if return_channel_id ~= "" then
-  redis.call("HSET", account_key, "return_channel_id", return_channel_id)
-end
-redis.call("EXPIRE", account_key, ttl)
-return {1, ${SessionErrorCode.SESSION_NONE}}
-`;
-        return (await client.eval(
-            script,
-            1,
-            accountKey,
-            String(worldId),
-            String(characterId),
-            String(characterName),
-            String(now),
-            String(ttlSeconds),
-            String(sourceCh),
-            clientIp,
-            (sourceCh >= 0 || sourceCs >= 0) && debuffs.length > 0 ? JSON.stringify(debuffs) : "",
-            String(sourceCs),
-            (sourceCh >= 0 || sourceCs >= 0) && presentation != null ? JSON.stringify(presentation) : "",
-        )) as Array<number | string>;
+        return this.locked(accountId, async (session, key, client): Promise<Array<number | string>> => {
+            if (!this.exists(session)) {
+                return [0, SessionErrorCode.SESSION_NOT_FOUND];
+            }
+            const state = Number(session.state ?? 0);
+            const fromServer = sourceChannelId != null || sourceCashShopId != null;
+            if (sourceCashShopId != null) {
+                if (
+                    !this.isOwner(session, AS.ACCOUNT_SESSION_STATE_CASH_SHOP, characterId, "cash_shop_id", sourceCashShopId)
+                ) {
+                    return [0, SessionErrorCode.SESSION_NOT_OWNER];
+                }
+            } else if (sourceChannelId != null) {
+                if (!this.isOwner(session, AS.ACCOUNT_SESSION_STATE_GAME, characterId, "channel_id", sourceChannelId)) {
+                    return [0, SessionErrorCode.SESSION_NOT_OWNER];
+                }
+            } else if (
+                state !== AS.ACCOUNT_SESSION_STATE_LOGIN &&
+                (state !== AS.ACCOUNT_SESSION_STATE_TRANSITION || session.game_to_game_transfer === "1")
+            ) {
+                return [0, SessionErrorCode.SESSION_NOT_OWNER];
+            }
+
+            const write = client
+                .multi()
+                .hset(key, {
+                    world_id: String(worldId),
+                    state: String(AS.ACCOUNT_SESSION_STATE_TRANSITION),
+                    character_id: String(characterId),
+                    character_name: String(characterName),
+                    client_ip: clientIp,
+                    game_to_game_transfer: fromServer ? "1" : "0",
+                    debuffs: fromServer && debuffs.length > 0 ? JSON.stringify(debuffs) : "",
+                    presentation: fromServer && presentation != null ? JSON.stringify(presentation) : "",
+                    updated_at: now,
+                    state_changed_at: now,
+                })
+                .hdel(key, "channel_id", "cash_shop_id", "return_channel_id");
+            if (sourceCashShopId == null && sourceChannelId != null) {
+                write.hset(key, "return_channel_id", String(sourceChannelId));
+            }
+            await write.expire(key, ttlSeconds).exec();
+            return [1, SessionErrorCode.SESSION_NONE];
+        });
     }
 
     // Ends a transition that never reached its server: the session goes only if it is still that same transition,
     // so a client entering at the same moment either enters first or is refused.
     async expireTransition(accountId: number, stateChangedAt: string): Promise<boolean> {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const script = `
-local account_key = KEYS[1]
-if redis.call("HGET", account_key, "state") ~= "${AS.ACCOUNT_SESSION_STATE_TRANSITION}" then
-  return 0
-end
-if redis.call("HGET", account_key, "state_changed_at") ~= ARGV[1] then
-  return 0
-end
-redis.call("DEL", account_key)
-return 1
-`;
-        return Number(await client.eval(script, 1, this.accountKey(accountId), stateChangedAt)) === 1;
+        return this.locked(accountId, async (session, key, client) => {
+            if (
+                session.state !== String(AS.ACCOUNT_SESSION_STATE_TRANSITION) ||
+                session.state_changed_at !== stateChangedAt
+            ) {
+                return false;
+            }
+            await client.del(key);
+            return true;
+        });
+    }
+
+    private entryError(
+        session: SessionHash,
+        accountId: number,
+        worldId: number,
+        characterId: number,
+        clientIp: string,
+    ): SessionErrorCode | null {
+        if (!this.exists(session)) {
+            return SessionErrorCode.SESSION_NOT_FOUND;
+        }
+        if (
+            Number(session.state ?? 0) !== AS.ACCOUNT_SESSION_STATE_TRANSITION ||
+            Number(session.account_id ?? 0) !== accountId ||
+            Number(session.world_id ?? 0) !== worldId ||
+            Number(session.character_id ?? 0) !== characterId
+        ) {
+            return SessionErrorCode.SESSION_UNKNOWN;
+        }
+        if (clientIp === "" || session.client_ip !== clientIp) {
+            return SessionErrorCode.SESSION_CLIENT_IP_MISMATCH;
+        }
+        return null;
     }
 
     async enterCashShop(
@@ -215,57 +217,27 @@ return 1
         now: string,
         ttlSeconds: number,
     ) {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const accountKey = this.accountKey(accountId);
-        const script = `
-local account_key = KEYS[1]
-local expected_account_id = tonumber(ARGV[1])
-local expected_world_id = tonumber(ARGV[2])
-local expected_character_id = tonumber(ARGV[3])
-local cash_shop_id = ARGV[4]
-local now = ARGV[5]
-local ttl = tonumber(ARGV[6])
-local client_ip = ARGV[7]
-if redis.call("EXISTS", account_key) == 0 then
-  return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
-end
-local state = tonumber(redis.call("HGET", account_key, "state") or "0")
-local return_channel_id = redis.call("HGET", account_key, "return_channel_id") or ""
-if state ~= ${AS.ACCOUNT_SESSION_STATE_TRANSITION} or return_channel_id == "" then
-  return {0, ${SessionErrorCode.SESSION_UNKNOWN}}
-end
-local account_id = tonumber(redis.call("HGET", account_key, "account_id") or "0")
-local world_id = tonumber(redis.call("HGET", account_key, "world_id") or "0")
-local character_id = tonumber(redis.call("HGET", account_key, "character_id") or "0")
-if account_id ~= expected_account_id or world_id ~= expected_world_id or character_id ~= expected_character_id then
-  return {0, ${SessionErrorCode.SESSION_UNKNOWN}}
-end
-local transition_ip = redis.call("HGET", account_key, "client_ip") or ""
-if client_ip == "" or transition_ip ~= client_ip then
-  return {0, ${SessionErrorCode.SESSION_CLIENT_IP_MISMATCH}}
-end
-
-redis.call("HSET", account_key,
-  "state", "${AS.ACCOUNT_SESSION_STATE_CASH_SHOP}",
-  "cash_shop_id", cash_shop_id,
-  "updated_at", now,
-  "state_changed_at", now
-)
-redis.call("EXPIRE", account_key, ttl)
-return {1, ${SessionErrorCode.SESSION_NONE}, return_channel_id}
-`;
-        return (await client.eval(
-            script,
-            1,
-            accountKey,
-            String(accountId),
-            String(worldId),
-            String(characterId),
-            String(cashShopId),
-            String(now),
-            String(ttlSeconds),
-            clientIp,
-        )) as Array<number | string>;
+        return this.locked(accountId, async (session, key, client): Promise<Array<number | string>> => {
+            const error = this.entryError(session, accountId, worldId, characterId, clientIp);
+            if (error != null) {
+                return [0, error];
+            }
+            const returnChannelId = session.return_channel_id ?? "";
+            if (returnChannelId === "") {
+                return [0, SessionErrorCode.SESSION_UNKNOWN];
+            }
+            await client
+                .multi()
+                .hset(key, {
+                    state: String(AS.ACCOUNT_SESSION_STATE_CASH_SHOP),
+                    cash_shop_id: String(cashShopId),
+                    updated_at: now,
+                    state_changed_at: now,
+                })
+                .expire(key, ttlSeconds)
+                .exec();
+            return [1, SessionErrorCode.SESSION_NONE, returnChannelId];
+        });
     }
 
     async enterGame(
@@ -277,59 +249,42 @@ return {1, ${SessionErrorCode.SESSION_NONE}, return_channel_id}
         now: string,
         ttlSeconds: number,
     ) {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const accountKey = this.accountKey(accountId);
-        const script = `
-local account_key = KEYS[1]
-local expected_account_id = tonumber(ARGV[1])
-local expected_world_id = tonumber(ARGV[2])
-local expected_character_id = tonumber(ARGV[3])
-local channel_id = ARGV[4]
-local now = ARGV[5]
-local ttl = tonumber(ARGV[6])
-local client_ip = ARGV[7]
-if redis.call("EXISTS", account_key) == 0 then
-  return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
-end
-local state = tonumber(redis.call("HGET", account_key, "state") or "0")
-if state ~= ${AS.ACCOUNT_SESSION_STATE_TRANSITION} then
-  return {0, ${SessionErrorCode.SESSION_UNKNOWN}}
-end
-local account_id = tonumber(redis.call("HGET", account_key, "account_id") or "0")
-local world_id = tonumber(redis.call("HGET", account_key, "world_id") or "0")
-local character_id = tonumber(redis.call("HGET", account_key, "character_id") or "0")
-if account_id ~= expected_account_id or world_id ~= expected_world_id or character_id ~= expected_character_id then
-  return {0, ${SessionErrorCode.SESSION_UNKNOWN}}
-end
-local transition_ip = redis.call("HGET", account_key, "client_ip") or ""
-if client_ip == "" or transition_ip ~= client_ip then
-  return {0, ${SessionErrorCode.SESSION_CLIENT_IP_MISMATCH}}
-end
+        return this.locked(accountId, async (session, key, client): Promise<Array<number | string>> => {
+            const error = this.entryError(session, accountId, worldId, characterId, clientIp);
+            if (error != null) {
+                return [0, error];
+            }
+            await client
+                .multi()
+                .hset(key, {
+                    state: String(AS.ACCOUNT_SESSION_STATE_GAME),
+                    login_server_connected: "0",
+                    channel_id: String(channelId),
+                    game_to_game_transfer: "0",
+                    updated_at: now,
+                    state_changed_at: now,
+                })
+                .hdel(key, "debuffs", "presentation")
+                .expire(key, ttlSeconds)
+                .exec();
+            return [1, SessionErrorCode.SESSION_NONE];
+        });
+    }
 
-redis.call("HSET", account_key,
-  "state", "${AS.ACCOUNT_SESSION_STATE_GAME}",
-  "login_server_connected", "0",
-  "channel_id", channel_id,
-  "game_to_game_transfer", "0",
-  "updated_at", now,
-  "state_changed_at", now
-)
-redis.call("HDEL", account_key, "debuffs", "presentation")
-redis.call("EXPIRE", account_key, ttl)
-return {1, ${SessionErrorCode.SESSION_NONE}}
-`;
-        return (await client.eval(
-            script,
-            1,
-            accountKey,
-            String(accountId),
-            String(worldId),
-            String(characterId),
-            String(channelId),
-            String(now),
-            String(ttlSeconds),
-            clientIp,
-        )) as Array<number | string>;
+    private ownerMatches(
+        session: SessionHash,
+        owner: { characterId: number; channelId?: number; cashShopId?: number },
+    ): boolean {
+        if (owner.cashShopId != null) {
+            return this.isOwner(
+                session,
+                AS.ACCOUNT_SESSION_STATE_CASH_SHOP,
+                owner.characterId,
+                "cash_shop_id",
+                owner.cashShopId,
+            );
+        }
+        return this.isOwner(session, AS.ACCOUNT_SESSION_STATE_GAME, owner.characterId, "channel_id", owner.channelId ?? -1);
     }
 
     async refresh(
@@ -339,54 +294,23 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         gameTtl: number,
         owner: { characterId: number; channelId?: number; cashShopId?: number } | null,
     ) {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const accountKey = this.accountKey(accountId);
-        const script = `
-local account_key = KEYS[1]
-local login_ttl = tonumber(ARGV[1])
-local transition_ttl = tonumber(ARGV[2])
-local game_ttl = tonumber(ARGV[3])
-local owner_character_id = ARGV[4]
-local owner_channel_id = ARGV[5]
-local owner_cash_shop_id = ARGV[6]
-if redis.call("EXISTS", account_key) == 0 then
-  return {0, ${SessionErrorCode.SESSION_NOT_FOUND}, 0, "0"}
-end
-local state = tonumber(redis.call("HGET", account_key, "state") or "0")
-if owner_character_id ~= "" then
-  local character_id = redis.call("HGET", account_key, "character_id") or ""
-  if owner_cash_shop_id ~= "" then
-    local cash_shop_id = redis.call("HGET", account_key, "cash_shop_id") or ""
-    if state ~= ${AS.ACCOUNT_SESSION_STATE_CASH_SHOP} or character_id ~= owner_character_id or cash_shop_id ~= owner_cash_shop_id then
-      return {0, ${SessionErrorCode.SESSION_NOT_OWNER}, 0, tostring(state)}
-    end
-  else
-    local channel_id = redis.call("HGET", account_key, "channel_id") or ""
-    if state ~= ${AS.ACCOUNT_SESSION_STATE_GAME} or character_id ~= owner_character_id or channel_id ~= owner_channel_id then
-      return {0, ${SessionErrorCode.SESSION_NOT_OWNER}, 0, tostring(state)}
-    end
-  end
-end
-local ttl = login_ttl
-if state == ${AS.ACCOUNT_SESSION_STATE_TRANSITION} then
-  ttl = transition_ttl
-elseif state == ${AS.ACCOUNT_SESSION_STATE_GAME} or state == ${AS.ACCOUNT_SESSION_STATE_CASH_SHOP} then
-  ttl = game_ttl
-end
-redis.call("EXPIRE", account_key, ttl)
-return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
-`;
-        return (await client.eval(
-            script,
-            1,
-            accountKey,
-            String(loginTtl),
-            String(transitionTtl),
-            String(gameTtl),
-            owner ? String(owner.characterId) : "",
-            owner?.channelId != null ? String(owner.channelId) : "",
-            owner?.cashShopId != null ? String(owner.cashShopId) : "",
-        )) as Array<number | string>;
+        return this.locked(accountId, async (session, key, client): Promise<Array<number | string>> => {
+            if (!this.exists(session)) {
+                return [0, SessionErrorCode.SESSION_NOT_FOUND, 0, "0"];
+            }
+            const state = Number(session.state ?? 0);
+            if (owner != null && !this.ownerMatches(session, owner)) {
+                return [0, SessionErrorCode.SESSION_NOT_OWNER, 0, String(state)];
+            }
+            let ttl = loginTtl;
+            if (state === AS.ACCOUNT_SESSION_STATE_TRANSITION) {
+                ttl = transitionTtl;
+            } else if (state === AS.ACCOUNT_SESSION_STATE_GAME || state === AS.ACCOUNT_SESSION_STATE_CASH_SHOP) {
+                ttl = gameTtl;
+            }
+            await client.expire(key, ttl);
+            return [1, SessionErrorCode.SESSION_NONE, ttl, String(state)];
+        });
     }
 
     async logout(
@@ -396,54 +320,24 @@ return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
         ownerCharacterId?: number,
         requestCashShopId?: number,
     ) {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const accountKey = this.accountKey(accountId);
-        const ch =
-            requestChannelId != null && Number.isInteger(requestChannelId) && requestChannelId >= 0
-                ? requestChannelId
-                : -1;
-        const cs =
-            requestCashShopId != null && Number.isInteger(requestCashShopId) && requestCashShopId >= 0
-                ? requestCashShopId
-                : -1;
-        const script = `
-local account_key = KEYS[1]
-local keep = ARGV[1]
-local owner_character_id = ARGV[3]
-local request_cash_shop_id = ARGV[4]
-local prev_state = 0
-if redis.call("EXISTS", account_key) == 1 then
-  prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
-end
-if keep == "1" then
-  return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
-end
-if owner_character_id ~= "" then
-  local character_id = redis.call("HGET", account_key, "character_id") or ""
-  if request_cash_shop_id ~= "-1" then
-    local session_cash_shop_id = redis.call("HGET", account_key, "cash_shop_id") or ""
-    if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_CASH_SHOP} or character_id ~= owner_character_id or session_cash_shop_id ~= request_cash_shop_id then
-      return {0, ${SessionErrorCode.SESSION_NOT_OWNER}, prev_state}
-    end
-  else
-    local session_channel_id = redis.call("HGET", account_key, "channel_id") or ""
-    if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_GAME} or character_id ~= owner_character_id or session_channel_id ~= ARGV[2] then
-      return {0, ${SessionErrorCode.SESSION_NOT_OWNER}, prev_state}
-    end
-  end
-end
-redis.call("DEL", account_key)
-return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
-`;
-        return (await client.eval(
-            script,
-            1,
-            accountKey,
-            keep ? "1" : "0",
-            String(ch),
-            ownerCharacterId != null ? String(ownerCharacterId) : "",
-            String(cs),
-        )) as Array<number | string>;
+        return this.locked(accountId, async (session, key, client): Promise<Array<number | string>> => {
+            const state = Number(session.state ?? 0);
+            if (keep) {
+                return [1, SessionErrorCode.SESSION_NONE, state];
+            }
+            if (
+                ownerCharacterId != null &&
+                !this.ownerMatches(session, {
+                    characterId: ownerCharacterId,
+                    channelId: requestChannelId,
+                    cashShopId: requestCashShopId,
+                })
+            ) {
+                return [0, SessionErrorCode.SESSION_NOT_OWNER, state];
+            }
+            await client.del(key);
+            return [1, SessionErrorCode.SESSION_NONE, state];
+        });
     }
 
     async getAccountSession(accountId: number): Promise<AccountSession | null> {
