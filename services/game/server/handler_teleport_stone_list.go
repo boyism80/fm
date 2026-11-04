@@ -4,22 +4,19 @@ import (
 	"github.com/boyism80/fm/core"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type TeleportStoneList struct{}
+type TeleportStoneList struct {
+	gs *GameServer
+}
 
-func (TeleportStoneList) New(_ *GameServer) *TeleportStoneList {
-	return &TeleportStoneList{}
+func (TeleportStoneList) New(gs *GameServer) *TeleportStoneList {
+	return &TeleportStoneList{gs: gs}
 }
 
 func (h *TeleportStoneList) Handle(ctx *core.ClientContext, req *request.TeleportStoneList) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 

@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type FamilyPrecept struct {
@@ -16,12 +15,11 @@ func (FamilyPrecept) New(gs *GameServer) *FamilyPrecept {
 }
 
 func (h *FamilyPrecept) Handle(ctx *core.ClientContext, req *request.FamilyPrecept) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
-	ch := gameClient.GetCharacter()
-	if ch == nil || (req.Precept != "" && !game.ClientText(req.Precept).Valid(200)) {
+	if req.Precept != "" && !game.ClientText(req.Precept).Valid(200) {
 		return nil
 	}
 

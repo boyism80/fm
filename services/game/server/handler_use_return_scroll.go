@@ -1,29 +1,21 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type UseReturnScroll struct{}
-
-func (UseReturnScroll) New(_ *GameServer) *UseReturnScroll {
-	return &UseReturnScroll{}
+type UseReturnScroll struct {
+	gs *GameServer
 }
 
-func (*UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnScroll) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
+func (UseReturnScroll) New(gs *GameServer) *UseReturnScroll {
+	return &UseReturnScroll{gs: gs}
+}
 
-	ch := client.GetCharacter()
-	if ch == nil {
+func (h *UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnScroll) error {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

@@ -1,29 +1,21 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type UseRewardBox struct{}
-
-func (UseRewardBox) New(_ *GameServer) *UseRewardBox {
-	return &UseRewardBox{}
+type UseRewardBox struct {
+	gs *GameServer
 }
 
-func (*UseRewardBox) Handle(ctx *core.ClientContext, req *request.UseRewardBox) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
+func (UseRewardBox) New(gs *GameServer) *UseRewardBox {
+	return &UseRewardBox{gs: gs}
+}
 
-	ch := gameClient.GetCharacter()
-	if ch == nil {
+func (h *UseRewardBox) Handle(ctx *core.ClientContext, req *request.UseRewardBox) error {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)

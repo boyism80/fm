@@ -1,23 +1,18 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type ItemEffect struct{}
+type ItemEffect struct {
+	gs *GameServer
+}
 
-func (ItemEffect) New(*GameServer) *ItemEffect { return &ItemEffect{} }
-func (*ItemEffect) Handle(ctx *core.ClientContext, req *request.ItemEffect) error {
-	gc, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("item effect: client is not a GameClient")
-	}
-	ch := gc.GetCharacter()
-	if ch == nil {
+func (ItemEffect) New(gs *GameServer) *ItemEffect { return &ItemEffect{gs: gs} }
+func (h *ItemEffect) Handle(ctx *core.ClientContext, req *request.ItemEffect) error {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	ch.SetItemEffect(req.ItemID)

@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type PetLoot struct {
@@ -17,12 +16,11 @@ func (PetLoot) New(gs *GameServer) *PetLoot {
 }
 
 func (h *PetLoot) Handle(ctx *core.ClientContext, req *request.PetLoot) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
-	character := gameClient.GetCharacter()
-	if character == nil || character.Pets().Active() == nil {
+	if character.Pets().Active() == nil {
 		return nil
 	}
 	if character.Spectating() || character.Occupied() || req.FieldKey != character.FieldKey() {
@@ -30,7 +28,7 @@ func (h *PetLoot) Handle(ctx *core.ClientContext, req *request.PetLoot) error {
 		return nil
 	}
 
-	err := character.Pets().Active().Loot(req.OID, req.Position)
+	err = character.Pets().Active().Loot(req.OID, req.Position)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

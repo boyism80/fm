@@ -1,30 +1,22 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type HealOverTime struct{}
-
-func (HealOverTime) New(_ *GameServer) *HealOverTime {
-	return &HealOverTime{}
+type HealOverTime struct {
+	gs *GameServer
 }
 
-func (*HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
+func (HealOverTime) New(gs *GameServer) *HealOverTime {
+	return &HealOverTime{gs: gs}
+}
 
-	character := client.GetCharacter()
-	if character == nil {
+func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime) error {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 

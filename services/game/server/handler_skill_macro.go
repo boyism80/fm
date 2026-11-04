@@ -1,24 +1,19 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type SkillMacro struct{}
+type SkillMacro struct {
+	gs *GameServer
+}
 
-func (SkillMacro) New(*GameServer) *SkillMacro { return &SkillMacro{} }
-func (*SkillMacro) Handle(ctx *core.ClientContext, req *request.SkillMacro) error {
-	gc, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("skill macro: client is not a GameClient")
-	}
-	ch := gc.GetCharacter()
-	if ch == nil {
+func (SkillMacro) New(gs *GameServer) *SkillMacro { return &SkillMacro{gs: gs} }
+func (h *SkillMacro) Handle(ctx *core.ClientContext, req *request.SkillMacro) error {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if req.Count != uint8(len(req.Entries)) {

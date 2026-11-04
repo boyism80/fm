@@ -2,31 +2,24 @@ package server
 
 import (
 	"errors"
-	"fmt"
-	"log"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type UseItem struct{}
-
-func (UseItem) New(_ *GameServer) *UseItem {
-	return &UseItem{}
+type UseItem struct {
+	gs *GameServer
 }
 
-func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
+func (UseItem) New(gs *GameServer) *UseItem {
+	return &UseItem{gs: gs}
+}
 
-	ch := client.GetCharacter()
-	if ch == nil {
+func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

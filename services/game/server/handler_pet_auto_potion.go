@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type PetAutoPotion struct {
@@ -17,12 +16,11 @@ func (PetAutoPotion) New(gs *GameServer) *PetAutoPotion {
 }
 
 func (h *PetAutoPotion) Handle(ctx *core.ClientContext, req *request.PetAutoPotion) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
-	character := gameClient.GetCharacter()
-	if character == nil || character.Pets().Active() == nil {
+	if character.Pets().Active() == nil {
 		return nil
 	}
 	if character.UsingCashItem() {
@@ -30,7 +28,7 @@ func (h *PetAutoPotion) Handle(ctx *core.ClientContext, req *request.PetAutoPoti
 		return nil
 	}
 
-	err := character.Pets().Active().UsePotion(req.Slot, req.ItemID)
+	err = character.Pets().Active().UsePotion(req.Slot, req.ItemID)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

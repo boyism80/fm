@@ -1,29 +1,21 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
-type UseSkillBook struct{}
-
-func (UseSkillBook) New(_ *GameServer) *UseSkillBook {
-	return &UseSkillBook{}
+type UseSkillBook struct {
+	gs *GameServer
 }
 
-func (*UseSkillBook) Handle(ctx *core.ClientContext, req *request.UseSkillBook) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
+func (UseSkillBook) New(gs *GameServer) *UseSkillBook {
+	return &UseSkillBook{gs: gs}
+}
 
-	ch := gameClient.GetCharacter()
-	if ch == nil {
+func (h *UseSkillBook) Handle(ctx *core.ClientContext, req *request.UseSkillBook) error {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)

@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type FamilyAccept struct {
@@ -16,12 +15,11 @@ func (FamilyAccept) New(gs *GameServer) *FamilyAccept {
 }
 
 func (h *FamilyAccept) Handle(ctx *core.ClientContext, req *request.FamilyAccept) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
-	ch := gameClient.GetCharacter()
-	if ch == nil || (req.Name != "" && !game.ClientText(req.Name).Valid(13)) {
+	if req.Name != "" && !game.ClientText(req.Name).Valid(13) {
 		return nil
 	}
 
