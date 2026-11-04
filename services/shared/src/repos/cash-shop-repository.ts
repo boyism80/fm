@@ -87,32 +87,12 @@ export class CashShopRepository {
         });
     }
 
-    async withAccountLock<T>(
-        worldId: number,
-        accountId: number,
-        fn: (client: PoolClient) => Promise<T>,
-        options: RepositoryTxOptions = {},
-    ): Promise<T> {
-        return this.ctx.withPgDataTransaction(
-            worldId,
-            accountId,
-            async (client) => {
-                await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, accountId]);
-                return fn(client);
-            },
-            options,
-        );
-    }
-
-    async withCharacterLock<T>(
+    async withCharacter<T>(
         worldId: number,
         characterId: number,
         fn: (client: PoolClient) => Promise<T>,
     ): Promise<T> {
-        return this.ctx.withPgDataTransaction(worldId, characterId, async (client) => {
-            await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, characterId]);
-            return fn(client);
-        });
+        return this.ctx.withPgDataTransaction(worldId, characterId, fn);
     }
 
     async withAccount<T>(
@@ -189,88 +169,18 @@ export class CashShopRepository {
         return requests;
     }
 
-    async receiveTransfer(
+    async receiveTransfer<T>(
         worldId: number,
         request: CashTransferRequest,
-        fn: (client: PoolClient) => Promise<void>,
-    ): Promise<void> {
-        await this.ctx.withPgDataTransaction(worldId, request.target_id, async (client) => {
-            if (
-                request.kind === CashTransferKind.Gift ||
-                request.kind === CashTransferKind.PutIn ||
-                request.kind === CashTransferKind.Purchase ||
-                request.kind === CashTransferKind.StorageSlot ||
-                request.kind === CashTransferKind.CharacterSlot
-            ) {
-                await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, request.target_id]);
-            } else if (
-                request.kind === CashTransferKind.InventorySlot ||
-                request.kind === CashTransferKind.Meso ||
-                request.kind === CashTransferKind.TakeOut ||
-                request.kind === CashTransferKind.Ring
-            ) {
-                await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, request.target_id]);
-            }
-            await fn(client);
-        });
-    }
-
-    // Items on their way into the account's locker of this world, from any queue.
-    async pendingLockerItemCount(worldId: number, accountId: number): Promise<number> {
-        const pending = `SELECT COALESCE(SUM(jsonb_array_length(detail->'items')), 0) AS count
-                         FROM cash_transfer_requests
-                         WHERE completed = FALSE AND kind = ANY($2::int[]) AND detail->>'accountId' = $1::text
-                           AND jsonb_typeof(detail->'items') = 'array'`;
-        const kinds = [CashTransferKind.Gift, CashTransferKind.Purchase];
-        let count = 0;
-        for (const pool of this.ctx.getPgDataPools(worldId)) {
-            const res = await pool.query(`${pending} AND world_id IS NULL`, [accountId, kinds]);
-            count += Number(res.rows[0]?.count ?? 0);
-        }
-        const res = await this.ctx
-            .getPgUnifiedPool()
-            .query(`${pending} AND world_id = $3`, [accountId, kinds, worldId]);
-        return count + Number(res.rows[0]?.count ?? 0);
+        fn: (client: PoolClient) => Promise<T>,
+    ): Promise<T> {
+        return this.ctx.withPgDataTransaction(worldId, request.target_id, fn);
     }
 
     async finishTransfer(request: CashTransferRequest): Promise<void> {
         await request.pool.query("UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1", [
             request.request_id,
         ]);
-    }
-
-    async isTransferCompleted(request: CashTransferRequest): Promise<boolean> {
-        const res = await request.pool.query("SELECT completed FROM cash_transfer_requests WHERE request_id = $1", [
-            request.request_id,
-        ]);
-        const row = res.rows[0] as { completed: boolean } | undefined;
-        return row?.completed === true;
-    }
-
-    async claimTransfer(requestId: string, client: PoolClient): Promise<boolean> {
-        const res = await client.query(
-            "UPDATE cash_transfer_requests SET completed = TRUE WHERE request_id = $1 AND completed = FALSE RETURNING request_id",
-            [requestId],
-        );
-        return (res.rowCount ?? 0) > 0;
-    }
-
-    async completeRingTransfers(sourceId: number, serials: string[], client: PoolClient): Promise<void> {
-        if (serials.length === 0) {
-            return;
-        }
-        await client.query(
-            `UPDATE cash_transfer_requests
-             SET completed = TRUE
-             WHERE completed = FALSE AND source_id = $1 AND kind = $3 AND detail->>'serial' = ANY($2::text[])`,
-            [sourceId, serials, CashTransferKind.Ring],
-        );
-    }
-
-    async deleteRing(worldId: number, characterId: number, serial: string): Promise<void> {
-        await this.ctx
-            .getPgDataPool(worldId, characterId)
-            .query("DELETE FROM cash_rings WHERE character_id = $1 AND serial = $2", [characterId, serial]);
     }
 
     async findBalance(accountId: number, options: RepositoryTxOptions = {}): Promise<CashBalance> {
@@ -443,8 +353,7 @@ export class CashShopRepository {
     }
 }
 
-// A transfer records whether it was placed or found the locker full, so every later settle follows the first decision.
-export class CashRequestRepository extends RequestRepository<{ full?: boolean }> {
+export class CashRequestRepository extends RequestRepository {
     protected readonly kind = "cash";
 }
 

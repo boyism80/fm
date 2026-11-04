@@ -396,16 +396,17 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *cash.Character, 
 			Item:        pb,
 		})
 	}, func(reply *internal.TakeOutCashItemReply) error {
-		if reply.GetResult() != internal.CashShopResult_CASH_SHOP_RESULT_OK {
+		switch reply.GetResult() {
+		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
+		case internal.CashShopResult_CASH_SHOP_RESULT_SLOT_LIMIT:
+			fail(constant.CashShopFailureNotEnoughSlots)
+			return nil
+		default:
 			fail(constant.CashShopFailureUnknown)
 			return nil
 		}
-		// Settling may have put the item in another slot, or back in the locker when none was free; the reload after
-		// the error reads where it is.
+		// Internal may have picked another slot when this one was taken.
 		placed := int16(reply.GetSlot())
-		if placed == 0 {
-			return fmt.Errorf("cash shop take out %d: not placed in the inventory", req.Serial)
-		}
 		if placed != slot {
 			slot = placed
 			record.SetSlot(int32(slot))
