@@ -378,4 +378,169 @@ function M.group_name(map_id)
     return nil
 end
 
+local function try_start(me, npc, cfg)
+    strip_items(me)
+    local party = me:party()
+    if party == nil or party:leader_id() ~= me:id() then
+        me:dialog(npc, "파티가 없으시거나, 혹은 파티장이 아니신 건 아닌가요? 또한 4명의 파티만 입장할 수 있습니다.")
+        return
+    end
+    local map = me:map()
+    if map == nil or map:wz() == nil then
+        return
+    end
+    local ok = true
+    local size = 0
+    local has_gm = false
+    for _, mem in ipairs(party:members()) do
+        if mem ~= nil then
+            local ch = map:characters()[mem:id()]
+            if ch == nil or mem:level() < MIN_LEVEL then
+                ok = false
+                break
+            end
+            if pq.is_gm(ch) then
+                has_gm = true
+            end
+            size = size + 1
+        end
+    end
+    if not ok or (size ~= MIN_PARTY and not has_gm) then
+        me:dialog(npc, "파티원 중 레벨 제한 71이상이 아닌 파티원이 있거나 파티원이 4명이 아닌 것 같군요.")
+        return
+    end
+    local group = state_machine(cfg.group)
+    if group == nil then
+        me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
+        return
+    end
+    local sm, err = group:start_party(me, party, SCALE_LEVEL)
+    if sm == nil then
+        if err == StateMachineError.Full then
+            me:dialog(npc, "이미 이 안에서 다른 파티가 퀘스트에 도전하는 중입니다. 잠시 후 다시 시도해 주세요.")
+        else
+            me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
+            log(cfg.group .. " start_party:", err)
+        end
+    end
+end
+
+local function read_letter(me, npc, sm, cfg)
+    if not pq.has_item(me, cfg.letter, 1) then
+        return false
+    end
+    pq.remove_all(cfg.letter, me)
+    sm:set_property("stage", "1")
+    sm:message(cfg.letter_notice)
+    me:dialog(npc, cfg.letter_reply)
+    return true
+end
+
+local function handle_hub(me, npc, sm, map, cfg)
+    if cfg.letter_before_leader and read_letter(me, npc, sm, cfg) then
+        return
+    end
+    if not pq.is_leader(me) then
+        me:dialog(npc,
+            "알카드노와 제뉴미스트 사이의 분쟁을 멈추기 위해서는 알카드노와 제뉴미스트의 실험 자료가 필요해요. 알카드노의 실험 자료를 먼저 제게 가져다 주세요. 또한, 파티장이 제게 말을 걸어주셔야 합니다.")
+        return
+    end
+    if not cfg.letter_before_leader and read_letter(me, npc, sm, cfg) then
+        return
+    end
+    if pq.has_item(me, 4001134, 1) then
+        pq.remove_all(4001134, me)
+        sm:set_property("stage4", "1")
+        me:dialog(npc, "알카드노 실험 자료를 찾아오셨군요! 이제 제뉴미스트 실험 자료를 찾으면 되겠군요.")
+        return
+    end
+    if pq.has_item(me, 4001135, 1) and sm:get_property("stage4") == "1" then
+        pq.remove_all(4001135, me)
+        clear_fx(map)
+        map:set_respawn(false)
+        map:kill_all_mobs()
+        pq.party_exp(sm, cfg.stage4_exp)
+        sm:set_property("stage4", "2")
+        local door = map:find_reactor_name(cfg.door)
+        if door ~= nil then
+            door:hit(1)
+        end
+        me:dialog(npc, "제뉴미스트 실험 자료도 찾아오셨군요. 다음 스테이지로 진행해 주세요.")
+        return
+    end
+    me:dialog(npc, "알카드노와 제뉴미스트 사이의 분쟁을 멈추기 위해서는 알카드노와 제뉴미스트의 실험 자료가 필요해요. 알카드노의 실험 자료를 먼저 제게 가져다 주세요.")
+end
+
+local function handle_reward(me, npc, cfg)
+    me:dialog(npc,
+        "이렇게 유레테도 마음을 고쳐먹었고, 제뉴미스트와 알카드노의 전쟁도 조금은 수그러 들 수 있을까요? 비록 저희 사랑이 이뤄지기까지 아직도 험난한 고난이 기다리고 있지만, 결코 포기하지 않고 " .. cfg.beloved .. " 지키겠습니다.")
+    local code = me:exchange({}, { item = { [cfg.marble] = 1 } })
+    if code ~= ExchangeResult.OK then
+        me:dialog(npc, "인벤토리 공간이 부족하신 건 아닌지 확인해 주시겠어요?")
+        return
+    end
+    strip_items(me)
+    me:end_party_quest(RANKING_QUEST)
+    me:records():add("romeo_juliet_pq.clears", 1)
+    me:map(cfg.base + 700)
+end
+
+-- cfg.base is the first map of this NPC's own run, cfg.other the first map of the other run.
+function M.npc(cfg)
+    return {
+        on_click = function(me, npc)
+            local map = me:map()
+            if map == nil or map:wz() == nil then
+                return
+            end
+            local map_id = map:wz():id()
+            if map_id == cfg.entry_map then
+                local sel = me:dialog_list(npc,
+                    "#e<파티퀘스트 : 로미오와 줄리엣>#n\r\n마가티아는 지금 크나큰 위기를 맞이하고 있습니다. 용감한 메이플의 모험가들께서 저희를 도와주시지 않으시겠어요?\r\n\r\n#b", {
+                        cfg.story,
+                        "함께 할 파티를 찾고 싶어요.",
+                        "퀘스트를 시작한다.",
+                    })
+                if sel == 1 then
+                    me:dialog(npc,
+                        "#e<파티퀘스트 : 로미오와 줄리엣>#n\r\n로미오와 줄리엣을 도와주세요.\r\n - #e레벨#n : 71이상 #r(추천레벨 : 71 ~ 85)#k\r\n - #e참가인원#n : 4명\r\n - #e최종 보상#n : #v1122010# #z1122010##k #b(알카드노, 제뉴미스트의 구슬 각각 25개로 교환)#k")
+                elseif sel == 2 then
+                    me:dialog(npc,
+                        "현재 미구현된 컨텐츠입니다.\r\n\r\n컨텐츠 오픈일 : #b하루속히 빨리 오픈하겠습니다.#k\r\n\r\n파티를 구하고 싶으시면 #b파티원 찾기#k 버튼을 누르시면 됩니다.")
+                elseif sel == 3 then
+                    try_start(me, npc, cfg)
+                end
+                return
+            end
+            local sm = me:state_machine()
+            if map_id == cfg.base then
+                me:dialog(npc, cfg.lab_hint)
+            elseif map_id == cfg.base + 1 then
+                me:dialog(npc, cfg.mobs_hint)
+            elseif map_id == cfg.base + 100 then
+                me:dialog(npc, cfg.beaker_hint)
+            elseif map_id == cfg.base + 200 then
+                if sm == nil then
+                    return
+                end
+                handle_hub(me, npc, sm, map, cfg)
+            elseif map_id == cfg.base + 300 then
+                me:dialog(npc, "각 파티원이 각각 연구실을 통해 꼭대기에 있는 중앙 연구실 까지 올라가야 해요.")
+            elseif map_id == cfg.base + 400 then
+                me:dialog(npc, "준비가 되면, 제 사랑을 구하러 가요.")
+            elseif map_id == cfg.base + 401 then
+                if sm ~= nil then
+                    pq.party_warp(sm, cfg.base + 500)
+                end
+            elseif map_id == cfg.other + 401 then
+                me:dialog(npc, "구해주셔서 진심으로 감사드립니다.")
+            elseif map_id == cfg.base + 600 then
+                handle_reward(me, npc, cfg)
+            elseif map_id == cfg.other + 600 then
+                me:dialog(npc, "저를 구해주신 모험가님. 진심으로 감사드립니다.")
+            end
+        end
+    }
+end
+
 return M
