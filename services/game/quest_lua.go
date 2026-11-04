@@ -75,7 +75,15 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			q.statusRecord.WriteString(L.CheckString(2))
+			record := L.CheckString(2)
+			if q.statusRecord.AsString() == record {
+				L.Push(lua.LBool(true))
+				return 1
+			}
+			q.statusRecord.WriteString(record)
+			if q.status == QuestStatusStarted && q.quests.owner != nil && q.quests.owner.listener != nil {
+				q.quests.owner.listener.OnQuestRecordChanged(q.quests.owner, q)
+			}
 			L.Push(lua.LBool(true))
 			return 1
 		},

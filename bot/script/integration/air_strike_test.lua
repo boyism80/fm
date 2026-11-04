@@ -7,6 +7,8 @@ local GATE = 910210000
 local JONATHAN = 1092019
 local STATUE = 1022103
 local REAL_BART = 1209000
+local COLOSSEUM_GATE = 200101000
+local COLOSSEUM = 200101100
 
 local DIALOG_DEFAULT = 0
 local DIALOG_YES_NO = 1
@@ -156,6 +158,29 @@ test_suite {
             end
             if shown[6401] == true then
                 return ctx:fail("레코드 퀘스트 6401의 완료 표시가 나감")
+            end
+            return true
+        end,
+        -- Writing a record of a started quest reaches the client at once.
+        function(ctx)
+            local bot = ctx:bot(0)
+            if pq.command(bot, "/봇초기화 70 500 0 - 31010:1", "봇초기화 완료") == false then
+                return ctx:fail("맘무트 확인 봇 초기화 실패")
+            end
+            if bot:force_instance_move(COLOSSEUM_GATE, "콜로세움 입구") == false then
+                return ctx:fail("콜로세움 입구 이동 실패")
+            end
+            local record = nil
+            ctx:hook("quest_record", function(_, _, p, name)
+                if name == resp.update_quest and p.quest_status.quest_id == 31010 then
+                    record = p.quest_status.status_record
+                end
+            end)
+            if pq.portal(ctx, bot, "serch_Colosseum", COLOSSEUM) == false then
+                return false
+            end
+            if record ~= "0" then
+                return ctx:fail("퀘스트 31010 기록 변경이 클라이언트에 오지 않음: " .. tostring(record))
             end
             return true
         end,
