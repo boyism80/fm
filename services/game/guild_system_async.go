@@ -180,7 +180,7 @@ func (s *GuildSystem) SettleEmblem(ctx actor.Context, ch *Character, request *Un
 	})
 }
 
-func (s *GuildSystem) DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandGuildReply] {
+func (s *GuildSystem) DisbandAsync(ctx actor.Context, ch *Character) (*async.Promise[int], int) {
 	worldID := s.gw.GetWorldID()
 	charID := ch.GetID()
 	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
@@ -189,70 +189,62 @@ func (s *GuildSystem) DisbandAsync(ctx actor.Context, ch *Character, result *int
 			WorldId:     worldID,
 			CharacterId: charID,
 		})
-	}, func(reply *internal.DisbandGuildReply) error {
+	}, nil).Then(func(reply *internal.DisbandGuildReply) (int, error) {
 		if reply == nil {
-			*result = int(constant.GuildDisbandResultFailed)
-			return nil
+			return int(constant.GuildDisbandResultFailed), nil
 		}
 		if reply.GetOk() {
-			*result = int(constant.GuildDisbandResultOK)
-			return nil
+			return int(constant.GuildDisbandResultOK), nil
 		}
 		switch reply.GetErrorCode() {
 		case internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD:
-			*result = int(constant.GuildDisbandResultNotInGuild)
+			return int(constant.GuildDisbandResultNotInGuild), nil
 		case internal.GuildErrorCode_GUILD_ERROR_NOT_AUTHORIZED:
-			*result = int(constant.GuildDisbandResultNotMaster)
+			return int(constant.GuildDisbandResultNotMaster), nil
 		default:
-			*result = int(constant.GuildDisbandResultFailed)
+			return int(constant.GuildDisbandResultFailed), nil
 		}
-		return nil
 	}).Bind(ch).OnError(func(err error) {
 		log.Printf("guild disband: character=%d: %v", charID, err)
-		*result = int(constant.GuildDisbandResultFailed)
-	})
+	}), int(constant.GuildDisbandResultFailed)
 }
 
-func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise[*internal.IncreaseGuildCapacityReply] {
+func (s *GuildSystem) IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool) (*async.Promise[int], int) {
 	detail := guildCapacityDetail{Extended: extendedCap}
 	if !extendedCap {
 		detail.Meso = constant.GuildCapacityIncreaseMesoCost
 		if !ch.inventory.RemoveMeso(detail.Meso) {
-			*result = int(constant.GuildIncreaseCapacityResultInsufficientMeso)
-			return nil
+			return nil, int(constant.GuildIncreaseCapacityResultInsufficientMeso)
 		}
 	}
 	guildID, _ := ch.guild.ID()
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_GUILD_CAPACITY, uint64(guildID), detail)
-	return s.incCapacityAsync(ctx, ch, id, guildID, extendedCap).Bind(ch).Do(func(reply *internal.IncreaseGuildCapacityReply) error {
+	return s.incCapacityAsync(ctx, ch, id, guildID, extendedCap).Bind(ch).Then(func(reply *internal.IncreaseGuildCapacityReply) (int, error) {
 		ch.unsettled.Erase(id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)
 		}
 
 		if reply.GetOk() {
-			*result = int(constant.GuildIncreaseCapacityResultOK)
-			return nil
+			return int(constant.GuildIncreaseCapacityResultOK), nil
 		}
 		switch reply.GetErrorCode() {
 		case internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD:
-			*result = int(constant.GuildIncreaseCapacityResultNotInGuild)
+			return int(constant.GuildIncreaseCapacityResultNotInGuild), nil
 		case internal.GuildErrorCode_GUILD_ERROR_NOT_AUTHORIZED:
-			*result = int(constant.GuildIncreaseCapacityResultNotMaster)
+			return int(constant.GuildIncreaseCapacityResultNotMaster), nil
 		case internal.GuildErrorCode_GUILD_ERROR_CAPACITY_REACHED:
-			*result = int(constant.GuildIncreaseCapacityResultCapacityReached)
+			return int(constant.GuildIncreaseCapacityResultCapacityReached), nil
 		case internal.GuildErrorCode_GUILD_ERROR_INSUFFICIENT_GUILD_GP:
-			*result = int(constant.GuildIncreaseCapacityResultInsufficientGP)
+			return int(constant.GuildIncreaseCapacityResultInsufficientGP), nil
 		default:
-			*result = int(constant.GuildIncreaseCapacityResultFailed)
+			return int(constant.GuildIncreaseCapacityResultFailed), nil
 		}
-		return nil
 	}).OnError(func(err error) {
 		ch.unsettled.Find(id).inFlight = false
 
 		log.Printf("guild inc_capacity: character=%d id=%d: %v", ch.GetID(), id, err)
-		*result = int(constant.GuildIncreaseCapacityResultFailed)
-	})
+	}), int(constant.GuildIncreaseCapacityResultFailed)
 }
 
 func (s *GuildSystem) incCapacityAsync(ctx actor.Context, ch *Character, requestID uint64, guildID uint32, extendedCap bool) *async.Promise[*internal.IncreaseGuildCapacityReply] {
@@ -392,25 +384,22 @@ func (s *GuildSystem) ShowRankingAsync(ctx actor.Context, ch *Character, npcID u
 	})
 }
 
-func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise[*internal.CreateAllianceReply] {
+func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string) (*async.Promise[int], int) {
 	partnerID, ok := s.gw.Systems().Get[*AllianceSystem]().ValidateCreateAlliance(ch)
 	if !ok || partnerID == 0 {
-		*result = int(constant.AllianceCreateResultInvalidRequirements)
-		return nil
+		return nil, int(constant.AllianceCreateResultInvalidRequirements)
 	}
 	trimmed := strings.TrimSpace(allianceName)
 	if !s.gw.GetResources().ValidName(trimmed) {
-		*result = int(constant.AllianceCreateResultInvalidName)
-		return nil
+		return nil, int(constant.AllianceCreateResultInvalidName)
 	}
 	if !ch.inventory.RemoveMeso(constant.AllianceCreateMesoCost) {
-		*result = int(constant.AllianceCreateResultInsufficientMeso)
-		return nil
+		return nil, int(constant.AllianceCreateResultInsufficientMeso)
 	}
 	guildID, _ := ch.guild.ID()
 	detail := allianceCreateDetail{Name: trimmed, Partner: partnerID, Meso: constant.AllianceCreateMesoCost}
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CREATE, uint64(guildID), detail)
-	return s.createAllianceAsync(ctx, ch, id, guildID, detail).Bind(ch).Do(func(reply *internal.CreateAllianceReply) error {
+	return s.createAllianceAsync(ctx, ch, id, guildID, detail).Bind(ch).Then(func(reply *internal.CreateAllianceReply) (int, error) {
 		ch.unsettled.Erase(id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)
@@ -419,28 +408,25 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 		if !reply.GetOk() {
 			switch reply.GetErrorCode() {
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NAME_INVALID:
-				*result = int(constant.AllianceCreateResultInvalidName)
+				return int(constant.AllianceCreateResultInvalidName), nil
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN:
-				*result = int(constant.AllianceCreateResultNameTaken)
+				return int(constant.AllianceCreateResultNameTaken), nil
 			default:
-				*result = int(constant.AllianceCreateResultFailed)
+				return int(constant.AllianceCreateResultFailed), nil
 			}
-			return nil
 		}
 		alliancePb := reply.GetAlliance()
 		if alliancePb == nil {
-			return nil
+			return int(constant.AllianceCreateResultFailed), nil
 		}
 		s.gw.Systems().Get[*AllianceSystem]().Update(alliancePb)
 		s.gw.Systems().Get[*AllianceSystem]().BroadcastCreate(alliancePb)
-		*result = int(constant.AllianceCreateResultOK)
-		return nil
+		return int(constant.AllianceCreateResultOK), nil
 	}).OnError(func(err error) {
 		ch.unsettled.Find(id).inFlight = false
 
 		log.Printf("alliance create: character=%d id=%d: %v", ch.GetID(), id, err)
-		*result = int(constant.AllianceCreateResultFailed)
-	})
+	}), int(constant.AllianceCreateResultFailed)
 }
 
 func (s *GuildSystem) createAllianceAsync(ctx actor.Context, ch *Character, requestID uint64, guildID uint32, detail allianceCreateDetail) *async.Promise[*internal.CreateAllianceReply] {
@@ -481,26 +467,22 @@ func (s *GuildSystem) SettleAllianceCreate(ctx actor.Context, ch *Character, req
 	})
 }
 
-func (s *GuildSystem) DisbandAllianceAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandAllianceReply] {
+func (s *GuildSystem) DisbandAllianceAsync(ctx actor.Context, ch *Character) (*async.Promise[int], int) {
 	guildID, ok := ch.guild.ID()
 	if !ok {
-		*result = int(constant.AllianceDisbandResultNotInAlliance)
-		return nil
+		return nil, int(constant.AllianceDisbandResultNotInAlliance)
 	}
 	g := s.Get(guildID)
 	_, inAlliance := g.GetAllianceID()
 	if g == nil || !inAlliance {
-		*result = int(constant.AllianceDisbandResultNotInAlliance)
-		return nil
+		return nil, int(constant.AllianceDisbandResultNotInAlliance)
 	}
 	charID := ch.GetID()
 	if g.leaderCharacterID != charID {
-		*result = int(constant.AllianceDisbandResultNotGuildMaster)
-		return nil
+		return nil, int(constant.AllianceDisbandResultNotGuildMaster)
 	}
 	if !g.IsAllianceLeader(charID) {
-		*result = int(constant.AllianceDisbandResultNotLeader)
-		return nil
+		return nil, int(constant.AllianceDisbandResultNotLeader)
 	}
 	worldID := s.gw.GetWorldID()
 	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
@@ -509,28 +491,24 @@ func (s *GuildSystem) DisbandAllianceAsync(ctx actor.Context, ch *Character, res
 			WorldId:     worldID,
 			CharacterId: charID,
 		})
-	}, func(reply *internal.DisbandAllianceReply) error {
+	}, nil).Then(func(reply *internal.DisbandAllianceReply) (int, error) {
 		if reply == nil {
-			*result = int(constant.AllianceDisbandResultFailed)
-			return nil
+			return int(constant.AllianceDisbandResultFailed), nil
 		}
 		if !reply.GetOk() {
 			switch reply.GetErrorCode() {
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_IN_ALLIANCE,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NOT_FOUND:
-				*result = int(constant.AllianceDisbandResultNotInAlliance)
+				return int(constant.AllianceDisbandResultNotInAlliance), nil
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_ALLIANCE_LEADER,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_GUILD_MASTER:
-				*result = int(constant.AllianceDisbandResultNotLeader)
+				return int(constant.AllianceDisbandResultNotLeader), nil
 			default:
-				*result = int(constant.AllianceDisbandResultFailed)
+				return int(constant.AllianceDisbandResultFailed), nil
 			}
-			return nil
 		}
-		*result = int(constant.AllianceDisbandResultOK)
-		return nil
+		return int(constant.AllianceDisbandResultOK), nil
 	}).Bind(ch).OnError(func(err error) {
 		log.Printf("alliance disband: character=%d: %v", charID, err)
-		*result = int(constant.AllianceDisbandResultFailed)
-	})
+	}), int(constant.AllianceDisbandResultFailed)
 }

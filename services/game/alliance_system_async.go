@@ -12,38 +12,32 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.IncreaseAllianceCapacityReply] {
+func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character) (*async.Promise[int], int) {
 	guildID, inGuild := ch.guild.ID()
 	if !inGuild {
-		*result = int(constant.AllianceIncreaseCapacityResultNotInAlliance)
-		return nil
+		return nil, int(constant.AllianceIncreaseCapacityResultNotInAlliance)
 	}
 	g := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
 	if g == nil {
-		*result = int(constant.AllianceIncreaseCapacityResultNotInAlliance)
-		return nil
+		return nil, int(constant.AllianceIncreaseCapacityResultNotInAlliance)
 	}
 	if _, inAlliance := g.GetAllianceID(); !inAlliance {
-		*result = int(constant.AllianceIncreaseCapacityResultNotInAlliance)
-		return nil
+		return nil, int(constant.AllianceIncreaseCapacityResultNotInAlliance)
 	}
 	charID := ch.GetID()
 	if g.leaderCharacterID != charID {
-		*result = int(constant.AllianceIncreaseCapacityResultNotGuildMaster)
-		return nil
+		return nil, int(constant.AllianceIncreaseCapacityResultNotGuildMaster)
 	}
 	if !g.IsAllianceLeader(charID) {
-		*result = int(constant.AllianceIncreaseCapacityResultNotLeader)
-		return nil
+		return nil, int(constant.AllianceIncreaseCapacityResultNotLeader)
 	}
 	if !ch.inventory.RemoveMeso(constant.AllianceIncreaseCapacityMesoCost) {
-		*result = int(constant.AllianceIncreaseCapacityResultInsufficientMeso)
-		return nil
+		return nil, int(constant.AllianceIncreaseCapacityResultInsufficientMeso)
 	}
 	allianceID, _ := g.GetAllianceID()
 	detail := allianceCapacityDetail{Meso: constant.AllianceIncreaseCapacityMesoCost}
 	id := ch.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_ALLIANCE_CAPACITY, uint64(allianceID), detail)
-	return s.incCapacityAsync(ctx, ch, id, allianceID).Bind(ch).Do(func(reply *internal.IncreaseAllianceCapacityReply) error {
+	return s.incCapacityAsync(ctx, ch, id, allianceID).Bind(ch).Then(func(reply *internal.IncreaseAllianceCapacityReply) (int, error) {
 		ch.unsettled.Erase(id)
 		if !reply.GetOk() {
 			ch.inventory.AddMeso(detail.Meso)
@@ -54,29 +48,26 @@ func (s *AllianceSystem) IncCapacityAsync(ctx actor.Context, ch *Character, resu
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_IN_ALLIANCE,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NOT_FOUND,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_GUILD_NOT_FOUND:
-				*result = int(constant.AllianceIncreaseCapacityResultNotInAlliance)
+				return int(constant.AllianceIncreaseCapacityResultNotInAlliance), nil
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_ALLIANCE_LEADER,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_GUILD_MASTER:
-				*result = int(constant.AllianceIncreaseCapacityResultNotLeader)
+				return int(constant.AllianceIncreaseCapacityResultNotLeader), nil
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_CAPACITY_MAX:
-				*result = int(constant.AllianceIncreaseCapacityResultCapacityMax)
+				return int(constant.AllianceIncreaseCapacityResultCapacityMax), nil
 			default:
-				*result = int(constant.AllianceIncreaseCapacityResultFailed)
+				return int(constant.AllianceIncreaseCapacityResultFailed), nil
 			}
-			return nil
 		}
-		*result = int(constant.AllianceIncreaseCapacityResultOK)
 		if alliancePb := reply.GetAlliance(); alliancePb != nil {
 			s.Update(alliancePb)
 			s.BroadcastInfoUpdate(alliancePb)
 		}
-		return nil
+		return int(constant.AllianceIncreaseCapacityResultOK), nil
 	}).OnError(func(err error) {
 		ch.unsettled.Find(id).inFlight = false
 
 		log.Printf("alliance inc_capacity: character=%d id=%d: %v", charID, id, err)
-		*result = int(constant.AllianceIncreaseCapacityResultFailed)
-	})
+	}), int(constant.AllianceIncreaseCapacityResultFailed)
 }
 
 type allianceCapacityDetail struct {
