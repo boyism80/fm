@@ -118,18 +118,6 @@ return {
         me:unbuff(BuffFlag.Puppet)
     end,
 
-    on_start = function(me)
-        local npc = 9001000
-        local text = me:dialog_input(npc, '안녕하세요')
-        me:dialog(npc, string.format("반갑습니다. %s님", me:name()))
-        for i = 1, 10 do
-            sleep(100)
-        end
-        if text ~= nil then
-        else
-        end
-    end,
-
     on_script = function(me)
         local x, y = me:position()
 
