@@ -188,7 +188,7 @@ func (qc *Quests) notifyQuestStart(qp *Quest, wireNPC uint32, opts QuestPhaseOpt
 		return
 	}
 	qp.statusRecord.WriteString(*opts.Record)
-	ch.listener.OnQuestProgress(ch, qp)
+	ch.listener.OnQuestRecordChanged(ch, qp)
 }
 
 func (qc *Quests) CanStart(questID uint32, opts QuestPhaseOpts) error {

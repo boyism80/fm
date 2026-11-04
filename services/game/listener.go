@@ -167,6 +167,7 @@ type CharacterListener interface {
 	OnQuestCompleted(ch *Character, qp *Quest, npcID uint32, nextQuestID uint32)
 	OnQuestForfeited(ch *Character, qp *Quest)
 	OnQuestProgress(ch *Character, qp *Quest)
+	OnQuestRecordChanged(ch *Character, qp *Quest)
 	OnQuestRecordExChanged(ch *Character, qp *Quest)
 	OnShowQuestCompletion(ch *Character, questID uint32)
 	OnPlaySound(ch *Character, sound string, broadcast bool)

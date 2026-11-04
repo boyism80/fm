@@ -1086,18 +1086,23 @@ func (l *CharacterListenerImpl) OnMapEffect(ch *game.Character, path string) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnQuestProgress(ch *game.Character, qp *game.Quest) {
+func (l *CharacterListenerImpl) OnQuestRecordChanged(ch *game.Character, qp *game.Quest) {
 	status, ok := qp.BuildS2C()
 	if !ok {
 		return
 	}
 	status.Status = response.QuestWireStatusStarted
 	ch.Send(&response.UpdateQuest{QuestStatus: status}, types.SEND_POLICY_ENCRYPT)
+}
 
+func (l *CharacterListenerImpl) OnQuestProgress(ch *game.Character, qp *game.Quest) {
+	status, ok := qp.BuildS2C()
+	if !ok {
+		return
+	}
+	l.OnQuestRecordChanged(ch, qp)
 	if qp.CanComplete(ch, game.QuestPhaseOpts{}) == nil {
-		ch.Send(&response.ShowQuestCompletion{
-			QuestID: status.QuestID,
-		}, types.SEND_POLICY_ENCRYPT)
+		ch.Send(&response.ShowQuestCompletion{QuestID: status.QuestID}, types.SEND_POLICY_ENCRYPT)
 	}
 }
 
