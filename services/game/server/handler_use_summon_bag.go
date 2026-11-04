@@ -14,8 +14,8 @@ func (UseSummonBag) New(gs *GameServer) *UseSummonBag {
 }
 
 func (h *UseSummonBag) Handle(ctx *core.ClientContext, req *request.UseSummonBag) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)

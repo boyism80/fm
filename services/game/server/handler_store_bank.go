@@ -17,11 +17,12 @@ func (StoreBank) New(gs *GameServer) *StoreBank {
 }
 
 func (h *StoreBank) Handle(ctx *core.ClientContext, req *request.StoreBank) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 
+	var err error
 	switch req.Mode {
 	case pconst.StoreBankWithdraw:
 		err = ch.StoreBank().Withdraw()

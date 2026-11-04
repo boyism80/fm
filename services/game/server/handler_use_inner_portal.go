@@ -19,9 +19,9 @@ func (UseInnerPortal) New(gs *GameServer) *UseInnerPortal {
 }
 
 func (h *UseInnerPortal) Handle(ctx *core.ClientContext, req *request.UseInnerPortal) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 	if req.FieldKey != ch.FieldKey() {
 		return nil

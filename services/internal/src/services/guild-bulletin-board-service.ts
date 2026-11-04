@@ -5,7 +5,6 @@ import {
     type GuildBulletinBoardThreadDetail,
     type GuildBulletinBoardThreadEntry,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { InternalContext } from "@fm/shared/context/internal-context";
 import { GuildRepository } from "@fm/shared/repos/guild-repository";
 import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
@@ -80,7 +79,6 @@ export type GuildMembershipResult =
 
 export class GuildBulletinBoardService {
     private readonly ctx: InternalContext;
-    private readonly app: AppConfiguration;
     private readonly guildRepo: GuildRepository;
     private readonly guildMemberRepo: GuildMemberRepository;
     private readonly guildBulletinBoardRepo: GuildBulletinBoardRepository;
@@ -89,7 +87,6 @@ export class GuildBulletinBoardService {
 
     constructor(
         internalContext: InternalContext,
-        appConfiguration: AppConfiguration,
         guildRepository: GuildRepository,
         guildMemberRepository: GuildMemberRepository,
         guildBulletinBoardRepository: GuildBulletinBoardRepository,
@@ -97,7 +94,6 @@ export class GuildBulletinBoardService {
         distributedLockService: DistributedLockService,
     ) {
         this.ctx = internalContext;
-        this.app = appConfiguration;
         this.guildRepo = guildRepository;
         this.guildMemberRepo = guildMemberRepository;
         this.guildBulletinBoardRepo = guildBulletinBoardRepository;

@@ -14,8 +14,8 @@ func (UseRewardBox) New(gs *GameServer) *UseRewardBox {
 }
 
 func (h *UseRewardBox) Handle(ctx *core.ClientContext, req *request.UseRewardBox) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)

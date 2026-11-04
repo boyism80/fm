@@ -18,9 +18,9 @@ func (DirectWarp) New(gs *GameServer) *DirectWarp {
 }
 
 func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 	if req.FieldKey != character.FieldKey() {
 		character.Listener().OnUpdateStats(character, nil, true)
@@ -36,5 +36,10 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 		return fmt.Errorf("map model not found")
 	}
 
-	return character.EnterPortalByName(ctx.ActorContext, req.PortalName)
+	portal := currentMap.FindPortalByName(req.PortalName)
+	if portal == nil || portal.Wz() == nil || character.Occupied() {
+		character.Listener().OnUpdateStats(character, nil, true)
+		return nil
+	}
+	return character.EnterPortal(ctx.ActorContext, portal)
 }

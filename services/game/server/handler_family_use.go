@@ -15,8 +15,8 @@ func (FamilyUse) New(gs *GameServer) *FamilyUse {
 }
 
 func (h *FamilyUse) Handle(ctx *core.ClientContext, req *request.FamilyUse) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if req.Name != "" && !game.ClientText(req.Name).Valid(13) {

@@ -15,8 +15,8 @@ func (UseTeleportStone) New(gs *GameServer) *UseTeleportStone {
 }
 
 func (h *UseTeleportStone) Handle(ctx *core.ClientContext, req *request.UseTeleportStone) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

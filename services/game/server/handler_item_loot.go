@@ -21,9 +21,9 @@ func (ItemLoot) New(gs *GameServer) *ItemLoot {
 }
 
 func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	if character.Spectating() || character.Occupied() || req.FieldKey != character.FieldKey() {

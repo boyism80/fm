@@ -16,8 +16,8 @@ func (PetLoot) New(gs *GameServer) *PetLoot {
 }
 
 func (h *PetLoot) Handle(ctx *core.ClientContext, req *request.PetLoot) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.Pets().Active() == nil {
@@ -28,7 +28,7 @@ func (h *PetLoot) Handle(ctx *core.ClientContext, req *request.PetLoot) error {
 		return nil
 	}
 
-	err = character.Pets().Active().Loot(req.OID, req.Position)
+	err := character.Pets().Active().Loot(req.OID, req.Position)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

@@ -87,14 +87,6 @@ export class CashShopRepository {
         });
     }
 
-    async withCharacter<T>(
-        worldId: number,
-        characterId: number,
-        fn: (client: PoolClient) => Promise<T>,
-    ): Promise<T> {
-        return this.ctx.withPgDataTransaction(worldId, characterId, fn);
-    }
-
     async withAccount<T>(
         worldId: number,
         accountId: number,
@@ -167,14 +159,6 @@ export class CashShopRepository {
         const res = await unified.query(`${select} AND world_id = $1 ORDER BY created_at LIMIT 100`, [worldId]);
         requests.push(...(res.rows as Omit<CashTransferRequest, "pool">[]).map((row) => ({ ...row, pool: unified })));
         return requests;
-    }
-
-    async receiveTransfer<T>(
-        worldId: number,
-        request: CashTransferRequest,
-        fn: (client: PoolClient) => Promise<T>,
-    ): Promise<T> {
-        return this.ctx.withPgDataTransaction(worldId, request.target_id, fn);
     }
 
     async finishTransfer(request: CashTransferRequest): Promise<void> {

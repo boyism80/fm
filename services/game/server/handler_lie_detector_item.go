@@ -16,12 +16,12 @@ func (LieDetectorItem) New(gs *GameServer) *LieDetectorItem {
 }
 
 func (h *LieDetectorItem) Handle(ctx *core.ClientContext, req *request.LieDetectorItem) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 
-	err = character.UseLieDetectorItem(req.Target, req.Slot, req.ItemID)
+	err := character.UseLieDetectorItem(req.Target, req.Slot, req.ItemID)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

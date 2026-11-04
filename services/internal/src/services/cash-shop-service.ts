@@ -43,6 +43,7 @@ import type { RepositoryTxOptions } from "@fm/shared/types/repository-contracts"
 import type { RabbitMQService } from "./rabbitmq-service";
 import type { SocialService } from "./social-service";
 import type { DistributedLockService } from "./distributed-lock-service";
+import type { InternalContext } from "@fm/shared/context/internal-context";
 
 const LOCKER_CAPACITY = 100;
 
@@ -54,6 +55,7 @@ const MAX_MESO = 2147483647;
 type BalanceTransfer = { targetId: number; kind: CashTransferKind; detail: unknown };
 
 export class CashShopService {
+    private readonly ctx: InternalContext;
     private readonly cashShopRepo: CashShopRepository;
     private readonly cashRequestRepo: CashRequestRepository;
     private readonly cashBalanceRequestRepo: CashBalanceRequestRepository;
@@ -68,6 +70,7 @@ export class CashShopService {
     private readonly distributedLockService: DistributedLockService;
 
     constructor(
+        internalContext: InternalContext,
         cashShopRepository: CashShopRepository,
         cashRequestRepository: CashRequestRepository,
         cashBalanceRequestRepository: CashBalanceRequestRepository,
@@ -81,6 +84,7 @@ export class CashShopService {
         socialService: SocialService,
         distributedLockService: DistributedLockService,
     ) {
+        this.ctx = internalContext;
         this.cashShopRepo = cashShopRepository;
         this.cashRequestRepo = cashRequestRepository;
         this.cashBalanceRequestRepo = cashBalanceRequestRepository;
@@ -212,7 +216,7 @@ export class CashShopService {
         request: CashTransferRequest,
         place: (txClient: PoolClient) => Promise<void>,
     ): Promise<boolean> {
-        const placed = await this.cashShopRepo.receiveTransfer(worldId, request, async (txClient) => {
+        const placed = await this.ctx.withPgDataTransaction(worldId, request.target_id, async (txClient) => {
             if ((await this.cashRequestRepo.find(worldId, request.target_id, request.request_id, { txClient })) != null) {
                 return false;
             }
@@ -442,7 +446,7 @@ export class CashShopService {
             worldId,
             `cash_account:${accountId}`,
         );
-        const free = await this.cashShopRepo.withCharacter(worldId, characterId, async (txClient) => {
+        const free = await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient) => {
             const character = await this.characterRepo.get(worldId, characterId, { txClient });
             const limit = character?.slotLimits?.[item.inventoryType - 1] ?? 0;
             const used = this.usedSlots(
@@ -495,7 +499,7 @@ export class CashShopService {
         if ((await this.lockerCount(worldId, accountId)) >= LOCKER_CAPACITY) {
             return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
         }
-        const queued = await this.cashShopRepo.withCharacter(worldId, characterId, async (txClient) => {
+        const queued = await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient) => {
             const inventory = [
                 ...(await this.inventoryRepo.getAll(worldId, String(characterId), { txClient })).values(),
             ];
@@ -875,7 +879,7 @@ export class CashShopService {
             worldId,
             `cash_account:${owner.accountId}`,
         );
-        const reply = await this.cashShopRepo.withCharacter(worldId, characterId, async (txClient) => {
+        const reply = await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient) => {
             const character = await this.characterRepo.get(worldId, characterId, { txClient });
             if (character == null) {
                 return { result: CashShopResult.CASH_SHOP_RESULT_NOT_FOUND, meso: 0 };

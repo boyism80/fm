@@ -14,9 +14,9 @@ func (Carnival) New(gs *GameServer) *Carnival {
 }
 
 func (h *Carnival) Handle(ctx *core.ClientContext, req *request.Carnival) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)
 

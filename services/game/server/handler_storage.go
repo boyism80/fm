@@ -21,8 +21,8 @@ func (Storage) New(gs *GameServer) *Storage {
 }
 
 func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if ch.UsingCashItem() {
@@ -30,6 +30,7 @@ func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
 		return nil
 	}
 
+	var err error
 	switch req.Mode {
 	case pconst.StorageTakeOut:
 		err = ch.Account().Storage().TakeOut(constant.InventoryType(req.InventoryType), req.Index)

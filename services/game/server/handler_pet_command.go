@@ -16,8 +16,8 @@ func (PetCommand) New(gs *GameServer) *PetCommand {
 }
 
 func (h *PetCommand) Handle(ctx *core.ClientContext, req *request.PetCommand) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.Pets().Active() == nil {

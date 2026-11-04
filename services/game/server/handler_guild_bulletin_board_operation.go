@@ -24,8 +24,8 @@ func (GuildBulletinBoardOperation) New(gs *GameServer) *GuildBulletinBoardOperat
 }
 
 func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *request.GuildBulletinBoardOperation) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	_, inGuild := ch.Guild().ID()

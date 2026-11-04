@@ -41,9 +41,8 @@ func luaGuildDisband(L *lua.LState, ch *Character) int {
 		L.ArgError(3, "disband(character) takes exactly one argument")
 		return 0
 	}
-	system := ch.gameWorld.Systems().Get[*GuildSystem]()
 	return luaYieldGuildRPC(L, ch, int(constant.GuildDisbandResultFailed), func(ctx actor.Context) (*async.Promise[int], int) {
-		return system.DisbandAsync(ctx, ch)
+		return ch.gameWorld.Systems().Get[*GuildSystem]().DisbandAsync(ctx, ch)
 	})
 }
 
@@ -53,9 +52,8 @@ func luaGuildIncCapacity(L *lua.LState, ch *Character, extendedCap bool) int {
 		L.ArgError(4, "inc_capacity(character, extendedCap) takes exactly two arguments")
 		return 0
 	}
-	system := ch.gameWorld.Systems().Get[*GuildSystem]()
 	return luaYieldGuildRPC(L, ch, int(constant.GuildIncreaseCapacityResultFailed), func(ctx actor.Context) (*async.Promise[int], int) {
-		return system.IncCapacityAsync(ctx, ch, extendedCap)
+		return ch.gameWorld.Systems().Get[*GuildSystem]().IncCapacityAsync(ctx, ch, extendedCap)
 	})
 }
 
@@ -68,9 +66,8 @@ func luaCreateAlliance(L *lua.LState, ch *Character) int {
 		return 0
 	}
 	allianceName := L.CheckString(2)
-	system := ch.gameWorld.Systems().Get[*GuildSystem]()
 	return luaYieldGuildRPC(L, ch, int(constant.AllianceCreateResultFailed), func(ctx actor.Context) (*async.Promise[int], int) {
-		return system.CreateAllianceAsync(ctx, ch, allianceName)
+		return ch.gameWorld.Systems().Get[*GuildSystem]().CreateAllianceAsync(ctx, ch, allianceName)
 	})
 }
 
@@ -82,9 +79,8 @@ func luaIncAllianceCapacity(L *lua.LState, ch *Character) int {
 		L.ArgError(1, "inc_alliance_capacity() takes no arguments")
 		return 0
 	}
-	system := ch.gameWorld.Systems().Get[*AllianceSystem]()
 	return luaYieldGuildRPC(L, ch, int(constant.AllianceIncreaseCapacityResultFailed), func(ctx actor.Context) (*async.Promise[int], int) {
-		return system.IncCapacityAsync(ctx, ch)
+		return ch.gameWorld.Systems().Get[*AllianceSystem]().IncCapacityAsync(ctx, ch)
 	})
 }
 
@@ -96,8 +92,7 @@ func luaDisbandAlliance(L *lua.LState, ch *Character) int {
 		L.ArgError(1, "disband_alliance() takes no arguments")
 		return 0
 	}
-	system := ch.gameWorld.Systems().Get[*GuildSystem]()
 	return luaYieldGuildRPC(L, ch, int(constant.AllianceDisbandResultFailed), func(ctx actor.Context) (*async.Promise[int], int) {
-		return system.DisbandAllianceAsync(ctx, ch)
+		return ch.gameWorld.Systems().Get[*GuildSystem]().DisbandAllianceAsync(ctx, ch)
 	})
 }

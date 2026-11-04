@@ -11,7 +11,6 @@ import {
 import type { PoolClient } from "pg";
 import type { PartyModel } from "@fm/shared/repos/party-repository";
 import type { PartyMemberModel } from "@fm/shared/repos/party-member-repository";
-import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { InternalContext } from "@fm/shared/context/internal-context";
 import { PartyRepository } from "@fm/shared/repos/party-repository";
 import { PartyMemberRepository } from "@fm/shared/repos/party-member-repository";
@@ -52,7 +51,6 @@ export type GetPartyResult = { found: boolean; party?: PartyModel; members?: Par
 
 export class PartyService {
     private readonly ctx: InternalContext;
-    private readonly app: AppConfiguration;
     private readonly partyRepo: PartyRepository;
     private readonly partyMemberRepo: PartyMemberRepository;
     private readonly characterRealtimeStateRepo: CharacterRealtimeStateRepository;
@@ -64,7 +62,6 @@ export class PartyService {
 
     constructor(
         internalContext: InternalContext,
-        appConfiguration: AppConfiguration,
         partyRepository: PartyRepository,
         partyMemberRepository: PartyMemberRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
@@ -75,7 +72,6 @@ export class PartyService {
         distributedLockService: DistributedLockService,
     ) {
         this.ctx = internalContext;
-        this.app = appConfiguration;
         this.partyRepo = partyRepository;
         this.partyMemberRepo = partyMemberRepository;
         this.characterRealtimeStateRepo = characterRealtimeStateRepository;
@@ -677,9 +673,6 @@ export class PartyService {
 
         for (const affectedCharacterId of partyResult.realtimeStateCharacterIds ?? [characterId]) {
             await this.ctx.withPgDataTransaction(worldId, affectedCharacterId, async (txClient: PoolClient) => {
-                const memberState = await this.characterRealtimeStateRepo.get(worldId, affectedCharacterId, {
-                    txClient,
-                });
                 await this.characterRealtimeStateRepo.setParty(worldId, affectedCharacterId, null, { txClient });
             });
         }
@@ -794,9 +787,6 @@ export class PartyService {
 
         for (const affectedCharacterId of partyResult.realtimeStateCharacterIds ?? [targetCharacterId]) {
             await this.ctx.withPgDataTransaction(worldId, affectedCharacterId, async (txClient: PoolClient) => {
-                const targetState = await this.characterRealtimeStateRepo.get(worldId, affectedCharacterId, {
-                    txClient,
-                });
                 await this.characterRealtimeStateRepo.setParty(worldId, affectedCharacterId, null, { txClient });
             });
         }

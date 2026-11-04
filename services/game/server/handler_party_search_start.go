@@ -24,8 +24,8 @@ func (PartySearchStart) New(gs *GameServer) *PartySearchStart {
 }
 
 func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySearchStart) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 

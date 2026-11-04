@@ -18,9 +18,9 @@ func (DistributeAP) New(gs *GameServer) *DistributeAP {
 }
 
 func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	stat := constant.StatType(req.StatType)

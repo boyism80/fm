@@ -16,12 +16,12 @@ func (SummonPet) New(gs *GameServer) *SummonPet {
 }
 
 func (h *SummonPet) Handle(ctx *core.ClientContext, req *request.SummonPet) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 
-	err = character.Pets().Summon(req.Slot)
+	err := character.Pets().Summon(req.Slot)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

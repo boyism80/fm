@@ -16,8 +16,8 @@ func (PetAutoPotion) New(gs *GameServer) *PetAutoPotion {
 }
 
 func (h *PetAutoPotion) Handle(ctx *core.ClientContext, req *request.PetAutoPotion) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.Pets().Active() == nil {
@@ -28,7 +28,7 @@ func (h *PetAutoPotion) Handle(ctx *core.ClientContext, req *request.PetAutoPoti
 		return nil
 	}
 
-	err = character.Pets().Active().UsePotion(req.Slot, req.ItemID)
+	err := character.Pets().Active().UsePotion(req.Slot, req.ItemID)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

@@ -17,8 +17,8 @@ func (DistributeSP) New(gs *GameServer) *DistributeSP {
 }
 
 func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

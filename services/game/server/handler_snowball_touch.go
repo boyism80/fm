@@ -15,9 +15,9 @@ func (SnowballTouch) New(gs *GameServer) *SnowballTouch {
 
 // Running into a snowball knocks the character back.
 func (h *SnowballTouch) Handle(ctx *core.ClientContext, req *request.SnowballTouch) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	if ch.StateMachine() == nil {

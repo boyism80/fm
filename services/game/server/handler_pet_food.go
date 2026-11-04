@@ -16,8 +16,8 @@ func (PetFood) New(gs *GameServer) *PetFood {
 }
 
 func (h *PetFood) Handle(ctx *core.ClientContext, req *request.PetFood) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.Pets().Active() == nil {
@@ -28,7 +28,7 @@ func (h *PetFood) Handle(ctx *core.ClientContext, req *request.PetFood) error {
 		return nil
 	}
 
-	err = character.Pets().Active().Feed(req.Slot, req.ItemID)
+	err := character.Pets().Active().Feed(req.Slot, req.ItemID)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

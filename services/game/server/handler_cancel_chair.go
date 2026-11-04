@@ -16,8 +16,8 @@ func (CancelChair) New(gs *GameServer) *CancelChair {
 }
 
 func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

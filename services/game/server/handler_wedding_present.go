@@ -18,8 +18,8 @@ func (WeddingPresent) New(gs *GameServer) *WeddingPresent {
 }
 
 func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPresent) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if ch.UsingCashItem() {
@@ -27,6 +27,7 @@ func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPre
 		return nil
 	}
 
+	var err error
 	switch req.Mode {
 	case pconst.WeddingPresentGive:
 		err = ch.Wedding().GiveGift(ctx.ActorContext, req.Slot, req.ItemID, req.Count)

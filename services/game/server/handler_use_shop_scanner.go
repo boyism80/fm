@@ -17,8 +17,8 @@ func (UseShopScanner) New(gs *GameServer) *UseShopScanner {
 }
 
 func (h *UseShopScanner) Handle(ctx *core.ClientContext, req *request.UseShopScanner) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

@@ -16,8 +16,8 @@ func (ShopScannerWarp) New(gs *GameServer) *ShopScannerWarp {
 }
 
 func (h *ShopScannerWarp) Handle(ctx *core.ClientContext, req *request.ShopScannerWarp) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	ch.Listener().OnMiniRoomFailed(ch, ch.RemoteShops().VisitFound(ctx.ActorContext, req.SN, req.MapID))

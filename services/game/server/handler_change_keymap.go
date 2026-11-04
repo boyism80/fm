@@ -30,9 +30,9 @@ func (h *ChangeKeymap) petPotion(data int32) uint32 {
 }
 
 func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 	switch req.Mode {
 	case 1:

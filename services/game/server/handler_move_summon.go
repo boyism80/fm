@@ -16,8 +16,8 @@ func (MoveSummon) New(gs *GameServer) *MoveSummon {
 }
 
 func (h *MoveSummon) Handle(ctx *core.ClientContext, req *request.MoveSummon) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	summon := character.Summons().FindByOID(req.OID)

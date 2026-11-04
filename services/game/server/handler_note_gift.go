@@ -21,8 +21,8 @@ func (h *NoteGift) Handle(ctx *core.ClientContext, _ *request.NoteGift) error {
 		return nil
 	}
 
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 

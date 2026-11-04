@@ -17,9 +17,9 @@ func (Attack) New(gs *GameServer) *Attack {
 }
 
 func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	return character.Attack(ctx.ActorContext, game.AttackClose, req)

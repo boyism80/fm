@@ -544,16 +544,6 @@ func (ch *Character) Warp(ctx actor.Context, targetMap *Map, spawnPoint uint8) e
 	return ch.gameWorld.Systems().Get[*MapSystem]().Warp(ctx, ch, targetMap, spawnPoint, nil)
 }
 
-// EnterPortalByName answers a portal packet: a portal that cannot be used only unlocks the client.
-func (ch *Character) EnterPortalByName(ctx actor.Context, name string) error {
-	portal := ch.GetMap().FindPortalByName(name)
-	if portal == nil || portal.Wz() == nil || ch.Occupied() {
-		ch.listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-	return ch.EnterPortal(ctx, portal)
-}
-
 func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 	m := ch.GetMap()
 	if m == nil {

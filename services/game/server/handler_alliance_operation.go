@@ -27,9 +27,9 @@ func (AllianceOperation) New(gs *GameServer) *AllianceOperation {
 }
 
 func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.AllianceOperation) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	switch req.Operation {

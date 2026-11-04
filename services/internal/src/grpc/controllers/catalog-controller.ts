@@ -33,7 +33,6 @@ type ChannelConfig = {
     name?: string;
     max_concurrent_users?: number;
 };
-type WorldConfig = { world_name?: string; flag?: number; event_message?: string; channels?: ChannelConfig[] };
 
 @Controller("catalogController")
 export class CatalogGrpcController {

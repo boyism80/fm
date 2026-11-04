@@ -14,8 +14,8 @@ func (EnhanceEquipment) New(gs *GameServer) *EnhanceEquipment {
 }
 
 func (h *EnhanceEquipment) Handle(ctx *core.ClientContext, req *request.EnhanceEquipment) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

@@ -18,9 +18,9 @@ func (AutoAssignAP) New(gs *GameServer) *AutoAssignAP {
 }
 
 func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	totalAmount := uint32(0)

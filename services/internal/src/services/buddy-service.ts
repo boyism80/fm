@@ -1,7 +1,6 @@
 import type { PoolClient } from "pg";
 import { BuddyErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "@fm/shared/context/internal-context";
-import type { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { CharacterBuddyRepository } from "@fm/shared/repos/character-buddy-repository";
 import type { CharacterBuddyModel } from "@fm/shared/repos/character-buddy-repository";
 import {
@@ -64,7 +63,6 @@ export type BroadcastBuddyMultiChatResult = { ok: boolean; code?: BuddyErrorCode
 
 export class BuddyService {
     private readonly ctx: InternalContext;
-    private readonly app: AppConfiguration;
     private readonly buddyRepo: CharacterBuddyRepository;
     private readonly realtimeStateRepo: CharacterRealtimeStateRepository;
     private readonly capacityRequestRepo: BuddyCapacityRequestRepository;
@@ -76,7 +74,6 @@ export class BuddyService {
 
     constructor(
         internalContext: InternalContext,
-        appConfiguration: AppConfiguration,
         characterBuddyRepository: CharacterBuddyRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         buddyCapacityRequestRepository: BuddyCapacityRequestRepository,
@@ -87,7 +84,6 @@ export class BuddyService {
         distributedLockService: DistributedLockService,
     ) {
         this.ctx = internalContext;
-        this.app = appConfiguration;
         this.buddyRepo = characterBuddyRepository;
         this.realtimeStateRepo = characterRealtimeStateRepository;
         this.capacityRequestRepo = buddyCapacityRequestRepository;

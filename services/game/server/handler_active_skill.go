@@ -19,8 +19,8 @@ func (ActiveSkill) New(gs *GameServer) *ActiveSkill {
 }
 
 func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 

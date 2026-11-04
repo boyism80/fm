@@ -28,9 +28,9 @@ func (MultiChat) New(gs *GameServer) *MultiChat {
 }
 
 func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 	if strings.HasPrefix(req.Message, "/") {
 		if mapInstance := ch.GetMap(); mapInstance != nil {

@@ -15,8 +15,8 @@ func (HealOverTime) New(gs *GameServer) *HealOverTime {
 }
 
 func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

@@ -14,8 +14,8 @@ func (QuestPotFeed) New(gs *GameServer) *QuestPotFeed {
 }
 
 func (h *QuestPotFeed) Handle(ctx *core.ClientContext, req *request.QuestPotFeed) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)

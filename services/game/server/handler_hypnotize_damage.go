@@ -14,9 +14,9 @@ func (HypnotizeDamage) New(gs *GameServer) *HypnotizeDamage {
 }
 
 func (h *HypnotizeDamage) Handle(ctx *core.ClientContext, req *request.HypnotizeDamage) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 	if req.CharacterID != character.GetID() {
 		return nil

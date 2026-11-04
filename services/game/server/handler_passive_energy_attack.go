@@ -15,9 +15,9 @@ func (PassiveEnergyAttack) New(gs *GameServer) *PassiveEnergyAttack {
 }
 
 func (h *PassiveEnergyAttack) Handle(ctx *core.ClientContext, req *request.PassiveEnergyAttack) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	return character.Attack(ctx.ActorContext, game.AttackEnergy, req)

@@ -27,8 +27,8 @@ func (h *Notes) Handle(ctx *core.ClientContext, req *request.Notes) error {
 		return nil
 	}
 
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 

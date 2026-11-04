@@ -9,7 +9,6 @@ import {
     type UpdateGuildMemberRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
-import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { InternalContext } from "@fm/shared/context/internal-context";
 import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import {
@@ -172,7 +171,6 @@ export type GuildRankingEntryResult = {
 
 export class GuildService {
     private readonly ctx: InternalContext;
-    private readonly app: AppConfiguration;
     private readonly unifiedRepo: UnifiedRepository;
     private readonly guildRepo: GuildRepository;
     private readonly guildCreateRequestRepo: GuildCreateRequestRepository;
@@ -187,7 +185,6 @@ export class GuildService {
 
     constructor(
         internalContext: InternalContext,
-        appConfiguration: AppConfiguration,
         unifiedRepository: UnifiedRepository,
         guildRepository: GuildRepository,
         guildCreateRequestRepository: GuildCreateRequestRepository,
@@ -201,7 +198,6 @@ export class GuildService {
         wzService: WzService,
     ) {
         this.ctx = internalContext;
-        this.app = appConfiguration;
         this.unifiedRepo = unifiedRepository;
         this.guildRepo = guildRepository;
         this.guildCreateRequestRepo = guildCreateRequestRepository;
@@ -251,7 +247,6 @@ export class GuildService {
         await this.publishToGuildRoutes(eventType, worldId, guildId, { ...extraPayload, guild_pb: guildPb });
     }
 
-    // The character's lock, then the lock of the guild it is in.
     private async lockRequesterGuild(worldId: number, characterId: number) {
         const characterLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
@@ -460,7 +455,7 @@ export class GuildService {
                 { txClient },
             );
 
-            const updatedGuild = await this.guildRepo.set(worldId, guild, { txClient });
+            await this.guildRepo.set(worldId, guild, { txClient });
 
             return { ok: true as const };
         });
@@ -525,7 +520,6 @@ export class GuildService {
 
         if (guildResult.clearRealtime) {
             await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
-                const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
                 await this.characterRealtimeStateRepo.setGuild(worldId, characterId, null, { txClient });
             });
         }
@@ -1417,7 +1411,6 @@ export class GuildService {
         if (!sender) {
             return { ok: false };
         }
-        const guild = loaded.guild;
         await this.publishToGuildRoutes("multi_chat", worldId, guildId, {
             guild_id: guildId,
             sender_character_id: senderCharacterId,

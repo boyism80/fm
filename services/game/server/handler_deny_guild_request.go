@@ -16,9 +16,9 @@ func (DenyGuildRequest) New(gs *GameServer) *DenyGuildRequest {
 }
 
 func (h *DenyGuildRequest) Handle(ctx *core.ClientContext, req *request.DenyGuildRequest) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 	ch.Guild().ClearInvites()
 	return nil

@@ -16,8 +16,8 @@ func (ShopScannerOpen) New(gs *GameServer) *ShopScannerOpen {
 }
 
 func (h *ShopScannerOpen) Handle(ctx *core.ClientContext, req *request.ShopScannerOpen) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	ch.RemoteShops().FindPopularSearches(ctx.ActorContext)

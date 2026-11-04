@@ -14,8 +14,8 @@ func (ItemMaker) New(gs *GameServer) *ItemMaker {
 }
 
 func (h *ItemMaker) Handle(ctx *core.ClientContext, req *request.ItemMaker) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)

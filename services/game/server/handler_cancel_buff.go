@@ -16,8 +16,8 @@ func (CancelBuff) New(gs *GameServer) *CancelBuff {
 }
 
 func (h *CancelBuff) Handle(ctx *core.ClientContext, req *request.CancelBuff) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	character.Buffs().Cancel(req.SourceID)

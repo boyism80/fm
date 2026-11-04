@@ -11,8 +11,8 @@ type FaceExpression struct {
 
 func (FaceExpression) New(gs *GameServer) *FaceExpression { return &FaceExpression{gs: gs} }
 func (h *FaceExpression) Handle(ctx *core.ClientContext, req *request.FaceExpression) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	ch.Express(req.Expression)

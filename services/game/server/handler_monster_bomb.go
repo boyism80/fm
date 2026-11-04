@@ -14,9 +14,9 @@ func (MonsterBomb) New(gs *GameServer) *MonsterBomb {
 }
 
 func (h *MonsterBomb) Handle(ctx *core.ClientContext, req *request.MonsterBomb) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 	m := character.GetMap()
 	if m == nil {

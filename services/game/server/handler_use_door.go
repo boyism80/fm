@@ -16,9 +16,9 @@ func (UseDoor) New(gs *GameServer) *UseDoor {
 }
 
 func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	m := character.GetMap()

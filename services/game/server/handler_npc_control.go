@@ -16,9 +16,9 @@ func (NpcControl) New(gs *GameServer) *NpcControl {
 }
 
 func (h *NpcControl) Handle(ctx *core.ClientContext, req *request.NpcAction) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	character.Listener().OnNpcAction(character, req.Bytes)

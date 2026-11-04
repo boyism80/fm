@@ -29,9 +29,9 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		return fmt.Errorf("party operation: actor context required")
 	}
 
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	switch req.Operation {

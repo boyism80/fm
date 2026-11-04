@@ -20,9 +20,9 @@ func (MovePlayer) New(gs *GameServer) *MovePlayer {
 }
 
 func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 	// A move the client made on the field it left still carries that field's key.
 	if req.FieldKey != character.FieldKey() {

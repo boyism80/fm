@@ -15,8 +15,8 @@ func (FamilySummon) New(gs *GameServer) *FamilySummon {
 }
 
 func (h *FamilySummon) Handle(ctx *core.ClientContext, req *request.FamilySummon) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if req.Name != "" && !game.ClientText(req.Name).Valid(13) {

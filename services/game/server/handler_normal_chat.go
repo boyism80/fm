@@ -21,9 +21,9 @@ func (NormalChat) New(gs *GameServer) *NormalChat {
 }
 
 func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	// The client keeps chat starting with "/" from players without GM rights, so "!" also runs a command.

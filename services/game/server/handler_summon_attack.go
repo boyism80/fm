@@ -17,8 +17,8 @@ func (SummonAttack) New(gs *GameServer) *SummonAttack {
 }
 
 func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

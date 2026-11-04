@@ -16,8 +16,8 @@ func (RemoteEntrustedShop) New(gs *GameServer) *RemoteEntrustedShop {
 }
 
 func (h *RemoteEntrustedShop) Handle(ctx *core.ClientContext, req *request.RemoteEntrustedShop) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

@@ -15,8 +15,8 @@ func (TeleportStoneList) New(gs *GameServer) *TeleportStoneList {
 }
 
 func (h *TeleportStoneList) Handle(ctx *core.ClientContext, req *request.TeleportStoneList) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

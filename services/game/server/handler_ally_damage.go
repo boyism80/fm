@@ -19,9 +19,9 @@ func (AllyDamage) New(gs *GameServer) *AllyDamage {
 }
 
 func (h *AllyDamage) Handle(ctx *core.ClientContext, req *request.AllyDamage) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	mapInstance := ch.GetMap()

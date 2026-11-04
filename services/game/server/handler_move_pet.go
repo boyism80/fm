@@ -16,8 +16,8 @@ func (MovePet) New(gs *GameServer) *MovePet {
 }
 
 func (h *MovePet) Handle(ctx *core.ClientContext, req *request.MovePet) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.Pets().Active() == nil {

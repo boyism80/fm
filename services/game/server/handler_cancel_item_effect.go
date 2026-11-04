@@ -16,8 +16,8 @@ func (CancelItemEffect) New(gs *GameServer) *CancelItemEffect {
 }
 
 func (h *CancelItemEffect) Handle(ctx *core.ClientContext, req *request.CancelItemEffect) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	character.Buffs().CancelBySource(req.SourceID)

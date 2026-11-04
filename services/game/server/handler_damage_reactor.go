@@ -16,9 +16,9 @@ func (DamageReactor) New(gs *GameServer) *DamageReactor {
 }
 
 func (h *DamageReactor) Handle(ctx *core.ClientContext, req *request.DamageReactor) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	if character.Spectating() {

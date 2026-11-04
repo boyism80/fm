@@ -27,9 +27,9 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 	if h.gs == nil {
 		return fmt.Errorf("deny party request: game server is nil")
 	}
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 	if pid := character.Party().ID(); pid != nil {
 		return nil

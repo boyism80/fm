@@ -15,9 +15,9 @@ func (CoconutHit) New(gs *GameServer) *CoconutHit {
 
 // The channel event decides what the struck coconut does.
 func (h *CoconutHit) Handle(ctx *core.ClientContext, req *request.CoconutHit) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	if ch.StateMachine() == nil {

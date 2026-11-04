@@ -16,8 +16,8 @@ func (NpcShop) New(gs *GameServer) *NpcShop {
 }
 
 func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.UsingCashItem() {

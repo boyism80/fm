@@ -16,8 +16,8 @@ func (InspectCharacter) New(gs *GameServer) *InspectCharacter {
 }
 
 func (h *InspectCharacter) Handle(ctx *core.ClientContext, req *request.InspectCharacter) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

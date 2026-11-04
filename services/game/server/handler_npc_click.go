@@ -21,9 +21,9 @@ func (NpcClick) New(gs *GameServer) *NpcClick {
 }
 
 func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	character := h.gs.character(ctx)
+	if character == nil {
+		return nil
 	}
 
 	if character.Spectating() || character.UsingCashItem() || character.Occupied() {

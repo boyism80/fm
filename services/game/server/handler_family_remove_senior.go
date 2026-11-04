@@ -14,8 +14,8 @@ func (FamilyRemoveSenior) New(gs *GameServer) *FamilyRemoveSenior {
 }
 
 func (h *FamilyRemoveSenior) Handle(ctx *core.ClientContext, req *request.FamilyRemoveSenior) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 

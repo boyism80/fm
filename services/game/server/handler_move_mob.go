@@ -28,9 +28,9 @@ func (MoveMob) New(gs *GameServer) *MoveMob {
 }
 
 func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	mapInstance := ch.GetMap()

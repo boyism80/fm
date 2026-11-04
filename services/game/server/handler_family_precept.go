@@ -15,8 +15,8 @@ func (FamilyPrecept) New(gs *GameServer) *FamilyPrecept {
 }
 
 func (h *FamilyPrecept) Handle(ctx *core.ClientContext, req *request.FamilyPrecept) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if req.Precept != "" && !game.ClientText(req.Precept).Valid(200) {

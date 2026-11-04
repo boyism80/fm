@@ -16,8 +16,8 @@ func (PetExceptions) New(gs *GameServer) *PetExceptions {
 }
 
 func (h *PetExceptions) Handle(ctx *core.ClientContext, req *request.PetExceptions) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.Pets().Active() == nil {

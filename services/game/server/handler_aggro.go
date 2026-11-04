@@ -16,9 +16,9 @@ func (Aggro) New(gs *GameServer) *Aggro {
 }
 
 func (h *Aggro) Handle(ctx *core.ClientContext, req *request.Aggro) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	m := ch.GetMap()

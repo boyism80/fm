@@ -16,8 +16,8 @@ func (UseMountFood) New(gs *GameServer) *UseMountFood {
 }
 
 func (h *UseMountFood) Handle(ctx *core.ClientContext, req *request.UseMountFood) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	if character.UsingCashItem() {

@@ -16,8 +16,8 @@ func (DenyAllianceRequest) New(gs *GameServer) *DenyAllianceRequest {
 }
 
 func (h *DenyAllianceRequest) Handle(ctx *core.ClientContext, req *request.DenyAllianceRequest) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	op := &AllianceOperation{gs: h.gs}

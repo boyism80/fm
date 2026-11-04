@@ -29,9 +29,9 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 		return fmt.Errorf("buddy: actor context required")
 	}
 
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	worldID := h.gs.config.WorldId

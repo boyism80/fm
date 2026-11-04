@@ -12,8 +12,8 @@ type SkillMacro struct {
 
 func (SkillMacro) New(gs *GameServer) *SkillMacro { return &SkillMacro{gs: gs} }
 func (h *SkillMacro) Handle(ctx *core.ClientContext, req *request.SkillMacro) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if req.Count != uint8(len(req.Entries)) {

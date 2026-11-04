@@ -7,7 +7,6 @@ import {
     type Guild as GuildMessage,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
-import { AppConfiguration } from "@fm/shared/config/app-configuration";
 import { InternalContext } from "@fm/shared/context/internal-context";
 import {
     AllianceChangeRequestRepository,
@@ -137,7 +136,6 @@ export type ChangeAllianceNoticeResult = {
 
 export class AllianceService {
     private readonly ctx: InternalContext;
-    private readonly app: AppConfiguration;
     private readonly allianceRepo: AllianceRepository;
     private readonly guildRepo: GuildRepository;
     private readonly allianceCreateRequestRepo: AllianceCreateRequestRepository;
@@ -152,7 +150,6 @@ export class AllianceService {
 
     constructor(
         internalContext: InternalContext,
-        appConfiguration: AppConfiguration,
         allianceRepository: AllianceRepository,
         guildRepository: GuildRepository,
         allianceCreateRequestRepository: AllianceCreateRequestRepository,
@@ -166,7 +163,6 @@ export class AllianceService {
         unifiedRepository: UnifiedRepository,
     ) {
         this.ctx = internalContext;
-        this.app = appConfiguration;
         this.allianceRepo = allianceRepository;
         this.guildRepo = guildRepository;
         this.allianceCreateRequestRepo = allianceCreateRequestRepository;
@@ -609,7 +605,6 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
         }
         await using _locks = new DistributedLockMultiGuard(locked.guards);
-        const alliance = locked.alliance;
 
         const guild = await this.guildRepo.get(worldId, guildId);
         if (!guild) {
@@ -628,7 +623,6 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
 
-        const otherGuildIds = [...alliance.guildIds].sort((a, b) => a - b);
 
         const txResult = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
             const lockedAlliance = await this.allianceRepo.get(worldId, allianceId, { txClient: dataTx });
@@ -977,7 +971,7 @@ export class AllianceService {
             return locked;
         }
         await using _locks = locked.locks;
-        const { guildId, guild, allianceId, alliance, requester: requesterMember } = locked;
+        const { allianceId, requester: requesterMember } = locked;
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -1309,7 +1303,7 @@ export class AllianceService {
             return locked;
         }
         await using _locks = locked.locks;
-        const { guildId, guild, allianceId, alliance, requester: requesterMember } = locked;
+        const { guildId, allianceId, alliance, requester: requesterMember } = locked;
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -1382,7 +1376,6 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
 
-        const guildIds = [...alliance.guildIds];
 
         const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
         const requesterMember = requesterMembers.find((m) => m.characterId === characterId);

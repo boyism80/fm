@@ -18,8 +18,8 @@ func (UseItem) New(gs *GameServer) *UseItem {
 }
 
 func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

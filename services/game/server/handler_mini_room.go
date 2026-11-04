@@ -19,8 +19,8 @@ func (MiniRoom) New(gs *GameServer) *MiniRoom {
 }
 
 func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
+	ch := h.gs.character(ctx)
+	if ch == nil {
 		return nil
 	}
 	if ch.UsingCashItem() {
@@ -28,6 +28,7 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 		return nil
 	}
 
+	var err error
 	switch req.Mode {
 	case pconst.MiniRoomCreate:
 		if ch.Occupied() {

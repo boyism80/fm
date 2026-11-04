@@ -15,9 +15,9 @@ func (SnowballHit) New(gs *GameServer) *SnowballHit {
 
 // The channel event judges the hit by where the character stands, not by the damage the client reports.
 func (h *SnowballHit) Handle(ctx *core.ClientContext, req *request.SnowballHit) error {
-	ch, err := h.gs.character(ctx)
-	if err != nil {
-		return err
+	ch := h.gs.character(ctx)
+	if ch == nil {
+		return nil
 	}
 
 	if ch.StateMachine() == nil {

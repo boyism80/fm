@@ -18,8 +18,8 @@ func (UseChair) New(gs *GameServer) *UseChair {
 }
 
 func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 

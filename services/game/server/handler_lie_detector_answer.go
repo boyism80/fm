@@ -16,12 +16,12 @@ func (LieDetectorAnswer) New(gs *GameServer) *LieDetectorAnswer {
 }
 
 func (h *LieDetectorAnswer) Handle(ctx *core.ClientContext, req *request.LieDetectorAnswer) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 
-	err = character.LieDetector().Answer(ctx.ActorContext, req.Answer)
+	err := character.LieDetector().Answer(ctx.ActorContext, req.Answer)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

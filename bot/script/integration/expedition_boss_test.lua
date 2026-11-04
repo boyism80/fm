@@ -164,12 +164,12 @@ local function expedite(ctx, npc, entrance, boss_map)
 end
 
 -- The leader's menu choice opens a list of names; choosing one answers with no dialog unless it is refused.
-local function bot_pick(ctx, bot, choice, expected, name)
+local function pick(ctx, bot, choice, expected, index)
     local list = bot:dialog(true, choice)
     if list == nil or list.text:find(expected, 1, true) == nil then
         return ctx:fail(bot:name() .. " 목록 대화 없음: " .. expected)
     end
-    local refused = bot:dialog(true, name)
+    local refused = bot:dialog(true, index)
     if refused ~= nil then
         bot:dialog(false)
         return ctx:fail(bot:name() .. " 거절됨: " .. refused.text)
@@ -235,7 +235,7 @@ local function recruit(ctx)
     if open(ctx, leader, ADOBIS, "원정대장님 무엇을") == false then
         return false
     end
-    if bot_pick(ctx, leader, 1, "추방할 원정대원", 1) == false then
+    if pick(ctx, leader, 1, "추방할 원정대원", 1) == false then
         return false
     end
     if bounce(ctx, late) == false then
@@ -244,7 +244,7 @@ local function recruit(ctx)
     if open(ctx, leader, ADOBIS, "원정대장님 무엇을") == false then
         return false
     end
-    if bot_pick(ctx, leader, 2, "허가할 제재 유저", 0) == false then
+    if pick(ctx, leader, 2, "허가할 제재 유저", 0) == false then
         return false
     end
 

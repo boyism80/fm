@@ -16,8 +16,8 @@ func (DamageSummon) New(gs *GameServer) *DamageSummon {
 }
 
 func (h *DamageSummon) Handle(ctx *core.ClientContext, req *request.DamageSummon) error {
-	character, err := h.gs.character(ctx)
-	if err != nil {
+	character := h.gs.character(ctx)
+	if character == nil {
 		return nil
 	}
 	summon := character.Summons().FindByOID(req.OID)
