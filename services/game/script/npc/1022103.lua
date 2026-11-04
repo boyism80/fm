@@ -18,6 +18,7 @@ local function complete_trial(me, npc, sm)
     else
         quest:start(npc, "q3")
     end
+    me:show_quest_completion(6400)
     sm:finish(0)
     me:map(EXIT_MAP, 1)
 end

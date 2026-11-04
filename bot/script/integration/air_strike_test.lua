@@ -139,10 +139,23 @@ test_suite {
             if bot:npc_click(oid) == false then
                 return ctx:fail("마지막 결과 대화가 오지 않음")
             end
+            -- Passing shows quest 6400 as ready; the record quest 6401 it writes never shows one.
+            local shown = {}
+            ctx:hook("quest_completion", function(_, _, p, name)
+                if name == resp.show_quest_completion then
+                    shown[p.quest_id] = true
+                end
+            end)
             if bot:request(resp.warp, req.dialog { dialog_type = DIALOG_DEFAULT, next = true }, function(p)
                     return p.character.map == JONATHAN_ROOM
                 end, 10000) == false then
                 return ctx:fail("시험을 통과한 뒤 조나단의 방으로 돌아가지 않음")
+            end
+            if shown[6400] ~= true then
+                return ctx:fail("시험을 통과했는데 퀘스트 6400 완료 표시가 오지 않음")
+            end
+            if shown[6401] == true then
+                return ctx:fail("레코드 퀘스트 6401의 완료 표시가 나감")
             end
             return true
         end,
