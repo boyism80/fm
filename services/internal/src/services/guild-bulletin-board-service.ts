@@ -105,24 +105,6 @@ export class GuildBulletinBoardService {
         this.distributedLockService = distributedLockService;
     }
 
-    private assertWorld(worldId: number) {
-        const wid = String(worldId);
-        if (!this.app.postgresql.worlds[wid]) {
-            const err = new Error(`Unknown world_id: ${worldId}`) as Error & { code?: string };
-            err.code = "UNKNOWN_WORLD";
-            throw err;
-        }
-    }
-
-    private assertCharacterId(characterId: number) {
-        const n = characterId;
-        if (!Number.isInteger(n) || n <= 0 || n > 0xffffffff) {
-            const err = new Error("character_id must be a positive uint32") as Error & { code?: string };
-            err.code = "INVALID_CHARACTER_ID";
-            throw err;
-        }
-    }
-
     private canChangeMemberRank(rank: GuildMemberRank | undefined) {
         return rank === GuildMemberRank.GUILD_MEMBER_RANK_MASTER || rank === GuildMemberRank.GUILD_MEMBER_RANK_JUNIOR;
     }
@@ -266,9 +248,6 @@ export class GuildBulletinBoardService {
         characterId: number,
         page: number,
     ): Promise<ListGuildBulletinBoardThreadsResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const membership = await this.assertGuildMembership(worldId, characterId);
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };
@@ -290,9 +269,6 @@ export class GuildBulletinBoardService {
         characterId: number,
         localThreadId: number,
     ): Promise<ShowGuildBulletinBoardThreadResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const membership = await this.assertGuildMembership(worldId, characterId);
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };
@@ -313,9 +289,6 @@ export class GuildBulletinBoardService {
         body: string,
         icon: number,
     ): Promise<CreateGuildBulletinBoardThreadResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const membership = await this.assertGuildMembership(worldId, characterId);
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };
@@ -377,9 +350,6 @@ export class GuildBulletinBoardService {
         body: string,
         icon: number,
     ): Promise<UpdateGuildBulletinBoardThreadResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const membership = await this.assertGuildMembership(worldId, characterId);
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };
@@ -431,9 +401,6 @@ export class GuildBulletinBoardService {
         characterId: number,
         localThreadId: number,
     ): Promise<DeleteGuildBulletinBoardThreadResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const membership = await this.assertGuildMembership(worldId, characterId);
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };
@@ -456,9 +423,6 @@ export class GuildBulletinBoardService {
         localThreadId: number,
         content: string,
     ): Promise<CreateGuildBulletinBoardReplyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const membership = await this.assertGuildMembership(worldId, characterId);
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };
@@ -504,9 +468,6 @@ export class GuildBulletinBoardService {
         localThreadId: number,
         replyId: number,
     ): Promise<DeleteGuildBulletinBoardReplyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const membership = await this.assertGuildMembership(worldId, characterId);
         if (membership.code !== messages.GuildErrorCode.GUILD_ERROR_NONE) {
             return { ok: false, code: membership.code };

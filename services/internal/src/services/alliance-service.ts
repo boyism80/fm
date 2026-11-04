@@ -180,24 +180,6 @@ export class AllianceService {
         this.unifiedRepo = unifiedRepository;
     }
 
-    private assertWorld(worldId: number) {
-        const wid = String(worldId);
-        if (!this.app.postgresql.worlds[wid]) {
-            const err = new Error(`Unknown world_id: ${worldId}`) as Error & { code?: string };
-            err.code = "UNKNOWN_WORLD";
-            throw err;
-        }
-    }
-
-    private assertCharacterId(characterId: number) {
-        const n = characterId;
-        if (!Number.isInteger(n) || n <= 0 || n > 0xffffffff) {
-            const err = new Error("character_id must be a positive uint32") as Error & { code?: string };
-            err.code = "INVALID_CHARACTER_ID";
-            throw err;
-        }
-    }
-
     private async publishToAllianceRoutes(
         eventType: string,
         worldId: number,
@@ -239,7 +221,6 @@ export class AllianceService {
     }
 
     async getAlliance(worldId: number, allianceId: number): Promise<GetAllianceResult> {
-        this.assertWorld(worldId);
         if (!Number.isInteger(allianceId) || allianceId < 1) {
             return { found: false };
         }
@@ -272,36 +253,6 @@ export class AllianceService {
         await this.guildMemberRepo.setAll(worldId, updated, { txClient: dataTx });
     }
 
-    private async rollbackCreateAlliance(worldId: number, allianceId: number, guildIds: number[]) {
-        await this.ctx
-            .withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
-                for (const guildId of guildIds) {
-                    const guild = await this.guildRepo.get(worldId, guildId, { txClient: dataTx });
-                    if (guild) {
-                        await this.guildRepo.set(worldId, { ...guild, allianceId: null }, { txClient: dataTx });
-                    }
-                    const members = [
-                        ...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values(),
-                    ];
-                    if (members.length > 0) {
-                        const cleared = members.map((member) => ({
-                            ...member,
-                            allianceRank: null,
-                        }));
-                        await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
-                    }
-                }
-                await this.allianceRepo.delete({ worldId, allianceId }, { txClient: dataTx });
-            })
-            .catch(() => {});
-        await this.unifiedRepo.deleteAllianceName(worldId, allianceId).catch(() => {});
-        await this.allianceRepo.invalidateCache(worldId, allianceId).catch(() => {});
-        for (const guildId of guildIds) {
-            await this.guildRepo.invalidateCache(worldId, guildId).catch(() => {});
-            await this.guildMemberRepo.invalidateCache(worldId, String(guildId)).catch(() => {});
-        }
-    }
-
     async createAlliance(
         worldId: number,
         allianceName: string,
@@ -310,10 +261,6 @@ export class AllianceService {
         requestId: string,
         leaderGuildId: number,
     ): Promise<CreateAllianceResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(leaderCharacterId);
-        this.assertCharacterId(partnerCharacterId);
-
         if (leaderCharacterId === partnerCharacterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
         }
@@ -388,87 +335,52 @@ export class AllianceService {
         }
 
         const initialGuildIds: number[] = [guildId, partnerGuildId];
-        let savedAlliance: AllianceModel;
-        let allianceId: number | null = null;
+        const newAllianceId = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
+            const res = await txClient.query("SELECT nextval('alliance_id_seq') AS id");
+            return Number(res.rows[0].id);
+        });
 
+        // Each data shard sees only its own alliances, so the name is reserved in the unified DB first.
         try {
-            const newAllianceId = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-                const res = await txClient.query("SELECT nextval('alliance_id_seq') AS id");
-                const id = res.rows?.[0]?.id;
-                if (id == null) {
-                    const err = new Error("nextval('alliance_id_seq') returned no id") as Error & { code?: string };
-                    err.code = "ALLIANCE_ID_SEQ_ERROR";
-                    throw err;
-                }
-                const n = Number(id);
-                if (!Number.isInteger(n) || n < 1) {
-                    const err = new Error("alliance_id_seq returned invalid id") as Error & { code?: string };
-                    err.code = "ALLIANCE_ID_SEQ_ERROR";
-                    throw err;
-                }
-                return n;
-            });
-            allianceId = newAllianceId;
-
-            // Each data shard sees only its own alliances, so the name is reserved in the unified DB first.
             await this.unifiedRepo.reserveAllianceName(worldId, newAllianceId, allianceName);
-
-            savedAlliance = await this.ctx.withPgDataTransaction(worldId, newAllianceId, async (dataTx: PoolClient) => {
-                return this.allianceRepo.set(
-                    worldId,
-                    {
-                        worldId,
-                        allianceId: newAllianceId,
-                        name: allianceName,
-                        leaderCharacterId,
-                        guildIds: initialGuildIds,
-                        rankTitles: [...DEFAULT_ALLIANCE_RANK_TITLES],
-                        capacity: DEFAULT_ALLIANCE_CAPACITY,
-                        notice: "",
-                    },
-                    { txClient: dataTx },
-                );
-            });
-
-            await this.ctx.withPgDataTransaction(worldId, partnerGuildId, async (dataTx: PoolClient) => {
-                await this.guildRepo.set(worldId, { ...guild2, allianceId: newAllianceId }, { txClient: dataTx });
-                await this.assignAllianceRanks(worldId, partnerGuildId, 2, dataTx);
-            });
-
-            await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
-                await this.guildRepo.set(worldId, { ...guild1, allianceId: newAllianceId }, { txClient: dataTx });
-                await this.assignAllianceRanks(worldId, guildId, 1, dataTx);
-                if (requestId !== "0") {
-                    await this.allianceCreateRequestRepo.insert(
-                        worldId,
-                        guildId,
-                        requestId,
-                        { alliance_id: newAllianceId },
-                        dataTx,
-                    );
-                }
-            });
         } catch (err: unknown) {
-            const code = (err as { code?: string })?.code;
-            if (code === "23505") {
-                if (allianceId != null) {
-                    await this.unifiedRepo.deleteAllianceName(worldId, allianceId).catch(() => {});
-                }
+            if ((err as { code?: string })?.code === "23505") {
                 return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN };
-            }
-            if (allianceId != null) {
-                await this.rollbackCreateAlliance(worldId, allianceId, [guildId, partnerGuildId]);
             }
             throw err;
         }
 
-        const createdAllianceId = savedAlliance.allianceId;
+        const savedAlliance = await this.allianceRepo.set(worldId, {
+            worldId,
+            allianceId: newAllianceId,
+            name: allianceName,
+            leaderCharacterId,
+            guildIds: initialGuildIds,
+            rankTitles: [...DEFAULT_ALLIANCE_RANK_TITLES],
+            capacity: DEFAULT_ALLIANCE_CAPACITY,
+            notice: "",
+        });
 
-        await this.allianceRepo.invalidateCache(worldId, createdAllianceId);
-        await this.guildRepo.invalidateCache(worldId, guildId);
-        await this.guildRepo.invalidateCache(worldId, partnerGuildId);
-        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
-        await this.guildMemberRepo.invalidateCache(worldId, String(partnerGuildId));
+        await this.ctx.withPgDataTransaction(worldId, partnerGuildId, async (dataTx: PoolClient) => {
+            await this.guildRepo.set(worldId, { ...guild2, allianceId: newAllianceId }, { txClient: dataTx });
+            await this.assignAllianceRanks(worldId, partnerGuildId, 2, dataTx);
+        });
+
+        await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
+            await this.guildRepo.set(worldId, { ...guild1, allianceId: newAllianceId }, { txClient: dataTx });
+            await this.assignAllianceRanks(worldId, guildId, 1, dataTx);
+            if (requestId !== "0") {
+                await this.allianceCreateRequestRepo.insert(
+                    worldId,
+                    guildId,
+                    requestId,
+                    { alliance_id: newAllianceId },
+                    dataTx,
+                );
+            }
+        });
+
+        const createdAllianceId = newAllianceId;
 
         const allianceMessage = await this.allianceToPb(worldId, savedAlliance);
         const wire = Alliance.encode(allianceMessage).finish();
@@ -556,11 +468,6 @@ export class AllianceService {
         }
 
         await this.unifiedRepo.deleteAllianceName(worldId, result.allianceId).catch(() => {});
-        await this.allianceRepo.invalidateCache(worldId, result.allianceId);
-        for (const gid of result.guildIds) {
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
-        }
 
         const guildPbs: string[] = [];
         for (const gid of result.guildIds) {
@@ -628,12 +535,6 @@ export class AllianceService {
             return txResult;
         }
 
-        await this.allianceRepo.invalidateCache(worldId, allianceId);
-        for (const gid of txResult.guildIds) {
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
-        }
-
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const removedGuildLoaded = await this.guildService.getGuild(worldId, guildId);
         const removedGuildMessage =
@@ -686,8 +587,6 @@ export class AllianceService {
         allianceId: number,
         guildId: number,
     ): Promise<AcceptAllianceInviteResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
         if (!Number.isInteger(allianceId) || allianceId < 1) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
         }
@@ -777,14 +676,6 @@ export class AllianceService {
 
         if (!txResult.ok || txResult.allianceId == null) {
             return txResult;
-        }
-
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
-        await this.guildRepo.invalidateCache(worldId, guildId);
-        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
-        for (const gid of otherGuildIds) {
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
@@ -905,8 +796,6 @@ export class AllianceService {
         requestId: string,
         allianceId: number,
     ): Promise<IncreaseAllianceCapacityResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
         if (!Number.isInteger(allianceId) || allianceId < 1) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
@@ -978,8 +867,6 @@ export class AllianceService {
             return txResult;
         }
 
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
-
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(ALLIANCE_EVT.CAPACITY_CHANGED, worldId, txResult.allianceId, {
@@ -1013,9 +900,6 @@ export class AllianceService {
         characterId: number,
         rankTitles: string[],
     ): Promise<ChangeAllianceRankTitlesResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const normalizedRankTitles = this.normalizeAllianceRankTitles(rankTitles);
         if (!normalizedRankTitles) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_RANK_TITLES };
@@ -1066,8 +950,6 @@ export class AllianceService {
             return txResult;
         }
 
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
-
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(ALLIANCE_EVT.RANK_TITLES_CHANGED, worldId, txResult.allianceId, {
@@ -1086,9 +968,6 @@ export class AllianceService {
         characterId: number,
         notice: string,
     ): Promise<ChangeAllianceNoticeResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         if (notice.length > MAX_ALLIANCE_NOTICE_LEN) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_NOTICE };
         }
@@ -1132,8 +1011,6 @@ export class AllianceService {
             return txResult;
         }
 
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
-
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, []);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
         await this.publishToAllianceRoutes(ALLIANCE_EVT.NOTICE_CHANGED, worldId, txResult.allianceId, {
@@ -1153,10 +1030,6 @@ export class AllianceService {
         characterId: number,
         newLeaderCharacterId: number,
     ): Promise<ChangeAllianceLeaderResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-        this.assertCharacterId(newLeaderCharacterId);
-
         if (newLeaderCharacterId === characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_LEADER_CANDIDATE };
         }
@@ -1287,17 +1160,10 @@ export class AllianceService {
             return txResult;
         }
 
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
-        await this.guildRepo.invalidateCache(worldId, txResult.oldLeaderGuildId);
-        await this.guildMemberRepo.invalidateCache(worldId, String(txResult.oldLeaderGuildId));
-        await this.guildRepo.invalidateCache(worldId, txResult.newLeaderGuildId);
-        await this.guildMemberRepo.invalidateCache(worldId, String(txResult.newLeaderGuildId));
         for (const gid of otherGuildIds) {
             if (gid === txResult.oldLeaderGuildId || gid === txResult.newLeaderGuildId) {
                 continue;
             }
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance, [
@@ -1326,10 +1192,6 @@ export class AllianceService {
         targetCharacterId: number,
         promote: boolean,
     ): Promise<ChangeAllianceMemberRankResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(requesterCharacterId);
-        this.assertCharacterId(targetCharacterId);
-
         const locked = await this.lockRequesterAlliance(worldId, requesterCharacterId, [targetCharacterId]);
         if (!locked.ok) {
             return locked;
@@ -1415,14 +1277,9 @@ export class AllianceService {
             return txResult;
         }
 
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
         const guildIdsToEvict = new Set<number>([requesterGuildId]);
         if (txResult.targetGuildId != null) {
             guildIdsToEvict.add(txResult.targetGuildId);
-        }
-        for (const gid of guildIdsToEvict) {
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(
@@ -1447,9 +1304,6 @@ export class AllianceService {
     }
 
     async leaveAlliance(worldId: number, characterId: number): Promise<LeaveAllianceResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const locked = await this.lockRequesterAlliance(worldId, characterId);
         if (!locked.ok) {
             return locked;
@@ -1485,8 +1339,6 @@ export class AllianceService {
         targetGuildId: number,
         clientAllianceId?: number,
     ): Promise<ExpelAllianceGuildResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
         if (!Number.isInteger(targetGuildId) || targetGuildId < 1) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
@@ -1517,9 +1369,6 @@ export class AllianceService {
     }
 
     async disbandAlliance(worldId: number, characterId: number): Promise<DisbandAllianceResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const locked = await this.lockRequesterAlliance(worldId, characterId);
         if (!locked.ok) {
             return locked;
@@ -1561,8 +1410,6 @@ export class AllianceService {
         senderName: string,
         message: string,
     ): Promise<{ ok: boolean; recipientCount?: number }> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(senderCharacterId);
         if (!Number.isInteger(allianceId) || allianceId < 1) {
             return { ok: false };
         }

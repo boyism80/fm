@@ -289,31 +289,6 @@ export class CharacterService {
         this.ctx = internalContext;
     }
 
-    private assertWorld(worldId: number) {
-        const wid = String(worldId);
-        if (!this.app.postgresql.worlds[wid]) {
-            const err = new Error(`Unknown world_id: ${worldId}`) as Error & { code?: string };
-            err.code = "UNKNOWN_WORLD";
-            throw err;
-        }
-    }
-
-    private assertCharacterId(characterId: number) {
-        if (!Number.isInteger(characterId) || characterId <= 0 || characterId > 0xffffffff) {
-            const err = new Error("character_id must be a positive uint32") as Error & { code?: string };
-            err.code = "INVALID_CHARACTER_ID";
-            throw err;
-        }
-    }
-
-    private assertAccountId(accountId: number) {
-        if (!Number.isInteger(accountId) || accountId <= 0 || accountId > 0xffffffff) {
-            const err = new Error("account_id must be a positive uint32") as Error & { code?: string };
-            err.code = "INVALID_PAYLOAD";
-            throw err;
-        }
-    }
-
     // PostgreSQL text cannot hold NUL; one rejected write would stop the batch halfway.
     private assertNoNul(value: unknown) {
         if (typeof value === "string") {
@@ -341,14 +316,10 @@ export class CharacterService {
     }
 
     async getCharacter(worldId: number, characterId: number): Promise<CharacterRowModel | null> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
         return (await this.repo.get(worldId, characterId)) as CharacterRowModel | null;
     }
 
     async getKeyLayoutBindings(worldId: number, characterId: number) {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
         const keyLayout = await this.keyLayoutRepo.get(worldId, characterId);
         const keyLayoutJson = keyLayout?.keyLayoutJson;
         const keyLayoutJsonString =
@@ -357,8 +328,6 @@ export class CharacterService {
     }
 
     async loadStorage(worldId: number, accountId: number) {
-        this.assertWorld(worldId);
-        this.assertAccountId(accountId);
         const storage = await this.storageRepo.get(worldId, accountId);
         const items = await this.storageItemRepo.getAll(worldId, String(accountId));
         return {
@@ -498,62 +467,16 @@ export class CharacterService {
     }
 
     private async persistCharacters(entries: SaveCharacterEntry[]) {
+        const byWorld = new Map<number, SaveCharacterEntry[]>();
         for (const entry of entries) {
             this.assertNoNul(entry);
-        }
-
-        const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const {
-            character,
-            baseLooks,
-            overlays,
-            inventory,
-            skills,
-            buffs,
-            quests,
-            savedLocations,
-            records,
-            accountRecords,
-            monsterBook,
-            keyLayout,
-            skillMacros,
-            mount,
-            storage,
-            claimedShops,
-            unsettledRequests,
-            cashWeapon,
-        } of entries) {
-            this.assertWorld(character.worldId);
-            this.assertCharacterId(character.characterId);
-            this.assertAccountId(character.accountId);
-            this.validateCharacter(character);
-            if (!character.mapId || character.mapId <= 0) {
+            this.validateCharacter(entry.character);
+            if (!entry.character.mapId || entry.character.mapId <= 0) {
                 continue;
             }
-            const wid = character.worldId;
-            if (!byWorld.has(wid)) {
-                byWorld.set(wid, []);
-            }
-            byWorld.get(wid)?.push({
-                character,
-                baseLooks,
-                overlays,
-                inventory,
-                skills,
-                buffs,
-                quests,
-                savedLocations,
-                records,
-                accountRecords,
-                monsterBook,
-                keyLayout,
-                skillMacros,
-                mount,
-                storage,
-                claimedShops,
-                unsettledRequests,
-                cashWeapon,
-            });
+            const group = byWorld.get(entry.character.worldId) ?? [];
+            group.push(entry);
+            byWorld.set(entry.character.worldId, group);
         }
 
         for (const [worldId, group] of byWorld) {
@@ -581,139 +504,127 @@ export class CharacterService {
                 await this.familyService.progress(worldId, character);
             }
 
-            for (const {
-                character,
-                baseLooks,
-                overlays,
-                inventory,
-                skills,
-                buffs,
-                quests,
-                savedLocations,
-                records,
-                accountRecords,
-                monsterBook,
-                keyLayout,
-                skillMacros,
-                mount,
-                storage,
-                claimedShops,
-                unsettledRequests,
-                cashWeapon,
-            } of latest) {
-                if (!character.accountId) {
-                    continue;
-                }
-                await this.overviewRepo.set(
-                    character.worldId,
-                    characterOverview(character, baseLooks ?? {}, overlays ?? {}, cashWeapon ?? 0),
-                );
-
-                if (inventory !== undefined) {
-                    await this.inventoryRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        inventory,
-                    );
-                }
-                if (skills !== undefined) {
-                    await this.skillRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        skills.map((m) => ({ ...m, characterId: character.characterId })),
-                    );
-                }
-                if (buffs !== undefined) {
-                    await this.buffRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        buffs.map((m) => ({ ...m, characterId: character.characterId })),
-                    );
-                }
-                if (quests !== undefined) {
-                    await this.questRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        quests.map((m) => ({ ...m, characterId: character.characterId })),
-                    );
-                }
-                if (savedLocations !== undefined) {
-                    await this.savedLocationRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        savedLocations.map((m) => ({ ...m, characterId: character.characterId })),
-                    );
-                }
-                if (records !== undefined) {
-                    await this.characterRecordRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        records.map((m) => ({ ...m, ownerId: character.characterId })),
-                    );
-                }
-                if (accountRecords !== undefined) {
-                    await this.accountRecordRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.accountId),
-                        accountRecords.map((m) => ({ ...m, ownerId: character.accountId })),
-                    );
-                }
-                if (monsterBook !== undefined) {
-                    await this.monsterBookRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        monsterBook.map((m) => ({ ...m, characterId: character.characterId })),
-                    );
-                }
-                if (keyLayout !== undefined) {
-                    await this.keyLayoutRepo.set(character.worldId, {
-                        characterId: character.characterId,
-                        worldId: character.worldId,
-                        keyLayoutJson: bindingsToJsonString(keyLayout),
-                    });
-                }
-                if (skillMacros !== undefined) {
-                    await this.skillMacroRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        skillMacros.map((macro) => ({ ...macro, characterId: character.characterId })),
-                    );
-                }
-                if (mount !== undefined) {
-                    await this.mountRepo.set(character.worldId, {
-                        ...mount,
-                        characterId: character.characterId,
-                        worldId: character.worldId,
-                    });
-                }
-                if (storage !== undefined) {
-                    await this.storageRepo.set(character.worldId, {
-                        ...storage.storage,
-                        accountId: character.accountId,
-                        worldId: character.worldId,
-                    });
-                    await this.storageItemRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.accountId),
-                        storage.items,
-                    );
-                }
-                if (unsettledRequests !== undefined) {
-                    await this.unsettledRequestRepo.replaceBySnapshot(
-                        character.worldId,
-                        String(character.characterId),
-                        unsettledRequests.map((m) => ({ ...m, characterId: character.characterId })),
-                    );
-                }
-                if (claimedShops !== undefined && claimedShops.length > 0) {
-                    await this.shopRepo.claim(
-                        character.worldId,
-                        character.accountId,
-                        character.characterId,
-                        claimedShops,
-                    );
-                }
+            for (const entry of latest) {
+                await this.persistDetails(entry);
             }
+        }
+    }
+
+    private async persistDetails(entry: SaveCharacterEntry) {
+        const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations } = entry;
+        const { records, accountRecords, monsterBook, keyLayout, skillMacros, mount, storage } = entry;
+        const { claimedShops, unsettledRequests, cashWeapon } = entry;
+        if (!character.accountId) {
+            return;
+        }
+        await this.overviewRepo.set(
+            character.worldId,
+            characterOverview(character, baseLooks ?? {}, overlays ?? {}, cashWeapon ?? 0),
+        );
+
+        if (inventory !== undefined) {
+            await this.inventoryRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                inventory,
+            );
+        }
+        if (skills !== undefined) {
+            await this.skillRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                skills.map((m) => ({ ...m, characterId: character.characterId })),
+            );
+        }
+        if (buffs !== undefined) {
+            await this.buffRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                buffs.map((m) => ({ ...m, characterId: character.characterId })),
+            );
+        }
+        if (quests !== undefined) {
+            await this.questRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                quests.map((m) => ({ ...m, characterId: character.characterId })),
+            );
+        }
+        if (savedLocations !== undefined) {
+            await this.savedLocationRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                savedLocations.map((m) => ({ ...m, characterId: character.characterId })),
+            );
+        }
+        if (records !== undefined) {
+            await this.characterRecordRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                records.map((m) => ({ ...m, ownerId: character.characterId })),
+            );
+        }
+        if (accountRecords !== undefined) {
+            await this.accountRecordRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.accountId),
+                accountRecords.map((m) => ({ ...m, ownerId: character.accountId })),
+            );
+        }
+        if (monsterBook !== undefined) {
+            await this.monsterBookRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                monsterBook.map((m) => ({ ...m, characterId: character.characterId })),
+            );
+        }
+        if (keyLayout !== undefined) {
+            await this.keyLayoutRepo.set(character.worldId, {
+                characterId: character.characterId,
+                worldId: character.worldId,
+                keyLayoutJson: bindingsToJsonString(keyLayout),
+            });
+        }
+        if (skillMacros !== undefined) {
+            await this.skillMacroRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                skillMacros.map((macro) => ({ ...macro, characterId: character.characterId })),
+            );
+        }
+        if (mount !== undefined) {
+            await this.mountRepo.set(character.worldId, {
+                ...mount,
+                characterId: character.characterId,
+                worldId: character.worldId,
+            });
+        }
+        if (storage !== undefined) {
+            await this.storageRepo.set(character.worldId, {
+                ...storage.storage,
+                accountId: character.accountId,
+                worldId: character.worldId,
+            });
+            await this.storageItemRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.accountId),
+                storage.items,
+            );
+        }
+        if (unsettledRequests !== undefined) {
+            await this.unsettledRequestRepo.replaceBySnapshot(
+                character.worldId,
+                String(character.characterId),
+                unsettledRequests.map((m) => ({ ...m, characterId: character.characterId })),
+            );
+        }
+        if (claimedShops !== undefined && claimedShops.length > 0) {
+            await this.shopRepo.claim(
+                character.worldId,
+                character.accountId,
+                character.characterId,
+                claimedShops,
+            );
         }
     }
 
@@ -726,8 +637,6 @@ export class CharacterService {
         >,
     ) {
         const { name, face, hair, skinColor, topItemId, bottomItemId, shoesItemId, weaponItemId } = params;
-        this.assertWorld(worldId);
-        this.assertAccountId(accountId);
         this.validateCharacter({ name });
         const session = await this.sessionRepo.getAccountSession(accountId);
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
@@ -878,10 +787,6 @@ export class CharacterService {
         characterId: number,
         worldId: number,
     ): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean; sealed?: boolean }> {
-        this.assertWorld(worldId);
-        this.assertAccountId(accountId);
-        this.assertCharacterId(characterId);
-
         const session = await this.sessionRepo.getAccountSession(accountId);
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
             return { success: false };

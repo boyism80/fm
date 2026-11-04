@@ -113,50 +113,6 @@ export class PartyService {
         return redisPartyKey(`w${worldId}:invite_pending:${characterId}`);
     }
 
-    private assertWorld(worldId: number) {
-        const wid = String(worldId);
-        if (!this.app.postgresql.worlds[wid]) {
-            const err = new Error(`Unknown world_id: ${worldId}`) as Error & { code?: string };
-            err.code = "UNKNOWN_WORLD";
-            throw err;
-        }
-    }
-
-    private assertCharacterId(characterId: number) {
-        const n = characterId;
-        if (!Number.isInteger(n) || n <= 0 || n > 0xffffffff) {
-            const err = new Error("character_id must be a positive uint32") as Error & { code?: string };
-            err.code = "INVALID_CHARACTER_ID";
-            throw err;
-        }
-    }
-
-    private assertPartyId(partyId: number) {
-        const n = partyId;
-        if (!Number.isInteger(n) || n < 1 || n > Number.MAX_SAFE_INTEGER) {
-            const err = new Error("party_id must be a positive integer") as Error & { code?: string };
-            err.code = "INVALID_PAYLOAD";
-            throw err;
-        }
-    }
-
-    private assertName(name: string) {
-        if (typeof name !== "string" || name.length <= 0 || name.length > 32) {
-            const err = new Error("character_name must be non-empty and <= 32 chars") as Error & { code?: string };
-            err.code = "INVALID_PAYLOAD";
-            throw err;
-        }
-    }
-
-    private assertUInt16(value: number, fieldName: string) {
-        const n = value;
-        if (!Number.isInteger(n) || n < 0 || n > 0xffff) {
-            const err = new Error(`${fieldName} must be uint16`) as Error & { code?: string };
-            err.code = "INVALID_PAYLOAD";
-            throw err;
-        }
-    }
-
     private async publishPartyEvent(
         eventType: string,
         worldId: number,
@@ -275,13 +231,9 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
         }
         const worldId = member.worldId;
-        this.assertWorld(worldId);
         const characterId = member.characterId;
-        this.assertCharacterId(characterId);
         const memberLevel = member.level;
         const memberClassId = member.classId;
-        this.assertUInt16(memberLevel, "level");
-        this.assertUInt16(memberClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(member.door);
 
         const lockedState = await this.characterRealtimeStateRepo.get(worldId, characterId);
@@ -331,8 +283,6 @@ export class PartyService {
             return result;
         }
 
-        await this.partyRepo.invalidateCache(worldId, result.party.partyId);
-        await this.partyMemberRepo.invalidateCache(worldId, String(result.party.partyId));
         const membersMap = await this.partyMemberRepo.getAll(worldId, String(result.party.partyId));
         const partyPb = await this.partyToPb(worldId, result.party, [...membersMap.values()]);
         const wire = Party.encode(partyPb).finish();
@@ -344,9 +294,6 @@ export class PartyService {
     }
 
     async publishMemberLogOnOff(worldId: number, characterId: number) {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
         if (state?.partyId == null) {
             return;
@@ -373,20 +320,16 @@ export class PartyService {
     }
 
     async createParty(worldId: number, leader: PartyMember | null | undefined): Promise<CreatePartyResult> {
-        this.assertWorld(worldId);
         if (!leader || leader.worldId !== worldId) {
             return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
         }
         const leaderCharacterId = leader.characterId;
-        this.assertCharacterId(leaderCharacterId);
         const name = leader.characterName.trim();
         if (!name) {
             return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
         }
         const leaderLevel = leader.level;
         const leaderClassId = leader.classId;
-        this.assertUInt16(leaderLevel, "level");
-        this.assertUInt16(leaderClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(leader.door);
 
         await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
@@ -453,9 +396,6 @@ export class PartyService {
         if (!result.ok || result.partyId == null) {
             return result;
         }
-        await this.partyRepo.invalidateCache(worldId, result.partyId);
-        await this.partyMemberRepo.invalidateCache(worldId, String(result.partyId));
-        await this.characterRealtimeStateRepo.invalidateCache(worldId, leaderCharacterId);
         const created = await this.getParty(worldId, result.partyId);
         if (!created.party) {
             return result;
@@ -468,10 +408,7 @@ export class PartyService {
         inviterCharacterId: number,
         targetCharacterName: string,
     ): Promise<InvitePartyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(inviterCharacterId);
         const trimmed = targetCharacterName.trim();
-        this.assertName(trimmed);
 
         const inviterState = await this.characterRealtimeStateRepo.get(worldId, inviterCharacterId);
         if (inviterState?.partyId == null) {
@@ -545,10 +482,7 @@ export class PartyService {
         inviterCharacterName: string,
         action: number,
     ): Promise<DenyPartyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(deniedCharacterId);
         const inviterName = inviterCharacterName.trim();
-        this.assertName(inviterName);
 
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const inviteKey = this.invitePendingKey(worldId, deniedCharacterId);
@@ -607,19 +541,13 @@ export class PartyService {
         member: PartyMember | null | undefined,
         skipInvitePendingCheck = false,
     ): Promise<PartyMutationResult> {
-        this.assertWorld(worldId);
-        this.assertPartyId(partyId);
         if (!member || member.worldId !== worldId) {
             return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
         }
         const characterId = member.characterId;
-        this.assertCharacterId(characterId);
         const name = member.characterName.trim();
-        this.assertName(name);
         const memberLevel = member.level;
         const memberClassId = member.classId;
-        this.assertUInt16(memberLevel, "level");
-        this.assertUInt16(memberClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(member.door);
 
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
@@ -685,28 +613,13 @@ export class PartyService {
             );
         });
         await client.del(inviteKey);
-        await this.partyRepo.invalidateCache(worldId, partyId);
-        await this.partyMemberRepo.invalidateCache(worldId, String(partyId));
-        await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
         await this.publishPartyChange(EVT.MEMBER_JOINED, worldId, result.partyId, { character_id: characterId });
         return result;
     }
 
     async leaveParty(worldId: number, characterId: number): Promise<LeavePartyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
-        for (;;) {
-            const result = await this.leavePartyLocked(worldId, characterId);
-            if (result !== undefined) {
-                return result;
-            }
-        }
-    }
-
-    // Character locks come before the party lock on every path. A leaving leader disbands the party and so locks
-    // every member, read before any lock; undefined means the party changed in between and the caller tries again.
-    private async leavePartyLocked(worldId: number, characterId: number): Promise<LeavePartyResult | undefined> {
+        // Character locks come before the party lock on every path. A leaving leader disbands the party and so locks
+        // every member, read before any lock; if the party changed in between, the request fails.
         const keyRests = await this.leavingKeyRests(worldId, characterId);
         await using _characterRealtimeLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
@@ -728,7 +641,7 @@ export class PartyService {
         );
 
         if ((await this.leavingKeyRests(worldId, characterId)).join() !== keyRests.join()) {
-            return undefined;
+            throw new Error(`party of character ${characterId} changed while locking`);
         }
 
         const partyResult = await this.ctx.withPgDataTransaction(
@@ -808,11 +721,6 @@ export class PartyService {
             });
         }
         const result = partyResult;
-        await this.partyRepo.invalidateCache(worldId, result.partyId);
-        await this.partyMemberRepo.invalidateCache(worldId, String(result.partyId));
-        for (const affectedCharacterId of result.realtimeStateCharacterIds ?? [characterId]) {
-            await this.characterRealtimeStateRepo.invalidateCache(worldId, affectedCharacterId);
-        }
 
         if (result.disbanded) {
             await this.publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, {
@@ -847,9 +755,6 @@ export class PartyService {
         requesterCharacterId: number,
         targetCharacterId: number,
     ): Promise<ExpelPartyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(requesterCharacterId);
-        this.assertCharacterId(targetCharacterId);
         if (requesterCharacterId === targetCharacterId) {
             return { ok: false, code: messages.PartyErrorCode.CANNOT_EXPEL_SELF };
         }
@@ -941,12 +846,6 @@ export class PartyService {
         }
         const result = partyResult;
 
-        await this.partyRepo.invalidateCache(worldId, result.partyId);
-        await this.partyMemberRepo.invalidateCache(worldId, String(result.partyId));
-        for (const affectedCharacterId of result.realtimeStateCharacterIds ?? [targetCharacterId]) {
-            await this.characterRealtimeStateRepo.invalidateCache(worldId, affectedCharacterId);
-        }
-
         if (result.disbanded) {
             await this.publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, {
                 character_id: targetCharacterId,
@@ -968,11 +867,6 @@ export class PartyService {
         requesterCharacterId: number,
         newLeaderCharacterId: number,
     ): Promise<PartyMutationResult> {
-        this.assertWorld(worldId);
-        this.assertPartyId(partyId);
-        this.assertCharacterId(requesterCharacterId);
-        this.assertCharacterId(newLeaderCharacterId);
-
         const requesterChannel = await this.sessionRepo.findChannel(worldId, requesterCharacterId);
         const targetChannel = await this.sessionRepo.findChannel(worldId, newLeaderCharacterId);
         if (targetChannel == null) {
@@ -1026,8 +920,6 @@ export class PartyService {
         if (!result.ok || result.partyId == null) {
             return result;
         }
-        await this.partyRepo.invalidateCache(worldId, partyId);
-        await this.partyMemberRepo.invalidateCache(worldId, String(partyId));
         await this.publishPartyChange(EVT.LEADER_CHANGED, worldId, result.partyId, {
             old_leader_character_id: requesterCharacterId,
             new_leader_character_id: newLeaderCharacterId,
@@ -1043,15 +935,11 @@ export class PartyService {
         senderName: string,
         message: string,
     ): Promise<BroadcastMultiChatResult> {
-        this.assertWorld(worldId);
-        this.assertPartyId(memberId);
-        this.assertCharacterId(senderCharacterId);
         const trimmedMsg = message;
         if (trimmedMsg.length <= 0 || trimmedMsg.length > 500) {
             return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
         }
         const name = senderName.trim();
-        this.assertName(name);
         const mode = chatMode;
         if (!Number.isInteger(mode) || mode < 0 || mode > 255) {
             return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
@@ -1068,8 +956,6 @@ export class PartyService {
     }
 
     async getParty(worldId: number, partyId: number): Promise<GetPartyResult> {
-        this.assertWorld(worldId);
-        this.assertPartyId(partyId);
         const party = await this.partyRepo.get(worldId, partyId);
         if (!party) {
             return { found: false };

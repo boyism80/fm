@@ -99,8 +99,6 @@ export class BuddyService {
     }
 
     async getAll(worldId: number, characterId: number) {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
         const capacity = await this.realtimeStateRepo.getBuddyCapacity(worldId, characterId);
         const all = await this.buddyRepo.getAll(worldId, String(characterId));
         const buddies: BuddyListEntry[] = [];
@@ -116,9 +114,6 @@ export class BuddyService {
         characterId: number,
         requestId: string,
     ): Promise<IncreaseBuddyCapacityResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-
         await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
@@ -147,13 +142,10 @@ export class BuddyService {
             await this.capacityRequestRepo.insert(worldId, characterId, requestId, {}, txClient);
             return { ok: true as const, capacity: capacity + BUDDY_CAPACITY_STEP };
         });
-        await this.realtimeStateRepo.invalidateCache(worldId, characterId);
         return result;
     }
 
     async publishBuddyChannel(worldId: number, characterId: number, channelIndex: number) {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
         const ch = channelIndex;
         if (!Number.isInteger(ch) || ch < -1) {
             return;
@@ -168,8 +160,6 @@ export class BuddyService {
         targetCharacterName: string,
         groupName: string,
     ): Promise<RequestBuddyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(requesterCharacterId);
         const trimmedName = targetCharacterName.trim();
         const trimmedGroup = groupName.trim();
         if (trimmedName.length > MAX_BUDDY_NAME_LEN || trimmedGroup.length > MAX_BUDDY_GROUP_LEN) {
@@ -219,7 +209,6 @@ export class BuddyService {
                     return this.buddyRepo.set(worldId, { ...existingEntry, groupName: trimmedGroup }, { txClient });
                 },
             );
-            await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
             const requesterView = await this.buildEntry(worldId, updated);
             const targetChannelIndex = (await this.sessionRepo.findChannel(worldId, targetCharacterId)) ?? -1;
             return {
@@ -254,7 +243,6 @@ export class BuddyService {
                     );
                 },
             );
-            await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
             const requesterChannelIndex = (await this.sessionRepo.findChannel(worldId, requesterCharacterId)) ?? -1;
             await this.publishBuddyChannelUpdate(worldId, requesterCharacterId, requesterChannelIndex, [
                 targetCharacterId,
@@ -315,9 +303,6 @@ export class BuddyService {
         );
         const result = { requesterBuddy };
 
-        await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
-        await this.buddyRepo.invalidateCache(worldId, String(targetCharacterId));
-
         const targetChannelIndex = (await this.sessionRepo.findChannel(worldId, targetCharacterId)) ?? -1;
         const requesterView = await this.buildEntry(worldId, result.requesterBuddy);
         const targetIncoming = await this.buddyRepo.getItem(worldId, String(targetCharacterId), requesterCharacterId);
@@ -339,9 +324,6 @@ export class BuddyService {
         accepterCharacterId: number,
         requesterCharacterId: number,
     ): Promise<AcceptBuddyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(accepterCharacterId);
-        this.assertCharacterId(requesterCharacterId);
         if (accepterCharacterId === requesterCharacterId) {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_CANNOT_ADD_SELF };
         }
@@ -418,9 +400,6 @@ export class BuddyService {
         );
         const result = { accepterBuddy, requesterBuddy };
 
-        await this.buddyRepo.invalidateCache(worldId, String(accepterCharacterId));
-        await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
-
         const requesterChannelIndex = (await this.sessionRepo.findChannel(worldId, requesterCharacterId)) ?? -1;
         const accepterChannelIndex = (await this.sessionRepo.findChannel(worldId, accepterCharacterId)) ?? -1;
         await this.publishBuddyChannelUpdate(worldId, accepterCharacterId, accepterChannelIndex, [
@@ -440,10 +419,6 @@ export class BuddyService {
     }
 
     async removeBuddy(worldId: number, characterId: number, buddyCharacterId: number): Promise<RemoveBuddyResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(characterId);
-        this.assertCharacterId(buddyCharacterId);
-
         await using _buddyLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_buddy:${characterId}`,
@@ -456,7 +431,6 @@ export class BuddyService {
 
         const buddyWasAccepted = !row.pending;
         await this.buddyRepo.del(worldId, String(characterId), String(buddyCharacterId));
-        await this.buddyRepo.invalidateCache(worldId, String(characterId));
 
         if (buddyWasAccepted) {
             await this.publishBuddyChannelUpdate(worldId, characterId, -1, [buddyCharacterId]);
@@ -470,24 +444,6 @@ export class BuddyService {
             buddyWasAccepted,
             removedFromOwner: true,
         };
-    }
-
-    private assertWorld(worldId: number) {
-        const wid = String(worldId);
-        if (!this.app.postgresql.worlds[wid]) {
-            const err = new Error(`Unknown world_id: ${worldId}`) as Error & { code?: string };
-            err.code = "UNKNOWN_WORLD";
-            throw err;
-        }
-    }
-
-    private assertCharacterId(characterId: number) {
-        const n = characterId;
-        if (!Number.isInteger(n) || n <= 0 || n > 0xffffffff) {
-            const err = new Error("character_id must be a positive uint32") as Error & { code?: string };
-            err.code = "INVALID_CHARACTER_ID";
-            throw err;
-        }
     }
 
     private async publishBuddyChannelUpdate(
@@ -562,8 +518,6 @@ export class BuddyService {
         senderName: string,
         message: string,
     ): Promise<BroadcastBuddyMultiChatResult> {
-        this.assertWorld(worldId);
-        this.assertCharacterId(senderCharacterId);
         const trimmedMsg = message;
         if (trimmedMsg.length <= 0 || trimmedMsg.length > MAX_MULTI_CHAT_MSG_LEN) {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_UNKNOWN };

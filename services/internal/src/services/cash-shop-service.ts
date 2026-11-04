@@ -270,7 +270,6 @@ export class CashShopService {
                 txClient,
             });
         });
-        await this.inventoryRepo.invalidateCache(worldId, String(request.target_id));
     }
 
     private usedSlots(inventory: InventoryModel[], inventoryType: number): Set<number> {
@@ -328,7 +327,6 @@ export class CashShopService {
                 { txClient },
             );
         });
-        await this.storageRepo.invalidateCache(worldId, request.target_id);
     }
 
     private async settleCharacterSlot(worldId: number, request: CashTransferRequest): Promise<void> {
@@ -521,7 +519,6 @@ export class CashShopService {
                 txClient,
             );
         });
-        await this.inventoryRepo.invalidateCache(worldId, String(characterId));
         if (typeof queued === "number") {
             return queued;
         }
@@ -549,73 +546,67 @@ export class CashShopService {
             req.worldId,
             `cash_account:${req.accountId}`,
         );
-        try {
-            const delta = this.debit(req.currency, req.price);
-            const detail = { amount: req.amount };
-            let slots = 0;
-            let transfer: BalanceTransfer;
-            switch (req.kind) {
-                case CashSlotKind.CASH_SLOT_KIND_INVENTORY: {
-                    const character = await this.characterRepo.get(req.worldId, req.characterId);
-                    const index = req.inventoryType - 1;
-                    if (
-                        character == null ||
-                        character.slotLimits == null ||
-                        index < 0 ||
-                        index >= character.slotLimits.length
-                    ) {
-                        return this.slotFailure(req.accountId, CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-                    }
-                    slots = (character.slotLimits[index] ?? 0) + req.amount;
-                    transfer = {
-                        targetId: req.characterId,
-                        kind: CashTransferKind.InventorySlot,
-                        detail: { ...detail, index },
-                    };
-                    break;
-                }
-                case CashSlotKind.CASH_SLOT_KIND_STORAGE: {
-                    const storage = await this.storageRepo.get(req.worldId, req.accountId);
-                    slots = (storage?.slots ?? DEFAULT_STORAGE_SLOTS) + req.amount;
-                    transfer = { targetId: req.accountId, kind: CashTransferKind.StorageSlot, detail };
-                    break;
-                }
-                case CashSlotKind.CASH_SLOT_KIND_CHARACTER: {
-                    slots =
-                        (await this.accountWorldRepo.findCharacterSlotCount(req.worldId, req.accountId)) + req.amount;
-                    transfer = { targetId: req.accountId, kind: CashTransferKind.CharacterSlot, detail };
-                    break;
-                }
-                default:
+        const delta = this.debit(req.currency, req.price);
+        const detail = { amount: req.amount };
+        let slots = 0;
+        let transfer: BalanceTransfer;
+        switch (req.kind) {
+            case CashSlotKind.CASH_SLOT_KIND_INVENTORY: {
+                const character = await this.characterRepo.get(req.worldId, req.characterId);
+                const index = req.inventoryType - 1;
+                if (
+                    character == null ||
+                    character.slotLimits == null ||
+                    index < 0 ||
+                    index >= character.slotLimits.length
+                ) {
                     return this.slotFailure(req.accountId, CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
-            }
-            if (slots > req.max) {
-                return this.slotFailure(req.accountId, CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
-            }
-
-            const charged = await this.charge(req.worldId, req.accountId, delta, null, [transfer]);
-            if (charged.result !== CashShopResult.CASH_SHOP_RESULT_OK) {
-                return {
-                    result: charged.result,
-                    slots: 0,
-                    nxCash: charged.balance.nxCash,
-                    maplePoint: charged.balance.maplePoint,
+                }
+                slots = (character.slotLimits[index] ?? 0) + req.amount;
+                transfer = {
+                    targetId: req.characterId,
+                    kind: CashTransferKind.InventorySlot,
+                    detail: { ...detail, index },
                 };
+                break;
             }
-            for (const request of charged.requests) {
-                await this.settle(req.worldId, request);
+            case CashSlotKind.CASH_SLOT_KIND_STORAGE: {
+                const storage = await this.storageRepo.get(req.worldId, req.accountId);
+                slots = (storage?.slots ?? DEFAULT_STORAGE_SLOTS) + req.amount;
+                transfer = { targetId: req.accountId, kind: CashTransferKind.StorageSlot, detail };
+                break;
             }
+            case CashSlotKind.CASH_SLOT_KIND_CHARACTER: {
+                slots =
+                    (await this.accountWorldRepo.findCharacterSlotCount(req.worldId, req.accountId)) + req.amount;
+                transfer = { targetId: req.accountId, kind: CashTransferKind.CharacterSlot, detail };
+                break;
+            }
+            default:
+                return this.slotFailure(req.accountId, CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+        }
+        if (slots > req.max) {
+            return this.slotFailure(req.accountId, CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT);
+        }
+
+        const charged = await this.charge(req.worldId, req.accountId, delta, null, [transfer]);
+        if (charged.result !== CashShopResult.CASH_SHOP_RESULT_OK) {
             return {
                 result: charged.result,
-                slots,
+                slots: 0,
                 nxCash: charged.balance.nxCash,
                 maplePoint: charged.balance.maplePoint,
             };
-        } finally {
-            if (req.kind === CashSlotKind.CASH_SLOT_KIND_INVENTORY) {
-                await this.characterRepo.invalidateCache(req.worldId, req.characterId);
-            }
         }
+        for (const request of charged.requests) {
+            await this.settle(req.worldId, request);
+        }
+        return {
+            result: charged.result,
+            slots,
+            nxCash: charged.balance.nxCash,
+            maplePoint: charged.balance.maplePoint,
+        };
     }
 
     private async slotFailure(accountId: number, result: CashShopResult): Promise<ExpandCashSlotReply> {
@@ -901,7 +892,6 @@ export class CashShopService {
             await this.characterRepo.set(worldId, { ...character, meso: meso - price }, { txClient });
             return { result: CashShopResult.CASH_SHOP_RESULT_OK, meso: meso - price };
         });
-        await this.inventoryRepo.invalidateCache(worldId, String(characterId));
         return reply;
     }
 
