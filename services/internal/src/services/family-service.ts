@@ -6,6 +6,7 @@ import { RequestStatus } from "@fm/shared/repos/request-repository";
 import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import type { SessionRepository } from "@fm/shared/repos/session-repository";
 import type { SocialService } from "./social-service";
+import type { DistributedLockService } from "./distributed-lock-service";
 import type { CharacterModel } from "@fm/shared/types/repository-models";
 import type {
     FamilyMember,
@@ -53,6 +54,7 @@ export class FamilyService {
         private readonly unifiedRepository: UnifiedRepository,
         private readonly sessionRepository: SessionRepository,
         private readonly socialService: SocialService,
+        private readonly distributedLockService: DistributedLockService,
     ) {}
 
     // Everyone in the families of the ids, plus the ids themselves when they have no family.
@@ -174,42 +176,19 @@ export class FamilyService {
         return { status, family: families.find((f) => f.members.some((m) => m.characterId === id)) };
     }
 
-    // A family changes only while its families row is locked. Families are locked
-    // in leader order before the member rows; the transaction restarts if a member
-    // changed family in between.
+    // A family changes only under this lock, so its members stay put. Rows are locked in id order, the order a save
+    // (progress) locks its rows in, since fn may update any of them.
     private async withFamilies<T>(
         world: number,
         ids: number[],
         fn: (tx: PoolClient, rows: Map<number, Relative>) => Promise<T>,
     ): Promise<T> {
         const sorted = [...new Set(ids)].sort((a, b) => a - b);
-        const memberships = async (tx: PoolClient) => {
-            const result = await tx.query<{ leader_id: number | null }>(
-                "SELECT leader_id FROM social_family WHERE character_id = ANY($1::int[]) ORDER BY character_id",
-                [sorted],
-            );
-            return result.rows.map((r) => r.leader_id);
-        };
-        for (;;) {
-            const result = await this.internalContext.withPgGlobalTransaction(world, async (tx) => {
-                const before = await memberships(tx);
-                await tx.query(
-                    "SELECT leader_id FROM families WHERE leader_id = ANY($1::int[]) ORDER BY leader_id FOR UPDATE",
-                    [before.filter((id) => id !== null)],
-                );
-                // Every row of both families is locked at once in id order, the order a save (progress) locks
-                // its rows in, since fn may update any of them.
-                await tx.query(`${RELATIVES} FOR UPDATE`, [sorted]);
-                if ((await memberships(tx)).join() !== before.join()) {
-                    return undefined;
-                }
-
-                return { value: await fn(tx, await this.relatives(tx, sorted)) };
-            });
-            if (result) {
-                return result.value;
-            }
-        }
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(world, "family");
+        return this.internalContext.withPgGlobalTransaction(world, async (tx) => {
+            await tx.query(`${RELATIVES} FOR UPDATE`, [sorted]);
+            return fn(tx, await this.relatives(tx, sorted));
+        });
     }
 
     async load(world: number, character: CharacterModel): Promise<Family> {
