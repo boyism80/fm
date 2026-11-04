@@ -124,17 +124,30 @@ export class CashShopRepository {
         return this.ctx.withPgDataTransaction(worldId, accountId, fn, options);
     }
 
+    // shardId names the data shard the client's transaction runs on, where the request row lands.
     async queueTransfer(
+        worldId: number,
+        shardId: number,
         sourceId: number,
         targetId: number,
         kind: CashTransferKind,
         detail: unknown,
         client: PoolClient,
-    ): Promise<void> {
+    ): Promise<CashTransferRequest> {
+        const requestId = randomUUID();
+        const json = JSON.stringify(detail);
         await client.query(
             "INSERT INTO cash_transfer_requests (request_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5)",
-            [randomUUID(), sourceId, targetId, kind, JSON.stringify(detail)],
+            [requestId, sourceId, targetId, kind, json],
         );
+        return {
+            request_id: requestId,
+            source_id: sourceId,
+            target_id: targetId,
+            kind,
+            detail: JSON.parse(json),
+            pool: this.ctx.getPgDataPool(worldId, shardId),
+        };
     }
 
     // Queued in the unified database with a balance change, for the shards of one world.
@@ -145,11 +158,21 @@ export class CashShopRepository {
         kind: CashTransferKind,
         detail: unknown,
         client: PoolClient,
-    ): Promise<void> {
+    ): Promise<CashTransferRequest> {
+        const requestId = randomUUID();
+        const json = JSON.stringify(detail);
         await client.query(
             "INSERT INTO cash_transfer_requests (request_id, world_id, source_id, target_id, kind, detail) VALUES ($1, $2, $3, $4, $5, $6)",
-            [randomUUID(), worldId, sourceId, targetId, kind, JSON.stringify(detail)],
+            [requestId, worldId, sourceId, targetId, kind, json],
         );
+        return {
+            request_id: requestId,
+            source_id: sourceId,
+            target_id: targetId,
+            kind,
+            detail: JSON.parse(json),
+            pool: this.ctx.getPgUnifiedPool(),
+        };
     }
 
     async pendingTransfers(worldId: number): Promise<CashTransferRequest[]> {
