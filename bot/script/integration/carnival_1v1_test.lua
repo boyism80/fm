@@ -50,6 +50,32 @@ local function open_field_list(ctx, bot)
     return dlg
 end
 
+-- The stages are announced to everyone in the match; the hook starts before the room opens.
+local announced = {}
+local ANNOUNCEMENTS = { "카니발 파티 대기가 시작", "10초 후 대결이 시작", "몬스터 카니발이 시작" }
+
+local function watch_announcements(ctx)
+    ctx:hook("carnival_stage", function(_, _, p, name)
+        if name ~= resp.notice then
+            return
+        end
+        for _, text in ipairs(ANNOUNCEMENTS) do
+            if p.message:find(text, 1, true) ~= nil then
+                announced[text] = true
+            end
+        end
+    end)
+end
+
+local function announced_all(ctx)
+    for _, text in ipairs(ANNOUNCEMENTS) do
+        if announced[text] ~= true then
+            return ctx:fail("카니발 단계 안내가 오지 않음: " .. text)
+        end
+    end
+    return true
+end
+
 local function challenge(ctx, red, blue)
     local dlg = open_field_list(ctx, blue)
     if dlg == false then
@@ -131,6 +157,7 @@ test_suite {
     scenarios = {
         function(ctx)
             local red = ctx:bot(0)
+            watch_announcements(ctx)
             local dlg = open_field_list(ctx, red)
             if dlg == false then
                 return false
@@ -205,7 +232,11 @@ test_suite {
             if wait_map(ctx, red, field, 20000) == false then
                 return false
             end
-            return wait_map(ctx, blue, field, 20000)
+            if wait_map(ctx, blue, field, 20000) == false then
+                return false
+            end
+            ctx:sleep(1000)
+            return announced_all(ctx)
         end,
         function(ctx)
             local red = ctx:bot(0)

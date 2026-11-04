@@ -115,6 +115,7 @@ return {
     end,
 
     on_start = function(sm)
+        sm:message("카니발 파티 대기가 시작되었습니다. 3분동안 아무런 도전이 없을 경우 나가지게 됩니다.")
         sm:start_timer(WAITING_MS)
     end,
 
@@ -133,6 +134,7 @@ return {
     end,
 
     on_challenge_accepted = function(sm)
+        sm:message("10초 후 대결이 시작됩니다! 모두 준비해 주세요!")
         sm:restart_timer(READY_MS)
     end,
 
@@ -159,6 +161,7 @@ return {
             for _, p in ipairs(sm:players()) do
                 p:try_party_quest(RANKING_QUEST)
             end
+            sm:message("몬스터 카니발이 시작되었습니다!")
             sm:restart_timer(BATTLE_MS)
         elseif state == CARNIVAL_STATE.BATTLE then
             local result = match:result()
@@ -233,6 +236,7 @@ return {
 
     on_player_leave = function(sm, player, reason)
         if reason == "disconnect" then
+            sm:message(player:name() .. "님이 몬스터 카니발에서 나가셨습니다.", Msg.PinkText)
             sm:finish(HUB_MAP)
         end
     end,
