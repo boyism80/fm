@@ -36,7 +36,7 @@ local function level_up(ctx, bot, level, class, exp, items)
     end
     local p = bot:request(resp.update_stats, req.normal_chat { message = "/경험치얻기 " .. exp }, function(p)
         return p.stats[LEVEL] ~= nil and p.stats[MAX_HP] ~= nil and p.stats[MAX_MP] ~= nil and
-        p.stats[AVAILABLE_SP] ~= nil
+            p.stats[AVAILABLE_SP] ~= nil
     end, 3000)
     if p == false then
         ctx:fail("경험치를 얻었는데 레벨이 오르지 않음")

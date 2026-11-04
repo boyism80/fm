@@ -101,12 +101,21 @@ for i, name in ipairs({ "전사 신발 제작", "궁수 신발 제작", "마법�
     for _, recipe in ipairs(category.recipes) do
         recipe.cost = math.floor(recipe.cost * 9 / 10)
     end
-    CATEGORIES[i + 4] = { text = " 촉진제로 " .. name, prompt = category.prompt, equip = true, stimulator = true, recipes =
-    category.recipes }
+    CATEGORIES[i + 4] = {
+        text = " 촉진제로 " .. name,
+        prompt = category.prompt,
+        equip = true,
+        stimulator = true,
+        recipes =
+            category.recipes
+    }
 end
 table.insert(CATEGORIES, 1,
-    { text = " 촉진제가 뭐죠?", info =
-    "촉진제는 여러 아이템을 만들때 첨가할 수 있는 특수한 약이죠. 몬스터에게서 구하실 수 있을거에요. 어쨌든, 촉진제는 아이템을 만들때 일정 확률로 옵션이 더 좋아질 수 있게 됩니다. 하지만 10%의 확률로 제작에 실패할 수도 있으니 신중하게 결정해주세요." })
+    {
+        text = " 촉진제가 뭐죠?",
+        info =
+        "촉진제는 여러 아이템을 만들때 첨가할 수 있는 특수한 약이죠. 몬스터에게서 구하실 수 있을거에요. 어쨌든, 촉진제는 아이템을 만들때 일정 확률로 옵션이 더 좋아질 수 있게 됩니다. 하지만 10%의 확률로 제작에 실패할 수도 있으니 신중하게 결정해주세요."
+    })
 
 local TEXT = {
     greet = "루디브리엄 신발 상점에 잘 오셨어요~ 무엇을 도와드릴까요?#b",
