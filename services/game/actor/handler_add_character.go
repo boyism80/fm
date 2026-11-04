@@ -27,6 +27,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		a.GameWorld.Systems().Get[*game.PartySystem]().UpdateMemberAsync(nil, msg.Character)
 		return
 	}
+	a.GameWorld.Systems().Get[*game.ExpeditionSystem]().EnterChannel(msg.Character)
 	msg.Character.NotifyLevelClassChanged()
 	msg.Character.ShowBerserk()
 	msg.Character.SocialLogin(msg.Notes)

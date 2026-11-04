@@ -163,6 +163,20 @@ local function expedite(ctx, npc, entrance, boss_map)
     return leader
 end
 
+-- The leader's menu choice opens a list of names; choosing one answers with no dialog unless it is refused.
+local function bot_pick(ctx, bot, choice, expected, name)
+    local list = bot:dialog(true, choice)
+    if list == nil or list.text:find(expected, 1, true) == nil then
+        return ctx:fail(bot:name() .. " 목록 대화 없음: " .. expected)
+    end
+    local refused = bot:dialog(true, name)
+    if refused ~= nil then
+        bot:dialog(false)
+        return ctx:fail(bot:name() .. " 거절됨: " .. refused.text)
+    end
+    return true
+end
+
 local function bounce(ctx, bot)
     if bot:transfer(1) == false then
         return ctx:fail(bot:name() .. " 채널 1 이동 실패")
@@ -214,6 +228,23 @@ local function recruit(ctx)
         return ctx:fail("채널을 옮긴 원정대원이 명단에 남음: " .. list.text)
     end
     if ask(ctx, late, ADOBIS, "무엇을 하시겠습니까", 1, "원정대에 가입했습니다") == false then
+        return false
+    end
+
+    -- A banned member who left the channel and came back can still be allowed in.
+    if open(ctx, leader, ADOBIS, "원정대장님 무엇을") == false then
+        return false
+    end
+    if bot_pick(ctx, leader, 1, "추방할 원정대원", 1) == false then
+        return false
+    end
+    if bounce(ctx, late) == false then
+        return false
+    end
+    if open(ctx, leader, ADOBIS, "원정대장님 무엇을") == false then
+        return false
+    end
+    if bot_pick(ctx, leader, 2, "허가할 제재 유저", 0) == false then
         return false
     end
 

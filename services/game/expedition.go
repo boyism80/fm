@@ -113,8 +113,7 @@ func (e *Expedition) addMember(ch *Character) error {
 	if e.memberIndex(ch.GetID()) >= 0 {
 		return ErrExpeditionJoined
 	}
-	if i := e.bannedIndex(ch.GetID()); i >= 0 {
-		e.banned[i].character = ch
+	if e.bannedIndex(ch.GetID()) >= 0 {
 		return ErrExpeditionBanned
 	}
 	if e.registry.boards[e.name].reservationIndex(ch.GetID()) >= 0 {

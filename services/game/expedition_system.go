@@ -254,6 +254,20 @@ func (r *ExpeditionSystem) LeaveChannel(ch *Character) {
 	}
 }
 
+func (r *ExpeditionSystem) EnterChannel(ch *Character) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, board := range r.boards {
+		e := board.recruiting
+		if e == nil {
+			continue
+		}
+		if i := e.bannedIndex(ch.GetID()); i >= 0 {
+			e.banned[i].character = ch
+		}
+	}
+}
+
 func (r *ExpeditionSystem) EndBattle(sm *StateMachine) {
 	r.mu.Lock()
 	name := ""
