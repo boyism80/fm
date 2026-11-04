@@ -54,6 +54,16 @@ export class CharacterRealtimeStateRepository extends ValueRepository<
         };
     }
 
+    async setGuild(worldId: number, characterId: number, guildId: number | null, options: RepositoryTxOptions = {}) {
+        const state = await this.get(worldId, characterId, options);
+        return this.set(worldId, { worldId, characterId, partyId: state?.partyId ?? null, guildId }, options);
+    }
+
+    async setParty(worldId: number, characterId: number, partyId: number | null, options: RepositoryTxOptions = {}) {
+        const state = await this.get(worldId, characterId, options);
+        return this.set(worldId, { worldId, characterId, partyId, guildId: state?.guildId ?? null }, options);
+    }
+
     async getBuddyCapacity(worldId: number, characterId: number, options: RepositoryTxOptions = {}): Promise<number> {
         const state = await this.get(worldId, characterId, options);
         if (state?.buddyCapacity == null) {

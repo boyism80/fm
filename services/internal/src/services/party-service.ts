@@ -241,9 +241,6 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
         const lockedPartyId = lockedState.partyId;
-        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 1) {
-            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
-        }
 
         await using _partyLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
@@ -344,59 +341,36 @@ export class PartyService {
 
         const partyId = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const res = await txClient.query("SELECT nextval('party_id_seq') AS id");
-            const id = res.rows?.[0]?.id;
-            if (id == null) {
-                const err = new Error("nextval('party_id_seq') returned no id") as Error & { code?: string };
-                err.code = "PARTY_ID_SEQ_ERROR";
-                throw err;
-            }
-            return Number(id);
+            return Number(res.rows[0].id);
         });
-        try {
-            const party = await this.ctx.withPgDataTransaction(worldId, partyId, async (txClient: PoolClient) => {
-                const created = await this.partyRepo.set(
+        await this.ctx.withPgDataTransaction(worldId, partyId, async (txClient: PoolClient) => {
+            const created = await this.partyRepo.set(
+                worldId,
+                { worldId, partyId, leaderCharacterId, state: PartyState.PARTY_STATE_ACTIVE },
+                { txClient },
+            );
+            await this.partyMemberRepo.set(
+                worldId,
+                {
                     worldId,
-                    { worldId, partyId, leaderCharacterId, state: PartyState.PARTY_STATE_ACTIVE },
-                    { txClient },
-                );
-                await this.partyMemberRepo.set(
-                    worldId,
-                    {
-                        worldId,
-                        partyId,
-                        characterId: leaderCharacterId,
-                        characterName: name,
-                        level: leaderLevel,
-                        classId: leaderClassId,
-                        role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER,
-                        mapId: leader.mapId ?? 0,
-                        door: doorJson,
-                    },
-                    { txClient },
-                );
-                return created;
-            });
-            await this.ctx.withPgDataTransaction(worldId, leaderCharacterId, async (txClient: PoolClient) => {
-                await this.characterRealtimeStateRepo.set(
-                    worldId,
-                    { worldId, characterId: leaderCharacterId, partyId, guildId: leaderState?.guildId ?? null },
-                    { txClient },
-                );
-            });
-        } catch (err) {
-            await this.ctx
-                .withPgDataTransaction(worldId, partyId, async (txClient: PoolClient) => {
-                    await this.partyMemberRepo.del(worldId, String(partyId), leaderCharacterId, { txClient });
-                    await this.partyRepo.delete({ worldId, partyId }, { txClient });
-                })
-                .catch(() => {});
-            throw err;
-        }
+                    partyId,
+                    characterId: leaderCharacterId,
+                    characterName: name,
+                    level: leaderLevel,
+                    classId: leaderClassId,
+                    role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER,
+                    mapId: leader.mapId ?? 0,
+                    door: doorJson,
+                },
+                { txClient },
+            );
+            return created;
+        });
+        await this.ctx.withPgDataTransaction(worldId, leaderCharacterId, async (txClient: PoolClient) => {
+            await this.characterRealtimeStateRepo.setParty(worldId, leaderCharacterId, partyId, { txClient });
+        });
         const result = { ok: true as const, partyId };
-        if (!result.ok || result.partyId == null) {
-            return result;
-        }
-        const created = await this.getParty(worldId, result.partyId);
+        const created = await this.getParty(worldId, partyId);
         if (!created.party) {
             return result;
         }
@@ -606,11 +580,7 @@ export class PartyService {
             return result;
         }
         await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
-            await this.characterRealtimeStateRepo.set(
-                worldId,
-                { worldId, characterId, partyId, guildId: memberState?.guildId ?? null },
-                { txClient },
-            );
+            await this.characterRealtimeStateRepo.setParty(worldId, characterId, partyId, { txClient });
         });
         await client.del(inviteKey);
         await this.publishPartyChange(EVT.MEMBER_JOINED, worldId, result.partyId, { character_id: characterId });
@@ -631,9 +601,6 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
         const lockedPartyId = lockedState.partyId;
-        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 1) {
-            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
-        }
 
         await using _partyLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
@@ -713,11 +680,7 @@ export class PartyService {
                 const memberState = await this.characterRealtimeStateRepo.get(worldId, affectedCharacterId, {
                     txClient,
                 });
-                await this.characterRealtimeStateRepo.set(
-                    worldId,
-                    { worldId, characterId: affectedCharacterId, partyId: null, guildId: memberState?.guildId ?? null },
-                    { txClient },
-                );
+                await this.characterRealtimeStateRepo.setParty(worldId, affectedCharacterId, null, { txClient });
             });
         }
         const result = partyResult;
@@ -777,9 +740,6 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
         const lockedPartyId = requesterLockedState.partyId;
-        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 1) {
-            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
-        }
 
         await using _partyLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
@@ -837,11 +797,7 @@ export class PartyService {
                 const targetState = await this.characterRealtimeStateRepo.get(worldId, affectedCharacterId, {
                     txClient,
                 });
-                await this.characterRealtimeStateRepo.set(
-                    worldId,
-                    { worldId, characterId: affectedCharacterId, partyId: null, guildId: targetState?.guildId ?? null },
-                    { txClient },
-                );
+                await this.characterRealtimeStateRepo.setParty(worldId, affectedCharacterId, null, { txClient });
             });
         }
         const result = partyResult;

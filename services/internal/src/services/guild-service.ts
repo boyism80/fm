@@ -369,17 +369,7 @@ export class GuildService {
         });
 
         await this.ctx.withPgDataTransaction(worldId, leaderCharacterId, async (dataTx: PoolClient) => {
-            await this.characterRealtimeStateRepo.set(
-                worldId,
-                {
-                    worldId,
-                    characterId: leaderCharacterId,
-                    partyId: leaderState?.partyId ?? null,
-                    guildId,
-                    buddyCapacity: leaderState?.buddyCapacity,
-                },
-                { txClient: dataTx },
-            );
+            await this.characterRealtimeStateRepo.setGuild(worldId, leaderCharacterId, guildId, { txClient: dataTx });
             if (requestId !== "0") {
                 await this.guildCreateRequestRepo.insert(
                     worldId,
@@ -480,17 +470,7 @@ export class GuildService {
         }
 
         await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
-            await this.characterRealtimeStateRepo.set(
-                worldId,
-                {
-                    worldId,
-                    characterId,
-                    partyId: memberState?.partyId ?? null,
-                    guildId,
-                    buddyCapacity: memberState?.buddyCapacity,
-                },
-                { txClient },
-            );
+            await this.characterRealtimeStateRepo.setGuild(worldId, characterId, guildId, { txClient });
         });
 
         await this.publishGuildChange(EVT.MEMBER_JOINED, worldId, guildId, {
@@ -546,17 +526,7 @@ export class GuildService {
         if (guildResult.clearRealtime) {
             await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
                 const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-                await this.characterRealtimeStateRepo.set(
-                    worldId,
-                    {
-                        worldId,
-                        characterId,
-                        partyId: state?.partyId ?? null,
-                        guildId: null,
-                        buddyCapacity: state?.buddyCapacity,
-                    },
-                    { txClient },
-                );
+                await this.characterRealtimeStateRepo.setGuild(worldId, characterId, null, { txClient });
             });
         }
         const result = guildResult;
@@ -661,17 +631,7 @@ export class GuildService {
         }
 
         await this.ctx.withPgDataTransaction(worldId, targetCharacterId, async (txClient: PoolClient) => {
-            await this.characterRealtimeStateRepo.set(
-                worldId,
-                {
-                    worldId,
-                    characterId: targetCharacterId,
-                    partyId: targetLockedState.partyId ?? null,
-                    guildId: null,
-                    buddyCapacity: targetLockedState.buddyCapacity,
-                },
-                { txClient },
-            );
+            await this.characterRealtimeStateRepo.setGuild(worldId, targetCharacterId, null, { txClient });
         });
         const result = guildResult;
 
@@ -1276,17 +1236,7 @@ export class GuildService {
                 if (!memberState) {
                     return;
                 }
-                await this.characterRealtimeStateRepo.set(
-                    worldId,
-                    {
-                        worldId,
-                        characterId: memberCharacterId,
-                        partyId: memberState.partyId ?? null,
-                        guildId: null,
-                        buddyCapacity: memberState.buddyCapacity,
-                    },
-                    { txClient },
-                );
+                await this.characterRealtimeStateRepo.setGuild(worldId, memberCharacterId, null, { txClient });
             });
         }
         const result = guildResult;
