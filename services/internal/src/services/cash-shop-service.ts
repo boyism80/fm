@@ -38,6 +38,7 @@ import type { StorageRepository } from "@fm/shared/repos/storage-repository";
 import type { InventoryRepository, InventoryModel } from "@fm/shared/repos/inventory-repository";
 import type { SessionRepository } from "@fm/shared/repos/session-repository";
 import type { UnifiedRepository } from "@fm/shared/repos/unified-repository";
+import { DistributedLockAcquireError } from "@fm/shared/system/distributed-lock";
 import type { RepositoryTxOptions } from "@fm/shared/types/repository-contracts";
 import type { RabbitMQService } from "./rabbitmq-service";
 import type { SocialService } from "./social-service";
@@ -182,12 +183,22 @@ export class CashShopService {
         });
     }
 
-    // A request settles its own transfer and answers from the outcome; this scan is for what they left behind.
+    // A request settles its own transfer under the account lock and answers from the outcome; this scan is for what
+    // they left behind, and leaves an account in use to its next run. source and target hold every account a transfer
+    // touches; the one that is a character id only takes a spare key.
     async settleTransfers(worldId: number): Promise<void> {
         for (const request of await this.cashShopRepo.pendingTransfers(worldId)) {
             try {
+                await using _locks = await this.distributedLockService.acquireWorldDataLocks(
+                    worldId,
+                    [`cash_account:${request.source_id}`, `cash_account:${request.target_id}`],
+                    { waitTimeoutMs: 0 },
+                );
                 await this.settle(worldId, request);
             } catch (err) {
+                if (err instanceof DistributedLockAcquireError) {
+                    continue;
+                }
                 console.error(`[cash-shop] transfer pending id=${request.request_id} kind=${request.kind}`, err);
             }
         }
@@ -680,6 +691,10 @@ export class CashShopService {
         characterId: number,
         item: InventoryModel,
     ): Promise<{ result: CashShopResult; slot: number }> {
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `cash_account:${accountId}`,
+        );
         const request = await this.cashShopRepo.withAccountLock(worldId, accountId, async (txClient) => {
             const row = await this.cashShopRepo.deleteItem(worldId, accountId, String(item.uniqueId), { txClient });
             if (row == null) {
@@ -771,6 +786,10 @@ export class CashShopService {
     }
 
     async expandSlot(req: ExpandCashSlotRequest): Promise<ExpandCashSlotReply> {
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(
+            req.worldId,
+            `cash_account:${req.accountId}`,
+        );
         try {
             const delta = this.debit(req.currency, req.price);
             const detail = { amount: req.amount, max: req.max, refund: CashShopService.negate(delta) };
@@ -1070,6 +1089,10 @@ export class CashShopService {
 
     // The item leaves the locker with a credit request in the same transaction; settle adds the maple points.
     async payBack(req: PayBackCashItemRequest): Promise<PayBackCashItemReply> {
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(
+            req.worldId,
+            `cash_account:${req.accountId}`,
+        );
         const request = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
             const row = await this.cashShopRepo.deleteItem(req.worldId, req.accountId, String(req.serial), {
                 txClient,
@@ -1104,6 +1127,14 @@ export class CashShopService {
         price: number,
         item: InventoryModel,
     ): Promise<BuyCashQuestItemReply> {
+        const owner = await this.characterRepo.get(worldId, characterId);
+        if (owner == null) {
+            return { result: CashShopResult.CASH_SHOP_RESULT_NOT_FOUND, meso: 0 };
+        }
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `cash_account:${owner.accountId}`,
+        );
         const reply = await this.cashShopRepo.withCharacterLock(worldId, characterId, async (txClient) => {
             const character = await this.characterRepo.get(worldId, characterId, { txClient });
             if (character == null) {
@@ -1125,7 +1156,12 @@ export class CashShopService {
         return reply;
     }
 
+    // The lock makes this read wait for a request whose reply timed out but is still running.
     async reload(worldId: number, accountId: number, characterId: number) {
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `cash_account:${accountId}`,
+        );
         const [character, inventory, balance, items] = await Promise.all([
             this.characterRepo.get(worldId, characterId),
             this.inventoryRepo.getAll(worldId, String(characterId)),

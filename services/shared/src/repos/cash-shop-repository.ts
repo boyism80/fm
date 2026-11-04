@@ -203,7 +203,12 @@ export class CashShopRepository {
                 request.kind === CashTransferKind.CharacterSlot
             ) {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617368, request.target_id]);
-            } else if (request.kind === CashTransferKind.InventorySlot || request.kind === CashTransferKind.Meso) {
+            } else if (
+                request.kind === CashTransferKind.InventorySlot ||
+                request.kind === CashTransferKind.Meso ||
+                request.kind === CashTransferKind.TakeOut ||
+                request.kind === CashTransferKind.Ring
+            ) {
                 await client.query("SELECT pg_advisory_xact_lock($1, $2)", [0x63617369, request.target_id]);
             }
             await fn(client);
