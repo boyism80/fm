@@ -125,7 +125,7 @@ func NewMiniGame(owner *Character, kind uint8, title string, password string, pi
 	if m.wz.PersonalShop || m.wz.Limits(constant.FieldLimitMinigame) {
 		return nil, &MiniRoomEnterError{Code: pconst.MiniRoomEnterCannotOpen}
 	}
-	if title == "" {
+	if !ClientText(title).Valid(miniRoomTitleLimit) {
 		return nil, ErrMiniRoomInvalid
 	}
 

@@ -272,7 +272,7 @@ func NewPersonalShop(owner *Character, title string, slot int16, itemID uint32) 
 	if expiration := permit.GetExpiration(); !expiration.IsZero() && clock.Now().After(expiration) {
 		return nil, ErrMiniRoomInvalid
 	}
-	if title == "" {
+	if !ClientText(title).Valid(miniRoomTitleLimit) {
 		return nil, ErrMiniRoomInvalid
 	}
 	if err := m.checkShopSpot(owner.position); err != nil {

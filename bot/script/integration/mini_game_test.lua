@@ -304,6 +304,24 @@ local function match_card_flow(ctx)
     return true
 end
 
+-- A title past the limit opens nothing and shows nothing to the map.
+local function long_title_refused(ctx)
+    local owner, watcher = ctx:bot(0), ctx:bot(1)
+    if setup(ctx, owner, OMOK_SET .. ":1") == false or setup(ctx, watcher, "-") == false then
+        return false
+    end
+    local balloon = owner:request_on(watcher, resp.user_mini_room_balloon, req.mini_room {
+        mode = MODE.create,
+        type = TYPE.omok,
+        title = string.rep("a", 65),
+        private = false,
+        piece = 0,
+    }, function(p)
+        return p.character_id == owner:id() and p.balloon ~= nil
+    end, 1500)
+    return check(ctx, balloon == false, "제한을 넘는 제목으로 미니게임 방이 열림")
+end
+
 test_suite {
     name = "MiniGame: 오목·짝맞추기",
     bot_count = 2,
@@ -311,5 +329,6 @@ test_suite {
     scenarios = {
         omok_flow,
         match_card_flow,
+        long_title_refused,
     },
 }

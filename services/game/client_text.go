@@ -13,6 +13,7 @@ type RankTitles [5]string
 
 const (
 	rankTitleLimit     = 12
+	miniRoomTitleLimit = 64
 	requiredRankTitles = 2
 )
 
