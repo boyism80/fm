@@ -57,21 +57,7 @@ export class PartyGrpcController {
             `[party] join character=${req.member?.characterId} party=${req.partyId} skip_pending=${req.skipInvitePendingCheck}` +
                 ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: PartyErrorCode.NONE,
-                partyId: result.partyId,
-                revision: result.revision ?? 0,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? PartyErrorCode.UNKNOWN,
-                partyId: undefined,
-                revision: 0,
-            });
-        }
+        callback(null, { ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN), partyId: result.partyId, revision: result.revision ?? 0 });
     }
 
     @Method("inviteParty")
@@ -101,23 +87,7 @@ export class PartyGrpcController {
             call.request.worldId,
             call.request.characterId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: PartyErrorCode.NONE,
-                partyId: result.partyId,
-                disbanded: result.disbanded ?? false,
-                revision: result.revision ?? 0,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? PartyErrorCode.UNKNOWN,
-                partyId: undefined,
-                disbanded: false,
-                revision: 0,
-            });
-        }
+        callback(null, { ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN), partyId: result.partyId, disbanded: result.disbanded ?? false, revision: result.revision ?? 0 });
     }
 
     @Method("expelParty")
@@ -127,23 +97,7 @@ export class PartyGrpcController {
             call.request.requesterCharacterId,
             call.request.targetCharacterId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: PartyErrorCode.NONE,
-                partyId: result.partyId,
-                disbanded: result.disbanded ?? false,
-                revision: result.revision ?? 0,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? PartyErrorCode.UNKNOWN,
-                partyId: undefined,
-                disbanded: false,
-                revision: 0,
-            });
-        }
+        callback(null, { ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN), partyId: result.partyId, disbanded: result.disbanded ?? false, revision: result.revision ?? 0 });
     }
 
     @Method("changePartyLeader")

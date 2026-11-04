@@ -226,23 +226,7 @@ export class GuildGrpcController {
             req.requestId,
             req.guildId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: GuildErrorCode.GUILD_ERROR_NONE,
-                guildId: result.guildId,
-                capacity: result.capacity ?? 0,
-                gp: result.gp ?? 0,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
-                guildId: undefined,
-                capacity: 0,
-                gp: 0,
-            });
-        }
+        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), guildId: result.guildId, capacity: result.capacity ?? 0, gp: result.gp ?? 0 });
     }
 
     @Method("gainGuildGp")
@@ -254,21 +238,7 @@ export class GuildGrpcController {
             req.amount,
             req.requestId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: GuildErrorCode.GUILD_ERROR_NONE,
-                guildId: result.guildId,
-                gp: result.gp ?? 0,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
-                guildId: undefined,
-                gp: 0,
-            });
-        }
+        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), guildId: result.guildId, gp: result.gp ?? 0 });
     }
 
     @Method("sendGuildMessage")
@@ -309,25 +279,7 @@ export class GuildGrpcController {
             req.characterId,
             req.page,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: GuildErrorCode.GUILD_ERROR_NONE,
-                threads: result.threads ?? [],
-                listStart: result.listStart ?? 0,
-                threadCount: result.threadCount ?? 0,
-                notice: result.notice,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
-                threads: [],
-                listStart: 0,
-                threadCount: 0,
-                notice: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), threads: result.threads ?? [], listStart: result.listStart ?? 0, threadCount: result.threadCount ?? 0, notice: result.notice });
     }
 
     @Method("showGuildBulletinBoardThread")
@@ -358,27 +310,7 @@ export class GuildGrpcController {
             req.body,
             req.icon,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: GuildErrorCode.GUILD_ERROR_NONE,
-                thread: result.thread,
-                threads: result.threads ?? [],
-                listStart: result.listStart ?? 0,
-                threadCount: result.threadCount ?? 0,
-                notice: result.notice,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
-                thread: undefined,
-                threads: [],
-                listStart: 0,
-                threadCount: 0,
-                notice: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), thread: result.thread, threads: result.threads ?? [], listStart: result.listStart ?? 0, threadCount: result.threadCount ?? 0, notice: result.notice });
     }
 
     @Method("updateGuildBulletinBoardThread")
@@ -453,21 +385,7 @@ export class GuildGrpcController {
             req.requestId,
             req.guildId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
     }
 
     @Method("leaveAlliance")
@@ -476,25 +394,7 @@ export class GuildGrpcController {
             call.request.worldId,
             call.request.characterId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                disbanded: result.disbanded ?? false,
-                removedGuildId: result.removedGuildId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                disbanded: false,
-                removedGuildId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, disbanded: result.disbanded ?? false, removedGuildId: result.removedGuildId ?? 0, alliance: result.alliance });
     }
 
     @Method("expelAllianceGuild")
@@ -509,25 +409,7 @@ export class GuildGrpcController {
             req.targetGuildId,
             req.allianceId > 0 ? req.allianceId : undefined,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                disbanded: result.disbanded ?? false,
-                removedGuildId: result.removedGuildId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                disbanded: false,
-                removedGuildId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, disbanded: result.disbanded ?? false, removedGuildId: result.removedGuildId ?? 0, alliance: result.alliance });
     }
 
     @Method("disbandAlliance")
@@ -536,19 +418,7 @@ export class GuildGrpcController {
             call.request.worldId,
             call.request.characterId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0 });
     }
 
     @Method("acceptAllianceInvite")
@@ -563,21 +433,7 @@ export class GuildGrpcController {
             req.allianceId,
             req.guildId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
     }
 
     @Method("increaseAllianceCapacity")
@@ -591,21 +447,7 @@ export class GuildGrpcController {
             call.request.requestId,
             call.request.allianceId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
     }
 
     @Method("changeAllianceRankTitles")
@@ -619,21 +461,7 @@ export class GuildGrpcController {
             req.characterId,
             req.rankTitles,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
     }
 
     @Method("changeAllianceLeader")
@@ -647,25 +475,7 @@ export class GuildGrpcController {
             req.characterId,
             req.newLeaderCharacterId,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                oldLeaderCharacterId: result.oldLeaderCharacterId ?? 0,
-                newLeaderCharacterId: result.newLeaderCharacterId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                oldLeaderCharacterId: 0,
-                newLeaderCharacterId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, oldLeaderCharacterId: result.oldLeaderCharacterId ?? 0, newLeaderCharacterId: result.newLeaderCharacterId ?? 0, alliance: result.alliance });
     }
 
     @Method("changeAllianceNotice")
@@ -679,21 +489,7 @@ export class GuildGrpcController {
             req.characterId,
             req.notice,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
     }
 
     @Method("changeAllianceMemberRank")
@@ -708,25 +504,7 @@ export class GuildGrpcController {
             req.targetCharacterId,
             req.promote,
         );
-        if (result.ok) {
-            callback(null, {
-                ok: true,
-                errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
-                allianceId: result.allianceId ?? 0,
-                targetCharacterId: result.targetCharacterId ?? 0,
-                newAllianceRank: result.newAllianceRank ?? 0,
-                alliance: result.alliance,
-            });
-        } else {
-            callback(null, {
-                ok: false,
-                errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
-                allianceId: 0,
-                targetCharacterId: 0,
-                newAllianceRank: 0,
-                alliance: undefined,
-            });
-        }
+        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, targetCharacterId: result.targetCharacterId ?? 0, newAllianceRank: result.newAllianceRank ?? 0, alliance: result.alliance });
     }
 
     @Method("getAlliance")
