@@ -53,11 +53,11 @@ test_suite {
     bot_count = 2,
 
     on_initialize = function(ctx)
-        local classes = { 112, 122 }
+        -- Only the leader needs the quest; the partner is any warrior.
+        local commands = { "/봇초기화 120 112 0 - 6110:1", "/봇초기화 120 110 0" }
         for i = 0, ctx:bot_count() - 1 do
             local bot = ctx:bot(i)
-            local command = string.format("/봇초기화 120 %d 0 - 6110:1", classes[i + 1])
-            if pq.command(bot, command, "봇초기화 완료") == false then
+            if pq.command(bot, commands[i + 1], "봇초기화 완료") == false then
                 return ctx:fail(bot:name() .. " 봇 초기화 실패")
             end
             if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
@@ -85,6 +85,22 @@ test_suite {
             return true
         end,
         pq.form_party,
+        function(ctx)
+            local leader, member = ctx:bot(0), ctx:bot(1)
+            if pq.command(member, "/봇초기화 120 200 0", "봇초기화 완료") == false then
+                return ctx:fail("마법사 봇 초기화 실패")
+            end
+            ctx:sleep(1000)
+            leader:warp("in00")
+            if leader:map() ~= RUSH_ENTRY then
+                return ctx:fail("전사가 아닌 파티원과 러시 시험장에 입장함")
+            end
+            if pq.command(member, "/봇초기화 120 110 0", "봇초기화 완료") == false then
+                return ctx:fail("전사 봇 초기화 실패")
+            end
+            ctx:sleep(1000)
+            return true
+        end,
         function(ctx)
             local leader = ctx:bot(0)
             if pq.portal(ctx, leader, "in00", RUSH_FIELD) == false then

@@ -8,7 +8,7 @@ local SHIELD = 4031471
 return {
     on_enter = function(me)
         if not me:quest(QUEST):started() then
-            me:message("아직 이 시험에 들어갈 수 없습니다.")
+            me:message("알 수 없는 힘으로 봉인되어 있습니다.")
             return
         end
         local class_id = me:class()
@@ -17,11 +17,11 @@ return {
             return
         end
         if not pq.has_item(me, KEY) then
-            me:message("시험장에 들어갈 열쇠가 없습니다.")
+            me:message("잊혀진 신전으로 가는 열쇠가 필요합니다.")
             return
         end
         if pq.has_item(me, SHIELD) then
-            me:message("이미 방패를 얻었습니다.")
+            me:message("이미 세이람의 방패를 갖고 있습니다.")
             return
         end
         local group = state_machine(GROUP_NAME)
@@ -31,7 +31,7 @@ return {
         end
         local sm, err = group:start_solo(me)
         if sm == nil then
-            me:message("다른 사람이 시험 중입니다. 잠시 후 다시 시도하세요.")
+            me:message("이미 이 안에 다른 누군가가 퀘스트에 도전중입니다.")
             if err ~= nil then
                 log("warrior_berserk start_solo:", err)
             end

@@ -3,32 +3,38 @@ local QUEST = 6110
 local PARTY_SIZE = 2
 
 local function warrior(class_id)
-    return class_id == 112 or class_id == 122 or class_id == 132 or class_id == 900
+    return math.floor(class_id / 100) == 1 or class_id == 900
 end
 
 return {
     on_enter = function(me)
         if not me:quest(QUEST):started() then
-            me:message("아직 이 시험에 들어갈 수 없습니다.")
+            me:message("알 수 없는 힘으로 봉인되어 지나갈 수 없습니다.")
             return
         end
         local party = me:party()
-        if party == nil or party:leader_id() ~= me:id() then
-            me:message("두 명의 전사로 파티를 구성하고 파티장이 입장해야 합니다.")
+        if party == nil then
+            me:message("파티를 구성한 후 도전할 수 있습니다.")
             return
         end
-        local members = party:members()
-        if #members ~= PARTY_SIZE then
-            me:message("정확히 두 명의 전사가 필요합니다.")
+        if party:leader_id() ~= me:id() then
+            me:message("파티장이 입장을 시작할 수 있습니다.")
             return
         end
         local characters = me:map():characters()
-        for _, member in ipairs(members) do
-            local character = characters[member:id()]
-            if character == nil or not warrior(member:class_id()) or not character:quest(QUEST):started() then
-                me:message("시험을 받을 두 전사가 모두 이곳에 있어야 합니다.")
+        local here = 0
+        for _, member in ipairs(party:members()) do
+            if not warrior(member:class_id()) then
+                me:message("파티원중 전사가 아닌 직업이 있어 도전할 수 없습니다.")
                 return
             end
+            if characters[member:id()] ~= nil then
+                here = here + 1
+            end
+        end
+        if here < PARTY_SIZE then
+            me:message("파티 인원이 2명이 아니기 때문에 도전할 수 없습니다.")
+            return
         end
         local group = state_machine(GROUP_NAME)
         if group == nil then
