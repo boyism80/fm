@@ -115,11 +115,6 @@ M.reflect_mob_attack_damage = function(me, damages, attack_info)
             immunity = mob:has_buff({ MobBuff.MagicImmunity, MobBuff.MagicDamageReflect })
             reflect = mob:has_buff(MobBuff.MagicDamageReflect)
         else
-            immunity = mob:has_buff({
-                MobBuff.WeaponDamageReflect,
-                MobBuff.DamageImmunity,
-                MobBuff.WeaponImmunity,
-            })
             reflect = mob:has_buff(MobBuff.WeaponDamageReflect)
         end
         local total = apply_mob_attack_immunity(hits, immunity)
