@@ -6,17 +6,41 @@ import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
 import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
 import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
 import { grpcMapper } from "../mappers";
-import type { CharacterOverviewService } from "../../services/character-overview-service";
-import type { CharacterRank } from "../../services/ranking-service";
-import type { CharacterService, SaveCharacterEntry } from "../../services/character-service";
-import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
-import type { CharacterModel } from "@fm/shared/repos/character-repository";
-import type { CharacterOverviewModel } from "@fm/shared/repos/character-overview-repository";
-import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
-import type { SkillModel } from "@fm/shared/repos/skill-repository";
-import type { BuffModel } from "@fm/shared/repos/buff-repository";
-import type { QuestModel } from "@fm/shared/repos/quest-repository";
-import type { SavedLocationModel } from "@fm/shared/repos/saved-location-repository";
+import type {
+    CharacterOverviewService,
+} from "../../services/character-overview-service";
+import type {
+    CharacterRank,
+} from "../../services/ranking-service";
+import type {
+    CharacterService,
+    SaveCharacterEntry,
+} from "../../services/character-service";
+import type {
+    GrpcCall,
+    GrpcCallback,
+} from "./types";
+import type {
+    CharacterModel,
+} from "@fm/shared/repos/character-repository";
+import type {
+    CharacterOverviewModel,
+} from "@fm/shared/repos/character-overview-repository";
+import type {
+    InventoryModel,
+} from "@fm/shared/repos/inventory-repository";
+import type {
+    SkillModel,
+} from "@fm/shared/repos/skill-repository";
+import type {
+    BuffModel,
+} from "@fm/shared/repos/buff-repository";
+import type {
+    QuestModel,
+} from "@fm/shared/repos/quest-repository";
+import type {
+    SavedLocationModel,
+} from "@fm/shared/repos/saved-location-repository";
 import type {
     Buff,
     Character,
@@ -163,61 +187,46 @@ function makeCharacterOverview(model: CharacterOverviewModel & Partial<Character
 export class CharacterGrpcController {
     private readonly characterService: CharacterService;
     private readonly characterOverviewService: CharacterOverviewService;
-    private readonly grpcError: GrpcErrorHandler;
 
     constructor(
         characterService: CharacterService,
-        characterOverviewService: CharacterOverviewService,
-        grpcError: GrpcErrorHandler,
+        characterOverviewService: CharacterOverviewService
     ) {
         this.characterService = characterService;
         this.characterOverviewService = characterOverviewService;
-        this.grpcError = grpcError;
     }
 
     @Method("saveCharacter")
     async saveCharacter(call: GrpcCall<SaveCharacterRequest>, callback: GrpcCallback<SaveCharacterReply>) {
-        try {
-            const msgChar = call.request.character;
-            if (!msgChar) {
-                throw Object.assign(new Error("character is required"), { code: "INVALID_PAYLOAD" });
-            }
-            const character = grpcMapper.map<Character, CharacterModel>(msgChar, CHARACTER_PROTO, CHARACTER_MODEL);
-            const baseLooks = protoMapToObject(call.request.baseLooks);
-            const overlays = protoMapToObject(call.request.overlays);
-            await this.characterService.saveCharacter(character, baseLooks, overlays, call.request.cashWeapon);
-            callback(null, { ok: true });
-        } catch (err) {
-            this.grpcError(err, callback);
+        const msgChar = call.request.character;
+        if (!msgChar) {
+            throw Object.assign(new Error("character is required"), { code: "INVALID_PAYLOAD" });
         }
+        const character = grpcMapper.map<Character, CharacterModel>(msgChar, CHARACTER_PROTO, CHARACTER_MODEL);
+        const baseLooks = protoMapToObject(call.request.baseLooks);
+        const overlays = protoMapToObject(call.request.overlays);
+        await this.characterService.saveCharacter(character, baseLooks, overlays, call.request.cashWeapon);
+        callback(null, { ok: true });
     }
 
     @Method("saveCharacters")
     async saveCharacters(call: GrpcCall<SaveCharactersRequest>, callback: GrpcCallback<SaveCharactersReply>) {
-        try {
-            const entries = call.request.entries.map(makeSaveCharacterEntry);
-            await this.characterService.saveCharacters(entries);
-            callback(null, { ok: true });
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        const entries = call.request.entries.map(makeSaveCharacterEntry);
+        await this.characterService.saveCharacters(entries);
+        callback(null, { ok: true });
     }
 
     @Method("getCharacterList")
     async getCharacterList(call: GrpcCall<GetCharacterListRequest>, callback: GrpcCallback<GetCharacterListReply>) {
-        try {
-            const result = await this.characterOverviewService.getCharacterList(
-                call.request.accountId,
-                call.request.worldId,
-            );
-            callback(null, {
-                characters: result.characters.map(makeCharacterOverview),
-                slotCount: result.slotCount,
-                hasSecondPassword: result.hasSecondPassword,
-            });
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        const result = await this.characterOverviewService.getCharacterList(
+            call.request.accountId,
+            call.request.worldId,
+        );
+        callback(null, {
+            characters: result.characters.map(makeCharacterOverview),
+            slotCount: result.slotCount,
+            hasSecondPassword: result.hasSecondPassword,
+        });
     }
 
     @Method("checkCharacterName")
@@ -225,52 +234,40 @@ export class CharacterGrpcController {
         call: GrpcCall<CheckCharacterNameRequest>,
         callback: GrpcCallback<CheckCharacterNameReply>,
     ) {
-        try {
-            const result = await this.characterOverviewService.checkCharacterName(
-                call.request.name,
-                call.request.accountId,
-                call.request.worldId,
-            );
-            callback(null, { exists: result.exists });
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        const result = await this.characterOverviewService.checkCharacterName(
+            call.request.name,
+            call.request.accountId,
+            call.request.worldId,
+        );
+        callback(null, { exists: result.exists });
     }
 
     @Method("createCharacter")
     async createCharacter(call: GrpcCall<CreateCharacterRequest>, callback: GrpcCallback<CreateCharacterReply>) {
-        try {
-            const result = await this.characterService.createCharacter(
-                call.request.accountId,
-                call.request.worldId,
-                call.request,
-            );
-            callback(null, {
-                success: result.success,
-                errorMsg: result.errorMsg ?? "",
-                character: result.character ? makeCharacterOverview(result.character) : undefined,
-            });
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        const result = await this.characterService.createCharacter(
+            call.request.accountId,
+            call.request.worldId,
+            call.request,
+        );
+        callback(null, {
+            success: result.success,
+            errorMsg: result.errorMsg ?? "",
+            character: result.character ? makeCharacterOverview(result.character) : undefined,
+        });
     }
 
     @Method("deleteCharacter")
     async deleteCharacter(call: GrpcCall<DeleteCharacterRequest>, callback: GrpcCallback<DeleteCharacterReply>) {
-        try {
-            const result = await this.characterService.deleteCharacter(
-                call.request.accountId,
-                call.request.characterId,
-                call.request.worldId,
-            );
-            callback(null, {
-                success: result.success,
-                secondPasswordSet: result.secondPasswordSet ?? false,
-                unsettled: result.unsettled ?? false,
-                sealed: result.sealed ?? false,
-            });
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        const result = await this.characterService.deleteCharacter(
+            call.request.accountId,
+            call.request.characterId,
+            call.request.worldId,
+        );
+        callback(null, {
+            success: result.success,
+            secondPasswordSet: result.secondPasswordSet ?? false,
+            unsettled: result.unsettled ?? false,
+            sealed: result.sealed ?? false,
+        });
     }
 }

@@ -1,11 +1,18 @@
-import type { RankingKind as RankingKindName } from "@fm/shared/ranking-filters";
-import type { RankingService } from "../../services/ranking-service";
+import type {
+    RankingKind as RankingKindName,
+} from "@fm/shared/ranking-filters";
+import type {
+    RankingService,
+} from "../../services/ranking-service";
 import {
     RankingKind,
     type GetRankingReply,
     type GetRankingRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
+import type {
+    GrpcCall,
+    GrpcCallback,
+} from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 const KIND_NAMES = new Map<RankingKind, RankingKindName>([
@@ -17,36 +24,30 @@ const KIND_NAMES = new Map<RankingKind, RankingKindName>([
 @Controller("rankingController")
 export class RankingGrpcController {
     private readonly rankingService: RankingService;
-    private readonly grpcError: GrpcErrorHandler;
 
-    constructor(rankingService: RankingService, grpcError: GrpcErrorHandler) {
+    constructor(rankingService: RankingService) {
         this.rankingService = rankingService;
-        this.grpcError = grpcError;
     }
 
     @Method("getRanking")
     async getRanking(call: GrpcCall<GetRankingRequest>, callback: GrpcCallback<GetRankingReply>) {
-        try {
-            const kind = KIND_NAMES.get(call.request.kind);
-            if (kind === undefined) {
-                throw Object.assign(new Error(`unknown ranking kind ${call.request.kind}`), {
-                    code: "INVALID_PAYLOAD",
-                });
-            }
-            const entries = await this.rankingService.top(kind, call.request.worldId >>> 0, call.request.count >>> 0);
-            callback(null, {
-                entries: entries.map((entry) => ({
-                    rank: entry.rankNo,
-                    subjectId: entry.subjectId,
-                    name: entry.name,
-                    worldId: entry.worldId,
-                    classId: entry.classId ?? 0,
-                    level: entry.level ?? 0,
-                    value: entry.value,
-                })),
+        const kind = KIND_NAMES.get(call.request.kind);
+        if (kind === undefined) {
+            throw Object.assign(new Error(`unknown ranking kind ${call.request.kind}`), {
+                code: "INVALID_PAYLOAD",
             });
-        } catch (err) {
-            this.grpcError(err, callback);
         }
+        const entries = await this.rankingService.top(kind, call.request.worldId >>> 0, call.request.count >>> 0);
+        callback(null, {
+            entries: entries.map((entry) => ({
+                rank: entry.rankNo,
+                subjectId: entry.subjectId,
+                name: entry.name,
+                worldId: entry.worldId,
+                classId: entry.classId ?? 0,
+                level: entry.level ?? 0,
+                value: entry.value,
+            })),
+        });
     }
 }

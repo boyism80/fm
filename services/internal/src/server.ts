@@ -54,7 +54,6 @@ type ServerContainerCradle = {
     cashShopService: CashShopService;
     accountService: AccountService;
     socialService: SocialService;
-    grpcError: typeof grpcError;
 };
 
 const INVALID_CODES = new Set(["UNKNOWN_WORLD", "INVALID_CHARACTER_ID", "INVALID_PAYLOAD", "UNKNOWN_CHANNEL"]);
@@ -146,7 +145,6 @@ async function main() {
     const server = new grpc.Server();
 
     container.register({
-        grpcError: awilix.asValue(grpcError),
         catalogController: awilix.asClass(CatalogGrpcController).scoped(),
         authController: awilix.asClass(AuthGrpcController).scoped(),
         sessionController: awilix.asClass(SessionGrpcController).scoped(),
@@ -185,6 +183,8 @@ async function main() {
                 await internalContext.withDatabaseOperation(route.grpcMethod, "", async () => {
                     await method.call(controller, call, callback);
                 });
+            } catch (err) {
+                grpcError(err as { code?: string; message?: string }, callback as never);
             } finally {
                 await scope.dispose();
             }

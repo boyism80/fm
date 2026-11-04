@@ -18,111 +18,76 @@ import type {
     WhisperReply,
     WhisperRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type { FamilyService } from "../../services/family-service";
-import type { SocialService } from "../../services/social-service";
-import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
+import type {
+    FamilyService,
+} from "../../services/family-service";
+import type {
+    SocialService,
+} from "../../services/social-service";
+import type {
+    GrpcCall,
+    GrpcCallback,
+} from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("socialController")
 export class SocialGrpcController {
     private readonly socialService: SocialService;
     private readonly familyService: FamilyService;
-    private readonly grpcError: GrpcErrorHandler;
 
-    constructor(socialService: SocialService, familyService: FamilyService, grpcError: GrpcErrorHandler) {
+    constructor(socialService: SocialService, familyService: FamilyService) {
         this.socialService = socialService;
         this.familyService = familyService;
-        this.grpcError = grpcError;
     }
 
     @Method("whisper")
     async whisper(call: GrpcCall<WhisperRequest>, callback: GrpcCallback<WhisperReply>) {
-        try {
-            callback(null, await this.socialService.whisper(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.socialService.whisper(call.request));
     }
 
     @Method("completeWhisper")
     async completeWhisper(call: GrpcCall<CompleteWhisperRequest>, callback: GrpcCallback<CompleteWhisperReply>) {
-        try {
-            callback(null, await this.socialService.completeWhisper(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.socialService.completeWhisper(call.request));
     }
 
     @Method("messenger")
     async messenger(call: GrpcCall<MessengerRequest>, callback: GrpcCallback<MessengerReply>) {
-        try {
-            callback(null, await this.socialService.messenger(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.socialService.messenger(call.request));
     }
 
     @Method("notes")
     async notes(call: GrpcCall<NotesRequest>, callback: GrpcCallback<NotesReply>) {
-        try {
-            callback(null, await this.socialService.notes(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.socialService.notes(call.request));
     }
 
     @Method("getFamily")
     async getFamily(call: GrpcCall<GetFamilyRequest>, callback: GrpcCallback<GetFamilyReply>) {
-        try {
-            callback(null, await this.familyService.get(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.familyService.get(call.request));
     }
 
     @Method("joinFamily")
     async joinFamily(call: GrpcCall<JoinFamilyRequest>, callback: GrpcCallback<FamilyReply>) {
-        try {
-            callback(null, await this.familyService.join(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.familyService.join(call.request));
     }
 
     @Method("separateFamily")
     async separateFamily(call: GrpcCall<SeparateFamilyRequest>, callback: GrpcCallback<FamilyReply>) {
-        try {
-            callback(null, await this.familyService.separate(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.familyService.separate(call.request));
     }
 
     @Method("setFamilyPrecept")
     async setFamilyPrecept(call: GrpcCall<SetFamilyPreceptRequest>, callback: GrpcCallback<FamilyReply>) {
-        try {
-            callback(null, await this.familyService.setPrecept(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.familyService.setPrecept(call.request));
     }
 
     @Method("useFamilyFeature")
     async useFamilyFeature(call: GrpcCall<UseFamilyFeatureRequest>, callback: GrpcCallback<FamilyReply>) {
-        try {
-            callback(null, await this.familyService.use(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.familyService.use(call.request));
     }
 
     @Method("finishFamilyMove")
     async finishFamilyMove(call: GrpcCall<FinishFamilyMoveRequest>, callback: GrpcCallback<FamilyReply>) {
-        try {
-            callback(null, await this.familyService.finishMove(call.request));
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        callback(null, await this.familyService.finishMove(call.request));
     }
 
     @Method("updateFamilyMember")
@@ -130,11 +95,7 @@ export class SocialGrpcController {
         call: GrpcCall<UpdateFamilyMemberRequest>,
         callback: GrpcCallback<UpdateFamilyMemberReply>,
     ) {
-        try {
-            await this.familyService.updateMember(call.request);
-            callback(null, {});
-        } catch (err) {
-            this.grpcError(err, callback);
-        }
+        await this.familyService.updateMember(call.request);
+        callback(null, {});
     }
 }

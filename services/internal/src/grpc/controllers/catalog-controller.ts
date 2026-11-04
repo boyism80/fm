@@ -1,6 +1,10 @@
 import type Redis from "ioredis";
-import type { AppConfiguration } from "@fm/shared/config/app-configuration";
-import type { InternalContext } from "@fm/shared/context/internal-context";
+import type {
+    AppConfiguration,
+} from "@fm/shared/config/app-configuration";
+import type {
+    InternalContext,
+} from "@fm/shared/context/internal-context";
 import type {
     FindCashShopReply,
     FindCashShopRequest,
@@ -13,8 +17,13 @@ import type {
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { ServerRole } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { redisAliveKey } from "@fm/shared/redis-alive-key";
-import type { InternalConfig } from "@fm/shared/types/internal-config";
-import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
+import type {
+    InternalConfig,
+} from "@fm/shared/types/internal-config";
+import type {
+    GrpcCall,
+    GrpcCallback,
+} from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type ChannelConfig = {
@@ -31,18 +40,15 @@ export class CatalogGrpcController {
     private readonly internalContext: InternalContext;
     private readonly appConfiguration: AppConfiguration;
     private readonly internalConfig: InternalConfig;
-    private readonly grpcError: GrpcErrorHandler;
 
     constructor(
         internalConfig: InternalConfig,
         internalContext: InternalContext,
-        appConfiguration: AppConfiguration,
-        grpcError: GrpcErrorHandler,
+        appConfiguration: AppConfiguration
     ) {
         this.internalContext = internalContext;
         this.appConfiguration = appConfiguration;
         this.internalConfig = internalConfig;
-        this.grpcError = grpcError;
     }
 
     private findChannel(worldId: number, channelId: number): ChannelConfig | undefined {
@@ -94,42 +100,30 @@ export class CatalogGrpcController {
     @Method("ping")
     async ping(call: GrpcCall<PingRequest>, callback: GrpcCallback<PingReply>) {
         const req = call.request;
-        try {
-            if (req.role === ServerRole.SERVER_ROLE_GAME) {
-                await this.heartbeat(
-                    this.internalContext.getRedisGlobalAccess(req.worldId).client,
-                    `w${req.worldId}`,
-                    `game:c${req.channelId}`,
-                    req.onlineUsers,
-                );
-            } else if (req.role === ServerRole.SERVER_ROLE_CASH_SHOP) {
-                await this.heartbeat(
-                    this.internalContext.getRedisGlobalAccess(req.worldId).client,
-                    `w${req.worldId}`,
-                    `cashshop:cs${req.cashShopId}`,
-                    req.onlineUsers,
-                );
-            } else if (req.role === ServerRole.SERVER_ROLE_LOGIN) {
-                const id = (req.loginInstanceId ?? "").trim();
-                if (!id) {
-                    this.grpcError(
-                        { code: "INVALID_PAYLOAD", message: "login ping requires login_instance_id" },
-                        callback,
-                    );
-                    return;
-                }
-                await this.heartbeat(this.internalContext.getRedisUnifiedAccess().client, "login", id, 0);
-            } else {
-                this.grpcError(
-                    { code: "INVALID_PAYLOAD", message: "ping requires role LOGIN, GAME or CASH_SHOP" },
-                    callback,
-                );
-                return;
+        if (req.role === ServerRole.SERVER_ROLE_GAME) {
+            await this.heartbeat(
+                this.internalContext.getRedisGlobalAccess(req.worldId).client,
+                `w${req.worldId}`,
+                `game:c${req.channelId}`,
+                req.onlineUsers,
+            );
+        } else if (req.role === ServerRole.SERVER_ROLE_CASH_SHOP) {
+            await this.heartbeat(
+                this.internalContext.getRedisGlobalAccess(req.worldId).client,
+                `w${req.worldId}`,
+                `cashshop:cs${req.cashShopId}`,
+                req.onlineUsers,
+            );
+        } else if (req.role === ServerRole.SERVER_ROLE_LOGIN) {
+            const id = (req.loginInstanceId ?? "").trim();
+            if (!id) {
+                throw Object.assign(new Error("login ping requires login_instance_id"), { code: "INVALID_PAYLOAD" });
             }
-            callback(null, { message: "pong" });
-        } catch (err) {
-            this.grpcError(err, callback);
+            await this.heartbeat(this.internalContext.getRedisUnifiedAccess().client, "login", id, 0);
+        } else {
+            throw Object.assign(new Error("ping requires role LOGIN, GAME or CASH_SHOP"), { code: "INVALID_PAYLOAD" });
         }
+        callback(null, { message: "pong" });
     }
 
     @Method("getGameChannelStatus")
@@ -138,82 +132,70 @@ export class CatalogGrpcController {
         callback: GrpcCallback<GetGameChannelStatusReply>,
     ) {
         const req = call.request;
-        try {
-            const row = this.findChannel(req.worldId, req.channelId);
-            if (!row) {
-                callback(null, {
-                    alive: false,
-                    channelFull: false,
-                    found: false,
-                    host: "",
-                    port: 0,
-                });
-                return;
-            }
-            const online = await this.onlineUsers(req.worldId, `game:c${req.channelId}`);
-            const maxConcurrentUsers = row.max_concurrent_users ?? 0;
-            const channelFull = online != null && maxConcurrentUsers > 0 && online >= maxConcurrentUsers;
+        const row = this.findChannel(req.worldId, req.channelId);
+        if (!row) {
             callback(null, {
-                alive: online != null,
-                channelFull,
-                found: true,
-                host: row.host,
-                port: row.port,
+                alive: false,
+                channelFull: false,
+                found: false,
+                host: "",
+                port: 0,
             });
-        } catch (err) {
-            this.grpcError(err, callback);
+            return;
         }
+        const online = await this.onlineUsers(req.worldId, `game:c${req.channelId}`);
+        const maxConcurrentUsers = row.max_concurrent_users ?? 0;
+        const channelFull = online != null && maxConcurrentUsers > 0 && online >= maxConcurrentUsers;
+        callback(null, {
+            alive: online != null,
+            channelFull,
+            found: true,
+            host: row.host,
+            port: row.port,
+        });
     }
 
     @Method("findCashShop")
     async findCashShop(call: GrpcCall<FindCashShopRequest>, callback: GrpcCallback<FindCashShopReply>) {
         const worldId = call.request.worldId;
-        try {
-            const cashShops = this.internalConfig.game_servers?.worlds?.[String(worldId)]?.cash_shops ?? [];
-            let best: { cashShopId: number; host: string; port: number; users: number } | null = null;
-            for (const member of await this.liveServers(worldId, "cashshop:cs")) {
-                const cs = cashShops.find((c) => member === `cashshop:cs${c.cash_shop_id}`);
-                const users = await this.onlineUsers(worldId, member);
-                if (cs == null || users == null) {
-                    continue;
-                }
-                if (best == null || users < best.users) {
-                    best = { cashShopId: cs.cash_shop_id, host: cs.host, port: cs.port, users };
-                }
+        const cashShops = this.internalConfig.game_servers?.worlds?.[String(worldId)]?.cash_shops ?? [];
+        let best: { cashShopId: number; host: string; port: number; users: number } | null = null;
+        for (const member of await this.liveServers(worldId, "cashshop:cs")) {
+            const cs = cashShops.find((c) => member === `cashshop:cs${c.cash_shop_id}`);
+            const users = await this.onlineUsers(worldId, member);
+            if (cs == null || users == null) {
+                continue;
             }
-            if (best == null) {
-                callback(null, { found: false, cashShopId: 0, host: "", port: 0 });
-                return;
+            if (best == null || users < best.users) {
+                best = { cashShopId: cs.cash_shop_id, host: cs.host, port: cs.port, users };
             }
-            callback(null, { found: true, cashShopId: best.cashShopId, host: best.host, port: best.port });
-        } catch (err) {
-            this.grpcError(err, callback);
         }
+        if (best == null) {
+            callback(null, { found: false, cashShopId: 0, host: "", port: 0 });
+            return;
+        }
+        callback(null, { found: true, cashShopId: best.cashShopId, host: best.host, port: best.port });
     }
 
     @Method("getServerCatalog")
     getServerCatalog(_call: GrpcCall<GetServerCatalogRequest>, callback: GrpcCallback<GetServerCatalogReply>) {
-        try {
-            const worlds = this.internalConfig.game_servers?.worlds ?? {};
-            const worldMsgs = [];
-            for (const [worldId, world] of Object.entries(worlds)) {
-                const channels = Array.isArray(world.channels) ? world.channels : [];
-                worldMsgs.push({
-                    worldId: Number(worldId),
-                    worldName: world.world_name || `World-${worldId}`,
-                    flag: world.flag ?? 0,
-                    eventMessage: world.event_message || "",
-                    channels: channels.map((ch) => ({
-                        channelId: ch.channel_id,
-                        host: ch.host,
-                        port: ch.port,
-                        name: ch.name || `Channel ${ch.channel_id + 1}`,
-                    })),
-                });
-            }
-            callback(null, { worlds: worldMsgs });
-        } catch (err) {
-            this.grpcError(err, callback);
+        const worlds = this.internalConfig.game_servers?.worlds ?? {};
+        const worldMsgs = [];
+        for (const [worldId, world] of Object.entries(worlds)) {
+            const channels = Array.isArray(world.channels) ? world.channels : [];
+            worldMsgs.push({
+                worldId: Number(worldId),
+                worldName: world.world_name || `World-${worldId}`,
+                flag: world.flag ?? 0,
+                eventMessage: world.event_message || "",
+                channels: channels.map((ch) => ({
+                    channelId: ch.channel_id,
+                    host: ch.host,
+                    port: ch.port,
+                    name: ch.name || `Channel ${ch.channel_id + 1}`,
+                })),
+            });
         }
+        callback(null, { worlds: worldMsgs });
     }
 }
