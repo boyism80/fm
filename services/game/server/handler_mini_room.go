@@ -1,14 +1,11 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type MiniRoom struct {
@@ -22,13 +19,8 @@ func (MiniRoom) New(gs *GameServer) *MiniRoom {
 }
 
 func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	ch := client.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if ch.UsingCashItem() {
@@ -36,7 +28,6 @@ func (h *MiniRoom) Handle(ctx *core.ClientContext, req *request.MiniRoom) error 
 		return nil
 	}
 
-	var err error
 	switch req.Mode {
 	case pconst.MiniRoomCreate:
 		if ch.Occupied() {

@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type DamageSummon struct {
@@ -17,12 +16,8 @@ func (DamageSummon) New(gs *GameServer) *DamageSummon {
 }
 
 func (h *DamageSummon) Handle(ctx *core.ClientContext, req *request.DamageSummon) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	summon := character.Summons().FindByOID(req.OID)

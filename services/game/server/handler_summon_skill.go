@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -22,12 +21,8 @@ func (SummonSkill) New(gs *GameServer) *SummonSkill {
 }
 
 func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if character.Spectating() {

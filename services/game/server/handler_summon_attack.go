@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type SummonAttack struct {
@@ -18,12 +17,8 @@ func (SummonAttack) New(gs *GameServer) *SummonAttack {
 }
 
 func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 

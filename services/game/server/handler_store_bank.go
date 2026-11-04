@@ -1,12 +1,9 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type StoreBank struct {
@@ -20,17 +17,11 @@ func (StoreBank) New(gs *GameServer) *StoreBank {
 }
 
 func (h *StoreBank) Handle(ctx *core.ClientContext, req *request.StoreBank) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	ch := client.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 
-	var err error
 	switch req.Mode {
 	case pconst.StoreBankWithdraw:
 		err = ch.StoreBank().Withdraw()

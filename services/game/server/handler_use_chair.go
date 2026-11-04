@@ -1,12 +1,10 @@
 package server
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type UseChair struct {
@@ -20,14 +18,8 @@ func (UseChair) New(gs *GameServer) *UseChair {
 }
 
 func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 

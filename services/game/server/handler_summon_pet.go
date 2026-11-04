@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type SummonPet struct {
@@ -17,16 +16,12 @@ func (SummonPet) New(gs *GameServer) *SummonPet {
 }
 
 func (h *SummonPet) Handle(ctx *core.ClientContext, req *request.SummonPet) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 
-	err := character.Pets().Summon(req.Slot)
+	err = character.Pets().Summon(req.Slot)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

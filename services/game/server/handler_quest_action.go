@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type QuestAction struct {
@@ -23,16 +22,9 @@ func (QuestAction) New(gs *GameServer) *QuestAction {
 }
 
 func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
-		log.Printf("Character is nil for client")
-		return fmt.Errorf("character is nil")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	if character.UsingCashItem() {
 		character.Listener().OnUnlockAction(character)

@@ -315,3 +315,16 @@ func (gs *GameServer) removeCharacter(character *game.Character, logout <-chan *
 	dispatch.UnregisterCharacter(charID)
 	return entry
 }
+
+// character finds the character of the client that sent a packet.
+func (gs *GameServer) character(ctx *core.ClientContext) (*game.Character, error) {
+	gameClient, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		return nil, fmt.Errorf("client is not a GameClient")
+	}
+	character := gameClient.GetCharacter()
+	if character == nil {
+		return nil, fmt.Errorf("character not found")
+	}
+	return character, nil
+}

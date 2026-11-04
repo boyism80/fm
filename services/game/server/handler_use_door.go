@@ -1,12 +1,8 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type UseDoor struct {
@@ -20,15 +16,9 @@ func (UseDoor) New(gs *GameServer) *UseDoor {
 }
 
 func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
-		return fmt.Errorf("character not found")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 
 	m := character.GetMap()

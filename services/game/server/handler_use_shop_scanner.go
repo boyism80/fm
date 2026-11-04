@@ -1,12 +1,9 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type UseShopScanner struct {
@@ -20,13 +17,8 @@ func (UseShopScanner) New(gs *GameServer) *UseShopScanner {
 }
 
 func (h *UseShopScanner) Handle(ctx *core.ClientContext, req *request.UseShopScanner) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	ch := client.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

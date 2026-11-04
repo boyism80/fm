@@ -1,14 +1,10 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type DistributeAP struct {
@@ -22,16 +18,9 @@ func (DistributeAP) New(gs *GameServer) *DistributeAP {
 }
 
 func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
-		log.Printf("Character is nil for client")
-		return fmt.Errorf("character is nil")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 
 	stat := constant.StatType(req.StatType)

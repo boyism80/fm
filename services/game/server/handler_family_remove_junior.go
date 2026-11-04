@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type FamilyRemoveJunior struct {
@@ -15,12 +14,8 @@ func (FamilyRemoveJunior) New(gs *GameServer) *FamilyRemoveJunior {
 }
 
 func (h *FamilyRemoveJunior) Handle(ctx *core.ClientContext, req *request.FamilyRemoveJunior) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	ch := gameClient.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 

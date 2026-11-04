@@ -1,12 +1,8 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type Carnival struct {
@@ -18,14 +14,9 @@ func (Carnival) New(gs *GameServer) *Carnival {
 }
 
 func (h *Carnival) Handle(ctx *core.ClientContext, req *request.Carnival) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-	ch := client.GetCharacter()
-	if ch == nil {
-		return fmt.Errorf("character is nil")
+	ch, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	defer ch.Listener().OnUnlockAction(ch)
 

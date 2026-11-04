@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type LieDetectorAnswer struct {
@@ -17,16 +16,12 @@ func (LieDetectorAnswer) New(gs *GameServer) *LieDetectorAnswer {
 }
 
 func (h *LieDetectorAnswer) Handle(ctx *core.ClientContext, req *request.LieDetectorAnswer) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 
-	err := character.LieDetector().Answer(ctx.ActorContext, req.Answer)
+	err = character.LieDetector().Answer(ctx.ActorContext, req.Answer)
 	if err != nil {
 		character.Listener().OnUnlockAction(character)
 	}

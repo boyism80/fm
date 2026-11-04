@@ -2,11 +2,9 @@ package server
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type Warp struct {
@@ -20,15 +18,9 @@ func (Warp) New(gs *GameServer) *Warp {
 }
 
 func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
-		return fmt.Errorf("character not found")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	if req.FieldKey != character.FieldKey() {
 		character.Listener().OnUpdateStats(character, nil, true)
@@ -41,12 +33,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 	}
 
 	if req.Target == 0xFFFFFFFF {
-		portal := currentMap.FindPortalByName(req.PortalName)
-		if portal == nil || portal.Wz() == nil || character.Occupied() {
-			character.Listener().OnUpdateStats(character, nil, true)
-			return nil
-		}
-		return character.EnterPortal(ctx.ActorContext, portal)
+		return character.EnterPortalByName(ctx.ActorContext, req.PortalName)
 	}
 
 	return character.Revive(ctx.ActorContext)

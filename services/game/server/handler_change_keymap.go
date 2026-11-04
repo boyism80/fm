@@ -1,13 +1,10 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type ChangeKeymap struct {
@@ -33,13 +30,9 @@ func (h *ChangeKeymap) petPotion(data int32) uint32 {
 }
 
 func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap) error {
-	gc, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("change keymap: client is not a GameClient")
-	}
-	ch := gc.GetCharacter()
-	if ch == nil {
-		return fmt.Errorf("change keymap: no character")
+	ch, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	switch req.Mode {
 	case 1:

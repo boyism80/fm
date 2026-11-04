@@ -1,13 +1,10 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type WeddingPresent struct {
@@ -21,13 +18,8 @@ func (WeddingPresent) New(gs *GameServer) *WeddingPresent {
 }
 
 func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPresent) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	ch := client.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if ch.UsingCashItem() {
@@ -35,7 +27,6 @@ func (h *WeddingPresent) Handle(ctx *core.ClientContext, req *request.WeddingPre
 		return nil
 	}
 
-	var err error
 	switch req.Mode {
 	case pconst.WeddingPresentGive:
 		err = ch.Wedding().GiveGift(ctx.ActorContext, req.Slot, req.ItemID, req.Count)

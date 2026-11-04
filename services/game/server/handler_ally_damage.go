@@ -2,12 +2,10 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type AllyDamage struct {
@@ -21,15 +19,9 @@ func (AllyDamage) New(gs *GameServer) *AllyDamage {
 }
 
 func (h *AllyDamage) Handle(ctx *core.ClientContext, req *request.AllyDamage) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	ch := client.GetCharacter()
-	if ch == nil {
-		return fmt.Errorf("character not found")
+	ch, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 
 	mapInstance := ch.GetMap()

@@ -1,11 +1,8 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type UseEntrustedShop struct {
@@ -19,13 +16,8 @@ func (UseEntrustedShop) New(gs *GameServer) *UseEntrustedShop {
 }
 
 func (h *UseEntrustedShop) Handle(ctx *core.ClientContext, req *request.UseEntrustedShop) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	ch := client.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if ch.UsingCashItem() {

@@ -2,14 +2,12 @@ package server
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type Storage struct {
@@ -23,13 +21,8 @@ func (Storage) New(gs *GameServer) *Storage {
 }
 
 func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	ch := client.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if ch.UsingCashItem() {
@@ -37,7 +30,6 @@ func (h *Storage) Handle(ctx *core.ClientContext, req *request.Storage) error {
 		return nil
 	}
 
-	var err error
 	switch req.Mode {
 	case pconst.StorageTakeOut:
 		err = ch.Account().Storage().TakeOut(constant.InventoryType(req.InventoryType), req.Index)

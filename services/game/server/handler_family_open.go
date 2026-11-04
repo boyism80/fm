@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type FamilyOpen struct {
@@ -15,12 +14,8 @@ func (FamilyOpen) New(gs *GameServer) *FamilyOpen {
 }
 
 func (h *FamilyOpen) Handle(ctx *core.ClientContext, req *request.FamilyOpen) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	ch := gameClient.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 

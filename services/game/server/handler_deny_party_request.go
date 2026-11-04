@@ -11,7 +11,6 @@ import (
 	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type DenyPartyRequest struct {
@@ -28,13 +27,9 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 	if h.gs == nil {
 		return fmt.Errorf("deny party request: game server is nil")
 	}
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("deny party request: client is not a GameClient")
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
-		return fmt.Errorf("deny party request: character not found")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	if pid := character.Party().ID(); pid != nil {
 		return nil

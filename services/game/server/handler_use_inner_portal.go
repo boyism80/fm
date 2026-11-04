@@ -1,12 +1,10 @@
 package server
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/types"
 )
 
@@ -21,13 +19,9 @@ func (UseInnerPortal) New(gs *GameServer) *UseInnerPortal {
 }
 
 func (h *UseInnerPortal) Handle(ctx *core.ClientContext, req *request.UseInnerPortal) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-	ch := gameClient.GetCharacter()
-	if ch == nil {
-		return fmt.Errorf("character not found")
+	ch, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	if req.FieldKey != ch.FieldKey() {
 		return nil

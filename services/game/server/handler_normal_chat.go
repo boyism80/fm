@@ -1,14 +1,12 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -23,16 +21,9 @@ func (NormalChat) New(gs *GameServer) *NormalChat {
 }
 
 func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
-		log.Printf("Character is nil for client")
-		return fmt.Errorf("character is nil")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 
 	// The client keeps chat starting with "/" from players without GM rights, so "!" also runs a command.

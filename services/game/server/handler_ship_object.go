@@ -1,14 +1,10 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type ShipObject struct {
@@ -20,13 +16,8 @@ func (ShipObject) New(gs *GameServer) *ShipObject {
 }
 
 func (h *ShipObject) Handle(ctx *core.ClientContext, req *request.ShipObject) error {
-	cl, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-	ch := cl.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 

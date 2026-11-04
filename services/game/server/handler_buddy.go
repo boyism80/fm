@@ -12,7 +12,6 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type Buddy struct {
@@ -30,13 +29,9 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 		return fmt.Errorf("buddy: actor context required")
 	}
 
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-	ch := gameClient.GetCharacter()
-	if ch == nil {
-		return fmt.Errorf("character not found")
+	ch, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 
 	worldID := h.gs.config.WorldId

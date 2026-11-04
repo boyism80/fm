@@ -1,12 +1,8 @@
 package server
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type Dialog struct {
@@ -20,16 +16,9 @@ func (Dialog) New(gs *GameServer) *Dialog {
 }
 
 func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
-		log.Printf("Character not found for client")
-		return fmt.Errorf("character not found")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 
 	return character.Dialog().Resume(ctx.ActorContext, req.DialogType, req.Next, req.Selected, req.Text)

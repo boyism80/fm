@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type UseMountFood struct {
@@ -17,12 +16,8 @@ func (UseMountFood) New(gs *GameServer) *UseMountFood {
 }
 
 func (h *UseMountFood) Handle(ctx *core.ClientContext, req *request.UseMountFood) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := gameClient.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	if character.UsingCashItem() {

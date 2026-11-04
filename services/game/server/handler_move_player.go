@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type MovePlayer struct {
@@ -21,16 +20,9 @@ func (MovePlayer) New(gs *GameServer) *MovePlayer {
 }
 
 func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-
-	character := client.GetCharacter()
-	if character == nil {
-		log.Printf("Character is nil for client")
-		return fmt.Errorf("character is nil")
+	character, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	// A move the client made on the field it left still carries that field's key.
 	if req.FieldKey != character.FieldKey() {

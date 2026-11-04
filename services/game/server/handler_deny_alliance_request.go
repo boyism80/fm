@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type DenyAllianceRequest struct {
@@ -17,12 +16,8 @@ func (DenyAllianceRequest) New(gs *GameServer) *DenyAllianceRequest {
 }
 
 func (h *DenyAllianceRequest) Handle(ctx *core.ClientContext, req *request.DenyAllianceRequest) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	ch := gameClient.GetCharacter()
-	if ch == nil {
+	ch, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	op := &AllianceOperation{gs: h.gs}

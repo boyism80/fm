@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type CancelBuff struct {
@@ -17,12 +16,8 @@ func (CancelBuff) New(gs *GameServer) *CancelBuff {
 }
 
 func (h *CancelBuff) Handle(ctx *core.ClientContext, req *request.CancelBuff) error {
-	client, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return nil
-	}
-	character := client.GetCharacter()
-	if character == nil {
+	character, err := h.gs.character(ctx)
+	if err != nil {
 		return nil
 	}
 	character.Buffs().Cancel(req.SourceID)

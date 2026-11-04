@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -15,7 +14,6 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type AllianceOperation struct {
@@ -29,13 +27,9 @@ func (AllianceOperation) New(gs *GameServer) *AllianceOperation {
 }
 
 func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.AllianceOperation) error {
-	gameClient, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		return fmt.Errorf("client is not a GameClient")
-	}
-	ch := gameClient.GetCharacter()
-	if ch == nil {
-		return fmt.Errorf("character not found")
+	ch, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 
 	switch req.Operation {

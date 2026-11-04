@@ -15,7 +15,6 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/services/game/client"
 )
 
 type MultiChat struct {
@@ -29,15 +28,9 @@ func (MultiChat) New(gs *GameServer) *MultiChat {
 }
 
 func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) error {
-	gc, ok := ctx.Client.(*client.GameClient)
-	if !ok {
-		log.Printf("Client is not a GameClient")
-		return fmt.Errorf("client is not a GameClient")
-	}
-	ch := gc.GetCharacter()
-	if ch == nil {
-		log.Printf("Character is nil for client")
-		return fmt.Errorf("character is nil")
+	ch, err := h.gs.character(ctx)
+	if err != nil {
+		return err
 	}
 	if strings.HasPrefix(req.Message, "/") {
 		if mapInstance := ch.GetMap(); mapInstance != nil {
