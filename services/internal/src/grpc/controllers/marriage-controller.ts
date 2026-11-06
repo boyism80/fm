@@ -1,6 +1,4 @@
-import type {
-    MarriageService,
-} from "../../services/marriage-service";
+import type { MarriageService } from "../../services/marriage-service";
 import type {
     AbortMarriageChangeReply,
     AbortMarriageChangeRequest,
@@ -27,10 +25,7 @@ import type {
     ReserveWeddingRequest,
     SetWeddingWishlistRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("marriageController")
@@ -199,13 +194,7 @@ export class MarriageGrpcController {
     @Method("notifySpouseMap")
     async notifySpouseMap(call: GrpcCall<NotifySpouseMapRequest>, callback: GrpcCallback<NotifySpouseMapReply>) {
         const req = call.request;
-        await this.marriageService.notifySpouseMap(
-            req.worldId,
-            req.characterId,
-            req.spouseId,
-            req.mapId,
-            req.reply,
-        );
+        await this.marriageService.notifySpouseMap(req.worldId, req.characterId, req.spouseId, req.mapId, req.reply);
         callback(null, {});
     }
 }

@@ -1,7 +1,5 @@
 import { PartyErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    PartyService,
-} from "../../services/party-service";
+import type { PartyService } from "../../services/party-service";
 import type {
     ChangePartyLeaderReply,
     ChangePartyLeaderRequest,
@@ -23,10 +21,7 @@ import type {
     UpdatePartyMemberRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { okReply } from "./types";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("partyController")
@@ -57,7 +52,11 @@ export class PartyGrpcController {
             `[party] join character=${req.member?.characterId} party=${req.partyId} skip_pending=${req.skipInvitePendingCheck}` +
                 ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`,
         );
-        callback(null, { ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN), partyId: result.partyId, revision: result.revision ?? 0 });
+        callback(null, {
+            ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN),
+            partyId: result.partyId,
+            revision: result.revision ?? 0,
+        });
     }
 
     @Method("inviteParty")
@@ -83,11 +82,13 @@ export class PartyGrpcController {
 
     @Method("leaveParty")
     async leaveParty(call: GrpcCall<LeavePartyRequest>, callback: GrpcCallback<LeavePartyReply>) {
-        const result = await this.partyService.leaveParty(
-            call.request.worldId,
-            call.request.characterId,
-        );
-        callback(null, { ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN), partyId: result.partyId, disbanded: result.disbanded ?? false, revision: result.revision ?? 0 });
+        const result = await this.partyService.leaveParty(call.request.worldId, call.request.characterId);
+        callback(null, {
+            ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN),
+            partyId: result.partyId,
+            disbanded: result.disbanded ?? false,
+            revision: result.revision ?? 0,
+        });
     }
 
     @Method("expelParty")
@@ -97,7 +98,12 @@ export class PartyGrpcController {
             call.request.requesterCharacterId,
             call.request.targetCharacterId,
         );
-        callback(null, { ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN), partyId: result.partyId, disbanded: result.disbanded ?? false, revision: result.revision ?? 0 });
+        callback(null, {
+            ...okReply(result, PartyErrorCode.NONE, PartyErrorCode.UNKNOWN),
+            partyId: result.partyId,
+            disbanded: result.disbanded ?? false,
+            revision: result.revision ?? 0,
+        });
     }
 
     @Method("changePartyLeader")

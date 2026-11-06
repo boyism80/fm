@@ -1,16 +1,8 @@
 import { SecondPasswordStatus, SessionErrorCode } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    AccountService,
-} from "../../services/account-service";
-import type {
-    CharacterService,
-} from "../../services/character-service";
-import type {
-    SessionService,
-} from "../../services/session-service";
-import type {
-    InternalConfig,
-} from "@fm/shared/types/internal-config";
+import type { AccountService } from "../../services/account-service";
+import type { CharacterService } from "../../services/character-service";
+import type { SessionService } from "../../services/session-service";
+import type { InternalConfig } from "@fm/shared/types/internal-config";
 import type {
     BeginGameTransitionReply,
     BeginGameTransitionRequest,
@@ -25,13 +17,8 @@ import type {
     RefreshSessionReply,
     RefreshSessionRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
-import type {
-    CharacterModel,
-} from "@fm/shared/repos/character-repository";
+import type { GrpcCall, GrpcCallback } from "./types";
+import type { CharacterModel } from "@fm/shared/repos/character-repository";
 import { Controller, Method } from "../grpc-method-decorator";
 
 enum OwnedCharacterKind {
@@ -56,7 +43,7 @@ export class SessionGrpcController {
         characterService: CharacterService,
         sessionService: SessionService,
         accountService: AccountService,
-        internalConfig: Pick<InternalConfig, "game_servers">
+        internalConfig: Pick<InternalConfig, "game_servers">,
     ) {
         this.characterService = characterService;
         this.sessionService = sessionService;
@@ -127,10 +114,7 @@ export class SessionGrpcController {
             return;
         }
 
-        const result = await this.accountService.authorizeCharacterSelection(
-            accountId,
-            call.request.secondPassword,
-        );
+        const result = await this.accountService.authorizeCharacterSelection(accountId, call.request.secondPassword);
         let status = SecondPasswordStatus.SECOND_PASSWORD_INVALID;
         switch (result) {
             case "success":
@@ -220,13 +204,7 @@ export class SessionGrpcController {
         }
         callback(
             null,
-            await this.sessionService.enterGame(
-                worldId,
-                row,
-                channelId,
-                call.request.clientIp,
-                () => call.cancelled,
-            ),
+            await this.sessionService.enterGame(worldId, row, channelId, call.request.clientIp, () => call.cancelled),
         );
     }
 

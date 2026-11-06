@@ -1,6 +1,4 @@
-import type {
-    ParcelService,
-} from "../../services/parcel-service";
+import type { ParcelService } from "../../services/parcel-service";
 import type {
     AbortParcelSendReply,
     AbortParcelSendRequest,
@@ -17,10 +15,7 @@ import type {
     SendParcelReply,
     SendParcelRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("parcelController")
@@ -57,12 +52,7 @@ export class ParcelGrpcController {
     @Method("returnParcel")
     async returnParcel(call: GrpcCall<ReturnParcelRequest>, callback: GrpcCallback<ReturnParcelReply>) {
         const req = call.request;
-        const result = await this.parcelService.returnParcels(
-            req.worldId,
-            req.characterId,
-            req.requestId,
-            req.parcels,
-        );
+        const result = await this.parcelService.returnParcels(req.worldId, req.characterId, req.requestId, req.parcels);
         callback(null, { result });
     }
 
@@ -77,10 +67,7 @@ export class ParcelGrpcController {
     @Method("claimParcel")
     async claimParcel(call: GrpcCall<ClaimParcelRequest>, callback: GrpcCallback<ClaimParcelReply>) {
         const req = call.request;
-        callback(
-            null,
-            await this.parcelService.claimParcel(req.worldId, req.characterId, req.parcelId, req.requestId),
-        );
+        callback(null, await this.parcelService.claimParcel(req.worldId, req.characterId, req.parcelId, req.requestId));
     }
 
     @Method("deleteParcel")

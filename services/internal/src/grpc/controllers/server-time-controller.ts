@@ -1,16 +1,11 @@
-import type {
-    ServerTimeService,
-} from "../../services/server-time-service";
+import type { ServerTimeService } from "../../services/server-time-service";
 import type {
     BroadcastNoticeReply,
     BroadcastNoticeRequest,
     SetServerDateTimeReply,
     SetServerDateTimeRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("serverTimeController")

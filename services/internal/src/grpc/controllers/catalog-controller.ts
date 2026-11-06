@@ -1,10 +1,6 @@
 import type Redis from "ioredis";
-import type {
-    AppConfiguration,
-} from "@fm/shared/config/app-configuration";
-import type {
-    InternalContext,
-} from "@fm/shared/context/internal-context";
+import type { AppConfiguration } from "@fm/shared/config/app-configuration";
+import type { InternalContext } from "@fm/shared/context/internal-context";
 import type {
     FindCashShopReply,
     FindCashShopRequest,
@@ -17,13 +13,8 @@ import type {
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { ServerRole } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { redisAliveKey } from "@fm/shared/redis-alive-key";
-import type {
-    InternalConfig,
-} from "@fm/shared/types/internal-config";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { InternalConfig } from "@fm/shared/types/internal-config";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type ChannelConfig = {
@@ -40,11 +31,7 @@ export class CatalogGrpcController {
     private readonly appConfiguration: AppConfiguration;
     private readonly internalConfig: InternalConfig;
 
-    constructor(
-        internalConfig: InternalConfig,
-        internalContext: InternalContext,
-        appConfiguration: AppConfiguration
-    ) {
+    constructor(internalConfig: InternalConfig, internalContext: InternalContext, appConfiguration: AppConfiguration) {
         this.internalContext = internalContext;
         this.appConfiguration = appConfiguration;
         this.internalConfig = internalConfig;

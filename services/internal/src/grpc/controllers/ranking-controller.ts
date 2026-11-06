@@ -1,18 +1,11 @@
-import type {
-    RankingKind as RankingKindName,
-} from "@fm/shared/ranking-filters";
-import type {
-    RankingService,
-} from "../../services/ranking-service";
+import type { RankingKind as RankingKindName } from "@fm/shared/ranking-filters";
+import type { RankingService } from "../../services/ranking-service";
 import {
     RankingKind,
     type GetRankingReply,
     type GetRankingRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 const KIND_NAMES = new Map<RankingKind, RankingKindName>([

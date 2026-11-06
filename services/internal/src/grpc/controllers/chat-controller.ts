@@ -3,22 +3,11 @@ import type {
     BroadcastMultiChatReply,
     BroadcastMultiChatRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    BuddyService,
-} from "../../services/buddy-service";
-import type {
-    GuildService,
-} from "../../services/guild-service";
-import type {
-    AllianceService,
-} from "../../services/alliance-service";
-import type {
-    PartyService,
-} from "../../services/party-service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { BuddyService } from "../../services/buddy-service";
+import type { GuildService } from "../../services/guild-service";
+import type { AllianceService } from "../../services/alliance-service";
+import type { PartyService } from "../../services/party-service";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 const MULTI_CHAT_MODE_BUDDY = 0;
@@ -37,7 +26,7 @@ export class ChatGrpcController {
         partyService: PartyService,
         buddyService: BuddyService,
         guildService: GuildService,
-        allianceService: AllianceService
+        allianceService: AllianceService,
     ) {
         this.partyService = partyService;
         this.buddyService = buddyService;

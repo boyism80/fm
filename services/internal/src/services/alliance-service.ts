@@ -623,7 +623,6 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
 
-
         const txResult = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
             const lockedAlliance = await this.allianceRepo.get(worldId, allianceId, { txClient: dataTx });
             if (!lockedAlliance) {
@@ -1375,7 +1374,6 @@ export class AllianceService {
         if (guild.leaderCharacterId !== characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
-
 
         const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
         const requesterMember = requesterMembers.find((m) => m.characterId === characterId);

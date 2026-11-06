@@ -473,7 +473,8 @@ end
 
 local function handle_reward(me, npc, cfg)
     me:dialog(npc,
-        "이렇게 유레테도 마음을 고쳐먹었고, 제뉴미스트와 알카드노의 전쟁도 조금은 수그러 들 수 있을까요? 비록 저희 사랑이 이뤄지기까지 아직도 험난한 고난이 기다리고 있지만, 결코 포기하지 않고 " .. cfg.beloved .. " 지키겠습니다.")
+        "이렇게 유레테도 마음을 고쳐먹었고, 제뉴미스트와 알카드노의 전쟁도 조금은 수그러 들 수 있을까요? 비록 저희 사랑이 이뤄지기까지 아직도 험난한 고난이 기다리고 있지만, 결코 포기하지 않고 " ..
+        cfg.beloved .. " 지키겠습니다.")
     local code = me:exchange({}, { item = { [cfg.marble] = 1 } })
     if code ~= ExchangeResult.OK then
         me:dialog(npc, "인벤토리 공간이 부족하신 건 아닌지 확인해 주시겠어요?")
@@ -496,7 +497,8 @@ function M.npc(cfg)
             local map_id = map:wz():id()
             if map_id == cfg.entry_map then
                 local sel = me:dialog_list(npc,
-                    "#e<파티퀘스트 : 로미오와 줄리엣>#n\r\n마가티아는 지금 크나큰 위기를 맞이하고 있습니다. 용감한 메이플의 모험가들께서 저희를 도와주시지 않으시겠어요?\r\n\r\n#b", {
+                    "#e<파티퀘스트 : 로미오와 줄리엣>#n\r\n마가티아는 지금 크나큰 위기를 맞이하고 있습니다. 용감한 메이플의 모험가들께서 저희를 도와주시지 않으시겠어요?\r\n\r\n#b",
+                    {
                         cfg.story,
                         "함께 할 파티를 찾고 싶어요.",
                         "퀘스트를 시작한다.",

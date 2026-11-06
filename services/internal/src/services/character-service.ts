@@ -523,11 +523,7 @@ export class CharacterService {
         );
 
         if (inventory !== undefined) {
-            await this.inventoryRepo.replaceBySnapshot(
-                character.worldId,
-                String(character.characterId),
-                inventory,
-            );
+            await this.inventoryRepo.replaceBySnapshot(character.worldId, String(character.characterId), inventory);
         }
         if (skills !== undefined) {
             await this.skillRepo.replaceBySnapshot(
@@ -605,11 +601,7 @@ export class CharacterService {
                 accountId: character.accountId,
                 worldId: character.worldId,
             });
-            await this.storageItemRepo.replaceBySnapshot(
-                character.worldId,
-                String(character.accountId),
-                storage.items,
-            );
+            await this.storageItemRepo.replaceBySnapshot(character.worldId, String(character.accountId), storage.items);
         }
         if (unsettledRequests !== undefined) {
             await this.unsettledRequestRepo.replaceBySnapshot(
@@ -619,12 +611,7 @@ export class CharacterService {
             );
         }
         if (claimedShops !== undefined && claimedShops.length > 0) {
-            await this.shopRepo.claim(
-                character.worldId,
-                character.accountId,
-                character.characterId,
-                claimedShops,
-            );
+            await this.shopRepo.claim(character.worldId, character.accountId, character.characterId, claimedShops);
         }
     }
 

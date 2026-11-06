@@ -6,41 +6,17 @@ import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
 import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
 import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
 import { grpcMapper } from "../mappers";
-import type {
-    CharacterOverviewService,
-} from "../../services/character-overview-service";
-import type {
-    CharacterRank,
-} from "../../services/ranking-service";
-import type {
-    CharacterService,
-    SaveCharacterEntry,
-} from "../../services/character-service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
-import type {
-    CharacterModel,
-} from "@fm/shared/repos/character-repository";
-import type {
-    CharacterOverviewModel,
-} from "@fm/shared/repos/character-overview-repository";
-import type {
-    InventoryModel,
-} from "@fm/shared/repos/inventory-repository";
-import type {
-    SkillModel,
-} from "@fm/shared/repos/skill-repository";
-import type {
-    BuffModel,
-} from "@fm/shared/repos/buff-repository";
-import type {
-    QuestModel,
-} from "@fm/shared/repos/quest-repository";
-import type {
-    SavedLocationModel,
-} from "@fm/shared/repos/saved-location-repository";
+import type { CharacterOverviewService } from "../../services/character-overview-service";
+import type { CharacterRank } from "../../services/ranking-service";
+import type { CharacterService, SaveCharacterEntry } from "../../services/character-service";
+import type { GrpcCall, GrpcCallback } from "./types";
+import type { CharacterModel } from "@fm/shared/repos/character-repository";
+import type { CharacterOverviewModel } from "@fm/shared/repos/character-overview-repository";
+import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
+import type { SkillModel } from "@fm/shared/repos/skill-repository";
+import type { BuffModel } from "@fm/shared/repos/buff-repository";
+import type { QuestModel } from "@fm/shared/repos/quest-repository";
+import type { SavedLocationModel } from "@fm/shared/repos/saved-location-repository";
 import type {
     Buff,
     Character,
@@ -188,10 +164,7 @@ export class CharacterGrpcController {
     private readonly characterService: CharacterService;
     private readonly characterOverviewService: CharacterOverviewService;
 
-    constructor(
-        characterService: CharacterService,
-        characterOverviewService: CharacterOverviewService
-    ) {
+    constructor(characterService: CharacterService, characterOverviewService: CharacterOverviewService) {
         this.characterService = characterService;
         this.characterOverviewService = characterOverviewService;
     }

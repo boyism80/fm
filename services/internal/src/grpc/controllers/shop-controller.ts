@@ -1,6 +1,4 @@
-import type {
-    ShopService,
-} from "../../services/shop-service";
+import type { ShopService } from "../../services/shop-service";
 import type {
     AbortOpenShopReply,
     AbortOpenShopRequest,
@@ -17,10 +15,7 @@ import type {
     SearchShopsReply,
     SearchShopsRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 import { makeSaveCharacterEntry } from "./character-controller";
 

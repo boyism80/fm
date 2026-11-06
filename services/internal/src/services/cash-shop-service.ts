@@ -217,7 +217,9 @@ export class CashShopService {
         place: (txClient: PoolClient) => Promise<void>,
     ): Promise<boolean> {
         const placed = await this.ctx.withPgDataTransaction(worldId, request.target_id, async (txClient) => {
-            if ((await this.cashRequestRepo.find(worldId, request.target_id, request.request_id, { txClient })) != null) {
+            if (
+                (await this.cashRequestRepo.find(worldId, request.target_id, request.request_id, { txClient })) != null
+            ) {
                 return false;
             }
             await place(txClient);
@@ -581,8 +583,7 @@ export class CashShopService {
                 break;
             }
             case CashSlotKind.CASH_SLOT_KIND_CHARACTER: {
-                slots =
-                    (await this.accountWorldRepo.findCharacterSlotCount(req.worldId, req.accountId)) + req.amount;
+                slots = (await this.accountWorldRepo.findCharacterSlotCount(req.worldId, req.accountId)) + req.amount;
                 transfer = { targetId: req.accountId, kind: CashTransferKind.CharacterSlot, detail };
                 break;
             }

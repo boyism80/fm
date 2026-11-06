@@ -67,20 +67,11 @@ import type {
     UpdateGuildMemberReply,
     UpdateGuildMemberRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GuildService,
-} from "../../services/guild-service";
-import type {
-    GuildBulletinBoardService,
-} from "../../services/guild-bulletin-board-service";
-import type {
-    AllianceService,
-} from "../../services/alliance-service";
+import type { GuildService } from "../../services/guild-service";
+import type { GuildBulletinBoardService } from "../../services/guild-bulletin-board-service";
+import type { AllianceService } from "../../services/alliance-service";
 import { okReply } from "./types";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("guildController")
@@ -92,7 +83,7 @@ export class GuildGrpcController {
     constructor(
         guildService: GuildService,
         guildBulletinBoardService: GuildBulletinBoardService,
-        allianceService: AllianceService
+        allianceService: AllianceService,
     ) {
         this.guildService = guildService;
         this.guildBulletinBoardService = guildBulletinBoardService;
@@ -102,12 +93,7 @@ export class GuildGrpcController {
     @Method("createGuild")
     async createGuild(call: GrpcCall<CreateGuildRequest>, callback: GrpcCallback<CreateGuildReply>) {
         const req = call.request;
-        const result = await this.guildService.createGuild(
-            req.worldId,
-            req.guildName,
-            req.leader,
-            req.requestId,
-        );
+        const result = await this.guildService.createGuild(req.worldId, req.guildName, req.leader, req.requestId);
         callback(null, okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN));
     }
 
@@ -132,31 +118,20 @@ export class GuildGrpcController {
     @Method("acceptGuildInvite")
     async acceptGuildInvite(call: GrpcCall<AcceptGuildInviteRequest>, callback: GrpcCallback<AcceptGuildInviteReply>) {
         const req = call.request;
-        const result = await this.guildService.acceptGuildInvite(
-            req.worldId,
-            req.guildId,
-            req.member,
-        );
+        const result = await this.guildService.acceptGuildInvite(req.worldId, req.guildId, req.member);
         callback(null, okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN));
     }
 
     @Method("leaveGuild")
     async leaveGuild(call: GrpcCall<LeaveGuildRequest>, callback: GrpcCallback<LeaveGuildReply>) {
-        const result = await this.guildService.leaveGuild(
-            call.request.worldId,
-            call.request.characterId,
-        );
+        const result = await this.guildService.leaveGuild(call.request.worldId, call.request.characterId);
         callback(null, okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN));
     }
 
     @Method("expelGuild")
     async expelGuild(call: GrpcCall<ExpelGuildRequest>, callback: GrpcCallback<ExpelGuildReply>) {
         const req = call.request;
-        const result = await this.guildService.expelGuild(
-            req.worldId,
-            req.requesterCharacterId,
-            req.targetCharacterId,
-        );
+        const result = await this.guildService.expelGuild(req.worldId, req.requesterCharacterId, req.targetCharacterId);
         callback(null, okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN));
     }
 
@@ -166,11 +141,7 @@ export class GuildGrpcController {
         callback: GrpcCallback<ChangeGuildRankTitlesReply>,
     ) {
         const req = call.request;
-        const result = await this.guildService.changeGuildRankTitles(
-            req.worldId,
-            req.characterId,
-            req.rankTitles,
-        );
+        const result = await this.guildService.changeGuildRankTitles(req.worldId, req.characterId, req.rankTitles);
         callback(null, okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN));
     }
 
@@ -205,11 +176,7 @@ export class GuildGrpcController {
     @Method("changeGuildNotice")
     async changeGuildNotice(call: GrpcCall<ChangeGuildNoticeRequest>, callback: GrpcCallback<ChangeGuildNoticeReply>) {
         const req = call.request;
-        const result = await this.guildService.changeGuildNotice(
-            req.worldId,
-            req.characterId,
-            req.notice,
-        );
+        const result = await this.guildService.changeGuildNotice(req.worldId, req.characterId, req.notice);
         callback(null, okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN));
     }
 
@@ -226,19 +193,23 @@ export class GuildGrpcController {
             req.requestId,
             req.guildId,
         );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), guildId: result.guildId, capacity: result.capacity ?? 0, gp: result.gp ?? 0 });
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            guildId: result.guildId,
+            capacity: result.capacity ?? 0,
+            gp: result.gp ?? 0,
+        });
     }
 
     @Method("gainGuildGp")
     async gainGuildGP(call: GrpcCall<GainGuildGPRequest>, callback: GrpcCallback<GainGuildGPReply>) {
         const req = call.request;
-        const result = await this.guildService.gainGuildGP(
-            req.worldId,
-            req.guildId,
-            req.amount,
-            req.requestId,
-        );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), guildId: result.guildId, gp: result.gp ?? 0 });
+        const result = await this.guildService.gainGuildGP(req.worldId, req.guildId, req.amount, req.requestId);
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            guildId: result.guildId,
+            gp: result.gp ?? 0,
+        });
     }
 
     @Method("sendGuildMessage")
@@ -279,7 +250,13 @@ export class GuildGrpcController {
             req.characterId,
             req.page,
         );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), threads: result.threads ?? [], listStart: result.listStart ?? 0, threadCount: result.threadCount ?? 0, notice: result.notice });
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            threads: result.threads ?? [],
+            listStart: result.listStart ?? 0,
+            threadCount: result.threadCount ?? 0,
+            notice: result.notice,
+        });
     }
 
     @Method("showGuildBulletinBoardThread")
@@ -293,7 +270,10 @@ export class GuildGrpcController {
             req.characterId,
             req.localThreadId,
         );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), thread: result.thread });
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            thread: result.thread,
+        });
     }
 
     @Method("createGuildBulletinBoardThread")
@@ -310,7 +290,14 @@ export class GuildGrpcController {
             req.body,
             req.icon,
         );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), thread: result.thread, threads: result.threads ?? [], listStart: result.listStart ?? 0, threadCount: result.threadCount ?? 0, notice: result.notice });
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            thread: result.thread,
+            threads: result.threads ?? [],
+            listStart: result.listStart ?? 0,
+            threadCount: result.threadCount ?? 0,
+            notice: result.notice,
+        });
     }
 
     @Method("updateGuildBulletinBoardThread")
@@ -327,7 +314,10 @@ export class GuildGrpcController {
             req.body,
             req.icon,
         );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), thread: result.thread });
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            thread: result.thread,
+        });
     }
 
     @Method("deleteGuildBulletinBoardThread")
@@ -356,7 +346,10 @@ export class GuildGrpcController {
             req.localThreadId,
             req.content,
         );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), thread: result.thread });
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            thread: result.thread,
+        });
     }
 
     @Method("deleteGuildBulletinBoardReply")
@@ -371,7 +364,10 @@ export class GuildGrpcController {
             req.localThreadId,
             req.replyId,
         );
-        callback(null, { ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN), thread: result.thread });
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            thread: result.thread,
+        });
     }
 
     @Method("createAlliance")
@@ -385,16 +381,23 @@ export class GuildGrpcController {
             req.requestId,
             req.guildId,
         );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("leaveAlliance")
     async leaveAlliance(call: GrpcCall<LeaveAllianceRequest>, callback: GrpcCallback<LeaveAllianceReply>) {
-        const result = await this.allianceService.leaveAlliance(
-            call.request.worldId,
-            call.request.characterId,
-        );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, disbanded: result.disbanded ?? false, removedGuildId: result.removedGuildId ?? 0, alliance: result.alliance });
+        const result = await this.allianceService.leaveAlliance(call.request.worldId, call.request.characterId);
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            disbanded: result.disbanded ?? false,
+            removedGuildId: result.removedGuildId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("expelAllianceGuild")
@@ -409,16 +412,22 @@ export class GuildGrpcController {
             req.targetGuildId,
             req.allianceId > 0 ? req.allianceId : undefined,
         );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, disbanded: result.disbanded ?? false, removedGuildId: result.removedGuildId ?? 0, alliance: result.alliance });
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            disbanded: result.disbanded ?? false,
+            removedGuildId: result.removedGuildId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("disbandAlliance")
     async disbandAlliance(call: GrpcCall<DisbandAllianceRequest>, callback: GrpcCallback<DisbandAllianceReply>) {
-        const result = await this.allianceService.disbandAlliance(
-            call.request.worldId,
-            call.request.characterId,
-        );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0 });
+        const result = await this.allianceService.disbandAlliance(call.request.worldId, call.request.characterId);
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+        });
     }
 
     @Method("acceptAllianceInvite")
@@ -433,7 +442,11 @@ export class GuildGrpcController {
             req.allianceId,
             req.guildId,
         );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("increaseAllianceCapacity")
@@ -447,7 +460,11 @@ export class GuildGrpcController {
             call.request.requestId,
             call.request.allianceId,
         );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("changeAllianceRankTitles")
@@ -461,7 +478,11 @@ export class GuildGrpcController {
             req.characterId,
             req.rankTitles,
         );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("changeAllianceLeader")
@@ -475,7 +496,13 @@ export class GuildGrpcController {
             req.characterId,
             req.newLeaderCharacterId,
         );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, oldLeaderCharacterId: result.oldLeaderCharacterId ?? 0, newLeaderCharacterId: result.newLeaderCharacterId ?? 0, alliance: result.alliance });
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            oldLeaderCharacterId: result.oldLeaderCharacterId ?? 0,
+            newLeaderCharacterId: result.newLeaderCharacterId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("changeAllianceNotice")
@@ -484,12 +511,12 @@ export class GuildGrpcController {
         callback: GrpcCallback<ChangeAllianceNoticeReply>,
     ) {
         const req = call.request;
-        const result = await this.allianceService.changeAllianceNotice(
-            req.worldId,
-            req.characterId,
-            req.notice,
-        );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, alliance: result.alliance });
+        const result = await this.allianceService.changeAllianceNotice(req.worldId, req.characterId, req.notice);
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("changeAllianceMemberRank")
@@ -504,16 +531,19 @@ export class GuildGrpcController {
             req.targetCharacterId,
             req.promote,
         );
-        callback(null, { ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN), allianceId: result.allianceId ?? 0, targetCharacterId: result.targetCharacterId ?? 0, newAllianceRank: result.newAllianceRank ?? 0, alliance: result.alliance });
+        callback(null, {
+            ...okReply(result, AllianceErrorCode.ALLIANCE_ERROR_NONE, AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN),
+            allianceId: result.allianceId ?? 0,
+            targetCharacterId: result.targetCharacterId ?? 0,
+            newAllianceRank: result.newAllianceRank ?? 0,
+            alliance: result.alliance,
+        });
     }
 
     @Method("getAlliance")
     async getAlliance(call: GrpcCall<GetAllianceRequest>, callback: GrpcCallback<GetAllianceReply>) {
         const worldId = call.request.worldId;
-        const result = await this.allianceService.getAlliance(
-            worldId,
-            call.request.allianceId,
-        );
+        const result = await this.allianceService.getAlliance(worldId, call.request.allianceId);
         if (!result.alliance) {
             callback(null, { found: false, alliance: undefined });
             return;
@@ -523,10 +553,7 @@ export class GuildGrpcController {
 
     @Method("disbandGuild")
     async disbandGuild(call: GrpcCall<DisbandGuildRequest>, callback: GrpcCallback<DisbandGuildReply>) {
-        const result = await this.guildService.disbandGuild(
-            call.request.worldId,
-            call.request.characterId,
-        );
+        const result = await this.guildService.disbandGuild(call.request.worldId, call.request.characterId);
         if (result.ok) {
             if (result.allianceId != null && result.guildId != null) {
                 await this.allianceService.removeDisbandedGuild(

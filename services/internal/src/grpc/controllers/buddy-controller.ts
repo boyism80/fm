@@ -12,14 +12,8 @@ import {
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { BUDDY_ENTRY, BUDDY_LIST_ENTRY } from "../buddy-proto";
 import { grpcMapper } from "../mappers";
-import type {
-    BuddyListEntry,
-    BuddyService,
-} from "../../services/buddy-service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { BuddyListEntry, BuddyService } from "../../services/buddy-service";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("buddyController")

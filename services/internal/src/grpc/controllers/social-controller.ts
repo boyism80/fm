@@ -18,16 +18,9 @@ import type {
     WhisperReply,
     WhisperRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    FamilyService,
-} from "../../services/family-service";
-import type {
-    SocialService,
-} from "../../services/social-service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { FamilyService } from "../../services/family-service";
+import type { SocialService } from "../../services/social-service";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("socialController")

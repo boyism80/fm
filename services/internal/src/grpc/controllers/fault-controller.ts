@@ -1,14 +1,9 @@
-import type {
-    RabbitMQService,
-} from "../../services/rabbitmq-service";
+import type { RabbitMQService } from "../../services/rabbitmq-service";
 import type {
     SetPublishFaultReply,
     SetPublishFaultRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("faultController")

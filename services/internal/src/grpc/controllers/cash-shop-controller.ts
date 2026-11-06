@@ -1,6 +1,4 @@
-import type {
-    CashShopService,
-} from "../../services/cash-shop-service";
+import type { CashShopService } from "../../services/cash-shop-service";
 import type {
     AddCashReply,
     AddCashRequest,
@@ -31,19 +29,12 @@ import type {
     TakeOutCashItemReply,
     TakeOutCashItemRequest,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    GrpcCall,
-    GrpcCallback,
-} from "./types";
+import type { GrpcCall, GrpcCallback } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 import { grpcMapper } from "../mappers";
 import { INVENTORY_MODEL, INVENTORY_PROTO } from "../inventory-proto";
-import type {
-    Inventory,
-} from "@fm/shared/protobuf/generated/fminternal/internal_service";
-import type {
-    InventoryModel,
-} from "@fm/shared/repos/inventory-repository";
+import type { Inventory } from "@fm/shared/protobuf/generated/fminternal/internal_service";
+import type { InventoryModel } from "@fm/shared/repos/inventory-repository";
 
 @Controller("cashShopController")
 export class CashShopGrpcController {
@@ -68,12 +59,7 @@ export class CashShopGrpcController {
             throw Object.assign(new Error("item with unique_id is required"), { code: "INVALID_PAYLOAD" });
         }
         const item = grpcMapper.map<Inventory, InventoryModel>(req.item, INVENTORY_PROTO, INVENTORY_MODEL);
-        const { result, slot } = await this.cashShopService.takeOut(
-            req.worldId,
-            req.accountId,
-            req.characterId,
-            item,
-        );
+        const { result, slot } = await this.cashShopService.takeOut(req.worldId, req.accountId, req.characterId, item);
         callback(null, { result, slot });
     }
 

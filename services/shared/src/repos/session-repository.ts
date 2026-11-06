@@ -131,7 +131,13 @@ export class SessionRepository {
             const fromServer = sourceChannelId != null || sourceCashShopId != null;
             if (sourceCashShopId != null) {
                 if (
-                    !this.isOwner(session, AS.ACCOUNT_SESSION_STATE_CASH_SHOP, characterId, "cash_shop_id", sourceCashShopId)
+                    !this.isOwner(
+                        session,
+                        AS.ACCOUNT_SESSION_STATE_CASH_SHOP,
+                        characterId,
+                        "cash_shop_id",
+                        sourceCashShopId,
+                    )
                 ) {
                     return [0, SessionErrorCode.SESSION_NOT_OWNER];
                 }
@@ -284,7 +290,13 @@ export class SessionRepository {
                 owner.cashShopId,
             );
         }
-        return this.isOwner(session, AS.ACCOUNT_SESSION_STATE_GAME, owner.characterId, "channel_id", owner.channelId ?? -1);
+        return this.isOwner(
+            session,
+            AS.ACCOUNT_SESSION_STATE_GAME,
+            owner.characterId,
+            "channel_id",
+            owner.channelId ?? -1,
+        );
     }
 
     async refresh(
