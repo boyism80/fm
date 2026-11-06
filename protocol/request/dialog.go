@@ -21,9 +21,13 @@ func (p *Dialog) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteBoolean(p.Next)
 
 	switch p.DialogType {
-	case constant.DialogTypeList, constant.DialogTypeStyle, constant.DialogTypeNumber:
+	case constant.DialogTypeList, constant.DialogTypeNumber:
 		if p.Next {
 			writer.WriteU32(p.Selected)
+		}
+	case constant.DialogTypeStyle:
+		if p.Next {
+			writer.WriteU8(uint8(p.Selected))
 		}
 	case constant.DialogTypeInput:
 		if p.Next {
@@ -41,9 +45,15 @@ func (p *Dialog) Deserialize(reader *stream.StreamReader) {
 	case constant.DialogTypeDefault:
 	case constant.DialogTypeYesNo:
 
-	case constant.DialogTypeList, constant.DialogTypeStyle, constant.DialogTypeNumber:
+	case constant.DialogTypeList, constant.DialogTypeNumber:
 		if p.Next {
 			p.Selected = reader.ReadU32()
+		}
+
+	// The client sends the style pick in one byte, unlike a list or number answer.
+	case constant.DialogTypeStyle:
+		if p.Next {
+			p.Selected = uint32(reader.ReadU8())
 		}
 
 	case constant.DialogTypeInput:
