@@ -77,6 +77,8 @@ type Skill struct {
 	LevelData    map[int]*SkillLevelData
 	// RequiredSkills maps each skill that must be learned first to the level it needs.
 	RequiredSkills map[uint32]int
+	// SummonMobCount is the most mobs a summon attack hits, from summon/attack1/info; 0 for a summon without an attack.
+	SummonMobCount int
 
 	ManualCooldown bool
 	ExtraElement   string

@@ -2566,6 +2566,13 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 			}
 		}
 
+		if attack := skillChild.find("summon:attack1"); attack != nil {
+			skill.SummonMobCount = 1
+			if info := attack.find("info"); info != nil {
+				skill.SummonMobCount = info.Int("mobCount", 1)
+			}
+		}
+
 		common := skillChild.find("common")
 		if common != nil {
 			for _, intField := range common.Ints {

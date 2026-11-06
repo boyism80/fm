@@ -42,6 +42,9 @@ func (v *SummonValidator) maximumDamages(damages []dto.AttackPair) ([]dto.Attack
 		a.kind = attackSummonMagic
 	}
 	maxTargets, _ := a.limits()
+	if skill.SummonMobCount > 0 {
+		maxTargets = skill.SummonMobCount
+	}
 	info := dto.AttackInfo{AttackHeader: dto.AttackHeader{Targets: uint8(len(damages)), Hits: 1}, Damages: damages}
 	if err := v.checkShape(info, maxTargets); err != nil {
 		return nil, err
