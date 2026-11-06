@@ -71,6 +71,9 @@ func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.Att
 		return nil
 	}
 
+	if kind != AttackEnergy {
+		ch.markCriticals(info)
+	}
 	skillLevel := uint8(ch.skills.Level(info.Skill))
 	switch kind {
 	case AttackClose:
@@ -86,6 +89,73 @@ func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.Att
 		ch.skills.CallHook(actx, skill, "on_activated")
 	}
 	return nil
+}
+
+// markCriticals flags the hits the others see as critical, from the RNG stream the client was seeded with, as the
+// original server's critModify did; the client draws a critical number for each flagged hit.
+func (ch *Character) markCriticals(info dto.AttackInfo) {
+	var randoms [7]int64
+	for i := range randoms {
+		randoms[i] = ch.random[0].CRand32Random()
+	}
+	prob, param := ch.criticalOdds(info)
+	if prob <= 0 || param <= 0 {
+		return
+	}
+	skill := constant.SkillID(info.Skill)
+	if info.Display != criticalSkillDisplay {
+		switch skill {
+		case constant.SkillBlizzard3211003, constant.SkillShadowMeso, constant.SkillAssassinate, constant.SkillMesoExplosion:
+			return
+		}
+	}
+	index := 4
+	if skill == constant.SkillSnipe || skill == constant.SkillNinjaStorm {
+		index++
+	}
+	for i := range info.Damages {
+		for j := range info.Damages[i].DamagePairs {
+			info.Damages[i].DamagePairs[j].Unknown = float64(randoms[index%7]%10000000)*0.0000100000010000001 < float64(prob)
+			index++
+		}
+	}
+}
+
+// criticalSkillDisplay is the attack display of a skill that brings its own critical odds.
+const criticalSkillDisplay = 58
+
+// criticalOdds is the critical chance in percent and the critical damage the attack can show: the skill's own for
+// display 58, otherwise the bow or claw critical passive, plus Sharp Eyes.
+func (ch *Character) criticalOdds(info dto.AttackInfo) (prob int, param int) {
+	if info.Display == criticalSkillDisplay {
+		if data := ch.skills.LevelData(constant.SkillID(info.Skill)); data != nil {
+			prob, param = data.Prop, data.CriticalDamage
+		}
+	} else if weapon := ch.inventory.equipped[constant.EquipmentPartsWeapon]; weapon != nil {
+		passive := constant.SkillID(0)
+		if model, ok := weapon.GetModel().(*wz.Weapon); ok {
+			switch model.WeaponType {
+			case constant.WeaponTypeBow, constant.WeaponTypeCrossbow:
+				passive = constant.SkillCriticalShot
+			case constant.WeaponTypeClaw:
+				passive = constant.SkillCriticalThrow
+			}
+		}
+		if data := ch.skills.LevelData(passive); passive != 0 && data != nil {
+			prob, param = data.Prop, data.Damage
+		}
+	}
+	if _, sharpEyes, ok := ch.buffs.GetBuffValue(constant.BuffFlagSharpEyes); ok {
+		prob += int(min(max(sharpEyes>>8, 0), 100))
+		if sharpEyes > 0 {
+			if param > 0 {
+				param += int(sharpEyes & 0xFF)
+			} else {
+				param = int(sharpEyes&0xFF) + 100
+			}
+		}
+	}
+	return prob, param
 }
 
 // A follow-up attack is a hit the skill's buff triggers under the skill's id, so it neither costs nor activates the
