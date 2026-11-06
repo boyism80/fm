@@ -119,6 +119,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.debuffs.Load(reply.GetDebuffs())
 	ch.chalkboard = reply.GetPresentation().GetChalkboard()
 	ch.itemEffectID = reply.GetPresentation().GetItemEffectId()
+	ch.mount.hp = reply.GetPresentation().GetMountHp()
 	ch.SetHp(p.GetHp(), false)
 	ch.SetMp(p.GetMp(), false)
 	ch.quests.Load(reply.GetQuests())

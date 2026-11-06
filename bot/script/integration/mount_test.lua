@@ -378,6 +378,23 @@ local function battleship(ctx)
         return false
     end
 
+    -- A channel change keeps the damaged battleship's HP, shown again when it rides into the new channel.
+    for _, channel in ipairs({ 1, 0 }) do
+        local gauge = nil
+        ctx:hook("battleship_transfer", function(_, b, p, name)
+            if b:id() == bot:id() and name == resp.skill_cooldown and p.skill_id == BATTLESHIP_GAUGE then
+                gauge = p.remaining_sec
+            end
+        end)
+        if bot:transfer(channel) == false then
+            return ctx:fail("채널 " .. channel .. " 이동 실패")
+        end
+        ctx:sleep(1000)
+        if check(ctx, gauge == 2300, "채널 이동 뒤 배틀쉽 HP가 다름: " .. tostring(gauge)) == false then
+            return false
+        end
+    end
+
     p = bot:request(resp.skill_cooldown, req.damaged { type = HIT_ENV, damage = 3000 }, function(p)
         return p.skill_id == BATTLESHIP
     end, 3000)

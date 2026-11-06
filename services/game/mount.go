@@ -23,6 +23,10 @@ type Mount struct {
 	hp      uint32
 }
 
+func (m *Mount) HP() uint32 {
+	return m.hp
+}
+
 func (m *Mount) SetLevel(level uint32) {
 	level = min(max(level, 1), constant.MountMaxLevel)
 	if m.level == level {

@@ -2563,6 +2563,7 @@ export interface EnterGameReply {
 export interface CharacterPresentation {
   chalkboard: string;
   itemEffectId: number;
+  mountHp: number;
 }
 
 export interface UnsettledRequest {
@@ -14441,7 +14442,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
 };
 
 function createBaseCharacterPresentation(): CharacterPresentation {
-  return { chalkboard: "", itemEffectId: 0 };
+  return { chalkboard: "", itemEffectId: 0, mountHp: 0 };
 }
 
 export const CharacterPresentation: MessageFns<CharacterPresentation> = {
@@ -14451,6 +14452,9 @@ export const CharacterPresentation: MessageFns<CharacterPresentation> = {
     }
     if (message.itemEffectId !== 0) {
       writer.uint32(16).uint32(message.itemEffectId);
+    }
+    if (message.mountHp !== 0) {
+      writer.uint32(24).uint32(message.mountHp);
     }
     return writer;
   },
@@ -14478,6 +14482,14 @@ export const CharacterPresentation: MessageFns<CharacterPresentation> = {
           message.itemEffectId = reader.uint32();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.mountHp = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14495,6 +14507,11 @@ export const CharacterPresentation: MessageFns<CharacterPresentation> = {
         : isSet(object.item_effect_id)
         ? globalThis.Number(object.item_effect_id)
         : 0,
+      mountHp: isSet(object.mountHp)
+        ? globalThis.Number(object.mountHp)
+        : isSet(object.mount_hp)
+        ? globalThis.Number(object.mount_hp)
+        : 0,
     };
   },
 
@@ -14506,6 +14523,9 @@ export const CharacterPresentation: MessageFns<CharacterPresentation> = {
     if (message.itemEffectId !== 0) {
       obj.itemEffectId = Math.round(message.itemEffectId);
     }
+    if (message.mountHp !== 0) {
+      obj.mountHp = Math.round(message.mountHp);
+    }
     return obj;
   },
 
@@ -14516,6 +14536,7 @@ export const CharacterPresentation: MessageFns<CharacterPresentation> = {
     const message = createBaseCharacterPresentation();
     message.chalkboard = object.chalkboard ?? "";
     message.itemEffectId = object.itemEffectId ?? 0;
+    message.mountHp = object.mountHp ?? 0;
     return message;
   },
 };

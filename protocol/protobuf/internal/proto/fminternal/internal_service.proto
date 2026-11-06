@@ -781,6 +781,7 @@ message EnterGameReply {
 message CharacterPresentation {
   string chalkboard = 1;
   uint32 item_effect_id = 2;
+  uint32 mount_hp = 3;
 }
 
 enum UnsettledType {

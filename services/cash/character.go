@@ -55,6 +55,7 @@ type Character struct {
 	debuffs        []debuffRecord
 	chalkboard     string
 	itemEffectID   uint32
+	mountHP        uint32
 
 	ReturnChannel  uint32
 	NXCash         uint32
@@ -127,6 +128,7 @@ func NewCharacter(reply *internal.EnterCashShopReply, resources *wz.Resources) *
 	}
 	ch.chalkboard = game.GetPresentation().GetChalkboard()
 	ch.itemEffectID = game.GetPresentation().GetItemEffectId()
+	ch.mountHP = game.GetPresentation().GetMountHp()
 	for _, debuff := range game.GetDebuffs() {
 		ch.debuffs = append(ch.debuffs, debuffRecord{
 			mask: debuff.GetMask(), position: debuff.GetPosition(), x: debuff.GetX(),
@@ -324,9 +326,9 @@ func (ch *Character) PreparePutIn(serial uint64, invType constant.InventoryType)
 	return &LockerItem{buyerName: ch.name, item: record}
 }
 
-// PresentationRPC hands the chalkboard and item effect back to the game server, which shows them again.
+// PresentationRPC hands the chalkboard, item effect, and battleship HP back to the game server.
 func (ch *Character) PresentationRPC() *internal.CharacterPresentation {
-	return &internal.CharacterPresentation{Chalkboard: ch.chalkboard, ItemEffectId: ch.itemEffectID}
+	return &internal.CharacterPresentation{Chalkboard: ch.chalkboard, ItemEffectId: ch.itemEffectID, MountHp: ch.mountHP}
 }
 
 func (ch *Character) DebuffsRPC() []*internal.Debuff {
