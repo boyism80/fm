@@ -211,7 +211,7 @@ func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *game.Character, 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *game.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuild *dto.AllianceMembershipChangeGuild) {
+func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *game.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuilds []dto.AllianceMembershipChangeGuild) {
 	if info == nil || addedGuild == nil {
 		return
 	}
@@ -222,11 +222,11 @@ func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *game.Character, info *d
 		_ = ch.Send(&response.AllianceShowGuilds{
 			Guilds: guilds,
 		}, types.SEND_POLICY_ENCRYPT)
-		if membershipGuild != nil {
+		if len(membershipGuilds) > 0 {
 			_ = ch.Send(&response.AllianceChangeMembership{
 				InAlliance: true,
 				AllianceID: info.AllianceID,
-				Guilds:     []dto.AllianceMembershipChangeGuild{*membershipGuild},
+				Guilds:     membershipGuilds,
 			}, types.SEND_POLICY_ENCRYPT)
 		}
 		return

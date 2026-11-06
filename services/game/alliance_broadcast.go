@@ -226,10 +226,7 @@ func (s *AllianceSystem) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 	guilds := s.guildInfos(alliancePb)
 	newGuildID := addedGuildPb.GetGuildId()
 	members := AllianceGuildMemberRanksFromProto(addedGuildPb)
-	var membershipGuild *dto.AllianceMembershipChangeGuild
-	if block, ok := AllianceMembershipChangeGuildFromProto(addedGuildPb); ok {
-		membershipGuild = &block
-	}
+	membershipGuilds := s.membershipGuilds(alliancePb)
 
 	seen := make(map[uint32]struct{})
 	send := func(memberID uint32, joining bool) {
@@ -241,10 +238,17 @@ func (s *AllianceSystem) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 		}
 		seen[memberID] = struct{}{}
 		s.callOnlineMember(memberID, func(ch *Character) {
-			ch.listener.OnAllianceGuildAdded(ch, info, guilds, newGuildID, addedInfo, members, joining, membershipGuild)
+			ch.listener.OnAllianceGuildAdded(ch, info, guilds, newGuildID, addedInfo, members, joining, membershipGuilds)
 		})
 	}
 
+	// The alliance already lists the new guild, so its members go first to get the joining packets.
+	for _, m := range addedGuildPb.GetMembers() {
+		if m == nil {
+			continue
+		}
+		send(m.GetCharacterId(), true)
+	}
 	for _, guildID := range alliancePb.GetGuildIds() {
 		g := s.gw.Systems().Get[*GuildSystem]().Get(guildID)
 		if g == nil {
@@ -256,12 +260,6 @@ func (s *AllianceSystem) BroadcastGuildAdded(alliancePb *internal.Alliance, adde
 			}
 			send(m.GetCharacterId(), false)
 		}
-	}
-	for _, m := range addedGuildPb.GetMembers() {
-		if m == nil {
-			continue
-		}
-		send(m.GetCharacterId(), true)
 	}
 	s.broadcastAllianceStateRefresh(alliancePb)
 }

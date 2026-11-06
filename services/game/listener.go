@@ -116,7 +116,7 @@ type CharacterListener interface {
 	OnAllianceNoticeChanged(ch *Character, info *dto.AllianceInfo)
 	OnAllianceLeaderChanged(ch *Character, allianceID uint32, oldLeaderID uint32, newLeaderID uint32, info *dto.AllianceInfo, guilds []*dto.GuildInfo)
 	OnAllianceMemberRankChanged(ch *Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo)
-	OnAllianceGuildAdded(ch *Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuild *dto.AllianceMembershipChangeGuild)
+	OnAllianceGuildAdded(ch *Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuilds []dto.AllianceMembershipChangeGuild)
 	OnAllianceGuildLeft(ch *Character, info *dto.AllianceInfo, removedGuildID uint32, removedGuild *dto.GuildInfo, removedMembers []dto.AllianceGuildMemberRank, expelled bool, leaving bool)
 	OnGuildNewMember(ch *Character, guildID uint32, member dto.GuildMemberStatus)
 	OnGuildLeaveSelf(ch *Character)
