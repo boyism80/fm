@@ -3,18 +3,8 @@
 local alliance_create_ok = 0
 
 local alliance_disband_ok = 0
-local alliance_disband_not_in_alliance = 1
-local alliance_disband_not_leader = 2
-local alliance_disband_not_guild_master = 3
-local alliance_disband_failed = 4
 
 local alliance_inc_capacity_ok = 0
-local alliance_inc_capacity_not_in_alliance = 1
-local alliance_inc_capacity_not_leader = 2
-local alliance_inc_capacity_not_guild_master = 3
-local alliance_inc_capacity_insufficient_meso = 4
-local alliance_inc_capacity_capacity_max = 5
-local alliance_inc_capacity_failed = 6
 
 local function try_create_alliance(npc, me)
     local party = me:party()
@@ -42,19 +32,16 @@ local function try_create_alliance(npc, me)
         me:dialog(npc, '길드장 두명이 파티를 맺고 있어야 길드 연합을 만들 수 있어요.')
         return
     end
-    local map = me:map()
-    if not map then
-        me:dialog(npc, '파티원 두명이 이곳에 모여 잇는지 확인해 주세요.')
-        return
-    end
-    local partner = map:characters()[partner_id]
-    if not partner then
-        me:dialog(npc, '파티원 두명이 이곳에 모여 잇는지 확인해 주세요.')
-        return
-    end
     local g = me:guild()
     if not g or g:rank(me) ~= 1 then
         me:dialog(npc, '길드장만 길드 연합을 등록할 수 있어요.')
+        return
+    end
+    -- The partner's guild is known only from the partner here, so this map check comes before its guild checks.
+    local map = me:map()
+    local partner = map and map:characters()[partner_id]
+    if not partner then
+        me:dialog(npc, '파티원 두명이 이곳에 모여 잇는지 확인해 주세요.')
         return
     end
     local partner_g = partner:guild()
@@ -92,55 +79,47 @@ local function try_create_alliance(npc, me)
     end
 end
 
-local function try_disband_alliance(npc, me)
+-- Only the alliance leader passes; a character in no alliance has no alliance rank.
+local function alliance_leader(me)
     local g = me:guild()
-    if not g or not g:alliance() then
-        me:dialog(npc, '길드 연합이 존재하지 않습니다.')
-        return
-    end
-    if g:rank(me) ~= 1 or g:alliance_rank(me) ~= 1 then
+    return g ~= nil and g:rank(me) == 1 and g:alliance_rank(me) == 1
+end
+
+local function try_disband_alliance(npc, me)
+    if not alliance_leader(me) then
         me:dialog(npc, '길드 연합장만 길드 연합을 해체할 수 있어요.')
         return
     end
     if not me:dialog_yes_no(npc, '길드 연합을 정말 해체하고 싶으세요? 신중하게 결정해 주시기 바랍니다.') then
         return
     end
-    local result = me:disband_alliance()
-    if result == alliance_disband_ok then
-        me:dialog(npc, '길드 연합이 해체되었습니다.')
-    elseif result == alliance_disband_not_guild_master or result == alliance_disband_not_leader then
-        me:dialog(npc, '길드 연합장만 길드 연합을 해체할 수 있어요.')
-    elseif result == alliance_disband_not_in_alliance then
+    if not me:guild() then
         me:dialog(npc, '길드 연합이 존재하지 않습니다.')
+        return
+    end
+    if me:disband_alliance() == alliance_disband_ok then
+        me:dialog(npc, '길드 연합이 해체되었습니다.')
     else
-        me:dialog(npc, '길드 연합을 해체하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+        me:dialog(npc, '길드 연합을 해체하는데 오류가 발생했어요. 다시 시도해 주세요.')
     end
 end
 
 local function try_inc_alliance_capacity(npc, me)
-    local g = me:guild()
-    if not g or not g:alliance() then
-        me:dialog(npc, '길드 연합이 존재하지 않습니다.')
-        return
-    end
-    if g:rank(me) ~= 1 or g:alliance_rank(me) ~= 1 then
+    if not alliance_leader(me) then
         me:dialog(npc, '길드 연합장만 길드 수를 늘릴 수 있어요.')
         return
     end
     if not me:dialog_yes_no(npc, '길드 수를 늘리는데에는 수수료 5백만 메소가 소비됩니다. 정말 만들고 싶으세요?') then
         return
     end
-    local result = me:inc_alliance_capacity()
-    if result == alliance_inc_capacity_ok then
-        me:dialog(npc, '길드 연합의 길드수를 늘렸어요.')
-    elseif result == alliance_inc_capacity_capacity_max or result == alliance_inc_capacity_insufficient_meso then
-        me:dialog(npc, '최대 길드 연합의 길드 수는 5개 까지 늘릴 수 있습니다. 또는 수수료가 부족하신 건 아닌지 확인해 주세요.')
-    elseif result == alliance_inc_capacity_not_leader or result == alliance_inc_capacity_not_guild_master then
-        me:dialog(npc, '길드 연합장만 길드 수를 늘릴 수 있어요.')
-    elseif result == alliance_inc_capacity_not_in_alliance then
+    if not me:guild() then
         me:dialog(npc, '길드 연합이 존재하지 않습니다.')
+        return
+    end
+    if me:inc_alliance_capacity() == alliance_inc_capacity_ok then
+        me:dialog(npc, '길드 연합의 길드수를 늘렸어요.')
     else
-        me:dialog(npc, '길드 연합의 길드 수를 늘리지 못했습니다. 잠시 후 다시 시도해 주세요.')
+        me:dialog(npc, '최대 길드 연합의 길드 수는 5개 까지 늘릴 수 있습니다. 또는 수수료가 부족하신 건 아닌지 확인해 주세요.')
     end
 end
 

@@ -984,12 +984,19 @@ local function alliance_name_taken(ctx)
     return disband_alliance(ctx, other)
 end
 
--- A guild master who does not lead the alliance is turned away before the fee question.
+-- A guild master who does not lead the alliance is turned away before the fee question, and so is one in no alliance.
 local function alliance_partner_refused(ctx)
     local leader, partner = ctx:bot(0), ctx:bot(1)
     watch(ctx)
     if setup(ctx, leader) == false or setup(ctx, partner) == false then
         return false
+    end
+    for _, case in ipairs({ { LENARIO_MENU.capacity, "길드 연합장만 길드 수를 늘릴 수 있어요" },
+        { LENARIO_MENU.disband, "길드 연합장만 길드 연합을 해체할 수 있어요" } }) do
+        if ask(ctx, partner, LENARIO, case[1], case[2]) == false then
+            return false
+        end
+        partner:dialog(false)
     end
     if create_alliance(ctx, leader, "연합 생성") == false then
         return false
