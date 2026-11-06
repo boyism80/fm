@@ -159,7 +159,7 @@ func (a attack) element(d damageRange, attr string, strength float64) damageRang
 func (a attack) skillElement(d damageRange, strength float64) damageRange {
 	switch a.skill {
 	case constant.SkillElementComposition:
-		return a.element(d, "f", 1).scale(.5).add(a.element(d, "p", 1).scale(.5))
+		return a.element(d, "f", 1).scale(.5).add(a.element(d, "s", 1).scale(.5))
 	case constant.SkillElementComposition2211006:
 		return a.element(d, "i", 1).scale(.5).add(a.element(d, "l", 1).scale(.5))
 	case constant.SkillInferno, constant.SkillBlizzard3211003:
