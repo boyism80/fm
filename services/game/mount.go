@@ -52,6 +52,8 @@ func (m *Mount) Ride(skill *SkillEntry, vehicle int32) error {
 
 	m.owner.buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagPowerguard, constant.BuffFlagManaReflection})
 	m.owner.buffs.AddBuff(skill.wz, 0, uint8(skill.Level()), m.owner.GetID(), map[constant.BuffFlag]int32{constant.BuffFlagMonsterRiding: vehicle}, true)
+	// A ride cancelled as a buff keeps its fatigue timer; on_ride starts it again only for a mount that tires.
+	m.owner.RemoveTimer(mountFatigueTimer)
 	m.start()
 	return nil
 }
