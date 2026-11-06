@@ -24,6 +24,10 @@ type NpcSpawn struct {
 
 type MobSpawn struct {
 	*BaseSpawn
+	// Positions, when set, are the points each spawn picks from at random instead of Position.
+	Positions []types.Vector2[int16]
+	// Notice is sent to the map each time this spawn brings its mob.
+	Notice string
 }
 
 const dropPointSearchOffset int16 = 50

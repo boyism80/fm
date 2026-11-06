@@ -104,6 +104,33 @@ local function respawn_after_death(ctx)
     return true
 end
 
+-- Mano is not in its map's WZ life; it comes from the field boss table with a notice to the map.
+local function mano_from_table(ctx)
+    local bot = ctx:bot(0)
+    local mano, field = 2220000, 104000400
+    if bot:instance_move(field) == false then
+        return ctx:fail("마노 맵 이동 실패")
+    end
+    if kill_boss(ctx, bot, mano) == false then
+        return false
+    end
+    if pq.command(bot, "/시간가속 00:09:00", "시간가속 적용 요청") == false then
+        return ctx:fail("시간가속 실패")
+    end
+    local notice = bot:request(resp.notice, nil, function(p)
+        return p.message == "서늘한 기운이 감돌며 마노가 나타났습니다."
+    end, 15000)
+    pq.command(bot, "/현재시간초기화", "현재 시간 보정 초기화")
+    ctx:sleep(2000)
+    if notice == false then
+        return ctx:fail("마노가 다시 나오며 공지가 오지 않음")
+    end
+    if bot:mobs(mano)[1] == nil then
+        return ctx:fail("공지 뒤에 마노가 보이지 않음")
+    end
+    return true
+end
+
 test_suite {
     name = "Boss: 대왕지네·포장마차·필드 보스 재생성",
     bot_count = 1,
@@ -150,5 +177,6 @@ test_suite {
             return confirm_warp(ctx, bot, 9330032, 741020100)
         end,
         respawn_after_death,
+        mano_from_table,
     },
 }

@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"github.com/boyism80/fm/core/clock"
+	"math/rand"
 	"time"
 
 	"github.com/boyism80/fm/maple/constant"
@@ -82,9 +83,13 @@ func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativ
 		}
 	}
 
+	spawnAt := mobSpawn.Wz.Position
+	if len(mobSpawn.Wz.Positions) > 0 {
+		spawnAt = mobSpawn.Wz.Positions[rand.Intn(len(mobSpawn.Wz.Positions))]
+	}
 	position := types.Point[int16]{
-		X: mobSpawn.Wz.Position.X,
-		Y: mobSpawn.Wz.Position.Y,
+		X: spawnAt.X,
+		Y: spawnAt.Y,
 	}
 
 	_, err := m.SpawnMob(mobSpawn.Wz.ID, position, mobSpawn, constant.MobSpawnTypeAnimate, 0, constant.CarnivalTeam(mobSpawn.Wz.Team))
@@ -93,6 +98,7 @@ func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativ
 	}
 
 	mobSpawn.Spawned = true
+	m.MapMessage(constant.MsgLightBlueText, mobSpawn.Wz.Notice)
 	return true
 }
 

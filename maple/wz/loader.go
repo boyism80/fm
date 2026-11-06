@@ -1503,6 +1503,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 			spawn = nil
 		}
 	}
+	model.addFieldBoss()
 
 	reactors := root.find("reactor")
 	if reactors != nil {
