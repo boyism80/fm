@@ -43,14 +43,9 @@ type AttackInfo struct {
 	Position types.Vector2[int16]
 }
 
-func (header *AttackHeader) deserialize(sr *stream.StreamReader) {
-	header.FieldKey = sr.ReadU8()
-	tbyte := sr.ReadU8()
-	header.Targets = (tbyte >> 4) & 0xF
-	header.Hits = tbyte & 0xF
-	header.Skill = sr.ReadU32()
-
-	switch constant.SkillID(header.Skill) {
+// keyDownSkill reports whether the client sends how long the key was held for the skill.
+func keyDownSkill(skill uint32) bool {
+	switch constant.SkillID(skill) {
 	case constant.SkillBigBang,
 		constant.SkillBigBang2221001,
 		constant.SkillBigBang2321001,
@@ -62,9 +57,21 @@ func (header *AttackHeader) deserialize(sr *stream.StreamReader) {
 		constant.SkillRapidFire,
 		constant.SkillGrenade,
 		constant.SkillPoisonBomb:
+		return true
+	}
+	return false
+}
+
+func (header *AttackHeader) deserialize(sr *stream.StreamReader) {
+	header.FieldKey = sr.ReadU8()
+	tbyte := sr.ReadU8()
+	header.Targets = (tbyte >> 4) & 0xF
+	header.Hits = tbyte & 0xF
+	header.Skill = sr.ReadU32()
+
+	header.Charge = 0
+	if keyDownSkill(header.Skill) {
 		header.Charge = sr.ReadU32()
-	default:
-		header.Charge = 0
 	}
 
 	sr.Skip(1)
@@ -93,18 +100,7 @@ func (header *AttackHeader) serialize(sw *stream.StreamWriter) {
 	sw.WriteU8((header.Targets << 4) | header.Hits)
 	sw.WriteU32(header.Skill)
 
-	switch constant.SkillID(header.Skill) {
-	case constant.SkillBigBang,
-		constant.SkillBigBang2221001,
-		constant.SkillBigBang2321001,
-		constant.SkillPiercing,
-		constant.SkillStormArrow,
-		constant.SkillStormArrowCygnus,
-		constant.SkillCorkscrewBlow,
-		constant.SkillCorkscrewBlowCygnus,
-		constant.SkillRapidFire,
-		constant.SkillGrenade,
-		constant.SkillPoisonBomb:
+	if keyDownSkill(header.Skill) {
 		sw.WriteU32(header.Charge)
 	}
 

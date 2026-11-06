@@ -50,8 +50,7 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 		}
 	}
 
-	switch constant.SkillID(a.Skill) {
-	case constant.SkillBigBang, constant.SkillBigBang2221001, constant.SkillBigBang2321001:
+	if a.Charge > 0 {
 		writer.WriteU32(a.Charge)
 	}
 	return nil
@@ -87,8 +86,7 @@ func (a *Attack) Deserialize(reader *stream.StreamReader) {
 		a.Damages = append(a.Damages, target)
 	}
 
-	switch constant.SkillID(a.Skill) {
-	case constant.SkillBigBang, constant.SkillBigBang2221001, constant.SkillBigBang2321001:
+	if reader.Remaining() >= 4 {
 		a.Charge = reader.ReadU32()
 	}
 }
