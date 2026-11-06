@@ -172,6 +172,29 @@ func (s *AllianceSystem) broadcastMemberFieldsChanged(allianceID uint32, subject
 	}
 }
 
+// BroadcastGuildsChanged sends every online alliance member the alliance info and guild list again, after a guild's
+// members changed.
+func (s *AllianceSystem) BroadcastGuildsChanged(allianceID uint32) {
+	info, guilds := s.ShowData(allianceID)
+	if info == nil {
+		return
+	}
+	for _, gid := range s.GuildIDs(allianceID) {
+		g := s.gw.Systems().Get[*GuildSystem]().Get(gid)
+		if g == nil {
+			continue
+		}
+		for _, m := range g.GetMembers() {
+			if m == nil || m.GetCharacterId() == 0 {
+				continue
+			}
+			s.callOnlineMember(m.GetCharacterId(), func(ch *Character) {
+				ch.listener.OnAllianceMemberRankChanged(ch, info, guilds)
+			})
+		}
+	}
+}
+
 func (s *AllianceSystem) BroadcastMemberOnlineChanged(allianceID uint32, subjectGuildID uint32, subjectID uint32, online bool) {
 	if s.gw == nil || subjectID == 0 {
 		return

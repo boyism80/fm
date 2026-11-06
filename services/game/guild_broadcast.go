@@ -222,6 +222,9 @@ func (s *GuildSystem) BroadcastMemberJoined(guildID uint32, joinerCharacterID ui
 			ch.listener.OnGuildNewMember(ch, gid, joinerStatus)
 		})
 	})
+	if allianceID, inAlliance := g.GetAllianceID(); inAlliance && allianceID > 0 {
+		s.gw.Systems().Get[*AllianceSystem]().BroadcastGuildsChanged(allianceID)
+	}
 }
 
 func (s *GuildSystem) BroadcastMemberLeft(prevGuild *Guild, leftCharacterID uint32, expelled bool) {
@@ -275,6 +278,10 @@ func (s *GuildSystem) BroadcastMemberLeft(prevGuild *Guild, leftCharacterID uint
 			}
 			ch.listener.OnGuildMemberLeft(ch, guildID, leftCharacterID, leftName, expelled)
 		})
+	}
+	// The guild is already updated, so the one who left is out of the list and gets nothing.
+	if allianceID, inAlliance := prevGuild.GetAllianceID(); inAlliance && allianceID > 0 {
+		s.gw.Systems().Get[*AllianceSystem]().BroadcastGuildsChanged(allianceID)
 	}
 }
 

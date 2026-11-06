@@ -3510,6 +3510,7 @@ export interface AcceptGuildInviteReply {
   ok: boolean;
   errorCode: GuildErrorCode;
   guild?: Guild | undefined;
+  alliance?: Alliance | undefined;
 }
 
 export interface LeaveGuildRequest {
@@ -29970,7 +29971,7 @@ export const AcceptGuildInviteRequest: MessageFns<AcceptGuildInviteRequest> = {
 };
 
 function createBaseAcceptGuildInviteReply(): AcceptGuildInviteReply {
-  return { ok: false, errorCode: 0, guild: undefined };
+  return { ok: false, errorCode: 0, guild: undefined, alliance: undefined };
 }
 
 export const AcceptGuildInviteReply: MessageFns<AcceptGuildInviteReply> = {
@@ -29983,6 +29984,9 @@ export const AcceptGuildInviteReply: MessageFns<AcceptGuildInviteReply> = {
     }
     if (message.guild !== undefined) {
       Guild.encode(message.guild, writer.uint32(26).fork()).join();
+    }
+    if (message.alliance !== undefined) {
+      Alliance.encode(message.alliance, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -30018,6 +30022,14 @@ export const AcceptGuildInviteReply: MessageFns<AcceptGuildInviteReply> = {
           message.guild = Guild.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.alliance = Alliance.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -30036,6 +30048,7 @@ export const AcceptGuildInviteReply: MessageFns<AcceptGuildInviteReply> = {
         ? guildErrorCodeFromJSON(object.error_code)
         : 0,
       guild: isSet(object.guild) ? Guild.fromJSON(object.guild) : undefined,
+      alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
     };
   },
 
@@ -30050,6 +30063,9 @@ export const AcceptGuildInviteReply: MessageFns<AcceptGuildInviteReply> = {
     if (message.guild !== undefined) {
       obj.guild = Guild.toJSON(message.guild);
     }
+    if (message.alliance !== undefined) {
+      obj.alliance = Alliance.toJSON(message.alliance);
+    }
     return obj;
   },
 
@@ -30061,6 +30077,9 @@ export const AcceptGuildInviteReply: MessageFns<AcceptGuildInviteReply> = {
     message.ok = object.ok ?? false;
     message.errorCode = object.errorCode ?? 0;
     message.guild = (object.guild !== undefined && object.guild !== null) ? Guild.fromPartial(object.guild) : undefined;
+    message.alliance = (object.alliance !== undefined && object.alliance !== null)
+      ? Alliance.fromPartial(object.alliance)
+      : undefined;
     return message;
   },
 };

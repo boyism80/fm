@@ -195,6 +195,10 @@ func (h *GuildOperation) acceptInvite(ctx *core.ClientContext, ch *game.Characte
 			return nil
 		}
 		h.gs.systems.Get[*game.GuildSystem]().StoreGuild(ch, guildPb)
+		if alliancePb := reply.GetAlliance(); alliancePb != nil {
+			h.gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
+			ch.Listener().OnShowAllianceInfo(ch)
+		}
 		return nil
 	})
 	promise.OnError(func(err error) {

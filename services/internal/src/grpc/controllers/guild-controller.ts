@@ -119,7 +119,15 @@ export class GuildGrpcController {
     async acceptGuildInvite(call: GrpcCall<AcceptGuildInviteRequest>, callback: GrpcCallback<AcceptGuildInviteReply>) {
         const req = call.request;
         const result = await this.guildService.acceptGuildInvite(req.worldId, req.guildId, req.member);
-        callback(null, okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN));
+        // A member joining an alliance guild needs the alliance, which its channel may not have cached.
+        const allianceId = result.guild?.allianceId;
+        const alliance = allianceId
+            ? (await this.allianceService.getAlliance(req.worldId, allianceId)).alliance
+            : undefined;
+        callback(null, {
+            ...okReply(result, GuildErrorCode.GUILD_ERROR_NONE, GuildErrorCode.GUILD_ERROR_UNKNOWN),
+            alliance,
+        });
     }
 
     @Method("leaveGuild")

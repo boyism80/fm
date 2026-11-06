@@ -1795,6 +1795,7 @@ message AcceptGuildInviteReply {
   bool ok = 1;
   GuildErrorCode error_code = 2;
   optional Guild guild = 3;
+  optional Alliance alliance = 4;
 }
 
 message LeaveGuildRequest {
