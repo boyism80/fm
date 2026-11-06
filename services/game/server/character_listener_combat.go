@@ -88,7 +88,7 @@ func (l *CharacterListenerImpl) OnEnergyAttack(ch *game.Character, attackPayload
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnRangedAttack(ch *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnRangedAttack(ch *game.Character, attackPayload dto.AttackPayload, skillLevel uint8, bullet uint32) {
 	if ch.GetMap() == nil {
 		return
 	}
@@ -96,7 +96,7 @@ func (l *CharacterListenerImpl) OnRangedAttack(ch *game.Character, attackPayload
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		CharacterId: ch.GetID(),
 		SkillLevel:  skillLevel,
-		CashBullet:  0,
+		CashBullet:  bullet,
 	}, nil)
 }
 

@@ -354,6 +354,7 @@ end
 
 local function ranged_ammo(ctx)
     local bot = ctx:bot(0)
+    local observer = ctx:bot(1)
     if setup(ctx, bot, 30, ROGUE, CLAW .. ":1," .. STAR .. ":3") == false then
         return false
     end
@@ -370,6 +371,16 @@ local function ranged_ammo(ctx)
     if bot:instance_move(HUNTING_GROUND) == false then
         return ctx:fail("사냥터 이동 실패")
     end
+    if observer:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("관찰 봇 사냥터 이동 실패")
+    end
+    -- The others see the star thrown, even the last one that empties the slot.
+    local thrown = {}
+    ctx:hook("ranged_ammo", function(_, b, p, name)
+        if b:id() == observer:id() and name == resp.ranged_attack and p.character_id == bot:id() then
+            thrown[#thrown + 1] = p.cash_bullet
+        end
+    end)
 
     local slot = bot:slot(STAR)
     local oid = spawn_snail(ctx, bot)
@@ -397,7 +408,19 @@ local function ranged_ammo(ctx)
     if check(ctx, bot:shoot(oid, slot), "남은 표창 1개로 던진 공격이 맞지 않음") == false then
         return false
     end
-    return check(ctx, bot:slot(STAR) == slot and stars(bot) == 0, "다 쓴 표창 칸이 0개로 남지 않음: " .. tostring(stars(bot)))
+    if check(ctx, bot:slot(STAR) == slot and stars(bot) == 0, "다 쓴 표창 칸이 0개로 남지 않음: " .. tostring(stars(bot))) == false then
+        return false
+    end
+    ctx:sleep(500)
+    if check(ctx, #thrown == 2, "주변에 보인 원거리 공격 수가 다름: " .. #thrown) == false then
+        return false
+    end
+    for _, bullet in ipairs(thrown) do
+        if check(ctx, bullet == STAR, "주변에 보인 표창 ID가 다름: " .. tostring(bullet)) == false then
+            return false
+        end
+    end
+    return true
 end
 
 -- A poison mist poisons a mob standing in it. Each tick poisons at the level's chance (70% at level 30).

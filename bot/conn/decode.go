@@ -371,6 +371,7 @@ var decoders = func() []decoder {
 		newDecoder[response.ChargeSkillEffect](nil),
 		newDecoder[response.CancelChargeSkillEffect](nil),
 		newDecoder[response.EnergyAttack](nil),
+		newDecoder[response.RangedAttack](nil),
 		newDecoder[response.SkillMacro](nil),
 	}
 }()

@@ -62,7 +62,7 @@ func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.Att
 	if info.Skill != 0 {
 		skill = ch.skills.Get(info.Skill)
 	}
-	attacked, err := ch.strike(actx, kind, info, skill)
+	bullet, attacked, err := ch.strike(actx, kind, info, skill)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (ch *Character) Attack(actx actor.Context, kind AttackKind, payload dto.Att
 	case AttackClose:
 		ch.listener.OnAttack(ch, payload, skillLevel)
 	case AttackRanged:
-		ch.listener.OnRangedAttack(ch, payload, skillLevel)
+		ch.listener.OnRangedAttack(ch, payload, skillLevel, bullet)
 	case AttackMagic:
 		ch.listener.OnMagicAttack(ch, payload, skillLevel)
 	case AttackEnergy:
@@ -164,24 +164,25 @@ func followUpAttack(skill *SkillEntry) bool {
 	return skill != nil && skill.Level() > 0 && skill.wz.FollowUpAttack
 }
 
-// strike validates the reported hits before skill costs and server attack hooks.
-func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.AttackInfo, skill *SkillEntry) (bool, error) {
+// strike validates the reported hits before skill costs and server attack hooks, and returns the item the others see
+// thrown by a ranged attack.
+func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.AttackInfo, skill *SkillEntry) (uint32, bool, error) {
 	switch kind {
 	case AttackMagic:
 		if info.Skill == 0 {
-			return false, nil
+			return 0, false, nil
 		}
 	case AttackEnergy:
 		_, energy, active := ch.buffs.GetBuffValue(constant.BuffFlagEnergyCharge)
 		if !active || energy < 10000 || info.Skill != 0 {
-			return false, nil
+			return 0, false, nil
 		}
 	}
 	switch constant.SkillID(info.Skill) {
 	case constant.SkillPanicSword, constant.SkillPanicAxe, constant.SkillComaSword, constant.SkillComaAxe, constant.SkillPanic, constant.SkillComa:
 		// The combo value counts one more than the orbs, and a finisher needs at least one orb.
 		if ch.buffs.value(constant.BuffFlagCombo) <= 1 {
-			return false, nil
+			return 0, false, nil
 		}
 	}
 
@@ -196,23 +197,24 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 	}
 	if err != nil {
 		ch.cheat.Rejected(actx, info, err)
-		return false, err
+		return 0, false, err
 	}
 
 	// The projectiles are counted before the skill costs, so a shot that cannot leave costs nothing.
 	var ammo uint16
+	var bullet uint32
 	if info.Ranged {
-		count, ok := ch.ammo(info)
+		count, thrown, ok := ch.ammo(info)
 		if !ok {
-			return false, nil
+			return 0, false, nil
 		}
-		ammo = count
+		ammo, bullet = count, thrown
 	}
 	if info.Skill != 0 && !followUpAttack(skill) && !ch.skills.UseAttack(actx, skill) {
-		return false, nil
+		return 0, false, nil
 	}
 	if ammo > 0 && !ch.inventory.useAmmo(int16(info.Slot), ammo) {
-		return false, nil
+		return 0, false, nil
 	}
 
 	ch.callAttackHooks(actx, kind, skill, info)
@@ -223,7 +225,7 @@ func (ch *Character) strike(actx actor.Context, kind AttackKind, info dto.Attack
 	if constant.SkillID(info.Skill) == constant.SkillMesoExplosion {
 		ch.ExplodeMesos(info.MesoOIDs)
 	}
-	return true, nil
+	return bullet, true, nil
 }
 
 // Scripts may change the reported damage, so the hits are read back from the table they edited.
@@ -337,14 +339,23 @@ func (ch *Character) projectile(info dto.AttackInfo) (item Item, projectile *wz.
 	return item, projectile, true
 }
 
-// ammo is how many projectiles a ranged attack takes from info.Slot; 0 when it takes none.
-func (ch *Character) ammo(info dto.AttackInfo) (uint16, bool) {
+// ammo is how many projectiles a ranged attack takes from info.Slot, 0 when it takes none, and the item the others
+// see thrown: the cash star in info.CsStar when the client names one, otherwise the ammo itself.
+func (ch *Character) ammo(info dto.AttackInfo) (uint16, uint32, bool) {
 	item, projectile, ok := ch.projectile(info)
 	if !ok || projectile == nil {
-		return 0, ok
+		return 0, 0, ok
+	}
+	bullet := item.GetModel().GetID()
+	if info.CsStar != 0 {
+		cash := ch.inventory.GetItem(constant.InventoryTypeCash, int16(info.CsStar))
+		if cash == nil {
+			return 0, 0, false
+		}
+		bullet = cash.GetModel().GetID()
 	}
 	if ch.buffs.Has(constant.BuffFlagSpiritClaw) && projectile.ConsumeType == constant.ConsumeTypeShuriken {
-		return 0, true
+		return 0, bullet, true
 	}
 
 	count := 1
@@ -358,9 +369,9 @@ func (ch *Character) ammo(info dto.AttackInfo) (uint16, bool) {
 		count *= 2
 	}
 	if item.GetCount() < uint16(count) {
-		return 0, false
+		return 0, 0, false
 	}
-	return uint16(count), true
+	return uint16(count), bullet, true
 }
 
 func (ch *Character) HypnotizeDamage(sourceOID, targetOID, damage uint32) bool {

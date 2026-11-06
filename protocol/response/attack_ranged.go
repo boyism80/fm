@@ -55,4 +55,31 @@ func (a *RangedAttack) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *RangedAttack) Deserialize(reader *stream.StreamReader) {
+	a.CharacterId = reader.ReadU32()
+	tbyte := reader.ReadU8()
+	a.Targets = tbyte >> 4
+	a.Hits = tbyte & 0xF
+	a.SkillLevel = reader.ReadU8()
+	if a.SkillLevel != 0 {
+		a.Skill = reader.ReadU32()
+	}
+
+	reader.ReadBool()
+	a.Unk = reader.ReadU8()
+	a.Speed = reader.ReadU8()
+	a.Display = reader.ReadU8()
+	a.CashBullet = reader.ReadU32()
+	for len(a.Damages) < int(a.Targets) && reader.Remaining() >= 5 {
+		target := dto.AttackPair{OID: reader.ReadU32()}
+		reader.ReadU8()
+		for range a.Hits {
+			damage := reader.ReadU32()
+			target.DamagePairs = append(target.DamagePairs, dto.DamagePair{Damage: damage &^ 0x80000000, Unknown: damage&0x80000000 != 0})
+		}
+		a.Damages = append(a.Damages, target)
+	}
+
+	if reader.Remaining() >= 4 {
+		a.Charge = reader.ReadU32()
+	}
 }

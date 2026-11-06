@@ -185,7 +185,7 @@ type CharacterListener interface {
 	OnFieldRelocate(ch *Character, spawnPoint uint8)
 	OnAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnEnergyAttack(ch *Character, attackPayload dto.AttackPayload)
-	OnRangedAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnRangedAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8, bullet uint32)
 	OnMagicAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnEndSortInventory(ch *Character, inventoryType constant.InventoryType)
 	OnSwapInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8)
