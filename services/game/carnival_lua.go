@@ -50,11 +50,6 @@ func (m *CarnivalMatch) Type() lua.LValueType { return lua.LTUserData }
 
 func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
-		"id": func(L *lua.LState) int {
-			match := luax.Check[CarnivalMatch](L, 1)
-			L.Push(lua.LNumber(match.waitingMapID))
-			return 1
-		},
 		"slot": func(L *lua.LState) int {
 			match := luax.Check[CarnivalMatch](L, 1)
 			L.Push(lua.LNumber(match.slotIndex))
@@ -96,13 +91,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"red_team": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			match, ok := ud.Value.(*CarnivalMatch)
-			if !ok || match == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			team := match.Team(constant.CarnivalTeamRed)
+			team := luax.Check[CarnivalMatch](L, 1).Team(constant.CarnivalTeamRed)
 			if team == nil {
 				L.Push(lua.LNil)
 			} else {
@@ -111,23 +100,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"blue_team": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			match, ok := ud.Value.(*CarnivalMatch)
-			if !ok || match == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			team := match.Team(constant.CarnivalTeamBlue)
-			if team == nil {
-				L.Push(lua.LNil)
-			} else {
-				L.Push(luax.NewLuable(L, team))
-			}
-			return 1
-		},
-		"enemy_team": func(L *lua.LState) int {
-			match := luax.Check[CarnivalMatch](L, 1)
-			team := match.enemyTeam(constant.CarnivalTeam(L.CheckInt(2)))
+			team := luax.Check[CarnivalMatch](L, 1).Team(constant.CarnivalTeamBlue)
 			if team == nil {
 				L.Push(lua.LNil)
 			} else {
@@ -238,32 +211,12 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			return 1
 		},
 		"leader": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			team, ok := ud.Value.(*CarnivalTeam)
-			if !ok || team == nil || team.match == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			leader := team.Leader()
+			leader := luax.Check[CarnivalTeam](L, 1).Leader()
 			if leader == nil {
 				L.Push(lua.LNil)
 			} else {
 				L.Push(luax.NewLuable(L, leader))
 			}
-			return 1
-		},
-		"members": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			team, ok := ud.Value.(*CarnivalTeam)
-			if !ok || team == nil || team.match == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			tbl := L.NewTable()
-			for i, ch := range team.Members() {
-				tbl.RawSetInt(i+1, luax.NewLuable(L, ch))
-			}
-			L.Push(tbl)
 			return 1
 		},
 		"roster": func(L *lua.LState) int {
@@ -280,25 +233,9 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(len(team.roster)))
 			return 1
 		},
-		"available_cp": func(L *lua.LState) int {
-			team := luax.Check[CarnivalTeam](L, 1)
-			L.Push(lua.LNumber(team.availableCP))
-			return 1
-		},
 		"total_cp": func(L *lua.LState) int {
 			team := luax.Check[CarnivalTeam](L, 1)
 			L.Push(lua.LNumber(team.totalCP))
-			return 1
-		},
-		"personal_cp": func(L *lua.LState) int {
-			team := luax.Check[CarnivalTeam](L, 1)
-			ch := luax.Check[Character](L, 2)
-			personal := team.PersonalCP(ch.GetID())
-			if personal == nil {
-				L.Push(lua.LNil)
-			} else {
-				L.Push(luax.NewLuable(L, personal))
-			}
 			return 1
 		},
 		"add_cp": func(L *lua.LState) int {
@@ -363,27 +300,6 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 }
 
-func (p *CarnivalPersonalCP) LuaTypeName() string { return "LuaCarnivalPersonalCP" }
-
-func (p *CarnivalPersonalCP) String() string { return p.LuaTypeName() }
-
-func (p *CarnivalPersonalCP) Type() lua.LValueType { return lua.LTUserData }
-
-func (p *CarnivalPersonalCP) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{
-		"available_cp": func(L *lua.LState) int {
-			personal := luax.Check[CarnivalPersonalCP](L, 1)
-			L.Push(lua.LNumber(personal.availableCP))
-			return 1
-		},
-		"total_cp": func(L *lua.LState) int {
-			personal := luax.Check[CarnivalPersonalCP](L, 1)
-			L.Push(lua.LNumber(personal.totalCP))
-			return 1
-		},
-	}
-}
-
 func (member *CarnivalMember) LuaTypeName() string { return "LuaCarnivalMember" }
 
 func (member *CarnivalMember) String() string { return member.LuaTypeName() }
@@ -415,7 +331,6 @@ func RegisterCarnivalLua(gw GameWorld, L *lua.LState) {
 	registerCarnivalConstants(L)
 	luax.RegisterLuaType[*CarnivalMatch](L)
 	luax.RegisterLuaType[*CarnivalTeam](L)
-	luax.RegisterLuaType[*CarnivalPersonalCP](L)
 	luax.RegisterLuaType[*CarnivalMember](L)
 
 	carnivalTable := L.NewTable()
