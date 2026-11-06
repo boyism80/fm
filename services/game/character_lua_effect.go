@@ -57,6 +57,11 @@ func (ch *Character) luaEffectFuncs() map[string]lua.LGFunction {
 			ch.listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, skillEntry.wz.ID, skillLevel, nil)
 			return 0
 		},
+		"show_nine_spirit_effect": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			ch.listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeNineSpirit, uint32(L.CheckInt(2)), 1, nil)
+			return 0
+		},
 		"show_effect": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
 			effectType := response.EffectType(L.CheckInt(2))

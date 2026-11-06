@@ -19,6 +19,8 @@ local HORNTAIL_LEFT_HEAD = 8810000
 local HORNTAIL_RIGHT_HEAD = 8810001
 local HORNTAIL_SEAL = 2401000
 local HORNTAIL_FINAL = 8810018
+local HORNTAIL_BUFF = 2022108
+local NINE_SPIRIT_EFFECT = 0x0B
 local TEMPLE_KEEPER = 2141001
 local PINKBEAN_ENTRANCE = 270050000
 local PINKBEAN_TWILIGHT = 270050100
@@ -61,6 +63,9 @@ local function crew(ctx, first, count)
     end
     function view:sleep(ms)
         return ctx:sleep(ms)
+    end
+    function view:hook(name, fn)
+        return ctx:hook(name, fn)
     end
     return view
 end
@@ -378,7 +383,22 @@ local function horntail(ctx)
     if pq.move(bot, 71, 260) == false then
         return ctx:fail("혼테일 앞으로 이동 실패")
     end
-    return slay(ctx, bot, HORNTAIL_FINAL)
+    -- The one the Horntail kill buff reached shows the nine spirits.
+    local nine_spirits = false
+    ctx:hook("nine_spirits", function(_, b, p, name)
+        if b:id() == bot:id() and name == resp.show_self_skill_effect and p.type == NINE_SPIRIT_EFFECT
+            and p.skill_id == HORNTAIL_BUFF then
+            nine_spirits = true
+        end
+    end)
+    if slay(ctx, bot, HORNTAIL_FINAL) == false then
+        return false
+    end
+    ctx:sleep(1000)
+    if not nine_spirits then
+        return ctx:fail("혼테일 처치 뒤 아홉 정령 이펙트가 오지 않음")
+    end
+    return true
 end
 
 local function pinkbean(ctx)

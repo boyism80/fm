@@ -27,4 +27,11 @@ func (p *ShowSelfSkillEffect) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ShowSelfSkillEffect) Deserialize(reader *stream.StreamReader) {
+	p.Type = pconst.SkillEffectType(reader.ReadU8())
+	p.SkillID = reader.ReadU32()
+	p.SkillLevel = reader.ReadU8()
+	if reader.Remaining() > 0 {
+		additional := reader.ReadU8()
+		p.Additional = &additional
+	}
 }
