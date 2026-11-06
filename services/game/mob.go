@@ -151,6 +151,13 @@ func (m *Mob) SetScaleLevel(scale int) {
 	m.SetMp(mp, false)
 }
 
+// RecoverMp adds the mob's WZ MP recovery, which the original server did every second.
+func (m *Mob) RecoverMp() {
+	if m.wz.MPRecovery > 0 {
+		m.AddMp(m.wz.MPRecovery)
+	}
+}
+
 func (m *Mob) SetFake(fake bool) {
 	if m == nil || m.fake == fake {
 		return

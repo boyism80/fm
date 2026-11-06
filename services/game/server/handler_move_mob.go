@@ -85,7 +85,9 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		}
 	}
 
-	ch.Listener().OnControlMoveMob(ch, mob, req.MovementId, req.ActiveSkill, uint16(min(mob.GetMp(), 65535)), selectedSkillID, selectedSkillLevel)
+	// The controller is told at least 500 MP, or the full MP of a mob with less.
+	mp := max(mob.GetMp(), min(mob.GetMaxMp(), 500))
+	ch.Listener().OnControlMoveMob(ch, mob, req.MovementId, req.ActiveSkill, uint16(min(mp, 65535)), selectedSkillID, selectedSkillLevel)
 	ch.Listener().OnMobMoved(
 		ch,
 		mob,

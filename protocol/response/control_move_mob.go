@@ -26,4 +26,10 @@ func (p *ControlMoveMob) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ControlMoveMob) Deserialize(reader *stream.StreamReader) {
+	p.OID = reader.ReadU32()
+	p.MoveId = reader.ReadU16()
+	p.EnabledSkill = reader.ReadBool()
+	p.MP = reader.ReadU16()
+	p.SkillId = reader.ReadU8()
+	p.SkillLevel = reader.ReadU8()
 }

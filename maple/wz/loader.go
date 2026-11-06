@@ -2046,6 +2046,7 @@ func loadMob(path string) (*Mob, error) {
 	model.Level = uint8(info.Int("level", 0))
 	model.MaxHP = info.Int("maxHP", 0) + info.Int("finalmaxHP", 0)
 	model.MaxMP = info.Int("maxMP", 0)
+	model.MPRecovery = info.Int("mpRecovery", 0)
 	model.Speed = int16(info.Int("speed", 0))
 	model.PADamage = info.Int("PADamage", 0)
 	model.PDDamage = info.Int("PDDamage", 0)

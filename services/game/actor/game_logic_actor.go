@@ -84,6 +84,7 @@ func (a *GameLogicActor) registerTimers() {
 	a.timerReg.Register(&timers.ItemExpireTimer{})
 	a.timerReg.Register(&timers.ClientPingTimer{})
 	a.timerReg.Register(&timers.MobBuffExpireTimer{})
+	a.timerReg.Register(&timers.MobMpRecoveryTimer{})
 	a.timerReg.Register(&timers.MobPoisonTickTimer{})
 	a.timerReg.Register(&timers.MistTimer{})
 	a.timerReg.Register(&timers.CharacterSaveTimer{})

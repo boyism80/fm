@@ -6,6 +6,7 @@ type Mob struct {
 	Level                 uint8
 	MaxHP                 int
 	MaxMP                 int
+	MPRecovery            int
 	Speed                 int16
 	PADamage              int
 	PDDamage              int

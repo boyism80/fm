@@ -21,6 +21,7 @@ local RED_POTION = 2000000
 local IL_ARCH_MAGE = 222
 local MANA_REFLECTION = 2221002
 local STONE_GOLEM = 5130101
+local ZETA_GRAY = 4230117
 
 local function setup(ctx, bot)
     if pq.command(bot, "/봇초기화 70 0 0 -", "봇초기화 완료") == false then
@@ -47,6 +48,42 @@ end
 
 local function hit(mob_id, oid, attack, damage)
     return req.damaged { type = attack, damage = damage, mob_id = mob_id, oid = oid }
+end
+
+-- A mob with at most 500 max MP shows its controller full MP, even after its attack spent 30 of its 55.
+local function zeta_gray_mp(ctx)
+    local actor = ctx:bot(0)
+    if setup(ctx, actor) == false then
+        return false
+    end
+    local controllers = {}
+    ctx:hook("zeta_gray_control", function(_, b, p, name)
+        if name == resp.start_control_mob then
+            controllers[p.mob.oid] = b
+        end
+    end)
+    local oid = spawn(ctx, actor, ZETA_GRAY)
+    if oid == false then
+        return false
+    end
+    ctx:sleep(500)
+    local controller = controllers[oid]
+    if controller == nil then
+        return ctx:fail("생성한 제타 그레이의 컨트롤이 오지 않음")
+    end
+    if actor:request(resp.update_stats, hit(ZETA_GRAY, oid, 0, 1), nil, 3000) == false then
+        return ctx:fail("제타 그레이 공격에 맞지 않음")
+    end
+    local moved = controller:request(resp.control_move_mob, req.move_mob { oid = oid, center_split = -1 }, function(p)
+        return p.oid == oid
+    end, 3000)
+    if moved == false then
+        return ctx:fail("제타 그레이 이동 응답이 오지 않음")
+    end
+    if moved.mp ~= 55 then
+        return ctx:fail("제타 그레이 이동 응답의 MP가 최대 MP가 아님: " .. moved.mp)
+    end
+    return true
 end
 
 -- A mob attack carries its WZ disease, and a map hazard carries the mob skill in the packet.
@@ -323,6 +360,7 @@ test_suite {
     bot_count = 2,
 
     scenarios = {
+        zeta_gray_mp,
         diseases,
         hp_mp,
         banish,
