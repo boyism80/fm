@@ -312,7 +312,7 @@ local function prepare_quest_requirement(me, quest, req)
             if target == nil then
                 return false, kind
             end
-            me:class(target)
+            me:class(target, false)
         end
         return true
     end
@@ -736,9 +736,10 @@ local command_funcs = {
                 return true
             end
             me:clear_inventory()
+            me:reset_inventory_slots()
             me:clear_quests()
             me:records():clear()
-            me:class(class)
+            me:class(class, false)
             me:level(1)
             me:level(level)
             me:exp(0)

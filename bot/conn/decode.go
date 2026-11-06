@@ -379,6 +379,7 @@ var decoders = func() []decoder {
 		newDecoder[response.EnergyAttack](nil),
 		newDecoder[response.RangedAttack](nil),
 		newDecoder[response.ControlMoveMob](nil),
+		newDecoder[response.InventorySlotLimit](nil),
 		newDecoder[response.SkillMacro](nil),
 	}
 }()

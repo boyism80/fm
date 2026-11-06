@@ -358,12 +358,12 @@ func (ch *Character) luaStatFuncs() map[string]lua.LGFunction {
 			case 1:
 				L.Push(lua.LNumber(ch.class))
 				return 1
-			case 2:
+			case 2, 3:
 				classValue := L.CheckInt(2)
-				ch.ChangeClass(constant.ClassType(classValue))
+				ch.ChangeClass(constant.ClassType(classValue), argc == 2 || L.ToBool(3))
 				return 0
 			default:
-				L.ArgError(2, "class() requires 0 or 1 arguments")
+				L.ArgError(2, "class() requires 0, 1, or 2 arguments")
 				return 0
 			}
 		},

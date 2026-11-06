@@ -177,6 +177,7 @@ type CharacterListener interface {
 	OnItemGainFailed(ch *Character, mode constant.ItemGainFailedType)
 	OnInventorySlotUpdated(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)
 	OnInventorySlotAdded(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)
+	OnInventorySlotLimitChanged(ch *Character, inventoryType constant.InventoryType, limit uint8)
 	OnShowItemGain(ch *Character, itemId uint32, count uint32, mode constant.ShowItemGainType)
 	OnShowMesoGain(ch *Character, count int32, mode constant.ShowMesoGainType)
 	OnUpdateStats(ch *Character, stats map[constant.Stat]int32, unlock bool)

@@ -1,8 +1,18 @@
 package game
 
-import "github.com/boyism80/fm/maple/constant"
+import (
+	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/protocol/response"
+)
 
-func (ch *Character) ChangeClass(newClass constant.ClassType) {
+const (
+	inventorySlotDefault = 32
+	inventorySlotMax     = 96
+)
+
+// ChangeClass sets the class; an advancement also brings the class change hook's gains and shows the others the effect.
+func (ch *Character) ChangeClass(newClass constant.ClassType, advance bool) {
 	oldClass := ch.class
 	ch.class = newClass
 
@@ -10,6 +20,43 @@ func (ch *Character) ChangeClass(newClass constant.ClassType) {
 
 	ch.listener.OnClassChange(ch, oldClass, newClass, ch.points.sp, ch.points.ap)
 	ch.NotifyLevelClassChanged()
+
+	if !advance {
+		return
+	}
+	if m := ch.GetMap(); m != nil {
+		if root := m.GetLuaRoot(); root != nil {
+			if thread, err := luax.NewThread(root, constant.CharacterHookScriptPath); err == nil {
+				luax.CallAsync(nil, root, thread, "on_class_change", ch, int32(oldClass), int32(newClass))
+			}
+		}
+	}
+	ch.listener.OnShowEffect(ch, response.EffectTypeClassChange)
+}
+
+// ExpandInventory adds slots to a tab, up to 96.
+func (ch *Character) ExpandInventory(invType constant.InventoryType, amount uint8) {
+	tab := ch.inventory.tabs[invType]
+	if tab == nil {
+		return
+	}
+	limit := uint8(min(int(tab.slotLimit)+int(amount), inventorySlotMax))
+	if limit == tab.slotLimit {
+		return
+	}
+	tab.slotLimit = limit
+	ch.listener.OnInventorySlotLimitChanged(ch, invType, limit)
+}
+
+// ResetInventorySlots puts every tab back to the slots a new character starts with.
+func (ch *Character) ResetInventorySlots() {
+	for invType, tab := range ch.inventory.tabs {
+		if tab == nil || tab.slotLimit == inventorySlotDefault {
+			continue
+		}
+		tab.slotLimit = inventorySlotDefault
+		ch.listener.OnInventorySlotLimitChanged(ch, invType, inventorySlotDefault)
+	}
 }
 
 func (ch *Character) grantClassChangePoints(newClass constant.ClassType) {

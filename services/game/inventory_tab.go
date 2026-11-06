@@ -23,7 +23,7 @@ type InventoryTab struct {
 
 func NewInventoryTab() *InventoryTab {
 	return &InventoryTab{
-		slotLimit: 32,
+		slotLimit: inventorySlotDefault,
 		items:     map[int16]Item{},
 	}
 }

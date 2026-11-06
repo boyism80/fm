@@ -12,6 +12,10 @@ local START_MP = 1000
 local EQUIP = 1
 local CAP_SLOT = -1
 local INT_CAP = 1002140
+local HP = 0x400
+local HIT_ENV = -3
+local FIELD = 100000000
+local CLASS_CHANGE_EFFECT = 8
 
 local function level_up(ctx, bot, level, class, exp, items)
     if pq.command(bot, "/봇초기화 " .. level .. " " .. class .. " 0 " .. (items or "-") .. " -", "봇초기화 완료") == false then
@@ -73,6 +77,55 @@ local function cygnus_level_exp(ctx)
     return true
 end
 
+-- An explorer's first advancement adds 200~250 max HP and four slots to each tab, fills HP, and shows the others the
+-- effect; a Cygnus advancement only fills HP.
+local function class_change(ctx)
+    local bot, observer = ctx:bot(0), ctx:bot(1)
+    for _, case in ipairs({ { from = 0, to = WARRIOR, hp = { 200, 250 }, slots = 36 }, { from = NOBLESSE, to = 1100, hp = { 0, 0 } } }) do
+        if pq.command(bot, "/봇초기화 10 " .. case.from .. " 0 - -", "봇초기화 완료") == false then
+            return ctx:fail("봇 초기화 실패")
+        end
+        if pq.command(bot, "/체력바꾸기 " .. START_HP, "체력 설정") == false then
+            return ctx:fail("체력 설정 실패")
+        end
+        if bot:instance_move(FIELD) == false or observer:instance_move(FIELD) == false then
+            return ctx:fail("맵 이동 실패")
+        end
+        if bot:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 300 }, nil, 3000) == false then
+            return ctx:fail("체력을 깎지 못함")
+        end
+        local slots, effect = {}, false
+        ctx:hook("class_change", function(_, b, p, name)
+            if b:id() == bot:id() and name == resp.inventory_slot_limit then
+                slots[p.inventory_type] = p.limit
+            elseif b:id() == observer:id() and name == resp.show_effect and p.character_id == bot:id() and p.type == CLASS_CHANGE_EFFECT then
+                effect = true
+            end
+        end)
+        local p = bot:request(resp.update_stats, req.normal_chat { message = "/직업바꾸기 " .. case.to }, function(p)
+            return p.stats[MAX_HP] ~= nil
+        end, 3000)
+        if p == false then
+            return ctx:fail("직업 " .. case.to .. " 전직에 최대 HP 갱신이 오지 않음")
+        end
+        local gained = p.stats[MAX_HP] - START_HP
+        if gained < case.hp[1] or gained > case.hp[2] or p.stats[HP] ~= p.stats[MAX_HP] then
+            return ctx:fail(string.format("직업 %d 전직: 최대 HP +%d, HP %d/%d", case.to, gained, p.stats[HP], p.stats[MAX_HP]))
+        end
+        ctx:sleep(500)
+        for tab = 1, 4 do
+            if slots[tab] ~= case.slots then
+                return ctx:fail(string.format("직업 %d 전직: %d번 탭 칸 %s (기대 %s)", case.to, tab, tostring(slots[tab]),
+                    tostring(case.slots)))
+            end
+        end
+        if not effect then
+            return ctx:fail("직업 " .. case.to .. " 전직 이펙트가 주변에 오지 않음")
+        end
+    end
+    return true
+end
+
 -- A warrior's level up adds 24~28 HP a level, not a level-scaled amount.
 local function warrior_hp(ctx)
     local from = 50
@@ -104,13 +157,14 @@ local function equipped_int_mp(ctx)
 end
 
 test_suite {
-    name = "LevelUp: 초보 직업 SP·시그너스 경험치 보너스·직업별 HP 증가량·장비 INT의 MP 증가량",
-    bot_count = 1,
+    name = "LevelUp: 초보 직업 SP·시그너스 경험치 보너스·직업별 HP 증가량·장비 INT의 MP 증가량·전직 보상",
+    bot_count = 2,
 
     scenarios = {
         noblesse_sp,
         warrior_hp,
         equipped_int_mp,
         cygnus_level_exp,
+        class_change,
     },
 }

@@ -32,6 +32,28 @@ end
 
 local MAX_HP_MP = 30000
 
+-- Max HP and MP ranges and the tabs that grow by four slots, on the explorer first and second advancements the
+-- original server rewarded.
+local CLASS_CHANGE_GAINS = {
+    [100] = { hp = { 200, 250 }, tabs = { InventoryType.Equipment, InventoryType.Use, InventoryType.Installation, InventoryType.Etc } },
+    [110] = { hp = { 300, 350 }, tabs = { InventoryType.Use, InventoryType.Etc } },
+    [120] = { hp = { 100, 150 }, tabs = { InventoryType.Use, InventoryType.Etc } },
+    [130] = { hp = { 100, 150 }, tabs = { InventoryType.Use, InventoryType.Etc } },
+    [200] = { mp = { 100, 150 } },
+    [210] = { mp = { 450, 500 }, tabs = { InventoryType.Use } },
+    [220] = { mp = { 450, 500 }, tabs = { InventoryType.Use } },
+    [230] = { mp = { 450, 500 }, tabs = { InventoryType.Use } },
+    [300] = { hp = { 100, 150 }, mp = { 30, 50 }, tabs = { InventoryType.Equipment, InventoryType.Use } },
+    [310] = { hp = { 300, 350 }, mp = { 150, 200 }, tabs = { InventoryType.Etc } },
+    [320] = { hp = { 300, 350 }, mp = { 150, 200 }, tabs = { InventoryType.Etc } },
+    [400] = { hp = { 100, 150 }, mp = { 30, 50 }, tabs = { InventoryType.Equipment, InventoryType.Etc } },
+    [500] = { hp = { 100, 150 }, mp = { 30, 50 }, tabs = { InventoryType.Equipment, InventoryType.Etc } },
+    [410] = { hp = { 300, 350 }, mp = { 150, 200 }, tabs = { InventoryType.Use } },
+    [420] = { hp = { 300, 350 }, mp = { 150, 200 }, tabs = { InventoryType.Use } },
+    [510] = { hp = { 300, 350 }, mp = { 150, 200 }, tabs = { InventoryType.Use } },
+    [520] = { hp = { 300, 350 }, mp = { 150, 200 }, tabs = { InventoryType.Use } },
+}
+
 -- HP and MP a level up adds, by class line, as the original server rolled them.
 local function level_up_ranges(me)
     if class_lib.is_beginner(me) then
@@ -252,6 +274,29 @@ return {
             me:unbuff(BuffFlag.SpiritClaw)
             me:unbuff(BuffFlag.SoulArrow)
             me:unbuff(BuffFlag.WkCharge)
+        end
+    end,
+
+    -- Every advancement fills HP and MP, after the gains of the advancements that have them.
+    on_class_change = function(me, old_class, new_class)
+        if me == nil then
+            return
+        end
+        local gains = CLASS_CHANGE_GAINS[new_class] or {}
+        local base_hp, base_mp = me:base_hp(), me:base_mp()
+        if gains.hp ~= nil then
+            base_hp = base_hp + math.random(gains.hp[1], gains.hp[2])
+        end
+        if gains.mp ~= nil then
+            base_mp = base_mp + math.random(gains.mp[1], gains.mp[2])
+        end
+        me:base_hp(math.min(base_hp, MAX_HP_MP), false)
+        me:base_mp(math.min(base_mp, MAX_HP_MP), false)
+        me:hp(me:max_hp(), false)
+        me:mp(me:max_mp(), false)
+        me:update_stats({ STAT.MaxHp, STAT.MaxMp, STAT.Hp, STAT.Mp })
+        for _, tab in ipairs(gains.tabs or {}) do
+            me:expand_inventory(tab, 4)
         end
     end,
 

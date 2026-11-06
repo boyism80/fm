@@ -99,6 +99,11 @@ func (ch *Character) luaItemFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(ch.inventory.ClearInventory()))
 			return 1
 		},
+		"reset_inventory_slots": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			ch.ResetInventorySlots()
+			return 0
+		},
 		"register_card": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
 			cardID := uint32(L.CheckInt(2))
@@ -283,6 +288,15 @@ func (ch *Character) luaItemFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(lua.LNumber(inven.EmptySlotCount()))
 			return 1
+		},
+		"expand_inventory": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			if L.GetTop() != 3 {
+				L.ArgError(2, "expand_inventory(inventory_type, amount) requires inventory type and amount")
+				return 0
+			}
+			ch.ExpandInventory(constant.InventoryType(L.CheckInt(2)), uint8(L.CheckInt(3)))
+			return 0
 		},
 		"put_key": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)

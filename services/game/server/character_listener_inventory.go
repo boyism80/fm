@@ -154,6 +154,10 @@ func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *game.Character, invento
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnInventorySlotLimitChanged(ch *game.Character, inventoryType constant.InventoryType, limit uint8) {
+	ch.Send(&response.InventorySlotLimit{InventoryType: inventoryType, Limit: limit}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnShowItemGain(ch *game.Character, itemId uint32, count uint32, mode constant.ShowItemGainType) {
 	ch.Send(&response.ShowItemGain{
 		ItemId: itemId,
