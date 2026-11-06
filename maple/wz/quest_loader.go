@@ -109,6 +109,7 @@ func parseQuestMeta(info *node) QuestMeta {
 	meta.SelectedSkillID = info.Int("selectedSkillID", 0)
 	meta.TimeLimit = info.Int("timeLimit", 0)
 	meta.TimeLimit2 = info.Int("timeLimit2", 0)
+	meta.DailyPlayTime = info.Int("dailyPlayTime", 0)
 
 	for _, strField := range info.Strings {
 		if idx, err := strconv.Atoi(strField.Name); err == nil {

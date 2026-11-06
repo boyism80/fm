@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/types"
@@ -59,6 +60,13 @@ func (l *CharacterListenerImpl) OnShowQuestCompletion(ch *game.Character, questI
 	ch.Send(&response.ShowQuestCompletion{
 		QuestID: uint16(questID),
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnQuestPlayTime(ch *game.Character, questID uint32, today uint16, days uint8) {
+	if questID == 0 || questID > 0xFFFF {
+		return
+	}
+	ch.Send(&response.UpdateQuestPlayTime{QuestID: uint16(questID), Today: today, Days: days, At: clock.Now()}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnQuestRecordChanged(ch *game.Character, qp *game.Quest) {

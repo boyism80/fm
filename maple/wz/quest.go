@@ -41,6 +41,8 @@ type QuestMeta struct {
 	SelectedSkillID int
 	TimeLimit       int
 	TimeLimit2      int
+	// DailyPlayTime is the seconds a day of play counts toward the quest.
+	DailyPlayTime int
 }
 
 type QuestPhase struct {

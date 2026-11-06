@@ -170,6 +170,7 @@ type CharacterListener interface {
 	OnQuestRecordChanged(ch *Character, qp *Quest)
 	OnQuestRecordExChanged(ch *Character, qp *Quest)
 	OnShowQuestCompletion(ch *Character, questID uint32)
+	OnQuestPlayTime(ch *Character, questID uint32, today uint16, days uint8)
 	OnPlaySound(ch *Character, sound string, broadcast bool)
 	OnPlayPortalSound(ch *Character)
 	OnMapEffect(ch *Character, path string)

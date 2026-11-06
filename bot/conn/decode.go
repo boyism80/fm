@@ -221,6 +221,9 @@ var decoders = func() []decoder {
 		newDecoder[response.ShopScannerPopular](sub(uint8(pconst.ShopScannerResultPopular))),
 		newDecoder[response.InventoryOperation](nil),
 		newDecoder[response.UpdateQuest](func(body []byte) bool { return len(body) > 0 && body[0] == 1 }),
+		newDecoder[response.UpdateQuestPlayTime](func(body []byte) bool {
+			return len(body) >= 9 && body[0] == response.QuestWireRecordExSubOpcode && string(body[5:9]) == "PTR="
+		}),
 		newDecoder[response.UpdateQuestRecordEx](func(body []byte) bool {
 			return len(body) > 0 && body[0] == response.QuestWireRecordExSubOpcode
 		}),

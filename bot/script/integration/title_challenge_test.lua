@@ -7,6 +7,7 @@ local CHALLENGE_NPC = 9000040
 local NPC_X = 527
 local NPC_Y = 454
 local POPULARITY = 29002
+local DILIGENT = 29003
 local MAX_NOTICES = 5
 
 local function status(bot, quest)
@@ -51,11 +52,42 @@ local function close_notices(ctx)
     return true
 end
 
+-- The diligent explorer counts a day once today's play reaches 3 hours, sends today's seconds and the days, and its
+-- 27th day shows the challenge complete.
+local function diligent_explorer(ctx)
+    local bot = ctx:bot(0)
+    local records = string.format("quest.%d.play_time.today=10795,quest.%d.play_time.days=26", DILIGENT, DILIGENT)
+    if pq.command(bot, string.format("/봇초기화 30 0 0 - %d:1 - %s", DILIGENT, records), "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    local completed = false
+    ctx:hook("diligent_explorer", function(_, b, p, name)
+        if b:id() == bot:id() and name == resp.show_quest_completion and p.quest_id == DILIGENT then
+            completed = true
+        end
+    end)
+    local p = bot:request(resp.update_quest_play_time, nil, function(p)
+        return p.quest_id == DILIGENT
+    end, 15000)
+    if p == false then
+        return ctx:fail("성실한 모험가 접속 시간 기록이 오지 않음")
+    end
+    if p.today < 10800 or p.days ~= 27 then
+        return ctx:fail(string.format("성실한 모험가 기록이 다름: 오늘 %d초, %d일", p.today, p.days))
+    end
+    ctx:sleep(500)
+    if not completed then
+        return ctx:fail("27일째에 도전 완료 알림이 오지 않음")
+    end
+    return true
+end
+
 test_suite {
-    name = "Title challenge: 안내 대화를 닫으면 도전이 시작되지 않음",
+    name = "Title challenge: 안내 대화를 닫으면 도전이 시작되지 않음·성실한 모험가 접속 시간",
     bot_count = 1,
 
     scenarios = {
         close_notices,
+        diligent_explorer,
     },
 }
