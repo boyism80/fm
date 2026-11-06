@@ -17,6 +17,9 @@ local LUCKY_SEVEN = 4001344
 local POISON_MIST = 2111003
 local MOB_POISON = 0x200
 local POISON_BOMB = 14111006
+local RECOVERY = 1001
+local NIMBLE_FEET = 1002
+local ECHO_OF_HERO = 1005
 -- Does not move, so it stays in the small poison bomb mist.
 local POISON_FLOWER = 9300174
 -- Takes mob hits (damagedByMob), so player skills cannot stun, slow, or poison it.
@@ -418,6 +421,53 @@ local function ranged_ammo(ctx)
     for _, bullet in ipairs(thrown) do
         if check(ctx, bullet == STAR, "주변에 보인 표창 ID가 다름: " .. tostring(bullet)) == false then
             return false
+        end
+    end
+    return true
+end
+
+-- The beginner buffs put their WZ value on the caster, and recovery heals that much every 5 seconds.
+local function beginner_buffs(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 10, 0, "-") == false then
+        return false
+    end
+    if pq.command(bot, "/마력바꾸기 1000", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    for _, case in ipairs({ { RECOVERY, 3, 12 }, { NIMBLE_FEET, 3, 20 }, { ECHO_OF_HERO, 1, 4 } }) do
+        local skill_id, level, value = case[1], case[2], case[3]
+        if pq.command(bot, "/스킬레벨 " .. skill_id .. " " .. level, "스킬레벨 설정") == false then
+            return ctx:fail("스킬 배우기 실패: " .. skill_id)
+        end
+        if skill_id == RECOVERY then
+            if pq.command(bot, "/체력바꾸기 1000", "체력 설정") == false then
+                return ctx:fail("체력 설정 실패")
+            end
+            if bot:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 500 }, nil, 3000) == false then
+                return ctx:fail("체력을 깎지 못함")
+            end
+        end
+        local hurt = bot:hp()
+        local p = bot:request(resp.update_self_buff, req.active_skill { skill_id = skill_id, skill_level = level },
+            function(p)
+                return p.buff_id == skill_id
+            end, 3000)
+        if p == false then
+            return ctx:fail("버프가 걸리지 않음: " .. skill_id)
+        end
+        if #p.buffs ~= 1 or p.buffs[1].value ~= value then
+            return ctx:fail(string.format("스킬 %d 버프 값이 다름: %s (기대 %d)", skill_id,
+                tostring(p.buffs[1] and p.buffs[1].value), value))
+        end
+        if skill_id == RECOVERY then
+            ctx:sleep(5500)
+            if bot:hp() ~= hurt + value then
+                return ctx:fail(string.format("회복 5초 뒤 HP %d (기대 %d)", bot:hp(), hurt + value))
+            end
         end
     end
     return true
@@ -1077,6 +1127,7 @@ test_suite {
         dragon_roar_half_hp,
         transform_stats,
         dark_sight_speed,
+        beginner_buffs,
         -- Last: the hyper body stays on the other bot and would raise its max HP.
         gm_hyper_body,
     },
