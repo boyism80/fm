@@ -72,9 +72,7 @@ func (m *Mob) credit(attacker *Character) mobCredit {
 				if ch == nil || ch.GetMap() != mapInst || !ch.IsAlive() {
 					continue
 				}
-				raw := m.ExpForDamage(dmg)
-				raw = raw * uint32(mobExpRate) / 100
-				credit.expRewards[ch] += uint64(raw)
+				credit.expRewards[ch] += uint64(m.ExpForDamage(dmg)) * uint64(mobExpRate) / 100
 			}
 		} else {
 			partyRewards, err := m.grantKillExp(mapInst, uint32(bucketID), damagers, mobExpRate)
@@ -145,8 +143,7 @@ func (m *Mob) grantKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uin
 	if totDamage == 0 {
 		return map[*Character]uint64{}, nil
 	}
-	poolRaw := m.ExpForDamage(totDamage)
-	poolRaw = poolRaw * uint32(mobExpRate) / 100
+	poolRaw := uint64(m.ExpForDamage(totDamage)) * uint64(mobExpRate) / 100
 
 	mobLv := int(m.wz.Level)
 
