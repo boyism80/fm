@@ -420,7 +420,6 @@ func (s *GuildSystem) CreateAllianceAsync(ctx actor.Context, ch *Character, alli
 			return int(constant.AllianceCreateResultFailed), nil
 		}
 		s.gw.Systems().Get[*AllianceSystem]().Update(alliancePb)
-		s.gw.Systems().Get[*AllianceSystem]().BroadcastCreate(alliancePb)
 		return int(constant.AllianceCreateResultOK), nil
 	}).OnError(func(err error) {
 		ch.unsettled.Find(id).inFlight = false
@@ -457,7 +456,6 @@ func (s *GuildSystem) SettleAllianceCreate(ctx actor.Context, ch *Character, req
 		}
 		if alliancePb := reply.GetAlliance(); alliancePb != nil {
 			s.gw.Systems().Get[*AllianceSystem]().Update(alliancePb)
-			s.gw.Systems().Get[*AllianceSystem]().BroadcastCreate(alliancePb)
 		}
 		return nil
 	}).OnError(func(err error) {
