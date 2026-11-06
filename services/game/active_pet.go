@@ -130,6 +130,12 @@ func (p *ActivePet) Loot(oid uint32, position types.Vector2[int16]) error {
 			return ErrPetLootRefused
 		}
 	}
+	// The drop packet tells the client a pet skips what another player dropped.
+	if placed, ok := obj.(FieldPlaceable); ok {
+		if fp := placed.GetFieldPlacement(); fp != nil && fp.playerDrop && fp.owner != p.owner.GetID() {
+			return ErrPetLootRefused
+		}
+	}
 	if position.DistanceSq(obj.GetPosition()) > constant.PetLootClientRange*constant.PetLootClientRange {
 		return ErrPetLootRefused
 	}
