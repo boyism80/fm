@@ -588,39 +588,6 @@ M.freeze_from_ice_charge = function(me, damages)
     end
 end
 
-M.roll_mortal_blow = function(me, damages)
-    if damages == nil then
-        return
-    end
-
-    local skill = nil
-    if me:class_of(Class.Ranger) then
-        skill = me:skill(Skill.MortalBlow)
-    elseif me:class_of(Class.Crossbowman) then
-        skill = me:skill(Skill.MortalBlow3210001)
-    else
-        return
-    end
-    if skill == nil then
-        return
-    end
-    local effect = skill:effect()
-    if effect == nil then
-        return
-    end
-
-    for mob, hits in pairs(damages) do
-        local mob_hp_percent = mob:hp() / mob:max_hp()
-        if mob_hp_percent <= effect.x / 100 then
-            if math.random(1, 100) <= effect.y then
-                for i = 1, #hits do
-                    hits[i] = mob:max_hp()
-                end
-            end
-        end
-    end
-end
-
 -- v83 MapleMonster VENOM: matk * (dex + 5*v43) / 49, v43 = floor((rand[0,v55-1] + v55*0.8)), v55 = str+luk (min 1).
 M.roll_venom_tick_damage = function(me, venom_skill)
     if venom_skill == nil then

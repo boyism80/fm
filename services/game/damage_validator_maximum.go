@@ -63,6 +63,8 @@ type damageModifiers struct {
 	Double              bool
 	Sealed              bool
 	GM                  bool
+	// MortalBlow is the mob HP percent under which a physical hit may reach mortalBlowDamage.
+	MortalBlow float64
 }
 
 // attack is one hit bounded by a conservative per-hit maximum from
@@ -256,6 +258,11 @@ func (a attack) maximum() (uint32, error) {
 		return a.limit(1)
 	}
 
+	floor := 0.0
+	if a.mortalBlow() {
+		floor = mortalBlowDamage
+	}
+
 	// Snipe's fixed damage depends on the client calculator mode, which the
 	// packet does not carry.
 	if a.skill == constant.SkillSnipe {
@@ -264,14 +271,26 @@ func (a attack) maximum() (uint32, error) {
 			return 0, err
 		}
 
-		return a.limit(max(600000, ordinary))
+		return a.limit(max(600000, ordinary, floor))
 	}
 
 	ordinary, err := a.ordinary()
 	if err != nil {
 		return 0, err
 	}
-	return a.limit(ordinary)
+	return a.limit(max(ordinary, floor))
+}
+
+// mortalBlowDamage is the most the original server let a Mortal Blow hit report.
+const mortalBlowDamage = 1999999
+
+// mortalBlow is whether the mob's HP percent, rounded up, is under the Mortal Blow percent.
+func (a attack) mortalBlow() bool {
+	maxHp := a.mob.GetMaxHp()
+	if a.kind != attackPhysical || a.modifiers.MortalBlow <= 0 || maxHp == 0 {
+		return false
+	}
+	return math.Ceil(float64(a.mob.GetHp())*100/float64(maxHp)) < a.modifiers.MortalBlow
 }
 
 // ordinary returns the core result before target-order and template overrides.

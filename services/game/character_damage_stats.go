@@ -161,6 +161,12 @@ func (ch *Character) damageStats() (damageStats, damageModifiers) {
 		}
 	}
 
+	for _, id := range []constant.SkillID{constant.SkillMortalBlow, constant.SkillMortalBlow3210001} {
+		if p := ch.skills.LevelData(id); p != nil {
+			b.MortalBlow = max(b.MortalBlow, float64(p.X))
+		}
+	}
+
 	if ch.buffs.value(constant.BuffFlagCombo) > 0 {
 		b.ComboPercent = ch.comboPercent(false)
 	}

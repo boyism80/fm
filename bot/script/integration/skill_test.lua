@@ -20,6 +20,8 @@ local POISON_BOMB = 14111006
 local RECOVERY = 1001
 local NIMBLE_FEET = 1002
 local ECHO_OF_HERO = 1005
+local RANGER = 311
+local MORTAL_BLOW = 3110001
 -- Does not move, so it stays in the small poison bomb mist.
 local POISON_FLOWER = 9300174
 -- Takes mob hits (damagedByMob), so player skills cannot stun, slow, or poison it.
@@ -960,6 +962,43 @@ local function sacrifice_boss(ctx)
         "새크리파이스 HP 감소량이 피해의 5%가 아님: " .. tostring(p.stats[HP]))
 end
 
+-- Mortal Blow lets a hit reach 1999999 only on a mob under the skill's HP percent (50% at level 20), a boss too.
+local function mortal_blow_cap(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 120, RANGER, "-") == false then
+        return false
+    end
+    if pq.command(bot, "/스킬레벨 " .. MORTAL_BLOW .. " 20", "스킬레벨 설정") == false then
+        return ctx:fail("모탈 블로우 배우기 실패")
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local spawned = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. MUSHMOM }, function(p)
+        return p.mob.mob_id == MUSHMOM
+    end)
+    if spawned == false then
+        return ctx:fail("머쉬맘 생성 응답 없음")
+    end
+    local oid = spawned.mob.oid
+    local function killed()
+        return bot:request(resp.die_mob, melee(bot, oid, 1000000, 0), function(p)
+            return p.oid == oid
+        end, QUIET_MS) ~= false
+    end
+
+    if killed() then
+        return ctx:fail("HP가 가득한 머쉬맘에게 1000000 피해가 들어감")
+    end
+    if pq.command(bot, "/몬스터체력 40%", "몬스터 체력") == false then
+        return ctx:fail("몬스터 체력 설정 실패")
+    end
+    return check(ctx, killed(), "HP 40% 머쉬맘에게 모탈 블로우 상한 안의 피해가 들어가지 않음")
+end
+
 local function buff_value(p, flag)
     for _, entry in ipairs(p.buffs or {}) do
         if entry.buff.mask == flag.mask and entry.buff.position == flag.position then
@@ -1122,6 +1161,7 @@ test_suite {
         soul_charge,
         finisher_orbs,
         sacrifice_boss,
+        mortal_blow_cap,
         skill_cost,
         sauna_robe_recovery,
         dragon_roar_half_hp,

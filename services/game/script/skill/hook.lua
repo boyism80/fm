@@ -351,7 +351,6 @@ return {
         end
         on_hamstring_slow(me, damages)
         on_blind_acc_debuff(me, damages)
-        combat.roll_mortal_blow(me, damages)
         on_energy_charge(me, damages)
         on_dark_sight(me, damages)
         combat.reflect_mob_attack_damage(me, damages, attack_info)
