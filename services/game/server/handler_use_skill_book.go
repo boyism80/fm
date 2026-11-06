@@ -19,6 +19,9 @@ func (h *UseSkillBook) Handle(ctx *core.ClientContext, req *request.UseSkillBook
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)
+	if ch.Occupied() {
+		return nil
+	}
 
 	ch.UseSkillBook(req.Slot, req.ItemID)
 	return nil

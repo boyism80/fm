@@ -18,7 +18,7 @@ func (h *EnhanceEquipment) Handle(ctx *core.ClientContext, req *request.EnhanceE
 	if ch == nil {
 		return nil
 	}
-	if ch.UsingCashItem() {
+	if ch.UsingCashItem() || ch.Occupied() {
 		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}

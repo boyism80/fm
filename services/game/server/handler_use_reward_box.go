@@ -19,6 +19,9 @@ func (h *UseRewardBox) Handle(ctx *core.ClientContext, req *request.UseRewardBox
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)
+	if ch.Occupied() {
+		return nil
+	}
 
 	ch.UseRewardBox(req.Slot, req.ItemID)
 	return nil

@@ -18,7 +18,7 @@ func (h *UseCatchItem) Handle(ctx *core.ClientContext, req *request.UseCatchItem
 	if ch == nil {
 		return nil
 	}
-	if ch.UsingCashItem() {
+	if ch.UsingCashItem() || ch.Occupied() {
 		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}

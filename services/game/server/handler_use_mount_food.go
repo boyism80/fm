@@ -20,7 +20,7 @@ func (h *UseMountFood) Handle(ctx *core.ClientContext, req *request.UseMountFood
 	if character == nil {
 		return nil
 	}
-	if character.UsingCashItem() {
+	if character.UsingCashItem() || character.Occupied() {
 		character.Listener().OnUpdateStats(character, nil, true)
 		return nil
 	}

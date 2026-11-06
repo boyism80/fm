@@ -19,6 +19,9 @@ func (h *UseSummonBag) Handle(ctx *core.ClientContext, req *request.UseSummonBag
 		return nil
 	}
 	defer ch.Listener().OnUnlockAction(ch)
+	if ch.Occupied() {
+		return nil
+	}
 
 	ch.UseSummonBag(req.Slot, req.ItemID)
 	return nil

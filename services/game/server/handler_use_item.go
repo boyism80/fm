@@ -22,7 +22,7 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 	if ch == nil {
 		return nil
 	}
-	if ch.UsingCashItem() {
+	if ch.UsingCashItem() || ch.Occupied() {
 		ch.Listener().OnUpdateStats(ch, nil, true)
 		return nil
 	}
