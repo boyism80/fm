@@ -1027,6 +1027,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		FreeMarket:        mapId >= freeMarketFirstMapID && mapId <= freeMarketLastMapID,
 		MessageBoxBlocked: mapId/10000000 == messageBoxBlockedRegion,
 		MoveBlocked:       moveBlockedMapIDs[mapId],
+		KeepsExpOnDeath:   mapId/1000000 == eventMapRegion || mapId/10000000 == carnivalMapRegion,
 	}
 	for _, r := range moveBlockedMapRanges {
 		if mapId >= r[0] && mapId <= r[1] {

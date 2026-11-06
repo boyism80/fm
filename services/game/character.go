@@ -344,6 +344,34 @@ func (ch *Character) die() {
 	if ch.stateMachine != nil {
 		ch.stateMachine.CallHook("on_player_dead", ch)
 	}
+	ch.deathPenalty()
+}
+
+// deathPenalty takes a safety charm, or without one a share of the level's EXP, as the original server did.
+func (ch *Character) deathPenalty() {
+	m := ch.GetMap()
+	if m == nil || m.wz == nil || m.wz.KeepsExpOnDeath || ch.class.Advancement() == 0 || ch.gameWorld == nil {
+		return
+	}
+	if charm := ch.inventory.safetyCharm(); charm != nil && ch.inventory.RemoveByItemIDCount(charm.GetModel().GetID(), 1) {
+		ch.listener.OnSafetyCharmUsed(ch, uint8(min(ch.inventory.GetCountByItemID(charm.GetModel().GetID()), 0xFF)))
+	} else if needed := ch.gameWorld.GetResources().GetExpNeededForLevel(ch.level); needed > 0 {
+		rate := 0.01
+		if !m.wz.IsTown && !m.wz.Limits(constant.FieldLimitRegularExpLoss) {
+			decRate := 0.2
+			if ch.class.Of(constant.ClassBowman) {
+				decRate = 0.08
+			}
+			rate = decRate/float64(max(ch.stats.base.luk, 1)) + 0.05
+		}
+		lost := uint32(float64(needed) * rate)
+		exp := uint32(0)
+		if ch.exp > lost {
+			exp = ch.exp - lost
+		}
+		ch.exp = min(exp, needed-1)
+	}
+	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatEXP: int32(ch.exp)}, false)
 }
 
 func (ch *Character) SetMp(v uint32, notify bool) {

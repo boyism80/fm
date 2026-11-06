@@ -79,6 +79,8 @@ func (model *ItemCore) classify() {
 		model.Traits |= constant.ItemTraitItemEffect
 	case 503:
 		model.Traits |= constant.ItemTraitEntrustedShopPermit
+	case 513:
+		model.Traits |= constant.ItemTraitSafetyCharm
 	case 514:
 		model.Traits |= constant.ItemTraitPersonalShopPermit
 	case 504:

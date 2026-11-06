@@ -219,6 +219,7 @@ type CharacterListener interface {
 	OnShowSelfCraftingEffect(ch *Character, effect string, time int32, mode int32)
 	OnShowCraftingEffect(ch *Character, effect string, time int32, mode int32)
 	OnShowSelfDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
+	OnSafetyCharmUsed(ch *Character, left uint8)
 	OnShowDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
 	OnShowScrollEffect(ch *Character, success bool, destroyedByCurse bool, legendarySpirit bool)
 	OnUseSkillBook(ch *Character, skillID uint32, masterLevel int, canUse bool, success bool)

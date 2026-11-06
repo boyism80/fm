@@ -232,6 +232,10 @@ func (l *CharacterListenerImpl) OnShowSelfDiceEffect(ch *game.Character, effectI
 	l.OnShowDiceEffect(ch, effectID, skillID, skillLevel)
 }
 
+func (l *CharacterListenerImpl) OnSafetyCharmUsed(ch *game.Character, left uint8) {
+	ch.Send(&response.ShowSelfSafetyCharmEffect{Left: left}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnShowDiceEffect(ch *game.Character, effectID int32, skillID uint32, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return

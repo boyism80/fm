@@ -34,6 +34,8 @@ const (
 	freeMarketFirstMapID    = 910000000
 	freeMarketLastMapID     = 910000022
 	messageBoxBlockedRegion = 91
+	eventMapRegion          = 109
+	carnivalMapRegion       = 98
 )
 
 var moveBlockedMapIDs = map[uint32]bool{
@@ -82,6 +84,8 @@ type Map struct {
 	FreeMarket        bool
 	MessageBoxBlocked bool
 	MoveBlocked       bool
+	// KeepsExpOnDeath marks event and carnival maps, where dying costs no EXP.
+	KeepsExpOnDeath bool
 
 	VRTop             int
 	VRLeft            int

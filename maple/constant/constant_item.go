@@ -52,6 +52,8 @@ const (
 	// ItemTraitKarma and ItemTraitPlatinumKarma name the scissors of karma an untradeable item takes.
 	ItemTraitKarma
 	ItemTraitPlatinumKarma
+	// ItemTraitSafetyCharm keeps the EXP a death would take, one charm per death.
+	ItemTraitSafetyCharm
 )
 
 const ChaosScrollRange = 5

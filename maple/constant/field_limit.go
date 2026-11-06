@@ -23,3 +23,6 @@ const (
 	FieldLimitNoFallDamage      FieldLimit = 0x100000
 	FieldLimitDrop              FieldLimit = 0x400000
 )
+
+// FieldLimitRegularExpLoss shares the return scroll bit; the original server also cut death EXP loss to 1% there.
+const FieldLimitRegularExpLoss FieldLimit = 0x20

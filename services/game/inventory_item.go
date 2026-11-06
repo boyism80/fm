@@ -171,6 +171,15 @@ func (inv *Inventory) GetCountByItemID(itemID uint32) uint16 {
 	return uint16(min(total, math.MaxUint16))
 }
 
+func (inv *Inventory) safetyCharm() Item {
+	for _, item := range inv.tabs[constant.InventoryTypeCash].items {
+		if item != nil && item.GetCount() > 0 && item.GetModel().GetTraits()&constant.ItemTraitSafetyCharm != 0 {
+			return item
+		}
+	}
+	return nil
+}
+
 func (inv *Inventory) HasItem(itemID uint32) bool {
 	model := inv.owner.itemModel(itemID)
 	if model == nil {
