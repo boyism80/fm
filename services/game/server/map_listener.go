@@ -430,40 +430,6 @@ func (l *MapListenerImpl) OnMobMoved(mapInstance *game.Map, mob *game.Mob, isAgg
 	mob.Broadcast(movePacket, nil)
 }
 
-func (l *MapListenerImpl) OnAttack(mapInstance *game.Map, character *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	if character == nil || character.GetMap() == nil {
-		return
-	}
-	character.Broadcast(&response.Attack{
-		CharacterId: character.GetID(),
-		AttackInfo:  attackPayload.ToAttackInfo(),
-		SkillLevel:  skillLevel,
-	}, nil)
-}
-
-func (l *MapListenerImpl) OnRangedAttack(mapInstance *game.Map, character *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	if character == nil || character.GetMap() == nil {
-		return
-	}
-	character.Broadcast(&response.RangedAttack{
-		CharacterId: character.GetID(),
-		AttackInfo:  attackPayload.ToAttackInfo(),
-		SkillLevel:  skillLevel,
-		CashBullet:  0,
-	}, nil)
-}
-
-func (l *MapListenerImpl) OnMagicAttack(mapInstance *game.Map, character *game.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	if character == nil || character.GetMap() == nil {
-		return
-	}
-	character.Broadcast(&response.MagicAttack{
-		CharacterId: character.GetID(),
-		AttackInfo:  attackPayload.ToAttackInfo(),
-		SkillLevel:  skillLevel,
-	}, nil)
-}
-
 func (l *MapListenerImpl) OnMistSpawned(mapInstance *game.Map, mist *game.Mist) {
 	if mapInstance == nil || mist == nil {
 		return
