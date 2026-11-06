@@ -70,7 +70,7 @@ func (t *TeleportStones) Reset() {
 }
 
 func (t *TeleportStones) Use(ctx actor.Context, invType constant.InventoryType, slot int16, itemID uint32, mapID uint32, name string) {
-	if !t.owner.session.cashItemInUse.CompareAndSwap(false, true) {
+	if t.owner.Occupied() || !t.owner.session.cashItemInUse.CompareAndSwap(false, true) {
 		t.owner.listener.OnUpdateStats(t.owner, nil, true)
 		return
 	}
