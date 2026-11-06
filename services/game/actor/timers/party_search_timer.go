@@ -43,7 +43,7 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 			ch.Party().SetSearch(nil)
 			continue
 		}
-		if reachedPartySearchTarget(mapData, *pid, cfg) {
+		if reachedPartySearchTarget(ch, cfg) {
 			ch.Party().SetSearch(nil)
 			continue
 		}
@@ -79,17 +79,17 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *game.Map) error {
 			}
 			target.Listener().OnPartyInvite(target, *pid, inviterName, true)
 		}
-		if reachedPartySearchTarget(mapData, *pid, cfg) {
+		if reachedPartySearchTarget(ch, cfg) {
 			ch.Party().SetSearch(nil)
 		}
 	}
 	return nil
 }
 
-func reachedPartySearchTarget(mapData *game.Map, partyID uint32, cfg *game.PartySearchConfig) bool {
-	if mapData == nil || cfg == nil {
+func reachedPartySearchTarget(ch *game.Character, cfg *game.PartySearchConfig) bool {
+	if cfg == nil {
 		return true
 	}
-	members := len(mapData.GetPartyMembers(partyID))
-	return members >= int(cfg.MembersNeeded) || members >= 6
+	members := ch.Party().Size()
+	return members == 0 || members >= int(cfg.MembersNeeded) || members >= 6
 }

@@ -82,13 +82,18 @@ func MatchesPartySearchClassMask(ch *Character, classMask int32) bool {
 		0x20000: constant.ClassHunter,
 		0x40000: constant.ClassCrossbowman,
 	}
-	if (classMask & 0x2) != 0 {
-		if ch.class == constant.ClassBeginner {
-			return true
-		}
+	if (classMask&0x2) != 0 && ch.class.Advancement() == 0 {
+		return true
 	}
 	for bit, classCode := range classCodesByMask {
 		if (classMask & bit) == 0 {
+			continue
+		}
+		// A first job bit is that job alone; each later line has its own bit.
+		if classCode.Advancement() == 1 {
+			if ch.class == classCode {
+				return true
+			}
 			continue
 		}
 		if ch.class.Of(classCode) {

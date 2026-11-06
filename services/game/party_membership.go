@@ -45,6 +45,19 @@ func (p *PartyMembership) Leave(partyID uint32, revision uint64) {
 	p.owner.doors.SetPartyID(nil)
 }
 
+// Size counts every member of the party wherever they are, 0 without a party.
+func (p *PartyMembership) Size() int {
+	partyID := p.ID()
+	if partyID == nil || p.owner.gameWorld == nil {
+		return 0
+	}
+	party := p.owner.gameWorld.Systems().Get[*PartySystem]().Get(*partyID)
+	if party == nil {
+		return 0
+	}
+	return len(party.GetMembers())
+}
+
 func (p *PartyMembership) MembersOnMap() ([]*Character, *Party) {
 	partyID := p.ID()
 	if partyID == nil || p.owner.gameWorld == nil {
