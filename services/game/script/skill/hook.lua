@@ -346,7 +346,9 @@ return {
         combat.increment_combo_orbs(me, targets, skill)
         combat.spawn_pickpocket_meso(me, skill, damages)
         combat.freeze_from_ice_charge(me, damages)
-        on_mp_eater(me, damages)
+        if attack_info.magic then
+            on_mp_eater(me, damages)
+        end
         on_hamstring_slow(me, damages)
         on_blind_acc_debuff(me, damages)
         combat.roll_mortal_blow(me, damages)
