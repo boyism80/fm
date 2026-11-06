@@ -55,7 +55,8 @@ func (h *buddyMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 			continue
 		}
 		gs.systems.Get[*game.DispatchSystem]().Visit(recipientID, func(_ actor.Context, ch *game.Character) {
-			if ch == nil {
+			// A buddy who was removed still lists the recipient, so the recipient's own list decides.
+			if ch == nil || !ch.Buddies().ContainsAccepted(payload.SenderCharacterID) {
 				return
 			}
 			ch.Listener().OnMultiChat(ch, mode, payload.SenderName, payload.Message)

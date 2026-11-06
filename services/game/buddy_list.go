@@ -134,6 +134,11 @@ func (bl *BuddyList) Remove(characterID uint32) bool {
 	return true
 }
 
+func (bl *BuddyList) ContainsAccepted(characterID uint32) bool {
+	entry, ok := bl.entries[characterID]
+	return ok && !entry.Pending
+}
+
 func (bl *BuddyList) SetChannel(characterID uint32, channel int32) bool {
 	entry, ok := bl.entries[characterID]
 	if !ok {
