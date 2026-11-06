@@ -1,6 +1,7 @@
 local pq = require("script/integration/lib/party_quest")
 
 local LEVEL = 0x10
+local EXP = 0x10000
 local MAX_HP = 0x800
 local MAX_MP = 0x2000
 local AVAILABLE_SP = 0x8000
@@ -57,6 +58,21 @@ local function noblesse_sp(ctx)
     return true
 end
 
+-- A Cygnus Knight starts level 11 with a tenth of its 2360 EXP already filled; a beginner starts it empty.
+local function cygnus_level_exp(ctx)
+    for _, case in ipairs({ { class = NOBLESSE, exp = 236 }, { class = 0, exp = 0 } }) do
+        local p = level_up(ctx, ctx:bot(0), 10, case.class, 1716)
+        if p == nil then
+            return false
+        end
+        if p.stats[LEVEL] ~= 11 or p.stats[EXP] ~= case.exp then
+            return ctx:fail(string.format("직업 %d가 레벨 %d, 경험치 %s로 시작함 (기대 11, %d)", case.class,
+                p.stats[LEVEL], tostring(p.stats[EXP]), case.exp))
+        end
+    end
+    return true
+end
+
 -- A warrior's level up adds 24~28 HP a level, not a level-scaled amount.
 local function warrior_hp(ctx)
     local from = 50
@@ -88,12 +104,13 @@ local function equipped_int_mp(ctx)
 end
 
 test_suite {
-    name = "LevelUp: 초보 직업 SP·직업별 HP 증가량·장비 INT의 MP 증가량",
+    name = "LevelUp: 초보 직업 SP·시그너스 경험치 보너스·직업별 HP 증가량·장비 INT의 MP 증가량",
     bot_count = 1,
 
     scenarios = {
         noblesse_sp,
         warrior_hp,
         equipped_int_mp,
+        cygnus_level_exp,
     },
 }

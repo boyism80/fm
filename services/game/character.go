@@ -950,6 +950,10 @@ func (ch *Character) tryLevelUp() bool {
 
 		remainingExp -= expNeeded
 		targetLevel++
+		// Cygnus Knights start each level from 11 to 119 with a tenth of it already filled.
+		if ch.class.Of(constant.ClassNoblesse) && targetLevel > 10 && targetLevel < 120 {
+			remainingExp += resources.GetExpNeededForLevel(targetLevel) / 10
+		}
 	}
 
 	if targetLevel == oldLevel {
