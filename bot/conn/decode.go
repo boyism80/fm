@@ -136,6 +136,7 @@ var decoders = func() []decoder {
 		newDecoder[response.DialogAccept](dialog(constant.DialogTypeAccept, constant.DialogTypeAcceptEscape)),
 		newDecoder[response.Dialog](func(body []byte) bool { return len(body) >= 6 }),
 		newDecoder[response.UpdateStats](nil),
+		newDecoder[response.DamageCharacter](nil),
 		newDecoder[response.UpdateSelfBuff](knownBuffs),
 		newDecoder[response.CancelSelfBuff](knownBuffs),
 		newDecoder[response.GiveDebuff](func(body []byte) bool {

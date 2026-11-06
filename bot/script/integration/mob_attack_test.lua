@@ -296,8 +296,30 @@ local function il_mana_reflection(ctx)
     return true
 end
 
+-- The others on the map see a hit; the one hit does not get it back.
+local function hit_shown(ctx)
+    local actor, observer = ctx:bot(0), ctx:bot(1)
+    if setup(ctx, actor) == false or setup(ctx, observer) == false then
+        return false
+    end
+    local shown = actor:request_on(observer, resp.damage_character, req.damaged { type = HIT_ENV, damage = 10 },
+        function(p)
+            return p.character_id == actor:id()
+        end, 3000)
+    if shown == false then
+        return ctx:fail("다른 캐릭터에게 피격이 보이지 않음")
+    end
+    if shown.damage ~= 10 then
+        return ctx:fail("보인 피해가 다름: " .. shown.damage)
+    end
+    if actor:request(resp.damage_character, nil, nil, 1000) ~= false then
+        return ctx:fail("맞은 캐릭터가 자기 피격 방송을 받음")
+    end
+    return true
+end
+
 test_suite {
-    name = "Mob attack: 상태이상·맵 디버프·HP/MP 1·MP 흡수·몸박치기 추방·홀리 실드·언데드 포션·썬콜 마나 리플렉션",
+    name = "Mob attack: 상태이상·맵 디버프·HP/MP 1·MP 흡수·몸박치기 추방·홀리 실드·언데드 포션·썬콜 마나 리플렉션·피격 방송",
     bot_count = 2,
 
     scenarios = {
@@ -309,5 +331,6 @@ test_suite {
         holy_shield,
         zombify_potion,
         il_mana_reflection,
+        hit_shown,
     },
 }

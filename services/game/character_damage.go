@@ -21,6 +21,7 @@ type Hit struct {
 	SkillID    uint32
 	SkillLevel uint8
 	Reflect    uint8
+	Direction  uint8
 }
 
 const maxIncomingDamage = 200000
@@ -420,6 +421,7 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 	if m != nil && hit.MobOID != 0 {
 		mob = m.GetMob(hit.MobOID)
 	}
+	wasAlive := ch.IsAlive()
 
 	var attack *wz.MobAttack
 	if index, ok := hit.Type.MobAttackIndex(); ok && mob != nil && !mob.fake && hit.Damage > 0 {
@@ -447,6 +449,7 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 	if ch.invincible {
 		ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{}, true)
 	} else {
+		ch.showHit(hit, mob, wasAlive)
 		if mob != nil && damage > 0 {
 			ch.dojo.AddEnergy(2)
 		}
@@ -457,6 +460,26 @@ func (ch *Character) TakeHit(actx actor.Context, hit Hit) {
 	if banish {
 		mob.Banish(actx, ch)
 	}
+}
+
+// showHit shows the others the hit as the client reported it, before guards; a hidden or already dead character and a
+// hit from a fake or missing mob show nothing. The mob id is the server's, not the client's.
+func (ch *Character) showHit(hit Hit, mob *Mob, wasAlive bool) {
+	if !wasAlive || ch.IsHidden() || (hit.MobOID != 0 && (mob == nil || mob.fake)) {
+		return
+	}
+	mobID := uint32(0)
+	if mob != nil {
+		mobID = mob.wz.ID
+	}
+	fakeSkillID := uint32(0)
+	if hit.Damage == -1 {
+		fakeSkillID = uint32(constant.SkillShadowShifter)
+		if ch.class.Of(constant.ClassBandit) {
+			fakeSkillID = uint32(constant.SkillShadowShifter4220002)
+		}
+	}
+	ch.listener.OnDamaged(ch, hit, mobID, fakeSkillID)
 }
 
 func (ch *Character) hitDamage(hit Hit, mob *Mob, attack *wz.MobAttack) int32 {

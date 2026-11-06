@@ -29,6 +29,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 		SkillID:    uint32(req.SkillID),
 		SkillLevel: req.Level,
 		Reflect:    req.Reflect,
+		Direction:  req.Direction,
 	})
 	return nil
 }

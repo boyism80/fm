@@ -205,6 +205,17 @@ func (l *CharacterListenerImpl) OnScriptError(ch *game.Character, script string,
 	l.OnMessage(ch, constant.MsgPinkText, fmt.Sprintf("스크립트 오류 %s: %v", script, err))
 }
 
+func (l *CharacterListenerImpl) OnDamaged(ch *game.Character, hit game.Hit, mobID uint32, fakeSkillID uint32) {
+	ch.Broadcast(&response.DamageCharacter{
+		CharacterID: ch.GetID(),
+		Type:        hit.Type,
+		Damage:      hit.Damage,
+		MobID:       mobID,
+		Direction:   hit.Direction,
+		FakeSkillID: fakeSkillID,
+	}, nil)
+}
+
 func (l *CharacterListenerImpl) OnUpdateStats(ch *game.Character, stats map[constant.Stat]int32, unlock bool) {
 	ch.Send(&response.UpdateStats{
 		Stats:        stats,
