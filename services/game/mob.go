@@ -509,27 +509,46 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 		}
 		if attacker != nil && spongeParent == nil {
 			if m.wz == nil || !m.wz.DamagedByMob {
-				maxHp := m.GetMaxHp()
-				if maxHp == 0 {
-					return false
+				switch {
+				case m.hpTagged():
+					m.listener.OnShowNearBossHp(m, false)
+				case m.wz != nil && m.wz.Boss && !m.inDojo():
+					// The original server showed an untagged boss's HP to no one.
+				default:
+					maxHp := m.GetMaxHp()
+					if maxHp == 0 {
+						return false
+					}
+					percent := min(uint64(m.GetHp())*100/uint64(maxHp), 100)
+					m.showHp(attacker, uint8(percent))
 				}
-				percent := min(m.GetHp()*100/maxHp, 100)
-				m.showHp(attacker, uint8(percent))
 			}
 		}
 		return false
 	}
 
+	if spongeParent == nil && m.hpTagged() {
+		m.listener.OnShowNearBossHp(m, true)
+	}
 	return m.Kill(attacker, constant.MobDieAnimationTypeFadeOut)
 }
 
-func (m *Mob) showHp(attacker *Character, percent uint8) {
+// hpTagged is whether the mob is a boss that shows the boss HP bar.
+func (m *Mob) hpTagged() bool {
+	return m.wz != nil && m.wz.Boss && m.wz.HpTagColor > 0
+}
+
+func (m *Mob) inDojo() bool {
 	mapInstance := m.GetMap()
-	if mapInstance == nil || mapInstance.wz.FieldType != wz.FieldTypeDojo {
+	return mapInstance != nil && mapInstance.wz.FieldType == wz.FieldTypeDojo
+}
+
+func (m *Mob) showHp(attacker *Character, percent uint8) {
+	if !m.inDojo() {
 		attacker.listener.OnShowMobHp(attacker, m, percent)
 		return
 	}
-	for _, player := range mapInstance.GetAllPlayers() {
+	for _, player := range m.GetMap().GetAllPlayers() {
 		ch, ok := player.(*Character)
 		if !ok {
 			continue

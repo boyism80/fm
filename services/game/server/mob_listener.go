@@ -109,7 +109,17 @@ func (l *MobListenerImpl) OnShowBossHp(mob *game.Mob, clear bool) {
 	if mapInstance == nil {
 		return
 	}
+	mapInstance.Broadcast(bossHp(mob, clear), nil)
+}
 
+func (l *MobListenerImpl) OnShowNearBossHp(mob *game.Mob, clear bool) {
+	if mob == nil || mob.GetMap() == nil {
+		return
+	}
+	mob.Broadcast(bossHp(mob, clear), nil)
+}
+
+func bossHp(mob *game.Mob, clear bool) *response.ShowBossHp {
 	mobID := uint32(0)
 	tagColor := uint8(0)
 	tagBgColor := uint8(0)
@@ -136,11 +146,11 @@ func (l *MobListenerImpl) OnShowBossHp(mob *game.Mob, clear bool) {
 		}
 	}
 
-	mapInstance.Broadcast(&response.ShowBossHp{
+	return &response.ShowBossHp{
 		MobID:      mobID,
 		CurrentHP:  currentHp,
 		MaxHP:      maxHp,
 		TagColor:   tagColor,
 		TagBgColor: tagBgColor,
-	}, nil)
+	}
 }

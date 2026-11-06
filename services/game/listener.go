@@ -283,4 +283,5 @@ type MobListener interface {
 	OnMobDamaged(mob *Mob, amount int32)
 	OnMobAllyDamaged(mob *Mob, amount int32)
 	OnShowBossHp(mob *Mob, clear bool)
+	OnShowNearBossHp(mob *Mob, clear bool)
 }

@@ -104,6 +104,61 @@ local function respawn_after_death(ctx)
     return true
 end
 
+local function hit(bot, oid)
+    local x, y = bot:position()
+    return req.attack {
+        close_attack_info = {
+            attack_header = { targets = 1, hits = 1 },
+            damages = { { oid = oid, damage_pairs = { { damage = 1 } } } },
+            position = { x = x, y = y },
+        },
+    }
+end
+
+-- A boss with an HP tag shows the boss HP bar when hit and clears it when it dies; a boss without one shows no HP.
+local function boss_hp_bar(ctx, bot, oid)
+    local mano, zakum_arm = 2220000, 8800003
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    -- Starting stats miss Mano, and a missed hit is rejected before any HP shows.
+    if pq.command(bot, "/전능 999", "전능 설정") == false then
+        return ctx:fail("스탯 설정 실패")
+    end
+    local bar = bot:request(resp.show_boss_hp, hit(bot, oid), function(p)
+        return p.mob_id == mano
+    end, 3000)
+    if bar == false or bar.current_hp ~= bar.max_hp - 1 then
+        return ctx:fail("마노를 때렸는데 보스 HP 바가 오지 않음")
+    end
+    local cleared = false
+    ctx:hook("mano_hp_bar", function(_, b, p, name)
+        if b:id() == bot:id() and name == resp.show_boss_hp and p.mob_id == mano and p.current_hp == -1 then
+            cleared = true
+        end
+    end)
+    if bot:kill(oid) == false then
+        return ctx:fail("마노 처치 실패")
+    end
+    if cleared == false then
+        return ctx:fail("마노가 죽었는데 보스 HP 바가 지워지지 않음")
+    end
+
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    local arm = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. zakum_arm }, function(p)
+        return p.mob.mob_id == zakum_arm
+    end, 5000)
+    if arm == false then
+        return ctx:fail("자쿰 팔 생성 응답 없음")
+    end
+    if bot:request({ resp.show_mob_hp, resp.show_boss_hp }, hit(bot, arm.mob.oid), nil, 1500) ~= false then
+        return ctx:fail("태그 없는 자쿰 팔의 HP가 보임")
+    end
+    return true
+end
+
 -- Mano is not in its map's WZ life; it comes from the field boss table with a notice to the map.
 local function mano_from_table(ctx)
     local bot = ctx:bot(0)
@@ -125,10 +180,11 @@ local function mano_from_table(ctx)
     if notice == false then
         return ctx:fail("마노가 다시 나오며 공지가 오지 않음")
     end
-    if bot:mobs(mano)[1] == nil then
+    local respawned = bot:mobs(mano)[1]
+    if respawned == nil then
         return ctx:fail("공지 뒤에 마노가 보이지 않음")
     end
-    return true
+    return boss_hp_bar(ctx, bot, respawned.oid)
 end
 
 test_suite {
