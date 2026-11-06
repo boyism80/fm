@@ -1045,6 +1045,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	if forced := info.Int("forcedReturn", 0); forced > 0 && forced != forcedReturnNone {
 		model.ForcedReturn = uint32(forced)
 	}
+	model.TimeLimit = time.Duration(info.Int("timeLimit", 0)) * time.Second
 	model.LevelLimit = uint8(info.Int("lvLimit", 0))
 	model.DecHP = info.Int("decHP", 0)
 	model.DecInterval = time.Duration(info.Int("decInterval", 10000)) * time.Millisecond

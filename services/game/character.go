@@ -563,7 +563,29 @@ func (ch *Character) AddBaseMp(amount uint32, notify bool) {
 	}
 }
 
-const clockTimer = "clock"
+const (
+	clockTimer = "clock"
+	// The map's own limit keeps a timer apart from script clocks, so a script clock cannot cancel the return.
+	mapTimeLimitTimer = "map_time_limit"
+)
+
+// limitStay shows the map's time limit and sends the character to its forced return map when the time is up.
+func (ch *Character) limitStay(m *Map) {
+	ch.listener.OnClock(ch, int32(m.wz.TimeLimit/time.Second))
+	ch.AddTimer(mapTimeLimitTimer, m.wz.TimeLimit, false, func() {
+		if ch.GetMap() != m {
+			return
+		}
+		target := ch.gameWorld.Systems().Get[*MapSystem]().Find(m.StateMachine(), m.wz.ForcedReturn)
+		if target == nil {
+			log.Printf("map %d time limit: forced return map %d not found", m.GetMapID(), m.wz.ForcedReturn)
+			return
+		}
+		if err := ch.Warp(nil, target, 0); err != nil {
+			log.Printf("map %d time limit: return character %d: %v", m.GetMapID(), ch.GetID(), err)
+		}
+	})
+}
 
 func (ch *Character) Warp(ctx actor.Context, targetMap *Map, spawnPoint uint8) error {
 	if ch.gameWorld == nil {

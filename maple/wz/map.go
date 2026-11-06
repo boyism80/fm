@@ -73,6 +73,7 @@ type Map struct {
 	Cloud        int
 	ReturnMapId  int
 	ForcedReturn uint32
+	TimeLimit    time.Duration
 	LevelLimit   uint8
 	DecHP        int
 	DecInterval  time.Duration

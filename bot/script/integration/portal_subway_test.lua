@@ -12,6 +12,12 @@ local LEAFRE = 240000000
 local LIMITED_PORTAL = "east00"
 local LIMITED_MAP = 240011000
 local LIMITED_LEVEL = 15
+local LIFT_QUEST = 31340
+local LIFT_BOTTOM = 240091500
+local LIFT_PORTAL = "pt_up"
+local LIFT = 240091600
+local LIFT_TOP = 240092000
+local LIFT_SECONDS = 5
 
 -- The command toggles, so it runs again when the bot was already in player mode.
 local function player_mode(bot)
@@ -26,7 +32,7 @@ local function player_mode(bot)
 end
 
 test_suite {
-    name = "Portal: 커닝 지하철·먼 포탈·레벨 제한 거절",
+    name = "Portal: 커닝 지하철·먼 포탈·레벨 제한 거절·치노 승강기 시간 제한",
     bot_count = 1,
 
     scenarios = {
@@ -93,6 +99,28 @@ test_suite {
             local warp = bot:warp(LIMITED_PORTAL)
             if warp == false or warp.character.map ~= LIMITED_MAP then
                 return ctx:fail("레벨 제한을 넘었는데 포탈로 이동하지 않음")
+            end
+            return true
+        end,
+
+        -- Chino's lift has only a spawn portal, so its WZ time limit is what lands the rider at the top.
+        function(ctx)
+            local bot = ctx:bot(0)
+            if pq.command(bot, "/봇초기화 120 100 0 - " .. LIFT_QUEST .. ":2", "봇초기화 완료") == false then
+                return ctx:fail("봇 초기화 실패")
+            end
+            if bot:force_instance_move(LIFT_BOTTOM, "승강기 포탈이 있는 암벽 거인 지역") == false then
+                return ctx:fail("승강기 아래 이동 실패")
+            end
+            local ride = bot:warp(LIFT_PORTAL)
+            if ride == false or ride.character.map ~= LIFT then
+                return ctx:fail("승강기에 타지 못함")
+            end
+            local arrive = bot:request(resp.warp, nil, function(p)
+                return p.character.map == LIFT_TOP
+            end, LIFT_SECONDS * 1000 + 3000)
+            if arrive == false then
+                return ctx:fail("시간 제한이 지나도 승강기에서 내리지 않음")
             end
             return true
         end,

@@ -391,6 +391,9 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 		character.stateMachine.HandlePlayerMapEnter(character, m)
 	}
 	m.gameWorld.Systems().Get[*ExpeditionSystem]().SyncClock(character, m)
+	if m.wz.TimeLimit > 0 && m.wz.ForcedReturn != 0 {
+		character.limitStay(m)
+	}
 
 	return nil
 }
@@ -485,6 +488,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	character.dialog.Close()
 	character.chair = 0
 	character.RemoveTimer(clockTimer)
+	character.RemoveTimer(mapTimeLimitTimer)
 	character.SuspendTimers()
 	character.party.search = nil
 	m.controllerTable.LeavePlayer(character)
