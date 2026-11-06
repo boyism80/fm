@@ -554,6 +554,8 @@ func consumeSpecKeyToBuffFlag(specKey string) (constant.BuffFlag, bool) {
 		return constant.BuffFlagDropRate, true
 	case "mesoupbyitem":
 		return constant.BuffFlagMesoRate, true
+	case "thaw":
+		return constant.BuffFlagHpLossGuard, true
 	default:
 		return constant.BuffFlag{}, false
 	}
@@ -1044,6 +1046,9 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		model.ForcedReturn = uint32(forced)
 	}
 	model.LevelLimit = uint8(info.Int("lvLimit", 0))
+	model.DecHP = info.Int("decHP", 0)
+	model.DecInterval = time.Duration(info.Int("decInterval", 10000)) * time.Millisecond
+	model.ProtectItem = uint32(info.Int("protectItem", 0))
 	model.OnFirstUserEnter = info.Text("onFirstUserEnter", "")
 	model.OnUserEnter = info.Text("onUserEnter", "")
 	model.FieldLimit = constant.FieldLimit(info.Int("fieldLimit", 0))

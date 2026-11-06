@@ -131,6 +131,8 @@ type Map struct {
 	weather           mapWeather
 	healer            mapHealer
 	nextTeam          constant.CarnivalTeam
+	// nextEnvironmentHurt is when the map's decHP next falls on its players; zero while nobody is there.
+	nextEnvironmentHurt time.Time
 }
 
 type BroadcastOption struct {

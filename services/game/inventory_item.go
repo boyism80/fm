@@ -512,6 +512,15 @@ func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot 
 	return nil
 }
 
+func (inv *Inventory) wears(itemID uint32) bool {
+	for _, equipment := range inv.equipped {
+		if equipment != nil && equipment.GetModel().GetID() == itemID {
+			return true
+		}
+	}
+	return false
+}
+
 func (inv *Inventory) RemoveEquipped(parts constant.EquipmentPartsType) Equipment {
 	ch := inv.owner
 	equipment := inv.equipped[parts]

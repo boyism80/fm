@@ -409,6 +409,12 @@ local function balrog_expedite(ctx)
     if pq.command(ctx:bot(1), "/타이머 " .. BALROG_TIMER, "타이머 제한: " .. BALROG_TIMER) == false then
         return ctx:fail("타이머 제한 설정 실패")
     end
+    -- The tomb's WZ decHP takes 50 HP every 15 seconds.
+    for i = 0, ctx:bot_count() - 1 do
+        if pq.command(ctx:bot(i), "/체력바꾸기 30000", "체력 설정") == false then
+            return ctx:fail("체력 설정 실패")
+        end
+    end
     local bot = expedite(ctx, MUYOUNG, BALROG_TEMPLE, BALROG_TOMB)
     if bot == false then
         return false

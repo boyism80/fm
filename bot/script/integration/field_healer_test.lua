@@ -7,6 +7,10 @@ local MAX_HP = 5000
 local HIT_ENV = -3
 local DAMAGE = 3000
 local PULL_INTERVAL_MS = 550
+-- The guild quest maps take 30000 HP every 10 seconds from anyone without this earring.
+local GUILD_QUEST_EARRING = 1032033
+local EARRING_SLOT = -4
+local EQUIP = 1
 
 local function pull(bot)
     return bot:request(resp.healer_move, req.pulley_pull {}, nil, 3000)
@@ -15,8 +19,12 @@ end
 -- Each pull lowers Ergoth's healer, it climbs back on its own, and at the bottom it heals the field and returns to the top.
 local function healer(ctx)
     local bot = ctx:bot(0)
-    if pq.command(bot, "/봇초기화 70 0 0", "봇초기화 완료") == false then
+    if pq.command(bot, "/봇초기화 70 0 0 " .. GUILD_QUEST_EARRING .. ":1", "봇초기화 완료") == false then
         return ctx:fail("봇 초기화 실패")
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(GUILD_QUEST_EARRING) or 0, dest = EARRING_SLOT, count = 1 }
+    if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("대항전 귀걸이 착용 실패")
     end
     if bot:force_instance_move(THRONE, "에레고스의 왕좌 힐러") == false then
         return ctx:fail("에레고스의 왕좌 이동 실패")

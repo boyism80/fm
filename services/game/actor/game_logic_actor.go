@@ -88,6 +88,7 @@ func (a *GameLogicActor) registerTimers() {
 	a.timerReg.Register(&timers.MistTimer{})
 	a.timerReg.Register(&timers.CharacterSaveTimer{})
 	a.timerReg.Register(&timers.PartySearchTimer{})
+	a.timerReg.Register(&timers.EnvironmentDamageTimer{})
 }
 
 func (a *GameLogicActor) StopTimers() {
