@@ -13,6 +13,14 @@ return {
             if ch:has_debuff(DebuffFlag.Zombify) then
                 ch:add_hp(-amount)
             else
+                -- Healing another member pays the caster for the HP actually restored.
+                if ch ~= me then
+                    local healed = math.min(ch:max_hp() - ch:hp(), amount)
+                    if healed > 0 then
+                        local max_mp = math.floor(me:max_mp() / 256)
+                        me:exp(me:exp() + math.floor(20 * healed / (8 * max_mp + 190)))
+                    end
+                end
                 ch:add_hp(amount)
             end
             if ch ~= me then
