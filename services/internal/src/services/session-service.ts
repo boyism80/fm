@@ -398,6 +398,11 @@ export class SessionService {
         const cid = options.characterId ?? null;
         if (cid != null && gameNormalDisconnect) {
             await this.announcePresence(worldId, cid, { party: true, buddyChannel: -1, guildOnline: false });
+            if (this.partyService && channelId != null) {
+                await this.partyService
+                    .passLeaderOnDisconnect(worldId, cid, channelId)
+                    .catch((err) => console.error("[party] leader handoff failed", err));
+            }
         }
         return { ok: true, code: SessionErrorCode.SESSION_NONE };
     }

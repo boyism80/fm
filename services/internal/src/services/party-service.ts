@@ -873,6 +873,73 @@ export class PartyService {
         return result;
     }
 
+    // A leader who logs off hands the party to the highest-level member online on the same channel and map, as the
+    // original server did; with nobody there the leader stays.
+    async passLeaderOnDisconnect(worldId: number, characterId: number, channelId: number) {
+        const partyId = (await this.characterRealtimeStateRepo.get(worldId, characterId))?.partyId;
+        if (partyId == null || !Number.isInteger(partyId) || partyId < 1) {
+            return;
+        }
+
+        await using _partyLock = await this.distributedLockService.acquireWorldDataLock(worldId, `party:${partyId}`);
+
+        const newLeaderCharacterId = await this.ctx.withPgDataTransaction(
+            worldId,
+            partyId,
+            async (txClient: PoolClient) => {
+                const party = await this.partyRepo.get(worldId, partyId, { txClient });
+                if (
+                    !party ||
+                    party.state !== PartyState.PARTY_STATE_ACTIVE ||
+                    party.leaderCharacterId !== characterId
+                ) {
+                    return null;
+                }
+                const members = await this.partyMemberRepo.getAll(worldId, String(partyId), { txClient });
+                const leader = members.get(String(characterId));
+                if (!leader) {
+                    return null;
+                }
+                let next: typeof leader | null = null;
+                for (const member of members.values()) {
+                    if (member.characterId === characterId || member.mapId !== leader.mapId) {
+                        continue;
+                    }
+                    if ((await this.sessionRepo.findChannel(worldId, member.characterId)) !== channelId) {
+                        continue;
+                    }
+                    if (next == null || member.level > next.level) {
+                        next = member;
+                    }
+                }
+                if (next == null) {
+                    return null;
+                }
+
+                await this.partyMemberRepo.set(
+                    worldId,
+                    { ...next, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER },
+                    { txClient },
+                );
+                await this.partyMemberRepo.set(
+                    worldId,
+                    { ...leader, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER },
+                    { txClient },
+                );
+                await this.partyRepo.set(worldId, { ...party, leaderCharacterId: next.characterId }, { txClient });
+                return next.characterId;
+            },
+        );
+        if (newLeaderCharacterId == null) {
+            return;
+        }
+        await this.publishPartyChange(EVT.LEADER_CHANGED, worldId, partyId, {
+            old_leader_character_id: characterId,
+            new_leader_character_id: newLeaderCharacterId,
+            by_disconnect: true,
+        });
+    }
+
     async broadcastMultiChat(
         worldId: number,
         memberId: number,

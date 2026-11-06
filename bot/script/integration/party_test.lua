@@ -156,12 +156,57 @@ local function shared_kill_count(ctx)
     return true
 end
 
+-- A leader who logs off hands the party to the highest-level member on the same map.
+local function leader_disconnect(ctx)
+    local a, b, c = ctx:bot(0), ctx:bot(1), ctx:bot(2)
+    for _, bot in ipairs({ a, b, c }) do
+        if setup(ctx, bot) == false then
+            return false
+        end
+    end
+    if pq.command(c, "/레벨바꾸기 40", "레벨 설정") == false then
+        return ctx:fail("레벨 설정 실패")
+    end
+    if pq.form_party(ctx) == false then
+        return false
+    end
+    ctx:sleep(1000)
+
+    local changed = nil
+    ctx:hook("leader_disconnect", function(_, bot, p, name)
+        if name == "party_update_leader_change" and bot:id() == b:id() then
+            changed = p
+        end
+    end)
+    local relogged = a:relog { passwords = { "" } }
+    for _ = 1, 50 do
+        if changed ~= nil then
+            break
+        end
+        ctx:sleep(100)
+    end
+    ctx:unhook("leader_disconnect")
+    if relogged == false then
+        return ctx:fail("파티장 재접속 실패")
+    end
+    if check(ctx, changed ~= nil and changed.new_leader_character_id == c:id() and changed.by_disconnect,
+            "파티장이 나갔는데 같은 맵의 최고 레벨 파티원에게 넘어가지 않음") == false then
+        return false
+    end
+
+    for _, bot in ipairs({ a, b, c }) do
+        bot:request(resp.party_update_leave, req.party_operation { operation = PARTY.Leave }, nil, 1000)
+    end
+    return true
+end
+
 test_suite {
-    name = "Party: 파티장 위임 조건·탈퇴·파티장 탈퇴 해체·처치 수 공유",
+    name = "Party: 파티장 위임 조건·탈퇴·파티장 탈퇴 해체·처치 수 공유·접속 종료 위임",
     bot_count = 3,
 
     scenarios = {
         leader_flow,
         shared_kill_count,
+        leader_disconnect,
     },
 }

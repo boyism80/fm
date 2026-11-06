@@ -28,6 +28,7 @@ func (h *partyMqLeaderChanged) Handle(ctx actor.Context, raw json.RawMessage) er
 	}
 	var extra struct {
 		NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
+		ByDisconnect         bool   `json:"by_disconnect"`
 	}
 	if err := json.Unmarshal(raw, &extra); err != nil {
 		return nil
@@ -36,7 +37,7 @@ func (h *partyMqLeaderChanged) Handle(ctx actor.Context, raw json.RawMessage) er
 		return nil
 	}
 	if party := pc.Get(evt.PartyID); party != nil {
-		pc.BroadcastLeaderChanged(party, extra.NewLeaderCharacterID, false)
+		pc.BroadcastLeaderChanged(party, extra.NewLeaderCharacterID, extra.ByDisconnect)
 	}
 	return nil
 }
