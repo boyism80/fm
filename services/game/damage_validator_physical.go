@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/maple/constant"
-	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/protocol/dto"
 )
 
@@ -58,20 +57,13 @@ func (v *PhysicalValidator) maximumDamages(info dto.AttackInfo) ([]dto.AttackPai
 	}
 
 	if info.Slot > 0 {
-		item := v.ch.inventory.tabs[constant.InventoryTypeConsume].items[int16(info.Slot)]
-		if item == nil || item.GetCount() == 0 {
-			return nil, fmt.Errorf("missing projectile")
-		}
-		projectile, ok := item.GetModel().(*wz.Consume)
+		_, projectile, ok := v.ch.projectile(info)
 		if !ok {
-			return nil, fmt.Errorf("invalid projectile %d", item.GetModel().GetID())
+			return nil, fmt.Errorf("invalid projectile in slot %d", info.Slot)
 		}
-		switch projectile.ConsumeType {
-		case constant.ConsumeTypeShuriken, constant.ConsumeTypeBullet, constant.ConsumeTypeArrowBow, constant.ConsumeTypeArrowCrossBow:
+		if projectile != nil {
 			a.projectile = projectile.ID
 			a.modifiers.ProjectilePAD = float64(projectile.ScrollIncPAD)
-		default:
-			return nil, fmt.Errorf("invalid projectile %d", item.GetModel().GetID())
 		}
 	}
 

@@ -223,19 +223,20 @@ func (ch *Character) damagesTable(L *lua.LState, damages []dto.AttackPair) *lua.
 	return tbl
 }
 
-// ammo is how many projectiles a ranged attack takes from info.Slot; 0 when it takes none.
-func (ch *Character) ammo(info dto.AttackInfo) (uint16, bool) {
+// projectile is the ammo a ranged attack throws from info.Slot, nil when the attack throws none. ok is false when the
+// slot does not hold the ammo the weapon needs.
+func (ch *Character) projectile(info dto.AttackInfo) (item Item, projectile *wz.Consume, ok bool) {
 	switch constant.SkillID(info.Skill) {
 	case constant.SkillShadowMeso, constant.SkillBarrage, constant.SkillSoulBlade, constant.SkillSpark, constant.SkillSharkWave, constant.SkillShowdown4221003:
-		return 0, true
+		return nil, nil, true
 	}
 	weapon := ch.inventory.equipped[constant.EquipmentPartsWeapon]
 	if weapon == nil {
-		return 0, true
+		return nil, nil, true
 	}
 	weaponModel, ok := weapon.GetModel().(*wz.Weapon)
 	if !ok {
-		return 0, true
+		return nil, nil, true
 	}
 
 	var ammo constant.ConsumeType
@@ -249,20 +250,29 @@ func (ch *Character) ammo(info dto.AttackInfo) (uint16, bool) {
 	case constant.WeaponTypeGun:
 		ammo = constant.ConsumeTypeBullet
 	default:
-		return 0, true
+		return nil, nil, true
 	}
 	if ch.buffs.Has(constant.BuffFlagSoulArrow) && (ammo == constant.ConsumeTypeArrowBow || ammo == constant.ConsumeTypeArrowCrossBow) {
-		return 0, true
+		return nil, nil, true
 	}
-	item := ch.inventory.GetItem(constant.InventoryTypeConsume, int16(info.Slot))
-	if item == nil {
-		return 0, false
+	item = ch.inventory.GetItem(constant.InventoryTypeConsume, int16(info.Slot))
+	if item == nil || item.GetCount() == 0 {
+		return nil, nil, false
 	}
-	projectile, ok := item.GetModel().(*wz.Consume)
+	projectile, ok = item.GetModel().(*wz.Consume)
 	if !ok || projectile.ConsumeType != ammo {
-		return 0, false
+		return nil, nil, false
 	}
-	if ch.buffs.Has(constant.BuffFlagSpiritClaw) && ammo == constant.ConsumeTypeShuriken {
+	return item, projectile, true
+}
+
+// ammo is how many projectiles a ranged attack takes from info.Slot; 0 when it takes none.
+func (ch *Character) ammo(info dto.AttackInfo) (uint16, bool) {
+	item, projectile, ok := ch.projectile(info)
+	if !ok || projectile == nil {
+		return 0, ok
+	}
+	if ch.buffs.Has(constant.BuffFlagSpiritClaw) && projectile.ConsumeType == constant.ConsumeTypeShuriken {
 		return 0, true
 	}
 
