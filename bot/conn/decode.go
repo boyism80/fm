@@ -139,6 +139,11 @@ var decoders = func() []decoder {
 		newDecoder[response.DamageCharacter](nil),
 		newDecoder[response.UpdateSelfBuff](knownBuffs),
 		newDecoder[response.CancelSelfBuff](knownBuffs),
+		newDecoder[response.UpdateBuff](func(body []byte) bool {
+			flag := constant.BuffFlagWkCharge
+			at := 4 + 4*int(flag.Position-1)
+			return len(body) >= 4+4*constant.MaxBuffFlag+4 && binary.LittleEndian.Uint32(body[at:])&uint32(flag.Mask) != 0
+		}),
 		newDecoder[response.GiveDebuff](func(body []byte) bool {
 			if len(body) < 4+constant.MaxBuffFlag*4 {
 				return false

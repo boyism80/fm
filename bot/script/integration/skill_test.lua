@@ -82,6 +82,7 @@ local WHITE_KNIGHT = 121
 local FIRE_CHARGE = 1211003
 local CHARGE_BLOW = 1211002
 local BUFF = {
+    wk_charge = { mask = 0x400000, position = 4 },
     weapon_def = { mask = 0x2, position = 4 },
     magic_def = { mask = 0x8, position = 4 },
     speed = { mask = 0x80, position = 4 },
@@ -1045,9 +1046,9 @@ local function gm_hyper_body(ctx)
         "GM 하이퍼 바디 최대 HP 증가가 60%가 아님: " .. tostring(buff_value(p, BUFF.max_hp)))
 end
 
--- A charge blow takes the charge only when it damages a mob.
+-- The others see a weapon charge by its skill ID, and a charge blow takes the charge only when it damages a mob.
 local function charge_blow(ctx)
-    local bot = ctx:bot(0)
+    local bot, observer = ctx:bot(0), ctx:bot(1)
     if setup(ctx, bot, 70, WHITE_KNIGHT, SWORD .. ":1") == false then
         return false
     end
@@ -1065,13 +1066,19 @@ local function charge_blow(ctx)
     if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
         return ctx:fail("즉사 끄기 실패")
     end
-    if bot:instance_move(HUNTING_GROUND) == false then
+    if bot:instance_move(HUNTING_GROUND) == false or observer:instance_move(HUNTING_GROUND) == false then
         return ctx:fail("사냥터 이동 실패")
     end
-    if bot:request(resp.update_self_buff, req.active_skill { skill_id = FIRE_CHARGE, skill_level = 1 }, function(p)
-            return p.buff_id == FIRE_CHARGE
-        end, 3000) == false then
-        return ctx:fail("차지 버프가 걸리지 않음")
+    local seen = bot:request_on(observer, resp.update_buff, req.active_skill { skill_id = FIRE_CHARGE, skill_level = 1 },
+        function(p)
+            return p.character_id == bot:id()
+        end, 3000)
+    if seen == false then
+        return ctx:fail("주변에 차지 버프가 오지 않음")
+    end
+    if check(ctx, buff_value(seen, BUFF.wk_charge) == FIRE_CHARGE,
+            "주변에 보인 차지 값이 스킬 ID가 아님: " .. tostring(buff_value(seen, BUFF.wk_charge))) == false then
+        return false
     end
 
     local x, y = bot:position()

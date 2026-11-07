@@ -88,8 +88,14 @@ func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU16(0)
 		return nil
 	default:
+		// The client reads a weapon charge or Spirit Claw as the skill ID in four bytes.
 		for _, e := range buffs {
-			writer.WriteU16(uint16(e.Value))
+			switch e.Buff {
+			case constant.BuffFlagWkCharge, constant.BuffFlagSpiritClaw:
+				writer.Write32(p.BuffID)
+			default:
+				writer.WriteU16(uint16(e.Value))
+			}
 		}
 		writer.WriteU16(0)
 		writer.WriteU16(0)
@@ -97,4 +103,25 @@ func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 	}
 }
 
-func (p *UpdateBuff) Deserialize(_ *stream.StreamReader) {}
+// Deserialize reads the default layout only, not the energy charge, dash, or booster ones.
+func (p *UpdateBuff) Deserialize(reader *stream.StreamReader) {
+	p.CharacterID = reader.Read32()
+	var flags []constant.BuffFlag
+	for i := 0; i < constant.MaxBuffFlag; i++ {
+		mask := uint32(reader.Read32())
+		for bit := uint32(1); bit != 0; bit <<= 1 {
+			if mask&bit != 0 {
+				flags = append(flags, constant.BuffFlag{Mask: bit, Position: i + 1})
+			}
+		}
+	}
+	for _, flag := range flags {
+		switch flag {
+		case constant.BuffFlagWkCharge, constant.BuffFlagSpiritClaw:
+			p.BuffID = reader.Read32()
+			p.Buffs = append(p.Buffs, dto.BuffEntry{Buff: flag, Value: p.BuffID})
+		default:
+			p.Buffs = append(p.Buffs, dto.BuffEntry{Buff: flag, Value: int32(reader.Read16())})
+		}
+	}
+}
