@@ -1,3 +1,5 @@
+local pq = require("script/lib/party_quest")
+
 local function create(config)
     local function finish(sm)
         sm:finish(config.exit_map)
@@ -20,7 +22,11 @@ local function create(config)
         end,
 
         on_prepare = function(sm)
-            sm:map(config.map):respawn({ include_one_time = true })
+            local map = sm:map(config.map)
+            map:respawn({ include_one_time = true })
+            if config.shuffle_reactors then
+                pq.shuffle_reactors(map)
+            end
         end,
 
         on_start = function(sm)

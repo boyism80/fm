@@ -5,4 +5,6 @@ return create({
     exit_map = 105090800,
     duration_ms = 1200000,
     max_machines = 1,
+    -- Only one of the five stone shields holds Seiram's shield, and it moves each time.
+    shuffle_reactors = true,
 })
