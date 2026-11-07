@@ -78,6 +78,8 @@ local DRAGON_ROAR_STUN_MS = 4000
 local GM_HYPER_BODY = 9001008
 local MARAUDER = 511
 local TRANSFORM = 5111005
+local FIGHTER = 110
+local RAGE = 1101006
 local WHITE_KNIGHT = 121
 local FIRE_CHARGE = 1211003
 local CHARGE_BLOW = 1211002
@@ -85,6 +87,7 @@ local FP_ARCH_MAGE = 212
 local FIRE_DEMON = 2121003
 local FIRE_RESISTANT = 2230108
 local BUFF = {
+    weapon_atk = { mask = 0x1, position = 4 },
     wk_charge = { mask = 0x400000, position = 4 },
     weapon_def = { mask = 0x2, position = 4 },
     magic_def = { mask = 0x8, position = 4 },
@@ -1128,6 +1131,32 @@ local function fire_demon_poison(ctx)
     return check(ctx, p ~= false, "파이어 데몬에 맞은 불 저항 몹이 중독되지 않음")
 end
 
+-- Rage trades the WZ's negative pdd of defense for its attack.
+local function rage_defense(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, FIGHTER, "-") == false then
+        return false
+    end
+    if pq.command(bot, "/스킬레벨 " .. RAGE .. " 20", "스킬레벨 설정") == false then
+        return ctx:fail("분노 배우기 실패")
+    end
+    if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("마력 설정 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local p = bot:request(resp.update_self_buff, req.active_skill { skill_id = RAGE, skill_level = 20 }, function(p)
+        return p.buff_id == RAGE
+    end, 3000)
+    if p == false then
+        return ctx:fail("분노 버프 응답 없음")
+    end
+    return check(ctx, buff_value(p, BUFF.weapon_atk) == 10 and buff_value(p, BUFF.weapon_def) == -10,
+        string.format("분노 버프가 WZ와 다름: 공격력 %s 방어력 %s", tostring(buff_value(p, BUFF.weapon_atk)),
+            tostring(buff_value(p, BUFF.weapon_def))))
+end
+
 -- A transformation carries the skill's defense, speed, and jump along with the look.
 local function transform_stats(ctx)
     local bot = ctx:bot(0)
@@ -1258,6 +1287,7 @@ test_suite {
         sauna_robe_recovery,
         dragon_roar_half_hp,
         transform_stats,
+        rage_defense,
         charge_blow,
         fire_demon_poison,
         dark_sight_speed,

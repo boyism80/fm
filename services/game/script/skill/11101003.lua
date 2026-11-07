@@ -10,8 +10,9 @@ return {
         end
 
         local vals = { [BuffFlag.WeaponAtk] = effect.pad }
-        if effect.pdd ~= nil and effect.pdd > 0 then
-            vals[BuffFlag.WeaponDef] = -effect.pdd
+        -- WZ gives the defense the rage costs as a negative pdd.
+        if effect.pdd ~= 0 then
+            vals[BuffFlag.WeaponDef] = effect.pdd
         end
         combat.for_each_near_party_member(me, skill, function(ch)
             ch:buff(skill, vals)
