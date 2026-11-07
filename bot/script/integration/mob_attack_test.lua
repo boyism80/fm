@@ -9,6 +9,7 @@ local BANISH_MOB = 9300160
 local BANISH_MAP = 925010000
 local STUN = 123
 local SEAL = 120
+local POISON = 125
 local ZOMBIFY = 133
 local HIT_COLLIDE = -1
 local HIT_MAP_DEBUFF = -2
@@ -110,6 +111,20 @@ local function diseases(ctx)
         end, 5000)
     if sealed == false then
         return ctx:fail("맵 디버프 피격에 봉인이 걸리지 않음")
+    end
+
+    -- Poison takes its x (15 at level 1) of HP when it lands, besides the hit. The seal's hit settles first.
+    ctx:sleep(500)
+    local before = actor:hp()
+    local poisoned = actor:request(resp.update_stats,
+        req.damaged { type = HIT_MAP_DEBUFF, damage = 1, level = 1, skill_id = POISON }, function(p)
+            return p.stats[HP] ~= nil and p.stats[HP] <= before - 16
+        end, 5000)
+    if poisoned == false then
+        return ctx:fail(string.format("독에 걸렸는데 HP가 15 더 줄지 않음: %d -> %d", before, actor:hp()))
+    end
+    if poisoned.stats[HP] ~= before - 16 then
+        return ctx:fail(string.format("독 HP 감소가 다름: %d -> %d", before, poisoned.stats[HP]))
     end
     return true
 end

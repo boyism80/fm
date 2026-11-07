@@ -73,6 +73,10 @@ func (d *Debuffs) Give(flag constant.DebuffFlag, duration time.Duration, x int16
 	}
 	d.Add(holder)
 	d.owner.listener.OnDebuffAdded(d.owner, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
+	// Poison takes its x of HP once, when it lands.
+	if x > 0 && flag == constant.DebuffFlagPoison {
+		d.owner.SetHp(uint32(max(int32(d.owner.GetHp())-int32(x), 0)), true)
+	}
 }
 
 func (d *Debuffs) restore() {
