@@ -223,6 +223,21 @@ local function archer_puppet_facing_left(me)
     return s % 2 ~= 0
 end
 
+-- A stationary summon stands 180 ahead of the caster, on the foothold below; nil when the caster has no map.
+M.stationary_summon_position = function(me)
+    local map = me:map()
+    if map == nil then
+        return nil
+    end
+    local px, py = me:position()
+    local ox = px + (archer_puppet_facing_left(me) and -archer_puppet_offset_x or archer_puppet_offset_x)
+    local grounded = map:point_below({ x = ox, y = py })
+    if grounded == nil then
+        return { x = ox, y = py }
+    end
+    return { x = grounded.x, y = grounded.y }
+end
+
 M.mark_archer_puppet = function(me, skill, params)
     local effect = skill:effect()
     if effect == nil then
@@ -250,18 +265,9 @@ M.apply_archer_puppet_buff = function(me, skill)
     if effect.x <= 0 then
         return
     end
-    local px, py = me:position()
-    local ox = px + (archer_puppet_facing_left(me) and -archer_puppet_offset_x or archer_puppet_offset_x)
-    local map = me:map()
-    if map == nil then
+    local spawn_pos = M.stationary_summon_position(me)
+    if spawn_pos == nil then
         return
-    end
-    local grounded = map:point_below({ x = ox, y = py })
-    local spawn_pos
-    if grounded == nil then
-        spawn_pos = { x = ox, y = py }
-    else
-        spawn_pos = { x = grounded.x, y = grounded.y }
     end
     local s = me:create_summon(wz:id(), level, effect.time, SummonMovementType.Stationary, SummonType.Puppet, spawn_pos)
     if s ~= nil then

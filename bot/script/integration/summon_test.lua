@@ -73,7 +73,14 @@ local function map_change(ctx)
     if setup(ctx, outlaw, OUTLAW, { OCTOPUS }) == false or setup(ctx, knight, DARK_KNIGHT, { BEHOLDER }) == false then
         return false
     end
-    if summon(ctx, outlaw, OCTOPUS) == false or summon(ctx, knight, BEHOLDER) == false then
+    local x = outlaw:position()
+    local octopus = summon(ctx, outlaw, OCTOPUS)
+    if octopus == false or summon(ctx, knight, BEHOLDER) == false then
+        return false
+    end
+    -- A stationary summon stands 180 ahead of its owner.
+    if check(ctx, math.abs(octopus.position.x - x) == 180,
+            string.format("문어가 주인 앞 180에 나오지 않음: 주인 %d 문어 %d", x, octopus.position.x)) == false then
         return false
     end
 
