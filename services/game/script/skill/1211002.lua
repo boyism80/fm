@@ -14,8 +14,12 @@ return {
                 keep_chance = adv_effect.x
             end
         end
-        if math.random(1, 100) > keep_chance then
-            me:unbuff(BuffFlag.WkCharge)
+        -- Each mob the blow damaged rolls for the charge; a blow that damaged none keeps it.
+        for _, hits in pairs(damages or {}) do
+            if combat.total_damage_to_mob(hits) > 0 and math.random(1, 100) > keep_chance then
+                me:unbuff(BuffFlag.WkCharge)
+                return
+            end
         end
     end
 }

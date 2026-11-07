@@ -78,6 +78,9 @@ local DRAGON_ROAR_STUN_MS = 4000
 local GM_HYPER_BODY = 9001008
 local MARAUDER = 511
 local TRANSFORM = 5111005
+local WHITE_KNIGHT = 121
+local FIRE_CHARGE = 1211003
+local CHARGE_BLOW = 1211002
 local BUFF = {
     weapon_def = { mask = 0x2, position = 4 },
     magic_def = { mask = 0x8, position = 4 },
@@ -1036,6 +1039,47 @@ local function gm_hyper_body(ctx)
         "GM 하이퍼 바디 최대 HP 증가가 60%가 아님: " .. tostring(buff_value(p, BUFF.max_hp)))
 end
 
+-- A charge blow takes the charge only when it damages a mob.
+local function charge_blow(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 70, WHITE_KNIGHT, SWORD .. ":1") == false then
+        return false
+    end
+    local wear = req.move_item { inventory_type = EQUIP, source = bot:slot(SWORD) or 0, dest = WEAPON_SLOT, count = 1 }
+    if bot:request(resp.inventory_operation, wear, nil, 3000) == false then
+        return ctx:fail("검 착용 실패")
+    end
+    if pq.command(bot, "/스킬레벨 " .. FIRE_CHARGE .. " 1", "스킬레벨 설정") == false
+        or pq.command(bot, "/스킬레벨 " .. CHARGE_BLOW .. " 1", "스킬레벨 설정") == false then
+        return ctx:fail("차지·차지 블로우 배우기 실패")
+    end
+    if pq.command(bot, "/전능 999", "전능 설정") == false or pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false then
+        return ctx:fail("능력치 설정 실패")
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    if bot:request(resp.update_self_buff, req.active_skill { skill_id = FIRE_CHARGE, skill_level = 1 }, function(p)
+            return p.buff_id == FIRE_CHARGE
+        end, 3000) == false then
+        return ctx:fail("차지 버프가 걸리지 않음")
+    end
+
+    local x, y = bot:position()
+    local golem = spawn_golem(ctx, bot, x, y)
+    if golem == nil then
+        return false
+    end
+    if bot:request(resp.cancel_self_buff, melee(bot, golem, 0, CHARGE_BLOW), nil, QUIET_MS) ~= false then
+        return ctx:fail("빗나간 차지 블로우가 차지를 풀음")
+    end
+    return check(ctx, bot:request(resp.cancel_self_buff, melee(bot, golem, 10, CHARGE_BLOW), nil, 3000) ~= false,
+        "맞힌 차지 블로우가 차지를 풀지 않음")
+end
+
 -- A transformation carries the skill's defense, speed, and jump along with the look.
 local function transform_stats(ctx)
     local bot = ctx:bot(0)
@@ -1166,6 +1210,7 @@ test_suite {
         sauna_robe_recovery,
         dragon_roar_half_hp,
         transform_stats,
+        charge_blow,
         dark_sight_speed,
         beginner_buffs,
         -- Last: the hyper body stays on the other bot and would raise its max HP.

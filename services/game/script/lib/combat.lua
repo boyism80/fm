@@ -77,6 +77,7 @@ local function total_damage_to_mob(hits)
     end
     return total
 end
+M.total_damage_to_mob = total_damage_to_mob
 
 local MOB_ATTACK_REFLECT_DAMAGE_MIN = 7000
 local MOB_ATTACK_REFLECT_DAMAGE_RANGE = 8000
