@@ -160,6 +160,68 @@ local function completion_rate(ctx)
     return true
 end
 
+-- A moon bunny the mobs kill ends the quest as a failure and sends everyone out.
+local function bunny_killed(ctx)
+    if enter(ctx) == false then
+        return false
+    end
+    local leader = ctx:bot(0)
+    if gather_seeds(ctx, leader) == false then
+        return false
+    end
+    for i = 0, 5 do
+        if pq.feed(ctx, leader, MOONFLOWER + i, SEED + i, 1) == false then
+            return false
+        end
+    end
+    local bunny = leader:mobs(MOON_BUNNY)[1]
+    if bunny == nil then
+        local p = leader:request(resp.spawn_mob, nil, function(p)
+            return p.mob.mob_id == MOON_BUNNY
+        end, 10000)
+        if p == false then
+            return ctx:fail("월묘가 나타나지 않음")
+        end
+        bunny = { oid = p.mob.oid }
+    end
+    local attacker = nil
+    for _ = 1, 30 do
+        for _, mob in ipairs(leader:mobs()) do
+            if mob.id ~= MOON_BUNNY then
+                attacker = mob
+            end
+        end
+        if attacker ~= nil then
+            break
+        end
+        ctx:sleep(1000)
+    end
+    if attacker == nil then
+        return ctx:fail("월묘를 때릴 몹이 나오지 않음")
+    end
+    local failed = false
+    for _ = 1, 300 do
+        if leader:request(resp.notice, req.ally_damage { from_oid = attacker.oid, to_oid = bunny.oid }, function(p)
+                return p.message == "월묘를 보호하지 못했습니다."
+            end, 200) ~= false then
+            failed = true
+            break
+        end
+    end
+    if not failed then
+        return ctx:fail("몹이 월묘를 잡았는데 실패 안내가 오지 않음")
+    end
+    if pq.wait_all(ctx, EXIT, 15000) == false then
+        return false
+    end
+    for i = 0, ctx:bot_count() - 1 do
+        if ctx:bot(i):instance_move(PARK) == false then
+            return ctx:fail(ctx:bot(i):name() .. " 헤네시스 공원 복귀 실패")
+        end
+    end
+    return true
+end
+
 test_suite {
     name = "Party Quest: 헤네시스 PQ",
     bot_count = 3,
@@ -291,5 +353,6 @@ test_suite {
             return true
         end,
         completion_rate,
+        bunny_killed,
     },
 }

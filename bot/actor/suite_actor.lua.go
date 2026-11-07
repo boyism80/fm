@@ -84,6 +84,7 @@ var requests = []outbound{
 	&request.UseSkillBook{},
 	&request.ItemMaker{},
 	&request.Damaged{},
+	&request.AllyDamage{},
 	&request.CancelBuff{},
 	&request.CashShopOperation{},
 	&request.CashShopCoupon{},

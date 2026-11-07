@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game"
 )
 
 type AllyDamage struct {
@@ -41,8 +42,9 @@ func (h *AllyDamage) Handle(ctx *core.ClientContext, req *request.AllyDamage) er
 	}
 	damage := (level * rand.Intn(level)) / 3
 	if damage > 0 {
-		killed := to.TakeDamage(ch, uint32(damage))
-		if !killed && to.Listener() != nil {
+		if to.TakeDamage(ch, uint32(damage)) {
+			ch.OnKill([]*game.Mob{to})
+		} else if to.Listener() != nil {
 			to.Listener().OnMobAllyDamaged(to, int32(damage))
 		}
 	} else {

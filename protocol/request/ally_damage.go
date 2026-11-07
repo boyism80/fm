@@ -11,7 +11,10 @@ type AllyDamage struct {
 
 func (*AllyDamage) Opcode() byte { return 0x99 }
 
-func (p *AllyDamage) Serialize(_ *stream.StreamWriter) error {
+func (p *AllyDamage) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.FromOID)
+	writer.WriteU32(0)
+	writer.WriteU32(p.ToOID)
 	return nil
 }
 
