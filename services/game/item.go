@@ -278,7 +278,7 @@ func NewItem(itemId uint32, count uint16, gw ItemWorld) (Item, error) {
 		}, nil
 	case *wz.Installation:
 		return &Installation{
-			itemCore: &ItemCore{wz: m, count: 1, expiration: util.TimeMax},
+			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
 		}, nil
 	case *wz.MiscItem:
 		return &MiscItem{

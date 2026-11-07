@@ -10,13 +10,14 @@ import (
 
 type InstallationItem struct {
 	ItemId     uint32
+	Count      uint16
 	Expiration time.Time
 	OwnerName  string
 	Flags      uint16
 }
 
 func (i *InstallationItem) GetCount() uint16 {
-	return 1
+	return i.Count
 }
 
 func (i *InstallationItem) GetItemID() uint32 {
@@ -33,7 +34,7 @@ func (i *InstallationItem) Serialize(writer *stream.StreamWriter, opt ItemSerial
 	writer.WriteBoolean(false)
 
 	writer.WriteDateTime(i.Expiration)
-	writer.WriteU16(1)
+	writer.WriteU16(i.Count)
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
 }
@@ -43,7 +44,7 @@ func (i *InstallationItem) Deserialize(reader *stream.StreamReader) {
 		reader.Skip(8)
 	}
 	i.Expiration = util.FromFileTime(reader.ReadU64())
-	reader.ReadU16()
+	i.Count = reader.ReadU16()
 	i.OwnerName = reader.ReadStr16()
 	i.Flags = reader.ReadU16()
 }

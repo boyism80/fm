@@ -45,6 +45,7 @@ func (item *CashItem) BuildS2C() dto.Item {
 func (item *Installation) BuildS2C() dto.Item {
 	return &dto.InstallationItem{
 		ItemId:     item.GetModel().GetID(),
+		Count:      item.GetCount(),
 		Expiration: item.GetExpiration(),
 		OwnerName:  item.ownerName,
 		Flags:      item.flags,

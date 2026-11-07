@@ -31,9 +31,7 @@ func NewInventory(itemID uint32, count uint16, ownerID uint32, slot int32, resou
 		}
 		item.Count = 1
 		item.EnhanceChance = uint32(m.GetEnhanceChance())
-	case *wz.Consume, *wz.MiscItem, *wz.CashItem:
-	case *wz.Installation:
-		item.Count = 1
+	case *wz.Consume, *wz.MiscItem, *wz.CashItem, *wz.Installation:
 	case *wz.Pet:
 		uniqueID := newUniqueID()
 		item.Count = 1
@@ -109,7 +107,7 @@ func BuildS2C(pb *internal.Inventory, resources *wz.Resources, newUniqueID func(
 	case *wz.Consume:
 		return &dto.ConsumeItem{ItemId: pb.GetItemId(), Count: count, Expiration: expiration, OwnerName: ownerName, Flags: flags}, nil
 	case *wz.Installation:
-		return &dto.InstallationItem{ItemId: pb.GetItemId(), Expiration: expiration, OwnerName: ownerName, Flags: flags}, nil
+		return &dto.InstallationItem{ItemId: pb.GetItemId(), Count: count, Expiration: expiration, OwnerName: ownerName, Flags: flags}, nil
 	case *wz.MiscItem:
 		return &dto.MiscItem{ItemId: pb.GetItemId(), Count: count, Expiration: expiration, OwnerName: ownerName, Flags: flags}, nil
 	case *wz.CashItem:

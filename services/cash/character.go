@@ -303,7 +303,7 @@ func (ch *Character) PrepareTakeOut(serial uint64, slot int16, invType constant.
 	record.SetSlot(int32(slot))
 	record.SetInventoryType(uint32(invType))
 	switch m := model.(type) {
-	case wz.Equipment, *wz.Installation:
+	case wz.Equipment:
 		record.SetCount(1)
 	case *wz.Pet:
 		record.SetCount(1)

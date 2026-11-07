@@ -12,6 +12,10 @@ local EXPENSIVE_PRICE = 10000000
 local OVERFLOWING_QUANTITY = 430
 local OTHER_CHANNEL = 1
 local HOME_CHANNEL = 0
+local HAPPYVILLE = 209000000
+local ORNAMENT_SHOP_NPC = 2002001
+local ORNAMENT = 3990000
+local ORNAMENT_PRICE = 100
 
 local function check(ctx, ok, message)
     if ok == false then
@@ -114,13 +118,47 @@ local function busy_while_open(ctx)
     return true
 end
 
+-- Setup items stack like the others: three ornaments and two more make five, for five prices.
+local function stacked_setup_items(ctx)
+    local bot = ctx:bot(0)
+    bot:send(req.npc_shop { mode = SHOP_LEAVE })
+    ctx:sleep(300)
+    if pq.command(bot, "/봇초기화 30 0 10000 -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    -- No route reaches Happyville, so the bot is sent there directly.
+    local moved = bot:request(resp.warp,
+        req.normal_chat { message = string.format("/인스턴스이동 %d %d", HAPPYVILLE, ctx:seat()) }, function(p)
+            return p.character.map == HAPPYVILLE
+        end, 5000)
+    if moved == false then
+        return ctx:fail("해피빌 이동 실패")
+    end
+    local oid = pq.npc(ctx, bot, ORNAMENT_SHOP_NPC)
+    if oid == false then
+        return false
+    end
+    if bot:request(resp.open_npc_shop, req.npc_click { oid = oid }, nil, 5000) == false then
+        return ctx:fail("장식 상점이 열리지 않음")
+    end
+    bot:shop_buy(ORNAMENT, 3)
+    ctx:sleep(500)
+    bot:shop_buy(ORNAMENT, 2)
+    ctx:sleep(500)
+    bot:send(req.npc_shop { mode = SHOP_LEAVE })
+    return check(ctx, (bot:items()[ORNAMENT] or 0) == 5 and bot:meso() == 10000 - 5 * ORNAMENT_PRICE,
+        string.format("장식 구매 결과가 다름: 장식 %d, 메소 %d (기대 5, %d)", bot:items()[ORNAMENT] or 0, bot:meso(),
+            10000 - 5 * ORNAMENT_PRICE))
+end
+
 test_suite {
-    name = "NpcShop: 표창 충전·판매 가격·가격 넘침 구매 거절",
+    name = "NpcShop: 표창 충전·판매 가격·가격 넘침 구매 거절·설치 아이템 묶음",
     bot_count = 1,
 
     scenarios = {
         recharge_and_sell,
         busy_while_open,
         price_overflow,
+        stacked_setup_items,
     },
 }
