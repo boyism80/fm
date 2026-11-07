@@ -360,7 +360,11 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 		if !entry.global && m.stealOutcome != nil && entry.Item != 0 && *m.stealOutcome == entry.Item {
 			continue
 		}
-		adjustedProb := entry.Prob * dropRate * dropRateMulF * mobDropF
+		// A global drop takes only the server rate, as the original server's did.
+		adjustedProb := entry.Prob * dropRate
+		if !entry.global {
+			adjustedProb *= dropRateMulF * mobDropF
+		}
 		if adjustedProb > 1.0 {
 			adjustedProb = 1.0
 		}

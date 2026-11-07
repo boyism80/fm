@@ -24,6 +24,13 @@ type GlobalDrop struct {
 	Quest     uint32
 }
 
+// codedGlobalDrops are the global drops the original server added in code, not in its drop table, so they are there
+// whether or not GlobalReward.img.xml is.
+var codedGlobalDrops = []GlobalDrop{
+	// The monster card, the only source of the match card set.
+	{Drop: Drop{Item: 4030012, Prob: 1000.0 / 999999, Min: 1, Max: 1}, Continent: -1},
+}
+
 func (d GlobalDrop) IsAvailableAt(mapID uint32) bool {
 	switch {
 	case d.Continent < 0:

@@ -451,10 +451,13 @@ func NewResources(wzPath string) *Resources {
 	if loaded, err := loadGlobalDrops(globalRewardPath); err == nil {
 		globalDrops = loaded
 		fmt.Println("Global drop file loaded.")
-	} else if !os.IsNotExist(err) {
+	} else if os.IsNotExist(err) {
+		log.Printf("%s not found; only the coded global drops apply", globalRewardPath)
+	} else {
 		log.Fatal(err)
 		return nil
 	}
+	globalDrops = append(globalDrops, codedGlobalDrops...)
 
 	shops := map[uint32]*Shop{}
 
