@@ -4,6 +4,7 @@ local combat = require("script/lib/combat")
 
 return {
     on_attack = function(me, skill, damages)
+        combat.weaken_damaged(skill, damages, "i")
         combat.apply_prob_status(me, skill, damages, MobBuff.Poison)
     end
 }

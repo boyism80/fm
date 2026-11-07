@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
@@ -41,6 +42,29 @@ type Mob struct {
 	dropItemCount int
 	deathStarted  bool
 	carnivalTeam  constant.CarnivalTeam
+	// weakUntil holds the elements a skill left this mob weak to, until when; the WZ resistance is shared by the
+	// mob's kind, so it stays untouched.
+	weakUntil map[string]time.Time
+}
+
+// Weaken leaves the mob weak to element for d, as the demons do before their poison.
+func (m *Mob) Weaken(element string, d time.Duration) {
+	if m.weakUntil == nil {
+		m.weakUntil = make(map[string]time.Time)
+	}
+	m.weakUntil[strings.ToLower(element)] = clock.Now().Add(d)
+}
+
+// ElementResist is the mob's resistance to element: weak (3) while a skill weakened it, otherwise its WZ value.
+func (m *Mob) ElementResist(element string) int {
+	element = strings.ToLower(element)
+	if until, ok := m.weakUntil[element]; ok && clock.Now().Before(until) {
+		return 3
+	}
+	if m.wz == nil {
+		return 0
+	}
+	return m.wz.ElemResist[element]
 }
 
 func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
@@ -212,7 +236,7 @@ func (m *Mob) resistsElement(skillWz *wz.Skill) bool {
 		elements = append(elements, skillWz.ExtraElement)
 	}
 	for _, element := range elements {
-		switch m.wz.ElemResist[element] {
+		switch m.ElementResist(element) {
 		case 1, 2:
 			return true
 		}

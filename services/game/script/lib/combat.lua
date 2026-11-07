@@ -27,9 +27,10 @@ local function element_amp_from_class(me)
     return amp
 end
 
-local function element_weak_multiplier(swz, mwz)
+-- The mob's own resistance counts, so a weakness a skill left on it shows here.
+local function element_weak_multiplier(swz, mob)
     local weak = 1.0
-    if mwz == nil or mwz:elem_resist() == nil then
+    if mob == nil then
         return weak
     end
     local attr = swz:elem_attr()
@@ -37,10 +38,7 @@ local function element_weak_multiplier(swz, mwz)
         return weak
     end
     local letter = string.lower(string.sub(tostring(attr), 1, 1))
-    local v = mwz:elem_resist()[letter]
-    if v == nil then
-        return weak
-    end
+    local v = mob:element_resist(letter)
     if v == 1 or v == 2 then
         return 0.5
     end
@@ -339,7 +337,7 @@ M.compute_poison_tick_damage_wz_level = function(wz, level, mob, multiplier)
     end
     local quotient = math.floor(max_hp / denom)
     local base = quotient + 0.999
-    local weak = element_weak_multiplier(wz, mwz)
+    local weak = element_weak_multiplier(wz, mob)
     local mul = multiplier or 1.0
     if mul <= 0 then
         mul = 1.0
@@ -347,6 +345,20 @@ M.compute_poison_tick_damage_wz_level = function(wz, level, mob, multiplier)
     local raw = base * weak * mul
     local clamped = math.max(1, math.min(raw, poison_pdam_cap))
     return math.floor(clamped)
+end
+
+-- Leaves each damaged mob weak to element for the skill's time, before the poison lands as the original demons did:
+-- the poison then passes the element's immunity and ticks for half again as much.
+M.weaken_damaged = function(skill, damages, element)
+    local effect = skill and skill:effect()
+    if effect == nil or (effect.time or 0) <= 0 then
+        return
+    end
+    for mob, hits in pairs(damages or {}) do
+        if mob and total_damage_to_mob(hits) > 0 then
+            mob:weaken(element, effect.time)
+        end
+    end
 end
 
 M.apply_prob_status = function(me, skill, damages, status)

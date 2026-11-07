@@ -81,6 +81,9 @@ local TRANSFORM = 5111005
 local WHITE_KNIGHT = 121
 local FIRE_CHARGE = 1211003
 local CHARGE_BLOW = 1211002
+local FP_ARCH_MAGE = 212
+local FIRE_DEMON = 2121003
+local FIRE_RESISTANT = 2230108
 local BUFF = {
     wk_charge = { mask = 0x400000, position = 4 },
     weapon_def = { mask = 0x2, position = 4 },
@@ -1093,6 +1096,38 @@ local function charge_blow(ctx)
         "맞힌 차지 블로우가 차지를 풀지 않음")
 end
 
+-- Fire Demon leaves the mob weak to fire and poisons it, a fire resistant mob included.
+local function fire_demon_poison(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 120, FP_ARCH_MAGE, "-") == false then
+        return false
+    end
+    if pq.command(bot, "/스킬레벨 " .. FIRE_DEMON .. " 30", "스킬레벨 설정") == false then
+        return ctx:fail("파이어 데몬 배우기 실패")
+    end
+    if pq.command(bot, "/전능 999", "전능 설정") == false or pq.command(bot, "/마력바꾸기 30000", "마력 설정") == false then
+        return ctx:fail("능력치 설정 실패")
+    end
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    if bot:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("사냥터 이동 실패")
+    end
+    local spawned = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. FIRE_RESISTANT }, function(p)
+        return p.mob.mob_id == FIRE_RESISTANT
+    end)
+    if spawned == false then
+        return ctx:fail("불 저항 몹 생성 응답 없음")
+    end
+    local oid = spawned.mob.oid
+    bot:magic_attack(oid, 10, 1, FIRE_DEMON)
+    local p = bot:request(resp.apply_mob_buff, nil, function(p)
+        return p.oid == oid and math.floor(p.status / MOB_POISON) % 2 == 1
+    end, 3000)
+    return check(ctx, p ~= false, "파이어 데몬에 맞은 불 저항 몹이 중독되지 않음")
+end
+
 -- A transformation carries the skill's defense, speed, and jump along with the look.
 local function transform_stats(ctx)
     local bot = ctx:bot(0)
@@ -1224,6 +1259,7 @@ test_suite {
         dragon_roar_half_hp,
         transform_stats,
         charge_blow,
+        fire_demon_poison,
         dark_sight_speed,
         beginner_buffs,
         -- Last: the hyper body stays on the other bot and would raise its max HP.

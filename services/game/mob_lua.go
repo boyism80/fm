@@ -193,6 +193,16 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"weaken": func(L *lua.LState) int {
+			mob := luax.Check[Mob](L, 1)
+			mob.Weaken(L.CheckString(2), time.Duration(L.CheckInt(3))*time.Millisecond)
+			return 0
+		},
+		"element_resist": func(L *lua.LState) int {
+			mob := luax.Check[Mob](L, 1)
+			L.Push(lua.LNumber(mob.ElementResist(L.CheckString(2))))
+			return 1
+		},
 		"foothold": func(L *lua.LState) int {
 			mob := luax.Check[Mob](L, 1)
 
