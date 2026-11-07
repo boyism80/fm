@@ -169,6 +169,13 @@ local function mano_from_table(ctx)
     if kill_boss(ctx, bot, mano) == false then
         return false
     end
+    -- A field boss belongs to no carnival team.
+    local team = nil
+    ctx:hook("mano_team", function(_, b, p, name)
+        if b:id() == bot:id() and name == resp.spawn_mob and p.mob.mob_id == mano then
+            team = p.mob.carnival_team
+        end
+    end)
     if pq.command(bot, "/시간가속 00:09:00", "시간가속 적용 요청") == false then
         return ctx:fail("시간가속 실패")
     end
@@ -179,6 +186,9 @@ local function mano_from_table(ctx)
     ctx:sleep(2000)
     if notice == false then
         return ctx:fail("마노가 다시 나오며 공지가 오지 않음")
+    end
+    if team ~= -1 then
+        return ctx:fail("다시 나온 마노의 카니발 팀이 다름: " .. tostring(team))
     end
     local respawned = bot:mobs(mano)[1]
     if respawned == nil then

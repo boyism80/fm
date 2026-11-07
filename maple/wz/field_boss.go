@@ -68,7 +68,7 @@ func (m *Map) addFieldBoss() {
 		return
 	}
 	m.MobSpawns[fieldBossSpawnID] = MobSpawn{
-		BaseSpawn: &BaseSpawn{ID: boss.mobID, Position: boss.positions[0], MobTime: boss.mobTime},
+		BaseSpawn: &BaseSpawn{ID: boss.mobID, Position: boss.positions[0], MobTime: boss.mobTime, Team: -1},
 		Positions: boss.positions[:],
 		Notice:    boss.notice,
 	}
