@@ -919,6 +919,12 @@ local function finisher_orbs(ctx)
     if hit(COMA, QUIET_MS) then
         return ctx:fail("구슬 없는 코마가 들어감")
     end
+    -- A blow that misses every mob gathers no orb.
+    bot:send(melee(bot, golem, 0, 0))
+    ctx:sleep(500)
+    if hit(COMA, QUIET_MS) then
+        return ctx:fail("빗나간 공격 뒤 코마가 들어감")
+    end
     if hit(0, 3000) == false then
         return ctx:fail("일반 공격이 들어가지 않음")
     end

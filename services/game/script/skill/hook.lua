@@ -342,8 +342,14 @@ return {
     end,
 
     on_attack = function(me, skill, damages, attack_info)
-        local targets = combat.damages_to_targets(damages)
-        combat.increment_combo_orbs(me, targets, skill)
+        -- Combo orbs and energy build only on an attack that damaged a mob, as the original afterAttack did.
+        local hit = false
+        for _, hits in pairs(damages or {}) do
+            hit = hit or damages_has_positive_damage(hits)
+        end
+        if hit then
+            combat.increment_combo_orbs(me, combat.damages_to_targets(damages), skill)
+        end
         combat.spawn_pickpocket_meso(me, skill, damages)
         combat.freeze_from_ice_charge(me, damages)
         if attack_info.magic then
@@ -351,7 +357,9 @@ return {
         end
         on_hamstring_slow(me, damages)
         on_blind_acc_debuff(me, damages)
-        on_energy_charge(me, damages)
+        if hit then
+            on_energy_charge(me, damages)
+        end
         on_dark_sight(me, damages)
         combat.reflect_mob_attack_damage(me, damages, attack_info)
     end
