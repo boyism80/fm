@@ -24,6 +24,7 @@ func (ch *Character) ChangeClass(newClass constant.ClassType, advance bool) {
 	if !advance {
 		return
 	}
+	ch.openFourthClassSkills(newClass)
 	if m := ch.GetMap(); m != nil {
 		if root := m.GetLuaRoot(); root != nil {
 			if thread, err := luax.NewThread(root, constant.CharacterHookScriptPath); err == nil {
@@ -32,6 +33,23 @@ func (ch *Character) ChangeClass(newClass constant.ClassType, advance bool) {
 		}
 	}
 	ch.listener.OnShowEffect(ch, response.EffectTypeClassChange)
+}
+
+// openFourthClassSkills puts the class's visible fourth class skills on the skill list at level 0 and their WZ master
+// level, from the third advancement on, as the original baseSkills did.
+func (ch *Character) openFourthClassSkills(class constant.ClassType) {
+	if class%10 < 1 || ch.gameWorld == nil {
+		return
+	}
+	for id, model := range ch.gameWorld.GetResources().Skills {
+		if model.Class != class || model.Invisible || !model.FourthClass || model.MasterLevel <= 0 {
+			continue
+		}
+		if entry := ch.skills.Learned(id); entry != nil && (entry.Level() > 0 || entry.masterLevel > 0) {
+			continue
+		}
+		ch.skills.Register(id, NewSkillEntry(ch, model, 0, model.MasterLevel))
+	}
 }
 
 // ExpandInventory adds slots to a tab, up to 96.

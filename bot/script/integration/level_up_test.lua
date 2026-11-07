@@ -16,6 +16,9 @@ local HP = 0x400
 local HIT_ENV = -3
 local FIELD = 100000000
 local CLASS_CHANGE_EFFECT = 8
+local CRUSADER = 111
+local HERO = 112
+local ACHILLES = 1120004
 
 local function level_up(ctx, bot, level, class, exp, items)
     if pq.command(bot, "/봇초기화 " .. level .. " " .. class .. " 0 " .. (items or "-") .. " -", "봇초기화 완료") == false then
@@ -126,6 +129,24 @@ local function class_change(ctx)
     return true
 end
 
+-- The fourth advancement opens the class's fourth class skills at level 0 and their WZ master level.
+local function fourth_class_skills(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/봇초기화 120 " .. CRUSADER .. " 0 - -", "봇초기화 완료") == false then
+        return ctx:fail("봇 초기화 실패")
+    end
+    local p = bot:request(resp.update_skills, req.normal_chat { message = "/직업바꾸기 " .. HERO }, function(p)
+        return p.skill_id == ACHILLES
+    end, 3000)
+    if p == false then
+        return ctx:fail("4차 전직 뒤 아킬레스가 스킬 목록에 오지 않음")
+    end
+    if p.level ~= 0 or p.master_level ~= 10 then
+        return ctx:fail(string.format("아킬레스가 레벨 %d, 마스터 레벨 %d로 옴 (기대 0, 10)", p.level, p.master_level))
+    end
+    return true
+end
+
 -- A warrior's level up adds 24~28 HP a level, not a level-scaled amount.
 local function warrior_hp(ctx)
     local from = 50
@@ -166,5 +187,6 @@ test_suite {
         equipped_int_mp,
         cygnus_level_exp,
         class_change,
+        fourth_class_skills,
     },
 }
