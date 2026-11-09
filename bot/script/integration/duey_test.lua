@@ -560,7 +560,13 @@ local function forged_requests(ctx)
         if expect(ctx, bot, case.request, case.result, case.what) == false then
             return false
         end
-        if case.result == RESULT.recipient_not_found or case.result == RESULT.same_account or case.result == RESULT.recipient_full or case.result == RESULT.only_in_box then
+        -- An unknown or same account receiver is refused before anything is held, so only a refused delivery refunds.
+        if case.result == RESULT.recipient_not_found or case.result == RESULT.same_account then
+            if has(ctx, bot, POTION, 10) == false or meso_is(ctx, bot, 10000) == false then
+                return false
+            end
+        end
+        if case.result == RESULT.recipient_full or case.result == RESULT.only_in_box then
             if claim_refunds(ctx, bot) == false then
                 return false
             end
@@ -788,6 +794,11 @@ local function late_send_after_abort(ctx)
     end
 
     sender:send(recovery_request(sender, recipient))
+    -- The receiver is looked up before the hold; move only once the delayed send holds the parcel.
+    if wait_holds(ctx, sender, 0, MESO - COST, "지연된 배송 보류") == false then
+        fault.rpc_delay(sender, "SendParcel", 0)
+        return false
+    end
     local moved = sender:transfer(1)
     fault.rpc_delay(recipient, "SendParcel", 0)
     if moved == false then

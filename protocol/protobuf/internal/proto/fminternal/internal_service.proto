@@ -28,6 +28,7 @@ service Internal {
   rpc SendParcel (SendParcelRequest) returns (SendParcelReply);
   rpc ReturnParcel (ReturnParcelRequest) returns (ReturnParcelReply);
   rpc AbortParcelSend (AbortParcelSendRequest) returns (AbortParcelSendReply);
+  rpc FindParcelRecipient (FindParcelRecipientRequest) returns (FindParcelRecipientReply);
   rpc ClaimParcel (ClaimParcelRequest) returns (ClaimParcelReply);
   rpc DeleteParcel (DeleteParcelRequest) returns (DeleteParcelReply);
   rpc CheckParcelArrivals (CheckParcelArrivalsRequest) returns (CheckParcelArrivalsReply);
@@ -986,8 +987,9 @@ message ReturnParcelReply {
 
 message AbortParcelSendRequest {
   uint32 world_id = 1;
-  string recipient_name = 2;
+  reserved 2;
   uint64 request_id = 3 [jstype = JS_STRING];
+  uint32 receiver_id = 4;
 }
 
 message AbortParcelSendReply {
@@ -2625,4 +2627,16 @@ message NotesReply {
   repeated Note notes = 2;
   // Thank-you notes this call removed; each grants one population.
   uint32 population = 3;
+}
+
+// A sender finds the receiver before anything is held, so the send and its recovery name the same character.
+message FindParcelRecipientRequest {
+  uint32 world_id = 1;
+  string recipient_name = 2;
+  uint32 sender_account_id = 3;
+}
+
+message FindParcelRecipientReply {
+  ParcelResult result = 1;
+  uint32 character_id = 2;
 }

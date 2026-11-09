@@ -2731,8 +2731,8 @@ export interface ReturnParcelReply {
 
 export interface AbortParcelSendRequest {
   worldId: number;
-  recipientName: string;
   requestId: string;
+  receiverId: number;
 }
 
 export interface AbortParcelSendReply {
@@ -4253,6 +4253,18 @@ export interface NotesReply {
   notes: Note[];
   /** Thank-you notes this call removed; each grants one population. */
   population: number;
+}
+
+/** A sender finds the receiver before anything is held, so the send and its recovery name the same character. */
+export interface FindParcelRecipientRequest {
+  worldId: number;
+  recipientName: string;
+  senderAccountId: number;
+}
+
+export interface FindParcelRecipientReply {
+  result: ParcelResult;
+  characterId: number;
 }
 
 function createBasePingRequest(): PingRequest {
@@ -17420,7 +17432,7 @@ export const ReturnParcelReply: MessageFns<ReturnParcelReply> = {
 };
 
 function createBaseAbortParcelSendRequest(): AbortParcelSendRequest {
-  return { worldId: 0, recipientName: "", requestId: "0" };
+  return { worldId: 0, requestId: "0", receiverId: 0 };
 }
 
 export const AbortParcelSendRequest: MessageFns<AbortParcelSendRequest> = {
@@ -17428,11 +17440,11 @@ export const AbortParcelSendRequest: MessageFns<AbortParcelSendRequest> = {
     if (message.worldId !== 0) {
       writer.uint32(8).uint32(message.worldId);
     }
-    if (message.recipientName !== "") {
-      writer.uint32(18).string(message.recipientName);
-    }
     if (message.requestId !== "0") {
       writer.uint32(24).uint64(message.requestId);
+    }
+    if (message.receiverId !== 0) {
+      writer.uint32(32).uint32(message.receiverId);
     }
     return writer;
   },
@@ -17452,20 +17464,20 @@ export const AbortParcelSendRequest: MessageFns<AbortParcelSendRequest> = {
           message.worldId = reader.uint32();
           continue;
         }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.recipientName = reader.string();
-          continue;
-        }
         case 3: {
           if (tag !== 24) {
             break;
           }
 
           message.requestId = reader.uint64().toString();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.receiverId = reader.uint32();
           continue;
         }
       }
@@ -17484,16 +17496,16 @@ export const AbortParcelSendRequest: MessageFns<AbortParcelSendRequest> = {
         : isSet(object.world_id)
         ? globalThis.Number(object.world_id)
         : 0,
-      recipientName: isSet(object.recipientName)
-        ? globalThis.String(object.recipientName)
-        : isSet(object.recipient_name)
-        ? globalThis.String(object.recipient_name)
-        : "",
       requestId: isSet(object.requestId)
         ? globalThis.String(object.requestId)
         : isSet(object.request_id)
         ? globalThis.String(object.request_id)
         : "0",
+      receiverId: isSet(object.receiverId)
+        ? globalThis.Number(object.receiverId)
+        : isSet(object.receiver_id)
+        ? globalThis.Number(object.receiver_id)
+        : 0,
     };
   },
 
@@ -17502,11 +17514,11 @@ export const AbortParcelSendRequest: MessageFns<AbortParcelSendRequest> = {
     if (message.worldId !== 0) {
       obj.worldId = Math.round(message.worldId);
     }
-    if (message.recipientName !== "") {
-      obj.recipientName = message.recipientName;
-    }
     if (message.requestId !== "0") {
       obj.requestId = globalThis.String(message.requestId);
+    }
+    if (message.receiverId !== 0) {
+      obj.receiverId = Math.round(message.receiverId);
     }
     return obj;
   },
@@ -17517,8 +17529,8 @@ export const AbortParcelSendRequest: MessageFns<AbortParcelSendRequest> = {
   fromPartial<I extends Exact<DeepPartial<AbortParcelSendRequest>, I>>(object: I): AbortParcelSendRequest {
     const message = createBaseAbortParcelSendRequest();
     message.worldId = object.worldId ?? 0;
-    message.recipientName = object.recipientName ?? "";
     message.requestId = object.requestId ?? "0";
+    message.receiverId = object.receiverId ?? 0;
     return message;
   },
 };
@@ -42475,6 +42487,190 @@ export const NotesReply: MessageFns<NotesReply> = {
   },
 };
 
+function createBaseFindParcelRecipientRequest(): FindParcelRecipientRequest {
+  return { worldId: 0, recipientName: "", senderAccountId: 0 };
+}
+
+export const FindParcelRecipientRequest: MessageFns<FindParcelRecipientRequest> = {
+  encode(message: FindParcelRecipientRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.recipientName !== "") {
+      writer.uint32(18).string(message.recipientName);
+    }
+    if (message.senderAccountId !== 0) {
+      writer.uint32(24).uint32(message.senderAccountId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindParcelRecipientRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindParcelRecipientRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.recipientName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.senderAccountId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindParcelRecipientRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      recipientName: isSet(object.recipientName)
+        ? globalThis.String(object.recipientName)
+        : isSet(object.recipient_name)
+        ? globalThis.String(object.recipient_name)
+        : "",
+      senderAccountId: isSet(object.senderAccountId)
+        ? globalThis.Number(object.senderAccountId)
+        : isSet(object.sender_account_id)
+        ? globalThis.Number(object.sender_account_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: FindParcelRecipientRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.recipientName !== "") {
+      obj.recipientName = message.recipientName;
+    }
+    if (message.senderAccountId !== 0) {
+      obj.senderAccountId = Math.round(message.senderAccountId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindParcelRecipientRequest>, I>>(base?: I): FindParcelRecipientRequest {
+    return FindParcelRecipientRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindParcelRecipientRequest>, I>>(object: I): FindParcelRecipientRequest {
+    const message = createBaseFindParcelRecipientRequest();
+    message.worldId = object.worldId ?? 0;
+    message.recipientName = object.recipientName ?? "";
+    message.senderAccountId = object.senderAccountId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindParcelRecipientReply(): FindParcelRecipientReply {
+  return { result: 0, characterId: 0 };
+}
+
+export const FindParcelRecipientReply: MessageFns<FindParcelRecipientReply> = {
+  encode(message: FindParcelRecipientReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindParcelRecipientReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindParcelRecipientReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindParcelRecipientReply {
+    return {
+      result: isSet(object.result) ? parcelResultFromJSON(object.result) : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: FindParcelRecipientReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = parcelResultToJSON(message.result);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindParcelRecipientReply>, I>>(base?: I): FindParcelRecipientReply {
+    return FindParcelRecipientReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindParcelRecipientReply>, I>>(object: I): FindParcelRecipientReply {
+    const message = createBaseFindParcelRecipientReply();
+    message.result = object.result ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
 export type InternalService = typeof InternalService;
 export const InternalService = {
   whisper: {
@@ -42691,6 +42887,17 @@ export const InternalService = {
     responseSerialize: (value: AbortParcelSendReply): Buffer =>
       Buffer.from(AbortParcelSendReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): AbortParcelSendReply => AbortParcelSendReply.decode(value),
+  },
+  findParcelRecipient: {
+    path: "/fm.internal.Internal/FindParcelRecipient" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FindParcelRecipientRequest): Buffer =>
+      Buffer.from(FindParcelRecipientRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FindParcelRecipientRequest => FindParcelRecipientRequest.decode(value),
+    responseSerialize: (value: FindParcelRecipientReply): Buffer =>
+      Buffer.from(FindParcelRecipientReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FindParcelRecipientReply => FindParcelRecipientReply.decode(value),
   },
   claimParcel: {
     path: "/fm.internal.Internal/ClaimParcel" as const,
@@ -43856,6 +44063,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   sendParcel: handleUnaryCall<SendParcelRequest, SendParcelReply>;
   returnParcel: handleUnaryCall<ReturnParcelRequest, ReturnParcelReply>;
   abortParcelSend: handleUnaryCall<AbortParcelSendRequest, AbortParcelSendReply>;
+  findParcelRecipient: handleUnaryCall<FindParcelRecipientRequest, FindParcelRecipientReply>;
   claimParcel: handleUnaryCall<ClaimParcelRequest, ClaimParcelReply>;
   deleteParcel: handleUnaryCall<DeleteParcelRequest, DeleteParcelReply>;
   checkParcelArrivals: handleUnaryCall<CheckParcelArrivalsRequest, CheckParcelArrivalsReply>;
@@ -44310,6 +44518,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: AbortParcelSendReply) => void,
+  ): ClientUnaryCall;
+  findParcelRecipient(
+    request: FindParcelRecipientRequest,
+    callback: (error: ServiceError | null, response: FindParcelRecipientReply) => void,
+  ): ClientUnaryCall;
+  findParcelRecipient(
+    request: FindParcelRecipientRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FindParcelRecipientReply) => void,
+  ): ClientUnaryCall;
+  findParcelRecipient(
+    request: FindParcelRecipientRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FindParcelRecipientReply) => void,
   ): ClientUnaryCall;
   claimParcel(
     request: ClaimParcelRequest,

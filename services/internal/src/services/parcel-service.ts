@@ -106,20 +106,39 @@ export class ParcelService {
         };
     }
 
+    // A player's send finds its receiver here before anything is held, then sends and recovers by that id.
+    async findParcelRecipient(
+        worldId: number,
+        recipientName: string,
+        senderAccountId: number,
+        system: boolean,
+    ): Promise<{ result: ParcelResult; characterId: number }> {
+        const entry = await this.unifiedRepo.findCharacterNameEntry(recipientName);
+        if (entry == null || entry.world_id !== worldId) {
+            return { result: ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND, characterId: 0 };
+        }
+        if (system === false && senderAccountId !== 0 && entry.account_id === senderAccountId) {
+            return { result: ParcelResult.PARCEL_RESULT_SAME_ACCOUNT, characterId: 0 };
+        }
+        if ((await this.characterRepo.get(worldId, entry.character_id)) == null) {
+            return { result: ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND, characterId: 0 };
+        }
+        return { result: ParcelResult.PARCEL_RESULT_OK, characterId: entry.character_id };
+    }
+
     async sendParcel(input: SendParcelInput): Promise<ParcelResult> {
         let receiverId = input.parcel.receiverId;
         if (input.recipientName !== "") {
-            const entry = await this.unifiedRepo.findCharacterNameEntry(input.recipientName);
-            if (entry == null || entry.world_id !== input.worldId) {
-                return ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND;
+            const recipient = await this.findParcelRecipient(
+                input.worldId,
+                input.recipientName,
+                input.senderAccountId,
+                input.system,
+            );
+            if (recipient.result !== ParcelResult.PARCEL_RESULT_OK) {
+                return recipient.result;
             }
-            if (input.system === false && input.senderAccountId !== 0 && entry.account_id === input.senderAccountId) {
-                return ParcelResult.PARCEL_RESULT_SAME_ACCOUNT;
-            }
-            if ((await this.characterRepo.get(input.worldId, entry.character_id)) == null) {
-                return ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND;
-            }
-            receiverId = entry.character_id;
+            receiverId = recipient.characterId;
         }
 
         const itemId = input.parcel.item?.itemId ?? 0;
@@ -252,14 +271,11 @@ export class ParcelService {
         return stored;
     }
 
-    async abortParcelSend(worldId: number, recipientName: string, requestId: string): Promise<boolean> {
-        const entry = await this.unifiedRepo.findCharacterNameEntry(recipientName);
-        if (entry == null || entry.world_id !== worldId) {
-            return false;
-        }
-
-        return this.parcelRepo.withReceiverLock(worldId, entry.character_id, async (txClient) => {
-            const request = await this.parcelSendRequestRepo.abort(worldId, entry.character_id, requestId, txClient);
+    // The receiver id the send recorded, not its name, so a deleted or reused name can't turn a sent parcel into a
+    // refund.
+    async abortParcelSend(worldId: number, receiverId: number, requestId: string): Promise<boolean> {
+        return this.parcelRepo.withReceiverLock(worldId, receiverId, async (txClient) => {
+            const request = await this.parcelSendRequestRepo.abort(worldId, receiverId, requestId, txClient);
             return request?.status === RequestStatus.Applied;
         });
     }

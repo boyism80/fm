@@ -189,15 +189,29 @@ func (s *InternalSystem) ReturnParcelAsync(ctx actor.Context, ch *Character, req
 	)
 }
 
-func (s *InternalSystem) AbortParcelSendAsync(ctx actor.Context, ch *Character, requestID uint64, recipient string) *async.Promise[*internal.AbortParcelSendReply] {
+func (s *InternalSystem) AbortParcelSendAsync(ctx actor.Context, ch *Character, requestID uint64, receiverID uint32) *async.Promise[*internal.AbortParcelSendReply] {
 	req := &internal.AbortParcelSendRequest{
-		WorldId:       s.gw.GetWorldID(),
-		RecipientName: recipient,
-		RequestId:     requestID,
+		WorldId:    s.gw.GetWorldID(),
+		RequestId:  requestID,
+		ReceiverId: receiverID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.AbortParcelSendReply, error) {
 			return s.client.AbortParcelSend(c, req, grpc.WaitForReady(true))
+		},
+		nil,
+	)
+}
+
+func (s *InternalSystem) FindParcelRecipientAsync(ctx actor.Context, ch *Character, recipient string) *async.Promise[*internal.FindParcelRecipientReply] {
+	req := &internal.FindParcelRecipientRequest{
+		WorldId:         s.gw.GetWorldID(),
+		RecipientName:   recipient,
+		SenderAccountId: ch.accountID,
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.FindParcelRecipientReply, error) {
+			return s.client.FindParcelRecipient(c, req, grpc.WaitForReady(true))
 		},
 		nil,
 	)

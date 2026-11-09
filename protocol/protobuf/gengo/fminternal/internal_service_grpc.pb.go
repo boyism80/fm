@@ -41,6 +41,7 @@ const (
 	Internal_SendParcel_FullMethodName                     = "/fm.internal.Internal/SendParcel"
 	Internal_ReturnParcel_FullMethodName                   = "/fm.internal.Internal/ReturnParcel"
 	Internal_AbortParcelSend_FullMethodName                = "/fm.internal.Internal/AbortParcelSend"
+	Internal_FindParcelRecipient_FullMethodName            = "/fm.internal.Internal/FindParcelRecipient"
 	Internal_ClaimParcel_FullMethodName                    = "/fm.internal.Internal/ClaimParcel"
 	Internal_DeleteParcel_FullMethodName                   = "/fm.internal.Internal/DeleteParcel"
 	Internal_CheckParcelArrivals_FullMethodName            = "/fm.internal.Internal/CheckParcelArrivals"
@@ -179,6 +180,7 @@ type InternalClient interface {
 	SendParcel(ctx context.Context, in *SendParcelRequest, opts ...grpc.CallOption) (*SendParcelReply, error)
 	ReturnParcel(ctx context.Context, in *ReturnParcelRequest, opts ...grpc.CallOption) (*ReturnParcelReply, error)
 	AbortParcelSend(ctx context.Context, in *AbortParcelSendRequest, opts ...grpc.CallOption) (*AbortParcelSendReply, error)
+	FindParcelRecipient(ctx context.Context, in *FindParcelRecipientRequest, opts ...grpc.CallOption) (*FindParcelRecipientReply, error)
 	ClaimParcel(ctx context.Context, in *ClaimParcelRequest, opts ...grpc.CallOption) (*ClaimParcelReply, error)
 	DeleteParcel(ctx context.Context, in *DeleteParcelRequest, opts ...grpc.CallOption) (*DeleteParcelReply, error)
 	CheckParcelArrivals(ctx context.Context, in *CheckParcelArrivalsRequest, opts ...grpc.CallOption) (*CheckParcelArrivalsReply, error)
@@ -513,6 +515,16 @@ func (c *internalClient) AbortParcelSend(ctx context.Context, in *AbortParcelSen
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AbortParcelSendReply)
 	err := c.cc.Invoke(ctx, Internal_AbortParcelSend_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) FindParcelRecipient(ctx context.Context, in *FindParcelRecipientRequest, opts ...grpc.CallOption) (*FindParcelRecipientReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FindParcelRecipientReply)
+	err := c.cc.Invoke(ctx, Internal_FindParcelRecipient_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1645,6 +1657,7 @@ type InternalServer interface {
 	SendParcel(context.Context, *SendParcelRequest) (*SendParcelReply, error)
 	ReturnParcel(context.Context, *ReturnParcelRequest) (*ReturnParcelReply, error)
 	AbortParcelSend(context.Context, *AbortParcelSendRequest) (*AbortParcelSendReply, error)
+	FindParcelRecipient(context.Context, *FindParcelRecipientRequest) (*FindParcelRecipientReply, error)
 	ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error)
 	DeleteParcel(context.Context, *DeleteParcelRequest) (*DeleteParcelReply, error)
 	CheckParcelArrivals(context.Context, *CheckParcelArrivalsRequest) (*CheckParcelArrivalsReply, error)
@@ -1830,6 +1843,9 @@ func (UnimplementedInternalServer) ReturnParcel(context.Context, *ReturnParcelRe
 }
 func (UnimplementedInternalServer) AbortParcelSend(context.Context, *AbortParcelSendRequest) (*AbortParcelSendReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AbortParcelSend not implemented")
+}
+func (UnimplementedInternalServer) FindParcelRecipient(context.Context, *FindParcelRecipientRequest) (*FindParcelRecipientReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindParcelRecipient not implemented")
 }
 func (UnimplementedInternalServer) ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ClaimParcel not implemented")
@@ -2574,6 +2590,24 @@ func _Internal_AbortParcelSend_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).AbortParcelSend(ctx, req.(*AbortParcelSendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_FindParcelRecipient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindParcelRecipientRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).FindParcelRecipient(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_FindParcelRecipient_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).FindParcelRecipient(ctx, req.(*FindParcelRecipientRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4652,6 +4686,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AbortParcelSend",
 			Handler:    _Internal_AbortParcelSend_Handler,
+		},
+		{
+			MethodName: "FindParcelRecipient",
+			Handler:    _Internal_FindParcelRecipient_Handler,
 		},
 		{
 			MethodName: "ClaimParcel",

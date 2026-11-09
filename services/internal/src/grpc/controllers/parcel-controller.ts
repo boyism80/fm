@@ -8,6 +8,8 @@ import type {
     ClaimParcelRequest,
     DeleteParcelReply,
     DeleteParcelRequest,
+    FindParcelRecipientReply,
+    FindParcelRecipientRequest,
     LoadParcelsReply,
     LoadParcelsRequest,
     ReturnParcelReply,
@@ -60,8 +62,20 @@ export class ParcelGrpcController {
     async abortParcelSend(call: GrpcCall<AbortParcelSendRequest>, callback: GrpcCallback<AbortParcelSendReply>) {
         const req = call.request;
         callback(null, {
-            sent: await this.parcelService.abortParcelSend(req.worldId, req.recipientName, req.requestId),
+            sent: await this.parcelService.abortParcelSend(req.worldId, req.receiverId, req.requestId),
         });
+    }
+
+    @Method("findParcelRecipient")
+    async findParcelRecipient(
+        call: GrpcCall<FindParcelRecipientRequest>,
+        callback: GrpcCallback<FindParcelRecipientReply>,
+    ) {
+        const req = call.request;
+        callback(
+            null,
+            await this.parcelService.findParcelRecipient(req.worldId, req.recipientName, req.senderAccountId, false),
+        );
     }
 
     @Method("claimParcel")

@@ -1,13 +1,10 @@
 package server
 
 import (
-	"errors"
-
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game"
 )
 
 type Duey struct {
@@ -46,19 +43,6 @@ func (h *Duey) Handle(ctx *core.ClientContext, req *request.Duey) error {
 		ch.Duey().Close()
 	}
 
-	switch {
-	case errors.Is(err, game.ErrDueyNotEnoughMeso):
-		ch.Listener().OnDueyResult(ch, pconst.DueyResultNotEnoughMeso)
-	case errors.Is(err, game.ErrDueyOnlyHeld):
-		ch.Listener().OnDueyResult(ch, pconst.DueyResultOnlyHeld)
-	case errors.Is(err, game.ErrInventoryFull):
-		ch.Listener().OnDueyResult(ch, pconst.DueyResultInventoryFull)
-	case errors.Is(err, game.ErrDueyCannotReceive):
-		ch.Listener().OnDueyResult(ch, pconst.DueyResultCannotReceive)
-	case errors.Is(err, game.ErrDueyNotSendable), errors.Is(err, game.ErrDueyInvalid), errors.Is(err, game.ErrDueyParcelNotFound):
-		ch.Listener().OnDueyResult(ch, pconst.DueyResultInvalid)
-	case err != nil:
-		ch.Listener().OnUnlockAction(ch)
-	}
+	ch.Duey().Report(err)
 	return nil
 }
