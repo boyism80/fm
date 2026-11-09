@@ -147,7 +147,7 @@ func (a attack) limits() (targets, hits int) {
 }
 
 func (a attack) element(d damageRange, attr string, strength float64) damageRange {
-	switch a.mob.wz.ElemResist[attr] {
+	switch a.mob.ElementResist(attr) {
 	case 1:
 		return damageRange{}
 	case 2:

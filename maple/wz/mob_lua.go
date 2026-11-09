@@ -41,15 +41,6 @@ func (*Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(m.Boss))
 			return 1
 		},
-		"elem_resist": func(L *lua.LState) int {
-			m := luax.Check[Mob](L, 1)
-			er := L.NewTable()
-			for k, v := range m.ElemResist {
-				er.RawSetString(k, lua.LNumber(v))
-			}
-			L.Push(er)
-			return 1
-		},
 	}
 }
 
