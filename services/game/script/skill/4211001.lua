@@ -11,6 +11,11 @@ local function make_heal_hp(rate, stat, lower_f, upper_f)
 end
 
 return {
+    -- Only usable while HP is below half.
+    on_activating = function(me, skill, params)
+        return me:hp() * 2 < me:max_hp()
+    end,
+
     on_activated = function(me, skill, params)
         local effect = skill:effect()
         if effect == nil then

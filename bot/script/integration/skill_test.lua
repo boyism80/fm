@@ -73,6 +73,8 @@ local OVERALL_SLOT = -5
 local HP_HEAL_INTERVAL_MS = 10000
 local MP = 0x1000
 local DRAGON_ROAR = 1311006
+local CHAKRA = 4211001
+local CHIEF_BANDIT = 421
 local DRAGON_ROAR_HP_PERCENT = 59
 local DRAGON_ROAR_STUN_MS = 4000
 local GM_HYPER_BODY = 9001008
@@ -1202,6 +1204,36 @@ local function dark_sight_speed(ctx)
             tostring(buff_value(p, BUFF.darksight)), tostring(buff_value(p, BUFF.speed)), DARK_SIGHT_SPEED))
 end
 
+-- Chakra heals only while HP is below half.
+local function chakra_half_hp(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, 120, CHIEF_BANDIT, "-") == false then
+        return false
+    end
+    if learn(ctx, bot, CHAKRA) == false then
+        return false
+    end
+    if pq.command(bot, "/마력바꾸기 3000", "마력 설정") == false or pq.command(bot, "/체력바꾸기 3000", "체력 설정") == false then
+        return ctx:fail("능력치 설정 실패")
+    end
+    if bot:request(resp.update_stats, req.active_skill { skill_id = CHAKRA, skill_level = 1 }, function(p)
+            return p.stats[MP] ~= nil
+        end, QUIET_MS) ~= false then
+        return ctx:fail("HP가 가득할 때 챠크라가 MP를 씀")
+    end
+    for _ = 1, 2 do
+        if bot:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 1000 }, function(p)
+                return p.stats[HP] ~= nil
+            end, 3000) == false then
+            return ctx:fail("피해를 받지 않음")
+        end
+    end
+    local healed = bot:request(resp.update_stats, req.active_skill { skill_id = CHAKRA, skill_level = 1 }, function(p)
+        return p.stats[HP] ~= nil and p.stats[HP] > 1000
+    end, 3000)
+    return check(ctx, healed ~= false, "HP가 절반 아래인데 챠크라가 회복하지 않음")
+end
+
 -- Dragon Roar under half HP is refused before it hits; above half it costs the WZ share of max HP.
 local function dragon_roar_half_hp(ctx)
     local bot = ctx:bot(0)
@@ -1286,6 +1318,7 @@ test_suite {
         skill_cost,
         sauna_robe_recovery,
         dragon_roar_half_hp,
+        chakra_half_hp,
         transform_stats,
         rage_defense,
         charge_blow,
