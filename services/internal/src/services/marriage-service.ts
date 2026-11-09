@@ -119,6 +119,16 @@ export class MarriageService {
         }
     }
 
+    // The requester's own server shows a change from its reply, so the notice goes to the other one of the couple only.
+    private async notifyPartner(
+        worldId: number,
+        row: { groom_id: number; bride_id: number },
+        characterId: number,
+        event: string,
+    ): Promise<void> {
+        await this.notify(worldId, [row.groom_id === characterId ? row.bride_id : row.groom_id], event);
+    }
+
     async loadMarriage(worldId: number, characterId: number): Promise<MarriageReply> {
         const row = await this.marriageRepo.withTransaction(worldId, (client) =>
             this.marriageRepo.findByCharacter(client, characterId),
@@ -194,8 +204,7 @@ export class MarriageService {
             return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, marriage: undefined };
         }
 
-        const partnerId = row.groom_id === characterId ? row.bride_id : row.groom_id;
-        await this.notify(worldId, [partnerId], "broken");
+        await this.notifyPartner(worldId, row, characterId, "broken");
         return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: undefined };
     }
 
@@ -235,8 +244,7 @@ export class MarriageService {
             return { result: row, marriage: undefined };
         }
 
-        const partnerId = row.groom_id === characterId ? row.bride_id : row.groom_id;
-        await this.notify(worldId, [partnerId], "booked");
+        await this.notifyPartner(worldId, row, characterId, "booked");
         return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
     }
 
@@ -254,7 +262,7 @@ export class MarriageService {
         wishes: string[],
         requestId: string,
     ): Promise<MarriageReply> {
-        const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
+        const submitted = await this.marriageRepo.withTransaction(worldId, async (client) => {
             const found = await this.marriageRepo.find(client, marriageId);
             if (found == null || found.ticket_item_id === 0) {
                 return null;
@@ -267,7 +275,7 @@ export class MarriageService {
                 ) {
                     return null;
                 }
-                return found;
+                return { row: found, reserved: false };
             }
             if (found.groom_id === characterId && found.groom_wished === false) {
                 found.groom_wished = true;
@@ -280,17 +288,17 @@ export class MarriageService {
             }
             await this.marriageRepo.update(client, found);
             await this.marriageRequestRepo.insert(worldId, 0, requestId, {}, client);
-            return found;
+            return { row: found, reserved: found.groom_wished && found.bride_wished };
         });
-        if (row == null) {
+        if (submitted == null) {
             return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, marriage: undefined };
         }
 
-        if (row.groom_wished && row.bride_wished) {
-            const partnerId = row.groom_id === characterId ? row.bride_id : row.groom_id;
-            await this.notify(worldId, [partnerId], "reserved");
+        // Only the request that completed the reservation tells the partner; a replayed one already did.
+        if (submitted.reserved) {
+            await this.notifyPartner(worldId, submitted.row, characterId, "reserved");
         }
-        return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
+        return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(submitted.row) };
     }
 
     // The marriage row lock serializes invites to one wedding. The invitation parcel commits on the guest's data shard
@@ -416,13 +424,11 @@ export class MarriageService {
             return { result: loaded.result, marriage: undefined };
         }
         if (loaded.divorced) {
-            const partnerId = loaded.row.groom_id === characterId ? loaded.row.bride_id : loaded.row.groom_id;
-            await this.notify(worldId, [partnerId], "divorced");
+            await this.notifyPartner(worldId, loaded.row, characterId, "divorced");
             return { result: loaded.result, marriage: undefined };
         }
         if (loaded.requested) {
-            const partnerId = loaded.row.groom_id === characterId ? loaded.row.bride_id : loaded.row.groom_id;
-            await this.notify(worldId, [partnerId], "divorce_requested");
+            await this.notifyPartner(worldId, loaded.row, characterId, "divorce_requested");
         }
         return { result: loaded.result, marriage: this.toProto(loaded.row) };
     }
@@ -448,8 +454,7 @@ export class MarriageService {
         if (row == null) {
             return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, marriage: undefined };
         }
-        const partnerId = row.groom_id === characterId ? row.bride_id : row.groom_id;
-        await this.notify(worldId, [partnerId], "divorce_canceled");
+        await this.notifyPartner(worldId, row, characterId, "divorce_canceled");
         return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
     }
 

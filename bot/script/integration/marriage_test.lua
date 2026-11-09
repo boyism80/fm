@@ -269,12 +269,24 @@ local function reserve(ctx)
     if talk(ctx, groom, MARGARET, "이미 위시리스트를 등록", "중복 위시리스트") == false then
         return false
     end
+    -- The bride sees the reservation from her reply and the groom from internal's notice, each exactly once.
+    local partner_reserved = 0
+    ctx:hook("partner_reserved", function(_, b, p, name)
+        if b:name() == groom:name() and name == resp.engage_result and p.result == ENGAGE.reserved then
+            partner_reserved = partner_reserved + 1
+        end
+    end)
     local reserved = bride:request(resp.engage_result, req.ring_action { mode = RING.wishlist, wishes = { "파란 달팽이 껍질" } },
         function(p)
             return p.result == ENGAGE.reserved
         end, 5000)
+    ctx:sleep(1000)
+    ctx:unhook("partner_reserved")
     if reserved == false then
         return ctx:fail("두 사람 위시리스트 등록 후 예약 완료가 오지 않음")
+    end
+    if partner_reserved ~= 1 then
+        return ctx:fail("신랑이 받은 예약 완료 수 " .. partner_reserved .. " (기대 1)")
     end
     if has(ctx, bride, INVITATION, 5) == false then
         return false

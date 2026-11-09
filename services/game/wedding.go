@@ -318,7 +318,7 @@ func (w *Wedding) BreakEngagement(actx actor.Context) (*async.Promise[bool], err
 		}
 		w.marriage = nil
 		w.discardRings()
-		w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultBroken)
+		w.apply(actx, "broken")
 
 		return broken, nil
 	}), nil
@@ -330,28 +330,33 @@ func (w *Wedding) Refresh(actx actor.Context, event string) {
 		if w.marriage == nil {
 			w.discardRings()
 		}
-		switch event {
-		case "broken":
-			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultBroken)
-		case "divorced":
-			w.owner.listener.OnSpouseMap(w.owner, 0, 0)
-			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultDivorced)
-		case "booked":
-			if w.marriage != nil && !w.marriage.Wished(w.owner.GetID()) {
-				w.owner.listener.OnWeddingWishlistInput(w.owner)
-			}
-		case "reserved":
-			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultReserved)
-		case "married":
-			if w.marriage != nil {
-				w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultMarried)
-				w.NotifySpouseMap(actx, false)
-			}
-		}
+		w.apply(actx, event)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("RefreshMarriage character=%d: %v", w.owner.GetID(), err)
 	})
+}
+
+// apply shows a marriage change to this character, the requester from its reply and the partner from internal's notice.
+func (w *Wedding) apply(actx actor.Context, event string) {
+	switch event {
+	case "broken":
+		w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultBroken)
+	case "divorced":
+		w.owner.listener.OnSpouseMap(w.owner, 0, 0)
+		w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultDivorced)
+	case "booked":
+		if w.marriage != nil && !w.marriage.Wished(w.owner.GetID()) {
+			w.owner.listener.OnWeddingWishlistInput(w.owner)
+		}
+	case "reserved":
+		w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultReserved)
+	case "married":
+		if w.marriage != nil {
+			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultMarried)
+			w.NotifySpouseMap(actx, false)
+		}
+	}
 }
 
 func (w *Wedding) Reserve(actx actor.Context, ticketItemID uint32) (*async.Promise[bool], error) {
@@ -379,7 +384,7 @@ func (w *Wedding) Reserve(actx actor.Context, ticketItemID uint32) (*async.Promi
 			return reserved, nil
 		}
 		w.marriage = NewMarriageFromInternalProto(v.GetMarriage())
-		w.owner.listener.OnWeddingWishlistInput(w.owner)
+		w.apply(actx, "booked")
 
 		return reserved, nil
 	}).OnError(func(err error) {
@@ -453,7 +458,7 @@ func (w *Wedding) SubmitWishlist(actx actor.Context, wishes []string) {
 			return nil
 		}
 		if w.marriage.Reserved() {
-			w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultReserved)
+			w.apply(actx, "reserved")
 			return nil
 		}
 		w.owner.listener.OnMessage(w.owner, constant.MsgPopup, "위시리스트를 등록했습니다. 상대방이 위시리스트 등록을 끝낼 때까지 잠시 기다려주세요.")
@@ -647,8 +652,7 @@ func (w *Wedding) RequestDivorce(actx actor.Context) (*async.Promise[string], er
 			return "requested", nil
 		}
 		w.discardRings()
-		w.owner.listener.OnSpouseMap(w.owner, 0, 0)
-		w.owner.listener.OnEngageResult(w.owner, pconst.EngageResultDivorced)
+		w.apply(actx, "divorced")
 
 		return "divorced", nil
 	}), nil
