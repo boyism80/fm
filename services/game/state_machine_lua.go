@@ -193,16 +193,6 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LString(machine.GetProperty(key)))
 			return 1
 		},
-		"add_kill": func(L *lua.LState) int {
-			machine := luax.Check[StateMachine](L, 1)
-			ch := luax.Check[Character](L, 2)
-			n := 1
-			if L.GetTop() >= 3 {
-				n = L.CheckInt(3)
-			}
-			machine.AddKill(ch, n)
-			return 0
-		},
 		"message": func(L *lua.LState) int {
 			machine := luax.Check[StateMachine](L, 1)
 			message := L.CheckString(2)

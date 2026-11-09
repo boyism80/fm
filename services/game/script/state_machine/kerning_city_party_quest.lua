@@ -23,10 +23,6 @@ return {
         group:exit_map(exit_map_id)
     end,
 
-    on_mob_kill = function(sm, player, mobs)
-        sm:add_kill(player, #mobs)
-    end,
-
     on_create = function(sm)
         return stage_maps
     end,

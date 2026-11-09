@@ -40,13 +40,11 @@ return {
         player:map(sm:map(STAGE_MAP), { callback = on_arrive })
     end,
 
-    on_mob_kill = function(sm, player, mobs)
-        for _, mob in ipairs(mobs) do
-            if mob ~= nil and mob:id() == MOON_BUNNY_ID then
-                sm:message("월묘를 보호하지 못했습니다.", Msg.PinkText)
-                clear(sm)
-                return
-            end
+    -- Every death of the moon bunny ends the quest, whoever or whatever killed it.
+    on_mob_die = function(sm, mob)
+        if mob:id() == MOON_BUNNY_ID then
+            sm:message("월묘를 보호하지 못했습니다.", Msg.PinkText)
+            clear(sm)
         end
     end,
 

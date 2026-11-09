@@ -51,9 +51,6 @@ return {
         player:map(sm:map(stage_maps[1]))
     end,
 
-    on_mob_kill = function(sm, player, mobs)
-    end,
-
     on_player_dead = function(sm, player)
     end,
 

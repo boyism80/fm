@@ -24,7 +24,6 @@ type StateMachine struct {
 	players         []*Character
 	playerSet       map[uint32]*Character
 	props           map[string]string
-	kills           map[uint32]int
 	disposed        bool
 	actorPID        *actor.PID
 	maps            map[uint32]*Map
@@ -46,7 +45,6 @@ func NewStateMachine(id string, group *StateMachineGroup) *StateMachine {
 		players:   make([]*Character, 0),
 		playerSet: make(map[uint32]*Character),
 		props:     make(map[string]string),
-		kills:     make(map[uint32]int),
 		maps:      make(map[uint32]*Map),
 		mapRefs:   make(map[*Map]*MapRef),
 	}
@@ -220,21 +218,6 @@ func (sm *StateMachine) GetProperty(key string) string {
 		return ""
 	}
 	return sm.props[key]
-}
-
-func (sm *StateMachine) AddKill(ch *Character, n int) {
-	if sm == nil || ch == nil || n == 0 {
-		return
-	}
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	if sm.disposed {
-		return
-	}
-	if sm.kills == nil {
-		sm.kills = make(map[uint32]int)
-	}
-	sm.kills[ch.GetID()] += n
 }
 
 func (sm *StateMachine) LimitTimer(ms int64) int64 {
