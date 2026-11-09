@@ -25,10 +25,17 @@ func (p *UpdateSelfRidding) Serialize(writer *stream.StreamWriter) error {
 		flags = append(flags, buffs[i].Buff)
 	}
 	WriteBuffs(writer, flags)
-	writer.WriteU8(0)
-	writer.WriteU8(0)
-	writer.Write32(p.MountID)
-	writer.Write32(p.BuffID)
+	// Every stat of the ride, the ride itself included, carries the mount and the skill where a buff carries
+	// its source and duration.
+	for i := range buffs {
+		value := buffs[i].Value
+		if buffs[i].Buff == constant.BuffFlagMonsterRiding {
+			value = 0
+		}
+		writer.WriteU16(uint16(value))
+		writer.Write32(p.MountID)
+		writer.Write32(p.BuffID)
+	}
 	writer.WriteU16(0)
 	writer.WriteU16(0)
 	writer.Write32(0)

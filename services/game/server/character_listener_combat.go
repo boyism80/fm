@@ -133,7 +133,7 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *game.Character, buffID int32, re
 			CharacterID: int32(ch.GetID()),
 			MountID:     mountID,
 			SkillID:     buffID,
-			Buffs:       dtoBuffs,
+			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagMonsterRiding, Value: mountID}},
 		}
 	} else {
 		selfPacket = &response.UpdateSelfBuff{
