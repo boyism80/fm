@@ -56,7 +56,7 @@ func (h *PartyOperation) create(ctx *core.ClientContext, ch *game.Character, req
 	worldID := h.gs.config.WorldId
 	charID := ch.GetID()
 
-	leader := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER).BuildRPC()
+	leader := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId)).BuildRPC()
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 		func(c context.Context) (*internal.CreatePartyReply, error) {
 			req := &internal.CreatePartyRequest{
@@ -121,7 +121,7 @@ func (h *PartyOperation) acceptInvite(ctx *core.ClientContext, ch *game.Characte
 	charID := ch.GetID()
 
 	skipPending := ch.ShouldSkipInvitePendingForPartySearch(req.PartyID)
-	member := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER).BuildRPC()
+	member := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId)).BuildRPC()
 	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
 		func(c context.Context) (*internal.JoinPartyReply, error) {
 			return h.gs.systems.Get[*rpc.InternalConnection]().Client.JoinParty(c, &internal.JoinPartyRequest{
@@ -189,7 +189,7 @@ func (h *PartyOperation) invite(ctx *core.ClientContext, ch *game.Character, req
 	hasParty := pid != nil
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch)
 	if !hasParty {
-		leader := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER).BuildRPC()
+		leader := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId)).BuildRPC()
 		promise.ThenRPC(
 			func(c context.Context) (*internal.CreatePartyReply, error) {
 				req := &internal.CreatePartyRequest{

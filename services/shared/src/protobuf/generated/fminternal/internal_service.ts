@@ -888,45 +888,6 @@ export function sessionDisconnectSourceToJSON(object: SessionDisconnectSource): 
   }
 }
 
-export enum PartyMemberRole {
-  PARTY_MEMBER_ROLE_UNSPECIFIED = 0,
-  PARTY_MEMBER_ROLE_MEMBER = 1,
-  PARTY_MEMBER_ROLE_LEADER = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function partyMemberRoleFromJSON(object: any): PartyMemberRole {
-  switch (object) {
-    case 0:
-    case "PARTY_MEMBER_ROLE_UNSPECIFIED":
-      return PartyMemberRole.PARTY_MEMBER_ROLE_UNSPECIFIED;
-    case 1:
-    case "PARTY_MEMBER_ROLE_MEMBER":
-      return PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER;
-    case 2:
-    case "PARTY_MEMBER_ROLE_LEADER":
-      return PartyMemberRole.PARTY_MEMBER_ROLE_LEADER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return PartyMemberRole.UNRECOGNIZED;
-  }
-}
-
-export function partyMemberRoleToJSON(object: PartyMemberRole): string {
-  switch (object) {
-    case PartyMemberRole.PARTY_MEMBER_ROLE_UNSPECIFIED:
-      return "PARTY_MEMBER_ROLE_UNSPECIFIED";
-    case PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER:
-      return "PARTY_MEMBER_ROLE_MEMBER";
-    case PartyMemberRole.PARTY_MEMBER_ROLE_LEADER:
-      return "PARTY_MEMBER_ROLE_LEADER";
-    case PartyMemberRole.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum PartyErrorCode {
   NONE = 0,
   UNKNOWN = 1,
@@ -3280,7 +3241,6 @@ export interface PartyMember {
   characterName: string;
   level: number;
   classId: number;
-  role: PartyMemberRole;
   mapId: number;
   channelIndex?: number | undefined;
   door?: PartyDoor | undefined;
@@ -25056,7 +25016,6 @@ function createBasePartyMember(): PartyMember {
     characterName: "",
     level: 0,
     classId: 0,
-    role: 0,
     mapId: 0,
     channelIndex: undefined,
     door: undefined,
@@ -25079,9 +25038,6 @@ export const PartyMember: MessageFns<PartyMember> = {
     }
     if (message.classId !== 0) {
       writer.uint32(40).uint32(message.classId);
-    }
-    if (message.role !== 0) {
-      writer.uint32(48).int32(message.role);
     }
     if (message.mapId !== 0) {
       writer.uint32(56).uint32(message.mapId);
@@ -25142,14 +25098,6 @@ export const PartyMember: MessageFns<PartyMember> = {
           message.classId = reader.uint32();
           continue;
         }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.role = reader.int32() as any;
-          continue;
-        }
         case 7: {
           if (tag !== 56) {
             break;
@@ -25206,7 +25154,6 @@ export const PartyMember: MessageFns<PartyMember> = {
         : isSet(object.class_id)
         ? globalThis.Number(object.class_id)
         : 0,
-      role: isSet(object.role) ? partyMemberRoleFromJSON(object.role) : 0,
       mapId: isSet(object.mapId)
         ? globalThis.Number(object.mapId)
         : isSet(object.map_id)
@@ -25238,9 +25185,6 @@ export const PartyMember: MessageFns<PartyMember> = {
     if (message.classId !== 0) {
       obj.classId = Math.round(message.classId);
     }
-    if (message.role !== 0) {
-      obj.role = partyMemberRoleToJSON(message.role);
-    }
     if (message.mapId !== 0) {
       obj.mapId = Math.round(message.mapId);
     }
@@ -25263,7 +25207,6 @@ export const PartyMember: MessageFns<PartyMember> = {
     message.characterName = object.characterName ?? "";
     message.level = object.level ?? 0;
     message.classId = object.classId ?? 0;
-    message.role = object.role ?? 0;
     message.mapId = object.mapId ?? 0;
     message.channelIndex = object.channelIndex ?? undefined;
     message.door = (object.door !== undefined && object.door !== null) ? PartyDoor.fromPartial(object.door) : undefined;

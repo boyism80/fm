@@ -3,12 +3,9 @@ import { toPgInt } from "./pg-int";
 import { HashRepository } from "./hash-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { PartyMemberModel, PartyMemberRow } from "../types/repository-models";
-import { PartyMemberRole } from "../protobuf/generated/fminternal/internal_service";
-
-const DEFAULT_PARTY_MEMBER_ROLE = PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER;
 
 const SELECT_COLS =
-    "world_id, party_id, character_id, character_name, level, class_id, role, map_id, door, joined_at, updated_at";
+    "world_id, party_id, character_id, character_name, level, class_id, map_id, door, joined_at, updated_at";
 
 export type { PartyMemberModel };
 
@@ -39,18 +36,17 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
         const placeholders = rows
             .map(
                 (_, i) =>
-                    `($${i * 9 + 1},$${i * 9 + 2},$${i * 9 + 3},$${i * 9 + 4},$${i * 9 + 5},$${i * 9 + 6},$${i * 9 + 7},$${i * 9 + 8},$${i * 9 + 9},NOW(),NOW())`,
+                    `($${i * 8 + 1},$${i * 8 + 2},$${i * 8 + 3},$${i * 8 + 4},$${i * 8 + 5},$${i * 8 + 6},$${i * 8 + 7},$${i * 8 + 8},NOW(),NOW())`,
             )
             .join(",\n");
         return {
-            text: `INSERT INTO party_members (world_id, party_id, character_id, character_name, level, class_id, role, map_id, door, joined_at, updated_at)
+            text: `INSERT INTO party_members (world_id, party_id, character_id, character_name, level, class_id, map_id, door, joined_at, updated_at)
                    VALUES
                    ${placeholders}
                    ON CONFLICT (world_id, party_id, character_id) DO UPDATE
                    SET character_name = EXCLUDED.character_name,
                        level = EXCLUDED.level,
                        class_id = EXCLUDED.class_id,
-                       role = EXCLUDED.role,
                        map_id = EXCLUDED.map_id,
                        door = EXCLUDED.door,
                        updated_at = NOW()
@@ -62,7 +58,6 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
                 r.character_name,
                 r.level,
                 r.class_id,
-                r.role ?? DEFAULT_PARTY_MEMBER_ROLE,
                 r.map_id ?? 0,
                 r.door == null ? null : r.door,
             ]),
@@ -105,7 +100,6 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
             characterName: row.character_name,
             level: row.level,
             classId: row.class_id,
-            role: row.role ?? DEFAULT_PARTY_MEMBER_ROLE,
             mapId: row.map_id ?? 0,
             door: this.doorFromRow(row.door),
             joinedAt: row.joined_at instanceof Date ? row.joined_at : new Date(row.joined_at),
@@ -121,7 +115,6 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
             character_name: model.characterName,
             level: model.level,
             class_id: model.classId,
-            role: model.role ?? DEFAULT_PARTY_MEMBER_ROLE,
             map_id: model.mapId ?? 0,
             door: model.door,
             joined_at: model.joinedAt ?? new Date(),

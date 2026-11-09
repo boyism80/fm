@@ -16,7 +16,6 @@ func PartyMemberFromProto(pb *internal.PartyMember) *PartyMember {
 		characterName: pb.GetCharacterName(),
 		level:         pb.GetLevel(),
 		classID:       pb.GetClassId(),
-		role:          pb.GetRole(),
 		mapID:         pb.GetMapId(),
 	}
 	if pb.ChannelIndex != nil {
@@ -38,7 +37,6 @@ func (m *PartyMember) BuildRPC() *internal.PartyMember {
 		CharacterName: m.characterName,
 		Level:         m.level,
 		ClassId:       m.classID,
-		Role:          m.role,
 		MapId:         m.mapID,
 	}
 	if m.channelIndex != nil {
@@ -50,7 +48,7 @@ func (m *PartyMember) BuildRPC() *internal.PartyMember {
 }
 
 // PartyMemberFromCharacter builds a PartyMember snapshot from an online character.
-func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, role internal.PartyMemberRole) *PartyMember {
+func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32) *PartyMember {
 	if ch == nil {
 		return nil
 	}
@@ -64,7 +62,6 @@ func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ro
 		characterName: ch.GetName(),
 		level:         uint32(ch.GetLevel()),
 		classID:       uint32(ch.class),
-		role:          role,
 		mapID:         mapID,
 	}
 	if channelID >= 0 {

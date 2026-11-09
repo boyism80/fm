@@ -1,6 +1,5 @@
 import type {
     PopulationHistory,
-    PartyMemberRole,
     PartyState,
     GuildMemberRank,
     Pet,
@@ -397,7 +396,6 @@ export interface PartyMemberModel {
     characterName: string;
     level: number;
     classId: number;
-    role: PartyMemberRole;
     mapId: number;
     door: { town: number; target: number; x: number; y: number } | null;
     joinedAt?: Date;
@@ -411,7 +409,6 @@ export type PartyMemberRow = {
     character_name: string;
     level: number;
     class_id: number;
-    role: PartyMemberRole | null;
     map_id: number | null;
     door: { town: number; target: number; x: number; y: number } | null;
     joined_at: Date | string;

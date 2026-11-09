@@ -5,7 +5,6 @@ import {
     type PartyDoor,
     type PartyMember,
     PartyErrorCode,
-    PartyMemberRole,
     PartyState,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
@@ -174,7 +173,6 @@ export class PartyService {
                     characterName: m.characterName,
                     level: m.level,
                     classId: m.classId,
-                    role: m.role,
                     mapId: m.mapId,
                     channelIndex,
                     door: undefined,
@@ -354,7 +352,6 @@ export class PartyService {
                     characterName: name,
                     level: leaderLevel,
                     classId: leaderClassId,
-                    role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER,
                     mapId: leader.mapId ?? 0,
                     door: doorJson,
                 },
@@ -563,7 +560,6 @@ export class PartyService {
                     characterName: name,
                     level: memberLevel,
                     classId: memberClassId,
-                    role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER,
                     mapId: member.mapId ?? 0,
                     door: doorJson,
                 },
@@ -846,16 +842,6 @@ export class PartyService {
                 return { ok: false, code: messages.PartyErrorCode.DIFFERENT_MAP };
             }
 
-            await this.partyMemberRepo.set(
-                worldId,
-                { ...newLeader, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER },
-                { txClient },
-            );
-            await this.partyMemberRepo.set(
-                worldId,
-                { ...requesterMember, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER },
-                { txClient },
-            );
             const updatedParty = await this.partyRepo.set(
                 worldId,
                 { ...party, leaderCharacterId: newLeaderCharacterId },
@@ -916,16 +902,6 @@ export class PartyService {
                     return null;
                 }
 
-                await this.partyMemberRepo.set(
-                    worldId,
-                    { ...next, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER },
-                    { txClient },
-                );
-                await this.partyMemberRepo.set(
-                    worldId,
-                    { ...leader, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER },
-                    { txClient },
-                );
                 await this.partyRepo.set(worldId, { ...party, leaderCharacterId: next.characterId }, { txClient });
                 return next.characterId;
             },

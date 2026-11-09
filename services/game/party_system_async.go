@@ -18,7 +18,7 @@ func (s *PartySystem) UpdateMemberAsync(ctx actor.Context, ch *Character) *async
 	if ch.party.ID() == nil {
 		return p
 	}
-	member := PartyMemberFromCharacter(ch, uint32(s.gw.GetWorldID()), s.gw.GetChannelID(), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
+	member := PartyMemberFromCharacter(ch, uint32(s.gw.GetWorldID()), s.gw.GetChannelID())
 	if member == nil {
 		return p
 	}

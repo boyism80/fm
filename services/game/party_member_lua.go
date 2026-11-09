@@ -48,15 +48,6 @@ func (m *PartyMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(mm.classID))
 			return 1
 		},
-		"role": func(L *lua.LState) int {
-			mm := luax.Check[PartyMember](L, 1)
-			if L.GetTop() != 1 {
-				L.ArgError(2, "role() is read-only")
-				return 0
-			}
-			L.Push(lua.LNumber(mm.role))
-			return 1
-		},
 		"map_id": func(L *lua.LState) int {
 			mm := luax.Check[PartyMember](L, 1)
 			if L.GetTop() != 1 {
