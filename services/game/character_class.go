@@ -78,7 +78,7 @@ func (ch *Character) ResetInventorySlots() {
 }
 
 func (ch *Character) grantClassChangePoints(newClass constant.ClassType) {
-	if newClass == constant.ClassBeginner || newClass == constant.ClassNoblesse || newClass == constant.ClassLegend {
+	if newClass == constant.ClassBeginner || newClass == constant.ClassNoblesse {
 		return
 	}
 

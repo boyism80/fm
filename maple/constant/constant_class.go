@@ -69,25 +69,18 @@ const (
 	ClassThunderBreaker2    ClassType = 1510
 	ClassThunderBreaker3    ClassType = 1511
 	ClassThunderBreaker4    ClassType = 1512
-	ClassLegend             ClassType = 2000
-	ClassAran2              ClassType = 2100
-	ClassAran3              ClassType = 2110
-	ClassAran4              ClassType = 2111
-	ClassAran5              ClassType = 2112
 )
 
 func (c ClassType) parent() (ClassType, bool) {
 	switch {
-	case c == ClassBeginner || c == ClassNoblesse || c == ClassLegend:
+	case c == ClassBeginner || c == ClassNoblesse:
 		return 0, false
 	case c%10 != 0:
 		return c - 1, true
 	case c < ClassNoblesse && c%100 == 0:
 		return 0, false
-	case c < ClassLegend && c%100 == 0:
+	case c%100 == 0:
 		return ClassNoblesse, true
-	case c > ClassLegend && c%100 == 0:
-		return ClassLegend, true
 	case c < ClassNoblesse:
 		return c / 100 * 100, true
 	default:
@@ -101,7 +94,7 @@ func (c ClassType) Advancement() int {
 	for {
 		parent, ok := c.parent()
 		if !ok {
-			if c == ClassBeginner || c == ClassNoblesse || c == ClassLegend {
+			if c == ClassBeginner || c == ClassNoblesse {
 				return advancement
 			}
 			return advancement + 1
@@ -192,10 +185,5 @@ func AllClassConstants() map[string]ClassType {
 		"ThunderBreaker2":    ClassThunderBreaker2,
 		"ThunderBreaker3":    ClassThunderBreaker3,
 		"ThunderBreaker4":    ClassThunderBreaker4,
-		"Legend":             ClassLegend,
-		"Aran2":              ClassAran2,
-		"Aran3":              ClassAran3,
-		"Aran4":              ClassAran4,
-		"Aran5":              ClassAran5,
 	}
 }

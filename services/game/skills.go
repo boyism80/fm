@@ -247,7 +247,7 @@ func (sc *Skills) criticalLevelData(weapon constant.WeaponType) *wz.SkillLevelDa
 
 func (sc *Skills) makerLevel() int {
 	skillID := uint32(constant.SkillMaker)
-	if sc.owner.class >= constant.ClassNoblesse && sc.owner.class < constant.ClassLegend {
+	if sc.owner.class.Of(constant.ClassNoblesse) {
 		skillID = uint32(constant.SkillMakerCygnus)
 	}
 	entry := sc.Get(skillID)

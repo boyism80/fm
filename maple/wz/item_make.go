@@ -12,7 +12,7 @@ var itemMakeClassBits = []struct {
 	mask    int
 	classes []constant.ClassType
 }{
-	{0x1, []constant.ClassType{constant.ClassWarrior, constant.ClassDawnWarrior1, constant.ClassAran2}},
+	{0x1, []constant.ClassType{constant.ClassWarrior, constant.ClassDawnWarrior1}},
 	{0x2, []constant.ClassType{constant.ClassMagician, constant.ClassBlazeWizard1}},
 	{0x4, []constant.ClassType{constant.ClassBowman, constant.ClassWindArcher1}},
 	{0x8, []constant.ClassType{constant.ClassThief, constant.ClassNightWalker1}},

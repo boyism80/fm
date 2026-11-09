@@ -9,7 +9,7 @@ return {
         local cost = 10000
         local ask =
         "초보자가 아닌 분들께는 정해진 요금을 모두 받고 있습니다. 개미굴 광장은 빅토리아 아일랜드의 중앙에 있는 던전 깊은곳 24시간 포장마차가 자리잡고 있는 곳입니다. #b10000 메소#k에 개미굴 광장까지 가보시겠습니까?"
-        if class == Class.Beginner or class == Class.Noblesse or class == Class.Legend then
+        if class == Class.Beginner or class == Class.Noblesse then
             cost = 1000
             ask =
             "특별히 초보자는 90% 세일된 가격으로 모시고 있으니 한 번 이용해 보세요. 개미굴 광장은 빅토리아 아일랜드 중앙에 있는 던전 깊숙히 24시간 포장마차가 자리잡고 있는 곳입니다. #b1000 메소#k에 개미굴 광장까지 가보시겠습니까?"

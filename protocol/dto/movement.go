@@ -25,7 +25,7 @@ type AbsoluteLifeMovement struct {
 	Foothold int16
 }
 
-type AranMovement struct {
+type StanceMovement struct {
 	*BasicMovement
 	Duration int16
 }
@@ -88,13 +88,13 @@ func (m *AbsoluteLifeMovement) Deserialize(reader *stream.StreamReader) {
 	m.Duration = reader.Read16()
 }
 
-func (m *AranMovement) Serialize(writer *stream.StreamWriter) {
+func (m *StanceMovement) Serialize(writer *stream.StreamWriter) {
 	writer.WriteU8(m.Command)
 	writer.WriteU8(m.Stance)
 	writer.Write16(m.Duration)
 }
 
-func (m *AranMovement) Deserialize(reader *stream.StreamReader) {
+func (m *StanceMovement) Deserialize(reader *stream.StreamReader) {
 	m.Stance = reader.ReadU8()
 	m.Duration = reader.Read16()
 }
@@ -203,7 +203,7 @@ func ReadMovements(reader *stream.StreamReader) []MoveFragment {
 		case 14:
 			frag = &ChairMovement{BasicMovement: basic}
 		default:
-			frag = &AranMovement{BasicMovement: basic}
+			frag = &StanceMovement{BasicMovement: basic}
 		}
 		frag.Deserialize(reader)
 		fragments = append(fragments, frag)

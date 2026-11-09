@@ -559,7 +559,7 @@ func (a attack) magic() (damageRange, bool) {
 func (a attack) summon() damageRange {
 	p, secondary := a.stats.DEX, a.stats.STR
 	switch {
-	case a.stats.Class.Of(constant.ClassWarrior) || a.stats.Class.Of(constant.ClassDawnWarrior1) || a.stats.Class.Of(constant.ClassAran2),
+	case a.stats.Class.Of(constant.ClassWarrior) || a.stats.Class.Of(constant.ClassDawnWarrior1),
 		a.stats.Class.Of(constant.ClassPirate) || a.stats.Class.Of(constant.ClassThunderBreaker1):
 		p, secondary = a.stats.STR, a.stats.DEX
 	case a.stats.Class.Of(constant.ClassThief) || a.stats.Class.Of(constant.ClassNightWalker1):

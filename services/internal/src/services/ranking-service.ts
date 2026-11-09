@@ -26,8 +26,8 @@ export class RankingService {
     }
 
     // The character select screen keeps the legacy ranks: the rank among all worlds of the character's group, and
-    // the class rank by class_id / 100, which is the branch for explorers, the line for Cygnus Knights and Aran,
-    // and the family for Noblesse and Legend. A character missing from the previous round has no rank change.
+    // the class rank by class_id / 100, which is the branch for explorers, the line for Cygnus Knights,
+    // and the family for Noblesse. A character missing from the previous round has no rank change.
     async characterRanks(characterIds: number[]): Promise<Map<number, CharacterRank>> {
         const ranks = new Map<number, CharacterRank>();
         if (characterIds.length === 0) {

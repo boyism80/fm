@@ -56,25 +56,14 @@ local CLASS_CHANGE_GAINS = {
 
 -- HP and MP a level up adds, by class line, as the original server rolled them.
 local function level_up_ranges(me)
-    if class_lib.is_beginner(me) then
-        return 12, 16, 10, 12
-    end
-    if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) or me:class_of(Class.Legend) then
-        return 24, 28, 4, 6
-    end
-    if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
-        return 10, 14, 22, 24
-    end
-    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
-        return 20, 24, 14, 16
-    end
-    if me:class_of(Class.Brawler) or me:class_of(Class.ThunderBreaker2) then
-        return 37, 41, 18, 22
-    end
-    if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
-        return 20, 24, 18, 22
-    end
-    return 0, 0, 0, 0
+    local r = class_lib.line(me).level_up
+    return r[1], r[2], r[3], r[4]
+end
+
+local function skill_x(me, skill_id)
+    local s = skill_id and me:skill(skill_id)
+    local effect = s and s:effect()
+    return effect and effect.x or 0
 end
 
 return {
@@ -317,53 +306,8 @@ return {
             total_hp = total_hp + math.random(hp_low, hp_high)
             total_mp = total_mp + math.random(mp_low, mp_high) + int_mp
         end
-        local bonus_hp = 0
-        local bonus_mp = 0
-        if me:class_of(Class.Warrior) then
-            local s = me:skill(Skill.ImprovingMaxhpIncrease)
-            if s ~= nil then
-                local effect = s:effect()
-                bonus_hp = bonus_hp + diff * effect.x
-            end
-        elseif me:class_of(Class.Pirate) then
-            local s = me:skill(Skill.HpIncrease)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus_hp = bonus_hp + diff * effect.x
-                end
-            end
-        elseif me:class_of(Class.ThunderBreaker1) then
-            local s = me:skill(Skill.HpIncreaseCygnus)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus_hp = bonus_hp + diff * effect.x
-                end
-            end
-        elseif me:class_of(Class.DawnWarrior1) then
-            local s = me:skill(Skill.ImprovingMaxhpIncreaseCygnus)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus_hp = bonus_hp + diff * effect.x
-                end
-            end
-        elseif me:class_of(Class.Magician) then
-            local s = me:skill(Skill.ImprovingMaxMpIncrease)
-            if s ~= nil then
-                local effect = s:effect()
-                bonus_mp = bonus_mp + diff * effect.x * 2
-            end
-        elseif me:class_of(Class.BlazeWizard1) then
-            local s = me:skill(Skill.ImprovingMaxMpIncreaseCygnus)
-            if s ~= nil then
-                local effect = s:effect()
-                if effect ~= nil then
-                    bonus_mp = bonus_mp + diff * effect.x * 2
-                end
-            end
-        end
+        local bonus_hp = diff * skill_x(me, class_lib.hp_skill(me))
+        local bonus_mp = diff * skill_x(me, class_lib.mp_skill(me)) * 2
         me:base_hp(math.min(me:base_hp() + total_hp + bonus_hp, MAX_HP_MP), false)
         me:base_mp(math.min(me:base_mp() + total_mp + bonus_mp, MAX_HP_MP), false)
         me:hp(me:max_hp(), false)

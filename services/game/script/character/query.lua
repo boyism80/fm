@@ -90,47 +90,13 @@ local function mp_recover_check(me)
 end
 
 local function ap_to_hp_base(me)
-    if class_lib.is_beginner(me) then
-        return math.random(8, 12)
-    end
-    if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
-        return math.random(12, 20)
-    end
-    if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
-        return math.random(6, 11)
-    end
-    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
-        return math.random(14, 18)
-    end
-    if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
-        return math.random(16, 20)
-    end
-    if me:class_of(Class.Legend) then
-        return math.random(34, 38)
-    end
-    return math.random(50, 100)
+    local r = class_lib.line(me).ap_hp
+    return math.random(r[1], r[2])
 end
 
 local function ap_to_mp_base(me)
-    if class_lib.is_beginner(me) then
-        return math.random(6, 8)
-    end
-    if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
-        return math.random(10, 20)
-    end
-    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
-        return math.random(8, 12)
-    end
-    if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
-        return math.random(4, 7)
-    end
-    if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
-        return math.random(10, 12)
-    end
-    if me:class_of(Class.Legend) then
-        return math.random(4, 6)
-    end
-    return math.random(50, 100)
+    local r = class_lib.line(me).ap_mp
+    return math.random(r[1], r[2])
 end
 
 local function skill_y(me, skill_id)
@@ -146,29 +112,13 @@ local function skill_y(me, skill_id)
 end
 
 local function hp_skill_bonus(me)
-    if me:class_of(Class.Warrior) then
-        return skill_y(me, Skill.ImprovingMaxhpIncrease)
-    end
-    if me:class_of(Class.Pirate) then
-        return skill_y(me, Skill.HpIncrease)
-    end
-    if me:class_of(Class.ThunderBreaker1) then
-        return skill_y(me, Skill.HpIncreaseCygnus)
-    end
-    if me:class_of(Class.DawnWarrior1) then
-        return skill_y(me, Skill.ImprovingMaxhpIncreaseCygnus)
-    end
-    return 0
+    local skill_id = class_lib.hp_skill(me)
+    return skill_id and skill_y(me, skill_id) or 0
 end
 
 local function mp_skill_bonus(me)
-    if me:class_of(Class.Magician) then
-        return skill_y(me, Skill.ImprovingMaxMpIncrease)
-    end
-    if me:class_of(Class.BlazeWizard1) then
-        return skill_y(me, Skill.ImprovingMaxMpIncreaseCygnus)
-    end
-    return 0
+    local skill_id = class_lib.mp_skill(me)
+    return skill_id and skill_y(me, skill_id) or 0
 end
 
 local function endure_hp_interval(me)
@@ -330,40 +280,11 @@ return {
 
     -- An AP reset takes back a fixed amount of HP or MP, as the original server did.
     get_ap_reset_hp = function(me)
-        local bonus = hp_skill_bonus(me)
-        if class_lib.is_beginner(me) then
-            return 12
-        end
-        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
-            return 24 + bonus
-        end
-        if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
-            return 10
-        end
-        if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) then
-            return 15
-        end
-        if me:class_of(Class.Pirate) or me:class_of(Class.ThunderBreaker1) then
-            return 20 + bonus
-        end
-        return 50
+        return class_lib.line(me).reset_hp + hp_skill_bonus(me)
     end,
 
     get_ap_reset_mp = function(me)
-        local bonus = mp_skill_bonus(me)
-        if class_lib.is_beginner(me) then
-            return 8
-        end
-        if me:class_of(Class.Warrior) or me:class_of(Class.DawnWarrior1) then
-            return 4
-        end
-        if me:class_of(Class.Magician) or me:class_of(Class.BlazeWizard1) then
-            return 20 + bonus
-        end
-        if me:class_of(Class.Bowman) or me:class_of(Class.Thief) or me:class_of(Class.Pirate) or me:class_of(Class.WindArcher1) or me:class_of(Class.NightWalker1) or me:class_of(Class.ThunderBreaker1) then
-            return 10
-        end
-        return 50
+        return class_lib.line(me).reset_mp + mp_skill_bonus(me)
     end,
 
     get_recharge_capacity = function(me, capacity)

@@ -17,7 +17,7 @@ function M.run(me, npc, cfg)
     end
 
     local class = me:class()
-    local beginner = class == Class.Beginner or class == Class.Noblesse or class == Class.Legend
+    local beginner = class == Class.Beginner or class == Class.Noblesse
     local fare_column = beginner and 3 or 2
     local options = {}
     for i, route in ipairs(cfg.routes) do
