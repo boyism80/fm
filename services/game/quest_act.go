@@ -86,11 +86,7 @@ func (qc *Quests) buildPhaseExchange(actions wz.QuestActions, opts questActionOp
 		if actions.Exp > 0 {
 			spec.Reward.Exp += uint32(actions.Exp)
 		}
-		if actions.Pop > 0 {
-			spec.Reward.Population += int32(actions.Pop)
-		} else if actions.Pop < 0 {
-			spec.Cost.Population += int32(-actions.Pop)
-		}
+		spec.Reward.Population += int32(actions.Pop)
 		if actions.SP > 0 {
 			spec.Reward.SkillPoint += uint16(actions.SP)
 		}

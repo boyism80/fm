@@ -44,9 +44,7 @@ func (ch *Character) payExchangeCost(side ExchangeSide) {
 	if side.Meso > 0 {
 		ch.inventory.removeMesoUnchecked(side.Meso)
 	}
-	if side.Population > 0 {
-		ch.stats.AddPopulation(-side.Population)
-	}
+	ch.stats.gainPopulation(-side.Population)
 	for id, count := range side.Items {
 		if count == 0 {
 			continue
@@ -98,9 +96,7 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 	if side.Exp > 0 {
 		ch.addExpUnchecked(side.Exp)
 	}
-	if side.Population > 0 {
-		ch.stats.AddPopulation(side.Population)
-	}
+	ch.stats.gainPopulation(side.Population)
 	if side.SkillPoint > 0 {
 		ch.points.SetSP(ch.points.sp+side.SkillPoint, true)
 	}

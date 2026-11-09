@@ -44,8 +44,8 @@ return {
         local code
         if is_morph then
             code = me:exchange(
-                { item = { [2210006] = 1 }, population = 1 },
-                { meso = 30000, exp = 10000 }
+                { item = { [2210006] = 1 } },
+                { meso = 30000, exp = 10000, population = -1 }
             )
         else
             code = me:exchange(

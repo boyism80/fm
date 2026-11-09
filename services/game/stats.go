@@ -149,18 +149,19 @@ func (s *Stats) AddPopulation(delta int32) int32 {
 	return int32(s.population)
 }
 
-func (s *Stats) validatePopulation(costPopulation, rewardPopulation int32) ExchangeResult {
-	if costPopulation < 0 || rewardPopulation < 0 {
-		return ExchangeLackCost
+// gainPopulation is fame from quests, scripts, and thank-you notes; a loss may take it below zero.
+func (s *Stats) gainPopulation(delta int32) {
+	if delta == 0 {
+		return
 	}
-	if costPopulation == 0 && rewardPopulation == 0 {
-		return ExchangeOK
-	}
-	current := int32(s.population)
-	if costPopulation > current {
-		return ExchangeLackCost
-	}
-	if rewardPopulation > populationLimit-(current-costPopulation) {
+	s.setPopulation(int32(s.population) + delta)
+	s.owner.listener.OnShowPopulationGain(s.owner, delta)
+}
+
+// Fame from an exchange is a score, not something paid: only the result must stay in range.
+func (s *Stats) validatePopulation(delta int32) ExchangeResult {
+	result := int32(s.population) + delta
+	if result > populationLimit || result < -populationLimit {
 		return ExchangeLackCapacity
 	}
 	return ExchangeOK

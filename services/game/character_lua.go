@@ -191,11 +191,11 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 
 	if popLV := tbl.RawGetString("population"); popLV != lua.LNil {
 		n, ok := popLV.(lua.LNumber)
-		if !ok || n < 0 {
-			L.ArgError(argIndex, "exchange side.population must be a non-negative number")
+		if !ok {
+			L.ArgError(argIndex, "exchange side.population must be a number")
 			return ExchangeSide{}, false
 		}
-		if n > 2147483647 {
+		if n > 2147483647 || n < -2147483647 {
 			L.ArgError(argIndex, "exchange side.population exceeds int32")
 			return ExchangeSide{}, false
 		}

@@ -180,6 +180,7 @@ type CharacterListener interface {
 	OnInventorySlotLimitChanged(ch *Character, inventoryType constant.InventoryType, limit uint8)
 	OnShowItemGain(ch *Character, itemId uint32, count uint32, mode constant.ShowItemGainType)
 	OnShowMesoGain(ch *Character, count int32, mode constant.ShowMesoGainType)
+	OnShowPopulationGain(ch *Character, amount int32)
 	OnUpdateStats(ch *Character, stats map[constant.Stat]int32, unlock bool)
 	OnDamaged(ch *Character, hit Hit, mobID uint32, fakeSkillID uint32)
 	OnMobMoved(ch *Character, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)

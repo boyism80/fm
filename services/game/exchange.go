@@ -63,7 +63,7 @@ func exchangeItemsEmpty(items map[uint32]uint16) bool {
 }
 
 func (side ExchangeSide) isEmpty() bool {
-	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && side.SkillPoint == 0 && exchangeItemsEmpty(side.Items) && len(side.objects) == 0 && len(side.Skills) == 0
+	return side.Meso <= 0 && side.Exp == 0 && side.Population == 0 && side.SkillPoint == 0 && exchangeItemsEmpty(side.Items) && len(side.objects) == 0 && len(side.Skills) == 0
 }
 
 func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
@@ -83,7 +83,7 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 	if result := ch.validateExpExchange(spec.Cost.Exp); result != ExchangeOK {
 		return result
 	}
-	if result := ch.stats.validatePopulation(spec.Cost.Population, spec.Reward.Population); result != ExchangeOK {
+	if result := ch.stats.validatePopulation(spec.Reward.Population - spec.Cost.Population); result != ExchangeOK {
 		return result
 	}
 	if result := spec.validateItems(ch, escrow); result != ExchangeOK {
@@ -206,9 +206,6 @@ func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
 		return ExchangeOK
 	}
 	if side.Meso > 0 && ch.inventory.meso < side.Meso {
-		return ExchangeLackCost
-	}
-	if side.Population > 0 && side.Population > int32(ch.stats.population) {
 		return ExchangeLackCost
 	}
 	if side.Exp > 0 && ch.exp < side.Exp {

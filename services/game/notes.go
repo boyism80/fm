@@ -55,7 +55,7 @@ type noteRemoveDetail struct {
 func (n *Notes) Receive(notes []*internal.Note, population uint32) {
 	n.entries = NotesFromProto(notes)
 	if population > 0 {
-		n.owner.stats.AddPopulation(int32(population))
+		n.owner.stats.gainPopulation(int32(population))
 	}
 }
 

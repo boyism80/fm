@@ -173,6 +173,10 @@ func (l *CharacterListenerImpl) OnShowMesoGain(ch *game.Character, count int32, 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnShowPopulationGain(ch *game.Character, amount int32) {
+	ch.Send(&response.ShowPopulationGain{Amount: amount}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnItemMakerDestroyed(ch *game.Character) {
 	ch.Send(&response.ShowSelfItemMakerSuccessEffect{}, types.SEND_POLICY_ENCRYPT)
 	l.OnMessage(ch, constant.MsgPopup, "아이템이 파괴되었습니다.")
