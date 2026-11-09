@@ -326,6 +326,19 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			}
 		}
 
+		if specEx := v.find("specEx"); specEx != nil {
+			if first := specEx.find("0"); first != nil {
+				for _, intField := range first.Ints {
+					switch intField.Name {
+					case "mobSkill":
+						model.MobSkillID = uint32(intField.Value)
+					case "level":
+						model.MobSkillLevel = uint8(intField.Value)
+					}
+				}
+			}
+		}
+
 		specNode := v.find("spec")
 		if specNode != nil {
 			for _, intField := range specNode.Ints {

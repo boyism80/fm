@@ -45,6 +45,8 @@ type Consume struct {
 	CP             int
 	NuffSkillID    uint32
 	NuffSkillLevel uint8
+	MobSkillID     uint32 // specEx puts this mob skill's status on the user
+	MobSkillLevel  uint8
 	MobID          uint32
 	MobHP          int32
 	CreateID       uint32

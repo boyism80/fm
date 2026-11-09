@@ -100,6 +100,9 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 				character.AddExp(uint32(wzConsume.ExpInc))
 			}
 		}
+		if wzConsume.MobSkillID > 0 {
+			ch.debuffs.GiveMobSkill(wzConsume.MobSkillID, wzConsume.MobSkillLevel)
+		}
 	}
 
 	return true
