@@ -2,6 +2,7 @@ package game
 
 import (
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -199,10 +200,28 @@ func (qc *Quests) passesRequirements(req wz.QuestRequirements, qp *Quest, opts Q
 	if req.TamingMobLevelMin > 0 && (qc.owner.inventory.equipped[constant.EquipmentPartsTamingMob] == nil || int(qc.owner.mount.level) < req.TamingMobLevelMin) {
 		return false
 	}
-	if req.EndMeso > 0 || req.EquipAllNeed > 0 || req.EquipSelectNeed > 0 {
+	if req.EndMeso > 0 && qc.owner.inventory.meso < int32(req.EndMeso) {
 		return false
 	}
-	if req.Buff != "" || req.ExceptBuff != "" || req.WorldMin != "" || req.WorldMax != "" {
+	for _, id := range req.EquipAllNeed {
+		if !qc.owner.inventory.wears(id) {
+			return false
+		}
+	}
+	if len(req.EquipSelectNeed) > 0 && !slices.ContainsFunc(req.EquipSelectNeed, qc.owner.inventory.wears) {
+		return false
+	}
+	if req.Buff != "" && !qc.owner.buffs.hasItemBuff(req.Buff) {
+		return false
+	}
+	if req.ExceptBuff != "" && qc.owner.buffs.hasItemBuff(req.ExceptBuff) {
+		return false
+	}
+	world := int(qc.owner.gameWorld.GetWorldID())
+	if min, err := strconv.Atoi(req.WorldMin); err == nil && world < min {
+		return false
+	}
+	if max, err := strconv.Atoi(req.WorldMax); err == nil && world > max {
 		return false
 	}
 	if req.Premium {

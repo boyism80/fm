@@ -53,6 +53,7 @@ type QuestRequirement struct {
 	InfoStrings []string       `yaml:"info_strings,omitempty"`
 	Classes     []int          `yaml:"classes,omitempty"`
 	PetIDs      []uint32       `yaml:"pet_ids,omitempty"`
+	ItemIDs     []uint32       `yaml:"item_ids,omitempty"`
 	Items       map[uint32]int `yaml:"items,omitempty"`
 	Mobs        map[uint32]int `yaml:"mobs,omitempty"`
 	Quests      map[uint32]int `yaml:"quests,omitempty"`

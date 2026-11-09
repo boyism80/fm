@@ -185,11 +185,11 @@ func exportQuestRequirements(r wz.QuestRequirements) []QuestRequirement {
 	if r.EndMeso != 0 {
 		out = append(out, QuestRequirement{Kind: "endmeso", IntValue: r.EndMeso})
 	}
-	if r.EquipAllNeed != 0 {
-		out = append(out, QuestRequirement{Kind: "equipAllNeed", IntValue: r.EquipAllNeed})
+	if len(r.EquipAllNeed) > 0 {
+		out = append(out, QuestRequirement{Kind: "equipAllNeed", ItemIDs: r.EquipAllNeed})
 	}
-	if r.EquipSelectNeed != 0 {
-		out = append(out, QuestRequirement{Kind: "equipSelectNeed", IntValue: r.EquipSelectNeed})
+	if len(r.EquipSelectNeed) > 0 {
+		out = append(out, QuestRequirement{Kind: "equipSelectNeed", ItemIDs: r.EquipSelectNeed})
 	}
 	if r.Premium {
 		out = append(out, QuestRequirement{Kind: "premium", IntValue: 1})

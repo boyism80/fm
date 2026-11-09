@@ -201,9 +201,13 @@ func mergeQuestRequirementChild(reqs *QuestRequirements, child *node) {
 	case "endmeso":
 		reqs.EndMeso = firstIntValue(child)
 	case "equipAllNeed":
-		reqs.EquipAllNeed = firstIntValue(child)
+		for _, intField := range child.Ints {
+			reqs.EquipAllNeed = append(reqs.EquipAllNeed, uint32(intField.Value))
+		}
 	case "equipSelectNeed":
-		reqs.EquipSelectNeed = firstIntValue(child)
+		for _, intField := range child.Ints {
+			reqs.EquipSelectNeed = append(reqs.EquipSelectNeed, uint32(intField.Value))
+		}
 	case "premium":
 		reqs.Premium = firstIntValue(child) > 0
 	case "tamingmoblevelmin":
@@ -273,9 +277,9 @@ func setQuestRequirementInt(reqs *QuestRequirements, kind string, value int) {
 	case "endmeso":
 		reqs.EndMeso = value
 	case "equipAllNeed":
-		reqs.EquipAllNeed = value
+		reqs.EquipAllNeed = []uint32{uint32(value)}
 	case "equipSelectNeed":
-		reqs.EquipSelectNeed = value
+		reqs.EquipSelectNeed = []uint32{uint32(value)}
 	case "premium":
 		reqs.Premium = value > 0
 	case "tamingmoblevelmin":

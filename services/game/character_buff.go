@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -416,6 +417,20 @@ func (bc *Buffs) CancelBySource(buffID int32) {
 		}
 	}
 	bc.RemoveBuff(flags)
+}
+
+// hasItemBuff reports whether the buff of the item with this id is on; the id is a WZ string.
+func (bc *Buffs) hasItemBuff(itemID string) bool {
+	id, err := strconv.Atoi(itemID)
+	if err != nil {
+		return false
+	}
+	for _, entity := range bc.Entities() {
+		if entity.GetBuffID() == -int32(id) {
+			return true
+		}
+	}
+	return false
 }
 
 func (bc *Buffs) GetBuffValue(flag constant.BuffFlag) (Buff, int32, bool) {

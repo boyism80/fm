@@ -82,8 +82,8 @@ type QuestRequirements struct {
 	WorldMin          string
 	WorldMax          string
 	EndMeso           int
-	EquipAllNeed      int
-	EquipSelectNeed   int
+	EquipAllNeed      []uint32
+	EquipSelectNeed   []uint32
 	Premium           bool
 	Buff              string
 	ExceptBuff        string
