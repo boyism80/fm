@@ -214,7 +214,7 @@ func (p *Points) SetSP(v uint16, notify bool) {
 
 func (p *Points) DistributeSkill(skillID uint32) bool {
 	wzSkill := p.owner.gameWorld.GetResources().GetSkill(skillID)
-	if wzSkill == nil || !wzSkill.LearnableBy(p.owner.class) || !p.owner.skills.passesRequirements(wzSkill) {
+	if wzSkill == nil {
 		return false
 	}
 
@@ -234,31 +234,15 @@ func (p *Points) DistributeSkill(skillID uint32) bool {
 		return false
 	}
 
-	skillEntry := p.owner.skills.Learned(skillID)
+	skillEntry := p.owner.skills.raisable(wzSkill)
 	if skillEntry == nil {
-		skillEntry = NewSkillEntry(p.owner, wzSkill, 0, wzSkill.DefaultMasterLevel())
-	}
-
-	if !skillEntry.wz.Distributable {
-		return false
-	}
-	// A hidden skill below the fourth class with fewer than ten levels is given by quests, not learned with SP.
-	if skillEntry.wz.Invisible && skillEntry.Level() == 0 && !beginner && !skillEntry.wz.FourthClass && skillEntry.wz.MaxLevel < 10 {
-		return false
-	}
-	if skillEntry.Level() >= min(skillEntry.masterLevel, skillEntry.wz.MaxLevel) {
 		return false
 	}
 
 	if !beginner {
 		p.sp--
 	}
-	if skillEntry.Level() == 0 {
-		skillEntry.SetLevel(1)
-		p.owner.skills.Bind(skillID, skillEntry)
-	} else {
-		skillEntry.SetLevel(skillEntry.Level() + 1)
-	}
+	p.owner.skills.raise(skillEntry)
 	p.owner.listener.OnUpdateStats(p.owner, map[constant.Stat]int32{
 		constant.StatAvailableSP: int32(p.sp),
 	}, false)

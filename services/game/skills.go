@@ -37,7 +37,7 @@ func (sc *Skills) MoveSP(to, from uint32, advancement int) bool {
 	resources := sc.owner.gameWorld.GetResources()
 	toWz := resources.GetSkill(to)
 	fromWz := resources.GetSkill(from)
-	if toWz == nil || fromWz == nil || toWz.Beginner || fromWz.Beginner || !toWz.Distributable || !toWz.LearnableBy(sc.owner.class) {
+	if toWz == nil || fromWz == nil || toWz.Beginner || fromWz.Beginner {
 		return false
 	}
 	if constant.ClassType(from/10000).Advancement() != advancement || constant.ClassType(to/10000).Advancement() != advancement {
@@ -47,7 +47,7 @@ func (sc *Skills) MoveSP(to, from uint32, advancement int) bool {
 	if source == nil || source.Level() == 0 {
 		return false
 	}
-	if !sc.passesRequirements(toWz) || toWz.RequiredSkills[from] > source.Level()-1 {
+	if toWz.RequiredSkills[from] > source.Level()-1 {
 		return false
 	}
 	for _, entry := range sc.entries {
@@ -55,22 +55,40 @@ func (sc *Skills) MoveSP(to, from uint32, advancement int) bool {
 			return false
 		}
 	}
-	target := sc.Learned(to)
+	target := sc.raisable(toWz)
 	if target == nil {
-		target = NewSkillEntry(sc.owner, toWz, 0, toWz.DefaultMasterLevel())
-	}
-	if target.Level() >= min(target.masterLevel, target.wz.MaxLevel) {
 		return false
 	}
 
 	source.SetLevel(source.Level() - 1)
-	if target.Level() == 0 {
-		target.SetLevel(1)
-		sc.Bind(to, target)
-	} else {
-		target.SetLevel(target.Level() + 1)
-	}
+	sc.raise(target)
 	return true
+}
+
+// raisable is the entry that can take one more level of skill, nil when it cannot; both SP and the SP reset scroll ask
+// it.
+func (sc *Skills) raisable(skill *wz.Skill) *SkillEntry {
+	if !skill.Distributable || !skill.LearnableBy(sc.owner.class) || !sc.passesRequirements(skill) {
+		return nil
+	}
+	entry := sc.Learned(skill.ID)
+	if entry == nil {
+		entry = NewSkillEntry(sc.owner, skill, 0, skill.DefaultMasterLevel())
+	}
+	// A hidden skill below the fourth class with fewer than ten levels is given by quests, not learned with SP.
+	if skill.Invisible && entry.Level() == 0 && !skill.Beginner && !skill.FourthClass && skill.MaxLevel < 10 {
+		return nil
+	}
+	if entry.Level() >= min(entry.masterLevel, skill.MaxLevel) {
+		return nil
+	}
+	return entry
+}
+
+// raise gives entry one more level; a new entry joins the list.
+func (sc *Skills) raise(entry *SkillEntry) {
+	entry.SetLevel(entry.Level() + 1)
+	sc.Bind(entry.wz.ID, entry)
 }
 
 func (sc *Skills) passesRequirements(skill *wz.Skill) bool {
