@@ -50,6 +50,7 @@ func NewCashShopServer(cfg *config.CashShop) (*CashShopServer, error) {
 		config:     cfg,
 		systems:    system.NewSystems(),
 	}
+	cs.SetOwner(cs)
 
 	actors := c_actor.NewActorRegistry(c_actor.NewActorSystem())
 	cs.systems.Add[*c_actor.ActorRegistry](actors)

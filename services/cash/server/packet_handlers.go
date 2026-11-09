@@ -1,14 +1,10 @@
 package server
 
-import (
-	"github.com/boyism80/fm/core"
-)
-
 func (cs *CashShopServer) registerPacketHandlers() {
-	core.Bind[*CashShopServer, Pong](cs)
-	core.Bind[*CashShopServer, Login](cs)
-	core.Bind[*CashShopServer, Leave](cs)
-	core.Bind[*CashShopServer, Refresh](cs)
-	core.Bind[*CashShopServer, Operation](cs)
-	core.Bind[*CashShopServer, Coupon](cs)
+	cs.Bind[Pong]()
+	cs.Bind[Login]()
+	cs.Bind[Leave]()
+	cs.Bind[Refresh]()
+	cs.Bind[Operation]()
+	cs.Bind[Coupon]()
 }

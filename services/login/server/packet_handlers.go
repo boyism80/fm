@@ -1,17 +1,13 @@
 package server
 
-import (
-	"github.com/boyism80/fm/core"
-)
-
 func (ls *LoginServer) registerPacketHandlers() {
-	core.Bind[*LoginServer, Pong](ls)
-	core.Bind[*LoginServer, Login](ls)
-	core.Bind[*LoginServer, CharacterList](ls)
-	core.Bind[*LoginServer, CheckName](ls)
-	core.Bind[*LoginServer, CreateCharacter](ls)
-	core.Bind[*LoginServer, DeleteCharacter](ls)
-	core.Bind[*LoginServer, SelectCharacter](ls)
-	core.Bind[*LoginServer, AuthSecondPassword](ls)
-	core.Bind[*LoginServer, SelectCharacterWithSecondPassword](ls)
+	ls.Bind[Pong]()
+	ls.Bind[Login]()
+	ls.Bind[CharacterList]()
+	ls.Bind[CheckName]()
+	ls.Bind[CreateCharacter]()
+	ls.Bind[DeleteCharacter]()
+	ls.Bind[SelectCharacter]()
+	ls.Bind[AuthSecondPassword]()
+	ls.Bind[SelectCharacterWithSecondPassword]()
 }

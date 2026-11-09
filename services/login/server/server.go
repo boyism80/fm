@@ -97,6 +97,7 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		config:     config,
 		systems:    system.NewSystems(),
 	}
+	ls.SetOwner(ls)
 
 	actors := c_actor.NewActorRegistry(c_actor.NewActorSystem())
 	ls.systems.Add[*c_actor.ActorRegistry](actors)

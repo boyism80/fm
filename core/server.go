@@ -17,6 +17,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
 
@@ -41,6 +42,7 @@ type ServerCore struct {
 	nextClientID       int
 	clientIDMutex      sync.Mutex
 	packetHandler      *PacketHandler
+	owner              any // the server that embeds this core; Bind hands it to every handler it builds
 	onClientDisconnect func(Client)
 	clientFactory      func(net.Conn, int) (Client, error)
 	config             *ServerConfig
@@ -329,6 +331,44 @@ func (s *ServerCore) PacketActorPID(client Client) *actor.PID {
 		}
 	}
 	return s.nilActorPID
+}
+
+// SetOwner names the server that embeds this core. It is set once, before any Bind.
+func (s *ServerCore) SetOwner(owner any) {
+	s.owner = owner
+}
+
+// Bind registers the handler C builds for its request. C's New names the server type, the owner that embeds
+// this core.
+func (s *ServerCore) Bind[C HandlerConstructor[S, H, T, U], S any, H Handler[T], T RequestPtr[U], U any]() {
+	var constructor C
+	handler := constructor.New(s.owner.(S))
+
+	var proto T = new(U)
+	opcode := int(proto.Opcode())
+
+	handlerFunc := func(ctx *ClientContext, data []byte) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("deserialize panic for packet 0x%X from %s: %v", opcode, ctx.Client.GetConnection().RemoteAddr(), r)
+				err = fmt.Errorf("deserialize: %v", r)
+			}
+		}()
+
+		reader := stream.NewStreamReader(&data, stream.LittleEndian)
+
+		var req T = new(U)
+		req.Deserialize(reader)
+
+		if GetPacketLogEnabled() {
+			log.Printf("recv 0x%04X: %+v", opcode, req)
+		}
+
+		return handler.Handle(ctx, req)
+	}
+
+	s.packetHandler.RegisterHandler(int(opcode), handlerFunc)
+	log.Printf("Registered packet handler 0x%X for type %T", opcode, handler)
 }
 
 func (s *ServerCore) GetPacketHandler() *PacketHandler {

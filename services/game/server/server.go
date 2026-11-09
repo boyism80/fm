@@ -89,6 +89,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		systems:    system.NewSystems(),
 		listeners:  system.NewListeners(),
 	}
+	gs.SetOwner(gs)
 	gs.systems.Add[*wz.Resources](resources)
 	gs.systems.Add[*uniqueid.Generator](uniqueid.NewForChannel(uint32(config.WorldId), uint32(config.ChannelId)))
 
