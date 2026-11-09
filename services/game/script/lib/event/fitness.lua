@@ -49,10 +49,10 @@ function M.start(sm)
     for _, player in ipairs(contestants(sm)) do
         player:clock(DURATION_MS / 1000)
     end
-    notice(sm, "포탈이 열렸습니다. 포탈 위에서 ↑를 눌러주세요.")
     sm:set_property("clock_until", tostring(now() + DURATION_MS / 1000))
+    M.hooks.on_fitness_hint(sm)
+    notice(sm, "포탈이 열렸습니다. 포탈 위에서 ↑를 눌러주세요.")
     sm:after("fitness", DURATION_MS, "on_fitness_end")
-    sm:after("fitness_hint", HINT_MS, "on_fitness_hint")
 end
 
 -- Called when a contestant walks through the last stage's portal into the winner map.

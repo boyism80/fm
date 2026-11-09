@@ -54,10 +54,20 @@ local function fitness(ctx)
         return false
     end
 
+    -- The first hint goes out as the event starts, before the portal notice.
+    local rules = false
+    ctx:hook("fitness_rules", function(_, _, p, name)
+        if name == resp.notice and p.message:find("총 4단계", 1, true) ~= nil then
+            rules = true
+        end
+    end)
     local started = bot:request(resp.notice, req.normal_chat { message = "/이벤트시작" }, function(p)
         return p.message:find("포탈이 열렸습니다", 1, true) ~= nil
     end, 60000)
     if check(ctx, started ~= false, "카운트다운 뒤 이벤트가 시작되지 않음") == false then
+        return false
+    end
+    if check(ctx, rules, "시작할 때 '총 4단계' 안내가 오지 않음") == false then
         return false
     end
 
