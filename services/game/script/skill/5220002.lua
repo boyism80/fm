@@ -1,7 +1,5 @@
 -- Skill name (String.wz/Skill.img.xml): 서포트 옥토퍼스
 
-local util = require("script/lib/skill")
-
 return {
     on_activated = function(me, skill, params)
         local effect = skill:effect()
@@ -27,11 +25,7 @@ return {
         if level == nil or level <= 0 then
             return
         end
-        local pos = util.stationary_summon_position(me)
-        if pos == nil then
-            return
-        end
-        me:create_summon(wz:id(), level, effect.time, SummonMovementType.Stationary, SummonType.Normal, pos)
+        me:create_summon(wz:id(), level, effect.time, SummonMovementType.Stationary, SummonType.Normal)
     end,
 
     on_unbuff = function(me, skill)

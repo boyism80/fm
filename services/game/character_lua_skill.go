@@ -374,21 +374,8 @@ func (ch *Character) luaSkillFuncs() map[string]lua.LGFunction {
 			movType := constant.SummonMovementType(L.CheckInt(5))
 			summonType := constant.SummonType(L.CheckInt(6))
 
-			pos := ch.position
-			if L.GetTop() >= 7 {
-				lv := L.Get(7)
-				if lv != lua.LNil {
-					posTbl, tableOK := lv.(*lua.LTable)
-					if !tableOK {
-						L.ArgError(7, "position table or nil expected")
-						return 0
-					}
-					pos = luax.ParsePoint(posTbl)
-				}
-			}
-
 			duration := time.Duration(durationMs) * time.Millisecond
-			s := ch.summons.Spawn(constant.SkillID(skillID), skillLevel, movType, summonType, pos, duration)
+			s := ch.summons.Spawn(constant.SkillID(skillID), skillLevel, movType, summonType, duration)
 			if s == nil {
 				L.Push(lua.LNil)
 				return 1

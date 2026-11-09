@@ -7,7 +7,6 @@ import (
 
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/dto"
-	"github.com/boyism80/fm/types"
 )
 
 type Summons struct {
@@ -22,10 +21,26 @@ func NewSummons(owner *Character) *Summons {
 	}
 }
 
-func (sc *Summons) Spawn(skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, position types.Point[int16], duration time.Duration) *Summon {
+// stationarySummonOffset is how far ahead of its owner a stationary summon stands.
+const stationarySummonOffset = 180
+
+func (sc *Summons) Spawn(skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, duration time.Duration) *Summon {
 	m := sc.owner.GetMap()
 	if m == nil {
 		return nil
+	}
+	// A stationary summon stands ahead of its owner and every summon on the foothold below, as the original's
+	// spawnSummonAt placed them.
+	position := sc.owner.position
+	if movementType == constant.SummonMoveStationary {
+		if sc.owner.stance%2 != 0 {
+			position.X -= stationarySummonOffset
+		} else {
+			position.X += stationarySummonOffset
+		}
+	}
+	if below := m.PointBelow(position); below != nil {
+		position = *below
 	}
 	if current := sc.Get(skillID); current != nil {
 		sc.Remove(current, true)
