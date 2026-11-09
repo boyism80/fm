@@ -14,7 +14,7 @@ return {
         local bounds = effect.bounds
 
         if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
-            for _, target in ipairs(mob:objects_in(bounds, ObjectType.Character)) do
+            for _, target in ipairs(mob:skill_targets(skill, ObjectType.Character)) do
                 table.insert(targets, target)
             end
         elseif controller ~= nil then

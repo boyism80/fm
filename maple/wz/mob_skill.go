@@ -217,6 +217,17 @@ func parseMobSkillLevel(skillID uint32, level uint8, levelNode *node) *MobSkillL
 	return data
 }
 
+// Area is the world area of the skill used at (x, y). WZ lt/rb describe it facing left; facing right mirrors it.
+func (d *MobSkillLevelData) Area(x, y int32, facingLeft bool) (types.Rect[int32], bool) {
+	if d.Bounds == (types.Rect[int32]{}) {
+		return types.Rect[int32]{}, false
+	}
+	if facingLeft {
+		return d.Bounds.AtOrigin(types.Point[int32]{X: x, Y: y}), true
+	}
+	return types.Rect[int32]{Left: x - d.Bounds.Right, Top: y + d.Bounds.Top, Right: x - d.Bounds.Left, Bottom: y + d.Bounds.Bottom}, true
+}
+
 func loadMobSkillData(path string) (map[uint32]map[uint8]*MobSkillLevelData, error) {
 	file, err := os.Open(path)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/maple/wz"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -14,8 +15,47 @@ func (m *Mob) LuaTypeName() string {
 	return "LuaMob"
 }
 
+// skillArea is where the mob's skill reaches, turned the way the mob faces (an odd stance faces left).
+func (m *Mob) skillArea(skill *MobSkill) (types.Rect[int32], bool) {
+	if skill == nil || skill.levelData == nil {
+		return types.Rect[int32]{}, false
+	}
+	pos := m.GetPosition()
+	return skill.levelData.Area(int32(pos.X), int32(pos.Y), m.GetStance()%2 != 0)
+}
+
 func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
+		"skill_targets": func(L *lua.LState) int {
+			mob := luax.Check[Mob](L, 1)
+			area, ok := mob.skillArea(luax.Check[MobSkill](L, 2))
+			tbl := L.NewTable()
+			mp := mob.GetMap()
+			if ok && mp != nil {
+				for _, obj := range mp.GetObjectsIn(constant.ObjectType(L.CheckInt(3)), area) {
+					if obj != nil && obj != Object(mob) {
+						tbl.Append(luax.NewLuable(L, obj.(luax.Luable)))
+					}
+				}
+			}
+			L.Push(tbl)
+			return 1
+		},
+		"skill_area": func(L *lua.LState) int {
+			mob := luax.Check[Mob](L, 1)
+			area, ok := mob.skillArea(luax.Check[MobSkill](L, 2))
+			if !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+			tbl := L.NewTable()
+			tbl.RawSetString("left", lua.LNumber(area.Left))
+			tbl.RawSetString("top", lua.LNumber(area.Top))
+			tbl.RawSetString("right", lua.LNumber(area.Right))
+			tbl.RawSetString("bottom", lua.LNumber(area.Bottom))
+			L.Push(tbl)
+			return 1
+		},
 		"fake": func(L *lua.LState) int {
 			mob := luax.Check[Mob](L, 1)
 			argc := L.GetTop()

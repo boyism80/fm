@@ -18,7 +18,7 @@ return {
         local targets = {}
 
         if is_range then
-            for _, target in ipairs(mob:objects_in(bounds, ObjectType.Mob)) do
+            for _, target in ipairs(mob:skill_targets(skill, ObjectType.Mob)) do
                 table.insert(targets, target)
             end
             table.insert(targets, mob)
