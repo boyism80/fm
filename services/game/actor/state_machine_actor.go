@@ -364,7 +364,10 @@ func (a *StateMachineActor) handleEnterPlayer(ctx actor.Context, msg *game.Enter
 	if msg == nil || msg.Character == nil || a.StateMachine == nil {
 		return
 	}
-	a.StateMachine.Register(msg.Character)
+	// A member that left while its entry waited for the maps is gone already.
+	if !a.StateMachine.HasPlayer(msg.Character) {
+		return
+	}
 	a.callHook(ctx, "on_player_enter", append([]interface{}{msg.Character}, msg.Args...)...)
 }
 

@@ -9,6 +9,9 @@ local BONUS = 103000805
 local LIGATOR = 9300001
 local COUPON = 4001007
 local PASS = 4001008
+local EXIT = 103000890
+local SM_ACTOR = "state_machine_kerning_city_party_quest"
+local ENTRY_DELAY_MS = 1000
 
 local stage1_answers = {
     { "전사 1차 전직을 하기 위한 최소 레벨", 10 },
@@ -39,6 +42,51 @@ local function enter_stage1(ctx, i)
     end, 15000)
     if warp == false then
         return ctx:fail(bot:name() .. " 1스테이지 미입장")
+    end
+    return true
+end
+
+-- A member that disconnects while its entry waits for the machine's actor leaves the machine, so the party, now
+-- below four, is sent out instead of entering with that member still counted.
+local function disconnect_on_entry(ctx)
+    local leader = ctx:bot(0)
+    local leaver = ctx:bot(3)
+    if pq.command(leader, "/액터지연 " .. SM_ACTOR .. " " .. ENTRY_DELAY_MS, "액터 지연") == false then
+        return ctx:fail("액터 지연 설정 실패")
+    end
+    local oid = leader:npc(LAKELIS)
+    if oid == nil then
+        return ctx:fail("라케리스 NPC가 맵에 없음")
+    end
+    if leader:send(req.npc_click { oid = oid }) == false then
+        return ctx:fail("라케리스 클릭 실패")
+    end
+    ctx:sleep(300)
+    local relogged = leaver:relog({ passwords = { "" } })
+    -- The disconnect is queued behind the entries by now; the rest of the machine runs at full speed.
+    pq.command(leader, "/액터지연 " .. SM_ACTOR .. " 0", "액터 지연")
+    if relogged == false then
+        return ctx:fail(leaver:name() .. " 재접속 실패")
+    end
+    for _ = 1, 30 do
+        if leader:map() ~= KERNING then
+            break
+        end
+        ctx:sleep(500)
+    end
+    if leader:map() == STAGE1 then
+        return ctx:fail("접속을 끊은 파티원을 센 채 1스테이지로 입장함")
+    end
+    if leader:map() ~= EXIT then
+        return ctx:fail("인원이 모자란 입장이 퇴장 맵으로 보내지 않음: " .. leader:map())
+    end
+    if pq.command(leaver, "/플레이어모드", "플레이어 모드: enabled") == false then
+        return ctx:fail(leaver:name() .. " 플레이어 모드 설정 실패")
+    end
+    for i = 0, ctx:bot_count() - 1 do
+        if ctx:bot(i):instance_move(KERNING) == false then
+            return ctx:fail(ctx:bot(i):name() .. " 커닝시티 복귀 실패")
+        end
     end
     return true
 end
@@ -199,6 +247,7 @@ test_suite {
             end
             return true
         end,
+        disconnect_on_entry,
         {
             parallel = {
                 function(ctx)

@@ -61,22 +61,20 @@ func (sm *StateMachine) Disposed() bool {
 	return sm.disposed
 }
 
-func (sm *StateMachine) Register(ch *Character) {
-	if sm == nil || ch == nil {
-		return
-	}
+// admit makes ch a member and points ch at this machine in one step, so every way out finds it; the caller owns ch.
+func (sm *StateMachine) admit(ch *Character) bool {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	if sm.disposed {
-		return
+		return false
 	}
 	id := ch.GetID()
-	if _, ok := sm.playerSet[id]; ok {
-		return
+	if _, ok := sm.playerSet[id]; !ok {
+		sm.players = append(sm.players, ch)
+		sm.playerSet[id] = ch
 	}
-	sm.players = append(sm.players, ch)
-	sm.playerSet[id] = ch
-	sm.bind(ch)
+	ch.stateMachine = sm
+	return true
 }
 
 func (sm *StateMachine) Unregister(ch *Character) {
@@ -150,8 +148,10 @@ func (sm *StateMachine) RequestFinish(exitMapID uint32, exitPortal uint8) {
 	})
 }
 
+// EnterPlayer admits ch on the actor that owns it, the map ch is on, and leaves on_player_enter to the machine's
+// actor, as the original registered a party member and its event instance in one call.
 func (sm *StateMachine) EnterPlayer(ch *Character, args ...interface{}) {
-	if sm == nil || ch == nil || sm.Disposed() || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil {
+	if sm == nil || ch == nil || sm.group == nil || sm.group.gameWorld == nil || sm.actorPID == nil || !sm.admit(ch) {
 		return
 	}
 	sm.group.gameWorld.Systems().Get[*StateMachineSystem]().Send(sm.actorPID, &EnterStateMachinePlayer{
@@ -633,12 +633,6 @@ func (ch *Character) Spectating() bool {
 	}
 	sm := m.StateMachine()
 	return sm != nil && !sm.HasPlayer(ch)
-}
-
-func (sm *StateMachine) bind(ch *Character) {
-	ch.gameWorld.Systems().Get[*DispatchSystem]().Visit(ch.GetID(), func(actor.Context, *Character) {
-		ch.stateMachine = sm
-	})
 }
 
 func (sm *StateMachine) unbind(ch *Character) {
