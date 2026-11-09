@@ -871,6 +871,22 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		return gs.systems.Get[*game.MapSystem]().RunScript(L, cfg.ActorContext, targetMap, scriptPath, funcName, args)
 	})
 
+	// guild_of is the guild of a character on this channel; nil when it has none or is elsewhere.
+	luax.RegisterFunc(luaState, "guild_of", func(L *lua.LState) int {
+		guilds := gs.systems.Get[*game.GuildSystem]()
+		guildID, ok := guilds.GuildIDForCharacter(uint32(L.CheckInt(1)))
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+		g := guilds.Get(guildID)
+		if g == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(luax.NewLuable(L, g))
+		return 1
+	})
 	luax.RegisterFunc(luaState, "channel_id", func(L *lua.LState) int {
 		L.Push(lua.LNumber(gs.config.ChannelId))
 		return 1

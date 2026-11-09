@@ -3,6 +3,7 @@ local fault = require("script/integration/lib/fault")
 local settle = require("script/integration/lib/settle")
 
 local GUILD_HQ = 200000301
+local HENESYS = 100000000
 local HERACLE = 2010007
 local LENARIO = 2010009
 local GUILD_SHOW_INFO = 0x1A
@@ -1000,6 +1001,18 @@ local function alliance_partner_refused(ctx)
     end
     if create_alliance(ctx, leader, "연합 생성") == false then
         return false
+    end
+    -- Creating again is refused for the alliance before the partner's absence, as the original checked the map last.
+    if partner:instance_move(HENESYS) == false then
+        return ctx:fail("파티원 맵 이동 실패")
+    end
+    local refused = ask(ctx, leader, LENARIO, LENARIO_MENU.create, "이미 길드 연합에 가입되어 있으면")
+    leader:dialog(false)
+    if refused == false then
+        return false
+    end
+    if partner:instance_move(GUILD_HQ) == false then
+        return ctx:fail("파티원 길드 본부 복귀 실패")
     end
     if ask(ctx, partner, LENARIO, LENARIO_MENU.capacity, "길드 연합장만 길드 수를 늘릴 수 있어요") == false then
         return false

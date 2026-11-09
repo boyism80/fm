@@ -16,19 +16,19 @@ local function try_create_alliance(npc, me)
         me:dialog(npc, '길드장 두명이 파티를 맺고 있어야 길드 연합을 만들 수 있어요.')
         return
     end
-    local party_members = party:members()
-    if #party_members ~= 2 then
-        me:dialog(npc, '길드장 두명이 파티를 맺고 있어야 길드 연합을 만들 수 있어요.')
-        return
-    end
-    local partner_id = nil
-    for _, pm in ipairs(party_members) do
-        if pm:id() ~= me:id() then
-            partner_id = pm:id()
-            break
+    -- The original counted the members online on any channel and checked the map last.
+    local online = 0
+    local partner = nil
+    for _, pm in ipairs(party:members()) do
+        local channel = pm:channel_index()
+        if channel ~= nil and channel >= 0 then
+            online = online + 1
+            if pm:id() ~= me:id() then
+                partner = pm
+            end
         end
     end
-    if not partner_id then
+    if online ~= 2 or partner == nil then
         me:dialog(npc, '길드장 두명이 파티를 맺고 있어야 길드 연합을 만들 수 있어요.')
         return
     end
@@ -37,15 +37,9 @@ local function try_create_alliance(npc, me)
         me:dialog(npc, '길드장만 길드 연합을 등록할 수 있어요.')
         return
     end
-    -- The partner's guild is known only from the partner here, so this map check comes before its guild checks.
-    local map = me:map()
-    local partner = map and map:characters()[partner_id]
-    if not partner then
-        me:dialog(npc, '파티원 두명이 이곳에 모여 잇는지 확인해 주세요.')
-        return
-    end
-    local partner_g = partner:guild()
-    if not partner_g or partner_g:leader_id() ~= partner_id then
+    -- A partner's guild is known only on its own channel; one elsewhere is turned away by the map check.
+    local partner_g = guild_of(partner:id())
+    if partner:channel_index() == channel_id() and (not partner_g or partner_g:leader_id() ~= partner:id()) then
         me:dialog(npc, '다른 파티원이 길드장이 아닌 것 같아요.')
         return
     end
@@ -53,8 +47,13 @@ local function try_create_alliance(npc, me)
         me:dialog(npc, '이미 길드 연합에 가입되어 있으면 길드 연합을 만들 수 없습니다.')
         return
     end
-    if partner_g:alliance() then
+    if partner_g and partner_g:alliance() then
         me:dialog(npc, '다른 파티원이 이미 다른 길드 연합에 가입되어 있어요.')
+        return
+    end
+    local map = me:map()
+    if not (map and map:characters()[partner:id()]) then
+        me:dialog(npc, '파티원 두명이 이곳에 모여 잇는지 확인해 주세요.')
         return
     end
     if not me:dialog_yes_no(npc, '정말 길드 연합을 만들고 싶으세요?') then
