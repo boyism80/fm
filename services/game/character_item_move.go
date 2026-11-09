@@ -104,14 +104,12 @@ func (ch *Character) DropItem(actx actor.Context, invType constant.InventoryType
 		if item.GetFlags()&constant.ItemFlagLock != 0 {
 			return false
 		}
-		if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
-			count = item.GetCount()
-		} else {
-			count = min(count, item.GetCount())
-			if count == 0 {
-				return false
-			}
+		// A drop asking for more than the slot holds drops the slot.
+		taken, ok := takeCount(item, min(count, item.GetCount()))
+		if !ok {
+			return false
 		}
+		count = taken
 		dropped = item.Clone(count)
 		if !ch.inventory.RemoveItem(invType, slot, count) {
 			return false

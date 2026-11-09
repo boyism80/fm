@@ -183,6 +183,18 @@ func (item *ItemCore) GetExpiration() time.Time                     { return ite
 func (item *ItemCore) SetExpiration(expiration time.Time)           { item.expiration = expiration }
 func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.fieldPlacement = placement }
 
+// takeCount is how many of item leave its slot for a request of requested: a rechargeable leaves whole, even used up,
+// and anything else takes from 1 up to what the slot holds.
+func takeCount(item Item, requested uint16) (uint16, bool) {
+	if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
+		return item.GetCount(), true
+	}
+	if requested == 0 || requested > item.GetCount() {
+		return 0, false
+	}
+	return requested, true
+}
+
 func (item *ItemCore) Tradable() bool {
 	if item.wz.GetTraits()&(constant.ItemTraitQuest|constant.ItemTraitPet) != 0 || item.GetFlags()&constant.ItemFlagLock != 0 {
 		return false

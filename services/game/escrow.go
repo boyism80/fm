@@ -27,9 +27,8 @@ func (e *Escrow) hold(invType constant.InventoryType, slot int16, count uint16) 
 	if item == nil {
 		return nil, ErrMiniRoomItemNotFound
 	}
-	if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
-		count = item.GetCount()
-	} else if count == 0 || count > item.GetCount() {
+	count, ok := takeCount(item, count)
+	if !ok {
 		return nil, ErrMiniRoomInvalid
 	}
 

@@ -245,11 +245,11 @@ func (d *Duey) sendable(invType constant.InventoryType, slot int16, count int16,
 		if !item.Tradable() {
 			return nil, 0, 0, ErrDueyNotSendable
 		}
-		if item.GetModel().GetTraits()&constant.ItemTraitRechargeable != 0 {
-			count = int16(item.GetCount())
-		} else if count == 0 || item.GetCount() < uint16(count) {
+		taken, ok := takeCount(item, uint16(count))
+		if !ok {
 			return nil, 0, 0, ErrDueyInvalid
 		}
+		count = int16(taken)
 	}
 	if item == nil && meso == 0 {
 		return nil, 0, 0, ErrDueyInvalid

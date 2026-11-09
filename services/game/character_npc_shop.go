@@ -59,10 +59,8 @@ func (d *Dialog) Sell(slot int16, itemID uint32, count uint16) {
 	if count == constant.ShopUnspecifiedQuantity || count == 0 {
 		count = 1
 	}
-	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
-		count = item.GetCount()
-	}
-	if count > item.GetCount() {
+	count, ok := takeCount(item, count)
+	if !ok {
 		return
 	}
 	meso := model.SellPrice(count)

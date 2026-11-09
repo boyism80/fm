@@ -710,15 +710,16 @@ func (w *Wedding) GiveGift(actx actor.Context, slot int16, itemID uint32, count 
 	}
 	invType := model.GetInventoryType()
 	item := w.owner.inventory.GetItem(invType, slot)
-	if item == nil || item.GetModel().GetID() != itemID || count == 0 || item.GetCount() < count {
+	if item == nil || item.GetModel().GetID() != itemID {
+		return ErrMarriageInvalid
+	}
+	count, ok := takeCount(item, count)
+	if !ok {
 		return ErrMarriageInvalid
 	}
 	if !item.Tradable() {
 		w.owner.listener.OnWeddingGift(w.owner, pconst.WeddingGiftGiveRejected, nil, nil)
 		return nil
-	}
-	if model.GetTraits()&constant.ItemTraitRechargeable != 0 {
-		count = item.GetCount()
 	}
 
 	held := item.Clone(count)
