@@ -1,18 +1,17 @@
 package game
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/maple/item"
 	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
-	"github.com/boyism80/fm/util"
 )
 
 type FieldPlaceable interface {
@@ -266,52 +265,11 @@ func (fp *FieldPlacement) ShouldFFA(now time.Time) bool {
 	return fp.dropType != constant.DropTypeFFA && !fp.nextFFA.IsZero() && now.After(fp.nextFFA)
 }
 
+// NewItem makes a new item through the shared starting state, the same way a saved one is read back.
 func NewItem(itemId uint32, count uint16, gw ItemWorld) (Item, error) {
-	model, ok := gw.GetResources().Items[itemId]
-	if !ok {
-		return nil, fmt.Errorf("item model not found for ID: %d", itemId)
+	pb, err := item.NewInventory(itemId, count, 0, 0, gw.GetResources(), gw.NewUniqueID)
+	if err != nil {
+		return nil, err
 	}
-	switch m := model.(type) {
-	case wz.Equipment:
-		if !m.GetEquipmentType().Equippable() {
-			return nil, fmt.Errorf("item %d: model is equipment but not equippable", itemId)
-		}
-		return &EquipmentCore{
-			itemCore: &ItemCore{
-				wz:         m,
-				count:      1,
-				expiration: util.TimeMax,
-			},
-			enhanceChance: m.GetEnhanceChance(),
-		}, nil
-	case *wz.Consume:
-		return &Consume{
-			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
-		}, nil
-	case *wz.Installation:
-		return &Installation{
-			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
-		}, nil
-	case *wz.MiscItem:
-		return &MiscItem{
-			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
-		}, nil
-	case *wz.CashItem:
-		return &CashItem{
-			itemCore: &ItemCore{wz: m, count: count, expiration: util.TimeMax},
-		}, nil
-	case *wz.Pet:
-		uniqueID := gw.NewUniqueID()
-		return &Pet{
-			itemCore:    &ItemCore{wz: m, count: 1, expiration: time.Now().AddDate(0, 0, m.Life)},
-			uniqueId:    &uniqueID,
-			name:        gw.GetResources().GetItemName(itemId),
-			level:       1,
-			fullness:    constant.PetMaxFullness,
-			skills:      m.Skills,
-			secondsLeft: uint32(m.LimitedLife),
-		}, nil
-	default:
-		return nil, fmt.Errorf("not supported item type")
-	}
+	return NewItemFromInternalProto(pb, gw)
 }

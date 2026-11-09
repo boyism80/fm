@@ -296,9 +296,6 @@ func (ch *Character) PrepareTakeOut(serial uint64, slot int16, invType constant.
 		record.SetCount(1)
 		record.SetFlag(0)
 		record.SetOwnerName("")
-		if record.Serial() == 0 {
-			record.SetUniqueID(world.NewUniqueID())
-		}
 		record.ensurePet(world.GetResources().GetItemName(record.ItemID()), constant.PetMaxFullness, uint32(m.Skills), uint32(m.LimitedLife))
 	}
 	return record, true
@@ -307,6 +304,9 @@ func (ch *Character) PrepareTakeOut(serial uint64, slot int16, invType constant.
 func (ch *Character) PreparePutIn(serial uint64, invType constant.InventoryType) *LockerItem {
 	record, ok := ch.FindInventory(serial, invType)
 	if !ok {
+		return nil
+	}
+	if model := ch.resources.Items[record.ItemID()]; model == nil || !item.HasSerial(model) {
 		return nil
 	}
 	record.SetSlot(0)

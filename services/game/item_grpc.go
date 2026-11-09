@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/maple/item"
 	"github.com/boyism80/fm/maple/wz"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/util"
@@ -111,6 +112,10 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 	if pb.UniqueId != nil {
 		v := *pb.UniqueId
 		uniqueID = &v
+	} else if item.HasSerial(model) {
+		// An item saved before it had a serial gets one as it is read.
+		v := gw.NewUniqueID()
+		uniqueID = &v
 	}
 	ownerName := pb.GetOwnerName()
 	flag := uint16(pb.GetFlag())
@@ -160,10 +165,6 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 			ownerName: ownerName,
 		}, nil
 	case *wz.Pet:
-		if uniqueID == nil {
-			v := gw.NewUniqueID()
-			uniqueID = &v
-		}
 		pet := pb.GetPet()
 		if pet == nil {
 			pet = &internal.Pet{

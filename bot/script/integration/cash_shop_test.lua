@@ -50,6 +50,7 @@ local SUPER_MEGAPHONE = { sn = 10001513, item_id = 5076000, price = 1150 }
 local PACKAGE = { sn = 70000003, price = 3540, size = 3 }
 local HAT = { sn = 20000000, item_id = 1002186, price = 1500, refund = 450 }
 local QUEST_ITEM = { sn = 80000054, item_id = 4031191, price = 1 }
+local GAME_CASH_ITEM = 5072000
 local CHARACTER_SLOT = { sn = 50200034, price = 6900 }
 local SLOT_PRICE = 3800
 local COUPLE_RING = { sn = 20900006, item_id = 1112001, price = 3500 }
@@ -577,12 +578,36 @@ local function ring_flow(ctx)
     return true
 end
 
+-- A cash item got in game has a serial like one bought in the cash shop, so it goes into the locker, as in the original.
+local function game_cash_item_flow(ctx)
+    local bot = ctx:bot(0)
+    if pq.command(bot, "/아이템생성 " .. GAME_CASH_ITEM .. " 1", "아이템 생성:") == false then
+        return ctx:fail("캐시 아이템 생성 실패")
+    end
+    ctx:sleep(500)
+    local serial = bot:serial(GAME_CASH_ITEM)
+    if check(ctx, serial ~= nil and serial ~= 0, "게임에서 만든 캐시 아이템에 시리얼이 없음") == false then
+        return false
+    end
+    if bot:enter_cash_shop() == false then
+        return ctx:fail("캐시샵 입장 실패")
+    end
+    local put = result(ctx, bot,
+        req.cash_shop_operation { action = ACTION.put_in, serial = serial, inventory_type = CASH },
+        KIND.put_in, "게임에서 얻은 캐시 아이템 보관함 넣기")
+    if bot:leave_cash_shop() == false then
+        return ctx:fail("캐시샵 퇴장 실패")
+    end
+    return put ~= false
+end
+
 test_suite {
     name = "Cash shop: 구매·보관함·선물·패키지·환불·슬롯·쿠폰·반지",
     bot_count = 2,
 
     scenarios = {
         shop_flow,
+        game_cash_item_flow,
         service_flow,
         ring_flow,
     },

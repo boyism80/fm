@@ -247,6 +247,8 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *cash.Charac
 		return
 	}
 	pb.InventoryType = uint32(invType)
+	// The cash shop finds its inventory items by serial, so the quest item takes one here; PreparePutIn still keeps it
+	// out of the locker, as it is no cash item.
 	if pb.UniqueId == nil {
 		serial := h.cs.NewUniqueID()
 		pb.UniqueId = &serial

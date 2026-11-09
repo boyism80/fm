@@ -11,6 +11,16 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
+// HasSerial reports whether items of model carry a serial: pets, the cash tab, and cash items do, as the original's
+// getUniqueId gave one, and only those go into the cash shop locker.
+func HasSerial(model wz.Item) bool {
+	if _, ok := model.(*wz.Pet); ok {
+		return true
+	}
+	return model.GetInventoryType() == constant.InventoryTypeCash || model.GetTraits()&constant.ItemTraitCash != 0
+}
+
+// NewInventory is the one place a new item takes its starting count, serial, and pet state.
 func NewInventory(itemID uint32, count uint16, ownerID uint32, slot int32, resources *wz.Resources, newUniqueID func() uint64) (*internal.Inventory, error) {
 	model := resources.Items[itemID]
 	if model == nil {
@@ -24,6 +34,10 @@ func NewInventory(itemID uint32, count uint16, ownerID uint32, slot int32, resou
 		Count:         uint32(count),
 		InventoryType: uint32(model.GetInventoryType()),
 	}
+	if HasSerial(model) {
+		uniqueID := newUniqueID()
+		item.UniqueId = &uniqueID
+	}
 	switch m := model.(type) {
 	case wz.Equipment:
 		if !m.GetEquipmentType().Equippable() {
@@ -33,9 +47,7 @@ func NewInventory(itemID uint32, count uint16, ownerID uint32, slot int32, resou
 		item.EnhanceChance = uint32(m.GetEnhanceChance())
 	case *wz.Consume, *wz.MiscItem, *wz.CashItem, *wz.Installation:
 	case *wz.Pet:
-		uniqueID := newUniqueID()
 		item.Count = 1
-		item.UniqueId = &uniqueID
 		item.ExpirationUnixMs = time.Now().AddDate(0, 0, m.Life).UnixMilli()
 		item.Pet = &internal.Pet{
 			Name:        resources.GetItemName(itemID),

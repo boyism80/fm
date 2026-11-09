@@ -89,6 +89,7 @@ type ItemSlot struct {
 	ItemID      uint32
 	Count       uint16
 	Speed, Jump int16
+	Serial      uint64
 }
 
 type Drop struct {
@@ -380,8 +381,16 @@ func (b *Bot) setItem(typ constant.InventoryType, slot int16, item dto.Item) {
 		b.Items[typ] = tab
 	}
 	entry := ItemSlot{ItemID: item.GetItemID(), Count: item.GetCount()}
-	if equip, ok := item.(*dto.Equipment); ok {
-		entry.Speed, entry.Jump = int16(equip.Speed), int16(equip.Jump)
+	switch it := item.(type) {
+	case *dto.Equipment:
+		entry.Speed, entry.Jump = int16(it.Speed), int16(it.Jump)
+		if it.UniqueId != nil {
+			entry.Serial = *it.UniqueId
+		}
+	case *dto.CashItem:
+		if it.UniqueId != nil {
+			entry.Serial = *it.UniqueId
+		}
 	}
 	tab[slot] = entry
 }

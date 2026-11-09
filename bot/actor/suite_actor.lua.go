@@ -342,6 +342,19 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNil)
 			return 1
 		},
+		"serial": func(L *lua.LState) int {
+			itemID := uint32(L.CheckInt(2))
+			for _, tab := range a.checkBot(L).Items {
+				for slot, item := range tab {
+					if slot > 0 && item.ItemID == itemID {
+						L.Push(lua.LNumber(item.Serial))
+						return 1
+					}
+				}
+			}
+			L.Push(lua.LNil)
+			return 1
+		},
 		"quests": func(L *lua.LState) int {
 			t := L.NewTable()
 			for id, status := range a.checkBot(L).Quests {
