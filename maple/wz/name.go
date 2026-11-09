@@ -23,9 +23,10 @@ func loadForbiddenNames(path string) ([]string, error) {
 		return nil, err
 	}
 	words := make([]string, 0, len(root.Strings))
+	// Curse.img values are "word,replacement"; the word before the comma is forbidden.
 	for _, s := range root.Strings {
-		if s.Value != "" {
-			words = append(words, strings.ToLower(s.Value))
+		if word, _, _ := strings.Cut(s.Value, ","); word != "" {
+			words = append(words, strings.ToLower(word))
 		}
 	}
 	return words, nil

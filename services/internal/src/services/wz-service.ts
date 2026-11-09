@@ -86,6 +86,7 @@ export class WzService {
         }
         await this.loadMakeCharInfo(path.join(this.wzRoot, "Etc.wz", "MakeCharInfo.img.xml"));
         await this.loadForbiddenNames(path.join(this.wzRoot, "Etc.wz", "ForbiddenName.img.xml"));
+        await this.loadForbiddenNames(path.join(this.wzRoot, "Etc.wz", "Curse.img.xml"));
     }
 
     private async loadMakeCharInfo(filePath: string): Promise<void> {
@@ -120,8 +121,9 @@ export class WzService {
 
     private async loadForbiddenNames(filePath: string): Promise<void> {
         const xml = await fs.readFile(filePath, "utf8");
+        // Curse.img values are "word,replacement"; the word before the comma is forbidden.
         for (const m of xml.matchAll(/<string name="\d+" value="([^"]+)"\/>/g)) {
-            this.forbiddenNames.push((m[1] ?? "").toLowerCase());
+            this.forbiddenNames.push((m[1] ?? "").split(",")[0]!.toLowerCase());
         }
     }
 

@@ -164,7 +164,7 @@ local function persistence(ctx)
     end
 
     -- Pet names follow the character name rule: Hangul syllables (not jamo), ASCII letters and digits, no forbidden word.
-    for _, bad in ipairs({ "ㄱㄴㄷ", "ＡＢＣ", "운영자펫" }) do
+    for _, bad in ipairs({ "ㄱㄴㄷ", "ＡＢＣ", "운영자펫", "개새끼펫" }) do
         if bot:request(resp.pet_name_changed,
                 req.use_cash_item { slot = bot:slot(RENAME) or 0, item_id = RENAME, text = bad }, nil, 1500) ~= false then
             return ctx:fail("규칙에 맞지 않는 펫 이름으로 바뀜: " .. bad)

@@ -486,6 +486,11 @@ func NewResources(wzPath string) *Resources {
 	if err != nil {
 		log.Printf("Failed to load ForbiddenName.img.xml: %v", err)
 	}
+	curseWords, err := loadForbiddenNames(filepath.Join(wzPath, "Etc.wz", "Curse.img.xml"))
+	if err != nil {
+		log.Printf("Failed to load Curse.img.xml: %v", err)
+	}
+	forbiddenNames = append(forbiddenNames, curseWords...)
 
 	items := map[uint32]Item{}
 	itemMake, err := loadItemMake(filepath.Join(wzPath, "Etc.wz", "ItemMake.img.xml"))
