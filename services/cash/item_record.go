@@ -277,16 +277,3 @@ type questRecord struct {
 	completion   int64
 	deadline     int64
 }
-
-type debuffRecord struct {
-	mask       uint32
-	position   int32
-	x          int32
-	skillID    uint32
-	skillLevel uint32
-	end        int64
-}
-
-func (d debuffRecord) BuildRPC() *internal.Debuff {
-	return &internal.Debuff{Mask: d.mask, Position: d.position, X: d.x, SkillId: d.skillID, SkillLevel: d.skillLevel, EndUnixMs: d.end}
-}

@@ -149,6 +149,55 @@ local function presentation_after_transfer(ctx)
     return true
 end
 
+-- The session keeps the chalkboard and item effect while its character is in the cash shop, so both are still on after
+-- coming back, as after a channel move.
+local function presentation_after_cash_shop(ctx)
+    local actor = ctx:bot(0)
+    local observer = ctx:bot(1)
+    if setup(ctx, actor, 1, 0, SUN_EFFECT .. ":1," .. CHALKBOARD .. ":1") == false then
+        return false
+    end
+    if actor:instance_move(HENESYS) == false or observer:instance_move(HENESYS) == false then
+        return ctx:fail("헤네시스 이동 실패")
+    end
+    local chalkboard = function()
+        return req.use_cash_item { slot = actor:slot(CHALKBOARD) or 0, item_id = CHALKBOARD, text = CHALKBOARD_TEXT }
+    end
+    if seen(actor, observer, resp.item_effect, req.item_effect { item_id = SUN_EFFECT }) == false then
+        return ctx:fail("이펙트 아이템이 켜지지 않음")
+    end
+    if seen(actor, observer, resp.chalkboard, chalkboard()) == false then
+        return ctx:fail("칠판이 세워지지 않음")
+    end
+
+    if actor:enter_cash_shop() == false then
+        return ctx:fail("캐시샵 입장 실패")
+    end
+    if actor:leave_cash_shop() == false then
+        return ctx:fail("캐시샵 퇴장 실패")
+    end
+    -- The cash shop returns to the town itself, not the test's copy of it; both meet in the copy again.
+    if actor:instance_move(HENESYS) == false or observer:instance_move(HENESYS) == false then
+        return ctx:fail("캐시샵에서 돌아온 뒤 헤네시스 이동 실패")
+    end
+    ctx:sleep(1000)
+    local effect_again = seen(actor, observer, resp.item_effect, req.item_effect { item_id = SUN_EFFECT }, nil, QUIET_MS)
+    local chalkboard_again = seen(actor, observer, resp.chalkboard, chalkboard(), nil, QUIET_MS)
+    -- Turning both off is seen, so the silence above was not the observer being elsewhere.
+    local effect_off = seen(actor, observer, resp.item_effect, req.item_effect { item_id = 0 })
+    seen(actor, observer, resp.chalkboard, req.close_chalkboard {}, nil, QUIET_MS)
+    if effect_off == false then
+        return ctx:fail("캐시샵에서 돌아온 뒤 관찰 봇이 같은 맵에서 보지 못함")
+    end
+    if effect_again ~= false then
+        return ctx:fail("캐시샵 왕복 뒤 아이템 이펙트가 사라짐")
+    end
+    if chalkboard_again ~= false then
+        return ctx:fail("캐시샵 왕복 뒤 칠판이 사라짐")
+    end
+    return true
+end
+
 local function charge_skill_effect(ctx)
     local actor = ctx:bot(0)
     local observer = ctx:bot(1)
@@ -198,6 +247,7 @@ test_suite {
         item_effect,
         close_chalkboard,
         presentation_after_transfer,
+        presentation_after_cash_shop,
         charge_skill_effect,
     },
 }

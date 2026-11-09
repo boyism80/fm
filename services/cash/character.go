@@ -52,10 +52,6 @@ type Character struct {
 	inventory      []ItemRecord
 	skills         []skillRecord
 	quests         []questRecord
-	debuffs        []debuffRecord
-	chalkboard     string
-	itemEffectID   uint32
-	mountHP        uint32
 
 	ReturnChannel  uint32
 	NXCash         uint32
@@ -124,15 +120,6 @@ func NewCharacter(reply *internal.EnterCashShopReply, resources *wz.Resources) *
 		ch.quests = append(ch.quests, questRecord{
 			id: quest.GetQuestId(), status: quest.GetStatus(), mobKills: quest.GetMobKills(),
 			statusRecord: quest.GetStatusRecord(), completion: quest.GetCompletionTimeUnixMs(), deadline: quest.GetDeadlineUnixMs(),
-		})
-	}
-	ch.chalkboard = game.GetPresentation().GetChalkboard()
-	ch.itemEffectID = game.GetPresentation().GetItemEffectId()
-	ch.mountHP = game.GetPresentation().GetMountHp()
-	for _, debuff := range game.GetDebuffs() {
-		ch.debuffs = append(ch.debuffs, debuffRecord{
-			mask: debuff.GetMask(), position: debuff.GetPosition(), x: debuff.GetX(),
-			skillID: debuff.GetSkillId(), skillLevel: debuff.GetSkillLevel(), end: debuff.GetEndUnixMs(),
 		})
 	}
 	for _, pb := range reply.GetLocker() {
@@ -324,19 +311,6 @@ func (ch *Character) PreparePutIn(serial uint64, invType constant.InventoryType)
 	}
 	record.SetSlot(0)
 	return &LockerItem{buyerName: ch.name, item: record}
-}
-
-// PresentationRPC hands the chalkboard, item effect, and battleship HP back to the game server.
-func (ch *Character) PresentationRPC() *internal.CharacterPresentation {
-	return &internal.CharacterPresentation{Chalkboard: ch.chalkboard, ItemEffectId: ch.itemEffectID, MountHp: ch.mountHP}
-}
-
-func (ch *Character) DebuffsRPC() []*internal.Debuff {
-	out := make([]*internal.Debuff, 0, len(ch.debuffs))
-	for _, debuff := range ch.debuffs {
-		out = append(out, debuff.BuildRPC())
-	}
-	return out
 }
 
 func (ch *Character) BuildLockerItemS2C(item *LockerItem) *dto.CashShopItem {

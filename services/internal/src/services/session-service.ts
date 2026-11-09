@@ -322,8 +322,6 @@ export class SessionService {
             if (callerGone()) {
                 throw new Error(`enter cash shop: caller left before the reply (character=${characterId})`);
             }
-            game.debuffs = account?.debuffs ?? [];
-            game.presentation = account?.presentation ?? undefined;
             return { game, returnChannelId: Number(raw[2]), ...cashShop };
         } catch (err) {
             await this.logout(worldId, accountId, {

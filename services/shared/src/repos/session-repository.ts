@@ -152,21 +152,22 @@ export class SessionRepository {
                 return [0, SessionErrorCode.SESSION_NOT_OWNER];
             }
 
-            const write = client
-                .multi()
-                .hset(key, {
-                    world_id: String(worldId),
-                    state: String(AS.ACCOUNT_SESSION_STATE_TRANSITION),
-                    character_id: String(characterId),
-                    character_name: String(characterName),
-                    client_ip: clientIp,
-                    game_to_game_transfer: fromServer ? "1" : "0",
-                    debuffs: fromServer && debuffs.length > 0 ? JSON.stringify(debuffs) : "",
-                    presentation: fromServer && presentation != null ? JSON.stringify(presentation) : "",
-                    updated_at: now,
-                    state_changed_at: now,
-                })
-                .hdel(key, "channel_id", "cash_shop_id", "return_channel_id");
+            const fields: Record<string, string> = {
+                world_id: String(worldId),
+                state: String(AS.ACCOUNT_SESSION_STATE_TRANSITION),
+                character_id: String(characterId),
+                character_name: String(characterName),
+                client_ip: clientIp,
+                game_to_game_transfer: fromServer ? "1" : "0",
+                updated_at: now,
+                state_changed_at: now,
+            };
+            // A cash shop leaves the debuffs and presentation the channel handed over in place; it never changes them.
+            if (sourceCashShopId == null) {
+                fields.debuffs = fromServer && debuffs.length > 0 ? JSON.stringify(debuffs) : "";
+                fields.presentation = fromServer && presentation != null ? JSON.stringify(presentation) : "";
+            }
+            const write = client.multi().hset(key, fields).hdel(key, "channel_id", "cash_shop_id", "return_channel_id");
             if (sourceCashShopId == null && sourceChannelId != null) {
                 write.hset(key, "return_channel_id", String(sourceChannelId));
             }
