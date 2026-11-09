@@ -2,8 +2,10 @@ package game
 
 import (
 	"errors"
+	"time"
 
 	"github.com/boyism80/fm/maple/constant"
+	"github.com/boyism80/fm/maple/wz"
 )
 
 var (
@@ -38,13 +40,18 @@ func (m *InventoryTab) NextSlot() (uint8, bool) {
 	return 0, false
 }
 
-// Stackable reports whether a and b may share one slot. Rechargeables keep their own slot even when partly used.
+// Stackable reports whether a and b may share one slot.
 func (m *InventoryTab) Stackable(a, b Item) bool {
-	model := a.GetModel()
-	return model.GetID() == b.GetModel().GetID() &&
+	return stacks(a.GetModel().GetID(), a.GetExpiration(), b.GetModel(), b.GetExpiration())
+}
+
+// stacks reports whether an item of model expiring at expiration may join a slot of slotID expiring at slotExpiration.
+// Rechargeables keep their own slot even when partly used.
+func stacks(slotID uint32, slotExpiration time.Time, model wz.Item, expiration time.Time) bool {
+	return slotID == model.GetID() &&
 		model.GetCapacity() > 1 &&
 		model.GetTraits()&constant.ItemTraitRechargeable == 0 &&
-		a.GetExpiration().Equal(b.GetExpiration())
+		slotExpiration.Equal(expiration)
 }
 
 func (m *InventoryTab) FindSlot(incoming Item) (uint8, bool) {

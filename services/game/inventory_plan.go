@@ -71,10 +71,7 @@ func newSlotPlan(tab *InventoryTab, invType constant.InventoryType, escrow *Escr
 }
 
 func (s *planSlot) stacks(model wz.Item, expiration time.Time) bool {
-	return s.model.GetID() == model.GetID() &&
-		model.GetCapacity() > 1 &&
-		model.GetTraits()&constant.ItemTraitRechargeable == 0 &&
-		s.expiration.Equal(expiration)
+	return stacks(s.model.GetID(), s.expiration, model, expiration)
 }
 
 func (p *slotPlan) free() (int16, bool) {

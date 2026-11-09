@@ -30,7 +30,9 @@ func (e *Escrow) mergeProto(items []*internal.Inventory) []*internal.Inventory {
 		count := uint32(held.item.GetCount())
 		key := escrowSlotKey{invType: held.invType, slot: held.slot}
 		if exists, ok := taken[key]; ok {
-			if exists.GetItemId() == model.GetID() && exists.GetCount()+count <= uint32(model.GetCapacity()) {
+			// The saved row keeps its expiration in milliseconds, so the held item is compared as it would be saved.
+			expiration := expirationFromUnixMs(expirationUnixMs(held.item.GetExpiration()))
+			if stacks(exists.GetItemId(), expirationFromUnixMs(exists.GetExpirationUnixMs()), model, expiration) && exists.GetCount()+count <= uint32(model.GetCapacity()) {
 				exists.Count += count
 				continue
 			}

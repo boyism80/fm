@@ -91,7 +91,7 @@ func (e *Escrow) putBack(held escrowItem) bool {
 	case exists == nil:
 		inven.items[held.slot] = held.item
 		ch.listener.OnInventorySlotAdded(ch, held.invType, held.slot, held.item)
-	case exists.GetModel() == model && exists.GetCount()+held.item.GetCount() <= model.GetCapacity():
+	case stacks(exists.GetModel().GetID(), exists.GetExpiration(), model, held.item.GetExpiration()) && exists.GetCount()+held.item.GetCount() <= model.GetCapacity():
 		exists.Increase(held.item.GetCount())
 		ch.listener.OnInventorySlotUpdated(ch, held.invType, held.slot, exists)
 	default:

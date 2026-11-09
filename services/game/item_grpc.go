@@ -18,6 +18,14 @@ func expirationUnixMs(t time.Time) int64 {
 	return t.UnixMilli()
 }
 
+// expirationFromUnixMs is the expiration a saved item comes back with; no expiration is util.TimeMax.
+func expirationFromUnixMs(ms int64) time.Time {
+	if ms > 0 {
+		return time.UnixMilli(ms)
+	}
+	return util.TimeMax
+}
+
 func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enhanceChance uint8, enhanceCount uint8, skillBonus uint16) *internal.Inventory {
 	if item == nil {
 		return nil
@@ -96,10 +104,7 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 		return nil, fmt.Errorf("item model not found for ID: %d", itemID)
 	}
 
-	expiration := util.TimeMax
-	if exp := pb.GetExpirationUnixMs(); exp > 0 {
-		expiration = time.UnixMilli(exp)
-	}
+	expiration := expirationFromUnixMs(pb.GetExpirationUnixMs())
 
 	count := uint16(pb.GetCount())
 	var uniqueID *uint64
