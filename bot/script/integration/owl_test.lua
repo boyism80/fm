@@ -5,6 +5,7 @@ local FREE_MARKET = 910000000
 local ENTRUSTED_ROOM = 910000009
 local PERSONAL_ROOM = 910000002
 local FREDRICK = 9030000
+local MIRROR = 9010022
 
 local ENTRUSTED_PERMIT = 5030000
 local PERSONAL_PERMIT = 5140000
@@ -226,6 +227,25 @@ local function search_flow(ctx)
         listed = listed or item_id == TARGET
     end
     if check(ctx, listed, "인기 검색어에 검색한 아이템이 없음") == false then
+        return false
+    end
+
+    -- A finder in a dialog neither scans nor moves, as the original's OwlMinerva and OwlWarp refused.
+    local mirror = pq.npc(ctx, finder, MIRROR)
+    if mirror == false then
+        return false
+    end
+    if finder:npc_click(mirror) == false then
+        return ctx:fail("차원의 거울 대화가 열리지 않음")
+    end
+    local scanned = finder:request(resp.shop_scanner_result, owl(TARGET, false), nil, 1500)
+    local moved = finder:request(resp.personal_shop_enter,
+        req.shop_scanner_warp { sn = found[2].sn, map_id = PERSONAL_ROOM }, nil, 1500)
+    finder:dialog(false)
+    if check(ctx, scanned == false and has(ctx, finder, OWL, 1), "대화 중에 부엉이로 검색됨") == false then
+        return false
+    end
+    if check(ctx, moved == false and finder:map() == FREE_MARKET, "대화 중에 검색 결과 상점으로 이동함") == false then
         return false
     end
 

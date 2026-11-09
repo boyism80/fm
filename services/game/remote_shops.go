@@ -40,7 +40,8 @@ func (r *RemoteShops) FindPopularSearches(actx actor.Context) {
 func (r *RemoteShops) Scan(actx actor.Context, invType constant.InventoryType, slot int16, itemID uint32, searchID uint32, highFirst bool) {
 	m := r.owner.GetMap()
 	item := r.owner.inventory.GetItem(invType, slot)
-	if m == nil || !m.wz.FreeMarket {
+	// Dead, in a dialog, or in a shop or game room, as the original's OwlMinerva refused.
+	if r.owner.Occupied() || m == nil || !m.wz.FreeMarket {
 		r.owner.listener.OnUpdateStats(r.owner, nil, true)
 		return
 	}
@@ -89,7 +90,8 @@ func (r *RemoteShops) Scan(actx actor.Context, invType constant.InventoryType, s
 
 func (r *RemoteShops) VisitFound(actx actor.Context, sn uint32, mapID uint32) error {
 	m := r.owner.GetMap()
-	if m == nil || !m.wz.FreeMarket {
+	// The original's OwlWarp moved no one dead, in a dialog, or in a room.
+	if r.owner.Occupied() || m == nil || !m.wz.FreeMarket {
 		return ErrMiniRoomInvalid
 	}
 	if !r.found[remoteShop{sn: sn, mapID: mapID}] {
