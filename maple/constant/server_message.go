@@ -73,4 +73,6 @@ const (
 	PartyBonusRateMessage      = "이곳에서는 파티원 한 명당 경험치가 %d%% 추가로 적용됩니다."
 	PartyPlayZoneMessage       = "파티 플레이 존에 들어왔습니다."
 	LootBlockedMessage         = "이 아이템은 주울 수 없습니다."
+	MaxLevelNoticeMessage      = "[축하] %s%s 님이 레벨 200을 달성하셨습니다. 모두 축하해 주세요."
+	HallOfFameNpcMessage       = "만렙 축하의 의미로 자신의 엔피시가 직업 전직관에 생겨났습니다!"
 )

@@ -115,6 +115,7 @@ type Map struct {
 	EntrustedShop     bool
 	Portals           map[uint8]Portal
 	NpcSpawns         map[uint32]NpcSpawn
+	PlayerNpcSeats    map[uint32]NpcSpawn // imitate npcs by template: where a player npc of that template stands
 	MobSpawns         map[uint32]MobSpawn
 	ReactorSpawns     map[uint32]ReactorSpawn
 	Areas             []types.Rect[int16]

@@ -3,6 +3,8 @@ package game
 import (
 	"context"
 	"log"
+	"maps"
+	"slices"
 	"sync"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/rpc"
+	"github.com/boyism80/fm/maple/wz"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"google.golang.org/grpc"
 )
@@ -48,6 +51,23 @@ func (s *PlayerNpcSystem) Find(npcID uint32) *PlayerNpc {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.npcs[npcID]
+}
+
+// FreeSeat is the WZ seat of the map with the lowest template that no player npc takes.
+func (s *PlayerNpcSystem) FreeSeat(mapID uint32) (wz.NpcSpawn, bool) {
+	m := s.gw.GetResources().Maps[mapID]
+	if m == nil {
+		return wz.NpcSpawn{}, false
+	}
+	ids := slices.Sorted(maps.Keys(m.PlayerNpcSeats))
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, id := range ids {
+		if s.npcs[id] == nil {
+			return m.PlayerNpcSeats[id], true
+		}
+	}
+	return wz.NpcSpawn{}, false
 }
 
 func (s *PlayerNpcSystem) CreateAsync(actorCtx actor.Context, npc *PlayerNpc) *async.Promise[bool] {

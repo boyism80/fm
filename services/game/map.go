@@ -1053,6 +1053,11 @@ func (m *Map) addNpc(npcId uint32, position types.Point[int16], player *PlayerNp
 		spawnPosition.Y = y
 	}
 
+	facing := wz.FACING_DIRECTION_RIGHT
+	// A player npc on a seat WZ placed for its template faces the way the seat does.
+	if seat, ok := m.wz.PlayerNpcSeats[npcId]; ok && player != nil {
+		facing = seat.FacingDirection
+	}
 	baseSpawn := &wz.BaseSpawn{
 		ID:              npcId,
 		Position:        spawnPosition,
@@ -1063,7 +1068,7 @@ func (m *Map) addNpc(npcId uint32, position types.Point[int16], player *PlayerNp
 		UseDay:          true,
 		UseNight:        true,
 		Foothold:        footholdID,
-		FacingDirection: wz.FACING_DIRECTION_RIGHT,
+		FacingDirection: facing,
 		MobTime:         0,
 		Info:            0,
 		LimitedName:     "",

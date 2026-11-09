@@ -993,6 +993,9 @@ func (ch *Character) tryLevelUp() bool {
 			ch.listener.OnShowEffect(ch, response.EffectTypeLevelUp)
 		}
 		ch.quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
+		if targetLevel == 200 {
+			ch.celebrateMaxLevel()
+		}
 	}
 	return true
 }

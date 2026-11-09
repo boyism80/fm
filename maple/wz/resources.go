@@ -830,6 +830,7 @@ func NewResources(wzPath string) *Resources {
 		log.Fatal(err)
 		return nil
 	}
+	movePlayerNpcSeats(maps, filepath.Join(wzPath, "Npc.wz"))
 	skills := map[uint32]*Skill{}
 	skillPath = filepath.Join(wzPath, "Skill.wz")
 	var skillFiles []string
