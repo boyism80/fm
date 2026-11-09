@@ -16,6 +16,7 @@ import { grpcMapper } from "../grpc/mappers";
 import type { KeyLayoutBindingModel } from "../grpc/key-layout-io";
 import {
     AccountSessionState,
+    DeleteCharacterResult,
     GuildErrorCode,
     PartyErrorCode,
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
@@ -769,22 +770,18 @@ export class CharacterService {
         return { success: true, errorMsg: "", character: overview };
     }
 
-    async deleteCharacter(
-        accountId: number,
-        characterId: number,
-        worldId: number,
-    ): Promise<{ success: boolean; secondPasswordSet?: boolean; unsettled?: boolean; sealed?: boolean }> {
+    async deleteCharacter(accountId: number, characterId: number, worldId: number): Promise<DeleteCharacterResult> {
         const session = await this.sessionRepo.getAccountSession(accountId);
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
-            return { success: false };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED;
         }
 
         const account = await this.accountRepo.get(accountId);
         if (!account) {
-            return { success: false };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED;
         }
         if (account.secondPasswordHash) {
-            return { success: false, secondPasswordSet: true };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_SECOND_PASSWORD_SET;
         }
 
         await using _characterLock = await this.distributedLockService.acquireWorldDataLock(
@@ -794,30 +791,30 @@ export class CharacterService {
 
         const character = await this.repo.get(worldId, characterId);
         if (!character || character.accountId !== accountId) {
-            return { success: false };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED;
         }
         const unsettledRequests = await this.unsettledRequestRepo.getAll(worldId, String(characterId));
         if (unsettledRequests.size > 0) {
-            return { success: false, unsettled: true };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_UNSETTLED;
         }
         // Only the character that left them can claim store bank items, and they block the account's next shop.
         const shops = await this.shopRepo.findByAccount(worldId, accountId);
         if (shops.some((shop) => Number(shop.character_id) === characterId)) {
-            return { success: false };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_SHOP_LEFT;
         }
         // A sealed item would be lost with the character, so the seal keeps the character from being deleted.
         const inventory = await this.inventoryRepo.getAll(worldId, String(characterId));
         if ([...inventory.values()].some((item) => ((item.flag ?? 0) & ITEM_FLAG_LOCK) !== 0)) {
-            return { success: false, sealed: true };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_SEALED;
         }
 
         const guildLeft = await this.guildService.leaveGuild(worldId, characterId);
         if (!guildLeft.ok && guildLeft.code !== GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD) {
-            return { success: false };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED;
         }
         const partyLeft = await this.partyService.leaveParty(worldId, characterId);
         if (!partyLeft.ok && partyLeft.code !== PartyErrorCode.NOT_IN_PARTY) {
-            return { success: false };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED;
         }
         await this.familyService.removeMember(worldId, characterId);
 
@@ -838,11 +835,11 @@ export class CharacterService {
         const characterDeleteModel = { worldId, characterId, accountId };
         const ok = await this.repo.delete(characterDeleteModel);
         if (!ok) {
-            return { success: false };
+            return DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED;
         }
 
         await this.unifiedRepo.deleteCharacterName(characterId);
         await this.overviewRepo.delete({ worldId, accountId, characterId });
-        return { success: true };
+        return DeleteCharacterResult.DELETE_CHARACTER_RESULT_OK;
     }
 }

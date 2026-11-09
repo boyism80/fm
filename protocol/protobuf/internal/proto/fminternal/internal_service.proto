@@ -1378,10 +1378,8 @@ message DeleteCharacterRequest {
 }
 
 message DeleteCharacterReply {
-  bool success = 1;
-  bool second_password_set = 2;
-  bool unsettled = 3;
-  bool sealed = 4;
+  reserved 1 to 4;
+  DeleteCharacterResult result = 5;
 }
 
 message RefreshSessionRequest {
@@ -2639,4 +2637,14 @@ message FindParcelRecipientRequest {
 message FindParcelRecipientReply {
   ParcelResult result = 1;
   uint32 character_id = 2;
+}
+
+// Why internal kept a character it was asked to delete, or that it deleted it.
+enum DeleteCharacterResult {
+  DELETE_CHARACTER_RESULT_FAILED = 0;
+  DELETE_CHARACTER_RESULT_OK = 1;
+  DELETE_CHARACTER_RESULT_SECOND_PASSWORD_SET = 2;
+  DELETE_CHARACTER_RESULT_UNSETTLED = 3;
+  DELETE_CHARACTER_RESULT_SHOP_LEFT = 4;
+  DELETE_CHARACTER_RESULT_SEALED = 5;
 }

@@ -1967,6 +1967,64 @@ export function noteResultToJSON(object: NoteResult): string {
   }
 }
 
+/** Why internal kept a character it was asked to delete, or that it deleted it. */
+export enum DeleteCharacterResult {
+  DELETE_CHARACTER_RESULT_FAILED = 0,
+  DELETE_CHARACTER_RESULT_OK = 1,
+  DELETE_CHARACTER_RESULT_SECOND_PASSWORD_SET = 2,
+  DELETE_CHARACTER_RESULT_UNSETTLED = 3,
+  DELETE_CHARACTER_RESULT_SHOP_LEFT = 4,
+  DELETE_CHARACTER_RESULT_SEALED = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function deleteCharacterResultFromJSON(object: any): DeleteCharacterResult {
+  switch (object) {
+    case 0:
+    case "DELETE_CHARACTER_RESULT_FAILED":
+      return DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED;
+    case 1:
+    case "DELETE_CHARACTER_RESULT_OK":
+      return DeleteCharacterResult.DELETE_CHARACTER_RESULT_OK;
+    case 2:
+    case "DELETE_CHARACTER_RESULT_SECOND_PASSWORD_SET":
+      return DeleteCharacterResult.DELETE_CHARACTER_RESULT_SECOND_PASSWORD_SET;
+    case 3:
+    case "DELETE_CHARACTER_RESULT_UNSETTLED":
+      return DeleteCharacterResult.DELETE_CHARACTER_RESULT_UNSETTLED;
+    case 4:
+    case "DELETE_CHARACTER_RESULT_SHOP_LEFT":
+      return DeleteCharacterResult.DELETE_CHARACTER_RESULT_SHOP_LEFT;
+    case 5:
+    case "DELETE_CHARACTER_RESULT_SEALED":
+      return DeleteCharacterResult.DELETE_CHARACTER_RESULT_SEALED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DeleteCharacterResult.UNRECOGNIZED;
+  }
+}
+
+export function deleteCharacterResultToJSON(object: DeleteCharacterResult): string {
+  switch (object) {
+    case DeleteCharacterResult.DELETE_CHARACTER_RESULT_FAILED:
+      return "DELETE_CHARACTER_RESULT_FAILED";
+    case DeleteCharacterResult.DELETE_CHARACTER_RESULT_OK:
+      return "DELETE_CHARACTER_RESULT_OK";
+    case DeleteCharacterResult.DELETE_CHARACTER_RESULT_SECOND_PASSWORD_SET:
+      return "DELETE_CHARACTER_RESULT_SECOND_PASSWORD_SET";
+    case DeleteCharacterResult.DELETE_CHARACTER_RESULT_UNSETTLED:
+      return "DELETE_CHARACTER_RESULT_UNSETTLED";
+    case DeleteCharacterResult.DELETE_CHARACTER_RESULT_SHOP_LEFT:
+      return "DELETE_CHARACTER_RESULT_SHOP_LEFT";
+    case DeleteCharacterResult.DELETE_CHARACTER_RESULT_SEALED:
+      return "DELETE_CHARACTER_RESULT_SEALED";
+    case DeleteCharacterResult.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface PingRequest {
   role: ServerRole;
   worldId: number;
@@ -3179,10 +3237,7 @@ export interface DeleteCharacterRequest {
 }
 
 export interface DeleteCharacterReply {
-  success: boolean;
-  secondPasswordSet: boolean;
-  unsettled: boolean;
-  sealed: boolean;
+  result: DeleteCharacterResult;
 }
 
 export interface RefreshSessionRequest {
@@ -24355,22 +24410,13 @@ export const DeleteCharacterRequest: MessageFns<DeleteCharacterRequest> = {
 };
 
 function createBaseDeleteCharacterReply(): DeleteCharacterReply {
-  return { success: false, secondPasswordSet: false, unsettled: false, sealed: false };
+  return { result: 0 };
 }
 
 export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
   encode(message: DeleteCharacterReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.secondPasswordSet !== false) {
-      writer.uint32(16).bool(message.secondPasswordSet);
-    }
-    if (message.unsettled !== false) {
-      writer.uint32(24).bool(message.unsettled);
-    }
-    if (message.sealed !== false) {
-      writer.uint32(32).bool(message.sealed);
+    if (message.result !== 0) {
+      writer.uint32(40).int32(message.result);
     }
     return writer;
   },
@@ -24382,36 +24428,12 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
+        case 5: {
+          if (tag !== 40) {
             break;
           }
 
-          message.success = reader.bool();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.secondPasswordSet = reader.bool();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.unsettled = reader.bool();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.sealed = reader.bool();
+          message.result = reader.int32() as any;
           continue;
         }
       }
@@ -24424,31 +24446,13 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
   },
 
   fromJSON(object: any): DeleteCharacterReply {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      secondPasswordSet: isSet(object.secondPasswordSet)
-        ? globalThis.Boolean(object.secondPasswordSet)
-        : isSet(object.second_password_set)
-        ? globalThis.Boolean(object.second_password_set)
-        : false,
-      unsettled: isSet(object.unsettled) ? globalThis.Boolean(object.unsettled) : false,
-      sealed: isSet(object.sealed) ? globalThis.Boolean(object.sealed) : false,
-    };
+    return { result: isSet(object.result) ? deleteCharacterResultFromJSON(object.result) : 0 };
   },
 
   toJSON(message: DeleteCharacterReply): unknown {
     const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.secondPasswordSet !== false) {
-      obj.secondPasswordSet = message.secondPasswordSet;
-    }
-    if (message.unsettled !== false) {
-      obj.unsettled = message.unsettled;
-    }
-    if (message.sealed !== false) {
-      obj.sealed = message.sealed;
+    if (message.result !== 0) {
+      obj.result = deleteCharacterResultToJSON(message.result);
     }
     return obj;
   },
@@ -24458,10 +24462,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
   },
   fromPartial<I extends Exact<DeepPartial<DeleteCharacterReply>, I>>(object: I): DeleteCharacterReply {
     const message = createBaseDeleteCharacterReply();
-    message.success = object.success ?? false;
-    message.secondPasswordSet = object.secondPasswordSet ?? false;
-    message.unsettled = object.unsettled ?? false;
-    message.sealed = object.sealed ?? false;
+    message.result = object.result ?? 0;
     return message;
   },
 };

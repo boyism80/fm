@@ -236,11 +236,6 @@ export class CharacterGrpcController {
             call.request.characterId,
             call.request.worldId,
         );
-        callback(null, {
-            success: result.success,
-            secondPasswordSet: result.secondPasswordSet ?? false,
-            unsettled: result.unsettled ?? false,
-            sealed: result.sealed ?? false,
-        });
+        callback(null, { result });
     }
 }
