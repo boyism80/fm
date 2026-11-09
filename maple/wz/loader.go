@@ -874,6 +874,9 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 					}
 				case "bigSize":
 				case "pickUpBlock":
+					if intField.Value == 1 {
+						model.Traits |= constant.ItemTraitPickUpBlock
+					}
 				case "showMessage":
 				case "mcType":
 				case "autoPrice":

@@ -61,8 +61,11 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 	}
 	if reason != constant.LootSuccess {
 		log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
-		if reason == constant.LootFailedInventoryFull || reason == constant.LootFailedMesoFull {
+		switch reason {
+		case constant.LootFailedInventoryFull, constant.LootFailedMesoFull:
 			character.Listener().OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
+		case constant.LootFailedBlocked:
+			character.Listener().OnMessage(character, constant.MsgPinkText, constant.LootBlockedMessage)
 		}
 		character.Listener().OnUpdateStats(character, nil, true)
 		return fmt.Errorf("failed to loot item for OID %d", req.OID)

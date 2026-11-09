@@ -11,6 +11,7 @@ const (
 	LootFailedInvalidItem   LootResult = 5
 	LootPartial             LootResult = 6
 	LootFailedTrading       LootResult = 7
+	LootFailedBlocked       LootResult = 8
 )
 
 const (

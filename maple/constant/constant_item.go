@@ -54,6 +54,8 @@ const (
 	ItemTraitPlatinumKarma
 	// ItemTraitSafetyCharm keeps the EXP a death would take, one charm per death.
 	ItemTraitSafetyCharm
+	// ItemTraitPickUpBlock marks an item that stays on the ground: neither a player nor a pet picks it up.
+	ItemTraitPickUpBlock
 )
 
 const ChaosScrollRange = 5

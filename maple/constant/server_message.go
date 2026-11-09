@@ -70,4 +70,5 @@ const (
 	ExpeditionExpiredMessage   = "원정대 모집 시간이 종료되었습니다."
 	ExpeditionDisbandedMessage = "원정대장이 자리를 비워 원정대가 해산되었습니다."
 	ExpeditionSkippedMessage   = "%s님이 자리에 없어 원정대 대기 순서를 넘깁니다."
+	LootBlockedMessage         = "이 아이템은 주울 수 없습니다."
 )

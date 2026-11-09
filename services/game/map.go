@@ -1536,6 +1536,9 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		if fp == nil {
 			return constant.LootFailedInvalidItem
 		}
+		if item.GetModel().GetTraits()&constant.ItemTraitPickUpBlock != 0 {
+			return constant.LootFailedBlocked
+		}
 
 		if fp.quest > 0 && !character.quests.Get(fp.quest).IsStarted() {
 			return constant.LootFailedNoOwnership
