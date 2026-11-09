@@ -391,6 +391,10 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 		character.stateMachine.HandlePlayerMapEnter(character, m)
 	}
 	m.gameWorld.Systems().Get[*ExpeditionSystem]().SyncClock(character, m)
+	if m.wz.PartyBonusRate > 0 {
+		character.listener.OnMessage(character, constant.MsgScrollingTop, fmt.Sprintf(constant.PartyBonusRateMessage, m.wz.PartyBonusRate))
+		character.listener.OnMessage(character, constant.MsgScrollingTop, constant.PartyPlayZoneMessage)
+	}
 	if m.wz.TimeLimit > 0 && m.wz.ForcedReturn != 0 {
 		character.limitStay(m)
 	}

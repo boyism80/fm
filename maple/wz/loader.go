@@ -1075,6 +1075,10 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	model.VRBottom = info.Int("VRBottom", 0)
 	model.VRRight = info.Int("VRRight", 0)
 	model.HideMinimap = info.Int("hideMinimap", 0) != 0
+	model.PartyBonusRate = info.Int("partyBonusR", 0) / 2
+	if partyPlayMaps[model.ID] {
+		model.PartyBonusRate = partyPlayRate
+	}
 	model.IsTown = info.Int("town", 0) == 1
 	model.Everlast = info.Int("everlast", 0) > 0
 	model.HasClock = info.Int("clock", 0) > 0
@@ -2220,6 +2224,11 @@ func loadMob(path string) (*Mob, error) {
 	}
 
 	model.Attacks = parseMobAttacks(root)
+	model.PartyBonus = info.Int("partyBonusMob", 0) > 0
+	if play, ok := partyPlayMobs[model.ID]; ok {
+		model.MaxHP, model.EXP = play.maxHP, play.exp
+		model.Boss, model.PartyBonus = true, true
+	}
 
 	return model, nil
 }

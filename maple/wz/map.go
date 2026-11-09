@@ -100,6 +100,7 @@ type Map struct {
 	VRBottom          int
 	VRRight           int
 	HideMinimap       bool
+	PartyBonusRate    int
 	IsTown            bool
 	Everlast          bool
 	HasClock          bool

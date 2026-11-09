@@ -204,9 +204,13 @@ func (m *Mob) grantKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uin
 		avgLv = 1
 	}
 
+	// A party bonus mob on a party play map gives each member past the first the map's rate.
 	expBonus := 1.0
 	if n > 1 {
 		expBonus = 1.0 + 0.05*float64(n)
+		if m.wz.PartyBonus && mapInst.wz.PartyBonusRate > 0 {
+			expBonus = 1.0 + float64(mapInst.wz.PartyBonusRate)/100*float64(n-1)
+		}
 	}
 
 	rawAcc := make(map[*Character]float64, len(expApplicable))

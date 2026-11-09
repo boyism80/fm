@@ -540,7 +540,7 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 				switch {
 				case m.hpTagged():
 					m.listener.OnShowNearBossHp(m, false)
-				case m.wz != nil && m.wz.Boss && !m.inDojo():
+				case m.wz != nil && m.wz.Boss && !m.wz.PartyBonus && !m.inDojo():
 					// The original server showed an untagged boss's HP to no one.
 				default:
 					maxHp := m.GetMaxHp()
