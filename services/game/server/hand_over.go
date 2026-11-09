@@ -15,8 +15,6 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/types"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameClient, character *game.Character, blocked constant.ServerBlockedReason, findRoute func(context.Context) (*response.SwitchChannel, error)) {
@@ -127,15 +125,11 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		log.Printf("hand over (async): %v", err)
 
 		// A transition internal never answered may have committed; playing on would be dropped unsaved when the session refresh fails.
-		// A promise future timeout is not a gRPC status.
-		if transitionPending {
-			s, ok := status.FromError(err)
-			if !ok || s.Code() == codes.DeadlineExceeded || s.Code() == codes.Unavailable || s.Code() == codes.Canceled {
-				leave(func() {
-					_ = ctx.Client.GetConnection().Close()
-				})
-				return
-			}
+		if transitionPending && rpc.OutcomeUnknown(err) {
+			leave(func() {
+				_ = ctx.Client.GetConnection().Close()
+			})
+			return
 		}
 		gameClient.SetChangingChannel(false)
 	})

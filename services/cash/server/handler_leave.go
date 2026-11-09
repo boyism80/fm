@@ -15,8 +15,6 @@ import (
 	"github.com/boyism80/fm/services/cash/client"
 	"github.com/boyism80/fm/types"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type Leave struct {
@@ -88,13 +86,9 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 
 		// A transition internal never answered may have committed, so the character stays busy and the connection closes;
 		// the disconnect logout then ends the session only if it is still this cash shop's.
-		// A promise future timeout is not a gRPC status.
-		if transitionPending {
-			s, ok := status.FromError(err)
-			if !ok || s.Code() == codes.DeadlineExceeded || s.Code() == codes.Unavailable || s.Code() == codes.Canceled {
-				_ = ctx.Client.GetConnection().Close()
-				return
-			}
+		if transitionPending && rpc.OutcomeUnknown(err) {
+			_ = ctx.Client.GetConnection().Close()
+			return
 		}
 		character.Busy = false
 	})

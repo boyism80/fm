@@ -16,8 +16,6 @@ import (
 	"github.com/boyism80/fm/services/cash/client"
 	"github.com/boyism80/fm/types"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type Login struct {
@@ -81,12 +79,8 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 		}
 
 		// Only an EnterCashShop that internal answered with an error is known not to have entered; internal rolled that one back.
-		// A promise future timeout is not a gRPC status, and its RPC may still enter the cash shop.
-		if entered == nil {
-			s, ok := status.FromError(err)
-			if ok && s.Code() != codes.DeadlineExceeded && s.Code() != codes.Unavailable && s.Code() != codes.Canceled {
-				return
-			}
+		if entered == nil && !rpc.OutcomeUnknown(err) {
+			return
 		}
 
 		characterID := req.PlayerId

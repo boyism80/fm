@@ -15,8 +15,6 @@ import (
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type LoginGame struct {
@@ -101,12 +99,8 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		_ = ctx.Client.GetConnection().Close()
 
 		// Only an EnterGame that internal answered with an error is known not to have entered the game; logging out then would end someone else's session.
-		// A promise future timeout is not a gRPC status, and its RPC may still enter the game.
-		if enterReply == nil {
-			s, ok := status.FromError(err)
-			if ok && s.Code() != codes.DeadlineExceeded && s.Code() != codes.Unavailable && s.Code() != codes.Canceled {
-				return
-			}
+		if enterReply == nil && !rpc.OutcomeUnknown(err) {
+			return
 		}
 
 		characterID := req.PlayerId
