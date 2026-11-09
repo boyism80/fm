@@ -342,7 +342,6 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 	}
 	type dropRule struct {
 		wz.Drop
-		quest  uint32
 		global bool
 	}
 	var drops []rolledDrop
@@ -357,7 +356,7 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 		if entry.Quest != 0 && !attacker.quests.NeedsItem(entry.Quest, entry.Item) {
 			continue
 		}
-		entries = append(entries, dropRule{Drop: entry.Drop, quest: entry.Quest, global: true})
+		entries = append(entries, dropRule{Drop: entry.Drop, global: true})
 	}
 
 	dropRate := float32(m.gameWorld.GetDropRate())
@@ -398,8 +397,12 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 		}
 
 		if entry.Item == 0 {
+			// Reward.img gives the most meso, of which a drop takes 75% to all; the legacy table gives a range.
 			min := float64(entry.Money) * 0.75
 			max := float64(entry.Money)
+			if entry.Max > 0 {
+				min, max = float64(entry.Min), float64(entry.Max)
+			}
 			count := int32(min + rand.Float64()*(max-min))
 			if count == 0 {
 				continue
@@ -429,7 +432,7 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 					eq.GetEquipmentCore().RandomizeStats(em)
 				}
 			}
-			drops = append(drops, rolledDrop{count: int32(count), item: item, quest: entry.quest, questTagged: !entry.global})
+			drops = append(drops, rolledDrop{count: int32(count), item: item, quest: entry.Quest, questTagged: !entry.global})
 		}
 	}
 

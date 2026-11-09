@@ -6,6 +6,7 @@ type Drop struct {
 	Prob  float32
 	Min   uint16
 	Max   uint16
+	Quest uint32 // only those with this quest started see the drop
 }
 
 type GlobalDropType uint8
@@ -21,7 +22,6 @@ type GlobalDrop struct {
 	Drop
 	Continent int32
 	Type      GlobalDropType
-	Quest     uint32
 }
 
 // codedGlobalDrops are the global drops the original server added in code, not in its drop table, so they are there

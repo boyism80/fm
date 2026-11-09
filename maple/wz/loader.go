@@ -2290,6 +2290,8 @@ func parseDropEntry(entry dropEntry) Drop {
 			model.Min = uint16(intField.Value)
 		case "max":
 			model.Max = uint16(intField.Value)
+		case "quest":
+			model.Quest = uint32(intField.Value)
 		}
 	}
 

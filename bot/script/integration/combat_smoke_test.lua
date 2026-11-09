@@ -8,6 +8,10 @@ local TIMED_MOB_SECONDS = 10
 local PART_HP = 700
 local SWORD = 1302000
 local WEAPON_SLOT = -11
+local LEGACY_DROP_MOB = 4300006
+local LEGACY_DROP_ITEM = 4000525
+local LEGACY_MESO_MIN = 66
+local LEGACY_MESO_MAX = 122
 
 local function command(bot, name, text)
     return bot:request(name, req.normal_chat { message = text })
@@ -83,6 +87,51 @@ test_suite {
             end
             if (bot:items()[SNAIL_SHELL] or 0) ~= count then
                 return ctx:fail("줍기 후 개수: " .. (bot:items()[SNAIL_SHELL] or 0))
+            end
+            return true
+        end,
+        -- A mob only the original drop table covers drops that table's item, and meso within its range.
+        function(ctx)
+            local bot = ctx:bot(0)
+            local known = {}
+            for _, drop in ipairs(bot:drops()) do
+                known[drop.oid] = true
+            end
+            local before = {}
+            for _, mob in ipairs(bot:mobs(LEGACY_DROP_MOB)) do
+                before[mob.oid] = true
+            end
+            if command(bot, resp.spawn_mob, "/몬스터생성 " .. LEGACY_DROP_MOB) == false then
+                return ctx:fail("몬스터 생성 응답 없음")
+            end
+            local oid = nil
+            for _, mob in ipairs(bot:mobs(LEGACY_DROP_MOB)) do
+                if before[mob.oid] == nil then
+                    oid = mob.oid
+                end
+            end
+            if oid == nil then
+                return ctx:fail("생성한 몬스터를 찾지 못함")
+            end
+            if bot:kill(oid) == false then
+                return ctx:fail("몬스터 처치 실패")
+            end
+            ctx:sleep(1000)
+            local item, meso = false, nil
+            for _, drop in ipairs(bot:drops()) do
+                if known[drop.oid] == nil then
+                    if drop.item == LEGACY_DROP_ITEM then
+                        item = true
+                    elseif drop.meso > 0 then
+                        meso = drop.meso
+                    end
+                end
+            end
+            if item == false then
+                return ctx:fail("레거시 드롭 표의 아이템이 떨어지지 않음")
+            end
+            if meso == nil or meso < LEGACY_MESO_MIN or meso > LEGACY_MESO_MAX then
+                return ctx:fail(string.format("메소가 레거시 범위 %d~%d 밖: %s", LEGACY_MESO_MIN, LEGACY_MESO_MAX, tostring(meso)))
             end
             return true
         end,

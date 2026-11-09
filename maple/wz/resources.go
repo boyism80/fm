@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -446,6 +447,18 @@ func NewResources(wzPath string) *Resources {
 	} else if err != nil {
 		log.Printf("Failed to load Reward.img.xml: %v", err)
 	}
+	// A mob Reward.img leaves without drops takes the original server's drop table.
+	legacyRewardPath := filepath.Join(filepath.Dir(wzPath), "drops", "MobReward.img.xml")
+	if legacy, _, err := loadRewardDrops(legacyRewardPath); err == nil {
+		for mobID, drops := range legacy {
+			if len(mobDrops[mobID]) == 0 {
+				mobDrops[mobID] = drops
+			}
+		}
+		fmt.Println("Legacy mob drop file loaded.")
+	} else {
+		log.Printf("Failed to load %s: %v", legacyRewardPath, err)
+	}
 
 	globalRewardPath := filepath.Join(wzPath, "GlobalReward.img.xml")
 	if loaded, err := loadGlobalDrops(globalRewardPath); err == nil {
@@ -559,7 +572,7 @@ func NewResources(wzPath string) *Resources {
 			continue
 		}
 		mob := mobs[card.MobID]
-		if mob == nil {
+		if mob == nil || slices.ContainsFunc(mobDrops[card.MobID], func(d Drop) bool { return d.Item == card.ID }) {
 			continue
 		}
 		prob := float32(0.001)
@@ -919,6 +932,14 @@ func NewResources(wzPath string) *Resources {
 	result.buildQuestAutoStartIndex()
 
 	return result
+}
+
+// DropQuest is the quest a drop needs started: its own, or the one its item is registered to.
+func (r *Resources) DropQuest(d Drop) uint32 {
+	if d.Quest != 0 {
+		return d.Quest
+	}
+	return r.QuestItems[d.Item]
 }
 
 func (r *Resources) buildNameIndexes() {

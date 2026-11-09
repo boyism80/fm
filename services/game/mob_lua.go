@@ -500,7 +500,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				row.RawSetString("prob", lua.LNumber(d.Prob))
 				row.RawSetString("min", lua.LNumber(d.Min))
 				row.RawSetString("max", lua.LNumber(d.Max))
-				row.RawSetString("quest", lua.LNumber(resources.QuestItems[d.Item]))
+				row.RawSetString("quest", lua.LNumber(resources.DropQuest(d)))
 				t.RawSetInt(idx, row)
 				idx++
 			}
