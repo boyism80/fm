@@ -161,7 +161,7 @@ export class SessionService {
         })();
         if (sourceChannelId != null || sourceCashShopId != null) {
             setTimeout(() => {
-                this.expireTransition(worldId, accountId, characterId, now).catch((err) =>
+                this.expireTransition(worldId, accountId, characterId, now, sourceChannelId).catch((err) =>
                     console.error("[session] transition timeout failed", err),
                 );
             }, TRANSITION_TIMEOUT_MS);
@@ -171,11 +171,22 @@ export class SessionService {
 
     // A character that left a channel or the cash shop and never reached the next one is logged out, so the
     // others stop seeing it online. A lost timer (internal restarting) only leaves that stale mark, as before.
-    private async expireTransition(worldId: number, accountId: number, characterId: number, stateChangedAt: string) {
+    private async expireTransition(
+        worldId: number,
+        accountId: number,
+        characterId: number,
+        stateChangedAt: string,
+        sourceChannelId: number | null,
+    ) {
         if ((await this.repo.expireTransition(accountId, stateChangedAt)) === false) {
             return;
         }
         console.log(`[session] transition timed out account=${accountId} character=${characterId}`);
+        await this.leaveWorld(worldId, characterId, sourceChannelId);
+    }
+
+    // Takes a character whose session ended out of the features that track who is online.
+    private async leaveWorld(worldId: number, characterId: number, channelId: number | null | undefined) {
         await this.socialService
             .leaveMessenger(worldId, characterId)
             .catch((err) => console.error("[social] messenger cleanup failed", err));
@@ -185,6 +196,11 @@ export class SessionService {
             buddyChannel: -1,
             guildOnline: false,
         });
+        if (this.partyService && channelId != null) {
+            await this.partyService
+                .passLeaderOnDisconnect(worldId, characterId, channelId)
+                .catch((err) => console.error("[party] leader handoff failed", err));
+        }
     }
 
     async enterGame(
@@ -389,20 +405,7 @@ export class SessionService {
         }
         await this.releaseCharacterNameReservation(accountId);
         if (options.characterId != null && serverDisconnect) {
-            await this.socialService
-                .leaveMessenger(worldId, options.characterId)
-                .catch((err) => console.error("[social] messenger cleanup failed", err));
-            await this.announcePresence(worldId, options.characterId, { family: true });
-        }
-        const gameNormalDisconnect = serverDisconnect && !transferDisconnect;
-        const cid = options.characterId ?? null;
-        if (cid != null && gameNormalDisconnect) {
-            await this.announcePresence(worldId, cid, { party: true, buddyChannel: -1, guildOnline: false });
-            if (this.partyService && channelId != null) {
-                await this.partyService
-                    .passLeaderOnDisconnect(worldId, cid, channelId)
-                    .catch((err) => console.error("[party] leader handoff failed", err));
-            }
+            await this.leaveWorld(worldId, options.characterId, channelId);
         }
         return { ok: true, code: SessionErrorCode.SESSION_NONE };
     }
