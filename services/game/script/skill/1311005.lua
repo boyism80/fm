@@ -1,5 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 새크리파이스
 
+local combat = require("script/lib/combat")
+
 return {
     on_attack = function(me, skill, damages)
         local effect = skill:effect()
@@ -10,11 +12,7 @@ return {
         local target = nil
         for mob, hits in pairs(damages) do
             target = mob
-            for _, amount in ipairs(hits) do
-                if amount and amount > 0 then
-                    total = total + amount
-                end
-            end
+            total = combat.total_damage_to_mob(hits)
             break
         end
         if target == nil or total == 0 then

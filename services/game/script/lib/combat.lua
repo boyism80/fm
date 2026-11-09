@@ -77,6 +77,22 @@ local function total_damage_to_mob(hits)
 end
 M.total_damage_to_mob = total_damage_to_mob
 
+-- A mob took damage when any of its hits did; an attack's after effects reach only such mobs, as the original's
+-- applyAttack decided once per mob.
+M.damaged = function(hits)
+    return total_damage_to_mob(hits) > 0
+end
+
+-- Whether the attack damaged any mob.
+M.any_damaged = function(damages)
+    for _, hits in pairs(damages or {}) do
+        if M.damaged(hits) then
+            return true
+        end
+    end
+    return false
+end
+
 local MOB_ATTACK_REFLECT_DAMAGE_MIN = 7000
 local MOB_ATTACK_REFLECT_DAMAGE_RANGE = 8000
 

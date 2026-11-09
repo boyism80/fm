@@ -1,16 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 쿨링 이펙트
 
-local function has_positive_hit(hits)
-    if hits == nil then
-        return false
-    end
-    for i = 1, #hits do
-        if (hits[i] or 0) > 0 then
-            return true
-        end
-    end
-    return false
-end
+local combat = require("script/lib/combat")
 
 return {
     on_attack = function(me, skill, damages)
@@ -37,7 +27,7 @@ return {
             end
         end
         for mob, hits in pairs(damages) do
-            if has_positive_hit(hits) and math.random(1, 100) <= prop then
+            if combat.damaged(hits) and math.random(1, 100) <= prop then
                 mob:buff(MobBuff.Freeze, 1, duration_ms, skill, me)
             end
         end

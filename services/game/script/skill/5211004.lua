@@ -2,18 +2,6 @@
 
 local combat = require("script/lib/combat")
 
-local function has_positive_hit(hits)
-    if hits == nil then
-        return false
-    end
-    for i = 1, #hits do
-        if (hits[i] or 0) > 0 then
-            return true
-        end
-    end
-    return false
-end
-
 return {
     extra_element = "f",
 
@@ -42,7 +30,7 @@ return {
             end
         end
         for mob, hits in pairs(damages) do
-            if has_positive_hit(hits) and math.random(1, 100) <= prop then
+            if combat.damaged(hits) and math.random(1, 100) <= prop then
                 local value = combat.compute_poison_tick_damage(skill, mob, multiplier)
                 if value > 0 then
                     mob:buff(MobBuff.Poison, value, duration_ms, skill, me)

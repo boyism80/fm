@@ -1,16 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 디스오더
 
-local function hits_have_damage(hits)
-    if hits == nil then
-        return false
-    end
-    for i = 1, #hits do
-        if (hits[i] or 0) > 0 then
-            return true
-        end
-    end
-    return false
-end
+local combat = require("script/lib/combat")
 
 return {
     on_attack = function(me, skill, damages)
@@ -22,7 +12,7 @@ return {
             return
         end
         for mob, hits in pairs(damages) do
-            if hits_have_damage(hits) then
+            if combat.damaged(hits) then
                 mob:buff({ [MobBuff.Watk] = effect.x, [MobBuff.Wdef] = effect.y }, effect.time, skill, me)
             end
         end

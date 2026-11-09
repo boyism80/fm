@@ -1,17 +1,5 @@
 local combat = require("script/lib/combat")
 
-local function damages_has_positive_damage(hits)
-    if hits == nil then
-        return false
-    end
-    for _, amount in ipairs(hits) do
-        if (amount or 0) > 0 then
-            return true
-        end
-    end
-    return false
-end
-
 local function roll_percent(prob)
     if prob == nil or prob <= 0 then
         return false
@@ -56,7 +44,7 @@ local function on_mp_eater(me, damages)
     local total_absorb_mp = 0
 
     for mob, hits in pairs(damages) do
-        if not damages_has_positive_damage(hits) then
+        if not combat.damaged(hits) then
             goto continue_mob
         end
 
@@ -250,7 +238,7 @@ local function on_blind_acc_debuff(me, damages)
         return
     end
     for mob, hits in pairs(damages) do
-        if not damages_has_positive_damage(hits) then
+        if not combat.damaged(hits) then
             goto continue_blind
         end
         if roll_percent(effect.prop) then
@@ -286,7 +274,7 @@ local function on_hamstring_slow(me, damages)
     end
 
     for mob, hits in pairs(damages) do
-        if not damages_has_positive_damage(hits) then
+        if not combat.damaged(hits) then
             goto continue_mob
         end
         if roll_percent(effect.prop) then
@@ -296,7 +284,7 @@ local function on_hamstring_slow(me, damages)
     end
 end
 
-local function on_dark_sight(me, damages)
+local function on_dark_sight(me, hit)
     if not (me:class_of(Class.NightWalker1) or me:class_of(Class.WindArcher2)) then
         return
     end
@@ -305,16 +293,7 @@ local function on_dark_sight(me, damages)
         return
     end
 
-    local is_hit = false
-    for _, hits in pairs(damages) do
-        for _, hit in pairs(hits) do
-            if hit > 0 then
-                is_hit = true
-                break
-            end
-        end
-    end
-    if not is_hit then
+    if not hit then
         return
     end
 
@@ -343,10 +322,7 @@ return {
 
     on_attack = function(me, skill, damages, attack_info)
         -- Combo orbs and energy build only on an attack that damaged a mob, as the original afterAttack did.
-        local hit = false
-        for _, hits in pairs(damages or {}) do
-            hit = hit or damages_has_positive_damage(hits)
-        end
+        local hit = combat.any_damaged(damages)
         if hit then
             combat.increment_combo_orbs(me, combat.damages_to_targets(damages), skill)
         end
@@ -360,7 +336,7 @@ return {
         if hit then
             on_energy_charge(me, damages)
         end
-        on_dark_sight(me, damages)
+        on_dark_sight(me, hit)
         combat.reflect_mob_attack_damage(me, damages, attack_info)
     end
 }

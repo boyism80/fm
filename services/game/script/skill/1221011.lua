@@ -2,6 +2,7 @@
 
 return {
     on_attack = function(me, skill, damages)
+        -- Every mob in reach takes it, damaged or not, as the original applied Sanctuary before its damage check.
         for mob, hits in pairs(damages) do
             if mob and hits then
                 local wz = mob:wz()

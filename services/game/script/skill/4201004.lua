@@ -1,14 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 스틸
 
-local function total_damage_steal(hits)
-    local total = 0
-    for _, amount in ipairs(hits) do
-        if amount > 0 then
-            total = total + amount
-        end
-    end
-    return total
-end
+local combat = require("script/lib/combat")
 
 local function roll_percent_steal(prob)
     if prob <= 0 then
@@ -32,7 +24,7 @@ return {
         end
         local map = me:map()
         for mob, hits in pairs(damages) do
-            if total_damage_steal(hits) <= 0 then
+            if combat.total_damage_to_mob(hits) <= 0 then
                 goto continue_steal
             end
             if mob:wz():boss() then
