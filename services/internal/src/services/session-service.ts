@@ -238,8 +238,7 @@ export class SessionService {
         // so every failure after the session moved, and a caller gone by the end, leaves it again.
         try {
             // Only a move between servers keeps the seat; a new login starts with no messenger window, so a seat
-            // left by a transfer that never arrived is given up. The seat moves right after the session does,
-            // since a messenger request from anyone in the world prunes a seat whose channel no longer matches.
+            // left by a transfer that never arrived is given up.
             let messengerRoomId = 0;
             if (gameToGameTransfer) {
                 messengerRoomId = await this.socialService

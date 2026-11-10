@@ -15,5 +15,11 @@ export interface AccountSession {
     gameToGameTransfer: boolean;
     debuffs: Debuff[];
     presentation: CharacterPresentation | null;
-    timestamps: { createdAt: string | null; updatedAt: string | null; stateChangedAt: string | null };
+    timestamps: {
+        createdAt: string | null;
+        updatedAt: string | null;
+        stateChangedAt: string | null;
+        // When the character entered the game from the login server; a move between servers keeps it.
+        loggedInAt: string | null;
+    };
 }

@@ -59,6 +59,7 @@ export class SessionRepository {
                 createdAt: hash.created_at || null,
                 updatedAt: hash.updated_at || null,
                 stateChangedAt: hash.state_changed_at || null,
+                loggedInAt: hash.logged_in_at || null,
             },
         };
     }
@@ -261,19 +262,18 @@ export class SessionRepository {
             if (error != null) {
                 return [0, error];
             }
-            await client
-                .multi()
-                .hset(key, {
-                    state: String(AS.ACCOUNT_SESSION_STATE_GAME),
-                    login_server_connected: "0",
-                    channel_id: String(channelId),
-                    game_to_game_transfer: "0",
-                    updated_at: now,
-                    state_changed_at: now,
-                })
-                .hdel(key, "debuffs", "presentation")
-                .expire(key, ttlSeconds)
-                .exec();
+            const fields: Record<string, string> = {
+                state: String(AS.ACCOUNT_SESSION_STATE_GAME),
+                login_server_connected: "0",
+                channel_id: String(channelId),
+                game_to_game_transfer: "0",
+                updated_at: now,
+                state_changed_at: now,
+            };
+            if (session.game_to_game_transfer !== "1") {
+                fields.logged_in_at = now;
+            }
+            await client.multi().hset(key, fields).hdel(key, "debuffs", "presentation").expire(key, ttlSeconds).exec();
             return [1, SessionErrorCode.SESSION_NONE];
         });
     }
