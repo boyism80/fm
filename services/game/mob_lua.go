@@ -24,50 +24,39 @@ func (m *Mob) skillArea(skill *MobSkill) (types.Rect[int32], bool) {
 	return skill.levelData.Area(int32(pos.X), int32(pos.Y), m.GetStance()%2 != 0)
 }
 
-// inSkillArea is what of typ stands in the area of the mob's skill, the mob itself left out; false when the skill
-// has no area.
-func (m *Mob) inSkillArea(skill *MobSkill, typ constant.ObjectType) ([]luax.Luable, bool) {
-	area, ok := m.skillArea(skill)
-	mp := m.GetMap()
-	if !ok || mp == nil {
-		return nil, ok
-	}
-	var targets []luax.Luable
-	for _, obj := range mp.GetObjectsIn(typ, area) {
-		if obj != nil && obj != Object(m) {
-			targets = append(targets, obj.(luax.Luable))
-		}
-	}
-	return targets, true
-}
-
 func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		// skill_mobs(skill) is the mobs a mob skill buffs: those in its area and the mob itself.
 		"skill_mobs": func(L *lua.LState) int {
 			mob := luax.Check[Mob](L, 1)
 			tbl := L.NewTable()
-			targets, _ := mob.inSkillArea(luax.Check[MobSkill](L, 2), constant.ObjectTypeMob)
-			for _, target := range targets {
-				tbl.Append(luax.NewLuable(L, target))
+			area, ok := mob.skillArea(luax.Check[MobSkill](L, 2))
+			if mp := mob.GetMap(); ok && mp != nil {
+				for _, obj := range mp.GetObjectsIn(constant.ObjectTypeMob, area) {
+					if obj != nil && obj != Object(mob) {
+						tbl.Append(luax.NewLuable(L, obj.(luax.Luable)))
+					}
+				}
 			}
 			tbl.Append(luax.NewLuable(L, mob))
 			L.Push(tbl)
 			return 1
 		},
-		// skill_characters(skill, controller) is the characters a mob skill reaches: those in its area, or the
-		// controller when the skill has no area.
+		// skill_characters(skill, controller) is the characters a mob skill reaches. As in the original it is only the
+		// controller, and only while it stands in the skill's area when the skill has one.
 		"skill_characters": func(L *lua.LState) int {
 			mob := luax.Check[Mob](L, 1)
+			skill := luax.Check[MobSkill](L, 2)
 			tbl := L.NewTable()
-			targets, ok := mob.inSkillArea(luax.Check[MobSkill](L, 2), constant.ObjectTypeCharacter)
-			if !ok && L.Get(3) != lua.LNil {
-				targets = append(targets, luax.Check[Character](L, 3))
-			}
-			for _, target := range targets {
-				tbl.Append(luax.NewLuable(L, target))
-			}
 			L.Push(tbl)
+			if L.Get(3) == lua.LNil {
+				return 1
+			}
+			controller := luax.Check[Character](L, 3)
+			pos := controller.GetPosition()
+			if area, ok := mob.skillArea(skill); !ok || area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) {
+				tbl.Append(luax.NewLuable(L, controller))
+			}
 			return 1
 		},
 		"skill_area": func(L *lua.LState) int {

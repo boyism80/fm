@@ -10,7 +10,7 @@ local FACE_RIGHT = 4
 -- Weapon attack up for every mob within (-300, -200) to (300, 200).
 local POWER_UP_MOB = 5120506
 local POWER_UP = 110
--- Darkness for the characters within (-300, -120) to (300, 120).
+-- Darkness within (-300, -120) to (300, 120).
 local DARKNESS_MOB = 9501001
 local DARKNESS = 121
 
@@ -130,7 +130,7 @@ local function area_buff(ctx)
     return true
 end
 
--- An area disease reaches the characters in the area.
+-- An area disease reaches only the controller standing in the area, as in the original.
 local function area_disease(ctx)
     local first, second = ctx:bot(0), ctx:bot(1)
     if setup(ctx, first) == false or setup(ctx, second) == false then
@@ -174,10 +174,15 @@ local function area_disease(ctx)
     if cast_ok == false then
         return false
     end
-    for _, bot in ipairs({ first, second }) do
-        if diseased[bot:id()] ~= true then
-            return ctx:fail(bot:name() .. "에게 범위 안 암흑이 걸리지 않음")
-        end
+    if diseased[controller:id()] ~= true then
+        return ctx:fail("범위 안 컨트롤러에게 암흑이 걸리지 않음")
+    end
+    local other = first
+    if controller:id() == first:id() then
+        other = second
+    end
+    if diseased[other:id()] == true then
+        return ctx:fail("컨트롤러가 아닌 캐릭터에게도 암흑이 걸림")
     end
     return true
 end
