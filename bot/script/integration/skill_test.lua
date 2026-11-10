@@ -1,6 +1,9 @@
 local pq = require("script/integration/lib/party_quest")
 
 local HUNTING_GROUND = 104040000
+local HENESYS = 100000000
+local DARK_KNIGHT = 132
+local BERSERK = 1320006
 -- The GM holy symbol reaches every player on the map, so the GM measures it alone, away from the other bots.
 local GM_GROUND = 104040001
 local NO_DOOR_MAP = 100000005
@@ -1294,8 +1297,50 @@ local function dragon_roar_half_hp(ctx)
     return true
 end
 
+-- A Dark Knight in Berserk shows its aura to the characters of the map it moves to, not only to those who saw it turn on.
+local function berserk_aura(ctx)
+    local knight = ctx:bot(0)
+    local watcher = ctx:bot(1)
+    if setup(ctx, knight, 120, DARK_KNIGHT, "-") == false or setup(ctx, watcher, 30, 0, "-") == false then
+        return false
+    end
+    if learn(ctx, knight, BERSERK) == false then
+        return false
+    end
+    if pq.command(knight, "/체력바꾸기 3000", "체력 설정") == false then
+        return ctx:fail("다크나이트 체력 설정 실패")
+    end
+    if watcher:instance_move(HENESYS) == false or knight:instance_move(HUNTING_GROUND) == false then
+        return ctx:fail("맵 이동 실패")
+    end
+    local hurt = knight:request(resp.update_stats, req.damaged { type = HIT_ENV, damage = 2999 }, function(p)
+        return p.stats[HP] ~= nil
+    end, 3000)
+    if hurt == false then
+        return ctx:fail("다크나이트 HP를 버서크 아래로 낮추지 못함")
+    end
+
+    local aura = nil
+    ctx:hook("berserk_aura", function(_, b, p, name)
+        if b:id() == watcher:id() and name == resp.show_skill_effect and p.character_id == knight:id() and p.skill_id == BERSERK then
+            aura = p.additional
+        end
+    end)
+    local moved = knight:instance_move(HENESYS)
+    ctx:sleep(500)
+    ctx:unhook("berserk_aura")
+    pq.command(knight, "/체력바꾸기 3000", "체력 설정")
+    if moved == false then
+        return ctx:fail("다크나이트 맵 이동 실패")
+    end
+    if aura ~= 1 then
+        return ctx:fail("버서크 상태로 들어온 다크나이트의 오라가 보이지 않음: " .. tostring(aura))
+    end
+    return true
+end
+
 test_suite {
-    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용·GM 하이퍼 바디·변신 능력치·드래곤 로어 HP 조건·다크 사이트 감속",
+    name = "Skill: 미스틱 도어 맵 제한·사망 시 사용 불가·GM 홀리 심볼·솔로 파티 버프·스킬 범위 방향·원거리 탄 소모·독 안개·알케미스트·MP 회복력 향상·쇼다운 뒤 위협·스킬 MP 비용·GM 하이퍼 바디·변신 능력치·드래곤 로어 HP 조건·다크 사이트 감속·버서크 오라",
     bot_count = 2,
 
     scenarios = {
@@ -1325,6 +1370,7 @@ test_suite {
         fire_demon_poison,
         dark_sight_speed,
         beginner_buffs,
+        berserk_aura,
         -- Last: the hyper body stays on the other bot and would raise its max HP.
         gm_hyper_body,
     },

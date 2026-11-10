@@ -230,6 +230,17 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 			Buffs:       buffs,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
+
+	if ch.berserk {
+		flag := uint8(1)
+		viewer.Send(&response.ShowSkillEffect{
+			CharacterID: ch.GetID(),
+			Type:        pconst.SkillEffectTypeCast,
+			SkillID:     uint32(constant.SkillBerserk),
+			SkillLevel:  uint8(ch.skills.Level(uint32(constant.SkillBerserk))),
+			Additional:  &flag,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
 }
 
 func (ch *Character) SendDestroySyncToViewer(viewer *Character) {
@@ -332,11 +343,7 @@ func (ch *Character) ShowBerserk() {
 	if on {
 		flag = 1
 	}
-	level := uint8(0)
-	if entry := ch.skills.Get(uint32(constant.SkillBerserk)); entry != nil {
-		level = uint8(entry.Level())
-	}
-	ch.listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, uint32(constant.SkillBerserk), level, &flag)
+	ch.listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, uint32(constant.SkillBerserk), uint8(ch.skills.Level(uint32(constant.SkillBerserk))), &flag)
 }
 
 func (ch *Character) die() {
