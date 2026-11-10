@@ -1,22 +1,15 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 
-	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
 
@@ -264,28 +257,6 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *game.Character) {
 	}
 
 	ch.Broadcast(lookPacket, nil)
-	if ch.Messenger().RoomID() != 0 {
-		l.gs.systems.Get[*game.DispatchSystem]().Visit(ch.GetID(), func(ctx actor.Context, current *game.Character) {
-			if current.Messenger().RoomID() == 0 {
-				return
-			}
-			w := stream.NewStreamWriter(stream.LittleEndian)
-			current.BuildS2C().SerializeLook(w)
-			req := &internal.MessengerRequest{
-				WorldId:     l.gs.config.WorldId,
-				CharacterId: current.GetID(),
-				ChannelId:   l.gs.config.ChannelId,
-				Action:      internal.MessengerAction_MESSENGER_ACTION_AVATAR,
-				Look:        w.Bytes(),
-			}
-			async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
-				func(c context.Context) (*internal.MessengerReply, error) {
-					return l.gs.systems.Get[*rpc.InternalConnection]().Client.Messenger(c, req)
-				},
-				nil,
-			).OnError(func(error) {})
-		})
-	}
 }
 
 func (l *CharacterListenerImpl) OnNpcAction(ch *game.Character, bytes []byte) {

@@ -264,12 +264,18 @@ func (ch *Character) GetSkinColor() uint8 { return ch.look.skinColor }
 func (ch *Character) GetFace() uint32     { return ch.look.face }
 func (ch *Character) GetHair() uint32     { return ch.look.hair }
 
+// updateLook shows the character's new look to its map and its messenger room.
+func (ch *Character) updateLook() {
+	ch.listener.OnUpdateCharacterLook(ch)
+	ch.messenger.shareLook()
+}
+
 func (ch *Character) SetGender(gender uint8) {
 	if ch.look.gender == gender {
 		return
 	}
 	ch.look.gender = gender
-	ch.listener.OnUpdateCharacterLook(ch)
+	ch.updateLook()
 }
 
 func (ch *Character) SetHair(id uint32) {
@@ -280,7 +286,7 @@ func (ch *Character) SetHair(id uint32) {
 	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHair: int32(id),
 	}, false)
-	ch.listener.OnUpdateCharacterLook(ch)
+	ch.updateLook()
 }
 
 func (ch *Character) SetFace(id uint32) {
@@ -291,7 +297,7 @@ func (ch *Character) SetFace(id uint32) {
 	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatFace: int32(id),
 	}, false)
-	ch.listener.OnUpdateCharacterLook(ch)
+	ch.updateLook()
 }
 
 func (ch *Character) SetSkin(color uint8) {
@@ -302,7 +308,7 @@ func (ch *Character) SetSkin(color uint8) {
 	ch.listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatSkin: int32(color),
 	}, false)
-	ch.listener.OnUpdateCharacterLook(ch)
+	ch.updateLook()
 }
 
 func (ch *Character) GetLevel() uint8 { return ch.level }

@@ -254,6 +254,17 @@ local function messenger_flow(ctx, a, b)
         return false
     end
 
+    -- A look change reaches the room as an avatar update.
+    if pq.command(b, "/성별 0", "성별 변경") == false or pq.command(b, "/성별 1", "성별 변경") == false then
+        return ctx:fail(b:name() .. " 성별 변경 실패")
+    end
+    local restyled = expect(ctx, a, "messenger", function(p)
+        return p.action == MESSENGER.avatar
+    end, "외형 변경 알림")
+    if restyled == false or check(ctx, restyled.position == 1, "외형 변경 알림의 자리가 다름: " .. restyled.position) == false then
+        return false
+    end
+
     send(b, req.messenger { action = MESSENGER.leave })
     local left = expect(ctx, a, "messenger", function(p)
         return p.action == MESSENGER.leave
@@ -263,6 +274,7 @@ local function messenger_flow(ctx, a, b)
     end
     send(a, req.messenger { action = MESSENGER.leave })
     ctx:sleep(300)
+    pq.command(b, "/성별 0", "성별 변경")
     if b:transfer(0) == false then
         return ctx:fail(b:name() .. " 원래 채널 복귀 실패")
     end

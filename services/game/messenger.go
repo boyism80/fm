@@ -3,6 +3,7 @@ package game
 import (
 	"errors"
 
+	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
@@ -29,9 +30,13 @@ type Messenger struct {
 	pending bool
 	joining uint32
 	queued  []MessengerEvent
+	// lookChanged holds a look change made while a join waits, shared once the owner is in the room.
+	lookChanged bool
 }
 
-func (m *Messenger) Begin(action internal.MessengerAction, roomID uint32) error {
+// RequestAsync asks internal for one messenger action; one request is in flight at a time, and the room follows the
+// reply.
+func (m *Messenger) RequestAsync(actx actor.Context, action internal.MessengerAction, roomID uint32, text string) error {
 	if m.pending {
 		return ErrMessengerBusy
 	}
@@ -43,10 +48,23 @@ func (m *Messenger) Begin(action internal.MessengerAction, roomID uint32) error 
 	if action == internal.MessengerAction_MESSENGER_ACTION_ENTER {
 		m.joining = roomID
 	}
+	m.owner.gameWorld.Systems().Get[*InternalSystem]().MessengerAsync(actx, m.owner, action, roomID, text).Do(func(reply *internal.MessengerReply) error {
+		if m.owner.LoggedOut() {
+			return nil
+		}
+		if !reply.Ok {
+			m.fail(action, text)
+			return nil
+		}
+		m.finish(action, text, reply)
+		return nil
+	}).OnError(func(error) {
+		m.fail(action, text)
+	})
 	return nil
 }
 
-func (m *Messenger) Finish(action internal.MessengerAction, name string, reply *internal.MessengerReply) {
+func (m *Messenger) finish(action internal.MessengerAction, name string, reply *internal.MessengerReply) {
 	m.pending = false
 	switch action {
 	case internal.MessengerAction_MESSENGER_ACTION_ENTER:
@@ -54,6 +72,10 @@ func (m *Messenger) Finish(action internal.MessengerAction, name string, reply *
 		m.owner.listener.OnMessengerJoined(m.owner, uint8(reply.Position), reply.Members, m.queued)
 		m.joining = 0
 		m.queued = nil
+		if m.lookChanged {
+			m.lookChanged = false
+			m.shareLook()
+		}
 	case internal.MessengerAction_MESSENGER_ACTION_LEAVE:
 		m.roomID = 0
 	case internal.MessengerAction_MESSENGER_ACTION_INVITE:
@@ -61,13 +83,23 @@ func (m *Messenger) Finish(action internal.MessengerAction, name string, reply *
 	}
 }
 
-func (m *Messenger) Fail(action internal.MessengerAction, name string) {
+func (m *Messenger) fail(action internal.MessengerAction, name string) {
 	m.pending = false
 	m.joining = 0
 	m.queued = nil
+	m.lookChanged = false
 	if action == internal.MessengerAction_MESSENGER_ACTION_INVITE {
 		m.owner.listener.OnMessengerInviteResult(m.owner, name, false)
 	}
+}
+
+// shareLook shows the owner's new look to its room. A look changed while a join waits is shared once the join ends.
+func (m *Messenger) shareLook() {
+	if m.roomID == 0 {
+		m.lookChanged = m.joining != 0
+		return
+	}
+	m.owner.gameWorld.Systems().Get[*InternalSystem]().MessengerAsync(nil, m.owner, internal.MessengerAction_MESSENGER_ACTION_AVATAR, 0, "").OnError(func(error) {})
 }
 
 // Room events can arrive before the join reply; they are held until the

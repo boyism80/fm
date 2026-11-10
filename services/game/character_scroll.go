@@ -104,7 +104,7 @@ func (ch *Character) Scroll(actx actor.Context, scrollSlot int16, targetSlot int
 		if targetSlot < 0 {
 			parts := constant.EquipmentPartsType(targetSlot)
 			delete(ch.inventory.equipped, parts)
-			ch.listener.OnUpdateCharacterLook(ch)
+			ch.updateLook()
 			ch.onEquipmentChanged(actx, parts, target, nil)
 		} else {
 			equipInventory.Remove(uint8(targetSlot))

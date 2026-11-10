@@ -507,7 +507,7 @@ func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot 
 	inven.items[destSlot] = equipments[parts]
 	delete(equipments, parts)
 	ch.listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
-	ch.listener.OnUpdateCharacterLook(ch)
+	ch.updateLook()
 	ch.mount.changeEquipment(parts)
 	return nil
 }
@@ -529,7 +529,7 @@ func (inv *Inventory) RemoveEquipped(parts constant.EquipmentPartsType) Equipmen
 	}
 	delete(inv.equipped, parts)
 	ch.listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts))
-	ch.listener.OnUpdateCharacterLook(ch)
+	ch.updateLook()
 	ch.mount.changeEquipment(parts)
 	return equipment
 }
@@ -642,7 +642,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	}
 
 	ch.listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
-	ch.listener.OnUpdateCharacterLook(ch)
+	ch.updateLook()
 	if swap {
 		ch.mount.changeEquipment(parts)
 	}

@@ -308,10 +308,6 @@ func (x *MessageBox) Text() string {
 	return x.text
 }
 
-func (x *Messenger) RoomID() uint32 {
-	return x.roomID
-}
-
 func (x *MiniGame) Cards() []uint32 {
 	return x.cards
 }

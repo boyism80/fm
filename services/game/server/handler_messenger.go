@@ -1,15 +1,10 @@
 package server
 
 import (
-	"context"
-
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/rpc"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
-	"github.com/boyism80/fm/stream"
 )
 
 type Messenger struct {
@@ -45,39 +40,6 @@ func (h *Messenger) Handle(ctx *core.ClientContext, req *request.Messenger) erro
 	default:
 		return nil
 	}
-	if err := ch.Messenger().Begin(req.Action, req.RoomID); err != nil {
-		return nil
-	}
-
-	w := stream.NewStreamWriter(stream.LittleEndian)
-	ch.BuildS2C().SerializeLook(w)
-	internalReq := &internal.MessengerRequest{
-		WorldId:     h.gs.config.WorldId,
-		CharacterId: ch.GetID(),
-		ChannelId:   h.gs.config.ChannelId,
-		Action:      req.Action,
-		RoomId:      req.RoomID,
-		Text:        req.Text,
-		Look:        w.Bytes(),
-	}
-	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
-		func(c context.Context) (*internal.MessengerReply, error) {
-			return h.gs.systems.Get[*rpc.InternalConnection]().Client.Messenger(c, internalReq)
-		},
-		func(reply *internal.MessengerReply) error {
-			if ch.LoggedOut() {
-				return nil
-			}
-			if !reply.Ok {
-				ch.Messenger().Fail(req.Action, req.Text)
-				return nil
-			}
-			ch.Messenger().Finish(req.Action, req.Text, reply)
-			return nil
-		},
-	).OnError(func(error) {
-		ch.Messenger().Fail(req.Action, req.Text)
-
-	})
+	ch.Messenger().RequestAsync(ctx.ActorContext, req.Action, req.RoomID, req.Text)
 	return nil
 }

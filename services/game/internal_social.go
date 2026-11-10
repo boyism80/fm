@@ -9,7 +9,29 @@ import (
 	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/stream"
 )
+
+// MessengerAsync sends one messenger action for ch with its current look.
+func (s *InternalSystem) MessengerAsync(ctx actor.Context, ch *Character, action internal.MessengerAction, roomID uint32, text string) *async.Promise[*internal.MessengerReply] {
+	w := stream.NewStreamWriter(stream.LittleEndian)
+	ch.BuildS2C().SerializeLook(w)
+	req := &internal.MessengerRequest{
+		WorldId:     s.gw.GetWorldID(),
+		CharacterId: ch.GetID(),
+		ChannelId:   uint32(s.gw.GetChannelID()),
+		Action:      action,
+		RoomId:      roomID,
+		Text:        text,
+		Look:        w.Bytes(),
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
+		func(c context.Context) (*internal.MessengerReply, error) {
+			return s.client.Messenger(c, req)
+		},
+		nil,
+	)
+}
 
 func (s *InternalSystem) ClaimWhisperAsync(ctx actor.Context, ch *Character, requestID string) *async.Promise[*internal.CompleteWhisperReply] {
 	req := &internal.CompleteWhisperRequest{
