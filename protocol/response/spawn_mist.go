@@ -52,4 +52,12 @@ func (p *SpawnMist) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnMist) Deserialize(*stream.StreamReader) {}
+func (p *SpawnMist) Deserialize(r *stream.StreamReader) {
+	p.OID = r.ReadU32()
+	p.Type = constant.MistType(r.ReadU8())
+	p.CauserID = r.ReadU32()
+	p.SkillID = r.ReadU32()
+	p.SkillLevel = r.ReadU8()
+	p.SkillDelay = r.ReadU16()
+	p.Bounds = types.Rect[int32]{Left: r.Read32(), Top: r.Read32(), Right: r.Read32(), Bottom: r.Read32()}
+}

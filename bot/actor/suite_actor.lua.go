@@ -491,6 +491,15 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(b.Move(a.wz, pos) == nil))
 			return 1
 		},
+		// move_mob(oid, x, y, stance) moves a mob the bot controls to (x, y), facing as stance says (odd faces left).
+		"move_mob": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pos := types.Point[int16]{X: int16(L.CheckInt(3)), Y: int16(L.CheckInt(4))}
+			L.Push(lua.LBool(b.Send(&request.MoveMob{OID: uint32(L.CheckInt(2)), CenterSplit: -1, Movements: []dto.MoveFragment{
+				&dto.AbsoluteLifeMovement{BasicMovement: &dto.BasicMovement{Stance: uint8(L.CheckInt(5))}, Position: pos},
+			}}) == nil))
+			return 1
+		},
 		"field_key": func(L *lua.LState) int {
 			L.Push(lua.LNumber(a.checkBot(L).FieldKey))
 			return 1

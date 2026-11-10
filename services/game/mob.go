@@ -284,6 +284,7 @@ func (m *Mob) SpawnMist(skill *MobSkill, spec mistSpec) *Mist {
 	if mapInstance == nil {
 		return nil
 	}
+	// Without bounds the mist covers the WZ area facing left, whichever way the mob faces, as the original laid it.
 	if spec.bounds == (types.Rect[int32]{}) {
 		spec.bounds = skill.levelData.Bounds.AtOrigin(types.Point[int32]{X: int32(m.position.X), Y: int32(m.position.Y)})
 	}

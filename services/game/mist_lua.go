@@ -9,16 +9,17 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// Parse reads create_mist(skill, duration_ms, type, bounds[, poison_delay_ms[, poison_tick_multiplier]]) after the skill.
+// Parse reads create_mist(skill, duration_ms, type[, bounds[, poison_delay_ms[, poison_tick_multiplier]]]) after the skill.
 func (spec *mistSpec) Parse(L *lua.LState) {
 	spec.duration = time.Duration(max(L.CheckInt(3), 0)) * time.Millisecond
 	spec.mistType = constant.MistType(L.CheckInt(4))
-	bounds := L.CheckTable(5)
-	spec.bounds = types.Rect[int32]{
-		Left:   int32(lua.LVAsNumber(bounds.RawGetString("left"))),
-		Top:    int32(lua.LVAsNumber(bounds.RawGetString("top"))),
-		Right:  int32(lua.LVAsNumber(bounds.RawGetString("right"))),
-		Bottom: int32(lua.LVAsNumber(bounds.RawGetString("bottom"))),
+	if bounds := L.OptTable(5, nil); bounds != nil {
+		spec.bounds = types.Rect[int32]{
+			Left:   int32(lua.LVAsNumber(bounds.RawGetString("left"))),
+			Top:    int32(lua.LVAsNumber(bounds.RawGetString("top"))),
+			Right:  int32(lua.LVAsNumber(bounds.RawGetString("right"))),
+			Bottom: int32(lua.LVAsNumber(bounds.RawGetString("bottom"))),
+		}
 	}
 	spec.poisonDelay = mistPoisonDelay
 	if L.GetTop() >= 6 && L.CheckInt(6) > 0 {

@@ -281,6 +281,7 @@ var decoders = func() []decoder {
 		newDecoder[response.SpawnMob](nil),
 		newDecoder[response.DieMob](nil),
 		newDecoder[response.ApplyMobBuff](nil),
+		newDecoder[response.SpawnMist](nil),
 		newDecoder[response.CancelMobBuff](nil),
 		newDecoder[response.ShowMobHp](nil),
 		newDecoder[response.SessionValue](nil),
