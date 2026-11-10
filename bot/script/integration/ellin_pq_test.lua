@@ -15,8 +15,8 @@ local ELLIN = 2133000
 local ELLA = 2133001
 local SPIRIT = 2133004
 local DIALOG_LIST = 4
-local FOREST_KEY = 4001161
-local FOREST_KEY_MOB = 9300173
+local POISON_MOB = 9300173
+local FACE_RIGHT = 4
 local SPINE_SEED = 4001162
 local SEED_BOX = 3002000
 local SPINE = 3009000
@@ -121,13 +121,93 @@ local function clear_stage1(ctx)
     return ctx:fail("몹을 모두 처치해도 1단계 포탈이 열리지 않음")
 end
 
+local function reactor_state(bot, oid)
+    for _, r in ipairs(bot:reactors()) do
+        if r.oid == oid then
+            return r.state
+        end
+    end
+    return nil
+end
+
+local function wait_reactor_state(ctx, bot, oid, match)
+    for _ = 1, 300 do
+        if match(reactor_state(bot, oid)) then
+            return true
+        end
+        ctx:sleep(100)
+    end
+    return false
+end
+
+-- Looks for a poisoned stonebug at its spawn spots, and respawns them once every one is dead.
+local function find_poison_mob(ctx, bot)
+    for _ = 1, 3 do
+        local mob = bot:mobs(POISON_MOB)[1]
+        if mob ~= nil then
+            return mob
+        end
+        for _, spot in ipairs(bot:mob_spots()) do
+            if spot.id == POISON_MOB then
+                if pq.move(bot, spot.x, spot.y) == false then
+                    return ctx:fail(bot:name() .. " 몹 위치로 이동 실패")
+                end
+                mob = bot:mobs(POISON_MOB)[1]
+                if mob ~= nil then
+                    return mob
+                end
+            end
+        end
+        if pq.regen(bot) == false then
+            bot:request(resp.spawn_mob, nil, function(p)
+                return p.mob.mob_id == POISON_MOB
+            end, 30000)
+        end
+    end
+    return ctx:fail("중독된 스톤버그가 보이지 않음")
+end
+
+-- The poison can't be picked up (WZ pickUpBlock), so a poisoned stonebug is drawn onto the seed box and killed
+-- there; its poison lands in the box, as in the original. A drop is checked only as it lands, so the box must be
+-- back in its first state first.
+local function poison_seed_box(ctx, bot)
+    local box = pq.seek_reactor(ctx, bot, pq.reactor_by_id(SEED_BOX))
+    if box == false then
+        return false
+    end
+    if wait_reactor_state(ctx, bot, box.oid, function(state)
+            return state == 0
+        end) == false then
+        return ctx:fail("씨앗 상자가 처음 상태로 돌아오지 않음")
+    end
+    local mob = find_poison_mob(ctx, bot)
+    if mob == false then
+        return false
+    end
+
+    -- A hit makes the bot the stonebug's controller, which moves it onto the box.
+    if pq.command(bot, "/몹피해 " .. mob.oid .. " 1", "몹 피해") == false then
+        return ctx:fail("스톤버그 컨트롤 가져오기 실패")
+    end
+    ctx:sleep(300)
+    if bot:move_mob(mob.oid, box.x, box.y, FACE_RIGHT) == false or pq.move(bot, box.x, box.y) == false then
+        return ctx:fail("스톤버그를 씨앗 상자로 옮기지 못함")
+    end
+    if bot:kill(mob.oid) == false then
+        return ctx:fail("씨앗 상자 위의 스톤버그 처치 실패")
+    end
+    if wait_reactor_state(ctx, bot, box.oid, function(state)
+            return state ~= 0
+        end) == false then
+        return ctx:fail("씨앗 상자가 스톤버그의 독에 반응하지 않음")
+    end
+    return true
+end
+
 local function grow_spine(ctx)
     local leader = ctx:bot(0)
     for _ = 1, SPINE_FEED do
-        if pq.collect(ctx, leader, FOREST_KEY_MOB, FOREST_KEY, 1) == false then
-            return false
-        end
-        if pq.feed(ctx, leader, SEED_BOX, FOREST_KEY, 1) == false then
+        if poison_seed_box(ctx, leader) == false then
             return false
         end
         if pq.pick_up(ctx, leader, SPINE_SEED) == false then
