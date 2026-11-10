@@ -12,15 +12,7 @@ return {
             return true
         end
 
-        local targets = {}
-        local bounds = effect.bounds
-        if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
-            for _, ch in ipairs(mob:skill_targets(skill, ObjectType.Character)) do
-                table.insert(targets, ch)
-            end
-        elseif controller ~= nil then
-            table.insert(targets, controller)
-        end
+        local targets = mob:skill_characters(skill, controller)
 
         local x = effect.x
         if x <= 0 then

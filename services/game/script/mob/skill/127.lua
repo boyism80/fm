@@ -31,19 +31,7 @@ return {
     end,
 
     on_mob_skill = function(mob, controller, skill)
-        local effect = skill:effect()
-        local targets = {}
-        local bounds = effect.bounds
-
-        if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
-            for _, target in ipairs(mob:skill_targets(skill, ObjectType.Character)) do
-                table.insert(targets, target)
-            end
-        elseif controller ~= nil then
-            table.insert(targets, controller)
-        end
-
-        for _, target in ipairs(targets) do
+        for _, target in ipairs(mob:skill_characters(skill, controller)) do
             dispel_skill_id(target)
         end
 

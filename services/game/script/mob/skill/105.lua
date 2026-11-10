@@ -16,27 +16,18 @@ return {
 
     on_mob_skill = function(mob, controller, skill)
         local effect = skill:effect()
-        local is_range = mob:skill_area(skill) ~= nil
-        local targets = {}
-        if is_range then
-            local other = mob:skill_targets(skill, ObjectType.Mob)[1]
-            if other ~= nil then
-                table.insert(targets, other)
-            end
-        else
-            table.insert(targets, mob)
+        if mob:skill_area(skill) == nil then
+            heal_mob(mob, effect)
+            return true
         end
 
-        local map = mob:map()
-        for _, target in ipairs(targets) do
-            if is_range then
-                map:remove_mob(target:oid(), MobDieAnimation.FadeOut)
+        for _, other in ipairs(mob:skill_mobs(skill)) do
+            if other:oid() ~= mob:oid() then
+                mob:map():remove_mob(other:oid(), MobDieAnimation.FadeOut)
                 heal_mob(mob, effect)
-            else
-                heal_mob(target, effect)
+                break
             end
         end
-
         return true
     end
 }

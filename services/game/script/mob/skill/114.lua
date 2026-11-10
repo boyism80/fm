@@ -13,25 +13,12 @@ return {
 
     on_mob_skill = function(mob, controller, skill)
         local effect = skill:effect()
-        local bounds = effect.bounds
-        local is_range = bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0
-        local targets = {}
-
-        if is_range then
-            for _, target in ipairs(mob:skill_targets(skill, ObjectType.Mob)) do
-                table.insert(targets, target)
-            end
-            table.insert(targets, mob)
-        else
-            table.insert(targets, mob)
-        end
-
         local hp_amount = effect.x
-        if is_range then
+        if mob:skill_area(skill) ~= nil then
             hp_amount = random_range_heal_hp(effect)
         end
 
-        for _, target in ipairs(targets) do
+        for _, target in ipairs(mob:skill_mobs(skill)) do
             if hp_amount ~= 0 then
                 target:add_hp(hp_amount)
             end

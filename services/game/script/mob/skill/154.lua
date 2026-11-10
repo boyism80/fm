@@ -7,14 +7,7 @@ return {
 
     on_mob_skill = function(mob, controller, skill)
         local effect = skill:effect()
-        local targets = {}
-        local bounds = effect.bounds
-        if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
-            for _, target in ipairs(mob:skill_targets(skill, ObjectType.Mob)) do
-                table.insert(targets, target)
-            end
-        end
-        table.insert(targets, mob)
+        local targets = mob:skill_mobs(skill)
         for _, target in ipairs(targets) do
             target:buff(MobBuff.Acc, effect.x, effect.time, skill, controller)
         end

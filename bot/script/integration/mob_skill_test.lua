@@ -7,6 +7,12 @@ local POISON_MIST = 131
 local MIST_AREA = { left = -50, top = -160, right = 300, bottom = 40 }
 local CAST_ACTION = 21
 local FACE_RIGHT = 4
+-- Weapon attack up for every mob within (-300, -200) to (300, 200).
+local POWER_UP_MOB = 5120506
+local POWER_UP = 110
+-- Darkness for the characters within (-300, -120) to (300, 120).
+local DARKNESS_MOB = 9501001
+local DARKNESS = 121
 
 local function setup(ctx, bot)
     if pq.command(bot, "/봇초기화 70 0 0 -", "봇초기화 완료") == false then
@@ -91,11 +97,98 @@ local function poison_mist(ctx)
     return true
 end
 
+-- An area buff reaches the other mobs in the area besides the caster.
+local function area_buff(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot) == false then
+        return false
+    end
+    local caster = spawn(ctx, bot, POWER_UP_MOB)
+    local other = caster ~= false and spawn(ctx, bot, POWER_UP_MOB)
+    if other == false then
+        return false
+    end
+
+    local buffed = {}
+    ctx:hook("area_buff", function(_, _, p, name)
+        if name == resp.apply_mob_buff then
+            buffed[p.oid] = true
+        end
+    end)
+    local cast_ok = cast(ctx, bot, caster.oid, POWER_UP, resp.apply_mob_buff, function(p)
+        return p.oid == caster.oid
+    end)
+    ctx:sleep(500)
+    ctx:unhook("area_buff")
+    pq.command(bot, "/몬스터죽이기", "마리 제거")
+    if cast_ok == false then
+        return false
+    end
+    if buffed[other.oid] ~= true then
+        return ctx:fail("범위 안 다른 몹에 버프가 걸리지 않음")
+    end
+    return true
+end
+
+-- An area disease reaches the characters in the area.
+local function area_disease(ctx)
+    local first, second = ctx:bot(0), ctx:bot(1)
+    if setup(ctx, first) == false or setup(ctx, second) == false then
+        return false
+    end
+    local controllers = {}
+    ctx:hook("disease_control", function(_, b, p, name)
+        if name == resp.start_control_mob then
+            controllers[p.mob.oid] = b
+        end
+    end)
+    local mob = spawn(ctx, first, DARKNESS_MOB)
+    if mob == false then
+        return false
+    end
+    ctx:sleep(500)
+    ctx:unhook("disease_control")
+    local controller = controllers[mob.oid]
+    if controller == nil then
+        return ctx:fail("생성한 몹의 컨트롤이 오지 않음")
+    end
+    -- The mob lands on the ground below the spawn point.
+    for _, bot in ipairs({ first, second }) do
+        if pq.move(bot, mob.position.x, mob.position.y) == false then
+            return ctx:fail(bot:name() .. " 몹 옆으로 이동 실패")
+        end
+    end
+
+    local diseased = {}
+    ctx:hook("area_disease", function(_, _, p, name)
+        if name == resp.give_debuff and p.skill_id == DARKNESS then
+            diseased[p.character_id] = true
+        end
+    end)
+    local cast_ok = cast(ctx, controller, mob.oid, DARKNESS, resp.control_move_mob, function(p)
+        return p.oid == mob.oid
+    end)
+    ctx:sleep(1000)
+    ctx:unhook("area_disease")
+    pq.command(first, "/몬스터죽이기", "마리 제거")
+    if cast_ok == false then
+        return false
+    end
+    for _, bot in ipairs({ first, second }) do
+        if diseased[bot:id()] ~= true then
+            return ctx:fail(bot:name() .. "에게 범위 안 암흑이 걸리지 않음")
+        end
+    end
+    return true
+end
+
 test_suite {
-    name = "MobSkill: 독 안개",
-    bot_count = 1,
+    name = "MobSkill: 독 안개·범위 버프·범위 상태 이상",
+    bot_count = 2,
 
     scenarios = {
         poison_mist,
+        area_buff,
+        area_disease,
     },
 }
