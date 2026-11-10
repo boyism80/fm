@@ -126,7 +126,7 @@ func (ch *Character) UseRewardBox(slot int16, itemID uint32) {
 	switch result {
 	case ExchangeOK:
 		ch.listener.OnShowSelfRewardItemAnimation(ch, reward.ItemID, reward.Effect)
-	case ExchangeLackCapacity:
+	case ExchangeLackCapacity, ExchangeOnlyHeld:
 		ch.listener.OnMessage(ch, constant.MsgPopup, "인벤토리 공간이 부족합니다.")
 	}
 }

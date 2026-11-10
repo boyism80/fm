@@ -1556,7 +1556,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		if !m.canLootFieldDrop(fp, character) {
 			return constant.LootFailedNoOwnership
 		}
-		if item.GetModel().GetTraits()&constant.ItemTraitPartyQuest == 0 && character.inventory.hasUniqueItem(item.GetModel()) {
+		if character.inventory.hasUniqueItem(item.GetModel()) {
 			return constant.LootFailedInventoryFull
 		}
 

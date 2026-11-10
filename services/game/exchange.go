@@ -14,6 +14,8 @@ const (
 	ExchangeOK ExchangeResult = iota
 	ExchangeLackCost
 	ExchangeLackCapacity
+	// ExchangeOnlyHeld refuses a one-of-a-kind reward the character already holds, or more than one of it.
+	ExchangeOnlyHeld
 )
 
 type ExchangeSkill struct {
@@ -86,10 +88,6 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 	if result := ch.stats.validatePopulation(spec.Reward.Population - spec.Cost.Population); result != ExchangeOK {
 		return result
 	}
-	if result := spec.validateItems(ch, escrow); result != ExchangeOK {
-		return result
-	}
-
 	// A trade passes no escrow: what the receiver offered leaves with the trade.
 	holdsUnique := ch.inventory.hasUniqueItem
 	if escrow == nil {
@@ -110,16 +108,15 @@ func (spec ExchangeSpec) Valid(ch *Character, escrow *Escrow) ExchangeResult {
 		if model == nil {
 			return ExchangeLackCapacity
 		}
-		traits := model.GetTraits()
-		if traits&constant.ItemTraitUnique == 0 || traits&constant.ItemTraitPartyQuest != 0 {
+		if model.GetTraits()&constant.ItemTraitUnique == 0 {
 			continue
 		}
 		if count > 1 || (spec.Cost.Items[id] == 0 && holdsUnique(model)) {
-			return ExchangeLackCapacity
+			return ExchangeOnlyHeld
 		}
 	}
 
-	return ExchangeOK
+	return spec.validateItems(ch, escrow)
 }
 
 // validateItems runs the cost and the reward through a slot plan of each tab, the same plan a real add uses.

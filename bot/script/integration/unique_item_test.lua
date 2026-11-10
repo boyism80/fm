@@ -7,6 +7,8 @@ local KEEPER = 1012009
 local ETC = 4
 local TRADE = 3
 local UNIQUE = 4031187
+-- A one-of-a-kind item of a party quest (Magatia's suspicious liquid).
+local PARTY_QUEST_ONLY = 4001132
 
 local MODE = {
     create = 0x00,
@@ -14,7 +16,9 @@ local MODE = {
     visit = 0x04,
     exit = 0x0A,
     put_item = 0x0D,
+    confirm = 0x0F,
 }
+local LEAVE = { only = 8 }
 local STORAGE = { take_out = 4, store = 5 }
 local RESULT = { store = 0x0D, open = 0x16 }
 
@@ -40,9 +44,9 @@ local function setup(ctx, bot, items)
     return true
 end
 
-local function spawn(ctx, bot)
-    local p = bot:request(resp.spawn_item, req.normal_chat { message = "/아이템드롭 " .. UNIQUE }, function(p)
-        return p.item_model ~= nil and p.item_model.id == UNIQUE
+local function spawn(ctx, bot, item_id)
+    local p = bot:request(resp.spawn_item, req.normal_chat { message = "/아이템드롭 " .. item_id }, function(p)
+        return p.item_model ~= nil and p.item_model.id == item_id
     end, 5000)
     if p == false then
         return ctx:fail(bot:name() .. " 아이템을 떨어뜨리지 못함")
@@ -94,7 +98,7 @@ local function offered_unique(ctx)
     if check(ctx, stored ~= false and stored.result == RESULT.store, "고유 아이템 보관 실패") == false then
         return false
     end
-    local oid = spawn(ctx, a)
+    local oid = spawn(ctx, a, UNIQUE)
     if oid == false or check(ctx, a:loot(oid), "창고에 맡긴 고유 아이템을 줍지 못함") == false then
         return false
     end
@@ -128,7 +132,7 @@ local function offered_unique(ctx)
         return false
     end
 
-    oid = spawn(ctx, a)
+    oid = spawn(ctx, a, UNIQUE)
     if oid == false or check(ctx, a:loot(oid) == false, "교환에 올린 고유 아이템을 또 주움") == false then
         return false
     end
@@ -144,11 +148,55 @@ local function offered_unique(ctx)
     return has(ctx, a, 1)
 end
 
+-- A trade that would give a character a second one-of-a-kind item closes as a one-of-a-kind refusal, and both keep theirs.
+local function held_unique_trade(ctx)
+    local a = ctx:bot(0)
+    local b = ctx:bot(1)
+    if setup(ctx, a, UNIQUE .. ":1") == false or setup(ctx, b, UNIQUE .. ":1") == false then
+        return false
+    end
+    if open_trade(ctx, a, b) == false then
+        return false
+    end
+    local put = a:request_on(b, resp.trade_item,
+        req.mini_room { mode = MODE.put_item, inventory_type = ETC, slot = a:slot(UNIQUE) or 0, count = 1, trade_slot = 1 },
+        nil, 5000)
+    if check(ctx, put ~= false, "고유 아이템 올리기가 상대에게 보이지 않음") == false then
+        return false
+    end
+    if a:request_on(b, resp.trade_confirm, req.mini_room { mode = MODE.confirm }, nil, 5000) == false then
+        return ctx:fail("교환 확정이 상대에게 보이지 않음")
+    end
+    local closed = b:request(resp.mini_room_leave, req.mini_room { mode = MODE.confirm }, nil, 5000)
+    if check(ctx, closed ~= false and closed.reason == LEAVE.only, "이미 가진 고유 아이템 교환이 고유 아이템 거절로 끝나지 않음") == false then
+        return false
+    end
+    ctx:sleep(500)
+    return has(ctx, a, 1) and has(ctx, b, 1)
+end
+
+-- A party quest item is never one of a kind, so a character holding one picks up another.
+local function party_quest_only(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, PARTY_QUEST_ONLY .. ":1") == false then
+        return false
+    end
+    local oid = spawn(ctx, bot, PARTY_QUEST_ONLY)
+    if oid == false or check(ctx, bot:loot(oid), "가진 파티 퀘스트 아이템을 하나 더 줍지 못함") == false then
+        return false
+    end
+    ctx:sleep(300)
+    local have = bot:items()[PARTY_QUEST_ONLY] or 0
+    return check(ctx, have == 2, "파티 퀘스트 아이템 개수 " .. have .. " (기대 2)")
+end
+
 test_suite {
-    name = "Unique: 교환에 올린 고유 아이템은 보유로 침",
+    name = "Unique: 교환에 올린 고유 아이템은 보유로 침·이미 가진 고유 아이템 교환 거절·파티 퀘스트 아이템 줍기",
     bot_count = 2,
 
     scenarios = {
         offered_unique,
+        held_unique_trade,
+        party_quest_only,
     },
 }

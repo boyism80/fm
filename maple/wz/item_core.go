@@ -22,7 +22,8 @@ func (model *ItemCore) setTradeFlags(info *node) {
 	if info.Int("tradeBlock", 0) == 1 {
 		model.Traits |= constant.ItemTraitTradeBlock
 	}
-	if info.Int("only", 0) == 1 {
+	// A party quest item is never one of a kind: the party collects several of it.
+	if info.Int("only", 0) == 1 && info.Int("pquest", 0) != 1 {
 		model.Traits |= constant.ItemTraitUnique
 	}
 	if info.Int("accountSharable", 0) == 1 {

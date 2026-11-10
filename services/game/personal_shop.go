@@ -215,7 +215,7 @@ func (ps *PersonalShop) returnItems(ch *Character) {
 		}
 		var spec ExchangeSpec
 		spec.Reward.include(listed.item, listed.count())
-		if ch.inventory.hasUniqueItem(listed.item.GetModel()) || spec.Valid(ch, ch.escrow) != ExchangeOK {
+		if spec.Valid(ch, ch.escrow) != ExchangeOK {
 			items = append(items, listed)
 			continue
 		}

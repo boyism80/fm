@@ -358,7 +358,7 @@ func (inv *Inventory) AddItem(item Item, allOrNothing bool) (addedItems []Item, 
 		return nil, fmt.Errorf("item is nil")
 	}
 
-	if allOrNothing && !inv.canReceiveItem(item) {
+	if allOrNothing && inv.checkReceive(item) != ExchangeOK {
 		return nil, fmt.Errorf("not enough inventory space for %d items", item.GetCount())
 	}
 
@@ -708,8 +708,8 @@ func (inv *Inventory) canReceive(itemID uint32, count uint16) bool {
 	return (ExchangeSpec{Reward: ExchangeSide{Items: map[uint32]uint16{itemID: count}}}).Valid(inv.owner, inv.owner.escrow) == ExchangeOK
 }
 
-func (inv *Inventory) canReceiveItem(item Item) bool {
+func (inv *Inventory) checkReceive(item Item) ExchangeResult {
 	var spec ExchangeSpec
 	spec.Reward.include(item, item.GetCount())
-	return spec.Valid(inv.owner, inv.owner.escrow) == ExchangeOK
+	return spec.Valid(inv.owner, inv.owner.escrow)
 }

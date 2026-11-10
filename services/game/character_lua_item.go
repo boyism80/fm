@@ -38,6 +38,10 @@ func (ch *Character) luaItemFuncs() map[string]lua.LGFunction {
 			}
 
 			result := ch.Exchange(ExchangeSpec{Cost: cost, Reward: reward})
+			// Scripts tell a character it has no room for a one-of-a-kind reward it already holds.
+			if result == ExchangeOnlyHeld {
+				result = ExchangeLackCapacity
+			}
 			L.Push(lua.LNumber(result))
 			return 1
 		},

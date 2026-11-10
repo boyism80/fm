@@ -37,7 +37,7 @@ func (d *Dialog) Buy(shop *wz.Shop, itemID uint32, count uint16) {
 	switch d.owner.Exchange(spec) {
 	case ExchangeOK:
 		d.owner.listener.OnConfirmShopTransaction(d.owner, constant.ShopTransactionBuyOK)
-	case ExchangeLackCapacity:
+	case ExchangeLackCapacity, ExchangeOnlyHeld:
 		d.owner.Message("인벤토리 공간이 부족합니다.")
 	}
 }

@@ -106,10 +106,6 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 		return ErrStorageItemNotFound
 	}
 	item := items[index]
-	if s.owner.inventory.hasUniqueItem(item.GetModel()) {
-		return ErrStorageNotStorable
-	}
-
 	spec := ExchangeSpec{Cost: ExchangeSide{Meso: s.takeOutFee}}
 	spec.Reward.include(item, item.GetCount())
 	switch spec.Valid(s.owner, s.owner.escrow) {
@@ -117,6 +113,8 @@ func (s *Storage) TakeOut(invType constant.InventoryType, index uint8) error {
 		return ErrStorageNotEnoughMeso
 	case ExchangeLackCapacity:
 		return ErrInventoryFull
+	case ExchangeOnlyHeld:
+		return ErrStorageNotStorable
 	}
 
 	s.tabs[invType] = append(items[:index:index], items[index+1:]...)

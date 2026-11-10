@@ -134,15 +134,16 @@ func (sb *StoreBank) check(fee int32) pconst.StoreBankResult {
 	}
 	var reward ExchangeSide
 	for _, listed := range sb.items {
-		if sb.owner.inventory.hasUniqueItem(listed.item.GetModel()) {
-			return pconst.StoreBankResultOnlyOne
-		}
 		reward.include(listed.item, listed.count())
 	}
-	if (ExchangeSpec{Reward: reward}).Valid(sb.owner, sb.owner.escrow) != ExchangeOK {
+	switch (ExchangeSpec{Reward: reward}).Valid(sb.owner, sb.owner.escrow) {
+	case ExchangeOK:
+		return pconst.StoreBankResultClaimed
+	case ExchangeOnlyHeld:
+		return pconst.StoreBankResultOnlyOne
+	default:
 		return pconst.StoreBankResultInventoryFull
 	}
-	return pconst.StoreBankResultClaimed
 }
 
 func (sb *StoreBank) Confirm(actx actor.Context) error {

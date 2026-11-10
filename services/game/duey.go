@@ -563,15 +563,16 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 	if parcel.item == nil {
 		return nil
 	}
-	if d.owner.inventory.hasUniqueItem(parcel.item.GetModel()) {
-		return ErrDueyOnlyHeld
-	}
 	var spec ExchangeSpec
 	spec.Reward.include(parcel.item, parcel.item.GetCount())
-	if spec.Valid(d.owner, d.owner.escrow) != ExchangeOK {
+	switch spec.Valid(d.owner, d.owner.escrow) {
+	case ExchangeOK:
+		return nil
+	case ExchangeOnlyHeld:
+		return ErrDueyOnlyHeld
+	default:
 		return ErrInventoryFull
 	}
-	return nil
 }
 
 func (d *Duey) Delete(actx actor.Context, parcelID uint32) error {
