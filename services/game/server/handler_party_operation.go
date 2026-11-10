@@ -53,37 +53,8 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 }
 
 func (h *PartyOperation) create(ctx *core.ClientContext, ch *game.Character, req *request.PartyOperation) error {
-	worldID := h.gs.config.WorldId
-	charID := ch.GetID()
-
-	leader := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId)).BuildRPC()
-	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
-		func(c context.Context) (*internal.CreatePartyReply, error) {
-			req := &internal.CreatePartyRequest{
-				WorldId: worldID,
-				Leader:  leader,
-			}
-			return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateParty(c, req)
-		},
-		func(reply *internal.CreatePartyReply) error {
-			if reply.GetOk() && reply.GetParty() != nil {
-				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
-			}
-			if !reply.GetOk() {
-				ch.Listener().OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())), "")
-				log.Printf("PartyOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
-				return nil
-			}
-			if reply.PartyId == nil {
-				log.Printf("PartyOperation(create): ok but missing party_id character=%d", charID)
-				return nil
-			}
-			ch.Party().Join(*reply.PartyId, reply.GetParty().GetRevision())
-			ch.Listener().OnPartyCreated(ch, *reply.PartyId)
-			return nil
-		},
-	).OnError(func(err error) {
-		log.Printf("PartyOperation(create) async error: %v", err)
+	h.gs.systems.Get[*game.PartySystem]().CreateAsync(ctx.ActorContext, ch).OnError(func(err error) {
+		log.Printf("PartyOperation(create): %v", err)
 	})
 	return nil
 }
@@ -185,36 +156,9 @@ func (h *PartyOperation) invite(ctx *core.ClientContext, ch *game.Character, req
 	charID := ch.GetID()
 
 	targetName := req.TargetName
-	pid := ch.Party().ID()
-	hasParty := pid != nil
 	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch)
-	if !hasParty {
-		leader := game.PartyMemberFromCharacter(ch, worldID, int32(h.gs.config.ChannelId)).BuildRPC()
-		promise.ThenRPC(
-			func(c context.Context) (*internal.CreatePartyReply, error) {
-				req := &internal.CreatePartyRequest{
-					WorldId: worldID,
-					Leader:  leader,
-				}
-				return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateParty(c, req)
-			},
-			func(reply *internal.CreatePartyReply) error {
-				if !reply.GetOk() {
-					ch.Listener().OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())), "")
-
-					log.Printf("PartyOperation(invite pre-create): failed character=%d target=%q code=%v", charID, targetName, reply.GetErrorCode())
-					return fmt.Errorf("party create before invite failed")
-				}
-				if reply.PartyId == nil {
-					log.Printf("PartyOperation(invite pre-create): ok but missing party_id character=%d", charID)
-					return fmt.Errorf("party create before invite failed")
-				}
-				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
-				ch.Party().Join(*reply.PartyId, reply.GetParty().GetRevision())
-				ch.Listener().OnPartyCreated(ch, *reply.PartyId)
-				return nil
-			},
-		)
+	if ch.Party().ID() == nil {
+		promise = h.gs.systems.Get[*game.PartySystem]().CreateAsync(ctx.ActorContext, ch).Task()
 	}
 	promise.ThenRPC(
 		func(c context.Context) (*internal.InvitePartyReply, error) {

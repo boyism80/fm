@@ -2,13 +2,39 @@ package game
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
+
+// CreateAsync creates a party led by ch and puts ch in it. A refusal tells ch why and fails the promise, so steps
+// chained after it run only once ch leads the new party.
+func (s *PartySystem) CreateAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.CreatePartyReply] {
+	req := &internal.CreatePartyRequest{
+		WorldId: s.gw.GetWorldID(),
+		Leader:  PartyMemberFromCharacter(ch, s.gw.GetWorldID(), s.gw.GetChannelID()).BuildRPC(),
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(func(c context.Context) (*internal.CreatePartyReply, error) {
+		return s.gw.Systems().Get[*InternalSystem]().client.CreateParty(c, req)
+	}, func(reply *internal.CreatePartyReply) error {
+		if !reply.GetOk() {
+			ch.listener.OnPartyStatusMessage(ch, pconst.PartyStatusForInternalError(pconst.PartyC2SCreate, int32(reply.GetErrorCode())), "")
+			return fmt.Errorf("create party: character=%d code=%v", ch.GetID(), reply.GetErrorCode())
+		}
+		if reply.PartyId == nil || reply.GetParty() == nil {
+			return fmt.Errorf("create party: no party in the reply character=%d", ch.GetID())
+		}
+		s.Update(reply.GetParty())
+		ch.party.Join(*reply.PartyId, reply.GetParty().GetRevision())
+		ch.listener.OnPartyCreated(ch, *reply.PartyId)
+		return nil
+	})
+}
 
 func (s *PartySystem) UpdateMemberAsync(ctx actor.Context, ch *Character) *async.Task {
 	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)

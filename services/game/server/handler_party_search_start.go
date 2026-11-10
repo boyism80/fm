@@ -1,12 +1,9 @@
 package server
 
 import (
-	"context"
-	"fmt"
+	"log"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/rpc"
 	"github.com/boyism80/fm/maple/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -58,31 +55,17 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 	}
 
 	if ch.Party().ID() == nil {
-		leader := game.PartyMemberFromCharacter(ch, h.gs.config.WorldId, int32(h.gs.config.ChannelId)).BuildRPC()
-		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).Bind(ch).ThenRPC(
-			func(c context.Context) (*internal.CreatePartyReply, error) {
-				return h.gs.systems.Get[*rpc.InternalConnection]().Client.CreateParty(c, &internal.CreatePartyRequest{
-					WorldId: h.gs.config.WorldId,
-					Leader:  leader,
-				})
-			},
-			func(reply *internal.CreatePartyReply) error {
-				if !reply.GetOk() || reply.PartyId == nil {
-					return fmt.Errorf("party create failed")
-				}
-				h.gs.systems.Get[*game.PartySystem]().Update(reply.GetParty())
-				ch.Party().Join(*reply.PartyId, reply.GetParty().GetRevision())
-				ch.Listener().OnPartyCreated(ch, *reply.PartyId)
-				if h.canSearch(ch) {
-					ch.Party().SetSearch(cfg)
-				}
-				return nil
-			},
-		)
-
-	} else {
-		ch.Party().SetSearch(cfg)
+		h.gs.systems.Get[*game.PartySystem]().CreateAsync(ctx.ActorContext, ch).Do(func(*internal.CreatePartyReply) error {
+			if h.canSearch(ch) {
+				ch.Party().SetSearch(cfg)
+			}
+			return nil
+		}).OnError(func(err error) {
+			log.Printf("PartySearchStart: %v", err)
+		})
+		return nil
 	}
+	ch.Party().SetSearch(cfg)
 	return nil
 }
 

@@ -12,6 +12,10 @@ type PartySearchStart struct {
 func (*PartySearchStart) Opcode() byte { return 0xB5 }
 
 func (p *PartySearchStart) Serialize(writer *stream.StreamWriter) error {
+	writer.Write32(p.MinLevel)
+	writer.Write32(p.MaxLevel)
+	writer.Write32(p.MembersNeeded)
+	writer.Write32(p.ClassMask)
 	return nil
 }
 

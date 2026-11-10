@@ -200,11 +200,63 @@ local function leader_disconnect(ctx)
     return true
 end
 
+-- An invite without a party and a party search without one each create one party led by the sender.
+local function create_paths(ctx)
+    local a, b, c = ctx:bot(0), ctx:bot(1), ctx:bot(2)
+    for _, bot in ipairs({ a, b, c }) do
+        if setup(ctx, bot) == false then
+            return false
+        end
+    end
+    local created = {}
+    ctx:hook("create_paths", function(_, bot, p, name)
+        if name == resp.party_created then
+            created[bot:id()] = (created[bot:id()] or 0) + 1
+        end
+    end)
+
+    local invite = a:request_on(b, resp.party_invite,
+        req.party_operation { operation = PARTY.Invite, target_name = b:name() },
+        nil, 5000)
+    if check(ctx, invite ~= false, "파티 없이 보낸 초대가 오지 않음") == false then
+        return false
+    end
+    local joined = b:request(resp.party_update_join,
+        req.party_operation { operation = PARTY.AcceptInvite, party_id = invite.party_id },
+        nil, 5000)
+    if check(ctx, joined ~= false, "파티 없이 보낸 초대로 가입하지 못함") == false then
+        return false
+    end
+
+    -- A party search is refused in an instance map.
+    if c:map_move(PARK) == false then
+        return ctx:fail(c:name() .. " 맵 이동 실패")
+    end
+    local searched = c:request(resp.party_created,
+        req.party_search_start { min_level = 25, max_level = 35, members_needed = 2, class_mask = 1 }, nil, 5000)
+    if check(ctx, searched ~= false, "파티 없이 시작한 파티 찾기가 파티를 만들지 않음") == false then
+        return false
+    end
+    ctx:sleep(500)
+    ctx:unhook("create_paths")
+    if check(ctx, created[a:id()] == 1 and created[c:id()] == 1, "파티가 한 번씩 만들어지지 않음") == false then
+        return false
+    end
+
+    for _, leader in ipairs({ a, c }) do
+        if leader:request(resp.party_update_disband, req.party_operation { operation = PARTY.Leave }, nil, 5000) == false then
+            return ctx:fail(leader:name() .. " 파티 해체 실패")
+        end
+    end
+    return true
+end
+
 test_suite {
-    name = "Party: 파티장 위임 조건·탈퇴·파티장 탈퇴 해체·처치 수 공유·접속 종료 위임",
+    name = "Party: 파티장 위임 조건·탈퇴·파티장 탈퇴 해체·처치 수 공유·접속 종료 위임·초대와 파티 찾기로 만든 파티",
     bot_count = 3,
 
     scenarios = {
+        create_paths,
         leader_flow,
         shared_kill_count,
         leader_disconnect,

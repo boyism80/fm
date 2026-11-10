@@ -31,6 +31,7 @@ var requests = []outbound{
 	&request.Warp{},
 	&request.DirectWarp{},
 	&request.PartyOperation{},
+	&request.PartySearchStart{},
 	&request.Buddy{},
 	&request.AutoAssignAP{},
 	&request.DistributeAP{},
