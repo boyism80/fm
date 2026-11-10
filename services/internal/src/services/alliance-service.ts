@@ -19,6 +19,7 @@ import { UnifiedRepository } from "@fm/shared/repos/unified-repository";
 import { GuildMemberRepository } from "@fm/shared/repos/guild-member-repository";
 import { CharacterRealtimeStateRepository } from "@fm/shared/repos/character-realtime-state-repository";
 import type { AllianceModel } from "@fm/shared/repos/alliance-repository";
+import type { GuildModel } from "@fm/shared/repos/guild-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { DistributedLockGuard, DistributedLockMultiGuard } from "@fm/shared/system/distributed-lock";
@@ -26,6 +27,7 @@ import { GuildService } from "./guild-service";
 import { WzService } from "./wz-service";
 import {
     ALLIANCE_CAPACITY_MAX,
+    ALLIANCE_MEMBER_RANK,
     DEFAULT_ALLIANCE_CAPACITY,
     DEFAULT_ALLIANCE_RANK_TITLES,
     type AllianceRankTitles,
@@ -227,26 +229,48 @@ export class AllianceService {
         return { found: true, alliance: await this.allianceToPb(worldId, alliance) };
     }
 
-    private async assignAllianceRanks(
+    // A guild belongs to an alliance through its row and its members' alliance ranks; these two keep them together.
+    private async joinGuild(
         worldId: number,
-        guildId: number,
+        guild: GuildModel,
+        allianceId: number,
         masterAllianceRank: number,
         dataTx: PoolClient,
     ) {
+        await this.guildRepo.set(worldId, { ...guild, allianceId }, { txClient: dataTx });
         const members = [
-            ...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values(),
+            ...(await this.guildMemberRepo.getAll(worldId, String(guild.guildId), { txClient: dataTx })).values(),
         ];
         if (members.length === 0) {
             return;
         }
         const updated = members.map((member) => {
-            const allianceRank = member.guildRank === GuildMemberRank.GUILD_MEMBER_RANK_MASTER ? masterAllianceRank : 3;
+            const allianceRank =
+                member.guildRank === GuildMemberRank.GUILD_MEMBER_RANK_MASTER
+                    ? masterAllianceRank
+                    : ALLIANCE_MEMBER_RANK;
             return {
                 ...member,
                 allianceRank,
             };
         });
         await this.guildMemberRepo.setAll(worldId, updated, { txClient: dataTx });
+    }
+
+    // Returns the members whose alliance rank it cleared.
+    private async releaseGuild(worldId: number, guild: GuildModel, dataTx: PoolClient): Promise<number[]> {
+        await this.guildRepo.set(worldId, { ...guild, allianceId: null }, { txClient: dataTx });
+        const members = [
+            ...(await this.guildMemberRepo.getAll(worldId, String(guild.guildId), { txClient: dataTx })).values(),
+        ];
+        if (members.length > 0) {
+            const cleared = members.map((member) => ({
+                ...member,
+                allianceRank: null,
+            }));
+            await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
+        }
+        return members.map((member) => member.characterId);
     }
 
     async createAlliance(
@@ -358,13 +382,11 @@ export class AllianceService {
         });
 
         await this.ctx.withPgDataTransaction(worldId, partnerGuildId, async (dataTx: PoolClient) => {
-            await this.guildRepo.set(worldId, { ...guild2, allianceId: newAllianceId }, { txClient: dataTx });
-            await this.assignAllianceRanks(worldId, partnerGuildId, 2, dataTx);
+            await this.joinGuild(worldId, guild2, newAllianceId, 2, dataTx);
         });
 
         await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
-            await this.guildRepo.set(worldId, { ...guild1, allianceId: newAllianceId }, { txClient: dataTx });
-            await this.assignAllianceRanks(worldId, guildId, 1, dataTx);
+            await this.joinGuild(worldId, guild1, newAllianceId, 1, dataTx);
             if (requestId !== "0") {
                 await this.allianceCreateRequestRepo.insert(
                     worldId,
@@ -422,20 +444,7 @@ export class AllianceService {
             if (!g) {
                 continue;
             }
-            await this.guildRepo.set(worldId, { ...g, allianceId: null }, { txClient: dataTx });
-            const members = [
-                ...(await this.guildMemberRepo.getAll(worldId, String(gid), { txClient: dataTx })).values(),
-            ];
-            if (members.length > 0) {
-                const cleared = members.map((member) => ({
-                    ...member,
-                    allianceRank: null,
-                }));
-                await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
-                for (const member of cleared) {
-                    memberCharacterIds.push(member.characterId);
-                }
-            }
+            memberCharacterIds.push(...(await this.releaseGuild(worldId, g, dataTx)));
         }
 
         await this.allianceRepo.set(
@@ -498,17 +507,7 @@ export class AllianceService {
                 if (lockedGuild.allianceId !== allianceId) {
                     return { ok: false as const, code: notInAllianceCode };
                 }
-                await this.guildRepo.set(worldId, { ...lockedGuild, allianceId: null }, { txClient: dataTx });
-                const members = [
-                    ...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values(),
-                ];
-                if (members.length > 0) {
-                    const cleared = members.map((member) => ({
-                        ...member,
-                        allianceRank: null,
-                    }));
-                    await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
-                }
+                await this.releaseGuild(worldId, lockedGuild, dataTx);
             }
 
             const savedAlliance = await this.allianceRepo.set(
@@ -648,8 +647,7 @@ export class AllianceService {
 
             const nextGuildIds = [...lockedAlliance.guildIds, guildId];
 
-            await this.guildRepo.set(worldId, { ...lockedGuild, allianceId }, { txClient: dataTx });
-            await this.assignAllianceRanks(worldId, guildId, 2, dataTx);
+            await this.joinGuild(worldId, lockedGuild, allianceId, 2, dataTx);
 
             const savedAlliance = await this.allianceRepo.set(
                 worldId,

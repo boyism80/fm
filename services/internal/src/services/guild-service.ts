@@ -27,6 +27,7 @@ import type { GuildMemberModel } from "@fm/shared/repos/guild-member-repository"
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { WzService } from "./wz-service";
+import { ALLIANCE_LATE_MEMBER_RANK } from "@fm/shared/types/alliance-json";
 import { redisCacheKey } from "@fm/shared/redis-cache-key";
 import {
     DEFAULT_GUILD_LOGO,
@@ -71,7 +72,6 @@ const GUILD_CAPACITY_EXTENDED_GP_COST = 2000;
 const GUILD_GP_MAX = 2147483647;
 const GUILD_RANKING_SIZE = 50;
 const GUILD_RANKING_TTL_SEC = 60;
-const DEFAULT_ALLIANCE_MEMBER_RANK = 5;
 
 const EVT = {
     CREATED: "created",
@@ -481,7 +481,7 @@ export class GuildService {
                     level: memberLevel,
                     classId: memberClassId,
                     guildRank: GuildMemberRank.GUILD_MEMBER_RANK_NEW,
-                    allianceRank: guild.allianceId != null ? DEFAULT_ALLIANCE_MEMBER_RANK : null,
+                    allianceRank: guild.allianceId != null ? ALLIANCE_LATE_MEMBER_RANK : null,
                 },
                 { txClient },
             );
