@@ -115,9 +115,27 @@ local function hit(bot, oid)
     }
 end
 
+-- Kills oid and reports whether the kill showed the mob's small HP bar, which the original never sent for a kill.
+local function kill_shows_mob_hp(ctx, bot, oid)
+    local shown = false
+    ctx:hook("kill_mob_hp", function(_, b, p, name)
+        if b:id() == bot:id() and name == resp.show_mob_hp and p.oid == oid then
+            shown = true
+        end
+    end)
+    local killed = bot:kill(oid)
+    ctx:sleep(300)
+    ctx:unhook("kill_mob_hp")
+    if killed == false then
+        return nil
+    end
+    return shown
+end
+
 -- A boss with an HP tag shows the boss HP bar when hit and clears it when it dies; a boss without one shows no HP.
+-- Other mobs show the attacker their HP while alive, and no kill shows the small HP bar.
 local function boss_hp_bar(ctx, bot, oid)
-    local mano, zakum_arm = 2220000, 8800003
+    local mano, zakum_arm, snail = 2220000, 8800003, 100100
     if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
         return ctx:fail("즉사 끄기 실패")
     end
@@ -137,11 +155,16 @@ local function boss_hp_bar(ctx, bot, oid)
             cleared = true
         end
     end)
-    if bot:kill(oid) == false then
+    local shown = kill_shows_mob_hp(ctx, bot, oid)
+    ctx:unhook("mano_hp_bar")
+    if shown == nil then
         return ctx:fail("마노 처치 실패")
     end
     if cleared == false then
         return ctx:fail("마노가 죽었는데 보스 HP 바가 지워지지 않음")
+    end
+    if shown then
+        return ctx:fail("마노가 죽을 때 몹 HP가 보임")
     end
 
     if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
@@ -155,6 +178,36 @@ local function boss_hp_bar(ctx, bot, oid)
     end
     if bot:request({ resp.show_mob_hp, resp.show_boss_hp }, hit(bot, arm.mob.oid), nil, 1500) ~= false then
         return ctx:fail("태그 없는 자쿰 팔의 HP가 보임")
+    end
+    shown = kill_shows_mob_hp(ctx, bot, arm.mob.oid)
+    if shown == nil then
+        return ctx:fail("자쿰 팔 처치 실패")
+    end
+    if shown then
+        return ctx:fail("태그 없는 자쿰 팔이 죽을 때 몹 HP가 보임")
+    end
+
+    if pq.command(bot, "/즉사 off", "즉사 상태: disabled") == false then
+        return ctx:fail("즉사 끄기 실패")
+    end
+    local mob = bot:request(resp.spawn_mob, req.normal_chat { message = "/몬스터생성 " .. snail }, function(p)
+        return p.mob.mob_id == snail
+    end, 5000)
+    if mob == false then
+        return ctx:fail("달팽이 생성 응답 없음")
+    end
+    local hp = bot:request(resp.show_mob_hp, hit(bot, mob.mob.oid), function(p)
+        return p.oid == mob.mob.oid
+    end, 3000)
+    if hp == false or hp.percentage >= 100 then
+        return ctx:fail("달팽이를 때렸는데 몹 HP가 오지 않음")
+    end
+    shown = kill_shows_mob_hp(ctx, bot, mob.mob.oid)
+    if shown == nil then
+        return ctx:fail("달팽이 처치 실패")
+    end
+    if shown then
+        return ctx:fail("달팽이가 죽을 때 몹 HP가 보임")
     end
     return true
 end

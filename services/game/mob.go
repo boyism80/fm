@@ -540,34 +540,15 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 			mapInstance.GetControllerTable().SwitchController(m, attacker, true)
 		}
 		if attacker != nil && spongeParent == nil {
-			if m.wz == nil || !m.wz.DamagedByMob {
-				switch {
-				case m.hpTagged():
-					m.listener.OnShowNearBossHp(m, false)
-				case m.wz != nil && m.wz.Boss && !m.wz.PartyBonus && !m.inDojo():
-					// The original server showed an untagged boss's HP to no one.
-				default:
-					maxHp := m.GetMaxHp()
-					if maxHp == 0 {
-						return false
-					}
-					percent := min(uint64(m.GetHp())*100/uint64(maxHp), 100)
-					m.showHp(attacker, uint8(percent))
-				}
-			}
+			m.showHp(attacker)
 		}
 		return false
 	}
 
-	if spongeParent == nil && m.hpTagged() {
+	if spongeParent == nil && m.wz.HpDisplay == wz.MobHpDisplayBossBar {
 		m.listener.OnShowNearBossHp(m, true)
 	}
 	return m.Kill(attacker, constant.MobDieAnimationTypeFadeOut)
-}
-
-// hpTagged is whether the mob is a boss that shows the boss HP bar.
-func (m *Mob) hpTagged() bool {
-	return m.wz != nil && m.wz.Boss && m.wz.HpTagColor > 0
 }
 
 func (m *Mob) inDojo() bool {
@@ -575,7 +556,23 @@ func (m *Mob) inDojo() bool {
 	return mapInstance != nil && mapInstance.wz.FieldType == wz.FieldTypeDojo
 }
 
-func (m *Mob) showHp(attacker *Character, percent uint8) {
+// showHp shows the HP a hit left the mob to whom its kind says. The dojo shows its bosses, which have no HP tag, and
+// every other mob without a boss bar to the whole map.
+func (m *Mob) showHp(attacker *Character) {
+	switch m.wz.HpDisplay {
+	case wz.MobHpDisplayBossBar:
+		m.listener.OnShowNearBossHp(m, false)
+		return
+	case wz.MobHpDisplayNone:
+		if !m.inDojo() {
+			return
+		}
+	}
+	maxHp := m.GetMaxHp()
+	if maxHp == 0 {
+		return
+	}
+	percent := uint8(min(uint64(m.GetHp())*100/uint64(maxHp), 100))
 	if !m.inDojo() {
 		attacker.listener.OnShowMobHp(attacker, m, percent)
 		return
@@ -662,9 +659,6 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType, 
 		sm.CallHook("on_mob_die", m)
 	}
 
-	if attacker != nil {
-		m.showHp(attacker, 0)
-	}
 	if sm := mapInstance.StateMachine(); sm != nil && !mapInstance.HasAliveMobs() {
 		sm.CallHook("on_all_monsters_dead")
 	}

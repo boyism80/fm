@@ -1,5 +1,17 @@
 package wz
 
+// MobHpDisplay is who sees a mob's HP while it is hit, decided once at load as the original did.
+type MobHpDisplay uint8
+
+const (
+	// MobHpDisplayNone shows no one: a boss without an HP tag, unless it is a party play mob, or a mob only mobs hurt.
+	MobHpDisplayNone MobHpDisplay = iota
+	// MobHpDisplayBossBar shows the boss HP bar near a boss with an HP tag.
+	MobHpDisplayBossBar
+	// MobHpDisplayAttacker shows the attacker the mob's small HP bar.
+	MobHpDisplayAttacker
+)
+
 type Mob struct {
 	ID                    uint32
 	BodyAttack            int
@@ -38,6 +50,7 @@ type Mob struct {
 	SelfDestructionHP     int
 	HpTagColor            uint8
 	HpTagBgColor          uint8
+	HpDisplay             MobHpDisplay
 	DropItemPeriod        int
 	DamagedByMob          bool
 	Invincible            bool

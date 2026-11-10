@@ -2230,6 +2230,16 @@ func loadMob(path string) (*Mob, error) {
 		model.MaxHP, model.EXP = play.maxHP, play.exp
 		model.Boss, model.PartyBonus = true, true
 	}
+	switch {
+	case model.DamagedByMob:
+		model.HpDisplay = MobHpDisplayNone
+	case model.Boss && model.HpTagColor > 0:
+		model.HpDisplay = MobHpDisplayBossBar
+	case model.Boss && !model.PartyBonus:
+		model.HpDisplay = MobHpDisplayNone
+	default:
+		model.HpDisplay = MobHpDisplayAttacker
+	}
 
 	return model, nil
 }
