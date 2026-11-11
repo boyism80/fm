@@ -814,15 +814,17 @@ func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16],
 					if questLV, ok := entry.RawGetString("quest").(lua.LNumber); ok {
 						quest = uint32(questLV)
 					}
+					if questTagged {
+						quest = resources.DropQuest(wz.Drop{Item: itemID, Quest: quest})
+					}
 					item, err := NewItem(itemID, count, m.gameWorld)
 					if err == nil {
 						if err := m.SpawnItem(item, ItemSpawn{
-							Position:    destPoint,
-							From:        spawnPoint,
-							Owner:       ownerID,
-							DropType:    dropType,
-							QuestTagged: questTagged,
-							Quest:       quest,
+							Position: destPoint,
+							From:     spawnPoint,
+							Owner:    ownerID,
+							DropType: dropType,
+							Quest:    quest,
 						}); err != nil {
 							return
 						}

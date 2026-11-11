@@ -4,7 +4,6 @@ import (
 	"log"
 	"math/rand"
 
-	"github.com/boyism80/fm/maple/wz"
 	"github.com/boyism80/fm/types"
 )
 
@@ -12,6 +11,7 @@ type reactorDropSpawn struct {
 	isMeso bool
 	count  int32
 	item   Item
+	quest  uint32
 }
 
 func (r *Reactor) DropItems() {
@@ -35,7 +35,8 @@ func (r *Reactor) DropItems() {
 	spawns := make([]reactorDropSpawn, 0, len(reactorDrops))
 
 	for _, entry := range reactorDrops {
-		if quest := resources.QuestItems[entry.Item]; quest > 0 && !questInProgress(trigger, quest) {
+		quest := resources.DropQuest(entry)
+		if quest > 0 && !questInProgress(trigger, quest) {
 			continue
 		}
 		if !gmDrop && rand.Float32() > entry.Prob {
@@ -43,21 +44,7 @@ func (r *Reactor) DropItems() {
 		}
 
 		if entry.Item == 0 {
-			min := float64(entry.Money) * 0.75
-			max := float64(entry.Money)
-			if entry.Max > 0 || entry.Min > 0 {
-				min = float64(entry.Min)
-				max = float64(entry.Max)
-			}
-			if max < min {
-				max = min
-			}
-			var count int32
-			if max == min {
-				count = int32(max)
-			} else {
-				count = int32(min + rand.Float64()*(max-min))
-			}
+			count := entry.Meso()
 			if count == 0 {
 				continue
 			}
@@ -67,25 +54,11 @@ func (r *Reactor) DropItems() {
 			}
 			spawns = append(spawns, reactorDropSpawn{isMeso: true, count: count})
 		} else {
-			count := uint16(1)
-			if entry.Max > 0 && entry.Min > 0 {
-				count = uint16(rand.Intn(int(entry.Max-entry.Min)+1) + int(entry.Min))
-			} else if entry.Max > 0 {
-				count = entry.Max
-			} else if entry.Min > 0 {
-				count = entry.Min
-			}
-
-			item, err := NewItem(entry.Item, count, r.gameWorld)
+			item, err := newDropItem(entry, r.gameWorld)
 			if err != nil {
 				continue
 			}
-			if eq, ok := item.(Equipment); ok {
-				if em, ok := eq.GetModel().(wz.Equipment); ok {
-					eq.GetEquipmentCore().RandomizeStats(em)
-				}
-			}
-			spawns = append(spawns, reactorDropSpawn{isMeso: false, count: int32(count), item: item})
+			spawns = append(spawns, reactorDropSpawn{isMeso: false, count: int32(item.GetCount()), item: item, quest: quest})
 		}
 	}
 
@@ -107,11 +80,11 @@ func (r *Reactor) DropItems() {
 			}
 		} else {
 			if err := r.onMap.SpawnItem(spawn.item, ItemSpawn{
-				Position:    destPoint,
-				From:        spawnPoint,
-				Owner:       ownerID,
-				DropType:    dropType,
-				QuestTagged: true,
+				Position: destPoint,
+				From:     spawnPoint,
+				Owner:    ownerID,
+				DropType: dropType,
+				Quest:    spawn.quest,
 			}); err != nil {
 				log.Printf("Failed to spawn reactor item drop: %v", err)
 			}

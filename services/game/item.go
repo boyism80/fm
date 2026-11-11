@@ -273,3 +273,17 @@ func NewItem(itemId uint32, count uint16, gw ItemWorld) (Item, error) {
 	}
 	return NewItemFromInternalProto(pb, gw)
 }
+
+// newDropItem makes the item a drop row gives: its count, and the stats an equipment rolls as it drops.
+func newDropItem(entry wz.Drop, gw ItemWorld) (Item, error) {
+	item, err := NewItem(entry.Item, entry.Count(), gw)
+	if err != nil {
+		return nil, err
+	}
+	if eq, ok := item.(Equipment); ok {
+		if em, ok := eq.GetModel().(wz.Equipment); ok {
+			eq.GetEquipmentCore().RandomizeStats(em)
+		}
+	}
+	return item, nil
+}

@@ -1416,7 +1416,6 @@ type ItemSpawn struct {
 	Owner                uint32
 	DropType             constant.DropType
 	PlayerDrop           bool
-	QuestTagged          bool
 	Quest                uint32
 	RestrictedPlayerDrop bool
 }
@@ -1446,11 +1445,7 @@ func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
 		playerDrop:           spawn.PlayerDrop,
 		restrictedPlayerDrop: spawn.RestrictedPlayerDrop,
 	}
-	if spawn.Quest != 0 {
-		fp.quest = spawn.Quest
-	} else if spawn.QuestTagged {
-		fp.quest = m.gameWorld.GetResources().QuestItems[item.GetModel().GetID()]
-	}
+	fp.quest = spawn.Quest
 	fp.initTimers()
 	item.BindFieldPlacement(fp)
 	m.registerFieldDropTimers(fp, spawn.DropType)

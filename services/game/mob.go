@@ -335,11 +335,10 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 	}
 
 	type rolledDrop struct {
-		isMeso      bool
-		count       int32
-		item        Item
-		quest       uint32
-		questTagged bool
+		isMeso bool
+		count  int32
+		item   Item
+		quest  uint32
 	}
 	type dropRule struct {
 		wz.Drop
@@ -398,13 +397,7 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 		}
 
 		if entry.Item == 0 {
-			// Reward.img gives the most meso, of which a drop takes 75% to all; the legacy table gives a range.
-			min := float64(entry.Money) * 0.75
-			max := float64(entry.Money)
-			if entry.Max > 0 {
-				min, max = float64(entry.Min), float64(entry.Max)
-			}
-			count := int32(min + rand.Float64()*(max-min))
+			count := entry.Meso()
 			if count == 0 {
 				continue
 			}
@@ -418,22 +411,16 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 			}
 			drops = append(drops, rolledDrop{isMeso: true, count: count})
 		} else {
-
-			count := uint16(1)
-			if entry.Max != 0 && entry.Min != 0 {
-				count = uint16(rand.Intn(int(entry.Max-entry.Min)+1) + int(entry.Min))
-			}
-
-			item, err := NewItem(entry.Item, count, m.gameWorld)
+			item, err := newDropItem(entry.Drop, m.gameWorld)
 			if err != nil {
 				continue
 			}
-			if eq, ok := item.(Equipment); ok {
-				if em, ok := eq.GetModel().(wz.Equipment); ok {
-					eq.GetEquipmentCore().RandomizeStats(em)
-				}
+			// A global drop needs only its own quest, not the one its item is registered to.
+			quest := entry.Quest
+			if !entry.global {
+				quest = m.gameWorld.GetResources().DropQuest(entry.Drop)
 			}
-			drops = append(drops, rolledDrop{count: int32(count), item: item, quest: entry.Quest, questTagged: !entry.global})
+			drops = append(drops, rolledDrop{count: int32(item.GetCount()), item: item, quest: quest})
 		}
 	}
 
@@ -461,12 +448,11 @@ func (m *Mob) dropItems(dropOwner *Character, attacker *Character) {
 			}
 		} else {
 			if err := mapInstance.SpawnItem(spawn.item, ItemSpawn{
-				Position:    destPoint,
-				From:        spawnPoint,
-				Owner:       ownerID,
-				DropType:    dropType,
-				QuestTagged: spawn.questTagged,
-				Quest:       spawn.quest,
+				Position: destPoint,
+				From:     spawnPoint,
+				Owner:    ownerID,
+				DropType: dropType,
+				Quest:    spawn.quest,
 			}); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}

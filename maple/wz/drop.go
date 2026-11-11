@@ -1,5 +1,7 @@
 package wz
 
+import "math/rand"
+
 type Drop struct {
 	Item  uint32
 	Money uint32
@@ -7,6 +9,24 @@ type Drop struct {
 	Min   uint16
 	Max   uint16
 	Quest uint32 // only those with this quest started see the drop
+}
+
+// Meso is how much a meso row drops: Reward.img gives the most, of which a drop takes 75% to all, and the legacy
+// table a range.
+func (d Drop) Meso() int32 {
+	min, max := float64(d.Money)*0.75, float64(d.Money)
+	if d.Max > 0 {
+		min, max = float64(d.Min), float64(d.Max)
+	}
+	return int32(min + rand.Float64()*(max-min))
+}
+
+// Count is how many of its item a row drops: a count in the range when the row gives both ends, otherwise one.
+func (d Drop) Count() uint16 {
+	if d.Max != 0 && d.Min != 0 {
+		return uint16(rand.Intn(int(d.Max-d.Min)+1) + int(d.Min))
+	}
+	return 1
 }
 
 type GlobalDropType uint8
