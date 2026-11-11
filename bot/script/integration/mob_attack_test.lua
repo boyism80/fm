@@ -21,6 +21,7 @@ local HOLY_SHIELD = 2321005
 local RED_POTION = 2000000
 local IL_ARCH_MAGE = 222
 local MANA_REFLECTION = 2221002
+local MAGIC_GUARD = 2001002
 local STONE_GOLEM = 5130101
 local ZETA_GRAY = 4230117
 
@@ -312,7 +313,8 @@ local function zombify_potion(ctx)
     return true
 end
 
--- The I/L Arch Mage's Mana Reflection sends part of a mob's attack back to the mob.
+-- The I/L Arch Mage's Mana Reflection sends part of a mob's attack back to the mob, from the whole hit even while
+-- Magic Guard takes most of it on MP.
 local function il_mana_reflection(ctx)
     local actor = ctx:bot(1)
     if pq.command(actor, "/봇초기화 120 " .. IL_ARCH_MAGE .. " 0 -", "봇초기화 완료") == false then
@@ -320,6 +322,9 @@ local function il_mana_reflection(ctx)
     end
     if pq.command(actor, "/스킬레벨 " .. MANA_REFLECTION .. " 1", "스킬레벨 설정") == false then
         return ctx:fail("마나 리플렉션 배우기 실패")
+    end
+    if pq.command(actor, "/스킬레벨 " .. MAGIC_GUARD .. " 20", "스킬레벨 설정") == false then
+        return ctx:fail("매직 가드 배우기 실패")
     end
     if pq.command(actor, "/체력바꾸기 3000", "체력 설정") == false or pq.command(actor, "/마력바꾸기 3000", "마력 설정") == false then
         return ctx:fail("썬콜 체력·마력 설정 실패")
@@ -334,16 +339,27 @@ local function il_mana_reflection(ctx)
     if cast == false then
         return ctx:fail("마나 리플렉션 사용 응답 없음")
     end
+    local guarded = actor:request(resp.update_stats, req.active_skill { skill_id = MAGIC_GUARD, skill_level = 20 },
+        function(p)
+            return p.unlock_action
+        end, 3000)
+    if guarded == false then
+        return ctx:fail("매직 가드 사용 응답 없음")
+    end
     local oid = spawn(ctx, actor, STONE_GOLEM)
     if oid == false then
         return false
     end
+    -- Mana Reflection 1 sends back 55% of the 300 hit, 165 of the golem's 4000 HP, though Magic Guard 20 leaves 60 on HP.
     local reflected = actor:request(resp.show_mob_hp,
-        req.damaged { type = 0, damage = 500, mob_id = STONE_GOLEM, oid = oid, reflect = 50 }, function(p)
+        req.damaged { type = 0, damage = 300, mob_id = STONE_GOLEM, oid = oid, reflect = 50 }, function(p)
             return p.oid == oid
         end, 3000)
     if reflected == false then
         return ctx:fail("마나 리플렉션 중 맞았는데 몹에게 피해가 돌아가지 않음")
+    end
+    if reflected.percentage ~= 95 then
+        return ctx:fail("매직 가드 중 마나 리플렉션 반사량이 다름: 남은 HP " .. reflected.percentage .. "%")
     end
     return true
 end

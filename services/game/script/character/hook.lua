@@ -166,15 +166,15 @@ return {
         if me:buff_value(BuffFlag.DivineBody) ~= nil then
             return 0
         end
-        local d
+        -- The reflection works on the whole hit, as the original's did, and the guards split what is left of it.
+        local d = combat.reflect_incoming_damage(me, attacker, skill, damage, params)
         if (me:buff_value(BuffFlag.MagicGuard) or 0) > 0 then
-            d = skill_lib.absorb_magic_guard(me, damage, params)
-        elseif (me:buff_value(BuffFlag.MesoGuard) or 0) > 0 then
-            d = skill_lib.absorb_meso_guard(me, damage, params)
-        else
-            d = skill_lib.take_hit(me, damage, params)
+            return skill_lib.absorb_magic_guard(me, d, params)
         end
-        return combat.reflect_incoming_damage(me, attacker, skill, d, params)
+        if (me:buff_value(BuffFlag.MesoGuard) or 0) > 0 then
+            return skill_lib.absorb_meso_guard(me, d, params)
+        end
+        return skill_lib.take_hit(me, d, params)
     end,
 
     on_poison = function(mist, targets)
