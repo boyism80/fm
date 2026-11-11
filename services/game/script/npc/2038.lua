@@ -1,21 +1,10 @@
 -- NPC name (String.wz/Npc.img.xml): 할로 캣
 
 local boss_entry = require("script/lib/boss_entry")
-
-local BOSS = {
-    name = "힐라",
-    difficulty = "#k★#k☆☆☆☆#b#n",
-    maps = { 123356780 },
-    time = 40,
-    mobs = { 8870000 },
-    x = 164,
-    y = 196,
-    limit = 5,
-    record = "boss_entry.hilla",
-}
+local bosses = require("script/lib/bosses")
 
 return {
     on_click = function(me, npc)
-        boss_entry.on_click(me, npc, BOSS)
+        boss_entry.on_click(me, npc, bosses.hilla)
     end
 }

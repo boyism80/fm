@@ -65,8 +65,62 @@ local function enter_and_kill(ctx, bot, boss)
     return true
 end
 
+-- Suu is fought through three maps: each phase's death sends the party on to the next 5 seconds later, with the
+-- next phase's boss there and a new clock, and the world hears of each.
+local function suu_phases(ctx)
+    local bot = ctx:bot(0)
+    local phases = {
+        { map = 123356782, mob = 9801028 },
+        { map = 123356783, mob = 9801029 },
+        { map = 123356784, mob = 9801030 },
+    }
+    local heard = {}
+    ctx:hook("suu_notices", function(_, b, p, name)
+        if b:id() == bot:id() and name == resp.notice and p.message:find("[헤이븐]", 1, true) ~= nil then
+            heard[#heard + 1] = p.message
+        end
+    end)
+    local function finish(ok)
+        ctx:unhook("suu_notices")
+        return ok
+    end
+    if enter_and_kill(ctx, bot, BOSSES[3]) == false then
+        return finish(false)
+    end
+    for i = 2, #phases do
+        local phase = phases[i]
+        if bot:map() ~= phase.map and bot:request(resp.warp, nil, function(p)
+                return p.character.map == phase.map
+            end, 15000) == false then
+            return finish(ctx:fail("스우 " .. (i - 1) .. "페이즈를 잡아도 다음 페이즈로 넘어가지 않음"))
+        end
+        local mob = bot:mobs(phase.mob)[1]
+        if mob == nil then
+            local spawn = bot:request(resp.spawn_mob, nil, function(p)
+                return p.mob.mob_id == phase.mob
+            end, 5000)
+            if spawn == false then
+                return finish(ctx:fail("스우 " .. i .. "페이즈 보스가 없음: " .. phase.mob))
+            end
+            mob = { oid = spawn.mob.oid }
+        end
+        if bot:kill(mob.oid) == false then
+            return finish(ctx:fail("스우 " .. i .. "페이즈 처치 실패"))
+        end
+    end
+    ctx:sleep(1000)
+    local notices = #heard
+    if waiting_room(ctx, bot) == false then
+        return finish(false)
+    end
+    if notices ~= 3 then
+        return finish(ctx:fail("스우 페이즈 공지가 3번 오지 않음: " .. table.concat(heard, " / ")))
+    end
+    return finish(true)
+end
+
 test_suite {
-    name = "Boss: 보스 처치 7종",
+    name = "Boss: 보스 처치 7종·스우 페이즈 이동",
     bot_count = 1,
 
     on_initialize = function(ctx)
@@ -104,5 +158,6 @@ test_suite {
             end
             return passed
         end,
+        suu_phases,
     },
 }
