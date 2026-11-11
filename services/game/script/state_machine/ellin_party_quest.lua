@@ -27,6 +27,7 @@ end
 
 return {
     on_init = function(group)
+        group:leave_on_party()
         group:set_property("stage1_cleareff", "0")
         group:min_players(1)
         group:exit_map(EXIT_MAP)

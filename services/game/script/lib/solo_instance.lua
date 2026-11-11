@@ -3,6 +3,9 @@ local M = {}
 function M.create(config)
     return {
         on_init = function(group)
+            if config.leave_on_party then
+                group:leave_on_party()
+            end
             group:min_players(1)
             group:exit_map(config.exit_map)
             group:max_machines(nil)

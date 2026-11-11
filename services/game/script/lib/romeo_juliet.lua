@@ -169,6 +169,7 @@ local function create(cfg)
         clear_fx = clear_fx,
 
         on_init = function(group)
+            group:leave_on_party()
             group:min_players(1)
             group:exit_map(exit_map)
         end,

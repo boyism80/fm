@@ -12,6 +12,7 @@ end
 
 return {
     on_init = function(group)
+        group:leave_on_party()
         group:set_property("stage", "0")
         group:set_property("clear", "0")
         group:min_players(1)

@@ -19,6 +19,7 @@ end
 
 return {
     on_init = function(group)
+        group:leave_on_party()
         group:min_players(4)
         group:exit_map(exit_map_id)
     end,

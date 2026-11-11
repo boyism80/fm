@@ -7,6 +7,9 @@ local function create(config)
 
     return {
         on_init = function(group)
+            if config.leave_on_party then
+                group:leave_on_party()
+            end
             group:set_property("started", "false")
             group:min_players(config.min_players or 1)
             group:exit_map(config.exit_map)

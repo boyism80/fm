@@ -95,6 +95,7 @@ end
 
 return {
     on_init = function(group)
+        group:leave_on_party()
         group:min_players(1)
         group:exit_map(EXIT_MAP)
     end,

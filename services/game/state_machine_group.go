@@ -21,6 +21,9 @@ type StateMachineGroup struct {
 	exitMapID   uint32
 	machineCap  MachineCap
 	capOverride *MachineCap
+	// leavesOnParty takes a player that leaves its party out of the group's machine, as the original's leftParty did
+	// for some events and not others.
+	leavesOnParty bool
 }
 
 type MachineCap struct {
@@ -136,6 +139,21 @@ func (g *StateMachineGroup) Machines() []*StateMachine {
 		}
 	}
 	return out
+}
+
+func (g *StateMachineGroup) LeaveOnParty() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.leavesOnParty = true
+}
+
+func (g *StateMachineGroup) LeavesOnParty() bool {
+	if g == nil {
+		return false
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.leavesOnParty
 }
 
 func (g *StateMachineGroup) SetExitMap(mapID uint32) {

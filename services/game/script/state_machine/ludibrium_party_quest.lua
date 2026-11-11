@@ -45,6 +45,7 @@ end
 
 return {
     on_init = function(group)
+        group:leave_on_party()
         group:set_property("allfinish", "")
         group:min_players(MIN_PARTY_SIZE)
         group:exit_map(LOBBY_MAP)

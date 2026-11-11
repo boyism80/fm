@@ -3,6 +3,7 @@
 local solo_instance = require("script/lib/solo_instance")
 
 return solo_instance.create({
+    leave_on_party = true,
     maps = { 912000100 },
     exit_map = 120000103,
     duration_ms = 300000,

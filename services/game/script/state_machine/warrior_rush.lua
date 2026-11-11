@@ -1,6 +1,7 @@
 local create = require("script/lib/fourth_skill_instance")
 
 return create({
+    leave_on_party = true,
     map = 910500100,
     exit_map = 105090700,
     duration_ms = 1200000,

@@ -74,6 +74,7 @@ end
 
 return {
     on_init = function(group)
+        group:leave_on_party()
         carnival.bind_group(group)
         carnival.set_skill_hit_chance(4, 100)
         group:exit_map(HUB_MAP)

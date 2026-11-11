@@ -15,8 +15,8 @@ local DIALOG_YES_NO = 1
 local PROTECT_SECONDS = 10
 
 test_suite {
-    name = "Quest: 델리를 지켜라",
-    bot_count = 1,
+    name = "Quest: 델리를 지켜라·파티 탈퇴 뒤에도 남음",
+    bot_count = 2,
 
     on_finished = function(ctx)
         pq.command(ctx:bot(0), "/타이머 0", "타이머 제한: 0")
@@ -30,12 +30,26 @@ test_suite {
         if pq.command(bot, "/플레이어모드", "플레이어 모드: enabled") == false then
             return ctx:fail("플레이어 모드 설정 실패")
         end
+        if pq.command(ctx:bot(1), "/봇초기화 70 0 0 -", "봇초기화 완료") == false then
+            return ctx:fail("파티장 봇 초기화 실패")
+        end
         return bot:instance_move(TRAINING_ROOM)
     end,
 
     scenarios = {
+        -- The bot enters as a party member, and leaving the party leaves it on the road: the original kept it.
         function(ctx)
-            local bot = ctx:bot(0)
+            local bot, leader = ctx:bot(0), ctx:bot(1)
+            if leader:request(resp.party_created, req.party_operation { operation = PARTY.Create }) == false then
+                return ctx:fail("파티 생성 실패")
+            end
+            local invite = leader:request_on(bot, resp.party_invite,
+                req.party_operation { operation = PARTY.Invite, target_name = bot:name() })
+            if invite == false or bot:request(resp.party_update_join,
+                    req.party_operation { operation = PARTY.AcceptInvite, party_id = invite.party_id }) == false then
+                return ctx:fail("파티 가입 실패")
+            end
+
             local oid = pq.npc(ctx, bot, SCHRINTZ)
             if oid == false then
                 return false
@@ -47,6 +61,15 @@ test_suite {
                     return p.character.map == ROAD_1
                 end, 10000) == false then
                 return ctx:fail("델리를 찾으러 가는 길 입장 실패")
+            end
+
+            if bot:request(resp.party_update_leave, req.party_operation { operation = PARTY.Leave }, nil, 5000) == false then
+                return ctx:fail("파티 탈퇴 실패")
+            end
+            leader:request(resp.party_update_disband, req.party_operation { operation = PARTY.Leave }, nil, 5000)
+            ctx:sleep(1500)
+            if bot:map() ~= ROAD_1 then
+                return ctx:fail("파티를 나갔더니 델리를 찾으러 가는 길에서 쫓겨남: " .. bot:map())
             end
             return true
         end,

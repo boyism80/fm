@@ -97,6 +97,9 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 	if sm == nil || ch == nil {
 		return false
 	}
+	if reason == StateMachineLeaveParty && !sm.group.LeavesOnParty() {
+		return false
+	}
 	sm.mu.Lock()
 	if sm.disposed || !sm.unregisterLocked(ch) {
 		sm.mu.Unlock()

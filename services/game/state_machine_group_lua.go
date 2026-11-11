@@ -47,6 +47,10 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			group.SetMinPlayers(L.CheckInt(2))
 			return 0
 		},
+		"leave_on_party": func(L *lua.LState) int {
+			luax.Check[StateMachineGroup](L, 1).LeaveOnParty()
+			return 0
+		},
 		"exit_map": func(L *lua.LState) int {
 			group := luax.Check[StateMachineGroup](L, 1)
 			group.SetExitMap(uint32(L.CheckInt(2)))
