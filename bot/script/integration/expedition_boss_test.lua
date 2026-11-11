@@ -25,6 +25,8 @@ local TEMPLE_KEEPER = 2141001
 local PINKBEAN_ENTRANCE = 270050000
 local PINKBEAN_TWILIGHT = 270050100
 local KIRSTON = 2141000
+local BEYOND_THE_RUINS = 3522
+local AWAKENED = 7402
 local PINKBEAN_FINAL = 8820001
 local MUYOUNG = 1061014
 local BALROG_TEMPLE = 105100100
@@ -66,6 +68,9 @@ local function crew(ctx, first, count)
     end
     function view:hook(name, fn)
         return ctx:hook(name, fn)
+    end
+    function view:unhook(name)
+        return ctx:unhook(name)
     end
     return view
 end
@@ -406,6 +411,22 @@ local function pinkbean(ctx)
     if bot == false then
         return false
     end
+    -- The leader is on Beyond the Ruins, which waking Pink Bean ends. The way to the temple resets quests, so this
+    -- comes after.
+    if pq.command(bot, "/봇초기화 140 0 0 - " .. BEYOND_THE_RUINS .. ":1", "봇초기화 완료") == false then
+        return ctx:fail("원정대장 퀘스트 설정 실패")
+    end
+    local awakened, completed = nil, false
+    ctx:hook("beyond_the_ruins", function(_, b, p, name)
+        if b:id() ~= bot:id() then
+            return
+        end
+        if name == resp.update_quest and p.quest_status.quest_id == AWAKENED then
+            awakened = p.quest_status.status_record
+        elseif name == resp.show_quest_completion and p.quest_id == BEYOND_THE_RUINS then
+            completed = true
+        end
+    end)
     if pq.move(bot, -190, -42) == false then
         return ctx:fail("키르스턴 앞으로 이동 실패")
     end
@@ -419,8 +440,13 @@ local function pinkbean(ctx)
     end
     local summon = bot:request(resp.spawn_mob, req.dialog { dialog_type = dlg.enable_escape and 11 or 12, next = true },
         nil, 15000)
+    ctx:sleep(500)
+    ctx:unhook("beyond_the_ruins")
     if summon == false then
         return ctx:fail("키르스턴의 거울을 깨도 핑크빈이 소환되지 않음")
+    end
+    if awakened ~= "1" or completed == false then
+        return ctx:fail("핑크빈이 깨어나도 폐허 너머에가 끝나지 않음: " .. tostring(awakened) .. " " .. tostring(completed))
     end
     return slay(ctx, bot, PINKBEAN_FINAL)
 end
