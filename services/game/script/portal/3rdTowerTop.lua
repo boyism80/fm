@@ -7,16 +7,10 @@ local GUARD = 8840004
 local GUARD_X = { 1483, 1683, 1880, 2347, 2108 }
 local GUARD_Y = -139
 
-local function enter(me)
-    local ok, count = run_on_map(TOWER, "script/lib/party_quest.lua", "character_count")
-    local allowed = me:quest(3141):started()
-        and (pq.has_item(me, TEMP_KEY) or me:quest(3167):completed())
-    if ok == false or count ~= 0 or allowed == false then
-        me:message("세번째 탑의 임시열쇠가 없거나 이미 누군가가 안에서 퀘스트를 진행중입니다.", Msg.PinkText)
-        return
-    end
+local REFUSED = "세번째 탑의 임시열쇠가 없거나 이미 누군가가 안에서 퀘스트를 진행중입니다."
 
-    run_on_map(TOWER, SCRIPT, "prepare_tower")
+local function enter(me)
+    run_on_map(TOWER, SCRIPT, "spawn_guards")
     if pq.has_item(me, TEMP_KEY) then
         me:rmitem(TEMP_KEY, 1)
     end
@@ -25,20 +19,24 @@ end
 
 return {
 
-    prepare_tower = function(map)
-        map:reset()
+    spawn_guards = function(map)
         for _, x in ipairs(GUARD_X) do
             map:spawn_mob(GUARD, x, GUARD_Y)
         end
     end,
 
     on_enter = function(me)
-        local map = me:map()
-        if not pq.hold_entry(map, SCRIPT) then
-            me:message("세번째 탑의 임시열쇠가 없거나 이미 누군가가 안에서 퀘스트를 진행중입니다.", Msg.PinkText)
+        local allowed = me:quest(3141):started()
+            and (pq.has_item(me, TEMP_KEY) or me:quest(3167):completed())
+        if allowed == false then
+            me:message(REFUSED, Msg.PinkText)
             return
         end
-        enter(me)
-        pq.release_entry(map, SCRIPT)
+        local refused = pq.enter_rooms(me:map(), SCRIPT, { { TOWER } }, REFUSED, function()
+            enter(me)
+        end)
+        if refused ~= nil then
+            me:message(refused, Msg.PinkText)
+        end
     end
 }

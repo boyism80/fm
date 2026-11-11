@@ -12,49 +12,40 @@ local QUESTS = {
 }
 local ROOMS = 10
 
-local function enter(me)
-    local base = nil
-    for _, entry in ipairs(QUESTS) do
-        if me:quest(entry.quest):started() then
-            base = entry.map
-        end
-    end
-    if base == nil then
-        me:message("퀘스트를 진행 중일 때만 들어갈 수 있습니다.", Msg.PinkText)
-        return
-    end
+local BUSY = "이미 다른 누군가가 들어가 있는 것 같다. 지금은 들어갈 수 없을 것 같다."
 
-    for i = 0, ROOMS - 1 do
-        local room = base + i
-        local ok, count = run_on_map(room, "script/lib/party_quest.lua", "character_count")
-        if ok and count == 0 then
-            run_on_map(room, SCRIPT, "reset_map")
-            me:play_portal_sound()
-            local function on_arrive(me)
-                me:clock(180, function(me)
-                    me:map(EXIT)
-                end)
-            end
-            me:map(room, 0, { callback = on_arrive })
-            return
-        end
+local function enter(me, room)
+    me:play_portal_sound()
+    local function on_arrive(me)
+        me:clock(180, function(me)
+            me:map(EXIT)
+        end)
     end
-    me:message("이미 다른 누군가가 들어가 있는 것 같다. 지금은 들어갈 수 없을 것 같다.", Msg.PinkText)
+    me:map(room, 0, { callback = on_arrive })
 end
 
 return {
 
-    reset_map = function(map)
-        map:reset()
-    end,
-
     on_enter = function(me)
-        local map = me:map()
-        if not pq.hold_entry(map, SCRIPT) then
-            me:message("이미 다른 누군가가 들어가 있는 것 같다. 지금은 들어갈 수 없을 것 같다.", Msg.PinkText)
+        local base = nil
+        for _, entry in ipairs(QUESTS) do
+            if me:quest(entry.quest):started() then
+                base = entry.map
+            end
+        end
+        if base == nil then
+            me:message("퀘스트를 진행 중일 때만 들어갈 수 있습니다.", Msg.PinkText)
             return
         end
-        enter(me)
-        pq.release_entry(map, SCRIPT)
+        local rooms = {}
+        for i = 0, ROOMS - 1 do
+            rooms[#rooms + 1] = { base + i }
+        end
+        local refused = pq.enter_rooms(me:map(), SCRIPT, rooms, BUSY, function(index)
+            enter(me, rooms[index][1])
+        end)
+        if refused ~= nil then
+            me:message(refused, Msg.PinkText)
+        end
     end
 }

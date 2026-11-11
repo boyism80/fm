@@ -9,10 +9,6 @@ local MIN_MEMBERS = 1
 local MAX_MEMBERS = 6
 local BUSY = "이미 누군가가 이용 중에 있습니다."
 
-function M.reset_map(map)
-    map:reset()
-end
-
 function M.spawn_boss(map, x, y, ...)
     for _, mob_id in ipairs({ ... }) do
         map:spawn_mob(mob_id, x, y)
@@ -20,12 +16,6 @@ function M.spawn_boss(map, x, y, ...)
 end
 
 local function enter(me, boss)
-    for _, map_id in ipairs(boss.maps) do
-        local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
-        if ok and count ~= nil and count > 0 then
-            return BUSY
-        end
-    end
     local party = me:party()
     if party == nil then
         return "파티를 구성하고 있지 않으십니다."
@@ -67,9 +57,6 @@ local function enter(me, boss)
         if p ~= nil and p:id() == pid then
             ch:records():add(boss.record, 1, { daily = true })
         end
-    end
-    for _, map_id in ipairs(boss.maps) do
-        run_on_map(map_id, SCRIPT, "reset_map")
     end
     run_on_map(boss.maps[1], SCRIPT, "spawn_boss", boss.x, boss.y, boss.mobs[1], boss.mobs[2])
     local room = boss.maps[1]
@@ -113,14 +100,9 @@ function M.on_click(me, npc, boss)
         return
     end
 
-    local lobby = me:map()
-    local key = "boss_entry:" .. boss.maps[1]
-    if not pq.hold_entry(lobby, key) then
-        me:dialog(npc, BUSY)
-        return
-    end
-    local refused = enter(me, boss)
-    pq.release_entry(lobby, key)
+    local refused = pq.enter_rooms(me:map(), "boss_entry:" .. boss.maps[1], { boss.maps }, BUSY, function()
+        return enter(me, boss)
+    end)
     if refused ~= nil then
         me:dialog(npc, refused)
     end

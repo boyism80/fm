@@ -12,17 +12,8 @@ local ENTRY_KEY = "seed_entry"
 local BUSY = "이미 다른 파티가 입장 중이거나, 파티장이 파티원 수만큼 입장권을 가지고 있지 않습니다."
 
 local function enter(me, party, characters, size)
-    for _, map_id in ipairs(WAVES) do
-        local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
-        if ok and count ~= nil and count > 0 then
-            return BUSY
-        end
-    end
     if me:exchange({ item = { [TICKET] = size } }, nil) ~= ExchangeResult.OK then
         return "입장권은 파티장이 파티원 수만큼 모아서 내야 합니다. 지금은 그 수에 미치지 못합니다."
-    end
-    for _, map_id in ipairs(WAVES) do
-        run_on_map(map_id, SCRIPT, "reset_map")
     end
     run_on_map(WAVES[1], SCRIPT, "spawn_first", FIRST_MOB, -63, 112)
     local pid = party:id()
@@ -69,13 +60,9 @@ local function challenge(me, npc)
         return
     end
 
-    local lobby = me:map()
-    if not pq.hold_entry(lobby, ENTRY_KEY) then
-        me:dialog(npc, BUSY)
-        return
-    end
-    local refused = enter(me, party, characters, size)
-    pq.release_entry(lobby, ENTRY_KEY)
+    local refused = pq.enter_rooms(me:map(), ENTRY_KEY, { WAVES }, BUSY, function()
+        return enter(me, party, characters, size)
+    end)
     if refused ~= nil then
         me:dialog(npc, refused)
     end
@@ -98,9 +85,6 @@ end
 
 return {
 
-    reset_map = function(map)
-        map:reset()
-    end,
 
     spawn_first = function(map, mob_id, x, y)
         map:spawn_mob(mob_id, x, y)

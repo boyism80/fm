@@ -175,20 +175,43 @@ function M.character_count(map)
     return n
 end
 
--- Checking the instance maps and moving into them yields to their actors, so another leader on the same map could
--- pass the same check in between. The hold lets one entry through at a time and lapses on its own if an error skips
--- the release.
-function M.hold_entry(map, key)
-    local held_until = map:property(key)
-    if held_until ~= nil and held_until > now() then
-        return false
+function M.reset_map(map)
+    map:reset()
+end
+
+local function rooms_empty(maps)
+    for _, map_id in ipairs(maps) do
+        local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
+        if ok == false or (count ~= nil and count > 0) then
+            return false
+        end
     end
-    map:property(key, now() + ENTRY_HOLD_SECONDS)
     return true
 end
 
-function M.release_entry(map, key)
-    map:property(key, nil)
+-- Lets one entry at a time into instance rooms. Checking the rooms and moving into them yields to their actors, so
+-- with the lobby held under key, it takes the first of rooms (each a list of map ids) whose maps are all empty,
+-- resets them, and calls enter(index), which pays and moves and may return a refusal. It returns that refusal, or
+-- busy when no room is free or another entry holds the lobby, after letting go of the lobby, so a dialog showing it
+-- keeps no one waiting. The hold lapses on its own if an error skips the release.
+function M.enter_rooms(lobby, key, rooms, busy, enter)
+    local held_until = lobby:property(key)
+    if held_until ~= nil and held_until > now() then
+        return busy
+    end
+    lobby:property(key, now() + ENTRY_HOLD_SECONDS)
+    local refused = busy
+    for i, maps in ipairs(rooms) do
+        if rooms_empty(maps) then
+            for _, map_id in ipairs(maps) do
+                run_on_map(map_id, "script/lib/party_quest.lua", "reset_map")
+            end
+            refused = enter(i)
+            break
+        end
+    end
+    lobby:property(key, nil)
+    return refused
 end
 
 function M.mob_count(map, mob_id)

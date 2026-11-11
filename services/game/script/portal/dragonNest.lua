@@ -6,17 +6,10 @@ local EXIT = 240040610
 local EGG = 4001094
 local GUARDIAN = 2081008
 
+local BUSY = "이미 이 안에 들어가 누군가가 퀘스트를 완수하는 중입니다. 잠시 후 다시 시도해 주세요."
+
 local function enter(me)
-    if pq.has_item(me, EGG) == false then
-        me:message("이 안에 들어가기 위해서는 <나인 스피릿의 알> 이 필요하다.", Msg.PinkText)
-        return
-    end
-    local ok, count = run_on_map(NEST, "script/lib/party_quest.lua", "character_count")
-    if ok == false or count ~= 0 then
-        me:message("이미 이 안에 들어가 누군가가 퀘스트를 완수하는 중입니다. 잠시 후 다시 시도해 주세요.", Msg.PinkText)
-        return
-    end
-    run_on_map(NEST, SCRIPT, "prepare_nest")
+    run_on_map(NEST, SCRIPT, "remove_guardian")
     me:play_portal_sound()
     local function on_arrive(me)
         me:clock(300, function(me)
@@ -28,8 +21,7 @@ end
 
 return {
 
-    prepare_nest = function(map)
-        map:reset()
+    remove_guardian = function(map)
         for _, n in pairs(map:npcs()) do
             if n:id() == GUARDIAN then
                 map:remove_npc(n)
@@ -38,12 +30,15 @@ return {
     end,
 
     on_enter = function(me)
-        local map = me:map()
-        if not pq.hold_entry(map, SCRIPT) then
-            me:message("이미 이 안에 들어가 누군가가 퀘스트를 완수하는 중입니다. 잠시 후 다시 시도해 주세요.", Msg.PinkText)
+        if pq.has_item(me, EGG) == false then
+            me:message("이 안에 들어가기 위해서는 <나인 스피릿의 알> 이 필요하다.", Msg.PinkText)
             return
         end
-        enter(me)
-        pq.release_entry(map, SCRIPT)
+        local refused = pq.enter_rooms(me:map(), SCRIPT, { { NEST } }, BUSY, function()
+            enter(me)
+        end)
+        if refused ~= nil then
+            me:message(refused, Msg.PinkText)
+        end
     end
 }

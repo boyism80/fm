@@ -8,12 +8,6 @@ local ROOM = 924030000
 local BUSY = "누군가 안에 퀘스트를 진행중입니다"
 
 local function enter(me, npc, q)
-    local ok, count = run_on_map(ROOM, "script/lib/party_quest.lua", "character_count")
-    if ok == false or count ~= 0 then
-        me:message(BUSY, Msg.PinkText)
-        return
-    end
-
     run_on_map(ROOM, SCRIPT, "prepare_room")
     q:start(npc, true)
     local function on_arrive(me)
@@ -34,13 +28,12 @@ return {
             return
         end
 
-        local map = me:map()
-        if not pq.hold_entry(map, SCRIPT) then
-            me:message(BUSY, Msg.PinkText)
-            return
+        local refused = pq.enter_rooms(me:map(), SCRIPT, { { ROOM } }, BUSY, function()
+            enter(me, npc, q)
+        end)
+        if refused ~= nil then
+            me:message(refused, Msg.PinkText)
         end
-        enter(me, npc, q)
-        pq.release_entry(map, SCRIPT)
     end,
 
     prepare_room = function(map)

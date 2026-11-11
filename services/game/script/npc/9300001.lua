@@ -19,12 +19,6 @@ local function busy_maps()
 end
 
 local function enter(me, party, characters, members)
-    for _, map_id in ipairs(busy_maps()) do
-        local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
-        if ok and count ~= nil and count > 0 then
-            return BUSY
-        end
-    end
     for _, mem in pairs(members) do
         if mem:level() < MIN_LEVEL or mem:level() > MAX_LEVEL then
             return "파티원 중에서 레벨 #r50~90#k 에 해당하지 않는 캐릭터가 있습니다."
@@ -76,13 +70,9 @@ return {
                 return
             end
         end
-        local lobby = me:map()
-        if not pq.hold_entry(lobby, SCRIPT) then
-            me:dialog(npc, BUSY)
-            return
-        end
-        local refused = enter(me, party, characters, members)
-        pq.release_entry(lobby, SCRIPT)
+        local refused = pq.enter_rooms(me:map(), SCRIPT, { busy_maps() }, BUSY, function()
+            return enter(me, party, characters, members)
+        end)
         if refused ~= nil then
             me:dialog(npc, refused)
         end

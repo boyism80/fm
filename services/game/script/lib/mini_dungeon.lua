@@ -6,22 +6,14 @@ local ROOMS = 39
 local ENTRY_KEY = "mini_dungeon_entry"
 local BUSY = "모든 미니던전 인스턴스가 사용중입니다. 나중에 다시 시도하세요."
 
-local function enter(me, party, first_room, rooms)
-    for i = 0, (rooms or ROOMS) - 1 do
-        local room = first_room + i
-        local ok, count = run_on_map(room, "script/lib/party_quest.lua", "character_count")
-        if ok and count == 0 then
-            local pid = party:id()
-            for _, ch in pairs(me:map():characters()) do
-                local p = ch:party()
-                if p ~= nil and p:id() == pid then
-                    ch:map(room, 0)
-                end
-            end
-            return true
+local function enter(me, party, room)
+    local pid = party:id()
+    for _, ch in pairs(me:map():characters()) do
+        local p = ch:party()
+        if p ~= nil and p:id() == pid then
+            ch:map(room, 0)
         end
     end
-    return false
 end
 
 function M.enter(me, base, first_room, rooms)
@@ -41,15 +33,15 @@ function M.enter(me, base, first_room, rooms)
         return
     end
 
-    local lobby = me:map()
-    if not pq.hold_entry(lobby, ENTRY_KEY) then
-        me:message(BUSY, Msg.PinkText)
-        return
+    local candidates = {}
+    for i = 0, (rooms or ROOMS) - 1 do
+        candidates[#candidates + 1] = { first_room + i }
     end
-    local entered = enter(me, party, first_room, rooms)
-    pq.release_entry(lobby, ENTRY_KEY)
-    if not entered then
-        me:message(BUSY, Msg.PinkText)
+    local refused = pq.enter_rooms(me:map(), ENTRY_KEY, candidates, BUSY, function(index)
+        enter(me, party, candidates[index][1])
+    end)
+    if refused ~= nil then
+        me:message(refused, Msg.PinkText)
     end
 end
 

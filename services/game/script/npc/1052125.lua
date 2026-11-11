@@ -1,12 +1,12 @@
 -- NPC name (String.wz/Npc.img.xml): 준이
 
+local pq = require("script/lib/party_quest")
+
+local SCRIPT = "script/npc/1052125.lua"
 local BASE_MAP = 103040410
+local BUSY = "모든 일반존에 누군가 있군요. 다른 채널을 이용해주세요."
 
 return {
-
-    reset_map = function(map)
-        map:reset()
-    end,
 
     on_click = function(me, npc)
         local sel = me:dialog_list(npc, "잠깐만요! 여기부터는 리모델링 중이어서 관계자외 출입이 제한된 구역입니다. 조건에 맞는 분만 입장을 시켜 드릴 수 있어요.", {
@@ -29,24 +29,16 @@ return {
             return
         end
 
+        local zones = {}
         for i = 0, 9 do
-            local maps = { BASE_MAP + i, BASE_MAP + 10 + i, BASE_MAP + 20 + i }
-            local empty = true
-            for _, map_id in ipairs(maps) do
-                local ok, count = run_on_map(map_id, "script/lib/party_quest.lua", "character_count")
-                if ok and count ~= nil and count > 0 then
-                    empty = false
-                end
-            end
-            if empty then
-                for _, map_id in ipairs(maps) do
-                    run_on_map(map_id, "script/npc/1052125.lua", "reset_map")
-                end
-                me:play_portal_sound()
-                me:map(BASE_MAP + i, 1)
-                return
-            end
+            zones[#zones + 1] = { BASE_MAP + i, BASE_MAP + 10 + i, BASE_MAP + 20 + i }
         end
-        me:dialog(npc, "모든 일반존에 누군가 있군요. 다른 채널을 이용해주세요.")
+        local refused = pq.enter_rooms(me:map(), SCRIPT, zones, BUSY, function(index)
+            me:play_portal_sound()
+            me:map(zones[index][1], 1)
+        end)
+        if refused ~= nil then
+            me:dialog(npc, refused)
+        end
     end
 }
