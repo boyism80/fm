@@ -266,11 +266,6 @@ export class GuildBulletinBoardRepository {
             // A guild has one notice; a new one replaces it with its replies.
             if (input.isNotice) {
                 await client.query(
-                    `DELETE FROM guild_bulletin_board_replies
-                     WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
-                    [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID],
-                );
-                await client.query(
                     `DELETE FROM guild_bulletin_board_threads
                      WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
                     [worldId, input.guildId, NOTICE_LOCAL_THREAD_ID],
@@ -339,11 +334,6 @@ export class GuildBulletinBoardRepository {
         options: RepositoryTxOptions = {},
     ): Promise<boolean> {
         return this.runInDataTransaction(worldId, guildId, options, async (client) => {
-            await client.query(
-                `DELETE FROM guild_bulletin_board_replies
-                 WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
-                [worldId, guildId, localThreadId],
-            );
             const res = await client.query(
                 `DELETE FROM guild_bulletin_board_threads
                  WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
@@ -416,10 +406,6 @@ export class GuildBulletinBoardRepository {
 
     async deleteAllForGuild(worldId: number, guildId: number, options: RepositoryTxOptions = {}): Promise<void> {
         await this.runInDataTransaction(worldId, guildId, options, async (client) => {
-            await client.query(`DELETE FROM guild_bulletin_board_replies WHERE world_id = $1 AND guild_id = $2`, [
-                worldId,
-                guildId,
-            ]);
             await client.query(`DELETE FROM guild_bulletin_board_threads WHERE world_id = $1 AND guild_id = $2`, [
                 worldId,
                 guildId,
