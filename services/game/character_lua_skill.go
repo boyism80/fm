@@ -496,6 +496,18 @@ func (ch *Character) luaSkillFuncs() map[string]lua.LGFunction {
 			L.Push(skillUD)
 			return 1
 		},
+		// skill_at(skill_id, level) is a skill at a level the character has not learned, for a skill's effect an item
+		// or an NPC gives; nothing is added to the character's skills.
+		"skill_at": func(L *lua.LState) int {
+			ch := luax.Check[Character](L, 1)
+			wzSkill := ch.gameWorld.GetResources().GetSkill(uint32(L.CheckInt(2)))
+			if wzSkill == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, NewSkillEntry(ch, wzSkill, L.CheckInt(3), 0)))
+			return 1
+		},
 		"add_skill": func(L *lua.LState) int {
 			ch := luax.Check[Character](L, 1)
 

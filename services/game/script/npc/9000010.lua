@@ -35,7 +35,7 @@ return {
             back = FALLBACK_MAP
         end
         me:clear_saved_location("EVENT")
-        local skill = me:add_skill(HOLY_SYMBOL)
+        local skill = me:skill_at(HOLY_SYMBOL, 1)
         if skill ~= nil then
             me:buff(skill, BuffFlag.HolySymbol, 50, { time = 1200 })
         end

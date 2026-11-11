@@ -37,6 +37,8 @@ local MAP_MEGAPHONE = 5070000
 local HEART_MEGAPHONE = 5073000
 local SKULL_MEGAPHONE = 5074000
 local WEATHER = 5120000
+local HOLY_SYMBOL_WEATHER = 5120010
+local HOLY_SYMBOL = 9001002
 local ITEM_TAG = 5060000
 local SEALING_LOCK = 5060001
 local KARMA = 5520000
@@ -542,6 +544,43 @@ local function megaphones(ctx)
     end, "해골 확성기")
 end
 
+-- The Holy Symbol weather gives everyone on the map Holy Symbol besides the weather.
+local function holy_symbol_weather(ctx)
+    local actor = ctx:bot(0)
+    local observer = ctx:bot(1)
+    if setup(ctx, actor, HOLY_SYMBOL_WEATHER .. ":1") == false or setup(ctx, observer, "-") == false then
+        return false
+    end
+    if actor:instance_move(TOWN) == false or observer:instance_move(TOWN) == false then
+        return ctx:fail("마을 이동 실패")
+    end
+    local buffed = {}
+    ctx:hook("holy_symbol_weather", function(_, b, p, name)
+        if name == resp.update_self_buff and p.buff_id == HOLY_SYMBOL then
+            buffed[b:id()] = true
+        end
+    end)
+    local before = count(actor, HOLY_SYMBOL_WEATHER)
+    local shown = actor:request_on(observer, resp.weather, use(actor, HOLY_SYMBOL_WEATHER, { text = "홀리 심볼" }),
+        function(p)
+            return p.item_id == HOLY_SYMBOL_WEATHER
+        end, 5000)
+    ctx:sleep(500)
+    ctx:unhook("holy_symbol_weather")
+    if shown == false then
+        return ctx:fail("홀리 심볼 날씨가 맵에 보이지 않음")
+    end
+    if consumed(ctx, actor, HOLY_SYMBOL_WEATHER, before, "홀리 심볼 날씨") == false then
+        return false
+    end
+    for _, bot in ipairs({ actor, observer }) do
+        if buffed[bot:id()] ~= true then
+            return ctx:fail(bot:name() .. "에게 홀리 심볼이 걸리지 않음")
+        end
+    end
+    return true
+end
+
 -- A weather item shows to the whole map, and a second one waits until the first ends.
 local function weather(ctx)
     local actor = ctx:bot(0)
@@ -593,7 +632,7 @@ local function item_targets(ctx)
 end
 
 test_suite {
-    name = "Cash consumable effects: 칠판·쪽지·메시지 박스·확성기·컬러렌즈·축하곡·AP/SP 되돌리기·날씨·이름/자물쇠/카르마·부화기·묘묘",
+    name = "Cash consumable effects: 칠판·쪽지·메시지 박스·확성기·컬러렌즈·축하곡·AP/SP 되돌리기·날씨·홀리 심볼 날씨·이름/자물쇠/카르마·부화기·묘묘",
     bot_count = 2,
 
     scenarios = {
@@ -611,6 +650,7 @@ test_suite {
         ap_reset,
         sp_reset,
         megaphones,
+        holy_symbol_weather,
         weather,
         item_targets,
     },
