@@ -27,8 +27,18 @@ func (g *GuildMembership) ID() (uint32, bool) {
 	return *g.id, true
 }
 
-func (g *GuildMembership) SetID(id *uint32) {
-	g.id = id
+func (g *GuildMembership) Join(guildID uint32) {
+	g.id = &guildID
+}
+
+// Leave ends the membership in guildID. News of a guild the character already left, or left for another, does
+// nothing, however late it arrives.
+func (g *GuildMembership) Leave(guildID uint32) bool {
+	if g.id == nil || *g.id != guildID {
+		return false
+	}
+	g.id = nil
+	return true
 }
 
 func (g *GuildMembership) Invite(guildID uint32, inviterName string) error {

@@ -90,8 +90,7 @@ func (s *GuildSystem) sendMemberUpdate(p *async.Task, req *internal.UpdateGuildM
 }
 
 func (s *GuildSystem) StoreGuild(ch *Character, guildPb *internal.Guild) {
-	guildID := guildPb.GetGuildId()
-	ch.guild.SetID(&guildID)
+	ch.guild.Join(guildPb.GetGuildId())
 	s.Update(guildPb)
 	ch.listener.OnShowGuildInfo(ch)
 	ch.listener.OnBroadcastGuildAppearance(ch)

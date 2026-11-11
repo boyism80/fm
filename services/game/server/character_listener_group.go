@@ -86,31 +86,27 @@ func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *game.Character) {
 	_ = ch.Send(&response.AllianceUpdateInfo{Info: info}, types.SEND_POLICY_ENCRYPT)
 }
 
+// OnBroadcastGuildAppearance shows the character's guild name and emblem over its head, or none once it has no guild.
 func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *game.Character) {
-	guildID, ok := ch.Guild().ID()
-	if !ok || l.gs == nil {
-		return
-	}
-	ent := l.gs.systems.Get[*game.GuildSystem]().Get(guildID)
-	if ent == nil {
-		return
-	}
 	characterID := ch.GetID()
+	namePkt := &response.LoadGuildName{CharacterID: characterID}
+	iconPkt := &response.LoadGuildIcon{CharacterID: characterID}
+	if guildID, ok := ch.Guild().ID(); ok {
+		ent := l.gs.systems.Get[*game.GuildSystem]().Get(guildID)
+		if ent == nil {
+			return
+		}
+		namePkt.GuildName = ent.Name()
+		if ent.Logo() != nil {
+			iconPkt.HasGuildIcon = true
+			iconPkt.LogoBG = uint16(ent.Logo().LogoBG())
+			iconPkt.LogoBGColor = uint8(ent.Logo().LogoBGColor())
+			iconPkt.Logo = uint16(ent.Logo().Logo())
+			iconPkt.LogoColor = uint8(ent.Logo().LogoColor())
+		}
+	}
 	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
-	ch.Broadcast(&response.LoadGuildName{
-		CharacterID: characterID,
-		GuildName:   ent.Name(),
-	}, broadcastOpt)
-	iconPkt := &response.LoadGuildIcon{
-		CharacterID: characterID,
-	}
-	if ent.Logo() != nil {
-		iconPkt.HasGuildIcon = true
-		iconPkt.LogoBG = uint16(ent.Logo().LogoBG())
-		iconPkt.LogoBGColor = uint8(ent.Logo().LogoBGColor())
-		iconPkt.Logo = uint16(ent.Logo().Logo())
-		iconPkt.LogoColor = uint8(ent.Logo().LogoColor())
-	}
+	ch.Broadcast(namePkt, broadcastOpt)
 	ch.Broadcast(iconPkt, broadcastOpt)
 }
 
@@ -273,38 +269,18 @@ func (l *CharacterListenerImpl) OnGuildNewMember(ch *game.Character, guildID uin
 }
 
 func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *game.Character) {
-	ch.Guild().SetID(nil)
 	_ = ch.Send(&response.GuildShowInfo{
 		Info: nil,
 	}, types.SEND_POLICY_ENCRYPT)
-	characterID := ch.GetID()
-	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
-	ch.Broadcast(&response.LoadGuildName{
-		CharacterID: characterID,
-		GuildName:   "",
-	}, broadcastOpt)
-	ch.Broadcast(&response.LoadGuildIcon{
-		CharacterID: characterID,
-	}, broadcastOpt)
 }
 
 func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *game.Character, guildID uint32) {
-	ch.Guild().SetID(nil)
 	_ = ch.Send(&response.GuildMemberLeft{
 		GuildID:     guildID,
 		CharacterID: ch.GetID(),
 		Name:        ch.GetName(),
 		WasExpelled: true,
 	}, types.SEND_POLICY_ENCRYPT)
-	characterID := ch.GetID()
-	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
-	ch.Broadcast(&response.LoadGuildName{
-		CharacterID: characterID,
-		GuildName:   "",
-	}, broadcastOpt)
-	ch.Broadcast(&response.LoadGuildIcon{
-		CharacterID: characterID,
-	}, broadcastOpt)
 }
 
 func (l *CharacterListenerImpl) OnGuildMemberLeft(ch *game.Character, guildID uint32, targetID uint32, targetName string, wasExpelled bool) {
@@ -411,24 +387,12 @@ func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *game.Character,
 }
 
 func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *game.Character, guildID uint32) {
-	if gid, ok := ch.Guild().ID(); ok && gid == guildID {
-		_ = ch.Send(&response.GuildDisband{
-			GuildID: guildID,
-		}, types.SEND_POLICY_ENCRYPT)
-	}
-	ch.Guild().SetID(nil)
+	_ = ch.Send(&response.GuildDisband{
+		GuildID: guildID,
+	}, types.SEND_POLICY_ENCRYPT)
 	_ = ch.Send(&response.GuildShowInfo{
 		Info: nil,
 	}, types.SEND_POLICY_ENCRYPT)
-	characterID := ch.GetID()
-	broadcastOpt := &game.ObjectBroadcastOption{WithMe: true}
-	ch.Broadcast(&response.LoadGuildName{
-		CharacterID: characterID,
-		GuildName:   "",
-	}, broadcastOpt)
-	ch.Broadcast(&response.LoadGuildIcon{
-		CharacterID: characterID,
-	}, broadcastOpt)
 }
 
 func (l *CharacterListenerImpl) OnMultiChat(ch *game.Character, mode pconst.MultiChatMode, senderName string, message string) {

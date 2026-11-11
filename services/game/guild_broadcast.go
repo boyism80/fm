@@ -252,21 +252,17 @@ func (s *GuildSystem) BroadcastMemberLeft(prevGuild *Guild, leftCharacterID uint
 			continue
 		}
 		if memberID == leftCharacterID {
-			if expelled {
-				s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
-					if ch == nil {
-						return
-					}
+			s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
+				if ch == nil || !ch.guild.Leave(guildID) {
+					return
+				}
+				if expelled {
 					ch.listener.OnGuildExpelledSelf(ch, guildID)
-				})
-			} else {
-				s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
-					if ch == nil {
-						return
-					}
+				} else {
 					ch.listener.OnGuildLeaveSelf(ch)
-				})
-			}
+				}
+				ch.listener.OnBroadcastGuildAppearance(ch)
+			})
 			continue
 		}
 		if s.gw == nil || !s.gw.Systems().Get[*DispatchSystem]().Exists(memberID) {
@@ -302,10 +298,11 @@ func (s *GuildSystem) BroadcastDisbanded(prevGuild *Guild, memberCharacterIDs []
 			continue
 		}
 		s.gw.Systems().Get[*DispatchSystem]().Visit(memberID, func(_ actor.Context, ch *Character) {
-			if ch == nil {
+			if ch == nil || !ch.guild.Leave(guildID) {
 				return
 			}
 			ch.listener.OnGuildDisbandSelf(ch, guildID)
+			ch.listener.OnBroadcastGuildAppearance(ch)
 		})
 	}
 }
