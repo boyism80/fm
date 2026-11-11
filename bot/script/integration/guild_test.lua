@@ -8,6 +8,10 @@ local HERACLE = 2010007
 local LENARIO = 2010009
 local GUILD_SHOW_INFO = 0x1A
 local GUILD_DISBAND = 0x32
+local GUILD_EXPELLED = 0x2F
+local NOTES = { list = 2 }
+local NOTES_PACKET = { list = 3 }
+local EXPEL_NOTE = "길드에서 강퇴당하셨습니다."
 local GUILD_EMBLEM_CHANGE = 0x42
 local DIALOG = { yes_no = 1 }
 local HERACLE_MENU = { create = 0, disband = 1, capacity = 2, gp_capacity = 3 }
@@ -524,6 +528,93 @@ local function create_guild(ctx, bot)
         return ctx:fail(bot:name() .. " 길드 생성 정보가 오지 않음")
     end
     return true
+end
+
+local function join_guild(ctx, master, member)
+    local invite = master:request_on(member, resp.guild_invite,
+        req.guild_operation { operation = GUILD.Invite, target_name = member:name() })
+    if invite == false then
+        return ctx:fail("길드 초대 패킷 없음")
+    end
+    local joined = member:request(resp.guild_message, req.guild_operation {
+        operation = GUILD.AcceptInvite,
+        guild_id = invite.guild_id,
+        character_id = member:id(),
+    }, code(GUILD_SHOW_INFO))
+    return check(ctx, joined ~= false, member:name() .. " 길드 가입 실패")
+end
+
+local function expel_request(member)
+    return req.guild_operation { operation = GUILD.Expel, character_id = member:id(), character_name = member:name() }
+end
+
+-- Leaving a guild takes its name off the character's head. A member expelled while away, in the cash shop here,
+-- finds a note from the one who expelled it, as the original left an offline member.
+local function expel_and_disband(ctx)
+    local master, member = ctx:bot(0), ctx:bot(1)
+    if setup(ctx, master) == false or setup(ctx, member) == false then
+        return false
+    end
+    if create_guild(ctx, master) == false or join_guild(ctx, master, member) == false then
+        return false
+    end
+
+    local names = {}
+    ctx:hook("guild_names", function(_, b, p, name)
+        if name == resp.load_guild_name and p.character_id == b:id() then
+            names[b:id()] = p.guild_name
+        end
+    end)
+    names[member:id()] = nil
+    if master:request_on(member, resp.guild_message, expel_request(member), code(GUILD_EXPELLED)) == false then
+        ctx:unhook("guild_names")
+        return ctx:fail("접속 중인 길드원 추방 알림이 오지 않음")
+    end
+    ctx:sleep(300)
+    if names[member:id()] ~= "" then
+        ctx:unhook("guild_names")
+        return ctx:fail("추방된 길드원 머리 위 길드 이름이 지워지지 않음: " .. tostring(names[member:id()]))
+    end
+
+    if join_guild(ctx, master, member) == false then
+        ctx:unhook("guild_names")
+        return false
+    end
+    if member:enter_cash_shop() == false then
+        ctx:unhook("guild_names")
+        return ctx:fail("길드원 캐시샵 입장 실패")
+    end
+    local expelled = master:request(resp.guild_message, expel_request(member), code(GUILD_EXPELLED))
+    if member:leave_cash_shop() == false then
+        ctx:unhook("guild_names")
+        return ctx:fail("길드원 캐시샵 퇴장 실패")
+    end
+    if expelled == false then
+        ctx:unhook("guild_names")
+        return ctx:fail("캐시샵에 있는 길드원 추방 알림이 오지 않음")
+    end
+    local list = member:request(resp.notes, req.notes { action = NOTES.list }, function(p)
+        return p.action == NOTES_PACKET.list
+    end)
+    local noted = false
+    for _, note in ipairs(list ~= false and list.notes or {}) do
+        if note.sender == master:name() and note.message == EXPEL_NOTE then
+            noted = true
+        end
+    end
+    if noted == false then
+        ctx:unhook("guild_names")
+        return ctx:fail("캐시샵에 있다 추방된 길드원에게 쪽지가 남지 않음")
+    end
+
+    names[master:id()] = nil
+    local disbanded = disband_guild(ctx, master)
+    ctx:sleep(300)
+    ctx:unhook("guild_names")
+    if disbanded == false then
+        return false
+    end
+    return check(ctx, names[master:id()] == "", "해산한 길드장 머리 위 길드 이름이 지워지지 않음: " .. tostring(names[master:id()]))
 end
 
 -- The emblem request is recorded under the guild it was made for, so its resend after the guild is disbanded finds
@@ -1057,7 +1148,7 @@ local function capacity_refusals(ctx)
 end
 
 test_suite {
-    name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구·이름 규칙",
+    name = "Guild: 길드 생성·마크·인원·GP·연합 응답 유실 복구·이름 규칙·추방과 해산",
     bot_count = 6,
 
     on_scenario_finished = function(ctx)
@@ -1065,6 +1156,7 @@ test_suite {
     end,
 
     scenarios = {
+        expel_and_disband,
         create_invalid_name,
         create_cancelled,
         create_during_question,

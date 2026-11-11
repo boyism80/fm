@@ -21,4 +21,7 @@ func (p *LoadGuildName) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *LoadGuildName) Deserialize(*stream.StreamReader) {}
+func (p *LoadGuildName) Deserialize(r *stream.StreamReader) {
+	p.CharacterID = r.ReadU32()
+	p.GuildName = r.ReadStr16()
+}

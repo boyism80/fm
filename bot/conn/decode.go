@@ -240,6 +240,7 @@ var decoders = func() []decoder {
 		newDecoder[response.GuildUpdateGP](sub(uint8(pconst.GuildS2CUpdateGP))),
 		newDecoder[response.GuildMemberLevelClassUpdate](sub(uint8(pconst.GuildS2CMemberLevelClassUpdate))),
 		newDecoder[response.GuildMessage](nil),
+		newDecoder[response.LoadGuildName](nil),
 		newDecoder[response.AllianceCreate](sub(uint8(pconst.AllianceS2CCreate))),
 		newDecoder[response.AllianceUpdateInfo](sub(uint8(pconst.AllianceS2CUpdateInfo))),
 		newDecoder[response.AllianceDisband](sub(uint8(pconst.AllianceS2CDisband))),

@@ -166,6 +166,7 @@ func (a *SuiteActor) register() {
 	guild.RawSetString("Create", lua.LNumber(pconst.GuildC2SCreate))
 	guild.RawSetString("Invite", lua.LNumber(pconst.GuildC2SInvite))
 	guild.RawSetString("AcceptInvite", lua.LNumber(pconst.GuildC2SAcceptInvite))
+	guild.RawSetString("Expel", lua.LNumber(pconst.GuildC2SExpel))
 	guild.RawSetString("ChangeEmblem", lua.LNumber(pconst.GuildC2SChangeEmblem))
 	L.SetGlobal("GUILD", guild)
 	L.SetGlobal("wz", L.SetFuncs(L.NewTable(), a.wzFuncs()))

@@ -27,6 +27,7 @@ import type { GuildMemberModel } from "@fm/shared/repos/guild-member-repository"
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { WzService } from "./wz-service";
+import { NoteKind, SocialService } from "./social-service";
 import { ALLIANCE_LATE_MEMBER_RANK } from "@fm/shared/types/alliance-json";
 import { redisCacheKey } from "@fm/shared/redis-cache-key";
 import {
@@ -182,6 +183,7 @@ export class GuildService {
     private readonly rabbitmqService: RabbitMQService;
     private readonly distributedLockService: DistributedLockService;
     private readonly wzService: WzService;
+    private readonly socialService: SocialService;
 
     constructor(
         internalContext: InternalContext,
@@ -196,6 +198,7 @@ export class GuildService {
         rabbitmqService: RabbitMQService,
         distributedLockService: DistributedLockService,
         wzService: WzService,
+        socialService: SocialService,
     ) {
         this.ctx = internalContext;
         this.unifiedRepo = unifiedRepository;
@@ -209,6 +212,7 @@ export class GuildService {
         this.rabbitmqService = rabbitmqService;
         this.distributedLockService = distributedLockService;
         this.wzService = wzService;
+        this.socialService = socialService;
     }
 
     private async publishToGuildRoutes(
@@ -636,7 +640,11 @@ export class GuildService {
                 await this.guildMemberRepo.del(worldId, String(lockedGuildId), targetCharacterId, { txClient });
 
                 const updatedGuild = await this.guildRepo.set(worldId, guild, { txClient });
-                return { ok: true as const, guildId: updatedGuild.guildId };
+                return {
+                    ok: true as const,
+                    guildId: updatedGuild.guildId,
+                    requester: { characterId: requesterCharacterId, name: requesterMember.characterName },
+                };
             },
         );
 
@@ -652,8 +660,11 @@ export class GuildService {
             expelled: true,
         });
 
+        // An offline member learns of it from a note, which skips the inbox limit as the original's did.
         if ((await this.sessionRepo.findChannel(worldId, targetCharacterId)) == null) {
-            // TODO: game server -> internal sendNote RPC (promise) when offline member is expelled
+            await this.socialService
+                .leaveNote(worldId, targetCharacterId, result.requester, "길드에서 강퇴당하셨습니다.", NoteKind.NORMAL)
+                .catch((err) => console.error("[guild] expel note failed", err));
         }
 
         return { ok: true, guildId: result.guildId };

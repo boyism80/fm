@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { InternalContext } from "@fm/shared/context/internal-context";
+import type { PoolClient } from "pg";
 import type { CharacterRepository } from "@fm/shared/repos/character-repository";
 import type { NoteRemoveRequestRepository } from "@fm/shared/repos/note-request-repository";
 import { RequestStatus } from "@fm/shared/repos/request-repository";
@@ -57,7 +58,7 @@ const NAME_LIMIT = 13;
 const TEXT_LIMIT = 200;
 const NOTE_LIMIT = 100;
 
-enum NoteKind {
+export enum NoteKind {
     NORMAL = 0,
     POPULATION = 1,
 }
@@ -570,7 +571,7 @@ export class SocialService {
             return notesReply(NoteResult.NOTE_RESULT_WRONG_NAME);
         }
 
-        const ok = await this.internalContext.withPgGlobalTransaction(world, async (tx) => {
+        const ok = await this.leaveNote(world, target.characterId, sender, req.message, req.gift, async (tx) => {
             await tx.query("SELECT pg_advisory_xact_lock(280, $1)", [target.characterId]);
             const count = await tx.query<{ count: string }>("SELECT COUNT(*) FROM social_notes WHERE receiver_id=$1", [
                 target.characterId,
@@ -592,22 +593,43 @@ export class SocialService {
                     return false;
                 }
             }
-
-            await tx.query(
-                "INSERT INTO social_notes (receiver_id, sender_id, sender_name, message, gift) VALUES ($1, $2, $3, $4, $5)",
-                [target.characterId, id, sender.name, req.message, req.gift],
-            );
             return true;
         });
         if (!ok) {
             return notesReply(NoteResult.NOTE_RESULT_INBOX_FULL);
         }
-
-        const channel = await this.sessionRepository.findChannel(world, target.characterId);
-        if (channel != null) {
-            await this.publish(world, channel, "note_arrived", { character_id: target.characterId }).catch(() => {});
-        }
         return notesReply(NoteResult.NOTE_RESULT_OK);
+    }
+
+    // Stores one note, in the same transaction as the checks that allow it (allowed returning false refuses it), and
+    // tells the receiver's channel once it is stored.
+    async leaveNote(
+        world: number,
+        receiverId: number,
+        sender: { characterId: number; name: string },
+        message: string,
+        gift: NoteKind,
+        allowed?: (tx: PoolClient) => Promise<boolean>,
+    ): Promise<boolean> {
+        const ok = await this.internalContext.withPgGlobalTransaction(world, async (tx) => {
+            if (allowed != null && !(await allowed(tx))) {
+                return false;
+            }
+            await tx.query(
+                "INSERT INTO social_notes (receiver_id, sender_id, sender_name, message, gift) VALUES ($1, $2, $3, $4, $5)",
+                [receiverId, sender.characterId, sender.name, message, gift],
+            );
+            return true;
+        });
+        if (!ok) {
+            return false;
+        }
+
+        const channel = await this.sessionRepository.findChannel(world, receiverId);
+        if (channel != null) {
+            await this.publish(world, channel, "note_arrived", { character_id: receiverId }).catch(() => {});
+        }
+        return true;
     }
 
     // The reward counts only thank-you notes this call actually deleted; the
