@@ -343,9 +343,7 @@ export class MarriageService {
                 }
                 const result = await this.parcelService.sendParcel({
                     worldId,
-                    recipientName: "",
                     parcel: { ...parcel, receiverId: entry.character_id },
-                    senderAccountId: 0,
                     oneOfAKind: false,
                     requestId,
                     system: true,

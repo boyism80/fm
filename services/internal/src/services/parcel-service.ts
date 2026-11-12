@@ -25,9 +25,7 @@ const KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type SendParcelInput = {
     worldId: number;
-    recipientName: string;
     parcel: Parcel;
-    senderAccountId: number;
     oneOfAKind: boolean;
     requestId: string;
     system: boolean;
@@ -106,18 +104,18 @@ export class ParcelService {
         };
     }
 
-    // A player's send finds its receiver here before anything is held, then sends and recovers by that id.
+    // A send finds its receiver here before anything is held, then sends and recovers by that id. A sender with no
+    // account, the system, may send to any account.
     async findParcelRecipient(
         worldId: number,
         recipientName: string,
         senderAccountId: number,
-        system: boolean,
     ): Promise<{ result: ParcelResult; characterId: number }> {
         const entry = await this.unifiedRepo.findCharacterNameEntry(recipientName);
         if (entry == null || entry.world_id !== worldId) {
             return { result: ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND, characterId: 0 };
         }
-        if (system === false && senderAccountId !== 0 && entry.account_id === senderAccountId) {
+        if (senderAccountId !== 0 && entry.account_id === senderAccountId) {
             return { result: ParcelResult.PARCEL_RESULT_SAME_ACCOUNT, characterId: 0 };
         }
         if ((await this.characterRepo.get(worldId, entry.character_id)) == null) {
@@ -127,20 +125,7 @@ export class ParcelService {
     }
 
     async sendParcel(input: SendParcelInput): Promise<ParcelResult> {
-        let receiverId = input.parcel.receiverId;
-        if (input.recipientName !== "") {
-            const recipient = await this.findParcelRecipient(
-                input.worldId,
-                input.recipientName,
-                input.senderAccountId,
-                input.system,
-            );
-            if (recipient.result !== ParcelResult.PARCEL_RESULT_OK) {
-                return recipient.result;
-            }
-            receiverId = recipient.characterId;
-        }
-
+        const receiverId = input.parcel.receiverId;
         const itemId = input.parcel.item?.itemId ?? 0;
         const result = await this.parcelRepo.withReceiverLock(input.worldId, receiverId, async (txClient) => {
             if (input.requestId !== "0") {

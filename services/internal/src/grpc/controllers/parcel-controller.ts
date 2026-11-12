@@ -41,9 +41,7 @@ export class ParcelGrpcController {
         }
         const result = await this.parcelService.sendParcel({
             worldId: req.worldId,
-            recipientName: req.recipientName ?? "",
             parcel: req.parcel,
-            senderAccountId: req.senderAccountId,
             oneOfAKind: req.oneOfAKind === true,
             requestId: req.requestId,
             system: req.system === true,
@@ -74,7 +72,7 @@ export class ParcelGrpcController {
         const req = call.request;
         callback(
             null,
-            await this.parcelService.findParcelRecipient(req.worldId, req.recipientName, req.senderAccountId, false),
+            await this.parcelService.findParcelRecipient(req.worldId, req.recipientName, req.senderAccountId),
         );
     }
 

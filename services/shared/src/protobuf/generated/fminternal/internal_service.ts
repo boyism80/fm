@@ -2725,9 +2725,7 @@ export interface LoadParcelsReply {
 
 export interface SendParcelRequest {
   worldId: number;
-  recipientName: string;
   parcel: Parcel | undefined;
-  senderAccountId: number;
   oneOfAKind: boolean;
   requestId: string;
   system: boolean;
@@ -17025,15 +17023,7 @@ export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
 };
 
 function createBaseSendParcelRequest(): SendParcelRequest {
-  return {
-    worldId: 0,
-    recipientName: "",
-    parcel: undefined,
-    senderAccountId: 0,
-    oneOfAKind: false,
-    requestId: "0",
-    system: false,
-  };
+  return { worldId: 0, parcel: undefined, oneOfAKind: false, requestId: "0", system: false };
 }
 
 export const SendParcelRequest: MessageFns<SendParcelRequest> = {
@@ -17041,14 +17031,8 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
     if (message.worldId !== 0) {
       writer.uint32(8).uint32(message.worldId);
     }
-    if (message.recipientName !== "") {
-      writer.uint32(18).string(message.recipientName);
-    }
     if (message.parcel !== undefined) {
       Parcel.encode(message.parcel, writer.uint32(26).fork()).join();
-    }
-    if (message.senderAccountId !== 0) {
-      writer.uint32(32).uint32(message.senderAccountId);
     }
     if (message.oneOfAKind !== false) {
       writer.uint32(48).bool(message.oneOfAKind);
@@ -17077,28 +17061,12 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
           message.worldId = reader.uint32();
           continue;
         }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.recipientName = reader.string();
-          continue;
-        }
         case 3: {
           if (tag !== 26) {
             break;
           }
 
           message.parcel = Parcel.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.senderAccountId = reader.uint32();
           continue;
         }
         case 6: {
@@ -17141,17 +17109,7 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
         : isSet(object.world_id)
         ? globalThis.Number(object.world_id)
         : 0,
-      recipientName: isSet(object.recipientName)
-        ? globalThis.String(object.recipientName)
-        : isSet(object.recipient_name)
-        ? globalThis.String(object.recipient_name)
-        : "",
       parcel: isSet(object.parcel) ? Parcel.fromJSON(object.parcel) : undefined,
-      senderAccountId: isSet(object.senderAccountId)
-        ? globalThis.Number(object.senderAccountId)
-        : isSet(object.sender_account_id)
-        ? globalThis.Number(object.sender_account_id)
-        : 0,
       oneOfAKind: isSet(object.oneOfAKind)
         ? globalThis.Boolean(object.oneOfAKind)
         : isSet(object.one_of_a_kind)
@@ -17171,14 +17129,8 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
     if (message.worldId !== 0) {
       obj.worldId = Math.round(message.worldId);
     }
-    if (message.recipientName !== "") {
-      obj.recipientName = message.recipientName;
-    }
     if (message.parcel !== undefined) {
       obj.parcel = Parcel.toJSON(message.parcel);
-    }
-    if (message.senderAccountId !== 0) {
-      obj.senderAccountId = Math.round(message.senderAccountId);
     }
     if (message.oneOfAKind !== false) {
       obj.oneOfAKind = message.oneOfAKind;
@@ -17198,11 +17150,9 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
   fromPartial<I extends Exact<DeepPartial<SendParcelRequest>, I>>(object: I): SendParcelRequest {
     const message = createBaseSendParcelRequest();
     message.worldId = object.worldId ?? 0;
-    message.recipientName = object.recipientName ?? "";
     message.parcel = (object.parcel !== undefined && object.parcel !== null)
       ? Parcel.fromPartial(object.parcel)
       : undefined;
-    message.senderAccountId = object.senderAccountId ?? 0;
     message.oneOfAKind = object.oneOfAKind ?? false;
     message.requestId = object.requestId ?? "0";
     message.system = object.system ?? false;

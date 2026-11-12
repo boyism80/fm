@@ -193,7 +193,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 	// The receiver is found before anything is held, so the send and its recovery name it by id, not by a name that
 	// can be deleted or reused in between.
 	d.pending = true
-	d.owner.gameWorld.Systems().Get[*InternalSystem]().FindParcelRecipientAsync(actx, d.owner, recipient).Bind(d.owner).Do(func(v *internal.FindParcelRecipientReply) error {
+	d.owner.gameWorld.Systems().Get[*InternalSystem]().FindParcelRecipientAsync(actx, d.owner, recipient, d.owner.accountID).Bind(d.owner).Do(func(v *internal.FindParcelRecipientReply) error {
 		if v.GetResult() != internal.ParcelResult_PARCEL_RESULT_OK {
 			d.pending = false
 			d.reportSend(v.GetResult())
@@ -318,7 +318,7 @@ func (d *Duey) send(actx actor.Context, invType constant.InventoryType, slot int
 	}
 	id := d.owner.unsettled.Add(internal.UnsettledType_UNSETTLED_TYPE_PARCEL_SEND, uint64(receiverID), detail)
 
-	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, id, d.owner.accountID, "", parcel, oneOfAKind, false).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
+	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, id, parcel, oneOfAKind, false).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
 		d.pending = false
 		result := v.GetResult()
 		if result == internal.ParcelResult_PARCEL_RESULT_OK {
@@ -629,11 +629,23 @@ func (d *Duey) SendFromSystem(actx actor.Context, recipient string, senderName s
 		return ErrDueyInvalid
 	}
 
-	d.owner.gameWorld.Systems().Get[*InternalSystem]().SendParcelAsync(actx, d.owner, 0, 0, recipient, parcel, false, true).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
-		result := v.GetResult()
-		if result != internal.ParcelResult_PARCEL_RESULT_OK {
-			log.Printf("Duey.SendFromSystem character=%d recipient=%s: %s", d.owner.GetID(), recipient, result)
+	internalSystem := d.owner.gameWorld.Systems().Get[*InternalSystem]()
+	internalSystem.FindParcelRecipientAsync(actx, d.owner, recipient, 0).Bind(d.owner).Do(func(v *internal.FindParcelRecipientReply) error {
+		if v.GetResult() != internal.ParcelResult_PARCEL_RESULT_OK {
+			log.Printf("Duey.SendFromSystem character=%d recipient=%s: %s", d.owner.GetID(), recipient, v.GetResult())
+			return nil
 		}
+		parcel.ReceiverId = v.GetCharacterId()
+		d.owner.Post(func(actx actor.Context) {
+			internalSystem.SendParcelAsync(actx, d.owner, 0, parcel, false, true).Bind(d.owner).Do(func(v *internal.SendParcelReply) error {
+				if result := v.GetResult(); result != internal.ParcelResult_PARCEL_RESULT_OK {
+					log.Printf("Duey.SendFromSystem character=%d recipient=%s: %s", d.owner.GetID(), recipient, result)
+				}
+				return nil
+			}).OnError(func(err error) {
+				log.Printf("Duey.SendFromSystem character=%d recipient=%s: %v", d.owner.GetID(), recipient, err)
+			})
+		})
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("Duey.SendFromSystem character=%d recipient=%s: %v", d.owner.GetID(), recipient, err)

@@ -961,10 +961,9 @@ message LoadParcelsReply {
 
 message SendParcelRequest {
   uint32 world_id = 1;
-  string recipient_name = 2;
+  reserved 2;
   Parcel parcel = 3;
-  uint32 sender_account_id = 4;
-  reserved 5;
+  reserved 4, 5;
   bool one_of_a_kind = 6;
   uint64 request_id = 7 [jstype = JS_STRING];
   bool system = 8;

@@ -156,15 +156,13 @@ func (s *InternalSystem) LoadParcelsAsync(ctx actor.Context, ch *Character) *asy
 	)
 }
 
-func (s *InternalSystem) SendParcelAsync(ctx actor.Context, ch *Character, requestID uint64, senderAccountID uint32, recipient string, parcel *internal.Parcel, oneOfAKind bool, system bool) *async.Promise[*internal.SendParcelReply] {
+func (s *InternalSystem) SendParcelAsync(ctx actor.Context, ch *Character, requestID uint64, parcel *internal.Parcel, oneOfAKind bool, system bool) *async.Promise[*internal.SendParcelReply] {
 	req := &internal.SendParcelRequest{
-		WorldId:         s.gw.GetWorldID(),
-		RecipientName:   recipient,
-		Parcel:          parcel,
-		SenderAccountId: senderAccountID,
-		OneOfAKind:      oneOfAKind,
-		RequestId:       requestID,
-		System:          system,
+		WorldId:    s.gw.GetWorldID(),
+		Parcel:     parcel,
+		OneOfAKind: oneOfAKind,
+		RequestId:  requestID,
+		System:     system,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SendParcelReply, error) {
@@ -203,11 +201,12 @@ func (s *InternalSystem) AbortParcelSendAsync(ctx actor.Context, ch *Character, 
 	)
 }
 
-func (s *InternalSystem) FindParcelRecipientAsync(ctx actor.Context, ch *Character, recipient string) *async.Promise[*internal.FindParcelRecipientReply] {
+// FindParcelRecipientAsync finds the receiver by name; a sender account of 0, the system, may send to any account.
+func (s *InternalSystem) FindParcelRecipientAsync(ctx actor.Context, ch *Character, recipient string, senderAccountID uint32) *async.Promise[*internal.FindParcelRecipientReply] {
 	req := &internal.FindParcelRecipientRequest{
 		WorldId:         s.gw.GetWorldID(),
 		RecipientName:   recipient,
-		SenderAccountId: ch.accountID,
+		SenderAccountId: senderAccountID,
 	}
 	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.FindParcelRecipientReply, error) {
