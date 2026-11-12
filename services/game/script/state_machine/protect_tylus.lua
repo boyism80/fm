@@ -10,7 +10,6 @@ local machine = create({
     map = 921100300,
     exit_map = ELDER_HOUSE,
     duration_ms = 600000,
-    max_machines = 1,
 })
 
 machine.on_scheduled_timeout = function(sm)

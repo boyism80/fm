@@ -10,17 +10,11 @@ local function create(config)
             if config.leave_on_party then
                 group:leave_on_party()
             end
-            group:set_property("started", "false")
             group:min_players(config.min_players or 1)
             group:exit_map(config.exit_map)
-            if config.max_machines ~= nil then
-                group:max_machines(config.max_machines)
-            end
         end,
 
         on_create = function(sm)
-            local group = sm:group()
-            group:set_property("started", "true")
             return { config.map }
         end,
 
@@ -47,10 +41,6 @@ local function create(config)
         on_scheduled_timeout = function(sm)
             finish(sm)
         end,
-
-        on_finish = function(sm)
-            sm:group():set_property("started", "false")
-        end
     }
 end
 

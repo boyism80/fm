@@ -226,7 +226,7 @@ local function handle_training(me, npc)
                 return true
             end
             local group = state_machine(config.group)
-            if group == nil or group:get_property("started") == "true" or not start_solo(group, me) then
+            if group == nil or group:full() or not start_solo(group, me) then
                 me:dialog(npc, "지금은 훈련장을 사용할 수 없어. 잠시 후 다시 시도해 줘.")
             end
             return true

@@ -31,7 +31,7 @@ return {
             me:message("지금은 하늘 둥지 꼭대기에 들어갈 수 없습니다.", Msg.PinkText)
             return
         end
-        if group:get_property("started") == "true" then
+        if group:full() then
             me:message("이미 다른 유저가 퀘스트를 진행 중입니다.", Msg.PinkText)
             return
         end

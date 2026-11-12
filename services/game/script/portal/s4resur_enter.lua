@@ -12,7 +12,7 @@ return {
             me:message("지금은 잊혀진 어둠에 들어갈 수 없습니다.", Msg.PinkText)
             return
         end
-        if group:get_property("started") == "true" then
+        if group:full() then
             me:message("이미 누군가가 퀘스트에 도전 중입니다.", Msg.PinkText)
             return
         end

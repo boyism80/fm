@@ -43,7 +43,7 @@ return {
             me:dialog(npc, "지금은 다른 세계로 들어갈 수 없네.")
             return
         end
-        if group:get_property("started") == "true" then
+        if group:full() then
             me:dialog(npc, "이미 다른 누군가가 다른 세계로 건너가서 임무를 수행 중인 것 같군. 나중에 다시 시도해 보게.")
             return
         end

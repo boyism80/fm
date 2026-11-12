@@ -2,13 +2,10 @@ local function create(config)
     return {
         on_init = function(group)
             group:leave_on_party()
-            group:set_property("started", "false")
             group:min_players(1)
         end,
 
         on_create = function(sm)
-            local group = sm:group()
-            group:set_property("started", "true")
             return { config.map }
         end,
 
@@ -28,10 +25,6 @@ local function create(config)
         on_scheduled_timeout = function(sm)
             sm:finish(config.exit_map)
         end,
-
-        on_finish = function(sm)
-            sm:group():set_property("started", "false")
-        end
     }
 end
 
