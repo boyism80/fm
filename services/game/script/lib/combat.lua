@@ -650,30 +650,17 @@ M.roll_venom_tick_damage = function(me, venom_skill)
     return v44
 end
 
--- The venom passives in the original's order; the first one learned poisons, whatever the attack.
-local VENOM_PASSIVES = {
-    Skill.Venom,
-    Skill.Venom4220005,
-    Skill.VenomCygnus,
-}
-
-local function learned_venom(me)
-    for _, id in ipairs(VENOM_PASSIVES) do
-        local skill = me:skill(id)
-        if skill ~= nil and (skill:level() or 0) > 0 then
-            return skill
-        end
-    end
-    return nil
-end
-
 -- Passive venom: WZ prop, stack 1..3, tick = sum of rolls capped 30000, immediate hit, buff with stack (Lua drives value like poison mist).
-M.apply_venom = function(me, damages)
-    if damages == nil then
+M.apply_venom = function(me, damages, passive_skill_id)
+    if damages == nil or passive_skill_id == nil then
         return
     end
-    local venom_skill = learned_venom(me)
+    local venom_skill = me:skill(passive_skill_id)
     if venom_skill == nil then
+        return
+    end
+    local venom_level = venom_skill:level()
+    if venom_level == nil or venom_level <= 0 then
         return
     end
     local effect = venom_skill:effect()
