@@ -1,17 +1,11 @@
 package server
 
 import (
-	"context"
-	"log"
-
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/clock"
-	"github.com/boyism80/fm/core/rpc"
 	gameconst "github.com/boyism80/fm/maple/constant"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game"
 )
@@ -61,242 +55,44 @@ func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.Allianc
 	}
 }
 
+// The changes below leave who may make them to internal, which checks the latest rows under its lock.
 func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
-	targetGuildID := req.TargetGuildID
-	if targetGuildID == 0 {
+	if _, inGuild := ch.Guild().ID(); !inGuild || req.TargetGuildID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.Guild().ID()
-	if !inGuild {
-		return nil
-	}
-	if targetGuildID == guildID {
-		return nil
-	}
-	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
-	if g == nil {
-		return nil
-	}
-	charID := ch.GetID()
-	if !g.IsAllianceLeader(charID) {
-		return nil
-	}
-	allianceID, inAlliance := g.GetAllianceID()
-	if !inAlliance {
-		return nil
-	}
-	if req.AllianceID != 0 && req.AllianceID != allianceID {
-		return nil
-	}
-	worldID := h.gs.config.WorldId
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.ExpelAllianceGuildReply, error) {
-		return h.gs.systems.Get[*rpc.InternalConnection]().Client.ExpelAllianceGuild(c, &internal.ExpelAllianceGuildRequest{
-			WorldId:       worldID,
-			CharacterId:   charID,
-			TargetGuildId: targetGuildID,
-			AllianceId:    allianceID,
-		})
-	}, func(reply *internal.ExpelAllianceGuildReply) error {
-		if reply == nil || !reply.GetOk() {
-			if reply != nil && !reply.GetOk() {
-				log.Printf("AllianceOperation(expel): failed character=%d target_guild=%d code=%v",
-					charID, targetGuildID, reply.GetErrorCode())
-			}
-			return nil
-		}
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(expel) async error: %v", err)
-	})
+	h.gs.systems.Get[*game.AllianceSystem]().ExpelAsync(ctx.ActorContext, ch, req.TargetGuildID, req.AllianceID)
 	return nil
 }
 
 func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
-	newLeaderID := req.NewLeaderID
-	if newLeaderID == 0 {
+	if _, inGuild := ch.Guild().ID(); !inGuild || req.NewLeaderID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.Guild().ID()
-	if !inGuild {
-		return nil
-	}
-	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
-	if g == nil {
-		return nil
-	}
-	charID := ch.GetID()
-	if !g.IsAllianceLeader(charID) {
-		return nil
-	}
-	allianceID, inAlliance := g.GetAllianceID()
-	if !inAlliance {
-		return nil
-	}
-	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
-	if a == nil || a.LeaderCharacterID() != charID {
-		return nil
-	}
-	worldID := h.gs.config.WorldId
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceLeaderReply, error) {
-		return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangeAllianceLeader(c, &internal.ChangeAllianceLeaderRequest{
-			WorldId:              worldID,
-			CharacterId:          charID,
-			NewLeaderCharacterId: newLeaderID,
-		})
-	}, func(reply *internal.ChangeAllianceLeaderReply) error {
-		if reply == nil || !reply.GetOk() {
-			if reply != nil && !reply.GetOk() {
-				log.Printf("AllianceOperation(change leader): failed character=%d new_leader=%d code=%v",
-					charID, newLeaderID, reply.GetErrorCode())
-			}
-			return nil
-		}
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(change leader) async error: %v", err)
-	})
+	h.gs.systems.Get[*game.AllianceSystem]().ChangeLeaderAsync(ctx.ActorContext, ch, req.NewLeaderID)
 	return nil
 }
 
 func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
-	guildID, inGuild := ch.Guild().ID()
-	if !inGuild {
+	if _, inGuild := ch.Guild().ID(); !inGuild {
 		return nil
 	}
-	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
-	if g == nil {
-		return nil
-	}
-	charID := ch.GetID()
-	if !g.IsAllianceOfficer(charID) {
-		return nil
-	}
-	if _, inAlliance := g.GetAllianceID(); !inAlliance {
-		return nil
-	}
-	worldID := h.gs.config.WorldId
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceNoticeReply, error) {
-		return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangeAllianceNotice(c, &internal.ChangeAllianceNoticeRequest{
-			WorldId:     worldID,
-			CharacterId: charID,
-			Notice:      req.Notice,
-		})
-	}, func(reply *internal.ChangeAllianceNoticeReply) error {
-		if reply == nil || !reply.GetOk() {
-			if reply != nil && !reply.GetOk() {
-				log.Printf("AllianceOperation(change notice): failed character=%d code=%v", charID, reply.GetErrorCode())
-			}
-			return nil
-		}
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(change notice) async error: %v", err)
-	})
+	h.gs.systems.Get[*game.AllianceSystem]().ChangeNoticeAsync(ctx.ActorContext, ch, req.Notice)
 	return nil
 }
 
 func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
-	if !game.RankTitles(req.RankTitles).Valid() {
+	if _, inGuild := ch.Guild().ID(); !inGuild {
 		return nil
 	}
-
-	guildID, inGuild := ch.Guild().ID()
-	if !inGuild {
-		return nil
-	}
-	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
-	if g == nil {
-		return nil
-	}
-	charID := ch.GetID()
-	if !g.IsAllianceLeader(charID) {
-		return nil
-	}
-	allianceID, inAlliance := g.GetAllianceID()
-	if !inAlliance {
-		return nil
-	}
-	a := h.gs.systems.Get[*game.AllianceSystem]().Get(allianceID)
-	if a == nil || a.LeaderCharacterID() != charID {
-		return nil
-	}
-	worldID := h.gs.config.WorldId
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceRankTitlesReply, error) {
-		return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangeAllianceRankTitles(c, &internal.ChangeAllianceRankTitlesRequest{
-			WorldId:     worldID,
-			CharacterId: charID,
-			RankTitles: []string{
-				req.RankTitles[0],
-				req.RankTitles[1],
-				req.RankTitles[2],
-				req.RankTitles[3],
-				req.RankTitles[4],
-			},
-		})
-	}, func(reply *internal.ChangeAllianceRankTitlesReply) error {
-		if reply == nil || !reply.GetOk() {
-			if reply != nil && !reply.GetOk() {
-				log.Printf("AllianceOperation(change rank titles): failed character=%d code=%v", charID, reply.GetErrorCode())
-			}
-			return nil
-		}
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(change rank titles) async error: %v", err)
-	})
+	h.gs.systems.Get[*game.AllianceSystem]().ChangeRankTitlesAsync(ctx.ActorContext, ch, req.RankTitles[:])
 	return nil
 }
 
 func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *game.Character, req *request.AllianceOperation) error {
-	targetID := req.TargetCharacterID
-	if targetID == 0 {
+	if _, inGuild := ch.Guild().ID(); !inGuild || req.TargetCharacterID == 0 {
 		return nil
 	}
-	guildID, inGuild := ch.Guild().ID()
-	if !inGuild {
-		return nil
-	}
-	g := h.gs.systems.Get[*game.GuildSystem]().Get(guildID)
-	if g == nil {
-		return nil
-	}
-	charID := ch.GetID()
-	if !g.IsAllianceOfficer(charID) {
-		return nil
-	}
-	if _, inAlliance := g.GetAllianceID(); !inAlliance {
-		return nil
-	}
-	worldID := h.gs.config.WorldId
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceMemberRankReply, error) {
-		return h.gs.systems.Get[*rpc.InternalConnection]().Client.ChangeAllianceMemberRank(c, &internal.ChangeAllianceMemberRankRequest{
-			WorldId:              worldID,
-			RequesterCharacterId: charID,
-			TargetCharacterId:    targetID,
-			Promote:              req.RankChangePromote,
-		})
-	}, func(reply *internal.ChangeAllianceMemberRankReply) error {
-		if reply == nil || !reply.GetOk() {
-			if reply != nil && !reply.GetOk() {
-				log.Printf("AllianceOperation(change member rank): failed requester=%d target=%d code=%v",
-					charID, targetID, reply.GetErrorCode())
-			}
-			return nil
-		}
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(change member rank) async error: %v", err)
-	})
+	h.gs.systems.Get[*game.AllianceSystem]().ChangeMemberRankAsync(ctx.ActorContext, ch, req.TargetCharacterID, req.RankChangePromote)
 	return nil
 }
 
@@ -380,41 +176,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *game
 	if !hasInvite || !clock.Now().Before(expiresAt) {
 		return nil
 	}
-	worldID := h.gs.config.WorldId
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.AcceptAllianceInviteReply, error) {
-		return h.gs.systems.Get[*rpc.InternalConnection]().Client.AcceptAllianceInvite(c, &internal.AcceptAllianceInviteRequest{
-			WorldId:     worldID,
-			CharacterId: charID,
-			AllianceId:  allianceID,
-			GuildId:     guildID,
-		})
-	}, func(reply *internal.AcceptAllianceInviteReply) error {
-		if reply == nil || !reply.GetOk() {
-			if reply != nil && !reply.GetOk() {
-				log.Printf("AllianceOperation(accept invite): failed character=%d alliance=%d guild=%d code=%v",
-					charID, allianceID, guildID, reply.GetErrorCode())
-			}
-			h.gs.systems.Get[*game.DispatchSystem]().Visit(charID, func(_ actor.Context, ch *game.Character) {
-				if ch == nil {
-					return
-				}
-				ch.Listener().OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceAcceptFailedMessage)
-			})
-			return nil
-		}
-		h.gs.systems.Get[*game.GuildSystem]().ClearAllianceInvite(guildID, allianceID)
-		alliancePb := reply.GetAlliance()
-		if alliancePb == nil {
-			log.Printf("AllianceOperation(accept invite): ok but missing alliance character=%d", charID)
-			return nil
-		}
-		h.gs.systems.Get[*game.AllianceSystem]().Update(alliancePb)
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(accept invite) async error: %v", err)
-	})
+	h.gs.systems.Get[*game.AllianceSystem]().AcceptInviteAsync(ctx.ActorContext, ch, guildID, allianceID)
 	return nil
 }
 
@@ -468,22 +230,6 @@ func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
 }
 
 func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *game.Character) error {
-	worldID := h.gs.config.WorldId
-	charID := ch.GetID()
-	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise.ThenRPC(func(c context.Context) (*internal.LeaveAllianceReply, error) {
-		return h.gs.systems.Get[*rpc.InternalConnection]().Client.LeaveAlliance(c, &internal.LeaveAllianceRequest{
-			WorldId:     worldID,
-			CharacterId: charID,
-		})
-	}, func(reply *internal.LeaveAllianceReply) error {
-		if !reply.GetOk() {
-			log.Printf("AllianceOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
-		}
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("AllianceOperation(leave) async error: %v", err)
-	})
+	h.gs.systems.Get[*game.AllianceSystem]().LeaveAsync(ctx.ActorContext, ch)
 	return nil
 }

@@ -182,11 +182,6 @@ func (g *Guild) IsAllianceLeader(characterID uint32) bool {
 	return ok && rank == constant.AllianceRankLeader
 }
 
-func (g *Guild) IsAllianceOfficer(characterID uint32) bool {
-	rank, ok := g.FindMaster(characterID).GetAllianceRank()
-	return ok && rank <= constant.AllianceRankOfficer
-}
-
 func (g *Guild) IsGuildMaster(characterID uint32) bool {
 	if g == nil {
 		return false
