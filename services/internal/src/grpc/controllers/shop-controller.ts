@@ -84,6 +84,6 @@ export class ShopGrpcController {
         call: GrpcCall<FindPopularShopSearchesRequest>,
         callback: GrpcCallback<FindPopularShopSearchesReply>,
     ) {
-        callback(null, { itemIds: this.shopService.findPopularShopSearches(call.request.worldId) });
+        callback(null, { itemIds: await this.shopService.findPopularShopSearches(call.request.worldId) });
     }
 }

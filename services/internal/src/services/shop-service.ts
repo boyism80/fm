@@ -7,33 +7,34 @@ import {
 } from "@fm/shared/protobuf/generated/fminternal/internal_service";
 import { ShopOpenRequestRepository, ShopRepository, type ShopRow } from "@fm/shared/repos/shop-repository";
 import { RequestStatus } from "@fm/shared/repos/request-repository";
+import { InternalContext } from "@fm/shared/context/internal-context";
 import { CharacterService, type SaveCharacterEntry } from "./character-service";
 
 const ShopKindEntrusted = 5;
 const SearchLimit = 200;
 const PopularLimit = 10;
 
+// The search counts are the ranking itself, not a cache, so they live in the world's Redis without the cache prefix
+// and outlast a restart of any internal process.
 export class ShopSearchRanking {
-    private readonly counts = new Map<number, Map<number, number>>();
+    private readonly ctx: InternalContext;
 
-    add(worldId: number, itemId: number): void {
-        let world = this.counts.get(worldId);
-        if (world == null) {
-            world = new Map();
-            this.counts.set(worldId, world);
-        }
-        world.set(itemId, (world.get(itemId) ?? 0) + 1);
+    constructor(internalContext: InternalContext) {
+        this.ctx = internalContext;
     }
 
-    top(worldId: number, n: number): number[] {
-        const world = this.counts.get(worldId);
-        if (world == null) {
-            return [];
-        }
-        return [...world.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, n)
-            .map(([itemId]) => itemId);
+    private key(worldId: number): string {
+        return `w${worldId}:shop-search-count`;
+    }
+
+    async add(worldId: number, itemId: number): Promise<void> {
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        await client.zincrby(this.key(worldId), 1, String(itemId));
+    }
+
+    async top(worldId: number, n: number): Promise<number[]> {
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        return (await client.zrevrange(this.key(worldId), 0, n - 1)).map(Number);
     }
 }
 
@@ -244,7 +245,7 @@ export class ShopService {
             }
         }
         if (entries.length > 0) {
-            this.ranking.add(worldId, itemId);
+            await this.ranking.add(worldId, itemId);
         }
         entries.sort((a, b) => {
             if (highFirst) {
@@ -255,7 +256,7 @@ export class ShopService {
         return entries.slice(0, SearchLimit);
     }
 
-    findPopularShopSearches(worldId: number): number[] {
+    async findPopularShopSearches(worldId: number): Promise<number[]> {
         return this.ranking.top(worldId, PopularLimit);
     }
 }
