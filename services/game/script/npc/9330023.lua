@@ -2,15 +2,23 @@
 
 local salon = require("script/lib/salon")
 
-local CONFIG = {
-    coupon = 5152024,
-    intro = "시술을 받으러 여기까지 온건가요? ",
-    outro = "을 가져온다면 아주 멋진 얼굴로 바꿔드릴수 있답니다.",
-    done = "자아~ 다 됐다네. 어떤가? 맘에 들지? 다음에 또 이곳을 찾아주게나~",
-}
+local COUPON = 5152024
 
 return {
     on_click = function(me, npc)
-        salon.face(me, npc, CONFIG)
+        if me:dialog(npc, "시술을 받으러 여기까지 온건가요? #b#t" .. COUPON .. "##k 을 가져온다면 아주 멋진 얼굴로 바꿔드릴수 있답니다.", false, true) == false then
+            return
+        end
+
+        local face, paid = salon.pick(me, npc, "어떤 얼굴로 바꿔보고 싶은가?", salon.faces(me), COUPON)
+        if face == nil then
+            return
+        end
+        if not paid then
+            me:dialog(npc, "미안하지만 쿠폰 없이는 성형수술을 해 줄수 없다네.")
+            return
+        end
+        me:face(face)
+        me:dialog(npc, "자아~ 다 됐다네. 어떤가? 맘에 들지? 다음에 또 이곳을 찾아주게나~")
     end,
 }

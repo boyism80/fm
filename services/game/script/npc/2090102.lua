@@ -4,6 +4,6 @@ local salon = require("script/lib/salon")
 
 return {
     on_click = function(me, npc)
-        salon.skin(me, npc, { coupon = 5153006 })
+        salon.skin(me, npc, 5153006)
     end,
 }
