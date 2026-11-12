@@ -6,16 +6,6 @@ return {
         if effect == nil then
             return
         end
-        local vals = {}
-        if effect.pad > 0 then
-            vals[BuffFlag.WeaponAtk] = effect.pad
-        end
-        if effect.x > 0 then
-            vals[BuffFlag.Concentrate] = effect.x
-        end
-        if next(vals) == nil then
-            return
-        end
-        me:buff(skill, vals)
+        me:buff(skill, { [BuffFlag.Concentrate] = effect.x })
     end
 }

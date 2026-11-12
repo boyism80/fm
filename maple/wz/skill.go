@@ -48,6 +48,27 @@ type SkillLevelData struct {
 	Action         string
 }
 
+// StatBuffs is every stat a lasting buff of this level gives: each nonzero attack, defense, accuracy, avoid, speed,
+// and jump, a negative one included, as the original server put them on every lasting skill.
+func (ld *SkillLevelData) StatBuffs() map[constant.BuffFlag]int32 {
+	out := map[constant.BuffFlag]int32{}
+	for flag, value := range map[constant.BuffFlag]int{
+		constant.BuffFlagWeaponAtk: ld.PAD,
+		constant.BuffFlagWeaponDef: ld.PDD,
+		constant.BuffFlagMagicAtk:  ld.MAD,
+		constant.BuffFlagMagicDef:  ld.MDD,
+		constant.BuffFlagAcc:       ld.ACC,
+		constant.BuffFlagAvoid:     ld.EVA,
+		constant.BuffFlagSpeed:     ld.Speed,
+		constant.BuffFlagJump:      ld.Jump,
+	} {
+		if value != 0 {
+			out[flag] = int32(value)
+		}
+	}
+	return out
+}
+
 // WZ lt/rb describe the area while facing left; facing right mirrors it. Range widens the front.
 func (ld *SkillLevelData) Area(x, y int32, facingLeft bool) types.Rect[int32] {
 	r := int32(ld.Range)

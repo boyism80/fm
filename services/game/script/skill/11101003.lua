@@ -4,18 +4,8 @@ local combat = require("script/lib/combat")
 
 return {
     on_activated = function(me, skill, params)
-        local effect = skill:effect()
-        if effect == nil then
-            return
-        end
-
-        local vals = { [BuffFlag.WeaponAtk] = effect.pad }
-        -- WZ gives the defense the rage costs as a negative pdd.
-        if effect.pdd ~= 0 then
-            vals[BuffFlag.WeaponDef] = effect.pdd
-        end
         combat.for_each_near_party_member(me, skill, function(ch)
-            ch:buff(skill, vals)
+            ch:buff(skill)
             if ch ~= me then
                 ch:show_skill_effect(skill, SkillEffectType.Affected)
             end

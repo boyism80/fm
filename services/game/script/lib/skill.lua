@@ -32,47 +32,18 @@ M.mark_homing = function(me, skill, damages)
     end
 end
 
--- Dark sight slows its user by the skill's speed.
+-- Dark sight slows its user by the skill's WZ speed, which the buff carries.
 M.apply_dark_sight = function(me, skill)
-    local vals = { [BuffFlag.Darksight] = 1 }
-    local effect = skill:effect()
-    if effect ~= nil and effect.speed ~= 0 then
-        vals[BuffFlag.Speed] = effect.speed
-    end
-    me:buff(skill, vals)
+    me:buff(skill, { [BuffFlag.Darksight] = 1 })
 end
 
 M.apply_iron_body = function(me, skill)
-    local effect = skill:effect()
-    if effect == nil then
-        return
-    end
-
-    if effect.pdd <= 0 then
-        return
-    end
-
-    me:buff(skill, BuffFlag.WeaponDef, effect.pdd)
+    me:buff(skill)
 end
 
--- A transformation carries the skill's defense, speed, and jump along with the look.
+-- A transformation carries the skill's WZ stats along with the look.
 M.apply_morph = function(me, skill, morph)
-    local vals = { [BuffFlag.Morph] = morph }
-    local effect = skill:effect()
-    if effect ~= nil then
-        local stats = {
-            [BuffFlag.WeaponDef] = effect.pdd,
-            [BuffFlag.MagicDef] = effect.mdd,
-            [BuffFlag.Speed] = effect.speed,
-            [BuffFlag.Jump] = effect.jump,
-        }
-        for flag, value in pairs(stats) do
-            if value > 0 then
-                vals[flag] = value
-            end
-        end
-    end
-    me:buff(skill, vals)
+    me:buff(skill, { [BuffFlag.Morph] = morph })
 end
 
 M.apply_monster_magnet = function(me, skill, params)

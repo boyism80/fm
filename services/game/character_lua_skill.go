@@ -70,6 +70,22 @@ func (ch *Character) luaSkillFuncs() map[string]lua.LGFunction {
 				}
 				return true, true
 			}
+			// buff(skill) gives the skill's WZ stats alone.
+			if ud, ok := L.Get(2).(*lua.LUserData); ok && argc == 2 {
+				skillEntry, ok := ud.Value.(*SkillEntry)
+				if !ok || skillEntry == nil || skillEntry.wz == nil {
+					L.ArgError(2, "SkillEntry with Wz expected")
+					return 0
+				}
+				ld := skillEntry.wz.GetLevelData(skillEntry.Level())
+				if ld == nil {
+					return 0
+				}
+				if values := ld.StatBuffs(); len(values) > 0 {
+					ch.buffs.AddBuff(skillEntry.wz, ld.Time, uint8(skillEntry.Level()), ch.GetID(), values, true)
+				}
+				return 0
+			}
 			if argc == 2 {
 				if L.Get(2).Type() != lua.LTTable {
 					L.ArgError(2, "buff() getter requires BuffFlag table")
@@ -183,6 +199,16 @@ func (ch *Character) luaSkillFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 					values = parsedValues
+					// A skill's table buff carries its WZ stats too; a flag the table names keeps the table's value.
+					if skillEntry != nil {
+						if ld := skillEntry.wz.GetLevelData(skillEntry.Level()); ld != nil {
+							for flag, value := range ld.StatBuffs() {
+								if _, set := values[flag]; !set {
+									values[flag] = value
+								}
+							}
+						}
+					}
 				}
 
 				if skillEntry != nil {
