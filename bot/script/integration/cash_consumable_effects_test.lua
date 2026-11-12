@@ -23,6 +23,9 @@ local FACE = 0x2
 local FACE_COUPON = 5152001
 local DENMA = 1052004
 local HENESYS_CLINIC = 100000103
+local SKIN = 0x1
+local SKIN_CARE = 1012105
+local HENESYS_SKIN_CARE = 100000105
 local ATTACHMENT = 4000000
 local ETC = 4
 local MSG_ITEM_MEGAPHONE = 8
@@ -351,6 +354,46 @@ local function denma(ctx)
     return consumed(ctx, bot, FACE_COUPON, 1, "헤네시스 성형외과 쿠폰")
 end
 
+-- Without the coupon the Henesys skin care turns the pick away and leaves the skin as it is.
+local function skin_care_without_coupon(ctx)
+    local bot = ctx:bot(0)
+    if setup(ctx, bot, "-") == false then
+        return false
+    end
+    if bot:instance_move(HENESYS_SKIN_CARE) == false then
+        return ctx:fail("헤네시스 피부관리실 이동 실패")
+    end
+    local oid = pq.npc(ctx, bot, SKIN_CARE)
+    if oid == false then
+        return false
+    end
+    if bot:npc_click(oid) == false then
+        return ctx:fail("나미녀 대화가 오지 않음")
+    end
+    local style = bot:request(resp.dialog_style, req.dialog { dialog_type = 0, next = true }, nil, 5000)
+    if style == false or style.styles == nil or #style.styles == 0 then
+        return ctx:fail("나미녀가 피부 목록을 보여 주지 않음")
+    end
+    local changed = false
+    ctx:hook("skin_care", function(_, b, p, name)
+        if b:id() == bot:id() and name == resp.update_stats and p.stats[SKIN] ~= nil then
+            changed = true
+        end
+    end)
+    local refused = bot:request(resp.dialog, req.dialog { dialog_type = 7, next = true, selected = #style.styles - 1 },
+        function(p)
+            return p.text ~= nil and p.text:find("쿠폰을 가져오시지 않으면", 1, true) ~= nil
+        end, 5000)
+    bot:dialog(false)
+    if refused == false then
+        return ctx:fail("쿠폰 없이 고른 피부에 거절 안내가 오지 않음")
+    end
+    if changed then
+        return ctx:fail("쿠폰 없이 피부가 바뀜")
+    end
+    return true
+end
+
 local function song(ctx)
     local actor = ctx:bot(0)
     local observer = ctx:bot(1)
@@ -641,6 +684,7 @@ test_suite {
         mu_mu,
         color_lens,
         denma,
+        skin_care_without_coupon,
         song,
         chalkboard,
         note,
