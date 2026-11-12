@@ -33,7 +33,10 @@ func (s *MobSkill) IsOnCooldown(now time.Time) bool {
 	return now.Sub(s.lastUsedAt) < cooldown
 }
 
-const mobSkillCastWindow = 5 * time.Second
+const (
+	mobSkillCastWindow = 5 * time.Second
+	mobSkillCastTimer  = "mobSkillCast"
+)
 
 type MobSkills struct {
 	owner     *Mob
@@ -158,9 +161,37 @@ func (sc *MobSkills) Choice(controller *Character) *MobSkill {
 	return nil
 }
 
-// TakePending returns the skill Choice gave the controller to cast, once. The client names the skill in its cast
-// packet, so anything else (another skill, a second cast, a cast long after the choice) is ignored.
-func (sc *MobSkills) TakePending(skillID uint32, level uint8, now time.Time) *MobSkill {
+// Cast runs the skill Choice gave the controller, which the client names in its cast packet: after the cast delay the
+// skill's on_mob_skill, then its MP cost.
+func (sc *MobSkills) Cast(skillID uint32, level uint8, delay time.Duration, controllerID uint32) {
+	skill := sc.takePending(skillID, level, clock.Now())
+	if skill == nil {
+		return
+	}
+	m := sc.owner
+	m.RemoveTimer(mobSkillCastTimer)
+	m.AddTimer(mobSkillCastTimer, delay, false, func() {
+		mapInstance := m.GetMap()
+		if !m.IsAlive() || mapInstance == nil {
+			return
+		}
+		var controller interface{}
+		if ch := mapInstance.GetPlayer(controllerID); ch != nil {
+			controller = ch
+		}
+		// The effect runs to its end here, as no mob skill script yields, so the cost follows it as in the original.
+		mapInstance.runMobLuaHook(mapInstance.GetLuaRoot(), sc.script(skill), "on_mob_skill", m, controller, skill)
+		m.consumeSkillMP(skill)
+	})
+}
+
+func (sc *MobSkills) script(skill *MobSkill) string {
+	return fmt.Sprintf("script/mob/skill/%d.lua", skill.slot.SkillID)
+}
+
+// takePending returns the skill Choice gave the controller to cast, once. Anything else (another skill, a second
+// cast, a cast long after the choice) is ignored.
+func (sc *MobSkills) takePending(skillID uint32, level uint8, now time.Time) *MobSkill {
 	if sc == nil {
 		return nil
 	}
@@ -191,8 +222,7 @@ func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool
 	if root == nil {
 		return true
 	}
-	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.slot.SkillID)
-	thread, err := luax.NewThread(root, scriptPath)
+	thread, err := luax.NewThread(root, sc.script(skill))
 	if err != nil {
 		return true
 	}
@@ -203,7 +233,7 @@ func (sc *MobSkills) chooseByScript(controller *Character, skill *MobSkill) bool
 	return lua.LVAsBool(ret)
 }
 
-func (m *Mob) ConsumeSkillMP(skill *MobSkill) {
+func (m *Mob) consumeSkillMP(skill *MobSkill) {
 	if skill.levelData == nil || skill.levelData.MpCon <= 0 {
 		return
 	}
@@ -212,5 +242,15 @@ func (m *Mob) ConsumeSkillMP(skill *MobSkill) {
 	if current := m.GetMp(); current > cost {
 		next = current - cost
 	}
-	m.SetMp(max(next, min(m.GetMaxMp(), 500)), false)
+	m.SetMp(max(next, m.mpFloor()), false)
+}
+
+// ControllerMP is the MP the controller is told the mob has.
+func (m *Mob) ControllerMP() uint32 {
+	return max(m.GetMp(), m.mpFloor())
+}
+
+// mpFloor is the least MP a mob is seen with: 500, or its full MP when it has less.
+func (m *Mob) mpFloor() uint32 {
+	return min(m.GetMaxMp(), 500)
 }

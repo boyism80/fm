@@ -6,16 +6,10 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/clock"
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/maple/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/services/game"
-	lua "github.com/yuin/gopher-lua"
 )
-
-const mobSkillScriptTimerKey = "mobSkillScript"
 
 type MoveMob struct {
 	gs *GameServer
@@ -72,22 +66,11 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 			selectedSkillLevel = skill.Slot().Level
 		}
 	} else if !needChoice {
-		if skill := mob.Skills().TakePending(uint32(req.SkillId), req.SkillLevel, clock.Now()); skill != nil {
-			delay := time.Duration(int(req.SkillDelay)*100+450) * time.Millisecond
-			controllerID := ch.GetID()
-			mob.RemoveTimer(mobSkillScriptTimerKey)
-			mob.AddTimer(mobSkillScriptTimerKey, delay, false, func() {
-				if !mob.IsAlive() {
-					return
-				}
-				h.runScript(ctx, mapInstance, mob, mapInstance.GetPlayer(controllerID), skill)
-			})
-		}
+		delay := time.Duration(int(req.SkillDelay)*100+450) * time.Millisecond
+		mob.Skills().Cast(uint32(req.SkillId), req.SkillLevel, delay, ch.GetID())
 	}
 
-	// The controller is told at least 500 MP, or the full MP of a mob with less.
-	mp := max(mob.GetMp(), min(mob.GetMaxMp(), 500))
-	ch.Listener().OnControlMoveMob(ch, mob, req.MovementId, req.ActiveSkill, uint16(min(mp, 65535)), selectedSkillID, selectedSkillLevel)
+	ch.Listener().OnControlMoveMob(ch, mob, req.MovementId, req.ActiveSkill, uint16(min(mob.ControllerMP(), 65535)), selectedSkillID, selectedSkillLevel)
 	ch.Listener().OnMobMoved(
 		ch,
 		mob,
@@ -103,31 +86,4 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	mapInstance.OnMoved(mob, startPoint)
 
 	return nil
-}
-
-func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *game.Map, mob *game.Mob, controller *game.Character, skill *game.MobSkill) {
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return
-	}
-	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.Slot().SkillID)
-	thread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		log.Printf("mob skill script %s: %v", scriptPath, err)
-		return
-	}
-	luax.SetConfiguration(thread, luax.Configuration{
-		ActorContext: ctx.ActorContext,
-	})
-	var target interface{}
-	if controller != nil {
-		target = controller
-	}
-	hook := "on_mob_skill"
-	luax.CallAsync(ctx.ActorContext, root, thread, hook, mob, target, skill).Do(func([]lua.LValue) error {
-		mob.ConsumeSkillMP(skill)
-		return nil
-	}).OnError(func(err error) {
-		log.Printf("mob skill %s: %v", hook, err)
-	})
 }
