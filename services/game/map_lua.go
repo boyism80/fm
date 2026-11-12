@@ -301,23 +301,6 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, item))
 			return 1
 		},
-		"drop": func(L *lua.LState) int {
-			mapInstance := luax.Check[Map](L, 1)
-
-			entries := L.CheckTable(2)
-			spawnPoint := luax.ParsePoint(L.CheckTable(3))
-
-			var owner *Character
-			if ownerLV := L.Get(4); ownerLV != lua.LNil {
-				if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
-					if ch, ok := ownerUd.Value.(*Character); ok {
-						owner = ch
-					}
-				}
-			}
-			mapInstance.dropLuaEntries(entries, spawnPoint, owner, false)
-			return 0
-		},
 		"spawn_mob": func(L *lua.LState) int {
 			mapInstance := luax.Check[Map](L, 1)
 			if mapInstance.gameWorld == nil {
@@ -750,92 +733,6 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
-	}
-}
-
-func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16], owner *Character, questTagged bool) {
-	if m.gameWorld == nil {
-		return
-	}
-	resources := m.gameWorld.GetResources()
-	if resources == nil {
-		return
-	}
-
-	ownerID, dropType := owner.dropOwner()
-
-	spacing := int16(25)
-	d := int16(1)
-	for i := 1; ; i++ {
-		entryLV := entries.RawGetInt(i)
-		entry, ok := entryLV.(*lua.LTable)
-		if !ok {
-			break
-		}
-
-		destPoint := spawnPoint
-		if d%2 == 0 {
-			destPoint.X += spacing * (d + 1) / 2
-		} else {
-			destPoint.X -= spacing * (d / 2)
-		}
-
-		spawned := false
-		mesoLV := entry.RawGetString("meso")
-		itemLV := entry.RawGetString("item")
-		if mesoLV != lua.LNil {
-			count := int32(lua.LVAsNumber(mesoLV))
-			if count > 0 {
-				if _, err := m.SpawnMeso(count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
-					return
-				}
-				spawned = true
-			}
-		} else if itemLV != lua.LNil {
-			var itemID uint32
-			switch lv := itemLV.(type) {
-			case lua.LString:
-				id, found := resources.NameToItem(string(lv))
-				if found {
-					itemID = id
-				}
-			case lua.LNumber:
-				itemID = uint32(lv)
-			}
-			if itemID != 0 {
-				if _, exists := resources.Items[itemID]; exists {
-					count := uint16(1)
-					if countLV := entry.RawGetString("count"); countLV != lua.LNil {
-						if n := int(lua.LVAsNumber(countLV)); n >= 1 {
-							count = uint16(n)
-						}
-					}
-					quest := uint32(0)
-					if questLV, ok := entry.RawGetString("quest").(lua.LNumber); ok {
-						quest = uint32(questLV)
-					}
-					if questTagged {
-						quest = resources.DropQuest(wz.Drop{Item: itemID, Quest: quest})
-					}
-					item, err := NewItem(itemID, count, m.gameWorld)
-					if err == nil {
-						if err := m.SpawnItem(item, ItemSpawn{
-							Position: destPoint,
-							From:     spawnPoint,
-							Owner:    ownerID,
-							DropType: dropType,
-							Quest:    quest,
-						}); err != nil {
-							return
-						}
-						spawned = true
-					}
-				}
-			}
-		}
-		if spawned {
-			d++
-		}
 	}
 }
 
