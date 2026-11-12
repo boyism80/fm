@@ -447,15 +447,13 @@ func NewResources(wzPath string) *Resources {
 	} else if err != nil {
 		log.Printf("Failed to load Reward.img.xml: %v", err)
 	}
-	// A mob Reward.img leaves without drops takes the original server's drop table.
+	// The original server's drop table adds the rows Reward.img does not have.
 	legacyRewardPath := filepath.Join(filepath.Dir(wzPath), "drops", "MobReward.img.xml")
-	if legacy, _, err := loadRewardDrops(legacyRewardPath); err == nil {
-		for mobID, drops := range legacy {
-			if len(mobDrops[mobID]) == 0 {
-				mobDrops[mobID] = drops
-			}
+	if legacyMob, _, err := loadRewardDrops(legacyRewardPath); err == nil {
+		for mobID, drops := range legacyMob {
+			mobDrops[mobID] = mergeDrops(mobDrops[mobID], drops)
 		}
-		fmt.Println("Legacy mob drop file loaded.")
+		fmt.Println("Legacy drop file loaded.")
 	} else {
 		log.Printf("Failed to load %s: %v", legacyRewardPath, err)
 	}

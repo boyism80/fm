@@ -26,17 +26,6 @@ local function roll(drops, owner)
     return spawned
 end
 
-function M.from_mob(drops, mob, attacker, map)
-    if attacker == nil or map == nil then
-        return
-    end
-    local spawned = roll(drops, attacker)
-    if #spawned == 0 then
-        return
-    end
-    mob:drop(spawned, attacker)
-end
-
 function M.from_reactor(drops, reactor)
     local map = reactor:map()
     if map == nil then

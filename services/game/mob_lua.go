@@ -478,21 +478,6 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.ArgError(2, "drop_rate() get or set one value")
 			return 0
 		},
-		"drop": func(L *lua.LState) int {
-			mob := luax.Check[Mob](L, 1)
-			entries := L.CheckTable(2)
-			mapInstance := mob.GetMap()
-			if mapInstance == nil {
-				return 0
-			}
-
-			var owner *Character
-			if ownerUd, ok := L.Get(3).(*lua.LUserData); ok {
-				owner, _ = ownerUd.Value.(*Character)
-			}
-			mapInstance.dropLuaEntries(entries, mob.position, owner, true)
-			return 0
-		},
 		"drops": func(L *lua.LState) int {
 			mob := luax.Check[Mob](L, 1)
 			t := L.NewTable()

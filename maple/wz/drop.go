@@ -29,6 +29,26 @@ func (d Drop) Count() uint16 {
 	return 1
 }
 
+// mergeDrops adds to base each extra row whose item, or meso, base does not already drop.
+func mergeDrops(base, extra []Drop) []Drop {
+	items := make(map[uint32]bool, len(base))
+	meso := false
+	for _, d := range base {
+		if d.Item == 0 {
+			meso = true
+		} else {
+			items[d.Item] = true
+		}
+	}
+	for _, d := range extra {
+		if (d.Item == 0 && meso) || (d.Item != 0 && items[d.Item]) {
+			continue
+		}
+		base = append(base, d)
+	}
+	return base
+}
+
 type GlobalDropType uint8
 
 const (
